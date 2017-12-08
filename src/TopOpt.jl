@@ -91,8 +91,8 @@ function get_fe(sp::StiffnessProblem{dim,T}, force::Float64) where {dim, T}
     if sp.problem == 1
         addnodeset!(dh.grid, "fixed_all", x -> left(sp.grid, x));
         addnodeset!(dh.grid, "down_force", x -> right(sp.grid, x) && middley(sp.grid, x));
-        addcellset!(dh.grid, "black", x -> right(sp.grid, x) && middley(sp.grid, x); all = false)
-        #addcellset!(dh.grid, "black", x -> right(sp.grid, x) && left(sp.grid, x))
+        #addcellset!(dh.grid, "black", x -> right(sp.grid, x) && middley(sp.grid, x); all = false)
+        addcellset!(dh.grid, "black", x -> right(sp.grid, x) && left(sp.grid, x))
         addcellset!(dh.grid, "white", x -> right(sp.grid, x) && left(sp.grid, x))
         
         add!(dbc, :u, getnodeset(dh.grid, "fixed_all"), (x,t) -> [0.0 for i in 1:dim], collect(1:dim))
