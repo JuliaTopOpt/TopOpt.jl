@@ -49,6 +49,9 @@ include(joinpath("simp", "simp.jl"))
 include(joinpath("simp", "continuation_schemes.jl"))
 include(joinpath("simp", "continuation_simp.jl"))
 
+# BESO
+include("beso.jl")
+
 # Export
 include("writevtk.jl")
 
@@ -69,6 +72,7 @@ export  simulate,
         MMAOptimizer, 
         SIMP, 
         ContinuationSIMP, 
+        BESO,
         PowerContinuation, 
         ExponentialContinuation, 
         LogarithmicContinuation, 
