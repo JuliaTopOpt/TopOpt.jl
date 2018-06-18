@@ -10,9 +10,10 @@ mutable struct ComplianceObj{T, TI<:Integer, TSP<:StiffnessTopOptProblem, FS<:Ab
     tracing::Bool
     topopt_trace::TopOptTrace{T,TI}
     reuse::Bool
-	nf::TI
+    nf::TI
+    logarithm::Bool
 end
-function ComplianceObj(problem::StiffnessTopOptProblem{dim, T}, solver::AbstractDisplacementSolver, ::Type{TI}=Int; rmin = T(0), filtering = true, tracing = false) where {dim, T, TI}
+function ComplianceObj(problem::StiffnessTopOptProblem{dim, T}, solver::AbstractDisplacementSolver, ::Type{TI}=Int; rmin = T(0), filtering = true, tracing = false, logarithm = false) where {dim, T, TI}
     cheqfilter = CheqFilter{filtering}(solver, rmin)
     comp = T(0)
     cell_comp = zeros(T, getncells(problem.ch.dh.grid))
@@ -20,7 +21,7 @@ function ComplianceObj(problem::StiffnessTopOptProblem{dim, T}, solver::Abstract
     topopt_trace = TopOptTrace{T,TI}()
     reuse = false
     nf = TI(0)
-    return ComplianceObj(problem, solver, cheqfilter, comp, cell_comp, grad, tracing, topopt_trace, reuse, nf)
+    return ComplianceObj(problem, solver, cheqfilter, comp, cell_comp, grad, tracing, topopt_trace, reuse, nf, logarithm)
 end
 
 function (o::ComplianceObj{T})(x, grad) where {T}
@@ -70,10 +71,14 @@ function (o::ComplianceObj{T})(x, grad) where {T}
         end
     end
 
-    o.comp = log(obj)
-    grad ./= obj
-    #o.comp = obj / length(cell_comp)
-    #grad ./= length(cell_comp)
+    if o.logarithm
+        o.comp = log(obj)
+        grad ./= obj
+    else
+        o.comp = obj / length(cell_comp)
+        scale!(grad, 1/length(cell_comp))
+        #o.comp = obj
+    end
     o.cheqfilter(grad)
     o.grad .= grad
     
@@ -141,10 +146,14 @@ function (o::ComplianceObj{T})(to, x, grad) where {T}
             obj += p.value * cell_comp[i]
         end
     end
-    o.comp = log(obj)
-    grad ./= obj
-    #o.comp = obj / length(cell_comp)
-    #grad .= grad ./ length(cell_comp)
+    if o.logarithm
+        o.comp = log(obj)
+        grad ./= obj
+    else
+        o.comp = obj / length(cell_comp)
+        scale!(grad, 1/length(cell_comp))
+        #o.comp = obj
+    end
     @timeit to "Chequerboard filtering" o.cheqfilter(grad)
     o.grad .= grad
 
