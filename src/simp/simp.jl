@@ -40,7 +40,6 @@ function update_result!(s::SIMP{T}, mma_results, prev_l) where T
     # Postprocessing
     nel = getncells(s.optimizer.obj.problem.ch.dh.grid)
     varind = s.optimizer.obj.problem.varind
-    xmin = s.optimizer.obj.solver.xmin
 
     x_hist = s.optimizer.obj.topopt_trace.x_hist
     black = s.optimizer.obj.problem.black
@@ -55,9 +54,9 @@ function update_result!(s::SIMP{T}, mma_results, prev_l) where T
                 if black[j]
                     topology[j] = 1
                 elseif white[j]
-                    topology[j] = xmin
+                    topology[j] = 0
                 else
-                    topology[j] = density(x_hist[i][varind[j]], xmin)
+                    topology[j] = x_hist[i][varind[j]]
                 end
             end
             push!(s.topologies, copy(topology))
@@ -70,9 +69,9 @@ function update_result!(s::SIMP{T}, mma_results, prev_l) where T
             if black[i]
                 topology[i] = 1
             elseif white[i]
-                topology[i] = xmin
+                topology[i] = 0
             else
-                topology[i] = density(minimizer[varind[i]], xmin)
+                topology[i] = minimizer[varind[i]]
             end
         end
     end
