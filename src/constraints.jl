@@ -23,16 +23,16 @@ function VolConstr(problem::StiffnessTopOptProblem{dim, T}, solver::AbstractFEAS
 
     cell_volumes = solver.elementinfo.cellvolumes
     grad = zeros(T, length(vars))
-    _density = (x)->density(x, xmin)
+    #_density = (x)->density(x, xmin)
     for (i, cell) in enumerate(CellIterator(dh))
         if !(black[i]) && !(white[i])
-            g = ForwardDiff.derivative(_density, vars[varind[i]])
-            grad[varind[i]] = cell_volumes[i]*g
+            #g = ForwardDiff.derivative(_density, vars[varind[i]])
+            grad[varind[i]] = cell_volumes[i]#*g
         end
     end
     total_volume = sum(cell_volumes)
     design_volume = total_volume * volume_fraction
-    fixed_volume = dot(black, cell_volumes) + dot(white, cell_volumes)*xmin
+    fixed_volume = dot(black, cell_volumes) #+ dot(white, cell_volumes)*xmin
 
     return VolConstr{T, dim, TI, typeof(problem), typeof(solver)}(problem, solver, volume_fraction, cell_volumes, grad, total_volume, design_volume, fixed_volume, tracing, TopOptTrace{T, TI}())
 end
@@ -54,7 +54,8 @@ function (v::VolConstr{T})(x, grad) where {T}
     vol = fixed_volume
     for (i, cell) in enumerate(CellIterator(dh))
         if !(black[i]) && !(white[i])
-            vol += density(x[varind[i]], xmin)*cell_volumes[i]
+            #vol += density(x[varind[i]], xmin)*cell_volumes[i]
+            vol += x[varind[i]]*cell_volumes[i]
         end
     end
 
