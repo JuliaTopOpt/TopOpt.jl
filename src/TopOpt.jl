@@ -10,6 +10,7 @@ using MMA
 using IterativeSolvers
 using Preconditioners
 using StaticArrays
+using Parameters
 
 #norm(a) = sqrt(dot(a,a))
 
@@ -52,6 +53,9 @@ include(joinpath("simp", "continuation_simp.jl"))
 # BESO
 include("beso.jl")
 
+# GESO
+include("geso.jl")
+
 # Export
 include("writevtk.jl")
 
@@ -73,6 +77,7 @@ export  simulate,
         SIMP, 
         ContinuationSIMP, 
         BESO,
+        GESO,
         PowerContinuation, 
         ExponentialContinuation, 
         LogarithmicContinuation, 
