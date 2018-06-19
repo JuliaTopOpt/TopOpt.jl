@@ -1,15 +1,16 @@
 mutable struct BESOResult{T}
-    topology::BitVector
+    topology::Vector{T}
     objval::T
     change::T
     converged::Bool
-    iters::Int
+    iterations::Int
 end
 
 struct BESO{TO, TC, T, TP} <: TopOptAlgorithm 
     obj::TO
     constr::TC
-    topology::BitVector
+    vars::Vector{T}
+    topology::Vector{T}
     er::T
     maxiter::Int
     penalty::TP
@@ -25,78 +26,86 @@ function BESO(obj::ComplianceObj, constr::VolConstr; maxiter = 1000, tol = 0.001
     penalty = obj.solver.penalty
     penalty.p = p
     T = typeof(obj.comp)
-    topology = trues(getncells(obj.problem.ch.dh.grid))
+    topology = zeros(T, getncells(obj.problem.ch.dh.grid))
     result = BESOResult(topology, T(NaN), T(NaN), false, 0)
-    sens = zeros(T, length(obj.problem.varind))
-    old_sens = zeros(T, length(obj.problem.varind))
+    black = obj.problem.black
+    white = obj.problem.white
+    nvars = length(topology) - sum(black) - sum(white)
+    vars = zeros(T, nvars)
+    sens = zeros(T, nvars)
+    old_sens = zeros(T, nvars)
     obj_trace = zeros(MVector{10, T})
-    return BESO{typeof(obj), typeof(constr), T, typeof(penalty)}(obj, constr, topology, er, maxiter, penalty, sens, old_sens, obj_trace, tol, sens_tol, result)
+
+    return BESO{typeof(obj), typeof(constr), T, typeof(penalty)}(obj, constr, vars, topology, er, maxiter, penalty, sens, old_sens, obj_trace, tol, sens_tol, result)
 end
 
 update_penalty!(b::BESO, p::Number) = (b.penalty.p = p)
 
-function (b::BESO{TO, TC, T})(x0=b.obj.solver.vars) where {TO<:ComplianceObj, TC<:VolConstr, T}
-    sens = b.sens
-    old_sens = b.old_sens
-    er = b.er
-    tol = b.tol
-    maxiter = b.maxiter
-    obj_trace = b.obj_trace
-    topology = b.topology
-    sens_tol = b.sens_tol
-
-    # Get black and white
-    black = b.obj.problem.black
-    white = b.obj.problem.white
+function (b::BESO{TO, TC, T})(x0=copy(b.obj.solver.vars)) where {TO<:ComplianceObj, TC<:VolConstr, T}
+    @unpack sens, old_sens, er, tol, maxiter = b
+    @unpack obj_trace, topology, sens_tol, vars = b    
+    @unpack varind, black, white = b.obj.problem
+    @unpack volume_fraction, total_volume, cell_volumes = b.constr
+    V = volume_fraction
 
     # Initialize the topology
-    topology .= round.(x0)
-    topology[black] .= 1
-    topology[white] .= 0
-
-    # Get the desired volume fraction and total volume
-    V = b.constr.volume_fraction
-    total_volume = b.constr.total_volume
+    for i in 1:length(topology)
+        if black[i]
+            topology[i] = 1
+        elseif white[i]
+            topology[i] = 0
+        else
+            topology[i] = round(x0[varind[i]])
+            vars[varind[i]] = topology[i]
+        end
+    end
 
     # Calculate the current volume fraction
-    vol = dot(topology, b.constr.cell_volumes)/total_volume
-
+    true_vol = vol = dot(topology, cell_volumes)/total_volume
     # Main loop
     change = T(1)
-    i = 0
-    while change > tol && i < maxiter
-        i += 1
+    iter = 0
+    while (change > tol || true_vol > V) && iter < maxiter
+        iter += 1
+        if iter > 1
+            old_sens .= sens
+        end
         vol = max(vol*(1-er), V)
-        for j in max(2, 10-i+2):10
+        for j in max(2, 10-iter+2):10
             obj_trace[j-1] = obj_trace[j]
         end
-        obj_trace[10] = b.obj(topology, sens)
+        obj_trace[10] = b.obj(vars, sens)
         scale!(sens, -1)
-        if i > 1
+        if iter > 1
             @. sens = (sens + old_sens) / 2
         end
         l1, l2 = minimum(sens), maximum(sens)
         while (l2 - l1) / l2 > sens_tol
             th = (l1 + l2) / 2
-            @. topology = ((sign(sens - th) > 0) | black) & !white
-            if dot(topology, b.constr.cell_volumes) - vol * total_volume > 0
+            for i in 1:length(topology)
+                if !black[i] && !white[i]
+                    topology[i] = (sign(sens[varind[i]] - th) > 0)
+                    vars[varind[i]] = topology[i]
+                end
+            end
+            if dot(topology, cell_volumes) - vol * total_volume > 0
                 l1 = th
             else
                 l2 = th
             end
         end
-        if i >= 10
+        true_vol = dot(topology, cell_volumes)/total_volume
+        if iter >= 10
             l = sum(@view obj_trace[1:5])
             h = sum(@view obj_trace[6:10])
             change = abs(l-h)/h
         end
     end
-    
-    b.result.topology .= topology
+
     b.result.objval = obj_trace[10]
     b.result.change = change
     b.result.converged = change <= tol
-    b.result.iters = i
+    b.result.iterations = iter
 
     return b.result
 end
