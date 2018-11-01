@@ -79,9 +79,9 @@ function (s::StaticMatrixFreeDisplacementSolver)()
         end
     end
     if preconditioner === Identity
-        cg!(u, operator, f, tol, cg_max_iter, Val{false}, cg_statevars, false)
+        cg!(u, operator, f, tol, cg_max_iter, Val{false}, cg_statevars, Val{false})
     else
-        cg!(u, operator, f, tol, cg_max_iter, Val{false}, cg_statevars, false, preconditioner)
+        cg!(u, operator, f, tol, cg_max_iter, Val{false}, cg_statevars, Val{false}, preconditioner)
     end
 
     #for ind in 1:length(s.dbc.values)
@@ -114,9 +114,9 @@ function (s::StaticMatrixFreeDisplacementSolver)(to)
             end
         end
         @timeit to "Conjugate gradient" if preconditioner === Identity
-            cg!(u, operator, f, tol, cg_max_iter, Val{false}, cg_statevars, false)
+            cg!(u, operator, f, tol, cg_max_iter, Val{false}, cg_statevars, Val{false})
         else
-            cg!(u, operator, f, tol, cg_max_iter, Val{false}, cg_statevars, false, preconditioner)
+            cg!(u, operator, f, tol, cg_max_iter, Val{false}, cg_statevars, Val{false}, preconditioner)
         end
     
         #for ind in 1:length(s.dbc.values)

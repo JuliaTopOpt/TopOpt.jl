@@ -17,3 +17,11 @@ function meandiag(K::AbstractMatrix)
 end
 
 density(var, xmin) = var*(1-xmin) + xmin
+
+macro debug(expr)
+    return quote
+        if DEBUG[]
+            $(esc(expr))
+        end
+    end
+end

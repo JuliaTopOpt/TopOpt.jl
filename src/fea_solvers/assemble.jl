@@ -38,7 +38,7 @@ function assemble!(globalinfo::GlobalFEAInfo{T}, problem::StiffnessTopOptProblem
                 JuAFEM.assemble!(assembler, global_dofs, Kes[i], fes[i])
             end
         elseif white[i]
-            px = penalty(xmin)
+            px = xmin
             fe .= px .* fes[i]
             if TK <: Symmetric
                 Ke .= px .* Kes[i].data
@@ -47,7 +47,7 @@ function assemble!(globalinfo::GlobalFEAInfo{T}, problem::StiffnessTopOptProblem
             end
             JuAFEM.assemble!(assembler, global_dofs, Ke, fe)
         else
-            px = penalty(density(vars[varind[i]], xmin))
+            px = density(penalty(vars[varind[i]]), xmin)
             fe .= px .* fes[i]
             if TK <: Symmetric
                 Ke .= px .* Kes[i].data
@@ -88,10 +88,10 @@ function assemble_f!(f::AbstractVector, problem::StiffnessTopOptProblem, element
             if black[cellidx]
                 f[dofidx] += fes[cellidx][localidx]
             elseif white[cellidx]
-                px = penalty(xmin)
+                px = xmin
                 f[dofidx] += px * fes[cellidx][localidx]                
             else
-                px = penalty(density(vars[varind[cellidx]], xmin))
+                px = density(penalty(vars[varind[cellidx]]), xmin)
                 f[dofidx] += px * fes[cellidx][localidx]                
             end
         end

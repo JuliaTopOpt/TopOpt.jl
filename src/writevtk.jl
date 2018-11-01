@@ -1,3 +1,21 @@
+function save_mesh(filename, problem::StiffnessTopOptProblem)
+    topology = ones(getncells(TopOptProblems.getdh(problem).grid))
+    vtkfile = WriteVTK.vtk_grid(filename, problem, topology)
+    outfiles = WriteVTK.vtk_save(vtkfile)
+end
+function WriteVTK.vtk_grid(filename::AbstractString, problem::StiffnessTopOptProblem{dim, T}, topology::AbstractVector) where {dim, T}
+    grid = problem.ch.dh.grid
+    celltype = JuAFEM.cell_to_vtkcell(JuAFEM.getcelltype(grid))
+    cls = JuAFEM.MeshCell[]
+    for (i, cell) in enumerate(CellIterator(grid))
+        if topology[i] >= 0.5
+            push!(cls, JuAFEM.MeshCell(celltype, copy(getnodes(cell))))
+        end
+    end
+    coords = reinterpret(T, getnodes(grid), (dim, getnnodes(grid)))
+    return vtk_grid(filename, coords, cls)
+end
+
 function save_mesh(filename, problem, solver)
     save_mesh(filename, problem, solver.vars)
 end

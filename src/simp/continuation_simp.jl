@@ -1,15 +1,31 @@
-mutable struct ContinuationSIMP{T,TO,TP,TMC,TPC,TXC,TInitC,TIncrC,TDecrC}
+#=
+mutable struct ContinuationSIMP{T, TO, TP, TMC, TPC, TXC, TFC, TGC, TInitC, TIncrC, TDecrC} <: AbstractSIMP
     simp::SIMP{T,TO,TP}
     reuse::Bool
     result::SIMPResult{T}
     topologies::Vector{Vector{T}}
     steps::Int
-    max_iters_cont::TMC
+    maxiter_cont::TMC
+    maxiter::Int
     p_cont::TPC
-    x_tol_cont::TXC
+    xtol_cont::TXC
+    ftol_cont::TFC
+    grtol_cont::TGC
     s_init_cont::TInitC
     s_incr_cont::TIncrC
     s_decr_cont::TDecrC
+    double_solve::Bool
+end
+=#
+mutable struct ContinuationSIMP{T, TO, TP, TPC, TFC} <: AbstractSIMP
+    simp::SIMP{T,TO,TP}
+    reuse::Bool
+    result::SIMPResult{T}
+    topologies::Vector{Vector{T}}
+    steps::Int
+    maxiter::Int
+    p_cont::TPC
+    ftol_cont::TFC
 end
 function ContinuationSIMP(simp::SIMP{T}; 
     steps = 40, 
@@ -18,76 +34,141 @@ function ContinuationSIMP(simp::SIMP{T};
     reuse = true,
     p_cont = PowerContinuation{T}(b=T(1), 
         start=start,
-        steps=steps,
+        steps=steps+1,
         finish=finish),
-    max_iters_cont = PowerContinuation{Int}(b=1, 
-        start=simp.optimizer.model.max_iters, 
-        steps=steps,
-        finish=simp.optimizer.model.max_iters),
-    x_tol_cont = PowerContinuation{T}(b=T(1),
+    maxiter = 500,
+    ftol_cont = PowerContinuation{T}(b=T(1),
+        start=simp.optimizer.obj.solver.xmin/10,
+        steps=steps+1,
+        finish=simp.optimizer.obj.solver.xmin/10
+        ),
+    #=
+    maxiter_cont = PowerContinuation{Int}(b=1, 
+        start=simp.optimizer.model.maxiter[], 
+        steps=steps+1,
+        finish=simp.optimizer.model.maxiter[]),
+    xtol_cont = PowerContinuation{T}(b=T(1),
         start=simp.optimizer.obj.solver.xmin,
-        steps=steps,
+        steps=steps+1,
         finish=simp.optimizer.obj.solver.xmin
+        ),
+    grtol_cont = PowerContinuation{T}(b=T(1),
+        start=simp.optimizer.obj.solver.xmin/1000*simp.optimizer.constr.total_volume*YoungsModulus(simp.optimizer.obj.problem),
+        steps=steps+1,
+        finish=simp.optimizer.obj.solver.xmin/1000*simp.optimizer.constr.total_volume*YoungsModulus(simp.optimizer.obj.problem)
         ),
     s_init_cont = PowerContinuation{T}(b=T(1),
         start=T(0.5),
-        steps=steps,
+        steps=steps+1,
         finish=T(0.5)
         ),
     s_incr_cont = PowerContinuation{T}(b=T(1),
-        start=T(1.05),
-        steps=steps,
-        finish=T(1.05)
+        start=T(1.2),
+        steps=steps+1,
+        finish=T(1.2)
         ),
     s_decr_cont = PowerContinuation{T}(b=T(1),
-        start=T(0.65),
-        steps=steps,
-        finish=T(0.65)
+        start=T(0.7),
+        steps=steps+1,
+        finish=T(0.7)
         ),
+    double_solve = false,=#
     ) where T
 
-    topology = fill(T(NaN), getncells(simp.optimizer.obj.problem.ch.dh.grid))
-    objval = T(NaN)
-    result = SIMPResult(topology, objval, T(NaN), false, T(NaN), false, T(NaN), false)
+    ncells = getncells(simp.optimizer.obj.problem)
+    result = NewSIMPResult(T, ncells)
 
-    return ContinuationSIMP(simp, reuse, result, simp.topologies, steps, max_iters_cont, p_cont, x_tol_cont, s_init_cont, s_incr_cont, s_decr_cont)
+    return ContinuationSIMP(simp, reuse, result, simp.topologies, steps, maxiter, p_cont, ftol_cont)
+
+    # return ContinuationSIMP(simp, reuse, result, simp.topologies, steps, maxiter_cont, maxiter, p_cont, xtol_cont, ftol_cont, grtol_cont, s_init_cont, s_incr_cont, s_decr_cont, double_solve)
 end
 
-function (c_simp::ContinuationSIMP{<:Any,<:MMAOptimizer})(x0=c_simp.simp.optimizer.obj.solver.vars)
+function (c_simp::ContinuationSIMP{<:Any,<:MMAOptimizer})(x0=c_simp.simp.optimizer.obj.solver.vars, terminate_early=false)
+    @unpack model, s_init, s_decr, s_incr, optimizer, suboptimizer, dual_caps, obj, constr, x_abschange, x_converged, f_abschange, f_converged, g_residual, g_converged = c_simp.simp.optimizer
+
+    c_simp.simp.optimizer.model.xtol[] = 0
+    c_simp.simp.optimizer.model.grtol[] = 0
     update!(c_simp, 1)
-    c_simp.simp(x0)
-    for i in 2:c_simp.steps
-        update!(c_simp, i)
-        c_simp.simp()
-        c_simp.simp.optimizer.obj.reuse = c_simp.reuse
+
+    # Does the first function evaluation
+    # Number of function evaluations is the number of iterations plus 1
+    c_simp.simp.optimizer.obj.reuse = false
+
+    workspace = MMA.MMAWorkspace(model, x0, optimizer, suboptimizer, s_init=s_init, s_incr=s_incr, s_decr=s_decr, dual_caps=dual_caps)
+
+    if obj.fevals >= c_simp.maxiter
+        c_simp.result = c_simp.simp.result
+        return c_simp.result
     end
+    c_simp.simp(workspace)
+    #error("The objective value is $(workspace.f_x). The penalty is $(c_simp.simp.penalty.p).")
+
+    maxiter = workspace.model.maxiter[]
+    fevals_hist = zeros(Int, 3)
+    fevals_hist .= obj.fevals
+    for i in 1:c_simp.steps
+        obj.fevals >= c_simp.maxiter && break
+        workspace.iter = workspace.outer_iter = 0
+        workspace.model.maxiter[] = 1
+
+        workspace.converged = false
+        if i == c_simp.steps
+            c_simp.simp.optimizer.obj.reuse = false
+        else
+            c_simp.simp.optimizer.obj.reuse = c_simp.reuse
+        end
+        ftol = update!(c_simp, i+1)
+
+        c_simp.simp(workspace)
+        if c_simp.simp.optimizer.obj.reuse
+            c_simp.simp.optimizer.workspace.f_x = c_simp.simp.optimizer.workspace.f_x_previous
+            c_simp.simp.optimizer.workspace.f_x_previous = f_x_previous
+            c_simp.simp.optimizer.workspace.x .= c_simp.simp.optimizer.workspace.x1
+            c_simp.simp.optimizer.workspace.x1 .= c_simp.simp.optimizer.workspace.x2
+        end
+    
+        if !c_simp.simp.optimizer.workspace.converged
+            c_simp.simp.optimizer.obj.reuse = false
+            while !workspace.converged && obj.fevals < c_simp.maxiter
+                workspace.model.maxiter[] += 1
+                c_simp.simp(workspace)
+            end
+        end
+        f_x_previous = c_simp.simp.optimizer.workspace.f_x_previous
+        for j in length(fevals_hist)-1:-1:2
+            fevals_hist[j] .= fevals_hist[j-1]
+        end
+        fevals = fevals_hist[1] = obj.fevals
+
+        fevals >= c_simp.maxiter && break
+        if terminate_early
+            x_hist = obj.topopt_trace.x_hist
+            x = x_hist[fevals]
+            same = true
+            for ind in 2:length(fevals_hist)
+                x1 = x_hist[fevals_hist[ind]]
+                for j in 1:length(x)
+                    if round(x[j]) != round(x1[j])
+                        same = false
+                        break
+                    end
+                end
+            end
+            fractionness = sum(frac, x) / length(x)
+            same && fractionness <= 0.01 && break
+        end
+    end
+    workspace.model.maxiter[] = maxiter
     c_simp.result = c_simp.simp.result
 end
 
 function update!(c_simp::ContinuationSIMP{<:Any,<:MMAOptimizer}, i)
-    c = 100
-    m = 100
     p = c_simp.p_cont(i)
-    x_tol = c_simp.x_tol_cont(i)
-    vol = c_simp.simp.optimizer.constr.total_volume
-    E = YoungsModulus(c_simp.simp.optimizer.obj.problem)
-    f_tol = x_tol/100
-    gr_tol = f_tol/(c*m^(p-1))*vol*E
-    max_iters = c_simp.max_iters_cont(i)
-    s_init = c_simp.s_init_cont(i)
-    s_incr = c_simp.s_incr_cont(i)
-    s_decr = c_simp.s_decr_cont(i)
-    
     c_simp.simp.penalty.p = p
+    ftol = c_simp.ftol_cont(i)
+    c_simp.simp.optimizer.model.ftol[] = ftol
 
-    c_simp.simp.optimizer.s_init = s_init
-    c_simp.simp.optimizer.s_incr = s_incr
-    c_simp.simp.optimizer.s_decr = s_decr
-
-    c_simp.simp.optimizer.model.max_iters = max_iters
-    c_simp.simp.optimizer.model.ftol = f_tol
-    c_simp.simp.optimizer.model.xtol = x_tol
-    c_simp.simp.optimizer.model.grtol = gr_tol
-
-    return
+    return ftol
 end
+frac(x) = 2*min(abs(x), abs(x - 1))
+

@@ -40,9 +40,9 @@ function (s::DirectDisplacementSolver{T})(::Type{Val{safe}}=Val{false}, ::Type{n
     end
     s.u .=  try 
         if T === newT
-            cholfact(K) \ f
+            Symmetric(K) \ f
         else
-            cholfact(newT.(K)) \ newT.(f)
+            Symmetric(newT.(K)) \ newT.(f)
         end
     catch
         T(NaN)
@@ -63,9 +63,9 @@ function (s::DirectDisplacementSolver{T})(to, ::Type{Val{safe}}=Val{false}, ::Ty
     end
     @timeit to "Solve system of equations" s.u .=  try 
         if T === newT
-            cholfact(K) \ f
+            Symmetric(K) \ f
         else
-            cholfact(newT.(K)) \ newT.(f)
+            Symmetric(newT.(K)) \ newT.(f)
         end
     catch
         T(NaN)

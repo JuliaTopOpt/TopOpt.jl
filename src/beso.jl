@@ -3,7 +3,7 @@ mutable struct BESOResult{T}
     objval::T
     change::T
     converged::Bool
-    iterations::Int
+    fevals::Int
 end
 
 struct BESO{TO, TC, T, TP} <: TopOptAlgorithm 
@@ -105,7 +105,7 @@ function (b::BESO{TO, TC, T})(x0=copy(b.obj.solver.vars)) where {TO<:ComplianceO
     b.result.objval = obj_trace[10]
     b.result.change = change
     b.result.converged = change <= tol
-    b.result.iterations = iter
+    b.result.fevals = iter
 
     return b.result
 end

@@ -13,7 +13,7 @@ struct Assembly <: SolverSubtype end
 function FEASolver(::Type{Displacement}, ::Type{Direct}, problem::StiffnessTopOptProblem{dim, T}; 
     xmin=T(1)/1000, 
     penalty=PowerPenalty{T}(1), 
-    quad_order=2) where {dim, T}
+    quad_order=default_quad_order(problem)) where {dim, T}
 
     return DirectDisplacementSolver(problem, 
         xmin=xmin, 
@@ -31,7 +31,7 @@ function FEASolver(::Type{Displacement}, ::Type{CG}, ::Type{MatrixFree}, problem
     tol=xmin, 
     penalty=PowerPenalty{T}(1), 
     preconditioner=Identity, 
-    quad_order=2) where {dim, T}
+    quad_order=default_quad_order(problem)) where {dim, T}
 
     return StaticMatrixFreeDisplacementSolver(problem, 
         xmin=xmin, 
@@ -48,7 +48,7 @@ function FEASolver(::Type{Displacement}, ::Type{CG}, ::Type{Assembly}, problem::
     tol=xmin, 
     penalty=PowerPenalty{T}(1), 
     preconditioner=Identity, 
-    quad_order=2) where {dim, T}
+    quad_order=default_quad_order(problem)) where {dim, T}
 
     return PCGDisplacementSolver(problem,
         xmin=xmin, 
@@ -58,3 +58,5 @@ function FEASolver(::Type{Displacement}, ::Type{CG}, ::Type{Assembly}, problem::
         preconditioner=preconditioner, 
         quad_order=quad_order)
 end
+
+default_quad_order(problem) = TopOptProblems.getgeomorder(problem) == 2 ? 6 : 4

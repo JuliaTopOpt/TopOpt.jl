@@ -28,18 +28,16 @@ function FilterMetadata(solver, rmin::T, ::Type{TI}) where {T, TI}
 end
 
 function get_neighbour_info(problem, rmin::T) where {T}
-    black = problem.black
-    white = problem.white
-    varind = problem.varind
+    @unpack black, white, varind = problem
     dh = problem.ch.dh
-    node_cells = problem.metadata.node_cells
-    node_cells_offset = problem.metadata.node_cells_offset
+    grid = dh.grid
+    @unpack node_cells, node_cells_offset = problem.metadata
     TI = eltype(node_cells[1])
 
     all_neighbouring_nodes = Vector{TI}[]
     all_node_weights = Vector{T}[]
-    sizehint!(all_neighbouring_nodes, getncells(dh.grid))
-    sizehint!(all_node_weights, getncells(dh.grid))
+    sizehint!(all_neighbouring_nodes, getncells(grid))
+    sizehint!(all_node_weights, getncells(grid))
 
     cells_to_traverse = TI[]
     neighbouring_nodes = TI[]
@@ -62,8 +60,8 @@ function get_neighbour_info(problem, rmin::T) where {T}
         while !isempty(cells_to_traverse)
             # Takes first element and removes it -> breadth first traversal
             cell_id = shift!(cells_to_traverse)
-            for n in dh.grid.cells[cell_id].nodes
-                node = getnodes(dh.grid, n)
+            for n in grid.cells[cell_id].nodes
+                node = getnodes(grid, n)
                 dist = norm(node.x - center.x)
                 if dist < rmin
                     push!(neighbouring_nodes, n)
@@ -89,8 +87,8 @@ end
 function CheqFilter{true}(solver::TS, rmin::T, ::Type{TI}=Int) where {T, TI<:Integer, TS<:AbstractFEASolver}
     metadata = FilterMetadata(solver, rmin, TI)
     problem = solver.problem
-    dh = problem.ch.dh    
-    nnodes = getnnodes(dh.grid)
+    grid = problem.ch.dh.grid
+    nnodes = getnnodes(grid)
     nodal_grad = zeros(T, nnodes)
     
     black = problem.black
@@ -113,16 +111,11 @@ function CheqFilter{false}(solver::TS, rmin::T, ::Type{TI}=Int) where {T, TS<:Ab
 end
 
 function (cf::CheqFilter{true, T})(grad) where {T}
-    vars = cf.solver.vars
-    problem = cf.solver.problem
-    cell_volumes = cf.solver.elementinfo.cellvolumes
-    nodal_grad = cf.nodal_grad
-    cell_weights = cf.cell_weights
-    cell_neighbouring_nodes = cf.metadata.cell_neighbouring_nodes
-    cell_node_weights = cf.metadata.cell_node_weights
-    black = problem.black
-    white = problem.white
-    varind = problem.varind
+    @unpack solver, nodal_grad, cell_weights, metadata = cf
+    @unpack vars, problem, elementinfo = solver
+    cell_volumes = elementinfo.cellvolumes
+    @unpack cell_neighbouring_nodes, cell_node_weights = metadata
+    @unpack black, white, varind = problem
     cells = problem.ch.dh.grid.cells
 
     nodal_grad .= zero(T)

@@ -102,15 +102,15 @@ function (s::PCGDisplacementSolver{T})(::Type{Val{safe}}=Val{false}) where {T, s
     end
     if K isa Symmetric
         if preconditioner === Identity
-            cg!(u, K.data, f, tol, cg_max_iter, Val{false}, cg_statevars, false)
+            cg!(u, K.data, f, tol, cg_max_iter, Val{false}, cg_statevars, Val{false})
         else
-            cg!(u, K.data, f, tol, cg_max_iter, Val{false}, cg_statevars, false, preconditioner)
+            cg!(u, K.data, f, tol, cg_max_iter, Val{false}, cg_statevars, Val{false}, preconditioner)
         end
     else
         if preconditioner === Identity
-            cg!(u, K, f, tol, cg_max_iter, Val{false}, cg_statevars, false)
+            cg!(u, K, f, tol, cg_max_iter, Val{false}, cg_statevars, Val{false})
         else
-            cg!(u, K, f, tol, cg_max_iter, Val{false}, cg_statevars, false, preconditioner)
+            cg!(u, K, f, tol, cg_max_iter, Val{false}, cg_statevars, Val{false}, preconditioner)
         end
     end
     s.prev_penalty.p = s.penalty.p

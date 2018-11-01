@@ -33,9 +33,9 @@ function A_mul_B!(y, A::MatrixFreeOperator, x)
         if black[i]
             px = one(T)
         elseif white[i]
-            px = penalty(xmin)
+            px = xmin
         else
-            px = penalty(density(vars[varind[i]], xmin))
+            px = density(penalty(vars[varind[i]]), xmin)
         end
         for j in 1:dofspercell
             fes[i][j] = x[cell_dofs[j,i]]

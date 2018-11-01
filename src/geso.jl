@@ -3,7 +3,7 @@ mutable struct GESOResult{T}
     objval::T
     change::T
     converged::Bool
-    iterations::Int
+    fevals::Int
 end
 struct GESO{TO, TC, T, TP} <: TopOptAlgorithm 
     obj::TO
@@ -276,7 +276,7 @@ function (b::GESO{TO, TC, T})(x0=copy(b.obj.solver.vars); seed=NaN) where {TO<:C
     b.result.objval = obj_trace[10]
     b.result.change = change
     b.result.converged = change <= tol
-    b.result.iterations = iter
+    b.result.fevals = iter
 
     return b.result
 end

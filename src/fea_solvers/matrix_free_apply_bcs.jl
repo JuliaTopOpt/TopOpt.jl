@@ -72,12 +72,12 @@ function matrix_free_apply2f!(f::Vector{T}, rawelementinfo::ElementFEAInfo{dim, 
                         f[cell_dofs[row,i]] -= v * raw_KK[i][row,j]
                     end
                 elseif white[i]
-                    px = penalty(xmin)
+                    px = xmin
                     for row in 1:m
                         f[cell_dofs[row,i]] -= px * v * raw_KK[i][row,j]
                     end
                 else
-                    px = penalty(density(vars[varind[i]], xmin))
+                    px = density(penalty(vars[varind[i]]), xmin)
                     for row in 1:m
                         f[cell_dofs[row,i]] -= px * v * raw_KK[i][row,j]
                     end
@@ -98,7 +98,7 @@ function matrix_free_apply2f!(f::Vector{T}, rawelementinfo::ElementFEAInfo{dim, 
                     end
                 end
             elseif white[i]
-                px = penalty(xmin)
+                px = xmin
                 for col in 1:m
                     for row in 1:m
                         if row == j || col == j
@@ -109,7 +109,7 @@ function matrix_free_apply2f!(f::Vector{T}, rawelementinfo::ElementFEAInfo{dim, 
                     end
                 end
             else
-                px = penalty(density(vars[varind[i]], xmin))
+                px = density(penalty(vars[varind[i]]), xmin)
                 for col in 1:m
                     for row in 1:m
                         if row == j || col == j

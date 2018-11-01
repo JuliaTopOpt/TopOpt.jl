@@ -1,19 +1,25 @@
 using TimerOutputs
 
-function simulate(problem::StiffnessTopOptProblem; round = true, hard = true, xmin = 0.001)
+struct LinearElasticityResult{T, TV}
+    comp::T
+    u::TV
+end
+
+function simulate(problem::StiffnessTopOptProblem, topology = ones(getncells(TopOptProblems.getdh(problem).grid)); round = true, hard = true, xmin = 0.001)
     if round 
-        problem.vars .= round.(problem.vars)
         if hard
-            solver = DirectDisplacementSolver(problem, xmin = 0.)
+            solver = FEASolver(Displacement, Direct, problem, xmin = 0.0)
         else
-            solver = DirectDisplacementSolver(problem, xmin = xmin)
+            solver = FEASolver(Displacement, Direct, problem, xmin = xmin)
         end
+        solver.vars .= Base.round.(topology)
     else
-        solver = DirectDisplacementSolver(problem, xmin = xmin)
+        solver = FEASolver(Displacement, Direct, problem, xmin = xmin)
+        solver.vars .= topology
     end
 
     solver(Val{true})
-    comp = dot(s.u, s.globalinfo.f)
+    comp = dot(solver.u, solver.globalinfo.f)
 
-    return u, comp
+    return LinearElasticityResult(comp, copy(solver.u))
 end
