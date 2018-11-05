@@ -1,11 +1,9 @@
 module TopOpt
 
 using Reexport, Parameters
-using TopOptProblems
+@reexport using TopOptProblems, Optim, MMA, LineSearches
 using JuAFEM, StaticArrays
-using MMA, ForwardDiff
-using Optim
-using IterativeSolvers#, Preconditioners
+using ForwardDiff, IterativeSolvers#, Preconditioners
 using IntervalArithmetic, IntervalRootFinding
 using IntervalOptimisation
 
