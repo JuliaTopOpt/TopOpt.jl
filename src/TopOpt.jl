@@ -62,7 +62,7 @@ include(joinpath("simp", "continuation_simp.jl"))
 ## Adaptive SIMP
 include(joinpath("simp", "polynomials.jl"))
 include(joinpath("simp", "polynomials2.jl"))
-include(joinpath("simp", "adaptive_simp2.jl"))
+include(joinpath("simp", "adaptive_simp.jl"))
 
 ## BESO
 include(joinpath(".", "beso.jl"))
