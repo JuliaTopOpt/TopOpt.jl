@@ -18,6 +18,8 @@ Pkg.add("StructsOfArrays")
 Pkg.add("WriteVTK", v"0.4.0")
 Pkg.add("Tensors")
 Pkg.add("TimerOutputs")
+Pkg.add("Setfield")
+Pkg.add("Missings")
 
 Pkg.clone("https://github.com/mohamed82008/TopOptProblems.jl")
 Pkg.clone("https://github.com/mohamed82008/Optim.jl")
