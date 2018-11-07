@@ -4,8 +4,6 @@ using Reexport, Parameters
 @reexport using TopOptProblems, Optim, MMA, LineSearches
 using JuAFEM, StaticArrays
 using ForwardDiff, IterativeSolvers#, Preconditioners
-using IntervalArithmetic, IntervalRootFinding
-using IntervalOptimisation
 
 using TimerOutputs
 
