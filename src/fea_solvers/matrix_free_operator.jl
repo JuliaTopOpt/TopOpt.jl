@@ -7,9 +7,9 @@ mutable struct MatrixFreeOperator{T, dim, TS<:StiffnessTopOptProblem{dim, T}, TK
     penalty::TP
 end
 
-import Base: *, A_mul_B!
+import LinearAlgebra: *, mul!
 #const nthreads = Threads.nthreads()
-function A_mul_B!(y, A::MatrixFreeOperator, x)
+function mul!(y, A::MatrixFreeOperator, x)
     nels = length(A.elementinfo.Kes)
     ndofs = length(A.elementinfo.fixedload)
     #division = ceil(Int, nels / nthreads)
@@ -55,6 +55,6 @@ function A_mul_B!(y, A::MatrixFreeOperator, x)
 end
 function *(A::MatrixFreeOperator, x)
     y = zeros(x)
-    A_mul_B!(y, A::MatrixFreeOperator, x)
+    mul!(y, A::MatrixFreeOperator, x)
     y
 end

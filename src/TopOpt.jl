@@ -1,5 +1,6 @@
 module TopOpt
 
+using LinearAlgebra, Statistics
 using Reexport, Parameters
 @reexport using TopOptProblems, Optim, MMA, LineSearches
 using JuAFEM, StaticArrays

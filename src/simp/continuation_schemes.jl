@@ -12,14 +12,15 @@ struct SigmoidContinuation{T} <: AbstractContinuation
     length::Int
     min::T
 end
-function SigmoidContinuation{T}(;c::T=T(0.1), start::T=T(1), finish::T=T(5), steps::Int=30, min::T=-Inf) where T
+function SigmoidContinuation{T}(; c::T=T(0.1), start::T=T(1), finish::T=T(5), steps::Int=30, min::T=-Inf) where T
     a = 1 - T(finish-start)/finish/(e^(-c) - e^(-steps*c)) * e^(-c)
     b = T(finish-start)/finish/(e^(-c) - e^(-steps*c))
-    SigmoidContinuation{T}(a,b,c,steps,min)
+    SigmoidContinuation{T}(a, b, c, steps, min)
 end
-Base.start(::SigmoidContinuation) = 1
-Base.next(s::SigmoidContinuation, x) = max(1/(s.a + s.b*e^(-s.c*x)), s.min), x+1
-Base.done(s::SigmoidContinuation, x) = x > s.length
+function Base.iterate(s::SigmoidContinuation, x=1)
+    (x > s.length) && return nothing
+    max(1/(s.a + s.b*e^(-s.c*x)), s.min), x+1
+end
 Base.length(s::SigmoidContinuation) = s.length
 (s::SigmoidContinuation{T})(x) where T = max(1/(s.a + s.b*e^(-s.c*T(x))), s.min)
 
@@ -38,9 +39,11 @@ function CubicSplineContinuation{T}(;b::T=T(0.5), start::T=T(1), finish::T=T(5),
     c = start - a*(1-b*steps)^3
     CubicSplineContinuation{T}(a,b,c,steps,min)
 end
-Base.start(::CubicSplineContinuation) = 1
-Base.next(s::CubicSplineContinuation, x) = max(s.a*(x-s.b*s.length)^3 + s.c, s.min), x+1
-Base.done(s::CubicSplineContinuation, x) = x > s.length
+
+function Base.iterate(s::CubicSplineContinuation, x=1)
+    x > s.length && return nothing
+    max(s.a*(x-s.b*s.length)^3 + s.c, s.min), x+1
+end
 Base.length(s::CubicSplineContinuation) = s.length
 (s::CubicSplineContinuation{T})(x) where T = max(s.a*(T(x)-s.b*s.length)^3 + s.c, s.min)
 
@@ -59,9 +62,10 @@ function PowerContinuation{T}(;b::T=T(2), start::T=T(1), finish::T=T(5), steps::
     c = start - a
     PowerContinuation{T}(a,b,c,steps,min)
 end
-Base.start(::PowerContinuation) = 1
-Base.next(s::PowerContinuation, x) = max(s.a*x^s.b + s.c, s.min), x+1
-Base.done(s::PowerContinuation, x) = x > s.length
+function Base.iterate(s::PowerContinuation, x=1)
+    x > s.length && return nothing
+    max(s.a*x^s.b + s.c, s.min), x+1
+end
 Base.length(s::PowerContinuation) = s.length
 (s::PowerContinuation{T})(x) where T = max(s.a*T(x)^s.b + s.c, s.min)
 
@@ -80,9 +84,10 @@ function ExponentialContinuation{T}(;b::T=T(0.1), start::T=T(1), finish::T=T(5),
     c = start - a*e^(b)
     ExponentialContinuation{T}(a,b,c,steps,min)
 end
-Base.start(::ExponentialContinuation) = 1
-Base.next(s::ExponentialContinuation, x) = max(s.a*e^(s.b*x) + s.c, s.min), x+1
-Base.done(s::ExponentialContinuation, x) = x > s.length
+function Base.iterate(s::ExponentialContinuation, x=1)
+    x > s.length && return nothing
+    max(s.a*e^(s.b*x) + s.c, s.min), x+1
+end
 Base.length(s::ExponentialContinuation) = s.length
 (s::ExponentialContinuation{T})(x) where T = max(s.a*e^(s.b*T(x)) + s.c, s.min)
 
@@ -101,8 +106,9 @@ function LogarithmicContinuation{T}(;b::T=T(1), start::T=T(1), finish::T=T(5), s
     c = start - a*log(b)
     LogarithmicContinuation{T}(a,b,c,steps,min)
 end
-Base.start(::LogarithmicContinuation) = 1
-Base.next(s::LogarithmicContinuation, x) = max(s.a*log(s.b*x) + s.c, s.min), x+1
-Base.done(s::LogarithmicContinuation, x) = x > s.length
+function Base.iterate(s::LogarithmicContinuation, x=1)
+    x > s.length && return nothing
+    max(s.a*log(s.b*x) + s.c, s.min), x+1
+end
 Base.length(s::LogarithmicContinuation) = s.length
 (s::LogarithmicContinuation{T})(x) where T = max(s.a*log(s.b*T(x)) + s.c, s.min)

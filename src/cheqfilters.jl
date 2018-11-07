@@ -59,7 +59,7 @@ function get_neighbour_info(problem, rmin::T) where {T}
         push!(visited_cells, current_cell_id)
         while !isempty(cells_to_traverse)
             # Takes first element and removes it -> breadth first traversal
-            cell_id = shift!(cells_to_traverse)
+            cell_id = popfirst!(cells_to_traverse)
             for n in grid.cells[cell_id].nodes
                 node = getnodes(grid, n)
                 dist = norm(node.x - center.x)
