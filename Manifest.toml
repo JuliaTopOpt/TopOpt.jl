@@ -85,6 +85,14 @@ git-tree-sha1 = "b91250044374764e7c29af59a774c4b8d6100b6e"
 uuid = "f6369f11-7733-5829-9624-2563aa707210"
 version = "0.10.1"
 
+[[InpParser]]
+deps = ["JuAFEM", "SparseArrays", "Test"]
+git-tree-sha1 = "4952174b80d1676888cda72b84c0ab20c6d2bb57"
+repo-rev = "master"
+repo-url = "https://github.com/mohamed82008/InpParser.jl"
+uuid = "9f7911e1-6279-5a0b-bd43-ff189ad07d03"
+version = "0.0.0"
+
 [[InteractiveUtils]]
 deps = ["LinearAlgebra", "Markdown"]
 uuid = "b77e0a4c-d291-57a0-90e8-8db25a27a240"
@@ -305,7 +313,8 @@ uuid = "a759f4b9-e2f1-59dc-863e-4aeb61b1ea8f"
 version = "0.4.0"
 
 [[TopOptProblems]]
-git-tree-sha1 = "54eb8f184364afd6e7d2a801d85336ac0cf0157e"
+deps = ["InpParser", "JuAFEM", "StaticArrays", "Test"]
+git-tree-sha1 = "20450ebe535d8f210c9f0716972df35a039a8006"
 repo-rev = "master"
 repo-url = "https://github.com/mohamed82008/TopOptProblems.jl"
 uuid = "1b2785be-23e2-53a7-aa38-0f89c8b55d31"
