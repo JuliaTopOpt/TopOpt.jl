@@ -313,8 +313,8 @@ uuid = "a759f4b9-e2f1-59dc-863e-4aeb61b1ea8f"
 version = "0.4.0"
 
 [[TopOptProblems]]
-deps = ["InpParser", "JuAFEM", "StaticArrays", "Test"]
-git-tree-sha1 = "20450ebe535d8f210c9f0716972df35a039a8006"
+deps = ["InpParser", "JuAFEM", "LinearAlgebra", "SparseArrays", "StaticArrays"]
+git-tree-sha1 = "881c36f48420d6314259c65705efc401e3ed9ad3"
 repo-rev = "master"
 repo-url = "https://github.com/mohamed82008/TopOptProblems.jl"
 uuid = "1b2785be-23e2-53a7-aa38-0f89c8b55d31"
