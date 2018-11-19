@@ -7,10 +7,9 @@ problems = Any[PointLoadCantilever(Val{:Linear}, (160, 40), (1.0, 1.0), E, v, f)
             LBeam(Val{:Linear}, Float64), 
             TieBeam(Val{:Quadratic}, Float64)]
 problem_names = ["cantilever beam", "half MBB beam", "L-beam", "tie-beam"]
-approx_objvals = [187.0, 87.0, 55.0, 847.0]
+approx_objvals = [330.0, 175.0, 65.0, 1413.0]
 
-#@testset "Continuation SIMP - $(problem_names[i])" for i in 1:4
-    i = 1
+@testset "Continuation SIMP - $(problem_names[i])" for i in 1:4
     # Define the problem
     problem = problems[i]
     # Parameter settings
@@ -45,5 +44,5 @@ approx_objvals = [187.0, 87.0, 55.0, 847.0]
     x0 = fill(1.0, length(solver.vars))
     result = cont_simp(x0)
 
-    @test round(result.objval, 0) == approx_objvals[i]
-#end
+    @test round(result.objval, digits=0) == approx_objvals[i]
+end

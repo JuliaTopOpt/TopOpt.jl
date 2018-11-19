@@ -136,7 +136,7 @@ function (c_simp::ContinuationSIMP{<:Any,<:MMAOptimizer})(x0=c_simp.simp.optimiz
         end
         f_x_previous = c_simp.simp.optimizer.workspace.f_x_previous
         for j in length(fevals_hist)-1:-1:2
-            fevals_hist[j] .= fevals_hist[j-1]
+            fevals_hist[j] = fevals_hist[j-1]
         end
         fevals = fevals_hist[1] = obj.fevals
 
