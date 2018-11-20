@@ -1,9 +1,9 @@
 module TopOpt
 
 using LinearAlgebra, Statistics
-using Reexport, Parameters
+using Reexport, Parameters, Setfield
 @reexport using TopOptProblems, Optim, MMA, LineSearches
-using JuAFEM, StaticArrays
+using JuAFEM, StaticArrays, CuArrays
 using ForwardDiff, IterativeSolvers#, Preconditioners
 
 using TimerOutputs

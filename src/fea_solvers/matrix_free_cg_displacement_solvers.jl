@@ -1,19 +1,19 @@
 abstract type AbstractMatrixFreeSolver <: AbstractDisplacementSolver end
 
-mutable struct StaticMatrixFreeDisplacementSolver{T, dim, TS<:StiffnessTopOptProblem{dim, T}, TK<:AbstractMatrix{T}, Tf<:AbstractVector{T}, TKes<:AbstractVector{TK}, Tfes<:AbstractVector{Tf}, Tcload<:AbstractVector{T}, TP<:AbstractPenalty{T}, TPrecond, TOp, TI<:Integer, refshape, TCV<:CellValues{dim, T, refshape}, dimless1, TFV<:FaceValues{dimless1, T, refshape}} <: AbstractDisplacementSolver
+mutable struct StaticMatrixFreeDisplacementSolver{T, dim, TEInfo<:ElementFEAInfo{dim, T}, TS<:StiffnessTopOptProblem{dim, T}, Tv<:AbstractVector{T}, TP<:AbstractPenalty{T}, TI<:Integer, TOp, TPrecond} <: AbstractDisplacementSolver
+    elementinfo::TEInfo
     problem::TS
-    f::Vector{T}
-    elementinfo::ElementFEAInfo{dim, T, TK, Tf, TKes, Tfes, Tcload, refshape, TCV, dimless1, TFV}
+    f::Tv
     meandiag::T
-    u::Vector{T}
-    vars::Vector{T}
+    u::Tv
+    vars::Tv
     penalty::TP
     prev_penalty::TP
     xmin::T
     cg_max_iter::TI
     tol::T
     operator::TOp
-    cg_statevars::CGStateVariables{T, Vector{T}}
+    cg_statevars::CGStateVariables{T, Tv}
     preconditioner::TPrecond
     preconditioner_initialized::Base.RefValue{Bool}
 end
@@ -32,31 +32,31 @@ function StaticMatrixFreeDisplacementSolver(sp::StiffnessTopOptProblem{dim, T};
     if !(T === BigFloat)
         m = size(rawelementinfo.Kes[1], 1)
         if eltype(rawelementinfo.Kes) <: Symmetric
-            newKes = Symmetric{T, MMatrix{m, m, T, m^2}}[]
+            newKes = Symmetric{T, SMatrix{m, m, T, m^2}}[]
             resize!(newKes, length(rawelementinfo.Kes))
-            for i in 1:length(rawelementinfo.Kes)
-                newKes[i] = Symmetric(MMatrix(rawelementinfo.Kes[i].data))
-            end
+            map!(x->Symmetric(SMatrix(x.data)), newKes, rawelementinfo.Kes)
         else
-            newKes = MMatrix{m, m, T, m^2}[]
+            newKes = SMatrix{m, m, T, m^2}[]
             resize!(newKes, length(rawelementinfo.Kes))
-            for i in 1:length(rawelementinfo.Kes)
-                newKes[i] = MMatrix(rawelementinfo.Kes[i])
-            end
+            map!(SMatrix, newKes, rawelementinfo.Kes)
         end
     else
         newKes = deepcopy(rawelementinfo.Kes)
     end
-    elementinfo = ElementFEAInfo(newKes, deepcopy(rawelementinfo.fes), rawelementinfo.fixedload, rawelementinfo.cellvolumes, rawelementinfo.cellvalues, rawelementinfo.facevalues, rawelementinfo.metadata) # cload and cellvalues are shared since they are not overwritten
+    # cload and cellvalues are shared since they are not overwritten
+    elementinfo = @set rawelementinfo.Kes = newKes
+    elementinfo = @set elementinfo.fes = deepcopy(elementinfo.fes)
     meandiag = matrix_free_apply2Kes!(elementinfo, rawelementinfo, sp)
 
     u = zeros(T, ndofs(sp.ch.dh))
     f = similar(u)
     vars = fill(T(NaN), getncells(sp.ch.dh.grid) - sum(sp.black) - sum(sp.white))
     operator = MatrixFreeOperator(elementinfo, meandiag, sp, vars, xmin, penalty)
-    cg_statevars = CGStateVariables{eltype(u),typeof(u)}(zeros(u), similar(u), similar(u))
+    cg_statevars = CGStateVariables{eltype(u),typeof(u)}(copy(u), similar(u), similar(u))
 
-    return StaticMatrixFreeDisplacementSolver(sp, f, rawelementinfo, meandiag, u, vars, penalty, prev_penalty, xmin, cg_max_iter, tol, operator, cg_statevars, preconditioner, Ref(false))
+    return StaticMatrixFreeDisplacementSolver(rawelementinfo, sp, f, meandiag, u, vars, 
+        penalty, prev_penalty, xmin, cg_max_iter, tol, operator, cg_statevars, 
+        preconditioner, Ref(false))
 end
 
 function (s::StaticMatrixFreeDisplacementSolver)()
@@ -127,4 +127,17 @@ function (s::StaticMatrixFreeDisplacementSolver)(to)
     end
     s.prev_penalty.p = s.penalty.p
     nothing
+end
+
+for T in (StaticMatrixFreeDisplacementSolver, MatrixFreeOperator)
+    @eval getfieldnames(::Type{<:$T}) = $(Tuple(fieldnames(T)))
+end
+cufieldnames(::Type{<:StaticMatrixFreeDisplacementSolver}) = (:operator,)
+cufieldnames(::Type{<: MatrixFreeOperator}) = (:elementinfo, :vars)
+_cu(s::T, f, fn) where {T} = fn ∈ cufieldnames(T) ? (f isa AbstractArray ? CuArray(f) : cu(f)) : f
+
+for T in (StaticMatrixFreeDisplacementSolver, MatrixFreeOperator)
+    @eval begin
+        CuArrays.cu(s::$T) = $T(_cu.((s,), getfield.((s,), getfieldnames($T)), getfieldnames($T))...)
+    end
 end

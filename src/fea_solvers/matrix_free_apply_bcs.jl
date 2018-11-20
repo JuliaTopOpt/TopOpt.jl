@@ -23,24 +23,26 @@ function matrix_free_apply2Kes!(elementinfo::ElementFEAInfo{dim, T}, raw_element
         r = dof_cells_offset[d] : dof_cells_offset[d+1]-1
         for idx in r
             (i,j) = dof_cells[idx]
+            if eltype(KK) <: Symmetric
+                KKi = KK[i].data
+            else
+                KKi = KK[i]
+            end
             for col in 1:m
                 for row in 1:m
                     if row == j || col == j
                         if row == col
-                            if eltype(KK) <: Symmetric
-                                KK[i].data[j,j] = M                            
-                            else
-                                KK[i][j,j] = M
-                            end
+                            KKi = @set KKi[j,j] = M
                         else
-                            if eltype(KK) <: Symmetric
-                                KK[i].data[row,col] = zero(T)
-                            else
-                                KK[i][row,col] = zero(T)
-                            end
+                            KKi = @set KKi[row,col] = zero(T)
                         end
                     end
                 end
+            end
+            if eltype(KK) <: Symmetric
+                KK[i] = Symmetric(KKi)
+            else
+                KK[i] = KKi
             end
         end
     end
