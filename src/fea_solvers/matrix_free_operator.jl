@@ -6,6 +6,9 @@ mutable struct MatrixFreeOperator{T, dim, TEInfo<:ElementFEAInfo{dim, T}, TS<:St
     xmin::T
     penalty::TP
 end
+Base.size(op::MatrixFreeOperator) = (size(op, 1), size(op, 2))
+Base.size(op::MatrixFreeOperator, i) = 1 <= i <= 2 ? length(op.elementinfo.fixedload) : 1
+Base.eltype(op::MatrixFreeOperator{T}) where {T} = T
 
 import LinearAlgebra: *, mul!
 #const nthreads = Threads.nthreads()
@@ -40,7 +43,6 @@ function mul!(y, A::MatrixFreeOperator, x)
         for j in 1:dofspercell
             fe = @set fe[j] = x[cell_dofs[j,i]]
         end
-        fes[i] = fe
         return px * Kes[i] * fe
     end
 
@@ -56,7 +58,7 @@ function mul!(y, A::MatrixFreeOperator, x)
     y
 end
 function *(A::MatrixFreeOperator, x)
-    y = zeros(x)
+    y = similar(x) .= 0
     mul!(y, A::MatrixFreeOperator, x)
     y
 end

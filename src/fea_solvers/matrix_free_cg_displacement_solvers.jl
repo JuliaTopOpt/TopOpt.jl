@@ -1,6 +1,6 @@
 abstract type AbstractMatrixFreeSolver <: AbstractDisplacementSolver end
 
-mutable struct StaticMatrixFreeDisplacementSolver{T, dim, TEInfo<:ElementFEAInfo{dim, T}, TS<:StiffnessTopOptProblem{dim, T}, Tv<:AbstractVector{T}, TP<:AbstractPenalty{T}, TI<:Integer, TOp, TPrecond} <: AbstractDisplacementSolver
+mutable struct StaticMatrixFreeDisplacementSolver{T, dim, TEInfo<:ElementFEAInfo{dim, T}, TS<:StiffnessTopOptProblem{dim, T}, Tv<:AbstractVector{T}, TP<:AbstractPenalty{T}, TI<:Integer, TOp, TStateVars<:CGStateVariables{T}, TPrecond} <: AbstractDisplacementSolver
     elementinfo::TEInfo
     problem::TS
     f::Tv
@@ -13,7 +13,7 @@ mutable struct StaticMatrixFreeDisplacementSolver{T, dim, TEInfo<:ElementFEAInfo
     cg_max_iter::TI
     tol::T
     operator::TOp
-    cg_statevars::CGStateVariables{T, Tv}
+    cg_statevars::TStateVars
     preconditioner::TPrecond
     preconditioner_initialized::Base.RefValue{Bool}
 end
@@ -50,7 +50,7 @@ function StaticMatrixFreeDisplacementSolver(sp::StiffnessTopOptProblem{dim, T};
 
     u = zeros(T, ndofs(sp.ch.dh))
     f = similar(u)
-    vars = fill(T(NaN), getncells(sp.ch.dh.grid) - sum(sp.black) - sum(sp.white))
+    vars = fill(T(1), getncells(sp.ch.dh.grid) - sum(sp.black) - sum(sp.white))
     operator = MatrixFreeOperator(elementinfo, meandiag, sp, vars, xmin, penalty)
     cg_statevars = CGStateVariables{eltype(u),typeof(u)}(copy(u), similar(u), similar(u))
 
@@ -129,14 +129,16 @@ function (s::StaticMatrixFreeDisplacementSolver)(to)
     nothing
 end
 
-for T in (StaticMatrixFreeDisplacementSolver, MatrixFreeOperator)
+for T in (IterativeSolvers.CGStateVariables, ElementFEAInfo, TopOptProblems.Metadata, StaticMatrixFreeDisplacementSolver, MatrixFreeOperator)
     @eval getfieldnames(::Type{<:$T}) = $(Tuple(fieldnames(T)))
 end
-cufieldnames(::Type{<:StaticMatrixFreeDisplacementSolver}) = (:operator,)
+cufieldnames(::Type{T}) where {T} = getfieldnames(T)
+@eval cufieldnames(::Type{<:ElementFEAInfo}) = $(Tuple(setdiff(fieldnames(ElementFEAInfo), [:cellvalues, :facevalues])))
+cufieldnames(::Type{<:StaticMatrixFreeDisplacementSolver}) = (:operator, :cg_statevars)
 cufieldnames(::Type{<: MatrixFreeOperator}) = (:elementinfo, :vars)
 _cu(s::T, f, fn) where {T} = fn ∈ cufieldnames(T) ? (f isa AbstractArray ? CuArray(f) : cu(f)) : f
 
-for T in (StaticMatrixFreeDisplacementSolver, MatrixFreeOperator)
+for T in (IterativeSolvers.CGStateVariables, ElementFEAInfo, TopOptProblems.Metadata, StaticMatrixFreeDisplacementSolver, MatrixFreeOperator)
     @eval begin
         CuArrays.cu(s::$T) = $T(_cu.((s,), getfield.((s,), getfieldnames($T)), getfieldnames($T))...)
     end
