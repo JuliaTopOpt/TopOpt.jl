@@ -19,7 +19,7 @@ function PCGDisplacementSolver(sp::StiffnessTopOptProblem{dim, T};
     tol=xmin, 
     penalty=PowerPenalty{T}(1), 
     prev_penalty=copy(penalty),
-    preconditioner=Identity, 
+    preconditioner=identity, 
     quad_order=2) where {dim, T}
 
     prev_penalty.p = T(NaN)
@@ -44,7 +44,7 @@ function (s::PCGDisplacementSolver{T})(to) where {T}
     preconditioner = s.preconditioner
     preconditioner_initialized = s.preconditioner_initialized
 
-    if !(preconditioner === Identity)
+    if !(preconditioner === identity)
         if !preconditioner_initialized[]
             if K isa Symmetric
                 @timeit to "Find Preconditioner" UpdatePreconditioner!(preconditioner, K.data)
@@ -55,13 +55,13 @@ function (s::PCGDisplacementSolver{T})(to) where {T}
         end
     end
     if K isa Symmetric
-        if preconditioner === Identity
+        if preconditioner === identity
             @timeit to "Solve system of equations" cg!(u, K.data, f, tol, cg_max_iter, Val{false}, cg_statevars, false)
         else
             @timeit to "Solve system of equations" cg!(u, K.data, f, tol, cg_max_iter, Val{false}, cg_statevars, false, preconditioner)
         end
     else
-        if preconditioner === Identity
+        if preconditioner === identity
             @timeit to "Solve system of equations" cg!(u, K, f, tol, cg_max_iter, Val{false}, cg_statevars, false)
         else
             @timeit to "Solve system of equations" cg!(u, K, f, tol, cg_max_iter, Val{false}, cg_statevars, false, preconditioner)
@@ -90,7 +90,7 @@ function (s::PCGDisplacementSolver{T})(::Type{Val{safe}}=Val{false}) where {T, s
     preconditioner = s.preconditioner
     preconditioner_initialized = s.preconditioner_initialized
 
-    if !(preconditioner === Identity)
+    if !(preconditioner === identity)
         if !preconditioner_initialized[]
             if K isa Symmetric
                 UpdatePreconditioner!(preconditioner, K.data)
@@ -101,13 +101,13 @@ function (s::PCGDisplacementSolver{T})(::Type{Val{safe}}=Val{false}) where {T, s
         end
     end
     if K isa Symmetric
-        if preconditioner === Identity
+        if preconditioner === identity
             cg!(u, K.data, f, tol, cg_max_iter, Val{false}, cg_statevars, Val{false})
         else
             cg!(u, K.data, f, tol, cg_max_iter, Val{false}, cg_statevars, Val{false}, preconditioner)
         end
     else
-        if preconditioner === Identity
+        if preconditioner === identity
             cg!(u, K, f, tol, cg_max_iter, Val{false}, cg_statevars, Val{false})
         else
             cg!(u, K, f, tol, cg_max_iter, Val{false}, cg_statevars, Val{false}, preconditioner)

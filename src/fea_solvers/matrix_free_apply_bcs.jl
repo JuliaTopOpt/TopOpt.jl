@@ -49,7 +49,7 @@ function matrix_free_apply2Kes!(elementinfo::ElementFEAInfo{dim, T}, raw_element
     return M
 end
 
-function matrix_free_apply2f!(f::Vector{T}, rawelementinfo::ElementFEAInfo{dim, T}, M, vars, problem::StiffnessTopOptProblem, penalty, xmin, applyzero::Bool=false) where {dim, T}
+function matrix_free_apply2f!(f::AbstractVector{T}, rawelementinfo::ElementFEAInfo{dim, T}, M, vars, problem::StiffnessTopOptProblem, penalty, xmin, applyzero::Bool=false) where {dim, T}
     raw_KK = rawelementinfo.Kes
 
     ch = problem.ch

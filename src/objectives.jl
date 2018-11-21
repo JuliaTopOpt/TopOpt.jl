@@ -41,7 +41,7 @@ function (o::ComplianceObj{T})(x, grad) where {T}
         xmin = o.solver.xmin
         varind = o.problem.varind
 
-        o.solver.vars .= x
+        copyto!(o.solver.vars, x)
         if o.reuse
             if !o.tracing
                 o.reuse = false
@@ -117,7 +117,7 @@ function (o::ComplianceObj{T})(to, x, grad) where {T}
     xmin = o.solver.xmin
     varind = o.problem.varind
 
-    o.solver.vars .= x
+    copyto!(o.solver.vars, x)
     if o.reuse
         if !o.tracing
             o.reuse = false

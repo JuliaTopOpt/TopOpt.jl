@@ -30,7 +30,7 @@ function FEASolver(::Type{Displacement}, ::Type{CG}, ::Type{MatrixFree}, problem
     cg_max_iter=700, 
     tol=xmin, 
     penalty=PowerPenalty{T}(1), 
-    preconditioner=Identity, 
+    preconditioner=identity, 
     quad_order=default_quad_order(problem)) where {dim, T}
 
     return StaticMatrixFreeDisplacementSolver(problem, 
@@ -47,7 +47,7 @@ function FEASolver(::Type{Displacement}, ::Type{CG}, ::Type{Assembly}, problem::
     cg_max_iter=700, 
     tol=xmin, 
     penalty=PowerPenalty{T}(1), 
-    preconditioner=Identity, 
+    preconditioner=identity, 
     quad_order=default_quad_order(problem)) where {dim, T}
 
     return PCGDisplacementSolver(problem,
