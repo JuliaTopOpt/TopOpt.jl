@@ -39,9 +39,9 @@ function mul!(y::TV, A::MatrixFreeOperator, x::TV) where {TV <: AbstractVector}
             fe = @set fe[j] = x[cell_dofs[j,i]]
         end
         if eltype(Kes) <: Symmetric
-            fes[i] = px * Kes[i].data * fe
+            fes[i] = px * (Kes[i].data * fe)
         else
-            fes[i] = px * Kes[i] * fe
+            fes[i] = px * (Kes[i] * fe)
         end
     end
 
@@ -68,12 +68,13 @@ function mul!(y::TV, A::MatrixFreeOperator, x::TV) where {TV <: CuArrays.CuVecto
     @unpack penalty, xmin, vars = A
 
     dev = CUDAdrv.device()
+    ctx = CUDAdrv.CuContext(dev)
     MAX_THREADS_PER_BLOCK = CUDAdrv.attribute(dev, CUDAdrv.MAX_THREADS_PER_BLOCK)
     threads = min(nels, MAX_THREADS_PER_BLOCK)
     blocks = ceil.(Int, nels / threads)
-    @cuda blocks=blocks threads=threads kernel1(x, black, white, vars, varind, cell_dofs, Kes, fes, xmin, dofspercell, penalty, nels)
+    @cuda blocks=blocks threads=threads kernel1(x, black, white, vars, varind, cell_dofs, Kes, fes, xmin, penalty, nels)
 
-    CUDAdrv.synchronize(dev)
+    CUDAdrv.synchronize(ctx)
 
     threads = min(ndofs, MAX_THREADS_PER_BLOCK)
     blocks = ceil.(Int, ndofs / threads)
@@ -82,26 +83,28 @@ function mul!(y::TV, A::MatrixFreeOperator, x::TV) where {TV <: CuArrays.CuVecto
 end
 
 # CUDA kernels
-
-function kernel1(x, black, white, vars, varind, cell_dofs, Kes, fes, xmin, dofspercell, penalty, nels)
+function kernel1(x, black, white, vars, varind, cell_dofs, Kes, fes::AbstractVector{TV}, xmin, penalty, nels) where {N, T, TV<:SVector{N, T}}
     i = (blockIdx().x-1) * blockDim().x + threadIdx().x
-    T = eltype(vars)
     if i <= nels
-        px = ifelse(black[i], one(T), 
-        ifelse(white[i], xmin, 
-                density(penalty(vars[varind[i]]), xmin)
-            )
-        )
+        px = vars[varind[i]]
+        #px = ifelse(black[i], one(T), 
+        #            ifelse(white[i], xmin, 
+        #                    density(penalty(vars[varind[i]]), xmin)
+        #                )
+        #            )
         fe = fes[i]
-        for j in 1:dofspercell
+        for j in 1:N
             fe = @set fe[j] = x[cell_dofs[j,i]]
         end
         if eltype(Kes) <: Symmetric
-            fes[i] = px * Kes[i].data * fe
+            fe = SVector{1, T}((px,)) .* (Kes[i].data * fe)
         else
-            fes[i] = px * Kes[i] * fe
+            fe = SVector{1, T}((px,)) .* (Kes[i] * fe)
         end
+        
+        fes[i] = fe
     end
+
     return
 end
 
