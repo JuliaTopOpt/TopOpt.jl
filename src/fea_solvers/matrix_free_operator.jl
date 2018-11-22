@@ -115,13 +115,15 @@ function getvalidconfig(dev, kernel, parallel_args)
                     ceil(Int, kernel_threads/y_thr))
 
         blk, thr = (Rlength - 1) ÷ y_thr + 1, (x_thr, y_thr, 1)
+        blk = min(blk, ceil(Int, Rlength / prod(thr)))
     end
     return blk, thr
 end
 
 # CUDA kernels
 function kernel1(fes::AbstractVector{TV}, x, black, white, vars, varind, cell_dofs, Kes, xmin, penalty, nels) where {N, T, TV<:SVector{N, T}}
-    i = (blockIdx().x - 1) * blockDim().x + threadIdx().x
+    blockid = blockIdx().x + blockIdx().y * gridDim().x
+    i = blockid * (blockDim().x * blockDim().y) + (threadIdx().y * blockDim().x) + threadIdx().x
     if i <= nels
         px = vars[varind[i]]
         #px = ifelse(black[i], one(T), 
