@@ -3,11 +3,13 @@ module TopOpt
 using LinearAlgebra, Statistics
 using Reexport, Parameters, Setfield
 @reexport using TopOptProblems, Optim, MMA, LineSearches
-using JuAFEM, StaticArrays, CuArrays
+using JuAFEM, StaticArrays, CuArrays, CUDAnative
+using CUDAdrv: CUDAdrv
 using ForwardDiff, IterativeSolvers#, Preconditioners
 
 using TimerOutputs
 
+CuArrays.allowscalar(false)
 const to = TimerOutput()
 const DEBUG = Base.RefValue(false)
 

@@ -164,7 +164,7 @@ end
 
 function update!(c_simp::ContinuationSIMP{<:Any,<:MMAOptimizer}, i)
     p = c_simp.p_cont(i)
-    c_simp.simp.penalty.p = p
+    setpenalty!(c_simp.simp, p)
     ftol = c_simp.ftol_cont(i)
     c_simp.simp.optimizer.model.ftol[] = ftol
 

@@ -1,4 +1,4 @@
-mutable struct MatrixFreeOperator{T, dim, TEInfo<:ElementFEAInfo{dim, T}, TS<:StiffnessTopOptProblem{dim, T}, Tf<:AbstractVector{T}, TP}
+struct MatrixFreeOperator{T, dim, TEInfo<:ElementFEAInfo{dim, T}, TS<:StiffnessTopOptProblem{dim, T}, Tf<:AbstractVector{T}, TP}
     elementinfo::TEInfo
     meandiag::T
     problem::TS
@@ -11,54 +11,111 @@ Base.size(op::MatrixFreeOperator, i) = 1 <= i <= 2 ? length(op.elementinfo.fixed
 Base.eltype(op::MatrixFreeOperator{T}) where {T} = T
 
 import LinearAlgebra: *, mul!
-#const nthreads = Threads.nthreads()
-function mul!(y, A::MatrixFreeOperator, x)
+
+function *(A::MatrixFreeOperator, x)
+    y = similar(x)
+    mul!(y, A::MatrixFreeOperator, x)
+    y
+end
+
+function mul!(y::TV, A::MatrixFreeOperator, x::TV) where {TV <: AbstractVector}
     T = eltype(y)
     nels = length(A.elementinfo.Kes)
     ndofs = length(A.elementinfo.fixedload)
-    #division = ceil(Int, nels / nthreads)
     dofspercell = size(A.elementinfo.Kes[1], 1)
+
+    @unpack Kes, fes, metadata, black, white, varind = A.elementinfo
+    @unpack cell_dofs, dof_cells, dof_cells_offset = metadata
+    @unpack penalty, xmin, vars = A
     
-    Kes = A.elementinfo.Kes
-    fes = A.elementinfo.fes # Used as buffers
-
-    metadata = A.elementinfo.metadata
-    cell_dofs = metadata.cell_dofs
-    dof_cells = metadata.dof_cells
-    dof_cells_offset = metadata.dof_cells_offset
-    black = A.elementinfo.black
-    white = A.elementinfo.white
-    penalty = A.penalty
-    xmin = A.xmin
-    vars = A.vars
-    varind = A.elementinfo.varind
-
-    map!(fes, 1:nels) do i
+    for i in 1:nels
         px = ifelse(black[i], one(T), 
                     ifelse(white[i], xmin, 
                             density(penalty(vars[varind[i]]), xmin)
                         )
                     )
-        fe = fes[i] 
+        fe = fes[i]
         for j in 1:dofspercell
             fe = @set fe[j] = x[cell_dofs[j,i]]
         end
-        return px * Kes[i] * fe
+        if eltype(Kes) <: Symmetric
+            fes[i] = px * Kes[i].data * fe
+        else
+            fes[i] = px * Kes[i] * fe
+        end
     end
 
-    map!(y, 1:ndofs) do i
+    for i in 1:ndofs
         yi = zero(T)
         r = dof_cells_offset[i] : dof_cells_offset[i+1]-1
         for ind in r
             k, m = dof_cells[ind]
             yi += fes[k][m]
         end
-        return yi
+        y[i] = yi
     end
     y
 end
-function *(A::MatrixFreeOperator, x)
-    y = similar(x) .= 0
-    mul!(y, A::MatrixFreeOperator, x)
+
+function mul!(y::TV, A::MatrixFreeOperator, x::TV) where {TV <: CuArrays.CuVector}
+    T = eltype(y)
+    nels = length(A.elementinfo.Kes)
+    ndofs = length(A.elementinfo.fixedload)
+    dofspercell = size(A.elementinfo.Kes[1], 1)
+    
+    @unpack Kes, fes, metadata, black, white, varind = A.elementinfo
+    @unpack cell_dofs, dof_cells, dof_cells_offset = metadata
+    @unpack penalty, xmin, vars = A
+
+    dev = CUDAdrv.device()
+    MAX_THREADS_PER_BLOCK = CUDAdrv.attribute(dev, CUDAdrv.MAX_THREADS_PER_BLOCK)
+    threads = min(nels, MAX_THREADS_PER_BLOCK)
+    blocks = ceil.(Int, nels / threads)
+    @cuda blocks=blocks threads=threads kernel1(x, black, white, vars, varind, cell_dofs, Kes, fes, xmin, dofspercell, penalty, nels)
+
+    CUDAdrv.synchronize(dev)
+
+    threads = min(ndofs, MAX_THREADS_PER_BLOCK)
+    blocks = ceil.(Int, ndofs / threads)
+    @cuda blocks=blocks threads=threads kernel2(y, dof_cells_offset, dof_cells, fes, ndofs)
     y
+end
+
+# CUDA kernels
+
+function kernel1(x, black, white, vars, varind, cell_dofs, Kes, fes, xmin, dofspercell, penalty, nels)
+    i = (blockIdx().x-1) * blockDim().x + threadIdx().x
+    T = eltype(vars)
+    if i <= nels
+        px = ifelse(black[i], one(T), 
+        ifelse(white[i], xmin, 
+                density(penalty(vars[varind[i]]), xmin)
+            )
+        )
+        fe = fes[i]
+        for j in 1:dofspercell
+            fe = @set fe[j] = x[cell_dofs[j,i]]
+        end
+        if eltype(Kes) <: Symmetric
+            fes[i] = px * Kes[i].data * fe
+        else
+            fes[i] = px * Kes[i] * fe
+        end
+    end
+    return
+end
+
+function kernel2(y, dof_cells_offset, dof_cells, fes, ndofs)
+    i = (blockIdx().x-1) * blockDim().x + threadIdx().x
+    T = eltype(y)
+    if i <= ndofs
+        yi = zero(T)
+        r = dof_cells_offset[i] : dof_cells_offset[i+1]-1
+        for ind in r
+            k, m = dof_cells[ind]
+            yi += fes[k][m]
+        end
+        y[i] = yi
+    end
+    return
 end

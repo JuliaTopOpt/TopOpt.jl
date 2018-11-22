@@ -15,7 +15,7 @@ function NewSIMPResult(::Type{T}, ncells) where {T}
     SIMPResult(fill(T(NaN), ncells), T(NaN), 0, T(NaN), false, T(NaN), false, T(NaN), false, Pair{T, Int}[], 0)
 end
 
-struct SIMP{T, TO, TP} <: AbstractSIMP
+mutable struct SIMP{T, TO, TP} <: AbstractSIMP
     optimizer::TO
     penalty::TP
     result::SIMPResult{T}
@@ -23,8 +23,8 @@ struct SIMP{T, TO, TP} <: AbstractSIMP
     tracing::Bool
 end
 function SIMP(optimizer, p::T, tracing=true) where T
-    penalty = optimizer.obj.solver.penalty
-    penalty.p = p
+    penalty = getpenalty(optimizer)
+    penalty = @set penalty.p = p
     ncells = getncells(optimizer.obj.problem)
     result = NewSIMPResult(T, ncells)
     topologies = Vector{T}[]
@@ -32,7 +32,11 @@ function SIMP(optimizer, p::T, tracing=true) where T
     return SIMP{T, typeof(optimizer), typeof(penalty)}(optimizer, penalty, result, topologies, tracing)
 end
 
-update_penalty!(s::AbstractSIMP, p::Number) = (s.penalty.p = p)
+getpenalty(s::AbstractSIMP) = s.penalty
+function setpenalty!(s::AbstractSIMP, p::Number)
+    s.penalty = @set s.penalty.p = p
+    setpenalty!(s.optimizer)
+end
 
 function (s::SIMP{T, TO})(x0=s.optimizer.obj.solver.vars) where {T, TO<:MMAOptimizer}
     #reset_timer!(to)
@@ -102,7 +106,7 @@ function update_result!(s::SIMP{T}, mma_results, prev_l, prev_fevals) where T
     new_fevals = obj.fevals - prev_fevals
     result.fevals += new_fevals
     if s.tracing
-        push!(result.penalty_trace, (s.penalty.p=>new_fevals))
+        push!(result.penalty_trace, (getpenalty(s).p => new_fevals))
     end
     if new_fevals > 0
         result.nsubproblems += 1

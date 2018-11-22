@@ -42,6 +42,9 @@ function MMAOptimizer(obj::AbstractObjective{T}, constr, opt=MMA.MMA87(), subopt
     return MMAOptimizer{T,typeof(model),typeof(opt),typeof(subopt),typeof(obj),typeof(constr),typeof(workspace)}(model, s_init, s_decr, s_incr, opt, subopt, dual_caps, obj, constr, T(NaN), false, T(NaN), false, T(NaN), false, workspace)
 end
 
+getpenalty(o::MMAOptimizer) = getpenalty(o.obj)
+setpenalty!(o::MMAOptimizer, p) = setpenalty!(o.obj, p)
+
 function (o::MMAOptimizer)(x0::AbstractVector)
     mma_results = @timeit to "MMA" begin
         workspace = o.workspace

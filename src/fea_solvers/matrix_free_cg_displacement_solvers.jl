@@ -1,6 +1,6 @@
 abstract type AbstractMatrixFreeSolver <: AbstractDisplacementSolver end
 
-mutable struct StaticMatrixFreeDisplacementSolver{T, dim, TEInfo<:ElementFEAInfo{dim, T}, TS<:StiffnessTopOptProblem{dim, T}, Tv<:AbstractVector{T}, TP<:AbstractPenalty{T}, TI<:Integer, TOp, TStateVars<:CGStateVariables{T}, TPrecond} <: AbstractDisplacementSolver
+mutable struct StaticMatrixFreeDisplacementSolver{T, dim, TEInfo<:ElementFEAInfo{dim, T}, TS<:StiffnessTopOptProblem{dim, T}, Tv<:AbstractVector{T}, TP<:AbstractPenalty{T}, TI<:Integer, TStateVars<:CGStateVariables{T}, TPrecond} <: AbstractDisplacementSolver
     elementinfo::TEInfo
     problem::TS
     f::Tv
@@ -12,7 +12,6 @@ mutable struct StaticMatrixFreeDisplacementSolver{T, dim, TEInfo<:ElementFEAInfo
     xmin::T
     cg_max_iter::TI
     tol::T
-    operator::TOp
     cg_statevars::TStateVars
     preconditioner::TPrecond
     preconditioner_initialized::Base.RefValue{Bool}
@@ -27,7 +26,7 @@ function StaticMatrixFreeDisplacementSolver(sp::StiffnessTopOptProblem{dim, T};
         preconditioner=identity, 
         quad_order=2) where {dim, T}
     
-    prev_penalty.p = T(NaN)
+    prev_penalty = @set prev_penalty.p = T(NaN)
     rawelementinfo = ElementFEAInfo(sp, quad_order, Val{:Static})
     if !(T === BigFloat)
         m = size(rawelementinfo.Kes[1], 1)
@@ -55,17 +54,23 @@ function StaticMatrixFreeDisplacementSolver(sp::StiffnessTopOptProblem{dim, T};
     cg_statevars = CGStateVariables{eltype(u),typeof(u)}(copy(u), similar(u), similar(u))
 
     return StaticMatrixFreeDisplacementSolver(rawelementinfo, sp, f, meandiag, u, vars, 
-        penalty, prev_penalty, xmin, cg_max_iter, tol, operator, cg_statevars, 
+        penalty, prev_penalty, xmin, cg_max_iter, tol, cg_statevars, 
         preconditioner, Ref(false))
 end
 
+function buildoperator(solver::StaticMatrixFreeDisplacementSolver)
+    penalty = getpenalty(solver)
+    @unpack elementinfo, meandiag, problem, vars, xmin = solver
+    MatrixFreeOperator(elementinfo, meandiag, problem, vars, xmin, penalty)
+end
+
 function (s::StaticMatrixFreeDisplacementSolver)()
-    assemble_f!(s.f, s.problem, s.elementinfo, s.vars, s.penalty, s.xmin)
-    matrix_free_apply2f!(s.f, s.elementinfo, s.meandiag, s.vars, s.problem, s.penalty, s.xmin)
+    assemble_f!(s.f, s.problem, s.elementinfo, s.vars, getpenalty(s), s.xmin)
+    matrix_free_apply2f!(s.f, s.elementinfo, s.meandiag, s.vars, s.problem, getpenalty(s), s.xmin)
 
     u = s.u
     f = s.f
-    operator = s.operator
+    operator = buildoperator(s)
     cg_max_iter = s.cg_max_iter
     tol = s.tol
     cg_statevars = s.cg_statevars
@@ -90,17 +95,17 @@ function (s::StaticMatrixFreeDisplacementSolver)()
     #    s.u[d] = v
     #end
 
-    s.prev_penalty.p = s.penalty.p
+    #s.prev_penalty.p = s.penalty.p
     nothing
 end
 function (s::StaticMatrixFreeDisplacementSolver)(to)
     @timeit to "Solve system of equations" begin
-        assemble_f!(s.f, s.problem, s.elementinfo, s.vars, s.penalty, s.xmin)
-        matrix_free_apply2f!(s.f, s.elementinfo, s.meandiag, s.vars, s.problem, s.penalty, s.xmin)
+        assemble_f!(s.f, s.problem, s.elementinfo, s.vars, getpenalty(s), s.xmin)
+        matrix_free_apply2f!(s.f, s.elementinfo, s.meandiag, s.vars, s.problem, getpenalty(s), s.xmin)
 
         u = s.u
         f = s.f
-        operator = s.operator
+        operator = buildoperator(s)
         cg_max_iter = s.cg_max_iter
         tol = s.tol
         cg_statevars = s.cg_statevars
@@ -125,16 +130,17 @@ function (s::StaticMatrixFreeDisplacementSolver)(to)
         #    s.u[d] = v
         #end
     end
-    s.prev_penalty.p = s.penalty.p
+    #s.prev_penalty.p = s.penalty.p
     nothing
 end
 
-for T in (IterativeSolvers.CGStateVariables, ElementFEAInfo, TopOptProblems.Metadata, StaticMatrixFreeDisplacementSolver, MatrixFreeOperator)
+for T in (IterativeSolvers.CGStateVariables, ElementFEAInfo, TopOptProblems.Metadata, StaticMatrixFreeDisplacementSolver)
     @eval @inline getfieldnames(::Type{<:$T}) = $(Tuple(fieldnames(T)))
 end
+
 @inline cufieldnames(::Type{T}) where {T} = getfieldnames(T)
 @eval @inline cufieldnames(::Type{<:ElementFEAInfo}) = $(Tuple(setdiff(fieldnames(ElementFEAInfo), [:cellvalues, :facevalues])))
-@inline cufieldnames(::Type{<:MatrixFreeOperator}) = (:elementinfo, :vars)
+
 @generated function _cu(s::T, f::F, ::Val{fn}) where {T, F, fn}
     if fn ∈ cufieldnames(T)
         if F <: AbstractArray
@@ -155,27 +161,7 @@ end
         end
     end
 end
-
-@generated function CuArrays.cu(s::StaticMatrixFreeDisplacementSolver)
-    fn1 = getfieldnames(StaticMatrixFreeDisplacementSolver)[1:5]
-    fn2 = getfieldnames(StaticMatrixFreeDisplacementSolver)[7:11]
-    fn3 = getfieldnames(StaticMatrixFreeDisplacementSolver)[13:15]
-
-    args = Any[]
-    append!(args, [:(_cu(s, getfield(s, $(QuoteNode(fn))), $(Val(fn)))) for fn in fn1])
-    push!(args, :vars)
-    append!(args, [:(_cu(s, getfield(s, $(QuoteNode(fn))), $(Val(fn)))) for fn in fn2])
-    push!(args, :op)
-    append!(args, [:(_cu(s, getfield(s, $(QuoteNode(fn))), $(Val(fn)))) for fn in fn3])
-
-    return quote
-        op = cu(s.operator)
-        vars = op.vars
-        StaticMatrixFreeDisplacementSolver($(args...))
-    end
-end
-
-for T in (IterativeSolvers.CGStateVariables, ElementFEAInfo, TopOptProblems.Metadata, MatrixFreeOperator)
+for T in (IterativeSolvers.CGStateVariables, ElementFEAInfo, TopOptProblems.Metadata, StaticMatrixFreeDisplacementSolver)
     fns = getfieldnames(T)
     args = Expr[]
     for fn in fns

@@ -22,7 +22,7 @@ function PCGDisplacementSolver(sp::StiffnessTopOptProblem{dim, T};
     preconditioner=identity, 
     quad_order=2) where {dim, T}
 
-    prev_penalty.p = T(NaN)
+    prev_penalty = @set prev_penalty.p = T(NaN)
     elementinfo = ElementFEAInfo(sp, quad_order, Val{:Static})
     globalinfo = GlobalFEAInfo(sp)
     u = zeros(T, ndofs(sp.ch.dh))
@@ -67,7 +67,7 @@ function (s::PCGDisplacementSolver{T})(to) where {T}
             @timeit to "Solve system of equations" cg!(u, K, f, tol, cg_max_iter, Val{false}, cg_statevars, false, preconditioner)
         end
     end
-    s.prev_penalty.p = s.penalty.p
+    #s.prev_penalty.p = s.penalty.p
 
     nothing
 end
@@ -113,7 +113,7 @@ function (s::PCGDisplacementSolver{T})(::Type{Val{safe}}=Val{false}) where {T, s
             cg!(u, K, f, tol, cg_max_iter, Val{false}, cg_statevars, Val{false}, preconditioner)
         end
     end
-    s.prev_penalty.p = s.penalty.p
+    #s.prev_penalty.p = s.penalty.p
     
     nothing
 end

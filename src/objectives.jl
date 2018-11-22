@@ -24,14 +24,19 @@ function ComplianceObj(problem::StiffnessTopOptProblem{dim, T}, solver::Abstract
     return ComplianceObj(problem, solver, cheqfilter, comp, cell_comp, grad, tracing, topopt_trace, reuse, fevals, logarithm)
 end
 
+getsolver(obj::AbstractObjective) = obj.solver
+getpenalty(obj::AbstractObjective) = getpenalty(getsolver(obj))
+setpenalty!(obj::AbstractObjective, p) = setpenalty!(getsolver(obj), p)
+getprevpenalty(obj::AbstractObjective) = getprevpenalty(getsolver(obj))
+
 function (o::ComplianceObj{T})(x, grad) where {T}
     @timeit to "Eval obj and grad" begin
-        #if o.solver.vars ≈ x && o.solver.penalty.p ≈ o.solver.prev_penalty.p
+        #if o.solver.vars ≈ x && getpenalty(o).p ≈ getprevpenalty(o).p
         #    grad .= o.grad
         #    return o.comp
         #end
 
-        penalty = o.solver.penalty
+        penalty = getpenalty(o)
         cell_dofs = o.problem.metadata.cell_dofs
         u = o.solver.u
         cell_comp = o.cell_comp
@@ -102,12 +107,13 @@ function (o::ComplianceObj{T})(x, grad) where {T}
     return o.comp::T
 end
 function (o::ComplianceObj{T})(to, x, grad) where {T}
-    if o.solver.vars ≈ x && o.solver.penalty.p ≈ o.solver.prev_penalty.p
+    penalty = getpenalty(o)
+    prev_penalty = getprevpenalty(o)
+    if o.solver.vars ≈ x && penalty.p ≈ prev_penalty.p
         grad .= o.grad
         return o.comp
     end
 
-    penalty = o.solver.penalty
     cell_dofs = o.problem.metadata.cell_dofs
     u = o.solver.u
     cell_comp = o.cell_comp

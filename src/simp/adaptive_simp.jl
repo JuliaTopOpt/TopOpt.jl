@@ -59,7 +59,7 @@ function (asimp::AdaptiveSIMP)(x0=asimp.simp.optimizer.obj.solver.vars)
             obj.reuse = asimp.reuse
         end
 
-        asimp.simp.penalty.p += Δp
+        setpenalty!(asimp.simp, p + Δp)
         simp_results = _innersolve!(asimp, workspace)
         
         if workspace.converged
@@ -102,7 +102,7 @@ function setup_workspace(asimp::AdaptiveSIMP, x0::AbstractArray{T}, p) where T
 
     @unpack innerpolynomial, simp = asimp
     # Set penalty as starting penalty
-    simp.penalty.p = p
+    setpenalty!(simp, p)
     simp.optimizer.obj.reuse = false
 
     # Does the first function evaluation
@@ -146,7 +146,7 @@ function _innersolve!(asimp::AdaptiveSIMP{T}, workspace::MMA.MMAWorkspace) where
 end
 
 function get_tol(asimp::AdaptiveSIMP{T}) where {T}
-    p = asimp.simp.penalty.p
+    p = getpenalty(asimp.simp).p
     obj = asimp.simp.optimizer.obj
     poly = asimp.innerpolynomial
     # If not converged yet, time to do tolerance adaptation

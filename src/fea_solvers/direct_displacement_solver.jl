@@ -24,11 +24,11 @@ function DirectDisplacementSolver(sp::StiffnessTopOptProblem{dim, T};
     vars = fill(T(NaN), getncells(sp.ch.dh.grid) - sum(sp.black) - sum(sp.white))
     varind = sp.varind
 
-    prev_penalty.p = T(NaN)
+    prev_penalty = @set prev_penalty.p = T(NaN)
     return DirectDisplacementSolver(sp, globalinfo, elementinfo, u, vars, penalty, prev_penalty, xmin)
 end
 function (s::DirectDisplacementSolver{T})(::Type{Val{safe}}=Val{false}, ::Type{newT}=T) where {T, safe, newT}
-    assemble!(s.globalinfo, s.problem, s.elementinfo, s.vars, s.penalty, s.xmin)
+    assemble!(s.globalinfo, s.problem, s.elementinfo, s.vars, getpenalty(s), s.xmin)
     K, f = s.globalinfo.K, s.globalinfo.f
     if safe
         m = meandiag(K)
@@ -47,12 +47,12 @@ function (s::DirectDisplacementSolver{T})(::Type{Val{safe}}=Val{false}, ::Type{n
     catch
         T(NaN)
     end
-    s.prev_penalty.p = s.penalty.p
+    #s.prev_penalty.p = s.penalty.p
  
     nothing
 end
 function (s::DirectDisplacementSolver{T})(to, ::Type{Val{safe}}=Val{false}, ::Type{newT}=T) where {T, safe, newT}
-    @timeit to "Assemble" assemble!(s.globalinfo, s.problem, s.elementinfo, s.vars, s.penalty, s.xmin)
+    @timeit to "Assemble" assemble!(s.globalinfo, s.problem, s.elementinfo, s.vars, getpenalty(s), s.xmin)
     if safe
         m = meandiag(s.K)
         for i in 1:size(s.K,1)
@@ -70,6 +70,6 @@ function (s::DirectDisplacementSolver{T})(to, ::Type{Val{safe}}=Val{false}, ::Ty
     catch
         T(NaN)
     end
-    s.prev_penalty.p = s.penalty.p
+    #s.prev_penalty.p = s.penalty.p
     nothing
 end

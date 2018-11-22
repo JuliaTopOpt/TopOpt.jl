@@ -71,7 +71,7 @@ function innersolve!(asimp::AdaptiveSIMP, x0::AbstractArray{T}, p) where T
     innerpolynomial = asimp.innerpolynomial
 
     # Set penalty as starting penalty
-    asimp.simp.penalty.p = p
+    setpenalty!(asimp.simp, p)
     # Turn off solution reuse
     asimp.simp.optimizer.obj.reuse = false
 
@@ -107,7 +107,7 @@ function innersolve!(asimp::AdaptiveSIMP, workspace::MMA.MMAWorkspace, p, reuse 
     prev_l = length(asimp.simp.topologies)
     prev_fevals = asimp.simp.optimizer.obj.fevals
 
-    asimp.simp.penalty.p = p
+    setpenalty!(asimp.simp, p)
     # Turn on solution reuse
     obj = asimp.simp.optimizer.obj
     obj.reuse = reuse && asimp.reuse
@@ -150,7 +150,7 @@ end
 
 function _innersolve!(asimp::AdaptiveSIMP{T}, workspace::MMA.MMAWorkspace, offset=0) where T
     @unpack innerpolynomial, pstart, pfinish = asimp
-    p = asimp.simp.penalty.p
+    p = getpenalty(asimp.simp).p
     obj = asimp.simp.optimizer.obj
     xmin = obj.solver.xmin
 
