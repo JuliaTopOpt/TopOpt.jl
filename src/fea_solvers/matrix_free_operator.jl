@@ -72,7 +72,7 @@ function mul!(y::TV, A::MatrixFreeOperator, x::TV) where {TV <: CuArrays.CuVecto
     MAX_THREADS_PER_BLOCK = CUDAdrv.attribute(dev, CUDAdrv.MAX_THREADS_PER_BLOCK)
     threads = min(nels, MAX_THREADS_PER_BLOCK)
     blocks = ceil.(Int, nels / threads)
-    @cuda blocks=blocks threads=threads kernel1(x, black, white, vars, varind, cell_dofs, Kes, fes, xmin, penalty, nels)
+    @cuda blocks=blocks threads=threads kernel1(fes, x, black, white, vars, varind, cell_dofs, Kes, xmin, penalty, nels)
 
     CUDAdrv.synchronize(ctx)
 
@@ -83,8 +83,8 @@ function mul!(y::TV, A::MatrixFreeOperator, x::TV) where {TV <: CuArrays.CuVecto
 end
 
 # CUDA kernels
-function kernel1(x, black, white, vars, varind, cell_dofs, Kes, fes::AbstractVector{TV}, xmin, penalty, nels) where {N, T, TV<:SVector{N, T}}
-    i = (blockIdx().x-1) * blockDim().x + threadIdx().x
+function kernel1(fes::AbstractVector{TV}, x, black, white, vars, varind, cell_dofs, Kes, xmin, penalty, nels) where {N, T, TV<:SVector{N, T}}
+    i = (blockIdx().x - 1) * blockDim().x + threadIdx().x
     if i <= nels
         px = vars[varind[i]]
         #px = ifelse(black[i], one(T), 
@@ -94,14 +94,14 @@ function kernel1(x, black, white, vars, varind, cell_dofs, Kes, fes::AbstractVec
         #            )
         fe = fes[i]
         for j in 1:N
-            fe = @set fe[j] = x[cell_dofs[j,i]]
+            fe = @set fe[j] = x[cell_dofs[j, i]]
         end
         if eltype(Kes) <: Symmetric
             fe = SVector{1, T}((px,)) .* (Kes[i].data * fe)
         else
             fe = SVector{1, T}((px,)) .* (Kes[i] * fe)
         end
-        
+
         fes[i] = fe
     end
 
