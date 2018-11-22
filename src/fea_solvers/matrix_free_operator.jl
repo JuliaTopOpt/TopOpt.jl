@@ -69,17 +69,54 @@ function mul!(y::TV, A::MatrixFreeOperator, x::TV) where {TV <: CuArrays.CuVecto
 
     dev = CUDAdrv.device()
     ctx = CUDAdrv.CuContext(dev)
-    MAX_THREADS_PER_BLOCK = CUDAdrv.attribute(dev, CUDAdrv.MAX_THREADS_PER_BLOCK)
-    threads = min(nels, MAX_THREADS_PER_BLOCK)
-    blocks = ceil.(Int, nels / threads)
-    @cuda blocks=blocks threads=threads kernel1(fes, x, black, white, vars, varind, cell_dofs, Kes, xmin, penalty, nels)
+
+    args1 = (fes, x, black, white, vars, varind, cell_dofs, Kes, xmin, penalty, nels)
+    callkernel(dev, kernel1, args1)
 
     CUDAdrv.synchronize(ctx)
 
-    threads = min(ndofs, MAX_THREADS_PER_BLOCK)
-    blocks = ceil.(Int, ndofs / threads)
-    @cuda blocks=blocks threads=threads kernel2(y, dof_cells_offset, dof_cells, fes, ndofs)
-    y
+    args2 = (y, dof_cells_offset, dof_cells, fes, ndofs)
+    callkernel(dev, kernel2, args2)
+
+    CUDAdrv.synchronize(ctx)
+    
+    return y
+end
+
+function callkernel(dev, kernel, args)
+    blocks, threads = getvalidconfig(dev, kernel, args)
+    @cuda blocks=blocks threads=threads kernel(args...)
+
+    return
+end
+
+function getvalidconfig(dev, kernel, parallel_args)
+    R = parallel_args[1]
+    Rlength = length(R)
+    Ssize = size(R)
+    Slength = prod(Ssize)
+    GC.@preserve parallel_args begin
+        parallel_kargs = cudaconvert.(parallel_args)
+        parallel_tt = Tuple{Core.Typeof.(parallel_kargs)...}
+        parallel_kernel = cufunction(kernel, parallel_tt)
+
+        # we are limited in how many threads we can launch...
+        ## by the kernel
+        kernel_threads = CUDAnative.maxthreads(parallel_kernel)
+        ## by the device
+        block_threads = (x=CUDAdrv.attribute(dev, CUDAdrv.MAX_BLOCK_DIM_X),
+                         y=CUDAdrv.attribute(dev, CUDAdrv.MAX_BLOCK_DIM_Y),
+                         total=CUDAdrv.attribute(dev, CUDAdrv.MAX_THREADS_PER_BLOCK))
+
+        # figure out a legal launch configuration
+        y_thr = min(nextpow(2, Rlength ÷ 512 + 1), 512, block_threads.y, kernel_threads)
+        x_thr = min(512 ÷ y_thr, Slength, block_threads.x,
+                    ceil(Int, block_threads.total/y_thr),
+                    ceil(Int, kernel_threads/y_thr))
+
+        blk, thr = (Rlength - 1) ÷ y_thr + 1, (x_thr, y_thr, 1)
+    end
+    return blk, thr
 end
 
 # CUDA kernels
