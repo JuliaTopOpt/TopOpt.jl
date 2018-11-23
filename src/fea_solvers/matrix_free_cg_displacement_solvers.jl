@@ -161,6 +161,11 @@ end
         end
     end
 end
+
+for T in (:PowerPenalty, :RationalPenalty)
+    fname = Symbol(:GPU, T)
+    @eval @inline CuArrays.cu(p::$T) = $fname(p.p)
+end
 for T in (IterativeSolvers.CGStateVariables, ElementFEAInfo, TopOptProblems.Metadata, StaticMatrixFreeDisplacementSolver)
     fns = getfieldnames(T)
     args = Expr[]

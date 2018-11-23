@@ -16,7 +16,7 @@ function meandiag(K::AbstractMatrix)
     return z / size(K, 1)
 end
 
-density(var, xmin) = var*(1-xmin) + xmin
+@inline density(var, xmin) = var*(1-xmin) + xmin
 
 macro debug(expr)
     return quote

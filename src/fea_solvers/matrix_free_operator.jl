@@ -57,6 +57,9 @@ function mul!(y::TV, A::MatrixFreeOperator, x::TV) where {TV <: AbstractVector}
     y
 end
 
+const dev = CUDAdrv.device()
+const ctx = CUDAdrv.CuContext(dev)
+
 function mul!(y::TV, A::MatrixFreeOperator, x::TV) where {TV <: CuArrays.CuVector}
     T = eltype(y)
     nels = length(A.elementinfo.Kes)
@@ -67,24 +70,20 @@ function mul!(y::TV, A::MatrixFreeOperator, x::TV) where {TV <: CuArrays.CuVecto
     @unpack cell_dofs, dof_cells, dof_cells_offset = metadata
     @unpack penalty, xmin, vars = A
 
-    dev = CUDAdrv.device()
-    ctx = CUDAdrv.CuContext(dev)
-
     args1 = (fes, x, black, white, vars, varind, cell_dofs, Kes, xmin, penalty, nels)
     callkernel(dev, kernel1, args1)
-
-    CUDAdrv.synchronize(ctx)
-
-    args2 = (y, dof_cells_offset, dof_cells, fes, ndofs)
-    callkernel(dev, kernel2, args2)
-
     CUDAdrv.synchronize(ctx)
     
+    args2 = (y, dof_cells_offset, dof_cells, fes, ndofs)
+    callkernel(dev, kernel2, args2)
+    CUDAdrv.synchronize(ctx)
+
     return y
 end
 
 function callkernel(dev, kernel, args)
     blocks, threads = getvalidconfig(dev, kernel, args)
+    @show blocks, threads
     @cuda blocks=blocks threads=threads kernel(args...)
 
     return
@@ -125,12 +124,12 @@ function kernel1(fes::AbstractVector{TV}, x, black, white, vars, varind, cell_do
     blockid = blockIdx().x + blockIdx().y * gridDim().x
     i = blockid * (blockDim().x * blockDim().y) + (threadIdx().y * blockDim().x) + threadIdx().x
     if i <= nels
-        px = vars[varind[i]]
-        #px = ifelse(black[i], one(T), 
-        #            ifelse(white[i], xmin, 
-        #                    density(penalty(vars[varind[i]]), xmin)
-        #                )
-        #            )
+        #px = vars[varind[i]]
+        px = ifelse(black[i], one(T), 
+                    ifelse(white[i], xmin, 
+                            density(penalty(vars[varind[i]]), xmin)
+                        )
+                    )
         fe = fes[i]
         for j in 1:N
             fe = @set fe[j] = x[cell_dofs[j, i]]
