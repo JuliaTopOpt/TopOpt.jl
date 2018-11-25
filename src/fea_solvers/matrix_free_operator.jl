@@ -71,11 +71,11 @@ function mul!(y::TV, A::MatrixFreeOperator, x::TV) where {TV <: CuArrays.CuVecto
     @unpack penalty, xmin, vars = A
 
     args1 = (fes, x, black, white, vars, varind, cell_dofs, Kes, xmin, penalty, nels)
-    callkernel(dev, kernel1, args1)
+    callkernel(dev, mul_kernel1, args1)
     CUDAdrv.synchronize(ctx)
     
     args2 = (y, dof_cells_offset, dof_cells, fes, ndofs)
-    callkernel(dev, kernel2, args2)
+    callkernel(dev, mul_kernel2, args2)
     CUDAdrv.synchronize(ctx)
 
     return y
@@ -120,9 +120,10 @@ function getvalidconfig(dev, kernel, parallel_args)
 end
 
 # CUDA kernels
-function kernel1(fes::AbstractVector{TV}, x, black, white, vars, varind, cell_dofs, Kes, xmin, penalty, nels) where {N, T, TV<:SVector{N, T}}
-    blockid = blockIdx().x + blockIdx().y * gridDim().x
-    i = blockid * (blockDim().x * blockDim().y) + (threadIdx().y * blockDim().x) + threadIdx().x
+function mul_kernel1(fes::AbstractVector{TV}, x, black, white, vars, varind, cell_dofs, Kes, xmin, penalty, nels) where {N, T, TV<:SVector{N, T}}
+    #blockid = blockIdx().x + blockIdx().y * gridDim().x
+    #i = (blockid - 1) * (blockDim().x * blockDim().y) + (threadIdx().y * blockDim().x) + threadIdx().x
+    i = (blockIdx().x-1) * blockDim().x + threadIdx().x
     if i <= nels
         #px = vars[varind[i]]
         px = ifelse(black[i], one(T), 
@@ -146,7 +147,7 @@ function kernel1(fes::AbstractVector{TV}, x, black, white, vars, varind, cell_do
     return
 end
 
-function kernel2(y, dof_cells_offset, dof_cells, fes, ndofs)
+function mul_kernel2(y, dof_cells_offset, dof_cells, fes, ndofs)
     i = (blockIdx().x-1) * blockDim().x + threadIdx().x
     T = eltype(y)
     if i <= ndofs
