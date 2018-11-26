@@ -17,6 +17,7 @@ const DEBUG = Base.RefValue(false)
 
 # Utilities
 include("utils.jl")
+include("gpu_utils.jl")
 
 # Trace definition
 include("traces.jl")

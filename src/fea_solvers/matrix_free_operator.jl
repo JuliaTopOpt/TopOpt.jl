@@ -57,9 +57,6 @@ function mul!(y::TV, A::MatrixFreeOperator, x::TV) where {TV <: AbstractVector}
     y
 end
 
-const dev = CUDAdrv.device()
-const ctx = CUDAdrv.CuContext(dev)
-
 function mul!(y::TV, A::MatrixFreeOperator, x::TV) where {TV <: CuArrays.CuVector}
     T = eltype(y)
     nels = length(A.elementinfo.Kes)
@@ -123,8 +120,9 @@ end
 function mul_kernel1(fes::AbstractVector{TV}, x, black, white, vars, varind, cell_dofs, Kes, xmin, penalty, nels) where {N, T, TV<:SVector{N, T}}
     #blockid = blockIdx().x + blockIdx().y * gridDim().x
     #i = (blockid - 1) * (blockDim().x * blockDim().y) + (threadIdx().y * blockDim().x) + threadIdx().x
-    i = (blockIdx().x-1) * blockDim().x + threadIdx().x
-    if i <= nels
+    i = thread_global_index()
+    offset = total_threads()
+    @inbounds while i <= nels
         #px = vars[varind[i]]
         px = ifelse(black[i], one(T), 
                     ifelse(white[i], xmin, 
@@ -142,6 +140,7 @@ function mul_kernel1(fes::AbstractVector{TV}, x, black, white, vars, varind, cel
         end
 
         fes[i] = fe
+        i += offset
     end
 
     return
@@ -150,7 +149,9 @@ end
 function mul_kernel2(y, dof_cells_offset, dof_cells, fes, ndofs)
     i = (blockIdx().x-1) * blockDim().x + threadIdx().x
     T = eltype(y)
-    if i <= ndofs
+    i = thread_global_index()
+    offset = total_threads()
+    @inbounds while i <= ndofs
         yi = zero(T)
         r = dof_cells_offset[i] : dof_cells_offset[i+1]-1
         for ind in r
@@ -158,6 +159,7 @@ function mul_kernel2(y, dof_cells_offset, dof_cells, fes, ndofs)
             yi += fes[k][m]
         end
         y[i] = yi
+        i += offset
     end
     return
 end

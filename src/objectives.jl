@@ -68,7 +68,7 @@ function (o::ComplianceObj{T})(x, grad) where {T}
             #o.comp = obj
         end
         o.cheqfilter(grad)
-        o.grad .= grad
+        copyto!(o.grad, grad)
         
         if o.tracing
             if o.reuse
@@ -116,99 +116,87 @@ function compute_compliance(cell_comp::Vector{T}, grad, cell_dofs, cell_comp, Ke
     return obj    
 end
 
+function compute_compliance(cell_comp::CuVector{T}, grad, cell_dofs, cell_comp, Kes, u, 
+                            black, white, varind, x, penalty, xmin) where {T}
+
+    args1 = (cell_comp, grad, cell_dofs, cell_comp, Kes, u, black, white, varind, x, penalty, xmin)
+    callkernel(dev, comp_kernel1, args1)
+    CUDAdrv.synchronize(ctx)
+    obj = compute_obj(cell_comp, x, varind, black, white, xmin)
+
+    return obj    
+end
+
 # CUDA kernels
 function comp_kernel1(cell_comp::CuVector{T}, grad, cell_dofs, cell_comp, Kes, u, 
     black, white, varind, x, penalty, xmin) where {N, T, TV<:SVector{N, T}}
-    
-    blockid = blockIdx().x + blockIdx().y * gridDim().x
-    i = blockid * (blockDim().x * blockDim().y) + (threadIdx().y * blockDim().x) + threadIdx().x
-    if i <= length(cell_comp)
+
+    i = thread_global_index()
+    offset = total_threads()
+    @inbounds while i <= length(cell_comp)
         cell_comp[i] = zero(T)
         Ke = Kes[i]
-        for w in 1:size(Ke,2)
+        for w in 1:size(Ke, 2)
             for v in 1:size(Ke, 1)
                 cell_comp[i] += u[cell_dofs[v,i]]*Ke[v,w]*u[cell_dofs[w,i]]
             end
         end
-
         if !(black[i] || white[i])
             d = ForwardDiff.Dual{T}(x[varind[i]], one(T))
             p = density(penalty(d), xmin)
             grad[varind[i]] = -p.partials[1] * cell_comp[i]
         end
+
+        i += offset
+	end
+    return
+end
+
+function compute_obj(cell_comp::AbstractVector{T}, x, varind, black, white, xmin, ::Val{blocksize} = Val(80), ::Val{threads} = Val(256)) where {T, blocksize, threads}
+    result = similar(cell_comp, T, (blocksize,))
+    args = (result, cell_comp, x, varind, black, white, xmin, Val(threads))
+    gpu_call(comp_kernel2, cell_comp, args, ((blocksize,), (threads,)))
+	reduce(+, Array(result))
+end
+
+function comp_kernel2(result, cell_comp::AbstractVector{T}, x, varind, black, white, xmin, ::Val{LMEM}) where {T, LMEM}
+    i = linear_index(state)
+    obj = zero(T)
+    # # Loop sequentially over chunks of input vector
+	offset = total_threads()
+    @inbounds while i <= length(cell_comp)
+        obj += w_comp(cell_comp[i], x[varind[i]], black[i], white[i], xmin)
+        i += offset
+    end
+
+    # Perform parallel reduction
+	tmp_local = @cuStaticSharedMem(T, LMEM)
+    local_index = thread_local_index()
+    @inbounds tmp_local[local_index] = obj
+    sync_threads()
+
+    offset = total_threads_per_block() ÷ 2
+    @inbounds while offset > 0
+        if (local_index < offset)
+            tmp_local[local_index + 1] += tmp_local[local_index + offset + 1]
+        end
+		sync_threads()
+        offset = offset ÷ 2
+    end
+    if local_index == 0
+        @inbounds result[block_index()] = tmp_local[1]
     end
 
     return
 end
 
-function mapreducedim_kernel_parallel(f, op, R::CuDeviceArray{T}, A::CuDeviceArray{T},
-                             CIS, Rlength, Slength) where {T}
-    
-    for Ri_base in 0:(gridDim().x * blockDim().y):(Rlength-1)
-        Ri = Ri_base + (blockIdx().x - 1) * blockDim().y + threadIdx().y
-        Ri > Rlength && return
-        RI = Tuple(CartesianIndices(R)[Ri])
-        S = @cuStaticSharedMem(T, 512)
-        Si_folded_base = (threadIdx().y - 1) * blockDim().x
-        Si_folded = Si_folded_base + threadIdx().x
-        # serial reduction of A into S by Slength ÷ xthreads
-        for Si_base in 0:blockDim().x:(Slength-1)
-            Si = Si_base + threadIdx().x
-            Si > Slength && break
-            SI = Tuple(CIS[Si])
-            AI = ifelse.(size(R) .== 1, SI, RI)
-            if Si_base == 0
-                S[Si_folded] = f(A[AI...])
-            else
-                S[Si_folded] = op(S[Si_folded], f(A[AI...]))
-            end
-        end
-        # block-parallel reduction of S to S[1] by xthreads
-        reduce_block(view(S, (Si_folded_base + 1):512), op)
-        # reduce S[1] into R
-        threadIdx().x == 1 && (R[Ri] = op(R[Ri], S[Si_folded]))
-    end
-    return
+function w_comp(comp, x, black, white, xmin)
+	return ifelse(black, comp,
+		   ifelse(white, xmin * comp, 
+			       	     (d = ForwardDiff.Dual{T}(x, one(T));
+            	            p = density(penalty(d), xmin); p.value * comp)))
 end
 
-@inline function reduce_block(arr, op)
-    sync_threads()
-    len = blockDim().x
-    while len != 1
-        sync_threads()
-        skip = (len + 1) >> 1
-        reduce_to = threadIdx().x - skip
-        if 0 < reduce_to <= (len >> 1)
-            arr[reduce_to] = op(arr[reduce_to], arr[threadIdx().x])
-        end
-        len = skip
-    end
-    sync_threads()
-    
-    return 
-end
-
-function compute_compliance(cell_comp::CuVector{T}, grad, cell_dofs, cell_comp, Kes, u, 
-                            black, white, varind, x, penalty, xmin) where {T}
-
-    args1 = (grad, cell_dofs, cell_comp, Kes, u, black, white, varind, x, penalty, xmin)
-    callkernel(dev, comp_kernel1, args1)
-    CUDAdrv.synchronize(ctx)
-
-    # Use mapreduce for obj
-    if black[i]
-        obj += cell_comp[i]
-    elseif white[i]
-        obj += xmin * cell_comp[i] 
-    else
-        d = ForwardDiff.Dual{T}(x[varind[i]], one(T))
-        p = density(penalty(d), xmin)
-        grad[varind[i]] = -p.partials[1] * cell_comp[i]
-        obj += p.value * cell_comp[i]
-    end
-
-    return obj    
-end
 
 function (o::ComplianceObj{T})(to, x, grad) where {T}
     penalty = getpenalty(o)
