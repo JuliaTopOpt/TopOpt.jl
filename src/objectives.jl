@@ -53,11 +53,11 @@ function (o::ComplianceObj{T})(x, grad) where {T}
             end
         else
             o.fevals += 1
-            o.solver()
+            @show typeof(o.solver)
+            #o.solver()
         end
-
-        obj = compute_compliance(cell_comp, grad, cell_dofs, cell_comp, Kes, u, 
-                            black, white, varind, x, penalty, xmin)
+        obj = 2.0 #compute_compliance(cell_comp, grad, cell_dofs, Kes, u, 
+                  #          black, white, varind, x, penalty, xmin)
 
         if o.logarithm
             o.comp = log(obj)
@@ -67,15 +67,19 @@ function (o::ComplianceObj{T})(x, grad) where {T}
             #scale!(grad, 1/length(cell_comp))
             #o.comp = obj
         end
-        o.cheqfilter(grad)
-        copyto!(o.grad, grad)
+        #o.cheqfilter(grad)
+        #copyto!(o.grad, grad)
         
         if o.tracing
             if o.reuse
                 o.reuse = false
             else
                 push!(o.topopt_trace.c_hist, obj)
-                push!(o.topopt_trace.x_hist, copy(x))
+                if x isa CuArray
+                    push!(o.topopt_trace.x_hist, Array(x))
+                else
+                    push!(o.topopt_trace.x_hist, copy(x))
+                end
                 if length(o.topopt_trace.x_hist) == 1
                     push!(o.topopt_trace.add_hist, 0)
                     push!(o.topopt_trace.rem_hist, 0)
@@ -89,7 +93,7 @@ function (o::ComplianceObj{T})(x, grad) where {T}
     return o.comp::T
 end
 
-function compute_compliance(cell_comp::Vector{T}, grad, cell_dofs, cell_comp, Kes, u, 
+function compute_compliance(cell_comp::Vector{T}, grad, cell_dofs, Kes, u, 
                             black, white, varind, x, penalty, xmin) where {T}
     obj = zero(T)
     @inbounds for i in 1:size(cell_dofs, 2)
@@ -116,20 +120,20 @@ function compute_compliance(cell_comp::Vector{T}, grad, cell_dofs, cell_comp, Ke
     return obj    
 end
 
-function compute_compliance(cell_comp::CuVector{T}, grad, cell_dofs, cell_comp, Kes, u, 
+function compute_compliance(cell_comp::CuVector{T}, grad, cell_dofs, Kes, u, 
                             black, white, varind, x, penalty, xmin) where {T}
 
-    args1 = (cell_comp, grad, cell_dofs, cell_comp, Kes, u, black, white, varind, x, penalty, xmin)
-    callkernel(dev, comp_kernel1, args1)
+    args = (cell_comp, grad, cell_dofs, Kes, u, black, white, varind, x, penalty, xmin)
+    callkernel(dev, comp_kernel1, args)
     CUDAdrv.synchronize(ctx)
     obj = compute_obj(cell_comp, x, varind, black, white, xmin)
 
-    return obj    
+    return obj
 end
 
 # CUDA kernels
-function comp_kernel1(cell_comp::CuVector{T}, grad, cell_dofs, cell_comp, Kes, u, 
-    black, white, varind, x, penalty, xmin) where {N, T, TV<:SVector{N, T}}
+function comp_kernel1(cell_comp::CuVector{T}, grad, cell_dofs, Kes, u, 
+            black, white, varind, x, penalty, xmin) where {N, T, TV<:SVector{N, T}}
 
     i = thread_global_index()
     offset = total_threads()
@@ -138,13 +142,17 @@ function comp_kernel1(cell_comp::CuVector{T}, grad, cell_dofs, cell_comp, Kes, u
         Ke = Kes[i]
         for w in 1:size(Ke, 2)
             for v in 1:size(Ke, 1)
-                cell_comp[i] += u[cell_dofs[v,i]]*Ke[v,w]*u[cell_dofs[w,i]]
+                if Ke isa Symmetric
+                    cell_comp[i] += u[cell_dofs[v,i]]*Ke.data[v,w]*u[cell_dofs[w,i]]
+                else
+                    cell_comp[i] += u[cell_dofs[v,i]]*Ke[v,w]*u[cell_dofs[w,i]]
+                end
             end
         end
         if !(black[i] || white[i])
-            d = ForwardDiff.Dual{T}(x[varind[i]], one(T))
-            p = density(penalty(d), xmin)
-            grad[varind[i]] = -p.partials[1] * cell_comp[i]
+            #d = ForwardDiff.Dual{T}(x[varind[i]], one(T))
+            #p = density(penalty(d), xmin)
+            grad[varind[i]] = cell_comp[i] #-p.partials[1] * cell_comp[i]
         end
 
         i += offset
@@ -195,82 +203,4 @@ function w_comp(comp, x, black, white, xmin)
 		   ifelse(white, xmin * comp, 
 			       	     (d = ForwardDiff.Dual{T}(x, one(T));
             	            p = density(penalty(d), xmin); p.value * comp)))
-end
-
-
-function (o::ComplianceObj{T})(to, x, grad) where {T}
-    penalty = getpenalty(o)
-    prev_penalty = getprevpenalty(o)
-    if o.solver.vars ≈ x && penalty.p ≈ prev_penalty.p
-        grad .= o.grad
-        return o.comp
-    end
-
-    cell_dofs = o.problem.metadata.cell_dofs
-    u = o.solver.u
-    cell_comp = o.cell_comp
-    Kes = o.solver.elementinfo.Kes
-    black = o.problem.black
-    white = o.problem.white
-    xmin = o.solver.xmin
-    varind = o.problem.varind
-
-    copyto!(o.solver.vars, x)
-    if o.reuse
-        if !o.tracing
-            o.reuse = false
-        end
-    else
-        o.fevals += 1
-        o.solver()
-    end
-
-    obj = zero(T)
-    @timeit to "Compute gradient" @inbounds for i in 1:size(cell_dofs, 2)
-        cell_comp[i] = zero(T)
-        Ke = Kes[i]
-        for w in 1:size(Ke,2)
-            for v in 1:size(Ke, 1)
-                cell_comp[i] += u[cell_dofs[v,i]]*Ke[v,w]*u[cell_dofs[w,i]]
-            end
-        end
-
-        if black[i]
-            obj += cell_comp[i]
-        elseif white[i]
-            obj += xmin * cell_comp[i] 
-        else
-            d = ForwardDiff.Dual{T}(x[varind[i]], one(T))
-            p = density(penalty(d), xmin)
-            grad[varind[i]] = -p.partials[1] * cell_comp[i]
-            obj += p.value * cell_comp[i]
-        end
-    end
-    if o.logarithm
-        o.comp = log(obj)
-        grad ./= obj
-    else
-        o.comp = obj# / length(cell_comp)
-        #scale!(grad, 1/length(cell_comp))
-        #o.comp = obj
-    end
-    @timeit to "Chequerboard filtering" o.cheqfilter(grad)
-    o.grad .= grad
-
-    @timeit to "Tracing" if o.tracing
-        if o.reuse
-            o.reuse = false
-        else
-            push!(o.topopt_trace.c_hist, obj)
-            push!(o.topopt_trace.x_hist, copy(x))
-            if length(o.topopt_trace.x_hist) == 1
-                push!(o.topopt_trace.add_hist, 0)
-                push!(o.topopt_trace.rem_hist, 0)
-            else
-                push!(o.topopt_trace.add_hist, sum(o.topopt_trace.x_hist[end] .> o.topopt_trace.x_hist[end-1]))
-                push!(o.topopt_trace.rem_hist, sum(o.topopt_trace.x_hist[end] .< o.topopt_trace.x_hist[end-1]))
-            end
-        end
-    end
-    return o.comp::T
 end

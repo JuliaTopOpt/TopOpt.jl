@@ -98,41 +98,6 @@ function (s::StaticMatrixFreeDisplacementSolver)()
     #s.prev_penalty.p = s.penalty.p
     nothing
 end
-function (s::StaticMatrixFreeDisplacementSolver)(to)
-    @timeit to "Solve system of equations" begin
-        assemble_f!(s.f, s.problem, s.elementinfo, s.vars, getpenalty(s), s.xmin)
-        matrix_free_apply2f!(s.f, s.elementinfo, s.meandiag, s.vars, s.problem, getpenalty(s), s.xmin)
-
-        u = s.u
-        f = s.f
-        operator = buildoperator(s)
-        cg_max_iter = s.cg_max_iter
-        tol = s.tol
-        cg_statevars = s.cg_statevars
-        preconditioner = s.preconditioner
-        preconditioner_initialized = preconditioner_initialized
-    
-        if !(preconditioner === identity)
-            if !preconditioner_initialized[]
-                UpdatePreconditioner!(preconditioner, operator)
-                preconditioner_initialized[] = true
-            end
-        end
-        @timeit to "Conjugate gradient" if preconditioner === identity
-            cg!(u, operator, f, tol, cg_max_iter, Val{false}, cg_statevars, Val{false})
-        else
-            cg!(u, operator, f, tol, cg_max_iter, Val{false}, cg_statevars, Val{false}, preconditioner)
-        end
-    
-        #for ind in 1:length(s.dbc.values)
-        #    d = s.dbc.dofs[ind]
-        #    v = s.dbc.values[ind]
-        #    s.u[d] = v
-        #end
-    end
-    #s.prev_penalty.p = s.penalty.p
-    nothing
-end
 
 for T in (IterativeSolvers.CGStateVariables, ElementFEAInfo, TopOptProblems.Metadata, StaticMatrixFreeDisplacementSolver)
     @eval @inline getfieldnames(::Type{<:$T}) = $(Tuple(fieldnames(T)))
