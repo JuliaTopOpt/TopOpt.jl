@@ -135,8 +135,8 @@ end
 function comp_kernel1(cell_comp::CuVector{T}, grad, cell_dofs, Kes, u, 
             black, white, varind, x, penalty, xmin) where {N, T, TV<:SVector{N, T}}
 
-    i = thread_global_index()
-    offset = total_threads()
+    i = @thread_global_index()
+    offset = @total_threads()
     @inbounds while i <= length(cell_comp)
         cell_comp[i] = zero(T)
         Ke = Kes[i]
@@ -168,10 +168,10 @@ function compute_obj(cell_comp::AbstractVector{T}, x, varind, black, white, xmin
 end
 
 function comp_kernel2(result, cell_comp::AbstractVector{T}, x, varind, black, white, xmin, ::Val{LMEM}) where {T, LMEM}
-    i = linear_index(state)
+    i = @thread_global_index()
     obj = zero(T)
     # # Loop sequentially over chunks of input vector
-	offset = total_threads()
+	offset = @total_threads()
     @inbounds while i <= length(cell_comp)
         obj += w_comp(cell_comp[i], x[varind[i]], black[i], white[i], xmin)
         i += offset
@@ -179,11 +179,11 @@ function comp_kernel2(result, cell_comp::AbstractVector{T}, x, varind, black, wh
 
     # Perform parallel reduction
 	tmp_local = @cuStaticSharedMem(T, LMEM)
-    local_index = thread_local_index()
+    local_index = @thread_local_index()
     @inbounds tmp_local[local_index] = obj
     sync_threads()
 
-    offset = total_threads_per_block() ÷ 2
+    offset = @total_threads_per_block() ÷ 2
     @inbounds while offset > 0
         if (local_index < offset)
             tmp_local[local_index + 1] += tmp_local[local_index + offset + 1]
@@ -192,14 +192,14 @@ function comp_kernel2(result, cell_comp::AbstractVector{T}, x, varind, black, wh
         offset = offset ÷ 2
     end
     if local_index == 0
-        @inbounds result[block_index()] = tmp_local[1]
+        @inbounds result[@block_index()] = tmp_local[1]
     end
 
     return
 end
 
-function w_comp(comp, x, black, white, xmin)
-	return ifelse(black, comp,
+function w_comp(comp::T, x, black, white, xmin) where {T}
+    return ifelse(black, comp,
 		   ifelse(white, xmin * comp, 
 			       	     (d = ForwardDiff.Dual{T}(x, one(T));
             	            p = density(penalty(d), xmin); p.value * comp)))

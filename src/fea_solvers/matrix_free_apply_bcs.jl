@@ -53,12 +53,12 @@ function matrix_free_apply2f!(f::AbstractVector{T}, rawelementinfo::ElementFEAIn
     raw_KK = rawelementinfo.Kes
 
     ch = problem.ch
-    black = problem.black
-    white = problem.white
-    varind = problem.varind
-    dof_cells = problem.metadata.dof_cells
-    dof_cells_offset = problem.metadata.dof_cells_offset
-    cell_dofs = problem.metadata.cell_dofs
+    black = rawelementinfo.black
+    white = rawelementinfo.white
+    varind = rawelementinfo.varind
+    dof_cells = rawelementinfo.metadata.dof_cells
+    dof_cells_offset = rawelementinfo.metadata.dof_cells_offset
+    cell_dofs = rawelementinfo.metadata.cell_dofs
 
     m = size(raw_KK[1], 1)
     for ind in 1:length(ch.values)

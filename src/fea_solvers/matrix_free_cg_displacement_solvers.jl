@@ -99,12 +99,36 @@ function (s::StaticMatrixFreeDisplacementSolver)()
     nothing
 end
 
-for T in (IterativeSolvers.CGStateVariables, ElementFEAInfo, TopOptProblems.Metadata, StaticMatrixFreeDisplacementSolver)
-    @eval @inline getfieldnames(::Type{<:$T}) = $(Tuple(fieldnames(T)))
+macro define_cu(T, fields...)
+    all_fields = Tuple(fieldnames(eval(T)))
+    args = Expr[]
+    for fn in all_fields
+        push!(args, :(_cu(s, s.$fn, $(Val(fn)))))
+    end
+    if eltype(fields) <: QuoteNode
+        field_syms = Tuple(field.value for field in fields)
+    elseif eltype(fields) <: Symbol
+        field_syms = fields
+    else
+        throw("Unsupported fields.")
+    end
+    esc(quote
+        @inline getfieldnames(::Type{<:$T}) = $all_fields
+        @inline cufieldnames(::Type{<:$T}) = $field_syms
+        @inline function CuArrays.cu(s::$T)
+            $T($(args...))
+        end
+    end)
 end
 
-@inline cufieldnames(::Type{T}) where {T} = getfieldnames(T)
-@eval @inline cufieldnames(::Type{<:ElementFEAInfo}) = $(Tuple(setdiff(fieldnames(ElementFEAInfo), [:cellvalues, :facevalues])))
+@eval @define_cu(IterativeSolvers.CGStateVariables, $(fieldnames(IterativeSolvers.CGStateVariables)...))
+@eval @define_cu(ElementFEAInfo, $(setdiff(fieldnames(ElementFEAInfo), [:cellvalues, :facevalues])...))
+@eval @define_cu(TopOptProblems.Metadata, $(fieldnames(TopOptProblems.Metadata)...))
+@define_cu(StaticMatrixFreeDisplacementSolver, :f, :problem, :vars, :cg_statevars, :elementinfo, :penalty, :prev_penalty, :u)
+@define_cu(ConstraintHandler, :values, :prescribed_dofs)
+for T in (PointLoadCantilever, HalfMBB, LBeam, TieBeam, InpStiffness)
+    @eval @define_cu($T, :ch)
+end
 
 @generated function _cu(s::T, f::F, ::Val{fn}) where {T, F, fn}
     if fn ∈ cufieldnames(T)
@@ -130,14 +154,4 @@ end
 for T in (:PowerPenalty, :RationalPenalty)
     fname = Symbol(:GPU, T)
     @eval @inline CuArrays.cu(p::$T) = $fname(p.p)
-end
-for T in (IterativeSolvers.CGStateVariables, ElementFEAInfo, TopOptProblems.Metadata, StaticMatrixFreeDisplacementSolver)
-    fns = getfieldnames(T)
-    args = Expr[]
-    for fn in fns
-        push!(args, :(_cu(s, s.$fn, $(Val(fn)))))
-    end
-    @eval @inline function CuArrays.cu(s::$T)
-        $T($(args...))
-    end
 end
