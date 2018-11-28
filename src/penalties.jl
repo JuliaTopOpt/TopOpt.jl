@@ -1,5 +1,7 @@
 abstract type AbstractPenalty{T} end
 
+CUDAnative.pow(d::TD, p::AbstractFloat) where {T, TV, TD <: ForwardDiff.Dual{T, TV, 1}} = ForwardDiff.Dual{T}(CUDAnative.pow(d.value, p), p * d.partials[1] * CUDAnative.pow(d.value, p - 1))
+
 struct PowerPenalty{T} <: AbstractPenalty{T}
     p::T
 end

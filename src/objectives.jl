@@ -1,12 +1,12 @@
 abstract type AbstractObjective{T} <: Function end
 
-mutable struct ComplianceObj{T, TI<:Integer, TSP<:StiffnessTopOptProblem, FS<:AbstractDisplacementSolver, CF<:AbstractCheqFilter} <: AbstractObjective{T}
+mutable struct ComplianceObj{T, TI<:Integer, TV<:AbstractArray, TSP<:StiffnessTopOptProblem, FS<:AbstractDisplacementSolver, CF<:AbstractCheqFilter} <: AbstractObjective{T}
 	problem::TSP
     solver::FS
     cheqfilter::CF
     comp::T
-    cell_comp::Vector{T}
-    grad::Vector{T}
+    cell_comp::TV
+    grad::TV
     tracing::Bool
     topopt_trace::TopOptTrace{T,TI}
     reuse::Bool
@@ -24,6 +24,8 @@ function ComplianceObj(problem::StiffnessTopOptProblem{dim, T}, solver::Abstract
     return ComplianceObj(problem, solver, cheqfilter, comp, cell_comp, grad, tracing, topopt_trace, reuse, fevals, logarithm)
 end
 
+@define_cu(ComplianceObj, :solver, :cell_comp, :grad)
+
 getsolver(obj::AbstractObjective) = obj.solver
 getpenalty(obj::AbstractObjective) = getpenalty(getsolver(obj))
 setpenalty!(obj::AbstractObjective, p) = setpenalty!(getsolver(obj), p)
@@ -37,14 +39,14 @@ function (o::ComplianceObj{T})(x, grad) where {T}
         #end
 
         penalty = getpenalty(o)
-        cell_dofs = o.problem.metadata.cell_dofs
+        cell_dofs = o.solver.elementinfo.metadata.cell_dofs
         u = o.solver.u
         cell_comp = o.cell_comp
         Kes = o.solver.elementinfo.Kes
-        black = o.problem.black
-        white = o.problem.white
+        black = o.solver.elementinfo.black
+        white = o.solver.elementinfo.white
         xmin = o.solver.xmin
-        varind = o.problem.varind
+        varind = o.solver.elementinfo.varind
 
         copyto!(o.solver.vars, x)
         if o.reuse
@@ -53,22 +55,21 @@ function (o::ComplianceObj{T})(x, grad) where {T}
             end
         else
             o.fevals += 1
-            @show typeof(o.solver)
-            #o.solver()
+            o.solver()
         end
-        obj = 2.0 #compute_compliance(cell_comp, grad, cell_dofs, Kes, u, 
-                  #          black, white, varind, x, penalty, xmin)
+        obj = compute_compliance(cell_comp, grad, cell_dofs, Kes, u, 
+                            black, white, varind, x, penalty, xmin)
 
         if o.logarithm
             o.comp = log(obj)
             grad ./= obj
         else
-            o.comp = obj# / length(cell_comp)
+            o.comp = obj
             #scale!(grad, 1/length(cell_comp))
             #o.comp = obj
         end
         #o.cheqfilter(grad)
-        #copyto!(o.grad, grad)
+        copyto!(o.grad, grad)
         
         if o.tracing
             if o.reuse
@@ -126,14 +127,14 @@ function compute_compliance(cell_comp::CuVector{T}, grad, cell_dofs, Kes, u,
     args = (cell_comp, grad, cell_dofs, Kes, u, black, white, varind, x, penalty, xmin)
     callkernel(dev, comp_kernel1, args)
     CUDAdrv.synchronize(ctx)
-    obj = compute_obj(cell_comp, x, varind, black, white, xmin)
+    obj = compute_obj(cell_comp, x, varind, black, white, penalty, xmin)
 
     return obj
 end
 
 # CUDA kernels
-function comp_kernel1(cell_comp::CuVector{T}, grad, cell_dofs, Kes, u, 
-            black, white, varind, x, penalty, xmin) where {N, T, TV<:SVector{N, T}}
+function comp_kernel1(cell_comp::AbstractVector{T}, grad, cell_dofs, Kes, u, 
+                        black, white, varind, x, penalty, xmin) where {T}
 
     i = @thread_global_index()
     offset = @total_threads()
@@ -150,9 +151,9 @@ function comp_kernel1(cell_comp::CuVector{T}, grad, cell_dofs, Kes, u,
             end
         end
         if !(black[i] || white[i])
-            #d = ForwardDiff.Dual{T}(x[varind[i]], one(T))
-            #p = density(penalty(d), xmin)
-            grad[varind[i]] = cell_comp[i] #-p.partials[1] * cell_comp[i]
+            d = ForwardDiff.Dual{T}(x[varind[i]], one(T))
+            p = density(penalty(d), xmin)
+            grad[varind[i]] = -p.partials[1] * cell_comp[i]
         end
 
         i += offset
@@ -160,20 +161,22 @@ function comp_kernel1(cell_comp::CuVector{T}, grad, cell_dofs, Kes, u,
     return
 end
 
-function compute_obj(cell_comp::AbstractVector{T}, x, varind, black, white, xmin, ::Val{blocksize} = Val(80), ::Val{threads} = Val(256)) where {T, blocksize, threads}
+function compute_obj(cell_comp::AbstractVector{T}, x, varind, black, white, penalty, xmin, ::Val{blocksize} = Val(80), ::Val{threads} = Val(256)) where {T, blocksize, threads}
     result = similar(cell_comp, T, (blocksize,))
-    args = (result, cell_comp, x, varind, black, white, xmin, Val(threads))
-    gpu_call(comp_kernel2, cell_comp, args, ((blocksize,), (threads,)))
-	reduce(+, Array(result))
+    args = (result, cell_comp, x, varind, black, white, penalty, xmin, Val(threads))
+    @cuda blocks = blocksize threads = threads comp_kernel2(args...)
+    CUDAnative.synchronize()
+    obj = reduce(+, Array(result))
+    return obj
 end
 
-function comp_kernel2(result, cell_comp::AbstractVector{T}, x, varind, black, white, xmin, ::Val{LMEM}) where {T, LMEM}
+function comp_kernel2(result, cell_comp::AbstractVector{T}, x, varind, black, white, penalty, xmin, ::Val{LMEM}) where {T, LMEM}
     i = @thread_global_index()
     obj = zero(T)
     # # Loop sequentially over chunks of input vector
 	offset = @total_threads()
     @inbounds while i <= length(cell_comp)
-        obj += w_comp(cell_comp[i], x[varind[i]], black[i], white[i], xmin)
+        obj += w_comp(cell_comp[i], x[varind[i]], black[i], white[i], penalty, xmin)
         i += offset
     end
 
@@ -185,20 +188,20 @@ function comp_kernel2(result, cell_comp::AbstractVector{T}, x, varind, black, wh
 
     offset = @total_threads_per_block() ÷ 2
     @inbounds while offset > 0
-        if (local_index < offset)
-            tmp_local[local_index + 1] += tmp_local[local_index + offset + 1]
+        if (local_index <= offset)
+            tmp_local[local_index] += tmp_local[local_index + offset]
         end
 		sync_threads()
         offset = offset ÷ 2
     end
-    if local_index == 0
+    if local_index == 1
         @inbounds result[@block_index()] = tmp_local[1]
     end
 
     return
 end
 
-function w_comp(comp::T, x, black, white, xmin) where {T}
+@inline function w_comp(comp::T, x, black, white, penalty, xmin) where {T}
     return ifelse(black, comp,
 		   ifelse(white, xmin * comp, 
 			       	     (d = ForwardDiff.Dual{T}(x, one(T));

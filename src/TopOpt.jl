@@ -3,7 +3,7 @@ module TopOpt
 using LinearAlgebra, Statistics
 using Reexport, Parameters, Setfield
 @reexport using TopOptProblems, Optim, MMA, LineSearches
-using JuAFEM, StaticArrays, CuArrays, CUDAnative
+using JuAFEM, StaticArrays, CuArrays, CUDAnative, GPUArrays
 using CUDAdrv: CUDAdrv
 using ForwardDiff, IterativeSolvers#, Preconditioners
 

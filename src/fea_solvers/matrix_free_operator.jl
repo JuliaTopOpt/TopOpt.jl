@@ -61,7 +61,6 @@ function mul!(y::TV, A::MatrixFreeOperator, x::TV) where {TV <: CuArrays.CuVecto
     T = eltype(y)
     nels = length(A.elementinfo.Kes)
     ndofs = length(A.elementinfo.fixedload)
-    dofspercell = size(A.elementinfo.Kes[1], 1)
     
     @unpack Kes, fes, metadata, black, white, varind = A.elementinfo
     @unpack cell_dofs, dof_cells, dof_cells_offset = metadata

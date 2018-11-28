@@ -27,7 +27,7 @@ end
 
 function callkernel(dev, kernel, args)
     blocks, threads = getvalidconfig(dev, kernel, args)
-    @show blocks, threads
+    #@show blocks, threads
     @cuda blocks=blocks threads=threads kernel(args...)
 
     return
