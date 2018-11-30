@@ -12,6 +12,8 @@ struct VolConstr{T, dim, TI, TP<:StiffnessTopOptProblem{dim, T}, TS<:AbstractFEA
     tracing::Bool
 	topopt_trace::TopOptTrace{T,TI}
 end
+whichdevice(v::VolConstr) = whichdevice(v.cell_volumes)
+
 function VolConstr(problem::StiffnessTopOptProblem{dim, T}, solver::AbstractFEASolver, volume_fraction::T, ::Type{TI} = Int; tracing = true) where {dim, T, TI}
     cellvalues = solver.elementinfo.cellvalues
     dh = problem.ch.dh

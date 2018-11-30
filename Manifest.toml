@@ -155,6 +155,14 @@ repo-url = "https://github.com/JuliaGPU/GPUArrays.jl.git"
 uuid = "0c68f7d7-f131-5f86-a1c3-88cf8149b2d7"
 version = "0.6.0+"
 
+[[GPUUtils]]
+deps = ["CUDAdrv", "CUDAnative", "CuArrays", "GPUArrays", "InteractiveUtils"]
+git-tree-sha1 = "5939f612f03af66cba8a3185eb372e1616cc7e96"
+repo-rev = "master"
+repo-url = "https://github.com/mohamed82008/GPUUtils"
+uuid = "b00d8864-7981-5727-8659-fd9f83287331"
+version = "0.0.0"
+
 [[InpParser]]
 deps = ["JuAFEM", "SparseArrays", "Test"]
 git-tree-sha1 = "4952174b80d1676888cda72b84c0ab20c6d2bb57"

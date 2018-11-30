@@ -17,7 +17,9 @@ mutable struct StaticMatrixFreeDisplacementSolver{T, dim, TEInfo<:ElementFEAInfo
     preconditioner_initialized::Base.RefValue{Bool}
 end
 
-function StaticMatrixFreeDisplacementSolver(sp::StiffnessTopOptProblem{dim, T};
+StaticMatrixFreeDisplacementSolver(sp, args...; kwargs...) = StaticMatrixFreeDisplacementSolver(whichdevice(sp), sp, args...; kwargs...)
+
+function StaticMatrixFreeDisplacementSolver(::CPU, sp::StiffnessTopOptProblem{dim, T};
         xmin=T(1)/1000, 
         cg_max_iter=700, 
         tol=xmin, 
@@ -56,6 +58,46 @@ function StaticMatrixFreeDisplacementSolver(sp::StiffnessTopOptProblem{dim, T};
     return StaticMatrixFreeDisplacementSolver(rawelementinfo, sp, f, meandiag, u, vars, 
         penalty, prev_penalty, xmin, cg_max_iter, tol, cg_statevars, 
         preconditioner, Ref(false))
+end
+
+function StaticMatrixFreeDisplacementSolver(::GPU, sp::StiffnessTopOptProblem{dim, T};
+        xmin=T(1)/1000, 
+        cg_max_iter=700, 
+        tol=xmin, 
+        _penalty=GPUPowerPenalty{T}(1), 
+        prev_penalty=copy(penalty),
+        preconditioner=identity, 
+        quad_order=2) where {dim, T}
+    
+    penalty = cu(_penalty)
+    prev_penalty = @set prev_penalty.p = T(NaN)
+    rawelementinfo = ElementFEAInfo(sp, quad_order, Val{:Static})
+    if !(T === BigFloat)
+        m = size(eltype(rawelementinfo.Kes), 1)
+        if eltype(rawelementinfo.Kes) <: Symmetric
+            newKes = Symmetric{T, SMatrix{m, m, T, m^2}}[]
+            resize!(newKes, length(rawelementinfo.Kes))
+            map!(x->Symmetric(SMatrix(x.data)), newKes, rawelementinfo.Kes)
+        else
+            newKes = SMatrix{m, m, T, m^2}[]
+            resize!(newKes, length(rawelementinfo.Kes))
+            map!(SMatrix, newKes, rawelementinfo.Kes)
+        end
+    else
+        newKes = deepcopy(rawelementinfo.Kes)
+    end
+    # cload and cellvalues are shared since they are not overwritten
+    elementinfo = @set rawelementinfo.Kes = newKes
+    elementinfo = @set elementinfo.fes = deepcopy(elementinfo.fes)
+    meandiag = matrix_free_apply2Kes!(elementinfo, rawelementinfo, sp)
+
+    u = zeros(T, ndofs(sp.ch.dh))
+    f = similar(u)
+    vars = fill(T(1), getncells(sp.ch.dh.grid) - sum(sp.black) - sum(sp.white))
+    operator = MatrixFreeOperator(elementinfo, meandiag, sp, vars, xmin, penalty)
+    cg_statevars = CGStateVariables{eltype(u),typeof(u)}(copy(u), similar(u), similar(u))
+
+    return StaticMatrixFreeDisplacementSolver(cu(rawelementinfo), sp, CuArray(f), meandiag, CuArray(u), CuArray(vars), penalty, prev_penalty, xmin, cg_max_iter, tol, cu(cg_statevars), preconditioner, Ref(false))
 end
 
 function buildoperator(solver::StaticMatrixFreeDisplacementSolver)
@@ -125,7 +167,9 @@ end
 @eval @define_cu(ElementFEAInfo, $(setdiff(fieldnames(ElementFEAInfo), [:cellvalues, :facevalues])...))
 @eval @define_cu(TopOptProblems.Metadata, $(fieldnames(TopOptProblems.Metadata)...))
 @define_cu(StaticMatrixFreeDisplacementSolver, :f, :problem, :vars, :cg_statevars, :elementinfo, :penalty, :prev_penalty, :u)
-@define_cu(ConstraintHandler, :values, :prescribed_dofs)
+@define_cu(JuAFEM.ConstraintHandler, :values, :prescribed_dofs, :dh)
+@define_cu(JuAFEM.DofHandler, :grid)
+@define_cu(JuAFEM.Grid, :cells)
 for T in (PointLoadCantilever, HalfMBB, LBeam, TieBeam, InpStiffness)
     @eval @define_cu($T, :ch)
 end

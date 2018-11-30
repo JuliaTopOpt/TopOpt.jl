@@ -1,6 +1,7 @@
 abstract type AbstractFEASolver end
 
 abstract type AbstractDisplacementSolver <: AbstractFEASolver end
+whichdevice(s::AbstractDisplacementSolver) = whichdevice(s.u)
 
 mutable struct DirectDisplacementSolver{T, dim, TS<:StiffnessTopOptProblem{dim, T}, TK1<:AbstractMatrix{T}, Tf1<:AbstractVector{T}, TK2<:AbstractMatrix{T}, Tf2<:AbstractVector{T}, TKes<:AbstractVector{TK2}, Tfes<:AbstractVector{Tf2}, Tcload<:AbstractVector{T}, TP<:AbstractPenalty{T}, refshape, TCV<:CellValues{dim, T, refshape}, dimless1, TFV<:FaceValues{dimless1, T, refshape}} <: AbstractDisplacementSolver
     problem::TS

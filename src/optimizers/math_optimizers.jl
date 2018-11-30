@@ -18,6 +18,7 @@ mutable struct MMAOptimizer{T, TM<:MMAModel{T}, TO, TSO, TObj, TConstr, TW} <: A
     g_converged::Bool
     workspace::TW
 end
+whichdevice(o::MMAOptimizer) = o.obj
 
 function MMAOptimizer(obj::AbstractObjective{T}, constr, opt=MMA.MMA87(), subopt=Optim.ConjugateGradient(), suboptions=Optim.Options(x_tol = sqrt(eps(T)), f_tol = zero(T), g_tol = zero(T));
     maxiter = 100,

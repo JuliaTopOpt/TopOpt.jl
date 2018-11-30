@@ -14,6 +14,7 @@ mutable struct AdaptiveSIMP{T,TO,TP,TFC} <: AbstractSIMP
     toltrace::Vector{T}
     progresstrace::Vector{T}
 end
+whichdevice(a::AdaptiveSIMP) = whichdevice(a.simp)
 
 function AdaptiveSIMP(simp::SIMP{T}, ::Type{Val{filtering}}=Val{false}; 
     pstart = T(1), 

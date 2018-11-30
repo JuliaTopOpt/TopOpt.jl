@@ -13,7 +13,12 @@ mutable struct ComplianceObj{T, TI<:Integer, TV<:AbstractArray, TSP<:StiffnessTo
     fevals::TI
     logarithm::Bool
 end
-function ComplianceObj(problem::StiffnessTopOptProblem{dim, T}, solver::AbstractDisplacementSolver, ::Type{TI}=Int; rmin = T(0), filtering = true, tracing = false, logarithm = false) where {dim, T, TI}
+whichdevice(c::ComplianceObj) = c.cell_comp
+
+function ComplianceObj(problem, solver::AbstractDisplacementSolver, args...; kwargs...)
+    ComplianceObj(whichdevice(solver), problem, solver, args...; kwargs...)
+end
+function ComplianceObj(::CPU, problem::StiffnessTopOptProblem{dim, T}, solver::AbstractDisplacementSolver, ::Type{TI}=Int; rmin = T(0), filtering = true, tracing = false, logarithm = false) where {dim, T, TI}
     cheqfilter = CheqFilter{filtering}(solver, rmin)
     comp = T(0)
     cell_comp = zeros(T, getncells(problem.ch.dh.grid))
@@ -23,8 +28,18 @@ function ComplianceObj(problem::StiffnessTopOptProblem{dim, T}, solver::Abstract
     fevals = TI(0)
     return ComplianceObj(problem, solver, cheqfilter, comp, cell_comp, grad, tracing, topopt_trace, reuse, fevals, logarithm)
 end
+function ComplianceObj(::GPU, problem::StiffnessTopOptProblem{dim, T}, solver::AbstractDisplacementSolver, ::Type{TI}=Int; rmin = T(0), filtering = true, tracing = false, logarithm = false) where {dim, T, TI}
+    cheqfilter = CheqFilter{filtering}(solver, rmin)
+    comp = T(0)
+    cell_comp = zeros(CuVector{T}, getncells(problem.ch.dh.grid))
+    grad = CuVector(fill(T(NaN), length(cell_comp) - sum(problem.black) - sum(problem.white)))
+    topopt_trace = TopOptTrace{T,TI}()
+    reuse = false
+    fevals = TI(0)
+    return ComplianceObj(problem, solver, cheqfilter, comp, cell_comp, grad, tracing, topopt_trace, reuse, fevals, logarithm)
+end
 
-@define_cu(ComplianceObj, :solver, :cell_comp, :grad)
+@define_cu(ComplianceObj, :solver, :cell_comp, :grad, :cheqfilter)
 
 getsolver(obj::AbstractObjective) = obj.solver
 getpenalty(obj::AbstractObjective) = getpenalty(getsolver(obj))
@@ -76,7 +91,7 @@ function (o::ComplianceObj{T})(x, grad) where {T}
                 o.reuse = false
             else
                 push!(o.topopt_trace.c_hist, obj)
-                if x isa CuArray
+                if x isa GPUArray
                     push!(o.topopt_trace.x_hist, Array(x))
                 else
                     push!(o.topopt_trace.x_hist, copy(x))

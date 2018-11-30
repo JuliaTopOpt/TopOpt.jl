@@ -1,23 +1,25 @@
 module TopOpt
 
 using LinearAlgebra, Statistics
-using Reexport, Parameters, Setfield
+using Reexport, Parameters, Setfield, GPUUtils
 @reexport using TopOptProblems, Optim, MMA, LineSearches
 using JuAFEM, StaticArrays, CuArrays, CUDAnative, GPUArrays
 using CUDAdrv: CUDAdrv
 using ForwardDiff, IterativeSolvers#, Preconditioners
 
 using TimerOutputs
+import GPUUtils: whichdevice
 
 CuArrays.allowscalar(false)
 const to = TimerOutput()
 const DEBUG = Base.RefValue(false)
+const dev = CUDAdrv.device()
+const ctx = CUDAdrv.CuContext(dev)
 
 #norm(a) = sqrt(dot(a,a))
 
 # Utilities
 include("utils.jl")
-include("gpu_utils.jl")
 
 # Trace definition
 include("traces.jl")

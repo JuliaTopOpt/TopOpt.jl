@@ -4,6 +4,7 @@ struct LinearElasticityResult{T, TV}
     comp::T
     u::TV
 end
+whichdevice(r::LinearElasticityResult) = whichdevice(r.u)
 
 function simulate(problem::StiffnessTopOptProblem, topology = ones(getncells(TopOptProblems.getdh(problem).grid)); round = true, hard = true, xmin = 0.001)
     if round 
