@@ -60,46 +60,6 @@ function StaticMatrixFreeDisplacementSolver(::CPU, sp::StiffnessTopOptProblem{di
         preconditioner, Ref(false))
 end
 
-function StaticMatrixFreeDisplacementSolver(::GPU, sp::StiffnessTopOptProblem{dim, T};
-        xmin=T(1)/1000, 
-        cg_max_iter=700, 
-        tol=xmin, 
-        _penalty=GPUPowerPenalty{T}(1), 
-        prev_penalty=copy(penalty),
-        preconditioner=identity, 
-        quad_order=2) where {dim, T}
-    
-    penalty = cu(_penalty)
-    prev_penalty = @set prev_penalty.p = T(NaN)
-    rawelementinfo = ElementFEAInfo(sp, quad_order, Val{:Static})
-    if !(T === BigFloat)
-        m = size(eltype(rawelementinfo.Kes), 1)
-        if eltype(rawelementinfo.Kes) <: Symmetric
-            newKes = Symmetric{T, SMatrix{m, m, T, m^2}}[]
-            resize!(newKes, length(rawelementinfo.Kes))
-            map!(x->Symmetric(SMatrix(x.data)), newKes, rawelementinfo.Kes)
-        else
-            newKes = SMatrix{m, m, T, m^2}[]
-            resize!(newKes, length(rawelementinfo.Kes))
-            map!(SMatrix, newKes, rawelementinfo.Kes)
-        end
-    else
-        newKes = deepcopy(rawelementinfo.Kes)
-    end
-    # cload and cellvalues are shared since they are not overwritten
-    elementinfo = @set rawelementinfo.Kes = newKes
-    elementinfo = @set elementinfo.fes = deepcopy(elementinfo.fes)
-    meandiag = matrix_free_apply2Kes!(elementinfo, rawelementinfo, sp)
-
-    u = zeros(T, ndofs(sp.ch.dh))
-    f = similar(u)
-    vars = fill(T(1), getncells(sp.ch.dh.grid) - sum(sp.black) - sum(sp.white))
-    operator = MatrixFreeOperator(elementinfo, meandiag, sp, vars, xmin, penalty)
-    cg_statevars = CGStateVariables{eltype(u),typeof(u)}(copy(u), similar(u), similar(u))
-
-    return StaticMatrixFreeDisplacementSolver(cu(rawelementinfo), sp, CuArray(f), meandiag, CuArray(u), CuArray(vars), penalty, prev_penalty, xmin, cg_max_iter, tol, cu(cg_statevars), preconditioner, Ref(false))
-end
-
 function buildoperator(solver::StaticMatrixFreeDisplacementSolver)
     penalty = getpenalty(solver)
     @unpack elementinfo, meandiag, problem, vars, xmin = solver

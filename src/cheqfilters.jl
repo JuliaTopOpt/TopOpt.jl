@@ -1,41 +1,5 @@
 abstract type AbstractCheqFilter end
 
-struct RaggedArray{TO, TV}
-    offsets::TO
-    values::TV
-end
-whichdevice(ra::RaggedArray) = whichdevice(ra.offsets)
-
-function RaggedArray(vv::Vector{Vector{T}}) where T
-    offsets = [1; 1 .+ accumulate(+, collect(length(v) for v in vv))]
-    values = zeros(T, offsets[end]-1)
-    for (i, v) in enumerate(vv)
-        r = offsets[i]:offsets[i+1]-1
-        values[r] .= v
-    end
-    RaggedArray(offsets, values)
-end
-@define_cu(RaggedArray, :offsets, :values)
-
-function Base.getindex(ra::RaggedArray, i)
-    @assert 1 <= j < length(ra.offsets)
-    r = ra.offsets[i]:ra.offsets[i+1]-1
-    @assert 1 <= r[1] && r[end] <= length(ra.values)
-    return @view ra.values[r]
-end
-function Base.getindex(ra::RaggedArray, i, j)
-    @assert 1 <= j < length(ra.offsets)
-    r = ra.offsets[j]:ra.offsets[j+1]-1
-    @assert 1 <= i <= length(r)
-    return ra.values[r[i]]
-end
-function Base.setindex!(ra::RaggedArray, v, i, j)
-    @assert 1 <= j < length(ra.offsets)
-    r = ra.offsets[j]:ra.offsets[j+1]-1
-    @assert 1 <= i <= length(r)
-    ra.values[r[i]] = v
-end
-
 struct FilterMetadata{TN,TW}
     cell_neighbouring_nodes::TN
     cell_node_weights::TW
@@ -43,9 +7,8 @@ end
 @define_cu(FilterMetadata, :cell_neighbouring_nodes, :cell_node_weights)
 whichdevice(m::FilterMetadata) = whichdevice(m.cell_neighbouring_nodes)
 
-struct CheqFilter{filtering, T, TV<:AbstractVector{T}, TM<:FilterMetadata, TS<:AbstractFEASolver} <: AbstractCheqFilter
+struct CheqFilter{filtering, T, TV<:AbstractVector{T}, TM<:FilterMetadata} <: AbstractCheqFilter
     filtering::Val{filtering}
-    solver::TS
     metadata::TM
     rmin::T
     nodal_grad::TV
@@ -72,8 +35,8 @@ function get_neighbour_info(problem, rmin::T) where {T}
     @unpack black, white, varind = problem
     dh = problem.ch.dh
     grid = dh.grid
-    @unpack node_cells, node_cells_offset = problem.metadata
-    TI = eltype(node_cells[1])
+    @unpack node_cells = problem.metadata
+    TI = eltype(node_cells.offsets)
 
     all_neighbouring_nodes = Vector{TI}[]
     all_node_weights = Vector{T}[]
@@ -107,9 +70,9 @@ function get_neighbour_info(problem, rmin::T) where {T}
                 if dist < rmin
                     push!(neighbouring_nodes, n)
                     push!(node_weights, max(rmin-dist, zero(T)))
-                    r = node_cells_offset[n] : node_cells_offset[n+1] - 1
-                    for j in r
-                        next_cell_id = node_cells[j][1]
+                    n_cells = node_cells[n]
+                    for c in n_cells
+                        next_cell_id = c[1]
                         if !(next_cell_id in visited_cells)
                             push!(cells_to_traverse, next_cell_id)
                             push!(visited_cells, next_cell_id)
@@ -128,7 +91,11 @@ end
 CheqFilter{true}(args...) = CheqFilter(Val(true), args...)
 CheqFilter{false}(args...) = CheqFilter(Val(false), args...)
 
-function CheqFilter(::Val{true}, solver::TS, rmin::T, ::Type{TI}=Int) where {T, TI<:Integer, TS<:AbstractFEASolver}
+function CheqFilter(::Val{filtering}, solver, args...) where {filtering}
+    CheqFilter(Val(filtering), whichdevice(solver), solver, args...)
+end
+
+function CheqFilter(::Val{true}, ::CPU, solver::TS, rmin::T, ::Type{TI}=Int) where {T, TI<:Integer, TS<:AbstractFEASolver}
     metadata = FilterMetadata(solver, rmin, TI)
     TM = typeof(metadata)
     problem = solver.problem
@@ -145,26 +112,51 @@ function CheqFilter(::Val{true}, solver::TS, rmin::T, ::Type{TI}=Int) where {T, 
 
     cell_weights = zeros(T, nnodes)
     
-    return CheqFilter(Val(true), solver, metadata, rmin, nodal_grad, last_grad, cell_weights)
+    return CheqFilter(Val(true), metadata, rmin, nodal_grad, last_grad, cell_weights)
 end
 
-function CheqFilter(::Val{false}, solver::TS, rmin::T, ::Type{TI}=Int) where {T, TS<:AbstractFEASolver, TI<:Integer}
+function CheqFilter(::Val{false}, ::CPU, solver::TS, rmin::T, ::Type{TI}=Int) where {T, TS<:AbstractFEASolver, TI<:Integer}
     metadata = FilterMetadata(T, TI)
     nodal_grad = T[]
     last_grad = T[]
     cell_weights = T[]
-    return CheqFilter(Val(false), solver, metadata, TI(0), nodal_grad, last_grad, cell_weights)
+    return CheqFilter(Val(false), metadata, TI(0), nodal_grad, last_grad, cell_weights)
 end
 
-function (cf::CheqFilter{true, T})(grad) where {T}
-    @unpack solver, nodal_grad, cell_weights, metadata = cf
-    @unpack vars, problem, elementinfo = solver
-    cell_volumes = elementinfo.cellvolumes
+function (cf::CheqFilter{true, T})(grad, vars, elementinfo) where {T}
+    @unpack nodal_grad, cell_weights, metadata = cf
+    @unpack black, white, varind, cellvolumes, cells = elementinfo
     @unpack cell_neighbouring_nodes, cell_node_weights = metadata
-    @unpack black, white, varind = metadata
-    cells = problem.ch.dh.grid.cells
+    node_cells = elementinfo.metadata.node_cells
 
-    update_nodal_grad!(nodal_grad, cells, )
+    update_nodal_grad!(nodal_grad, node_cells, cell_weights, cells, cellvolumes, black, white, varind, grad)
+    normalize_grad!(nodal_grad, cell_weights)
+    update_grad!(grad, black, white, varind, cell_neighbouring_nodes, cell_node_weights, nodal_grad)
+end
+
+(cf::CheqFilter{false})(args...) = nothing
+
+function update_nodal_grad!(nodal_grad::Vector, node_cells, cell_weights, cells, cellvolumes, black, white, varind, grad)
+    T = eltype(nodal_grad)
+    for n in 1:length(nodal_grad)
+        nodal_grad[n] = zero(T)
+        cell_weights[n] = zero(T)
+        r = node_cells.offsets[n]:node_cells.offsets[n+1]-1
+        for i in r
+            c = node_cells.values[i][1]
+            if black[c] || white[c]
+                continue
+            end
+            ind = varind[c]
+            w = cellvolumes[c]
+            cell_weights[n] += w
+            nodal_grad[n] += w * grad[ind]
+        end
+    end
+    return
+    #=
+function update_nodal_grad!(nodal_grad::Vector, cell_weights, cells, cellvolumes, black, white, varind, grad)
+    T = eltype(nodal_grad)
     nodal_grad .= zero(T)
     cell_weights .= 0
     @inbounds for i in 1:length(cells)
@@ -174,18 +166,76 @@ function (cf::CheqFilter{true, T})(grad) where {T}
         nodes = cells[i].nodes
         for n in nodes
             ind = varind[i]
-            w = cell_volumes[i]
+            w = cellvolumes[i]
             cell_weights[n] += w
             nodal_grad[n] += w*grad[ind]
         end
     end
+    =#
+end
+
+function update_nodal_grad!(nodal_grad::CuVector, node_cells, args...)
+    T = eltype(nodal_grad)
+    allargs = (nodal_grad, node_cells.offsets, node_cells.values, args...)
+    callkernel(dev, cheq_kernel1, allargs)
+    CUDAdrv.synchronize(ctx)
+    return
+end
+
+function cheq_kernel1(nodal_grad, node_cells_offsets, node_cells_values, cell_weights, 
+        cells, cellvolumes, black, white, varind, grad)
+    T = eltype(nodal_grad)
+    n = @thread_global_index()
+    offset = @total_threads()
+    while n <= length(nodal_grad)
+        nodal_grad[n] = zero(T)
+        cell_weights[n] = zero(T)
+        r = node_cells_offsets[n]:node_cells_offsets[n+1]-1
+        for i in r
+            c = node_cells_values[i][1]
+            if black[c] || white[c]
+                continue
+            end
+            ind = varind[c]
+            w = cellvolumes[c]
+            cell_weights[n] += w
+            nodal_grad[n] += w * grad[ind]
+        end
+        n += offset
+    end
+end
+
+
+function normalize_grad!(nodal_grad::Vector, cell_weights)
     for n in 1:length(nodal_grad)
         if cell_weights[n] > 0
             nodal_grad[n] /= cell_weights[n]
         end
     end
-    
-    @inbounds for i in 1:length(cells)
+end
+function normalize_grad!(nodal_grad::CuVector, cell_weights)
+    T = eltype(nodal_grad)
+    args = (nodal_grad, cell_weights)
+    callkernel(dev, cheq_kernel2, args)
+    CUDAdrv.synchronize(ctx)
+    return
+end
+function cheq_kernel2(nodal_grad, cell_weights)
+    T = eltype(nodal_grad)
+    n = @thread_global_index()
+    offset = @total_threads()
+    while n <= length(nodal_grad)
+        w = cell_weights[n]
+        w = ifelse(w > 0, w, one(T))
+        nodal_grad[n] /= w
+        n += offset
+    end
+    return
+end
+
+
+function update_grad!(grad::Vector, black, white, varind, cell_neighbouring_nodes, cell_node_weights, nodal_grad)
+    @inbounds for i in 1:length(black)
         if black[i] || white[i]
             continue
         end
@@ -201,4 +251,35 @@ function (cf::CheqFilter{true, T})(grad) where {T}
     return
 end
 
-(cf::CheqFilter{false})(grad) = nothing
+function update_grad!(grad::CuVector, black, white, varind, cell_neighbouring_nodes, cell_node_weights, nodal_grad)
+    T = eltype(grad)
+    allargs = (grad, black, white, varind, cell_neighbouring_nodes.offsets, cell_neighbouring_nodes.values, cell_node_weights.values, nodal_grad)
+    callkernel(dev, cheq_kernel3, allargs)
+    CUDAdrv.synchronize(ctx)
+    return
+end
+function cheq_kernel3(grad, black, white, varind, cell_neighbouring_nodes_offsets, cell_neighbouring_nodes_values, cell_node_weights_values, nodal_grad)
+    T = eltype(nodal_grad)
+    i = @thread_global_index()
+    offset = @total_threads()
+    while i <= length(black)
+        if black[i] || white[i]
+            continue
+        end
+        ind = varind[i]
+        r = cell_neighbouring_nodes_offsets[ind]:cell_neighbouring_nodes_offsets[ind+1]-1
+        length(r) == 0 && continue
+        grad[ind] = zero(T)
+        sum_weights = zero(T)
+        for linear_ind in r
+            w = cell_node_weights_values[linear_ind]
+            sum_weights += w
+            node_ind = cell_neighbouring_nodes_values[linear_ind]
+            grad[ind] += nodal_grad[node_ind] * w
+        end
+        grad[ind] /= sum_weights
+        i += offset
+    end
+
+    return
+end

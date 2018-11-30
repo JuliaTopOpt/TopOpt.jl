@@ -45,7 +45,7 @@ function (b::BESO{TO, TC, T})(x0=copy(b.obj.solver.vars)) where {TO<:ComplianceO
     @unpack sens, old_sens, er, tol, maxiter = b
     @unpack obj_trace, topology, sens_tol, vars = b    
     @unpack varind, black, white = b.obj.problem
-    @unpack volume_fraction, total_volume, cell_volumes = b.constr
+    @unpack volume_fraction, total_volume, cellvolumes = b.constr
     V = volume_fraction
 
     # Initialize the topology
@@ -61,7 +61,7 @@ function (b::BESO{TO, TC, T})(x0=copy(b.obj.solver.vars)) where {TO<:ComplianceO
     end
 
     # Calculate the current volume fraction
-    true_vol = vol = dot(topology, cell_volumes)/total_volume
+    true_vol = vol = dot(topology, cellvolumes)/total_volume
     # Main loop
     change = T(1)
     iter = 0
@@ -88,13 +88,13 @@ function (b::BESO{TO, TC, T})(x0=copy(b.obj.solver.vars)) where {TO<:ComplianceO
                     vars[varind[i]] = topology[i]
                 end
             end
-            if dot(topology, cell_volumes) - vol * total_volume > 0
+            if dot(topology, cellvolumes) - vol * total_volume > 0
                 l1 = th
             else
                 l2 = th
             end
         end
-        true_vol = dot(topology, cell_volumes)/total_volume
+        true_vol = dot(topology, cellvolumes)/total_volume
         if iter >= 10
             l = sum(@view obj_trace[1:5])
             h = sum(@view obj_trace[6:10])

@@ -19,7 +19,7 @@ function ComplianceObj(problem, solver::AbstractDisplacementSolver, args...; kwa
     ComplianceObj(whichdevice(solver), problem, solver, args...; kwargs...)
 end
 function ComplianceObj(::CPU, problem::StiffnessTopOptProblem{dim, T}, solver::AbstractDisplacementSolver, ::Type{TI}=Int; rmin = T(0), filtering = true, tracing = false, logarithm = false) where {dim, T, TI}
-    cheqfilter = CheqFilter{filtering}(solver, rmin)
+    cheqfilter = CheqFilter(Val(filtering), solver, rmin)
     comp = T(0)
     cell_comp = zeros(T, getncells(problem.ch.dh.grid))
     grad = fill(T(NaN), length(cell_comp) - sum(problem.black) - sum(problem.white))
@@ -29,7 +29,7 @@ function ComplianceObj(::CPU, problem::StiffnessTopOptProblem{dim, T}, solver::A
     return ComplianceObj(problem, solver, cheqfilter, comp, cell_comp, grad, tracing, topopt_trace, reuse, fevals, logarithm)
 end
 function ComplianceObj(::GPU, problem::StiffnessTopOptProblem{dim, T}, solver::AbstractDisplacementSolver, ::Type{TI}=Int; rmin = T(0), filtering = true, tracing = false, logarithm = false) where {dim, T, TI}
-    cheqfilter = CheqFilter{filtering}(solver, rmin)
+    cheqfilter = cu(CheqFilter(Val(filtering), solver, rmin))
     comp = T(0)
     cell_comp = zeros(CuVector{T}, getncells(problem.ch.dh.grid))
     grad = CuVector(fill(T(NaN), length(cell_comp) - sum(problem.black) - sum(problem.white)))
@@ -47,30 +47,26 @@ setpenalty!(obj::AbstractObjective, p) = setpenalty!(getsolver(obj), p)
 getprevpenalty(obj::AbstractObjective) = getprevpenalty(getsolver(obj))
 
 function (o::ComplianceObj{T})(x, grad) where {T}
+    @unpack cell_comp, solver, tracing, cheqfilter, topopt_trace = o
+    @unpack elementinfo, u, xmin = solver
+    @unpack metadata, Kes, black, white, varind = elementinfo
+    @unpack cell_dofs = metadata
+
     @timeit to "Eval obj and grad" begin
         #if o.solver.vars ≈ x && getpenalty(o).p ≈ getprevpenalty(o).p
         #    grad .= o.grad
         #    return o.comp
         #end
 
-        penalty = getpenalty(o)
-        cell_dofs = o.solver.elementinfo.metadata.cell_dofs
-        u = o.solver.u
-        cell_comp = o.cell_comp
-        Kes = o.solver.elementinfo.Kes
-        black = o.solver.elementinfo.black
-        white = o.solver.elementinfo.white
-        xmin = o.solver.xmin
-        varind = o.solver.elementinfo.varind
-
-        copyto!(o.solver.vars, x)
+        penalty = getpenalty(o)    
+        copyto!(solver.vars, x)
         if o.reuse
-            if !o.tracing
+            if !tracing
                 o.reuse = false
             end
         else
             o.fevals += 1
-            o.solver()
+            solver()
         end
         obj = compute_compliance(cell_comp, grad, cell_dofs, Kes, u, 
                             black, white, varind, x, penalty, xmin)
@@ -83,25 +79,25 @@ function (o::ComplianceObj{T})(x, grad) where {T}
             #scale!(grad, 1/length(cell_comp))
             #o.comp = obj
         end
-        #o.cheqfilter(grad)
+        cheqfilter(grad, x, elementinfo)
         copyto!(o.grad, grad)
         
         if o.tracing
             if o.reuse
                 o.reuse = false
             else
-                push!(o.topopt_trace.c_hist, obj)
+                push!(topopt_trace.c_hist, obj)
                 if x isa GPUArray
-                    push!(o.topopt_trace.x_hist, Array(x))
+                    push!(topopt_trace.x_hist, Array(x))
                 else
-                    push!(o.topopt_trace.x_hist, copy(x))
+                    push!(topopt_trace.x_hist, copy(x))
                 end
-                if length(o.topopt_trace.x_hist) == 1
-                    push!(o.topopt_trace.add_hist, 0)
-                    push!(o.topopt_trace.rem_hist, 0)
+                if length(topopt_trace.x_hist) == 1
+                    push!(topopt_trace.add_hist, 0)
+                    push!(topopt_trace.rem_hist, 0)
                 else
-                    push!(o.topopt_trace.add_hist, sum(o.topopt_trace.x_hist[end] .> o.topopt_trace.x_hist[end-1]))
-                    push!(o.topopt_trace.rem_hist, sum(o.topopt_trace.x_hist[end] .< o.topopt_trace.x_hist[end-1]))
+                    push!(topopt_trace.add_hist, sum(topopt_trace.x_hist[end] .> topopt_trace.x_hist[end-1]))
+                    push!(topopt_trace.rem_hist, sum(topopt_trace.x_hist[end] .< topopt_trace.x_hist[end-1]))
                 end
             end
         end

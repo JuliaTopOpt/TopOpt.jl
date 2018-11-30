@@ -47,7 +47,7 @@ function GESO(obj::ComplianceObj, constr::VolConstr; maxiter = 1000, tol = 0.001
     sens = zeros(T, nvars)
     old_sens = zeros(T, nvars)
     obj_trace = zeros(MVector{10, T})
-    var_volumes = constr.cell_volumes[.!black .& .!white]
+    var_volumes = constr.cellvolumes[.!black .& .!white]
     cum_var_volumes = zeros(T, nvars)
     order = zeros(Int, nvars)
     genotypes = trues(string_length, nvars)
@@ -194,7 +194,7 @@ function (b::GESO{TO, TC, T})(x0=copy(b.obj.solver.vars); seed=NaN) where {TO<:C
     @unpack string_length, genotypes, children, var_black = b
     @unpack cum_var_volumes, var_volumes, order = b
     @unpack varind, black, white = b.obj.problem
-    @unpack total_volume, cell_volumes, design_volume = b.constr
+    @unpack total_volume, cellvolumes, design_volume = b.constr
     @unpack fixed_volume, volume_fraction = b.constr
     V = volume_fraction
 

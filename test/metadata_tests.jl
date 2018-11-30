@@ -86,13 +86,12 @@
                  8  6 16 14]
     @test problem.metadata.cell_dofs == cell_dofs
 
-    offsets = problem.metadata.dof_cells_offset
     dof_cells = problem.metadata.dof_cells
     cell_dofs = problem.metadata.cell_dofs
     for i in 1:JuAFEM.ndofs(problem.ch.dh)
-        r = offsets[i] : offsets[i+1] - 1
-        for j in r
-            (cellid, localdof) = dof_cells[j]
+        d_cells = dof_cells[i]
+        for c in d_cells
+            (cellid, localdof) = c
             @test i == cell_dofs[localdof, cellid]
         end
     end

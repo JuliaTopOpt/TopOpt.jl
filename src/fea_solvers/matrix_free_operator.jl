@@ -26,7 +26,7 @@ function mul!(y::TV, A::MatrixFreeOperator, x::TV) where {TV <: AbstractVector}
     dofspercell = size(A.elementinfo.Kes[1], 1)
 
     @unpack Kes, fes, metadata, black, white, varind = A.elementinfo
-    @unpack cell_dofs, dof_cells, dof_cells_offset = metadata
+    @unpack cell_dofs, dof_cells = metadata
     @unpack penalty, xmin, vars = A
     
     for i in 1:nels
@@ -48,9 +48,9 @@ function mul!(y::TV, A::MatrixFreeOperator, x::TV) where {TV <: AbstractVector}
 
     for i in 1:ndofs
         yi = zero(T)
-        r = dof_cells_offset[i] : dof_cells_offset[i+1]-1
-        for ind in r
-            k, m = dof_cells[ind]
+        d_cells = dof_cells[i]
+        for c in d_cells
+            k, m = c
             yi += fes[k][m]
         end
         y[i] = yi
@@ -64,14 +64,14 @@ function mul!(y::TV, A::MatrixFreeOperator, x::TV) where {TV <: CuArrays.CuVecto
     ndofs = length(A.elementinfo.fixedload)
     
     @unpack Kes, fes, metadata, black, white, varind = A.elementinfo
-    @unpack cell_dofs, dof_cells, dof_cells_offset = metadata
+    @unpack cell_dofs, dof_cells = metadata
     @unpack penalty, xmin, vars = A
 
     args1 = (fes, x, black, white, vars, varind, cell_dofs, Kes, xmin, penalty, nels)
     callkernel(dev, mul_kernel1, args1)
     CUDAdrv.synchronize(ctx)
     
-    args2 = (y, dof_cells_offset, dof_cells, fes, ndofs)
+    args2 = (y, dof_cells.offsets, dof_cells.values, fes, ndofs)
     callkernel(dev, mul_kernel2, args2)
     CUDAdrv.synchronize(ctx)
 
@@ -107,15 +107,15 @@ function mul_kernel1(fes::AbstractVector{TV}, x, black, white, vars, varind, cel
     return
 end
 
-function mul_kernel2(y, dof_cells_offset, dof_cells, fes, ndofs)
+function mul_kernel2(y, dof_cells_offsets, dof_cells_values, fes, ndofs)
     T = eltype(y)
     i = @thread_global_index()
     offset = @total_threads()
     @inbounds while i <= ndofs
         yi = zero(T)
-        r = dof_cells_offset[i] : dof_cells_offset[i+1]-1
+        r = dof_cells_offsets[i] : dof_cells_offsets[i+1]-1
         for ind in r
-            k, m = dof_cells[ind]
+            k, m = dof_cells_values[ind]
             yi += fes[k][m]
         end
         y[i] = yi
