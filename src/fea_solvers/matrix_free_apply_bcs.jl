@@ -7,7 +7,11 @@ function matrix_free_apply2Kes!(elementinfo::ElementFEAInfo{dim, T}, raw_element
     ch = problem.ch
     dof_cells = elementinfo.metadata.dof_cells
 
-    M = mapreduce(sumdiag, +, raw_KK, init=zero(T))
+    if eltype(KK) <: Symmetric
+        M = mapreduce(x->sumdiag(x.data), +, raw_KK, init=zero(T))
+    else
+        M = mapreduce(sumdiag, +, raw_KK, init=zero(T))
+    end
     #M = zero(T)
     #for i in 1:length(raw_KK)
     #    s = sumdiag(raw_KK[i])
@@ -256,8 +260,4 @@ function bc_kernel2(f::AbstractVector{T}, values, prescribed_dofs, applyzero, do
         ind += offset
     end
     return 
-end
-
-@generated function sumdiag(K::StaticMatrices{m,T}) where {m,T}
-    return reduce((ex1,ex2) -> :($ex1 + $ex2), [:(K[$j,$j]) for j in 1:m])
 end

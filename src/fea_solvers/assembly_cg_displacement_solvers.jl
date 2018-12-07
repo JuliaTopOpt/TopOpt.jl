@@ -28,7 +28,8 @@ function PCGDisplacementSolver(sp::StiffnessTopOptProblem{dim, T};
     u = zeros(T, ndofs(sp.ch.dh))
     vars = fill(T(NaN), getncells(sp.ch.dh.grid) - sum(sp.black) - sum(sp.white))
     varind = sp.varind
-    cg_statevars = CGStateVariables{eltype(u), typeof(u)}(zeros(u), similar(u), similar(u))
+    us = similar(u) .= 0
+    cg_statevars = CGStateVariables{eltype(u), typeof(u)}(us, similar(u), similar(u))
 
     return PCGDisplacementSolver(sp, globalinfo, elementinfo, u, vars, penalty, prev_penalty, xmin, cg_max_iter, tol, cg_statevars, preconditioner, Ref(false))
 end
@@ -101,17 +102,14 @@ function (s::PCGDisplacementSolver{T})(::Type{Val{safe}}=Val{false}) where {T, s
         end
     end
     if K isa Symmetric
-        if preconditioner === identity
-            cg!(u, K.data, f, tol, cg_max_iter, Val{false}, cg_statevars, Val{false})
-        else
-            cg!(u, K.data, f, tol, cg_max_iter, Val{false}, cg_statevars, Val{false}, preconditioner)
-        end
+        _K = K.data
     else
-        if preconditioner === identity
-            cg!(u, K, f, tol, cg_max_iter, Val{false}, cg_statevars, Val{false})
-        else
-            cg!(u, K, f, tol, cg_max_iter, Val{false}, cg_statevars, Val{false}, preconditioner)
-        end
+        _K = K
+    end
+    if preconditioner === identity
+        cg!(u, _K, f, tol=tol, maxiter=cg_max_iter, log=false, statevars=cg_statevars, initially_zero=false)
+    else
+        cg!(u, _K, f, tol=tol, maxiter=cg_max_iter, log=false, statevars=cg_statevars, initially_zero=false, Pl = preconditioner)
     end
     #s.prev_penalty.p = s.penalty.p
     

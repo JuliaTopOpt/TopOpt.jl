@@ -1,12 +1,15 @@
 abstract type AbstractMatrixFreeSolver <: AbstractDisplacementSolver end
 
-mutable struct StaticMatrixFreeDisplacementSolver{T, dim, TEInfo<:ElementFEAInfo{dim, T}, TS<:StiffnessTopOptProblem{dim, T}, Tv<:AbstractVector{T}, TP<:AbstractPenalty{T}, TI<:Integer, TStateVars<:CGStateVariables{T}, TPrecond} <: AbstractDisplacementSolver
+mutable struct StaticMatrixFreeDisplacementSolver{T, dim, TEInfo<:ElementFEAInfo{dim}, TS<:StiffnessTopOptProblem{dim}, Tv<:AbstractVector{T}, Txes, TDofs, TP<:AbstractPenalty{T}, TI<:Integer, TStateVars<:CGStateVariables{T}, TPrecond} <: AbstractDisplacementSolver
     elementinfo::TEInfo
     problem::TS
     f::Tv
     meandiag::T
     u::Tv
     vars::Tv
+    xes::Txes
+    fixed_dofs::TDofs
+    free_dofs::TDofs
     penalty::TP
     prev_penalty::TP
     xmin::T
@@ -19,6 +22,11 @@ end
 
 StaticMatrixFreeDisplacementSolver(sp, args...; kwargs...) = StaticMatrixFreeDisplacementSolver(whichdevice(sp), sp, args...; kwargs...)
 
+const StaticMatrices{m,T} = Union{StaticMatrix{m,m,T}, Symmetric{T, <:StaticMatrix{m,m,T}}}
+@generated function sumdiag(K::StaticMatrices{m,T}) where {m,T}
+    return reduce((ex1,ex2) -> :($ex1 + $ex2), [:(K[$j,$j]) for j in 1:m])
+end
+
 function StaticMatrixFreeDisplacementSolver(::CPU, sp::StiffnessTopOptProblem{dim, T};
         xmin=T(1)/1000, 
         cg_max_iter=700, 
@@ -30,12 +38,13 @@ function StaticMatrixFreeDisplacementSolver(::CPU, sp::StiffnessTopOptProblem{di
     
     prev_penalty = @set prev_penalty.p = T(NaN)
     rawelementinfo = ElementFEAInfo(sp, quad_order, Val{:Static})
+    #=
     if !(T === BigFloat)
         m = size(rawelementinfo.Kes[1], 1)
         if eltype(rawelementinfo.Kes) <: Symmetric
             newKes = Symmetric{T, SMatrix{m, m, T, m^2}}[]
             resize!(newKes, length(rawelementinfo.Kes))
-            map!(x->Symmetric(SMatrix(x.data)), newKes, rawelementinfo.Kes)
+            map!(x -> Symmetric(SMatrix{m, m}(x.data)), newKes, rawelementinfo.Kes)
         else
             newKes = SMatrix{m, m, T, m^2}[]
             resize!(newKes, length(rawelementinfo.Kes))
@@ -48,22 +57,30 @@ function StaticMatrixFreeDisplacementSolver(::CPU, sp::StiffnessTopOptProblem{di
     elementinfo = @set rawelementinfo.Kes = newKes
     elementinfo = @set elementinfo.fes = deepcopy(elementinfo.fes)
     meandiag = matrix_free_apply2Kes!(elementinfo, rawelementinfo, sp)
+    =#
+    if eltype(rawelementinfo.Kes) <: Symmetric
+        meandiag = mapreduce(x -> sumdiag(rawmatrix(x).data), +, rawelementinfo.Kes, init = zero(T))
+    else
+        meandiag = mapreduce(x -> sumdiag(rawmatrix(x)), +, rawelementinfo.Kes, init = zero(T))
+    end
+    xes = deepcopy(rawelementinfo.fes)
 
     u = zeros(T, ndofs(sp.ch.dh))
     f = similar(u)
     vars = fill(T(1), getncells(sp.ch.dh.grid) - sum(sp.black) - sum(sp.white))
-    operator = MatrixFreeOperator(elementinfo, meandiag, sp, vars, xmin, penalty)
     cg_statevars = CGStateVariables{eltype(u),typeof(u)}(copy(u), similar(u), similar(u))
 
+    fixed_dofs = sp.ch.prescribed_dofs
+    free_dofs = setdiff(1:length(fixed_dofs), fixed_dofs)
     return StaticMatrixFreeDisplacementSolver(rawelementinfo, sp, f, meandiag, u, vars, 
-        penalty, prev_penalty, xmin, cg_max_iter, tol, cg_statevars, 
-        preconditioner, Ref(false))
+        xes, fixed_dofs, free_dofs, penalty, prev_penalty, xmin, cg_max_iter, tol, 
+        cg_statevars, preconditioner, Ref(false))
 end
 
 function buildoperator(solver::StaticMatrixFreeDisplacementSolver)
     penalty = getpenalty(solver)
-    @unpack elementinfo, meandiag, problem, vars, xmin = solver
-    MatrixFreeOperator(elementinfo, meandiag, problem, vars, xmin, penalty)
+    @unpack elementinfo, meandiag, vars, xmin, fixed_dofs, free_dofs, xes = solver
+    MatrixFreeOperator(elementinfo, meandiag, vars, xes, fixed_dofs, free_dofs, xmin, penalty)
 end
 
 function (s::StaticMatrixFreeDisplacementSolver)()
@@ -101,58 +118,15 @@ function (s::StaticMatrixFreeDisplacementSolver)()
     nothing
 end
 
-macro define_cu(T, fields...)
-    all_fields = Tuple(fieldnames(eval(T)))
-    args = Expr[]
-    for fn in all_fields
-        push!(args, :(_cu(s, s.$fn, $(Val(fn)))))
-    end
-    if eltype(fields) <: QuoteNode
-        field_syms = Tuple(field.value for field in fields)
-    elseif eltype(fields) <: Symbol
-        field_syms = fields
-    else
-        throw("Unsupported fields.")
-    end
-    esc(quote
-        @inline getfieldnames(::Type{<:$T}) = $all_fields
-        @inline cufieldnames(::Type{<:$T}) = $field_syms
-        @inline function CuArrays.cu(s::$T)
-            $T($(args...))
-        end
-    end)
-end
-
-@eval @define_cu(IterativeSolvers.CGStateVariables, $(fieldnames(IterativeSolvers.CGStateVariables)...))
-@eval @define_cu(ElementFEAInfo, $(setdiff(fieldnames(ElementFEAInfo), [:cellvalues, :facevalues])...))
-@eval @define_cu(TopOptProblems.Metadata, $(fieldnames(TopOptProblems.Metadata)...))
-@define_cu(StaticMatrixFreeDisplacementSolver, :f, :problem, :vars, :cg_statevars, :elementinfo, :penalty, :prev_penalty, :u)
+@define_cu(IterativeSolvers.CGStateVariables, :u, :r, :c)
+@define_cu(ElementFEAInfo, :Kes, :fes, :fixedload, :cellvolumes, :metadata, :black, :white, :varind, :cells)
+@define_cu(TopOptProblems.Metadata, :cell_dofs, :dof_cells, :node_cells, :node_dofs)
+@define_cu(StaticMatrixFreeDisplacementSolver, :f, :problem, :vars, :cg_statevars, :elementinfo, :penalty, :prev_penalty, :u, :fixed_dofs, :free_dofs, :xes)
 @define_cu(JuAFEM.ConstraintHandler, :values, :prescribed_dofs, :dh)
 @define_cu(JuAFEM.DofHandler, :grid)
 @define_cu(JuAFEM.Grid, :cells)
 for T in (PointLoadCantilever, HalfMBB, LBeam, TieBeam, InpStiffness)
     @eval @define_cu($T, :ch)
-end
-
-@generated function _cu(s::T, f::F, ::Val{fn}) where {T, F, fn}
-    if fn ∈ cufieldnames(T)
-        if F <: AbstractArray
-            quote 
-                $(Expr(:meta, :inline))
-                CuArray(f)
-            end
-        else
-            quote
-                $(Expr(:meta, :inline))
-                cu(f)
-            end
-        end
-    else
-        quote 
-            $(Expr(:meta, :inline))
-            f
-        end
-    end
 end
 
 for T in (:PowerPenalty, :RationalPenalty)

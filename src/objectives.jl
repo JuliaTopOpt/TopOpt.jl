@@ -110,7 +110,7 @@ function compute_compliance(cell_comp::Vector{T}, grad, cell_dofs, Kes, u,
     obj = zero(T)
     @inbounds for i in 1:size(cell_dofs, 2)
         cell_comp[i] = zero(T)
-        Ke = Kes[i]
+        Ke = rawmatrix(Kes[i])
         for w in 1:size(Ke,2)
             for v in 1:size(Ke, 1)
                 cell_comp[i] += u[cell_dofs[v,i]]*Ke[v,w]*u[cell_dofs[w,i]]
@@ -151,7 +151,7 @@ function comp_kernel1(cell_comp::AbstractVector{T}, grad, cell_dofs, Kes, u,
     offset = @total_threads()
     @inbounds while i <= length(cell_comp)
         cell_comp[i] = zero(T)
-        Ke = Kes[i]
+        Ke = rawmatrix(Kes[i])
         for w in 1:size(Ke, 2)
             for v in 1:size(Ke, 1)
                 if Ke isa Symmetric
