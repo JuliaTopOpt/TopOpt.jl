@@ -1,5 +1,3 @@
-const StaticMatrices{m,T} = Union{StaticMatrix{m,m,T}, Symmetric{T,<:StaticMatrix{m,m,T}}}
-
 function matrix_free_apply2Kes!(elementinfo::ElementFEAInfo{dim, T}, raw_elementinfo::ElementFEAInfo, problem::StiffnessTopOptProblem) where {dim, T}
     KK = elementinfo.Kes
     raw_KK = raw_elementinfo.Kes
