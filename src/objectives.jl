@@ -13,7 +13,7 @@ mutable struct ComplianceObj{T, TI<:Integer, TV<:AbstractArray, TSP<:StiffnessTo
     fevals::TI
     logarithm::Bool
 end
-whichdevice(c::ComplianceObj) = c.cell_comp
+whichdevice(c::ComplianceObj) = whichdevice(c.cell_comp)
 
 function ComplianceObj(problem, solver::AbstractDisplacementSolver, args...; kwargs...)
     ComplianceObj(whichdevice(solver), problem, solver, args...; kwargs...)
