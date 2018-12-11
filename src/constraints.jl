@@ -1,11 +1,11 @@
 abstract type AbstractConstraint <: Function end
 
-struct VolConstr{T, dim, TI, TP<:StiffnessTopOptProblem{dim, T}, TS<:AbstractFEASolver} <: AbstractConstraint
+struct VolConstr{T, dim, TI, TV, TP<:StiffnessTopOptProblem{dim, T}, TS<:AbstractFEASolver} <: AbstractConstraint
     problem::TP
     solver::TS
     volume_fraction::T
-    cellvolumes::Vector{T}
-    grad::Vector{T}
+    cellvolumes::TV
+    grad::TV
     total_volume::T
     design_volume::T
     fixed_volume::T
@@ -13,6 +13,7 @@ struct VolConstr{T, dim, TI, TP<:StiffnessTopOptProblem{dim, T}, TS<:AbstractFEA
 	topopt_trace::TopOptTrace{T,TI}
 end
 whichdevice(v::VolConstr) = whichdevice(v.cellvolumes)
+@define_cu(VolConstr, :cellvolumes, :grad, :problem) # should be optimized to avoid replicating problem
 
 function VolConstr(problem::StiffnessTopOptProblem{dim, T}, solver::AbstractFEASolver, volume_fraction::T, ::Type{TI} = Int; tracing = true) where {dim, T, TI}
     cellvalues = solver.elementinfo.cellvalues
@@ -36,7 +37,7 @@ function VolConstr(problem::StiffnessTopOptProblem{dim, T}, solver::AbstractFEAS
     design_volume = total_volume * volume_fraction
     fixed_volume = dot(black, cellvolumes) #+ dot(white, cellvolumes)*xmin
 
-    return VolConstr{T, dim, TI, typeof(problem), typeof(solver)}(problem, solver, volume_fraction, cellvolumes, grad, total_volume, design_volume, fixed_volume, tracing, TopOptTrace{T, TI}())
+    return VolConstr(problem, solver, volume_fraction, cellvolumes, grad, total_volume, design_volume, fixed_volume, tracing, TopOptTrace{T, TI}())
 end
 function (v::VolConstr{T})(x, grad) where {T}
     varind = v.problem.varind
@@ -53,14 +54,8 @@ function (v::VolConstr{T})(x, grad) where {T}
     dh = v.problem.ch.dh
     xmin = v.solver.xmin
 
-    vol = fixed_volume
-    for (i, cell) in enumerate(CellIterator(dh))
-        if !(black[i]) && !(white[i])
-            #vol += density(x[varind[i]], xmin)*cellvolumes[i]
-            vol += x[varind[i]]*cellvolumes[i]
-        end
-    end
-
+    vol = compute_volume(cellvolumes, x, fixed_volume, varind, black, white)
+    
     constrval = vol / total_volume - volume_fraction
     grad .= v.grad ./ total_volume
 
@@ -68,4 +63,57 @@ function (v::VolConstr{T})(x, grad) where {T}
         push!(topopt_trace.v_hist, vol/total_volume)
     end
     return constrval
+end
+
+function compute_volume(cellvolumes::Vector, x, fixed_volume, varind, black, white)
+    vol = fixed_volume
+    for i in 1:length(cellvolumes)
+        if !(black[i]) && !(white[i])
+            #vol += density(x[varind[i]], xmin)*cellvolumes[i]
+            vol += x[varind[i]]*cellvolumes[i]
+        end
+    end
+    return vol
+end
+
+function compute_volume(cellvolumes::CuVector{T}, x, fixed_volume, varind, black, white, ::Val{blocksize} = Val(80), ::Val{threads} = Val(256)) where {T, blocksize, threads}
+    result = similar(cellvolumes, T, (blocksize,))
+    args = (result, cellvolumes, x, varind, black, white, Val(threads))
+    @cuda blocks = blocksize threads = threads volume_kernel(args...)
+    CUDAnative.synchronize()
+    vol = reduce(+, Array(result)) + fixed_volume
+    return vol
+end
+
+function volume_kernel(result, cellvolumes::AbstractVector{T}, x, varind, black, white, ::Val{LMEM}) where {T, LMEM}
+    i = @thread_global_index()
+    vol = zero(T)
+    # # Loop sequentially over chunks of input vector
+	offset = @total_threads()
+    @inbounds while i <= length(cellvolumes)
+        if !(black[i]) && !(white[i])
+            vol += x[varind[i]]*cellvolumes[i]
+        end
+        i += offset
+    end
+
+    # Perform parallel reduction
+	tmp_local = @cuStaticSharedMem(T, LMEM)
+    local_index = @thread_local_index()
+    @inbounds tmp_local[local_index] = vol
+    sync_threads()
+
+    offset = @total_threads_per_block() ÷ 2
+    @inbounds while offset > 0
+        if (local_index <= offset)
+            tmp_local[local_index] += tmp_local[local_index + offset]
+        end
+		sync_threads()
+        offset = offset ÷ 2
+    end
+    if local_index == 1
+        @inbounds result[@block_index()] = tmp_local[1]
+    end
+
+    return
 end

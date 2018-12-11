@@ -20,7 +20,11 @@ mutable struct MMAOptimizer{T, TM<:MMAModel{T}, TO, TSO, TObj, TConstr, TW} <: A
 end
 whichdevice(o::MMAOptimizer) = o.obj
 
-function MMAOptimizer(obj::AbstractObjective{T}, constr, opt=MMA.MMA87(), subopt=Optim.ConjugateGradient(), suboptions=Optim.Options(x_tol = sqrt(eps(T)), f_tol = zero(T), g_tol = zero(T));
+function MMAOptimizer(obj::AbstractObjective, args...; kwargs...)
+    MMAOptimizer(whichdevice(obj), obj, args...; kwargs...)
+end
+
+function MMAOptimizer(device, obj::AbstractObjective{T}, constr, opt=MMA.MMA87(), subopt=Optim.ConjugateGradient(), suboptions=Optim.Options(x_tol = sqrt(eps(T)), f_tol = zero(T), g_tol = zero(T));
     maxiter = 100,
     xtol = 0.001,
     ftol = xtol,
@@ -32,7 +36,11 @@ function MMAOptimizer(obj::AbstractObjective{T}, constr, opt=MMA.MMA87(), subopt
 
     nvars = length(obj.solver.vars)
     xmin = obj.solver.xmin
-    model = MMAModel{T, Vector{T}, Vector{typeof(constr)}}(nvars, obj, maxiter=maxiter, ftol=ftol, grtol=grtol, xtol=xtol, store_trace=false, extended_trace=false)
+    if device isa CPU
+        model = MMAModel{T, Vector{T}, Vector{typeof(constr)}}(nvars, obj, maxiter=maxiter, ftol=ftol, grtol=grtol, xtol=xtol, store_trace=false, extended_trace=false)
+    else
+        model = MMAModel{T, CuVector{T}, Vector{typeof(constr)}}(nvars, obj, maxiter=maxiter, ftol=ftol, grtol=grtol, xtol=xtol, store_trace=false, extended_trace=false)
+    end
 
     box!(model, zero(T), one(T))
     ineq_constraint!(model, constr)
@@ -40,7 +48,7 @@ function MMAOptimizer(obj::AbstractObjective{T}, constr, opt=MMA.MMA87(), subopt
     workspace = MMA.MMAWorkspace(model, obj.solver.vars, opt, subopt; s_init=s_init, 
     s_incr=s_incr, s_decr=s_decr, dual_caps=dual_caps)    
 
-    return MMAOptimizer{T,typeof(model),typeof(opt),typeof(subopt),typeof(obj),typeof(constr),typeof(workspace)}(model, s_init, s_decr, s_incr, opt, subopt, dual_caps, obj, constr, T(NaN), false, T(NaN), false, T(NaN), false, workspace)
+    return MMAOptimizer(model, s_init, s_decr, s_incr, opt, subopt, dual_caps, obj, constr, T(NaN), false, T(NaN), false, T(NaN), false, workspace)
 end
 
 getpenalty(o::MMAOptimizer) = getpenalty(o.obj)

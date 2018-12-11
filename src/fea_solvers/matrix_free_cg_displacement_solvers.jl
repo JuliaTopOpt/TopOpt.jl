@@ -126,7 +126,7 @@ end
 @define_cu(JuAFEM.DofHandler, :grid)
 @define_cu(JuAFEM.Grid, :cells)
 for T in (PointLoadCantilever, HalfMBB, LBeam, TieBeam, InpStiffness)
-    @eval @define_cu($T, :ch)
+    @eval @define_cu($T, :ch, :black, :white, :varind)
 end
 
 for T in (:PowerPenalty, :RationalPenalty)
