@@ -1,7 +1,7 @@
-using MMA
+using TopOpt.MMA
 using Test, LinearAlgebra
 
-import MMA: eval_constraint, eval_objective, dim
+using TopOpt.MMA: eval_constraint, eval_objective, dim
 
 function f(x::AbstractVector, grad::AbstractVector)
     if length(grad) != 0

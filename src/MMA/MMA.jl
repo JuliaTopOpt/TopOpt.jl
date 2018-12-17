@@ -6,7 +6,7 @@
 # JA  - Int. J. Numer. Meth. Engng.
 module MMA
 
-using Parameters, StructArrays, Setfield, TimerOutputs, GPUUtils, CuArrays
+using Parameters, StructArrays, Setfield, TimerOutputs, ..GPUUtils, CuArrays
 
 using LinearAlgebra
 
