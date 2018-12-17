@@ -31,21 +31,21 @@ git-tree-sha1 = "da085c9c8668dbb37bd84573d4257b09cf33d053"
 repo-rev = "master"
 repo-url = "https://github.com/JuliaGPU/CUDAapi.jl.git"
 uuid = "3895d2a7-ec45-59b8-82bb-cfc6a382f9b3"
-version = "0.5.3+"
+version = "0.5.3"
 
 [[CUDAdrv]]
 deps = ["CUDAapi", "Libdl", "Printf"]
-git-tree-sha1 = "9a80f01ab2e2773f997ef2b8274c7dbde56f01aa"
+git-tree-sha1 = "1b95588d489576cf9971a1a232be5667a290d2d1"
 repo-rev = "master"
-repo-url = "https://github.com/JuliaGPU/CUDAdrv.jl.git"
+repo-url = "https://github.com/JuliaGPU/CUDAdrv.jl"
 uuid = "c5f51814-7f29-56b8-a69c-e4d8f6be1fde"
 version = "1.0.0+"
 
 [[CUDAnative]]
 deps = ["Adapt", "CUDAapi", "CUDAdrv", "InteractiveUtils", "LLVM", "Libdl", "Logging", "Pkg", "Printf"]
-git-tree-sha1 = "38138f1a80e501965349e7768755b661913d0d25"
+git-tree-sha1 = "4cb23fbd6005fdb6f5a29922ea6d71ac314e605a"
 repo-rev = "master"
-repo-url = "https://github.com/JuliaGPU/CUDAnative.jl.git"
+repo-url = "https://github.com/JuliaGPU/CUDAnative.jl"
 uuid = "be33ccc6-a3ff-5ff2-a52e-74243cff1e17"
 version = "0.10.1+"
 
@@ -86,10 +86,10 @@ uuid = "a8cc5b0e-0ffa-5ad4-8c14-923d3ee1735f"
 version = "1.0.0"
 
 [[CuArrays]]
-deps = ["AbstractFFTs", "Adapt", "CUDAapi", "CUDAdrv", "CUDAnative", "DiffRules", "ForwardDiff", "GPUArrays", "LinearAlgebra", "MacroTools", "NNlib", "Printf", "Random", "SparseArrays"]
-git-tree-sha1 = "f057b3b217a98b2b6dcc6739dcdd56986a16a02f"
+deps = ["AbstractFFTs", "Adapt", "CUDAapi", "CUDAdrv", "CUDAnative", "DiffRules", "ForwardDiff", "GPUArrays", "LinearAlgebra", "MacroTools", "NNlib", "Pkg", "Printf", "Random", "SparseArrays"]
+git-tree-sha1 = "b536057582e879c7cab68177d02e1ea78e243e5a"
 repo-rev = "master"
-repo-url = "https://github.com/JuliaGPU/CuArrays.jl.git"
+repo-url = "https://github.com/JuliaGPU/CuArrays.jl"
 uuid = "3a865a2d-5b23-5a0f-bc46-62713ec82fae"
 version = "0.8.1+"
 
@@ -157,16 +157,16 @@ version = "0.6.0+"
 
 [[GPUUtils]]
 deps = ["CUDAdrv", "CUDAnative", "CuArrays", "GPUArrays", "InteractiveUtils"]
-git-tree-sha1 = "5939f612f03af66cba8a3185eb372e1616cc7e96"
-repo-rev = "master"
-repo-url = "https://github.com/mohamed82008/GPUUtils"
-uuid = "b00d8864-7981-5727-8659-fd9f83287331"
+git-tree-sha1 = "0592a92f3f0d8838a07967678011f1b1e6776fb6"
+repo-rev = "cuda_error"
+repo-url = "https://github.com/mohamed82008/GPUUtils.jl"
+uuid = "d52e50ae-f8aa-57b0-8e49-10ef736eb96d"
 version = "0.0.0"
 
 [[InpParser]]
 deps = ["JuAFEM", "SparseArrays", "Test"]
 git-tree-sha1 = "4952174b80d1676888cda72b84c0ab20c6d2bb57"
-repo-rev = "master"
+repo-rev = "cuda_error"
 repo-url = "https://github.com/mohamed82008/InpParser.jl"
 uuid = "9f7911e1-6279-5a0b-bd43-ff189ad07d03"
 version = "0.0.0"
@@ -176,10 +176,12 @@ deps = ["LinearAlgebra", "Markdown"]
 uuid = "b77e0a4c-d291-57a0-90e8-8db25a27a240"
 
 [[IterativeSolvers]]
-deps = ["LinearAlgebra", "Printf", "Random", "RecipesBase", "SparseArrays", "Test"]
-git-tree-sha1 = "a7b8056ecd43aa0d112d4b5d04180194d12c3c62"
+deps = ["GPUArrays", "LinearAlgebra", "Printf", "Random", "RecipesBase", "SparseArrays", "Test"]
+git-tree-sha1 = "4ea24a69866024b5b56e2e57d82a49b7f12c2762"
+repo-rev = "cuda_error"
+repo-url = "https://github.com/mohamed82008/IterativeSolvers.jl"
 uuid = "42fd0dbc-a981-5370-80f2-aaf504508153"
-version = "0.7.1"
+version = "0.7.1+"
 
 [[JSON]]
 deps = ["Dates", "Distributed", "Mmap", "Sockets", "Test", "Unicode"]
@@ -189,9 +191,9 @@ version = "0.20.0"
 
 [[JuAFEM]]
 deps = ["LinearAlgebra", "Reexport", "SparseArrays", "Tensors", "WriteVTK"]
-git-tree-sha1 = "c320f96c12f913c2eb4991cf67e3e3767be662c6"
-repo-rev = "master"
-repo-url = "https://github.com/KristofferC/JuAFEM.jl"
+git-tree-sha1 = "28d20367ce159f38842113cea80d9e9694b93e5e"
+repo-rev = "cuda_error"
+repo-url = "https://github.com/mohamed82008/JuAFEM.jl"
 uuid = "30d91d44-8115-11e8-1d28-c19a5ac16de8"
 version = "0.2.0"
 
@@ -227,9 +229,9 @@ uuid = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 uuid = "56ddb016-857b-54e1-b83d-db4d58db5568"
 
 [[MMA]]
-deps = ["Compat", "LinearAlgebra", "Optim", "Parameters", "Setfield", "StructArrays", "Test", "TimerOutputs"]
-git-tree-sha1 = "8188a43cb8240c29d9c6393075ae2e2ab44126d7"
-repo-rev = "acsimp-v1.0"
+deps = ["Compat", "CuArrays", "GPUUtils", "LinearAlgebra", "Optim", "Parameters", "Setfield", "StructArrays", "Test", "TimerOutputs"]
+git-tree-sha1 = "adb8eece634a87c5e268622f6cdf9b8cb66e91b1"
+repo-rev = "cuda_error"
 repo-url = "https://github.com/mohamed82008/MMA.jl"
 uuid = "75f4df93-4c67-5d61-8d32-7b778488a4e1"
 version = "0.0.0"
@@ -411,9 +413,9 @@ uuid = "a759f4b9-e2f1-59dc-863e-4aeb61b1ea8f"
 version = "0.4.0"
 
 [[TopOptProblems]]
-deps = ["InpParser", "JuAFEM", "LinearAlgebra", "SparseArrays", "StaticArrays"]
-git-tree-sha1 = "5d890f9e0c6120feead64677efd09581b119b5c4"
-repo-rev = "master"
+deps = ["CUDAdrv", "CUDAnative", "CuArrays", "GPUUtils", "InpParser", "JuAFEM", "LinearAlgebra", "Setfield", "SparseArrays", "StaticArrays"]
+git-tree-sha1 = "95039e698c01df0585c48acddaeb32d11bdd63a4"
+repo-rev = "cuda_error"
 repo-url = "https://github.com/mohamed82008/TopOptProblems.jl"
 uuid = "1b2785be-23e2-53a7-aa38-0f89c8b55d31"
 version = "0.0.0"
