@@ -1,0 +1,152 @@
+** written by FreeCAD inp file writer for CalculiX,Abaqus meshes
+** highest dimension mesh elements only.
+
+** Nodes
+*Node, NSET=Nall
+1, 10, 10, 0
+2, 10, 10, 10
+3, 10, 0, 0
+4, 10, 0, 10
+5, 0, 10, 0
+6, 0, 10, 10
+7, 0, 0, 0
+8, 0, 0, 10
+9, 0, 5, 10
+10, 5, 10, 10
+11, 10, 5, 10
+12, 5, 0, 10
+13, 0, 5, 0
+14, 5, 10, 0
+15, 10, 5, 0
+16, 5, 0, 0
+17, 10, 10, 5
+18, 0, 10, 5
+19, 10, 0, 5
+20, 0, 0, 5
+21, 5, 5, 10
+22, 5, 5, 0
+23, 5, 10, 5
+24, 5, 0, 5
+25, 10, 5, 5
+26, 0, 5, 5
+
+
+** Volume elements
+*Element, TYPE=C3D10, ELSET=Evolumes
+25, 7, 4, 6, 8, 24, 21, 26, 20, 12, 9
+26, 7, 6, 4, 1, 26, 21, 24, 22, 23, 25
+27, 5, 7, 1, 6, 13, 22, 14, 18, 26, 23
+28, 4, 7, 1, 3, 24, 22, 25, 19, 16, 15
+29, 4, 2, 1, 6, 11, 17, 25, 21, 10, 23
+
+** Define element set Eall
+*ELSET, ELSET=Eall
+Evolumes
+
+
+
+***********************************************************
+** Element sets for materials and FEM element type (solid, shell, beam, fluid)
+** written by write_element_sets_material_and_femelement_type function
+*ELSET,ELSET=SolidMaterialSolid
+Evolumes
+
+***********************************************************
+** Node sets for prescribed displacement constraint
+** written by write_node_sets_constraints_displacement function
+** FemConstraintDisplacement
+*NSET,NSET=FemConstraintDisplacement
+1,
+3,
+5,
+7,
+13,
+14,
+15,
+16,
+22,
+
+***********************************************************
+** Materials
+** written by write_materials function
+** Young's modulus unit is MPa = N/mm2
+** FreeCAD material name: [DE]AlMg3F24
+** SolidMaterial
+*MATERIAL, NAME=SolidMaterial
+*ELASTIC
+70000, 0.300
+
+***********************************************************
+** Sections
+** written by write_femelementsets function
+*SOLID SECTION, ELSET=SolidMaterialSolid, MATERIAL=SolidMaterial
+
+***********************************************************
+** At least one step is needed to run an CalculiX analysis of FreeCAD
+** written by write_step_begin function
+*STEP
+*STATIC
+
+
+***********************************************************
+** Displacement constraint applied
+** written by write_constraints_displacement function
+** FemConstraintDisplacement
+*BOUNDARY
+FemConstraintDisplacement,1
+FemConstraintDisplacement,2
+FemConstraintDisplacement,3
+
+
+***********************************************************
+** Node loads Constraints
+** written by write_constraints_force function
+*CLOAD
+** FemConstraintForce
+** node load on shape: Box:Vertex7
+2,2,-1.0000000000000E+00
+
+
+
+***********************************************************
+** Element + CalculiX face + load in [MPa]
+** written by write_constraints_pressure function
+** FemConstraintPressure
+*DLOAD
+** FemConstraintPressure: face load
+25,P3,1.0
+29,P2,1.0
+
+***********************************************************
+** Outputs --> frd file
+** written by write_outputs_types function
+*NODE FILE
+U
+*EL FILE
+S, E
+** outputs --> dat file
+*NODE PRINT , NSET=Nall
+U 
+*EL PRINT , ELSET=Eall
+S 
+
+***********************************************************
+** written by write_step_end function
+*END STEP 
+
+***********************************************************
+** CalculiX Input file
+** written by write_footer function
+**   written by    --> FreeCAD 0.17.13514 (Git)
+**   written on    --> Wed Nov 07 15:25:19 2018
+**   file name     --> 
+**   analysis name --> Analysis
+**
+**
+**
+**   Units
+**
+**   Geometry (mesh data)        --> mm
+**   Materials (Young's modulus) --> N/mm2 = MPa
+**   Loads (nodal loads)         --> N
+**

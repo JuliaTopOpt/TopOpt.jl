@@ -1,14 +1,19 @@
 module TopOpt
 
+include(joinpath("GPUUtils", "GPUUtils.jl"))
+include(joinpath("MMA", "MMA.jl"))
+include(joinpath("InpParser", "InpParser.jl"))
+include(joinpath("TopOptProblems", "TopOptProblems.jl"))
+
 using LinearAlgebra, Statistics
-using Reexport, Parameters, Setfield, GPUUtils
-@reexport using TopOptProblems, Optim, MMA, LineSearches
+using Reexport, Parameters, Setfield, .GPUUtils
+@reexport using .TopOptProblems, Optim, .MMA, LineSearches
 using JuAFEM, StaticArrays, CuArrays, CUDAnative, GPUArrays
 using CUDAdrv: CUDAdrv
 using ForwardDiff, IterativeSolvers#, Preconditioners
 
 using TimerOutputs
-import GPUUtils: whichdevice
+import .GPUUtils: whichdevice
 
 CuArrays.allowscalar(false)
 const to = TimerOutput()

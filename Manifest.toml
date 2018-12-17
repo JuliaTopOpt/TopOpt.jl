@@ -31,7 +31,7 @@ git-tree-sha1 = "da085c9c8668dbb37bd84573d4257b09cf33d053"
 repo-rev = "master"
 repo-url = "https://github.com/JuliaGPU/CUDAapi.jl.git"
 uuid = "3895d2a7-ec45-59b8-82bb-cfc6a382f9b3"
-version = "0.5.3"
+version = "0.5.3+"
 
 [[CUDAdrv]]
 deps = ["CUDAapi", "Libdl", "Printf"]
@@ -155,22 +155,6 @@ repo-url = "https://github.com/JuliaGPU/GPUArrays.jl.git"
 uuid = "0c68f7d7-f131-5f86-a1c3-88cf8149b2d7"
 version = "0.6.0+"
 
-[[GPUUtils]]
-deps = ["CUDAdrv", "CUDAnative", "CuArrays", "GPUArrays", "InteractiveUtils"]
-git-tree-sha1 = "0592a92f3f0d8838a07967678011f1b1e6776fb6"
-repo-rev = "cuda_error"
-repo-url = "https://github.com/mohamed82008/GPUUtils.jl"
-uuid = "d52e50ae-f8aa-57b0-8e49-10ef736eb96d"
-version = "0.0.0"
-
-[[InpParser]]
-deps = ["JuAFEM", "SparseArrays", "Test"]
-git-tree-sha1 = "4952174b80d1676888cda72b84c0ab20c6d2bb57"
-repo-rev = "cuda_error"
-repo-url = "https://github.com/mohamed82008/InpParser.jl"
-uuid = "9f7911e1-6279-5a0b-bd43-ff189ad07d03"
-version = "0.0.0"
-
 [[InteractiveUtils]]
 deps = ["LinearAlgebra", "Markdown"]
 uuid = "b77e0a4c-d291-57a0-90e8-8db25a27a240"
@@ -227,14 +211,6 @@ uuid = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 
 [[Logging]]
 uuid = "56ddb016-857b-54e1-b83d-db4d58db5568"
-
-[[MMA]]
-deps = ["Compat", "CuArrays", "GPUUtils", "LinearAlgebra", "Optim", "Parameters", "Setfield", "StructArrays", "Test", "TimerOutputs"]
-git-tree-sha1 = "adb8eece634a87c5e268622f6cdf9b8cb66e91b1"
-repo-rev = "cuda_error"
-repo-url = "https://github.com/mohamed82008/MMA.jl"
-uuid = "75f4df93-4c67-5d61-8d32-7b778488a4e1"
-version = "0.0.0"
 
 [[MacroTools]]
 deps = ["Compat"]
@@ -411,14 +387,6 @@ deps = ["Crayons", "Printf", "Test", "Unicode"]
 git-tree-sha1 = "89a9bd610d6bfd62a7c2b85112762b99b979fe5f"
 uuid = "a759f4b9-e2f1-59dc-863e-4aeb61b1ea8f"
 version = "0.4.0"
-
-[[TopOptProblems]]
-deps = ["CUDAdrv", "CUDAnative", "CuArrays", "GPUUtils", "InpParser", "JuAFEM", "LinearAlgebra", "Setfield", "SparseArrays", "StaticArrays"]
-git-tree-sha1 = "95039e698c01df0585c48acddaeb32d11bdd63a4"
-repo-rev = "cuda_error"
-repo-url = "https://github.com/mohamed82008/TopOptProblems.jl"
-uuid = "1b2785be-23e2-53a7-aa38-0f89c8b55d31"
-version = "0.0.0"
 
 [[TranscodingStreams]]
 deps = ["Pkg", "Random", "Test"]
