@@ -42,7 +42,6 @@ function (asimp::AdaptiveSIMP)(x0=asimp.simp.optimizer.obj.solver.vars)
     steps = round(Int, (pfinish - pstart)/Δp)
 
     maxiter = workspace.model.maxiter[]
-    @show maxiter
     fevals1, fevals2, fevals = obj.fevals, obj.fevals, obj.fevals
     for i in 1:steps
         obj.fevals >= asimp.maxiter && break

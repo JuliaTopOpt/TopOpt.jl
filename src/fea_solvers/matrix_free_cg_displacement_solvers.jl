@@ -77,6 +77,7 @@ function StaticMatrixFreeDisplacementSolver(::CPU, sp::StiffnessTopOptProblem{di
         cg_statevars, preconditioner, Ref(false))
 end
 
+MatrixFreeOperator(solver::StaticMatrixFreeDisplacementSolver) = buildoperator(solver)
 function buildoperator(solver::StaticMatrixFreeDisplacementSolver)
     penalty = getpenalty(solver)
     @unpack elementinfo, meandiag, vars, xmin, fixed_dofs, free_dofs, xes = solver

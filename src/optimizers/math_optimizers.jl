@@ -37,9 +37,9 @@ function MMAOptimizer(device, obj::AbstractObjective{T}, constr, opt=MMA.MMA87()
     nvars = length(obj.solver.vars)
     xmin = obj.solver.xmin
     if device isa CPU
-        model = MMAModel{T, Vector{T}, Vector{typeof(constr)}}(nvars, obj, maxiter=maxiter, ftol=ftol, grtol=grtol, xtol=xtol, store_trace=false, extended_trace=false)
+        model = MMAModel(nvars, obj, maxiter=maxiter, ftol=ftol, grtol=grtol, xtol=xtol, store_trace=false, extended_trace=false)
     else
-        model = MMAModel{T, CuVector{T}, Vector{typeof(constr)}}(nvars, obj, maxiter=maxiter, ftol=ftol, grtol=grtol, xtol=xtol, store_trace=false, extended_trace=false)
+        model = MMAModel(nvars, obj, maxiter=maxiter, ftol=ftol, grtol=grtol, xtol=xtol, store_trace=false, extended_trace=false)
     end
 
     box!(model, zero(T), one(T))

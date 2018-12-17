@@ -124,6 +124,7 @@ function CheqFilter(::Val{false}, ::CPU, solver::TS, rmin::T, ::Type{TI}=Int) wh
 end
 
 function (cf::CheqFilter{true, T})(grad, vars, elementinfo) where {T}
+    cf.rmin <= 0 && return
     @unpack nodal_grad, cell_weights, metadata = cf
     @unpack black, white, varind, cellvolumes, cells = elementinfo
     @unpack cell_neighbouring_nodes, cell_node_weights = metadata

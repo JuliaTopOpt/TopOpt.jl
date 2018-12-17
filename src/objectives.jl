@@ -69,7 +69,7 @@ function (o::ComplianceObj{T})(x, grad) where {T}
             solver()
         end
         obj = compute_compliance(cell_comp, grad, cell_dofs, Kes, u, 
-                            black, white, varind, x, penalty, xmin)
+                                    black, white, varind, x, penalty, xmin)
 
         if o.logarithm
             o.comp = log(obj)

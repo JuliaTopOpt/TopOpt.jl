@@ -84,11 +84,9 @@ end
 
 # CUDA kernels
 function mul_kernel1(xes::AbstractVector{TV}, x, black, white, vars, varind, cell_dofs, Kes, xmin, penalty, nels) where {N, T, TV<:SVector{N, T}}
-    #blockid = blockIdx().x + blockIdx().y * gridDim().x
-    #i = (blockid - 1) * (blockDim().x * blockDim().y) + (threadIdx().y * blockDim().x) + threadIdx().x
     i = @thread_global_index()
     offset = @total_threads()
-    @inbounds while i <= nels
+    while i <= nels
         px = ifelse(black[i], one(T), 
                     ifelse(white[i], xmin, 
                             density(penalty(vars[varind[i]]), xmin)
