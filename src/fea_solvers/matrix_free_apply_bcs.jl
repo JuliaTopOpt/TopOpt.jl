@@ -1,14 +1,10 @@
-function matrix_free_apply2f!(f::AbstractVector{T}, rawelementinfo::ElementFEAInfo{dim, T}, M, vars, problem::StiffnessTopOptProblem, penalty, xmin, applyzero::Bool=false) where {dim, T}
-    raw_KK = rawelementinfo.Kes
+function matrix_free_apply2f!(f::AbstractVector{T}, elementinfo::ElementFEAInfo{dim, T}, M, vars, problem::StiffnessTopOptProblem, penalty, xmin, applyzero::Bool=false) where {dim, T}
+    @unpack Kes, black, white, varind, metadata = elementinfo
+    @unpack dof_cells, cell_dofs = metadata
+    @unpack ch = problem
+    @unpack values, prescribed_dofs = ch
 
-    ch = problem.ch
-    black = rawelementinfo.black
-    white = rawelementinfo.white
-    varind = rawelementinfo.varind
-    dof_cells = rawelementinfo.metadata.dof_cells
-    cell_dofs = rawelementinfo.metadata.cell_dofs
-
-    update_f!(f, ch.values, ch.prescribed_dofs, applyzero, dof_cells, cell_dofs, black, white, raw_KK, xmin, penalty, vars, varind, M)
+    update_f!(f, values, prescribed_dofs, applyzero, dof_cells, cell_dofs, black, white, Kes, xmin, penalty, vars, varind, M)
 
     return
 end
