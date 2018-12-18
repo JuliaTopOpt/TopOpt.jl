@@ -49,14 +49,19 @@ function mul!(y::TV, A::MatrixFreeOperator, x::TV) where {TV <: AbstractVector}
         end
     end
 
-    for i in 1:length(y)
+    for i in 1:length(fixed_dofs)
+        dof = fixed_dofs[i]
+        y[dof] = meandiag * y[dof]
+    end
+    for i in 1:length(free_dofs)
+        dof = free_dofs[i]
         yi = zero(T)
-        d_cells = dof_cells[i]
-        for c in d_cells
-            k, m = c
+        r = dof_cells.offsets[dof] : dof_cells.offsets[dof+1]-1
+        for ind in r
+            k, m = dof_cells.values[ind]
             yi += xes[k][m]
         end
-        y[i] = yi
+        y[dof] = yi
     end
     y
 end
@@ -116,14 +121,14 @@ function mul_kernel2(y, dof_cells_offsets, dof_cells_values, xes, fixed_dofs, fr
     ndofs = length(y)
     
     i = @thread_global_index()
-    @inbounds while i <= n_fixeddofs
+    while i <= n_fixeddofs
         dof = fixed_dofs[i]
         y[dof] = meandiag * y[dof]
         i += offset
     end
 
     i = @thread_global_index()
-    @inbounds while n_fixeddofs < i <= ndofs
+    while n_fixeddofs < i <= ndofs
         dof = free_dofs[i - n_fixeddofs]
         yi = zero(T)
         r = dof_cells_offsets[dof] : dof_cells_offsets[dof+1]-1

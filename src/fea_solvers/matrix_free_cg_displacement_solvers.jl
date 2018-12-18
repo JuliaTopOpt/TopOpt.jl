@@ -37,33 +37,14 @@ function StaticMatrixFreeDisplacementSolver(::CPU, sp::StiffnessTopOptProblem{di
         quad_order=2) where {dim, T}
     
     prev_penalty = @set prev_penalty.p = T(NaN)
-    rawelementinfo = ElementFEAInfo(sp, quad_order, Val{:Static})
-    #=
-    if !(T === BigFloat)
-        m = size(rawelementinfo.Kes[1], 1)
-        if eltype(rawelementinfo.Kes) <: Symmetric
-            newKes = Symmetric{T, SMatrix{m, m, T, m^2}}[]
-            resize!(newKes, length(rawelementinfo.Kes))
-            map!(x -> Symmetric(SMatrix{m, m}(x.data)), newKes, rawelementinfo.Kes)
-        else
-            newKes = SMatrix{m, m, T, m^2}[]
-            resize!(newKes, length(rawelementinfo.Kes))
-            map!(SMatrix, newKes, rawelementinfo.Kes)
-        end
+    elementinfo = ElementFEAInfo(sp, quad_order, Val{:Static})
+    if eltype(elementinfo.Kes) <: Symmetric
+        f = x -> sumdiag(rawmatrix(x).data)
     else
-        newKes = deepcopy(rawelementinfo.Kes)
+        f = x -> sumdiag(rawmatrix(x))
     end
-    # cload and cellvalues are shared since they are not overwritten
-    elementinfo = @set rawelementinfo.Kes = newKes
-    elementinfo = @set elementinfo.fes = deepcopy(elementinfo.fes)
-    meandiag = matrix_free_apply2Kes!(elementinfo, rawelementinfo, sp)
-    =#
-    if eltype(rawelementinfo.Kes) <: Symmetric
-        meandiag = mapreduce(x -> sumdiag(rawmatrix(x).data), +, rawelementinfo.Kes, init = zero(T))
-    else
-        meandiag = mapreduce(x -> sumdiag(rawmatrix(x)), +, rawelementinfo.Kes, init = zero(T))
-    end
-    xes = deepcopy(rawelementinfo.fes)
+    meandiag = mapreduce(f, +, elementinfo.Kes, init = zero(T))
+    xes = deepcopy(elementinfo.fes)
 
     u = zeros(T, ndofs(sp.ch.dh))
     f = similar(u)
@@ -71,8 +52,8 @@ function StaticMatrixFreeDisplacementSolver(::CPU, sp::StiffnessTopOptProblem{di
     cg_statevars = CGStateVariables{eltype(u),typeof(u)}(copy(u), similar(u), similar(u))
 
     fixed_dofs = sp.ch.prescribed_dofs
-    free_dofs = setdiff(1:length(fixed_dofs), fixed_dofs)
-    return StaticMatrixFreeDisplacementSolver(rawelementinfo, sp, f, meandiag, u, vars, 
+    free_dofs = setdiff(1:length(u), fixed_dofs)
+    return StaticMatrixFreeDisplacementSolver(elementinfo, sp, f, meandiag, u, vars, 
         xes, fixed_dofs, free_dofs, penalty, prev_penalty, xmin, cg_max_iter, tol, 
         cg_statevars, preconditioner, Ref(false))
 end
