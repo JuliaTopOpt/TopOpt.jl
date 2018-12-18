@@ -8,7 +8,7 @@ Pkg.instantiate()
 
 # Error example
 
-using Revise, TopOpt, CuArrays, LinearAlgebra
+using TopOpt, CuArrays, LinearAlgebra
 CuArrays.allowscalar(false)
 
 function gpu_testcase(s)
