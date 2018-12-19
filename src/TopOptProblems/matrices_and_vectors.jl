@@ -20,22 +20,14 @@ rawmatrix(m::Symmetric{T, <:ElementMatrix{T}}) where {T} = Symmetric(m.data.matr
 @generated function bcmatrix(m::ElementMatrix{T, TM}) where {dim, T, TM <: StaticMatrix{dim, dim, T}}
     expr = Expr(:tuple)
     for j in 1:dim, i in 1:dim
-        if i == j
-            push!(expr.args, :(ifelse(m.mask[$i], m.matrix[$i,$i], m.meandiag)))
-        else
-            push!(expr.args, :(ifelse(m.mask[$i] && m.mask[$j], m.matrix[$i,$j], zero(T))))
-        end
+        push!(expr.args, :(ifelse(m.mask[$i] && m.mask[$j], m.matrix[$i,$j], zero(T))))
     end
     return :($(Expr(:meta, :inline)); $TM($expr))
 end
 @generated function bcmatrix(m::Symmetric{T, <:ElementMatrix{T, TM}}) where {dim, T, TM <: StaticMatrix{dim, dim, T}}
     expr = Expr(:tuple)
     for j in 1:dim, i in 1:dim
-        if i == j
-            push!(expr.args, :(ifelse(m.data.mask[$i], m.data.matrix[$i,$i], m.data.meandiag)))
-        else
-            push!(expr.args, :(ifelse(m.data.mask[$i] && m.data.mask[$j], m.data.matrix[$i,$j], zero(T))))
-        end
+        push!(expr.args, :(ifelse(m.data.mask[$i] && m.data.mask[$j], m.data.matrix[$i,$j], zero(T))))
     end
     return :($(Expr(:meta, :inline)); Symmetric($TM($expr)))
 end

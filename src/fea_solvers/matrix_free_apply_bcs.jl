@@ -22,8 +22,13 @@ function update_f!(f::Vector{T}, values, prescribed_dofs, applyzero, dof_cells, 
                 px = ifelse(black[i], one(T), 
                             ifelse(white[i], xmin, 
                             px = density(penalty(vars[varind[i]]), xmin)))
+                if eltype(Kes) <: Symmetric
+                    Ke = Kes[i].data
+                else
+                    Ke = Kes[i]
+                end
                 for row in 1:m
-                    f[cell_dofs[row,i]] -= px * v * Kes[i][row,j]
+                    f[cell_dofs[row,i]] -= px * v * Ke[row,j]
                 end
             end
         end
@@ -32,14 +37,14 @@ function update_f!(f::Vector{T}, values, prescribed_dofs, applyzero, dof_cells, 
     return 
 end
 
-function update_f!(f::CuVector{T}, values, prescribed_dofs, applyzero, dof_cells, cell_dofs, black, white, raw_KK, xmin, penalty, vars, varind, M) where {T}
-    args = (f, values, prescribed_dofs, applyzero, dof_cells.offsets, dof_cells.values, cell_dofs, black, white, raw_KK, xmin, penalty, vars, varind, M)
+function update_f!(f::CuVector{T}, values, prescribed_dofs, applyzero, dof_cells, cell_dofs, black, white, Kes, xmin, penalty, vars, varind, M) where {T}
+    args = (f, values, prescribed_dofs, applyzero, dof_cells.offsets, dof_cells.values, cell_dofs, black, white, Kes, xmin, penalty, vars, varind, M)
     callkernel(dev, bc_kernel, args)
     CUDAdrv.synchronize(ctx)
     return 
 end
 
-function bc_kernel(f::AbstractVector{T}, values, prescribed_dofs, applyzero, dof_cells_offsets, dof_cells_values, cell_dofs, black, white, raw_KK, xmin, penalty, vars, varind, M) where {T}
+function bc_kernel(f::AbstractVector{T}, values, prescribed_dofs, applyzero, dof_cells_offsets, dof_cells_values, cell_dofs, black, white, Kes, xmin, penalty, vars, varind, M) where {T}
 
     ind = @thread_global_index()
     offset = @total_threads()
@@ -51,12 +56,17 @@ function bc_kernel(f::AbstractVector{T}, values, prescribed_dofs, applyzero, dof
         r = dof_cells_offsets[d] : dof_cells_offsets[d+1]-1
         if !applyzero && v != 0 
             for idx in r
-                (i,j) = dof_cells_values[idx]
+                (i, j) = dof_cells_values[idx]
                 px = ifelse(black[i], one(T), 
-                            ifelse(white[i], xmin, 
-                            px = density(penalty(vars[varind[i]]), xmin)))
+                        ifelse(white[i], xmin, 
+                        density(penalty(vars[varind[i]]), xmin)))
+                if eltype(Kes) <: Symmetric
+                    Ke = Kes[i].data
+                else
+                    Ke = Kes[i]
+                end
                 for row in 1:m
-                    f[cell_dofs[row,i]] -= px * v * Kes[i][row,j]
+                    f[cell_dofs[row,i]] -= px * v * Ke[row,j]
                 end
             end
         end

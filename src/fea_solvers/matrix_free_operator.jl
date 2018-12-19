@@ -51,7 +51,7 @@ function mul!(y::TV, A::MatrixFreeOperator, x::TV) where {TV <: AbstractVector}
 
     for i in 1:length(fixed_dofs)
         dof = fixed_dofs[i]
-        y[dof] = meandiag * y[dof]
+        y[dof] = meandiag * x[dof]
     end
     for i in 1:length(free_dofs)
         dof = free_dofs[i]
@@ -80,7 +80,7 @@ function mul!(y::TV, A::MatrixFreeOperator, x::TV) where {TV <: CuArrays.CuVecto
     callkernel(dev, mul_kernel1, args1)
     CUDAdrv.synchronize(ctx)
 
-    args2 = (y, dof_cells.offsets, dof_cells.values, xes, fixed_dofs, free_dofs, meandiag)
+    args2 = (y, x, dof_cells.offsets, dof_cells.values, xes, fixed_dofs, free_dofs, meandiag)
     callkernel(dev, mul_kernel2, args2)
     CUDAdrv.synchronize(ctx)
 
@@ -114,7 +114,7 @@ function mul_kernel1(xes::AbstractVector{TV}, x, black, white, vars, varind, cel
     return
 end
 
-function mul_kernel2(y, dof_cells_offsets, dof_cells_values, xes, fixed_dofs, free_dofs, meandiag)
+function mul_kernel2(y, x, dof_cells_offsets, dof_cells_values, xes, fixed_dofs, free_dofs, meandiag)
     T = eltype(y)
     offset = @total_threads()
     n_fixeddofs = length(fixed_dofs)
@@ -123,7 +123,7 @@ function mul_kernel2(y, dof_cells_offsets, dof_cells_values, xes, fixed_dofs, fr
     i = @thread_global_index()
     while i <= n_fixeddofs
         dof = fixed_dofs[i]
-        y[dof] = meandiag * y[dof]
+        y[dof] = meandiag * x[dof]
         i += offset
     end
 

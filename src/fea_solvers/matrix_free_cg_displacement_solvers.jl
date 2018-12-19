@@ -68,7 +68,7 @@ end
 function (s::StaticMatrixFreeDisplacementSolver)()
     assemble_f!(s.f, s.problem, s.elementinfo, s.vars, getpenalty(s), s.xmin)
     matrix_free_apply2f!(s.f, s.elementinfo, s.meandiag, s.vars, s.problem, getpenalty(s), s.xmin)
-
+    
     u = s.u
     f = s.f
     operator = buildoperator(s)
