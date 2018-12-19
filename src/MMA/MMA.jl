@@ -6,7 +6,11 @@
 # JA  - Int. J. Numer. Meth. Engng.
 module MMA
 
-using Parameters, StructArrays, Setfield, TimerOutputs, ..GPUUtils, CuArrays
+using Parameters, StructArrays, Setfield, TimerOutputs, ..GPUUtils, CuArrays, CUDAnative
+using CUDAdrv: CUDAdrv
+
+const dev = CUDAdrv.device()
+const ctx = CUDAdrv.CuContext(dev)
 
 using LinearAlgebra
 
@@ -15,6 +19,7 @@ import Optim: OnceDifferentiable, Fminbox, GradientDescent, update!,
                 MultivariateOptimizationResults, OptimizationTrace, maxdiff, 
                 LineSearches, ConjugateGradient, LBFGS, AbstractOptimizer
 import Base: min, max, show
+import ..GPUUtils: whichdevice
 
 export MMAModel, box!, ineq_constraint!, optimize
 
@@ -24,8 +29,8 @@ abstract type TopOptAlgorithm end
 
 include("utils.jl")
 include("model.jl")
-include("primal.jl")
 include("dual.jl")
+include("primal.jl")
 include("lift.jl")
 include("trace.jl")
 include("workspace.jl")
@@ -104,11 +109,11 @@ function optimize!(#=to, =#workspace::MMAWorkspace{T, TV, TM}) where {T, TV, TM}
         while lift && iter < model.maxiter[]
             iter += 1
             # Solve dual
-            λ .= min.(dual_caps[2], max.(λ, dual_caps[1]))
-            d = OnceDifferentiable(dual_obj, dual_obj_grad, λ)
-            _minimizer = #=@timeit to "Fminbox"=# Optim.optimize(d, l, u, λ, Optim.Fminbox(suboptimizer), _suboptions).minimizer
-            copyto!(λ, _minimizer)
-            dual_obj_grad(ng_approx, λ)
+            λ.cpu .= min.(dual_caps[2], max.(λ.cpu, dual_caps[1]))
+            d = OnceDifferentiable(dual_obj, dual_obj_grad, λ.cpu)
+            _minimizer = #=@timeit to "Fminbox"=# Optim.optimize(d, l, u, λ.cpu, Optim.Fminbox(suboptimizer), _suboptions).minimizer
+            copyto!(λ.cpu, _minimizer)
+            dual_obj_grad(ng_approx, λ.cpu)
 
             # Evaluate the objective function and its gradient
             f_x_previous, f_x = f_x, eval_objective(model, x, ∇f_x)

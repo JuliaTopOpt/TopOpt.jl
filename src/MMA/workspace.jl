@@ -1,4 +1,4 @@
-mutable struct MMAWorkspace{T, TV1, TV2, TM, TO, TSO, TSubOptions, TTrace<:OptimizationTrace{T}, TModel<:MMAModel{T}, TPD<:PrimalData{T}}
+mutable struct MMAWorkspace{T, TV1, TV2, TM, TO, TSO, TSubOptions, TTrace<:OptimizationTrace{T}, TModel<:MMAModel{T}, TPD<:PrimalData{T}, TDualSol<:DualSolution, TXUpdater<:XUpdater{T, TV1, TPD}}
     model::TModel
     optimizer::TO
     suboptimizer::TSO
@@ -7,7 +7,7 @@ mutable struct MMAWorkspace{T, TV1, TV2, TM, TO, TSO, TSubOptions, TTrace<:Optim
     x::TV1
 	x1::TV1
 	x2::TV1
-	λ::TV2
+	λ::TDualSol
 	l::TV2
 	u::TV2
 	∇f_x::TV1
@@ -30,13 +30,13 @@ mutable struct MMAWorkspace{T, TV1, TV2, TM, TO, TSO, TSubOptions, TTrace<:Optim
 	f_residual::T
 	gr_residual::T
 	asymptotes_updater::AsymptotesUpdater{T, TV1, TModel}
-	variable_bounds_updater::VariableBoundsUpdater{T, TPD, TModel}
-	cvx_grad_updater::ConvexApproxGradUpdater{T, TPD, TModel}
+	variable_bounds_updater::VariableBoundsUpdater{T, TV1, TPD, TModel}
+	cvx_grad_updater::ConvexApproxGradUpdater{T, TV1, TPD, TModel}
 	lift_updater::LiftUpdater{T, TV2, TPD}
 	lift_resetter::LiftResetter{T, TV2}
-	x_updater::XUpdater{TPD}
-	dual_obj::DualObjVal{T, TPD}
-	dual_obj_grad::DualObjGrad{TPD}
+	x_updater::TXUpdater
+	dual_obj::DualObjVal{TPD, TXUpdater}
+	dual_obj_grad::DualObjGrad{TPD, TXUpdater}
     dual_caps::Tuple{T, T}
 	outer_iter::Int
     iter::Int
@@ -68,7 +68,12 @@ function MMAWorkspace(model::MMAModel{T,TV}, x0::TV, optimizer=MMA02(), suboptim
     r = Vector(zerosof(TV, n_i))
     
     # Initial data and bounds for Optim to solve dual problem
-    λ = Vector(onesof(TV, n_i))
+    dev = whichdevice(model)
+    if dev isa CPU
+        λ = DualSolution{:CPU}(Vector(onesof(TV, n_i)))
+    else
+        λ = DualSolution{:GPU}(Vector(onesof(TV, n_i)))
+    end
     l = Vector(zerosof(TV, n_i))
     u = Vector(infsof(TV, n_i))
     #u .= 1e50
@@ -107,8 +112,8 @@ function MMAWorkspace(model::MMAModel{T,TV}, x0::TV, optimizer=MMA02(), suboptim
     lift_resetter = LiftResetter(ρ, T(ρmin))
 
     x_updater = XUpdater(primal_data)
-    dual_obj = DualObjVal(primal_data, x_updater)
-    dual_obj_grad = DualObjGrad(primal_data, x_updater)
+    dual_obj = DualObjVal(primal_data, x_updater, λ)
+    dual_obj_grad = DualObjGrad(primal_data, x_updater, λ)
 
     # Iteraton counter
     outer_iter = 0

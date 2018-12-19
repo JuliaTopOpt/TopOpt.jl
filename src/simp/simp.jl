@@ -38,8 +38,9 @@ end
 
 getpenalty(s::AbstractSIMP) = s.penalty
 function setpenalty!(s::AbstractSIMP, p::Number)
-    s.penalty = @set s.penalty.p = p
-    setpenalty!(s.optimizer)
+    penalty = s.penalty
+    s.penalty = @set penalty.p = p
+    setpenalty!(s.optimizer, p)
 end
 
 function (s::SIMP{T, TO})(x0=s.optimizer.obj.solver.vars) where {T, TO<:MMAOptimizer}

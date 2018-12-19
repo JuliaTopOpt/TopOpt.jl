@@ -13,7 +13,8 @@ struct Assembly <: SolverSubtype end
 getpenalty(solver::AbstractFEASolver) = solver.penalty
 function setpenalty!(solver::AbstractFEASolver, p)
     solver.prev_penalty = solver.penalty
-    solver.penalty = @set solver.penalty.p = p
+    penalty = solver.penalty
+    solver.penalty = @set penalty.p = p
     solver
 end
 getprevpenalty(solver::AbstractFEASolver) = solver.prev_penalty

@@ -16,20 +16,46 @@ struct PrimalData{T, TV1<:AbstractVector{T}, TV2, TM<:AbstractMatrix{T}}
     ∇f::TV1 # Function gradient at current iteration
     ∇g::TM # Inequality gradients [var, ineq] at current iteration
 end
+whichdevice(p::PrimalData) = whichdevice(p.x)
 
-struct XUpdater{TPD<:PrimalData}
+struct XUpdater{T, TV, TPD<:PrimalData{T, TV}}
     pd::TPD
 end
-function (xu::XUpdater)(λ)
-    @unpack x = xu.pd
-    #@show sum(x)
-    #@show mean(xu.pd.p0), mean(xu.pd.q0)
-    map!((j)->xu(λ, j), x, 1:length(x))
+function (xu::XUpdater)(λ::DualSolution{:CPU})
+    @unpack x, p0, p, q0, q, σ, x1, α, β, ρ = xu.pd
+    λρ = dot(λ.cpu, ρ)
+    for j in 1:length(x)
+        λpj = @matdot(λ.cpu, p, j)
+        λqj = @matdot(λ.cpu, q, j)
+        x[j] = getxj(λρ, λpj, λqj, j, p0, q0, σ, x1, α, β)
+    end
+    return
 end
-function (xu::XUpdater)(λ, j)
-    @unpack p0, p, q0, ρ, q, σ, x1, α, β = xu.pd
-    lj1 = p0[j] + matdot(λ, p, j) + dot(λ, ρ)*σ[j]/4
-    lj2 = q0[j] + matdot(λ, q, j) + dot(λ, ρ)*σ[j]/4
+function (xu::XUpdater{T, TV})(λ::DualSolution{:GPU}) where {T, TV <: CuVector{T}}
+    @unpack x, p0, p, q0, q, σ, x1, α, β, ρ = xu.pd
+    λρ = dot(λ.cpu, ρ)
+    togpu!(λ)
+    λgpu = λ.gpu
+    args = (x, λgpu, λρ, p, q, p0, q0, σ, x1, α, β)
+    callkernel(dev, xupdater_kernel, args)
+    CUDAdrv.synchronize(ctx)
+    return
+end
+function xupdater_kernel(x, λgpu, λρ, p, q, p0, q0, σ, x1, α, β)
+    j = @thread_global_index()
+	offset = @total_threads()
+    while j <= length(x)
+        λpj = @matdot(λgpu, p, j)
+        λqj = @matdot(λgpu, q, j)
+        x[j] = getxj(λρ, λpj, λqj, j, p0, q0, σ, x1, α, β)
+        j += offset
+    end
+    return
+end
+
+function getxj(λρ, λpj, λqj, j, p0, q0, σ, x1, α, β)
+    lj1 = p0[j] + λpj + λρ*σ[j]/4
+    lj2 = q0[j] + λqj + λρ*σ[j]/4
 
     αj, βj = α[j], β[j]
     Lj, Uj = minus_plus(x1[j], σ[j])
@@ -42,7 +68,6 @@ function (xu::XUpdater)(λ, j)
     βjLj = βj - Lj
     ljβj = lj1/Ujβj^2 - lj2/βjLj^2 
 
-    (lj1 < 0 || lj2 < 0) && @show lj1, lj2
     fpj = sqrt(lj1)
     fqj = sqrt(lj2)
     xj = (fpj * Lj + fqj * Uj) / (fpj + fqj)
@@ -52,23 +77,120 @@ function (xu::XUpdater)(λ, j)
 end
 
 # Primal problem functions
-struct ConvexApproxGradUpdater{T, TPD<:PrimalData{T}, TM<:MMAModel{T}}
+struct ConvexApproxGradUpdater{T, TV, TPD<:PrimalData{T}, TM<:MMAModel{T, TV}}
     pd::TPD
     m::TM
 end
 
-function (gu::ConvexApproxGradUpdater{T})() where T
+function (gu::ConvexApproxGradUpdater{T, TV})() where {T, TV <: AbstractVector}
     @unpack pd, m = gu
-    @unpack f_val, g_val, r = pd
+    @unpack f_val, g_val, r, x, σ, x1, p0, q0, ∇f, p, q, ρ, ∇g = pd
     n = dim(m)
-    r0 = f_val[] - mapreduce(gu, +, 1:n, init=T(0))
-    map!((i)->(g_val[i] - mapreduce(gu, +, Base.Iterators.product(1:n, i:i), init=T(0))), 
-        r, 1:length(constraints(m)))
+    r0 = f_val[]
+    for j in 1:n
+        r0 -= getgradelement(x, σ, x1, p0, q0, ∇f, j)
+    end
+    for i in 1:length(constraints(m))
+        r[i] = g_val[i]
+        for j in 1:n
+            r[i] -= getgradelement(x, σ, p, q, ρ, ∇g, (j, i))
+        end
+    end
     pd.r0[] = r0
 end
-function (gu::ConvexApproxGradUpdater{T})(j::Int) where T
-    pd = gu.pd
-    @unpack x, σ, x1, p0, q0, ∇f = pd
+
+function (gu::ConvexApproxGradUpdater{T, TV})() where {T, TV <: CuVector}
+    @unpack pd, m = gu
+    @unpack f_val, g_val, r, x, σ, x1, p0, q0, ∇f, p, q, ρ, ∇g = pd
+    n = dim(m)
+    r0 = compute_r0(f_val[], x, σ, x1, p0, q0, ∇f)
+    update_r!(r, g_val, x, σ, p, q, ρ, ∇g)
+    pd.r0[] = r0
+end
+
+function compute_r0(r0, x::AbstractVector{T}, σ, x1, p0, q0, ∇f, ::Val{blocksize} = Val(80), ::Val{threads} = Val(256)) where {T, blocksize, threads}
+    result = similar(x, T, (blocksize,))
+    args = (x, σ, x1, p0, q0, ∇f, result, Val(threads))
+    @cuda blocks = blocksize threads = threads gradupdater_kernel1(args...)
+    CUDAnative.synchronize()
+    r0 -= sum(Array(result))
+    return r0
+end
+
+function gradupdater_kernel1(x::AbstractVector{T}, σ, x1, p0, q0, ∇f, result, ::Val{LMEM}) where {T, LMEM}
+    j = @thread_global_index()
+	offset = @total_threads()
+    out = zero(T)
+    # # Loop sequentially over chunks of input vector
+    while j <= length(x)
+        out += getgradelement(x, σ, x1, p0, q0, ∇f, j)
+        j += offset
+    end
+
+    # Perform parallel reduction
+	tmp_local = @cuStaticSharedMem(T, LMEM)
+    local_index = @thread_local_index()
+    tmp_local[local_index] = out
+    sync_threads()
+
+    offset = @total_threads_per_block() ÷ 2
+    while offset > 0
+        if (local_index <= offset)
+            tmp_local[local_index] += tmp_local[local_index + offset]
+        end
+		sync_threads()
+        offset = offset ÷ 2
+    end
+    if local_index == 1
+        result[@block_index()] = tmp_local[1]
+    end
+
+    return
+end
+
+function update_r!(r, g_val, x::AbstractVector{T}, σ, p, q, ρ, ∇g, ::Val{blocksize} = Val(80), ::Val{threads} = Val(256)) where {T, blocksize, threads}
+    result = similar(x, T, (blocksize,))
+    for i in 1:length(r)
+        r[i] = g_val[i]
+        args = (x, σ, p, q, i, ρ[i], ∇g, result, Val(threads))
+        @cuda blocks = blocksize threads = threads gradupdater_kernel2(args...)
+        CUDAnative.synchronize()
+        r[i] -= sum(Array(result))
+    end
+    return 
+end
+
+function gradupdater_kernel2(x::AbstractVector{T}, σ, p, q, i, ρi, ∇g, result, ::Val{LMEM}) where {T, LMEM}
+    j = @thread_global_index()
+	offset = @total_threads()
+    out = zero(T)
+    # # Loop sequentially over chunks of input vector
+    @inbounds while j <= length(x)
+        out += getgradelement(x, σ, p, q, ρi, ∇g, (j, i))
+        j += offset
+    end
+
+    # Perform parallel reduction
+	tmp_local = @cuStaticSharedMem(T, LMEM)
+    local_index = @thread_local_index()
+    tmp_local[local_index] = out
+    sync_threads()
+
+    offset = @total_threads_per_block() ÷ 2
+    while offset > 0
+        if (local_index <= offset)
+            tmp_local[local_index] += tmp_local[local_index + offset]
+        end
+		sync_threads()
+        offset = offset ÷ 2
+    end
+    if local_index == 1
+        result[@block_index()] = tmp_local[1]
+    end
+    return
+end
+
+function getgradelement(x::AbstractVector{T}, σ, x1, p0, q0, ∇f, j::Int) where {T}
     xj = x[j]
     σj = σ[j]
     Lj, Uj = minus_plus(xj, σj) # x == x1
@@ -78,10 +200,8 @@ function (gu::ConvexApproxGradUpdater{T})(j::Int) where T
     p0[j], q0[j] = p0j, q0j
     return (p0[j] + q0[j])/σj
 end
-function (gu::ConvexApproxGradUpdater{T})(ji::Tuple) where T
+function getgradelement(x::AbstractVector{T}, σ, p, q, ρi, ∇g, ji::Tuple) where {T}
     j, i = ji
-    pd = gu.pd
-    @unpack x, σ, p, q, ρ, ∇g = pd
     σj = σ[j]
     xj = x[j]
     Lj, Uj = minus_plus(xj, σj) # x == x1
@@ -89,34 +209,54 @@ function (gu::ConvexApproxGradUpdater{T})(ji::Tuple) where T
     abs2σj∇gj = abs2(σj)*∇gj
     (pji, qji) = ifelse(∇gj > 0, (abs2σj∇gj, zero(T)), (zero(T), -abs2σj∇gj))
     p[j,i], q[j,i] = pji, qji
-    Δ = ρ[i]*σj/4
+    Δ = ρi*σj/4
     return (pji + qji + 2Δ)/σj
 end
 
-struct VariableBoundsUpdater{T, TPD<:PrimalData{T}, TModel<:MMAModel{T}}
+struct VariableBoundsUpdater{T, TV, TPD<:PrimalData{T}, TModel<:MMAModel{T, TV}}
     pd::TPD
     m::TModel
     μ::T
 end
-
-function (bu::VariableBoundsUpdater{T})() where {T}
-    @unpack pd, m = bu
-    @unpack α, β = pd
+function (bu::VariableBoundsUpdater{T, TV})() where {T, TV <: AbstractVector}
+    @unpack pd, m, μ = bu
+    @unpack α, β, x, σ = pd
     n = dim(m)
-    s = StructArray{NTuple{2,T}}(α, β)
-    map!(s, 1:n) do i
-        t = bu(i)
-        (x1 = t[1], x2 = t[2])
+    for j in 1:n
+        xj = x[j]
+        Lj, Uj = minus_plus(xj, σ[j]) # x == x1 here
+        αj = max(Lj + μ * (xj - Lj), min(m, j))
+        βj = min(Uj - μ * (Uj - xj), max(m, j))    
+        α[j] = αj
+        β[j] = βj
     end
+    return
 end
-function (bu::VariableBoundsUpdater{T})(j) where T
-    @unpack m, pd, μ = bu
-    @unpack x, σ = pd
-    xj = x[j]
-    Lj, Uj = minus_plus(xj, σ[j]) # x == x1 here
-    αj = max(Lj + μ * (xj - Lj), min(m, j))
-    βj = min(Uj - μ * (Uj - xj), max(m, j))
-    return (αj, βj)
+
+function (bu::VariableBoundsUpdater{T, TV})() where {T, TV <: CuVector}
+    @unpack pd, m, μ = bu
+    @unpack α, β, x, σ = pd
+    @unpack box_max, box_min = m
+    n = dim(m)
+    args = (α, β, σ, x, box_max, box_min)
+    callkernel(dev, bounds_kernel, args)
+    CUDAdrv.synchronize(ctx)
+    return
+end
+
+function bounds_kernel(α, β, σ, x, box_max, box_min)
+    j = @thread_global_index()
+    offset = @total_threads()
+    while j <= length(σ)
+        xj = x[j]
+        Lj, Uj = minus_plus(xj, σ[j]) # x == x1 here
+        αj = max(Lj + μ * (xj - Lj), box_min[j])
+        βj = min(Uj - μ * (Uj - xj), box_max[j])
+        α[j] = αj
+        β[j] = βj
+        j += offset
+    end
+    return
 end
 
 struct AsymptotesUpdater{T, TV<:AbstractVector{T}, TModel<:MMAModel{T}}
@@ -130,36 +270,71 @@ struct AsymptotesUpdater{T, TV<:AbstractVector{T}, TModel<:MMAModel{T}}
     s_decr::T
 end
 
-struct InitialAsymptotesUpdater{T, TModel<:MMAModel{T}}
-    m::TModel
-    s_init::T
-end
-Initial(au::AsymptotesUpdater) = InitialAsymptotesUpdater(au.m, au.s_init)
-
-function (au::AsymptotesUpdater{T, TV})(k::Iteration) where {T, TV}
-    @unpack σ, m = au
+function (au::AsymptotesUpdater{T, TV})(k::Iteration) where {T, TV <: AbstractVector}
+    @unpack σ, m, s_init = au
     if k.i == 1 || k.i == 2
-        map!(Initial(au), σ, 1:dim(m))
+        for j in 1:dim(m)
+            σ[j] = s_init * (max(m, j) - min(m, j))
+        end
     else
-        map!(au, σ, 1:dim(m))
+        for j in 1:dim(m)
+            σj = σ[j]
+            xj = x[j]
+            x1j = x1[j]
+            x2j = x2[j]
+            d = ifelse((xj == x1j || x1j == x2j), 
+                σj, ifelse(xor(xj > x1j, x1j > x2j), 
+                σj * s_decr, σj * s_incr))
+            diff = max(m, j) - min(m, j)
+            _min = T(0.01)*diff
+            _max = 10diff
+            σ[j] = ifelse(d <= _min, _min, ifelse(d >= _max, _max, d))
+        end
+    end
+    return
+end
+
+function (au::AsymptotesUpdater{T, TV})(k::Iteration) where {T, TV <: CuVector}
+    @unpack σ, m, s_init, s_incr, s_decr, x, x1, x2 = au
+    @unpack box_max, box_min = m
+
+    if k.i == 1 || k.i == 2
+        args = (σ, s_init, box_max, box_min)
+        callkernel(dev, asymptotes_kernel1, args)
+        CUDAdrv.synchronize(ctx)
+    else
+        args = (σ, x, x1, x2, box_max, box_min, s_incr, s_decr)
+        callkernel(dev, asymptotes_kernel2, args)
+        CUDAdrv.synchronize(ctx)
     end
 end
-# Update move limits
-function (au::InitialAsymptotesUpdater)(j::Int)
-    @unpack m, s_init = au
-    return s_init * (max(m, j) - min(m, j))
+
+function asymptotes_kernel1(σ, s_init, box_max, box_min)
+    j = @thread_global_index()
+    offset = @total_threads()
+    while j <= length(σ)
+        σ[j] = s_init * (box_max[j] - box_min[j])
+        j += offset
+    end
+    return
 end
-function (au::AsymptotesUpdater{T})(j::Int) where T
-    @unpack x, x1, x2, s_incr, s_decr, σ, m = au
-    σj = σ[j]
-    xj = x[j]
-    x1j = x1[j]
-    x2j = x2[j]
-    d = ifelse((xj == x1j || x1j == x2j), 
-        σj, ifelse(xor(xj > x1j, x1j > x2j), 
-        σj * s_decr, σj * s_incr))
-    diff = max(m, j) - min(m, j)
-    _min = T(0.01)*diff
-    _max = 10diff
-    return ifelse(d <= _min, _min, ifelse(d >= _max, _max, d))
+
+function asymptotes_kernel2(σ::AbstractVector{T}, x, x1, x2, box_max, box_min, s_incr, s_decr) where {T}
+    j = @thread_global_index()
+    offset = @total_threads()
+    while j <= length(σ)
+        σj = σ[j]
+        xj = x[j]
+        x1j = x1[j]
+        x2j = x2[j]
+        d = ifelse((xj == x1j || x1j == x2j), 
+            σj, ifelse(xor(xj > x1j, x1j > x2j), 
+            σj * s_decr, σj * s_incr))
+        diff = box_max[j] - box_min[j]
+        _min = T(0.01)*diff
+        _max = 10diff
+        σ[j] = ifelse(d <= _min, _min, ifelse(d >= _max, _max, d))
+        j += offset
+    end
+    return
 end

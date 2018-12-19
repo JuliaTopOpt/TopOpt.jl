@@ -14,10 +14,17 @@ nansof(::Type{TM}, n...) where TM = (TM(undef, n...) .= NaN)
 
 @inline or(a,b) = a || b
 
-@inline function matdot(v::AbstractVector, A::AbstractMatrix, j::Int)
-    T = promote_type(eltype(v), eltype(A))
-    r = mapreduce((va)->(va[1]*va[2]), +, zip(v, @view(A[j,:])), init=T(0))
-    return r
+macro matdot(v, A, j)
+    r = gensym()
+    T = gensym()
+    esc(quote
+        $T = promote_type(eltype($v), eltype($A))
+        $r = zero($T)
+        for i in 1:length($v)
+            $r += $v[i] * $A[$j, i]
+        end
+        $r
+    end)
 end
 
 function check_error(m, x0)
@@ -34,17 +41,21 @@ function check_error(m, x0)
 end
 
 # From Optim.jl
-function assess_convergence(x::Array,
-                            x_previous::Array,
+function assess_convergence(x::AbstractArray{T},
+                            x_previous::AbstractArray,
                             f_x::Real,
                             f_x_previous::Real,
-                            gr::Array,
+                            gr::AbstractArray,
                             xtol::Real,
                             ftol::Real,
-                            grtol::Real)
+                            grtol::Real) where {T}
     x_converged, f_converged, gr_converged, f_increased = false, false, false, false
 
-    x_residual = maxdiff(x, x_previous)
+    if x isa CuArray
+        x_residual = mapreduce((x1, x2) -> abs(x1 - x2), max, x, x_previous, init=zero(T))
+    else
+        x_residual = maxdiff(x, x_previous)
+    end
     f_residual = abs(f_x - f_x_previous)
     gr_residual = maximum(abs, gr)
 
