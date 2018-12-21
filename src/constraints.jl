@@ -86,34 +86,13 @@ function compute_volume(cellvolumes::CuVector{T}, x, fixed_volume, varind, black
 end
 
 function volume_kernel(result, cellvolumes::AbstractVector{T}, x, varind, black, white, ::Val{LMEM}) where {T, LMEM}
-    i = @thread_global_index()
-    vol = zero(T)
-    # # Loop sequentially over chunks of input vector
-	offset = @total_threads()
-    @inbounds while i <= length(cellvolumes)
+    @mapreduce_block(i, length(cellvolumes), +, T, LMEM, result, begin
         if !(black[i]) && !(white[i])
-            vol += x[varind[i]]*cellvolumes[i]
+            x[varind[i]]*cellvolumes[i]
+        else
+            zero(T)
         end
-        i += offset
-    end
-
-    # Perform parallel reduction
-	tmp_local = @cuStaticSharedMem(T, LMEM)
-    local_index = @thread_local_index()
-    @inbounds tmp_local[local_index] = vol
-    sync_threads()
-
-    offset = @total_threads_per_block() ÷ 2
-    @inbounds while offset > 0
-        if (local_index <= offset)
-            tmp_local[local_index] += tmp_local[local_index + offset]
-        end
-		sync_threads()
-        offset = offset ÷ 2
-    end
-    if local_index == 1
-        @inbounds result[@block_index()] = tmp_local[1]
-    end
+    end)
 
     return
 end

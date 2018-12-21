@@ -1,3 +1,7 @@
+include(joinpath("InpParser", "runtests.jl"))
+include(joinpath("MMA", "runtests.jl"))
+include(joinpath("TopOptProblems", "runtests.jl"))
+
 using TopOpt.TopOptProblems
 using Test
 

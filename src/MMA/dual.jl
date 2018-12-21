@@ -87,63 +87,17 @@ function computeφ(φ0, p0::CuVector{T}, q0, p, q, ρ, σ, λ, x1, x, ::Val{bloc
 end
 
 function computeφ_kernel1(x::AbstractVector{T}, x1, p0, q0, σ, result, ::Val{LMEM}) where {T, LMEM}
-    j = @thread_global_index()
-	offset = @total_threads()
-    out = zero(T)
-    # # Loop sequentially over chunks of input vector
-    while j <= length(x)
-        out += getdualterm(p0, q0, σ, x1, x, j)
-        j += offset
-    end
-
-    # Perform parallel reduction
-	tmp_local = @cuStaticSharedMem(T, LMEM)
-    local_index = @thread_local_index()
-    tmp_local[local_index] = out
-    sync_threads()
-
-    offset = @total_threads_per_block() ÷ 2
-    while offset > 0
-        if (local_index <= offset)
-            tmp_local[local_index] += tmp_local[local_index + offset]
-        end
-		sync_threads()
-        offset = offset ÷ 2
-    end
-    if local_index == 1
-        result[@block_index()] = tmp_local[1]
-    end
+    @mapreduce_block(j, length(x), +, T, LMEM, result, begin
+        getdualterm(p0, q0, σ, x1, x, j)
+    end)
 
     return
 end
 
 function computeφ_kernel2(x::AbstractVector{T}, x1, p, q, ρi, σ, λi, i, result, ::Val{LMEM}) where {T, LMEM}
-    j = @thread_global_index()
-	offset = @total_threads()
-    out = zero(T)
-    # # Loop sequentially over chunks of input vector
-    while j <= length(x)
-        out += getdualterm(p, q, ρi, σ, x1, x, λi, (j, i))
-        j += offset
-    end
-
-    # Perform parallel reduction
-	tmp_local = @cuStaticSharedMem(T, LMEM)
-    local_index = @thread_local_index()
-    tmp_local[local_index] = out
-    sync_threads()
-
-    offset = @total_threads_per_block() ÷ 2
-    while offset > 0
-        if (local_index <= offset)
-            tmp_local[local_index] += tmp_local[local_index + offset]
-        end
-		sync_threads()
-        offset = offset ÷ 2
-    end
-    if local_index == 1
-        result[@block_index()] = tmp_local[1]
-    end
+    @mapreduce_block(j, length(x), +, T, LMEM, result, begin
+        getdualterm(p, q, ρi, σ, x1, x, λi, (j, i))
+    end)
 
     return
 end
@@ -192,32 +146,10 @@ function compute_grad!(::GPU, dgrad, ∇φ::AbstractVector{T}, λ, ::Val{blocksi
     return ∇φ
 end
 function compute_grad_kernel(x::AbstractVector{T}, x1, p, q, ρi, i, σ, result, ::Val{LMEM}) where {T, LMEM}
-    j = @thread_global_index()
-	offset = @total_threads()
-    out = zero(T)
-    # # Loop sequentially over chunks of input vector
-    @inbounds while j <= length(x)
-        out += getgradterm(x, x1, p, q, ρi, σ, (j, i))
-        j += offset
-    end
+    @mapreduce_block(j, length(x), +, T, LMEM, result, begin
+        getgradterm(x, x1, p, q, ρi, σ, (j, i))
+    end)
 
-    # Perform parallel reduction
-	tmp_local = @cuStaticSharedMem(T, LMEM)
-    local_index = @thread_local_index()
-    tmp_local[local_index] = out
-    sync_threads()
-
-    offset = @total_threads_per_block() ÷ 2
-    while offset > 0
-        if (local_index <= offset)
-            tmp_local[local_index] += tmp_local[local_index + offset]
-        end
-		sync_threads()
-        offset = offset ÷ 2
-    end
-    if local_index == 1
-        result[@block_index()] = tmp_local[1]
-    end
     return
 end
 function getgradterm(x, x1, p, q, ρi, σ, ji::Tuple)

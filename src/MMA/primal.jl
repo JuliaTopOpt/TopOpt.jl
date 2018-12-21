@@ -93,7 +93,7 @@ function (gu::ConvexApproxGradUpdater{T, TV})() where {T, TV <: AbstractVector}
     for i in 1:length(constraints(m))
         r[i] = g_val[i]
         for j in 1:n
-            r[i] -= getgradelement(x, σ, p, q, ρ, ∇g, (j, i))
+            r[i] -= getgradelement(x, σ, p, q, ρ[i], ∇g, (j, i))
         end
     end
     pd.r0[] = r0
@@ -118,32 +118,9 @@ function compute_r0(r0, x::AbstractVector{T}, σ, x1, p0, q0, ∇f, ::Val{blocks
 end
 
 function gradupdater_kernel1(x::AbstractVector{T}, σ, x1, p0, q0, ∇f, result, ::Val{LMEM}) where {T, LMEM}
-    j = @thread_global_index()
-	offset = @total_threads()
-    out = zero(T)
-    # # Loop sequentially over chunks of input vector
-    while j <= length(x)
-        out += getgradelement(x, σ, x1, p0, q0, ∇f, j)
-        j += offset
-    end
-
-    # Perform parallel reduction
-	tmp_local = @cuStaticSharedMem(T, LMEM)
-    local_index = @thread_local_index()
-    tmp_local[local_index] = out
-    sync_threads()
-
-    offset = @total_threads_per_block() ÷ 2
-    while offset > 0
-        if (local_index <= offset)
-            tmp_local[local_index] += tmp_local[local_index + offset]
-        end
-		sync_threads()
-        offset = offset ÷ 2
-    end
-    if local_index == 1
-        result[@block_index()] = tmp_local[1]
-    end
+    @mapreduce_block(j, length(x), +, T, LMEM, result, begin
+        getgradelement(x, σ, x1, p0, q0, ∇f, j)
+    end)
 
     return
 end
@@ -161,32 +138,10 @@ function update_r!(r, g_val, x::AbstractVector{T}, σ, p, q, ρ, ∇g, ::Val{blo
 end
 
 function gradupdater_kernel2(x::AbstractVector{T}, σ, p, q, i, ρi, ∇g, result, ::Val{LMEM}) where {T, LMEM}
-    j = @thread_global_index()
-	offset = @total_threads()
-    out = zero(T)
-    # # Loop sequentially over chunks of input vector
-    @inbounds while j <= length(x)
-        out += getgradelement(x, σ, p, q, ρi, ∇g, (j, i))
-        j += offset
-    end
+    @mapreduce_block(j, length(x), +, T, LMEM, result, begin
+        getgradelement(x, σ, p, q, ρi, ∇g, (j, i))
+    end)
 
-    # Perform parallel reduction
-	tmp_local = @cuStaticSharedMem(T, LMEM)
-    local_index = @thread_local_index()
-    tmp_local[local_index] = out
-    sync_threads()
-
-    offset = @total_threads_per_block() ÷ 2
-    while offset > 0
-        if (local_index <= offset)
-            tmp_local[local_index] += tmp_local[local_index + offset]
-        end
-		sync_threads()
-        offset = offset ÷ 2
-    end
-    if local_index == 1
-        result[@block_index()] = tmp_local[1]
-    end
     return
 end
 
@@ -271,7 +226,7 @@ struct AsymptotesUpdater{T, TV<:AbstractVector{T}, TModel<:MMAModel{T}}
 end
 
 function (au::AsymptotesUpdater{T, TV})(k::Iteration) where {T, TV <: AbstractVector}
-    @unpack σ, m, s_init = au
+    @unpack σ, m, s_init, x, x1, x2, s_incr, s_decr = au
     if k.i == 1 || k.i == 2
         for j in 1:dim(m)
             σ[j] = s_init * (max(m, j) - min(m, j))
@@ -291,6 +246,7 @@ function (au::AsymptotesUpdater{T, TV})(k::Iteration) where {T, TV <: AbstractVe
             σ[j] = ifelse(d <= _min, _min, ifelse(d >= _max, _max, d))
         end
     end
+
     return
 end
 

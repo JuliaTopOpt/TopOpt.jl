@@ -66,6 +66,7 @@ function (o::ComplianceObj{T})(x, grad) where {T}
             end
         else
             o.fevals += 1
+            setpenalty!(solver, penalty.p)
             solver()
         end
         obj = compute_compliance(cell_comp, grad, cell_dofs, Kes, u, 
@@ -182,32 +183,9 @@ function compute_obj(cell_comp::AbstractVector{T}, x, varind, black, white, pena
 end
 
 function comp_kernel2(result, cell_comp::AbstractVector{T}, x, varind, black, white, penalty, xmin, ::Val{LMEM}) where {T, LMEM}
-    i = @thread_global_index()
-    obj = zero(T)
-    # # Loop sequentially over chunks of input vector
-	offset = @total_threads()
-    @inbounds while i <= length(cell_comp)
-        obj += w_comp(cell_comp[i], x[varind[i]], black[i], white[i], penalty, xmin)
-        i += offset
-    end
-
-    # Perform parallel reduction
-	tmp_local = @cuStaticSharedMem(T, LMEM)
-    local_index = @thread_local_index()
-    @inbounds tmp_local[local_index] = obj
-    sync_threads()
-
-    offset = @total_threads_per_block() ÷ 2
-    @inbounds while offset > 0
-        if (local_index <= offset)
-            tmp_local[local_index] += tmp_local[local_index + offset]
-        end
-		sync_threads()
-        offset = offset ÷ 2
-    end
-    if local_index == 1
-        @inbounds result[@block_index()] = tmp_local[1]
-    end
+    @mapreduce_block(i, length(cell_comp), +, T, LMEM, result, begin
+        w_comp(cell_comp[i], x[varind[i]], black[i], white[i], penalty, xmin)
+    end)
 
     return
 end

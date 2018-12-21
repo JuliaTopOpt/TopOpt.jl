@@ -26,7 +26,7 @@ mutable struct SIMP{T, TO, TP} <: AbstractSIMP
 end
 whichdevice(s::SIMP) = whichdevice(s.optimizer)
 
-function SIMP(optimizer, p::T, tracing=true) where T
+function SIMP(optimizer, p::T; tracing=true) where T
     penalty = getpenalty(optimizer)
     penalty = @set penalty.p = p
     ncells = getncells(optimizer.obj.problem)
@@ -46,6 +46,7 @@ end
 function (s::SIMP{T, TO})(x0=s.optimizer.obj.solver.vars) where {T, TO<:MMAOptimizer}
     #reset_timer!(to)
     r = @timeit to "SIMP" begin
+        setpenalty!(s.optimizer, s.penalty.p)
         prev_l = length(s.topologies)
         prev_fevals = s.optimizer.obj.fevals
         mma_results = s.optimizer(x0)
@@ -71,10 +72,10 @@ function update_result!(s::SIMP{T}, mma_results, prev_l, prev_fevals) where T
     # Postprocessing
     #@debug @show mma_results.minimum
     @unpack result, optimizer, topologies = s
-    obj = optimizer.obj
-    problem = obj.problem
+    @unpack obj = optimizer
+    @unpack problem = obj
     @unpack black, white, varind = problem
-    x_hist = obj.topopt_trace.x_hist    
+    @unpack x_hist = obj.topopt_trace    
     nel = getncells(problem)
 
     if optimizer.obj.tracing
@@ -82,30 +83,12 @@ function update_result!(s::SIMP{T}, mma_results, prev_l, prev_fevals) where T
         sizehint!(topologies, l)
         for i in (prev_l+1) : l
             topology = zeros(T, nel)
-            for j in 1:nel
-                if black[j]
-                    topology[j] = 1
-                elseif white[j]
-                    topology[j] = 0
-                else
-                    topology[j] = x_hist[i][varind[j]]
-                end
-            end
-            push!(topologies, copy(topology))
+            update_topology!(topology, black, white, x_hist[i], varind)
+            push!(topologies, topology)
         end
         result.topology .= topologies[end]
     else
-        topology = result.topology
-        minimizer = mma_results.minimizer
-        for i in 1:nel
-            if black[i]
-                topology[i] = 1
-            elseif white[i]
-                topology[i] = 0
-            else
-                topology[i] = minimizer[varind[i]]
-            end
-        end
+        update_topology!(result.topology, black, white, mma_results.minimizer, varind)
     end
     result.objval = mma_results.minimum
     new_fevals = obj.fevals - prev_fevals
@@ -116,12 +99,22 @@ function update_result!(s::SIMP{T}, mma_results, prev_l, prev_fevals) where T
     if new_fevals > 0
         result.nsubproblems += 1
     end
-    result.x_abschange = mma_results.x_abschange
-    result.x_converged = mma_results.x_converged
-    result.f_abschange = mma_results.f_abschange
-    result.f_converged = mma_results.f_converged
-    result.g_residual = mma_results.g_residual
-    result.g_converged = mma_results.g_converged
+    @unpack x_abschange, x_converged, f_abschange, f_converged, g_residual, g_converged = mma_results
+    @pack! result = x_abschange, x_converged, f_abschange, f_converged, g_residual, g_converged
 
     return result
 end    
+
+function update_topology!(topology, black, white, x, varind)
+    for i in 1:length(black)
+        if black[i]
+            topology[i] = 1
+        elseif white[i]
+            topology[i] = 0
+        else
+            topology[i] = x[varind[i]]
+        end
+    end
+
+    return
+end

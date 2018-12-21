@@ -13,7 +13,8 @@ export  CPU,
         @total_blocks, 
         @thread_global_index, 
         @total_threads, 
-        callkernel
+        callkernel,
+        @mapreduce_block
 
 struct CPU end
 struct GPU end
@@ -87,6 +88,44 @@ end
 
 macro total_threads()
     :(@total_blocks() * @total_threads_per_block())
+end
+
+macro mapreduce_block(indvar, limit, op, T, LMEM, result, mapexpr)
+    _mapreduce_block(indvar, limit, op, T, LMEM, result, mapexpr)
+end
+function _mapreduce_block(indvar, limit, op, T, LMEM, result, mapexpr)
+    offset = gensym()
+    out = gensym()
+    tmp_local = gensym()
+    local_index = gensym()
+    esc(quote
+        $indvar = @thread_global_index()
+        $offset = @total_threads()
+        $out = zero($T)
+        # # Loop sequentially over chunks of input vector
+        while $indvar <= $limit
+            $out = $op($out, $mapexpr)
+            $indvar += $offset
+        end
+
+        # Perform parallel reduction
+        $tmp_local = @cuStaticSharedMem($T, $LMEM)
+        $local_index = @thread_local_index()
+        $tmp_local[$local_index] = $out
+        sync_threads()
+
+        $offset = @total_threads_per_block() ÷ 2
+        while $offset > 0
+            if ($local_index <= $offset)
+                $tmp_local[$local_index] = $op($tmp_local[$local_index], $tmp_local[$local_index + $offset])
+            end
+            sync_threads()
+            $offset = $offset ÷ 2
+        end
+        if $local_index == 1
+            $result[@block_index()] = $tmp_local[1]
+        end
+    end)
 end
 
 function callkernel(dev, kernel, args)
