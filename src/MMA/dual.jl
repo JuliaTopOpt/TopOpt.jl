@@ -53,14 +53,14 @@ end
 function computeφ(φ0, p0::AbstractVector{T}, q0, p, q, ρ, σ, λ, x1, x) where {T}
     nv, nc = size(p)
     φ = φ0
-    for j in 1:nv
-        φ += getdualterm(p0, q0, σ, x1, x, j)
+    φ += tmapreduce(+, 1:nv, init = zero(T)) do j
+        getdualterm(p0, q0, σ, x1, x, j)
     end
     for i in 1:nc
         λi = λ.cpu[i]
         ρi = ρ[i]
-        for j in 1:nv
-            φ += getdualterm(p, q, ρi, σ, x1, x, λi, (j, i))
+        φ += tmapreduce(+, 1:nv, init = zero(T)) do j
+            getdualterm(p, q, ρi, σ, x1, x, λi, (j, i))
         end
     end
     return φ
@@ -111,6 +111,7 @@ function (dgrad::DualObjGrad)(∇φ::AbstractVector{T}, λ) where {T}
     compute_grad!(whichdevice(dgrad.pd), dgrad, ∇φ, λ)
 end
 function compute_grad!(::CPU, dgrad, ∇φ, λ)
+    T = eltype(λ)
     @unpack pd = dgrad
     @unpack r, r0, p, q, σ, x1, x, ρ = pd
     # Updates x to the Lagrangian minimizer for the input λ
@@ -121,8 +122,8 @@ function compute_grad!(::CPU, dgrad, ∇φ, λ)
     for i in 1:nc
         ∇φ[i] = -r[i]
         ρi = ρ[i]
-        for j in 1:nv
-            ∇φ[i] -= getgradterm(x, x1, p, q, ρi, σ, (j, i))
+        ∇φ[i] -= tmapreduce(+, 1:nv, init = zero(T)) do j
+            getgradterm(x, x1, p, q, ρi, σ, (j, i))
         end
     end
     return ∇φ

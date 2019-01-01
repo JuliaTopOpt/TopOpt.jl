@@ -32,7 +32,7 @@ function check_error(m, x0)
         throw(ArgumentError("initial variable must have same length as number of design variables"))
     end
 
-    for j in 1:length(x0)
+    Threads.@threads for j in 1:length(x0)
         # x is not in box
         if !(min(m, j) <= x0[j] <= max(m,j))
             throw(ArgumentError("initial variable at index $j outside box constraint"))

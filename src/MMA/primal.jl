@@ -24,10 +24,10 @@ end
 function (xu::XUpdater)(λ::DualSolution{:CPU})
     @unpack x, p0, p, q0, q, σ, x1, α, β, ρ = xu.pd
     λρ = dot(λ.cpu, ρ)
-    for j in 1:length(x)
+    tmap!(x, 1:length(x)) do j
         λpj = @matdot(λ.cpu, p, j)
         λqj = @matdot(λ.cpu, q, j)
-        x[j] = getxj(λρ, λpj, λqj, j, p0, q0, σ, x1, α, β)
+        getxj(λρ, λpj, λqj, j, p0, q0, σ, x1, α, β)
     end
     return
 end
@@ -87,13 +87,13 @@ function (gu::ConvexApproxGradUpdater{T, TV})() where {T, TV <: AbstractVector}
     @unpack f_val, g_val, r, x, σ, x1, p0, q0, ∇f, p, q, ρ, ∇g = pd
     n = dim(m)
     r0 = f_val[]
-    for j in 1:n
-        r0 -= getgradelement(x, σ, x1, p0, q0, ∇f, j)
+    r0 -= tmapreduce(+, 1:n, init = zero(T)) do j
+        getgradelement(x, σ, x1, p0, q0, ∇f, j)
     end
     for i in 1:length(constraints(m))
         r[i] = g_val[i]
-        for j in 1:n
-            r[i] -= getgradelement(x, σ, p, q, ρ[i], ∇g, (j, i))
+        r[i] -= tmapreduce(+, 1:n, init = zero(T)) do j
+            getgradelement(x, σ, p, q, ρ[i], ∇g, (j, i))
         end
     end
     pd.r0[] = r0
@@ -177,13 +177,13 @@ function (bu::VariableBoundsUpdater{T, TV})() where {T, TV <: AbstractVector}
     @unpack pd, m, μ = bu
     @unpack α, β, x, σ = pd
     n = dim(m)
-    for j in 1:n
+    αβ = StructArray{Tuple{T, T}}(α, β)
+    tmap!(αβ, 1:n) do j
         xj = x[j]
         Lj, Uj = minus_plus(xj, σ[j]) # x == x1 here
         αj = max(Lj + μ * (xj - Lj), min(m, j))
         βj = min(Uj - μ * (Uj - xj), max(m, j))    
-        α[j] = αj
-        β[j] = βj
+        αj, βj
     end
     return
 end
@@ -228,11 +228,11 @@ end
 function (au::AsymptotesUpdater{T, TV})(k::Iteration) where {T, TV <: AbstractVector}
     @unpack σ, m, s_init, x, x1, x2, s_incr, s_decr = au
     if k.i == 1 || k.i == 2
-        for j in 1:dim(m)
-            σ[j] = s_init * (max(m, j) - min(m, j))
+        tmap!(σ, 1:dim(m)) do j
+            s_init * (max(m, j) - min(m, j))
         end
     else
-        for j in 1:dim(m)
+        tmap!(σ, 1:dim(m)) do j
             σj = σ[j]
             xj = x[j]
             x1j = x1[j]
@@ -243,7 +243,7 @@ function (au::AsymptotesUpdater{T, TV})(k::Iteration) where {T, TV <: AbstractVe
             diff = max(m, j) - min(m, j)
             _min = T(0.01)*diff
             _max = 10diff
-            σ[j] = ifelse(d <= _min, _min, ifelse(d >= _max, _max, d))
+            ifelse(d <= _min, _min, ifelse(d >= _max, _max, d))
         end
     end
 

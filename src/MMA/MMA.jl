@@ -6,7 +6,8 @@
 # JA  - Int. J. Numer. Meth. Engng.
 module MMA
 
-using Parameters, StructArrays, Setfield, TimerOutputs, ..GPUUtils, CuArrays, CUDAnative
+using Parameters, StructArrays, Setfield, TimerOutputs, Base.Threads
+using ..GPUUtils, CuArrays, CUDAnative, KissThreading
 using CUDAdrv: CUDAdrv
 
 const dev = CUDAdrv.device()
@@ -90,8 +91,8 @@ function optimize!(#=to, =#workspace::MMAWorkspace{T, TV, TM}) where {T, TV, TM}
         asymptotes_updater(Iteration(outer_iter))
 
         # Track trial points two steps back
-        copyto!(x2, x1)
-        copyto!(x1, x)
+        tmap!(identity, x2, x1)
+        tmap!(identity, x1, x)
 
         # Update convex approximation
         ## Update bounds on primal variables

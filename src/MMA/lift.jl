@@ -19,11 +19,9 @@ function (lu::LiftUpdater{T})() where T
     return lift
 end
 function computew(x::Vector{T}, x1, σ) where {T}
-    w = zero(T)
-    for j in 1:length(x)
-        w += (x[j] - x1[j])^2 / (σ[j]^2 - (x[j] - x1[j])^2)
+    tmapreduce(+, 1:length(x), init = zero(T)) do j
+        (x[j] - x1[j])^2 / (σ[j]^2 - (x[j] - x1[j])^2)
     end
-    w
 end
 
 function computew(x::CuVector{T}, x1, σ, ::Val{blocksize} = Val(80), ::Val{threads} = Val(256)) where {T, blocksize, threads}

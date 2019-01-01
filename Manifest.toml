@@ -147,6 +147,10 @@ git-tree-sha1 = "b91250044374764e7c29af59a774c4b8d6100b6e"
 uuid = "f6369f11-7733-5829-9624-2563aa707210"
 version = "0.10.1"
 
+[[Future]]
+deps = ["Random"]
+uuid = "9fa8497b-333b-5362-9e8d-4d0656e87820"
+
 [[GPUArrays]]
 deps = ["Adapt", "FFTW", "FillArrays", "LinearAlgebra", "Printf", "Random", "Serialization", "StaticArrays", "Test"]
 git-tree-sha1 = "f0016298a7c7c8f36a7a94694b6be5e8f663a948"
@@ -180,6 +184,14 @@ repo-rev = "master"
 repo-url = "https://github.com/mohamed82008/JuAFEM.jl"
 uuid = "30d91d44-8115-11e8-1d28-c19a5ac16de8"
 version = "0.2.0"
+
+[[KissThreading]]
+deps = ["Compat", "Future"]
+git-tree-sha1 = "f7f2ea6abcf71c1296c6739ef89855a6c7834b6e"
+repo-rev = "master"
+repo-url = "https://github.com/bkamins/KissThreading.jl"
+uuid = "36cdf07b-9254-507f-b4f5-798eb7a84506"
+version = "0.0.0"
 
 [[LLVM]]
 deps = ["InteractiveUtils", "Libdl", "Printf", "Test", "Unicode"]
