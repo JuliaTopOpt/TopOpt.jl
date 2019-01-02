@@ -24,10 +24,37 @@ max(m::MMAModel) = m.box_min
 objective(m::MMAModel) = m.objective
 constraints(m::MMAModel) = m.ineq_constraints
 constraint(m::MMAModel, i::Integer) = m.ineq_constraints[i]
-eval_objective(m, x::AbstractVector{T}, ∇g) where {T} = T(m.objective(x, ∇g))
-eval_objective(m, x::AbstractVector{T}) where {T} = m.objective(x, T[])
-eval_constraint(m, i, x::AbstractVector{T}, ∇g) where {T} = T(constraint(m, i)(x, ∇g))
-eval_constraint(m, i, x::AbstractVector{T}) where {T} = constraint(m, i)(x, T[])
+
+eval_objective(m, x::AbstractVector{T}) where {T} = eval_objective(m, x, T[])
+eval_objective(m, x, ∇g) = eval_objective(whichdevice(objective(m)), m, x, ∇g)
+eval_objective(::CPU, m, x::Vector{T}, ∇g) where {T} = T(m.objective(x, ∇g))
+eval_objective(::GPU, m, x::CuVector{T}, ∇g) where {T} = T(m.objective(x, ∇g))
+function eval_objective(::GPU, m, x::Vector{T}, ∇g) where {T}
+    x_gpu = CuArray(x)
+    ∇g_gpu = CuArray(∇g)
+    obj = T(m.objective(x_gpu, ∇g_gpu))
+    copyto!(∇g, ∇g_gpu)
+    return obj
+end
+function eval_objective(::CPU, m, x::CuVector{T}, ∇g) where {T}
+    error("Optimization on the GPU with the objective evaluation on the CPU is weird!")
+end
+
+eval_constraint(m, i, x::AbstractVector{T}) where {T} = eval_constraint(m, i, x, T[])
+eval_constraint(m, i, x, ∇g) = eval_constraint(whichdevice(constraint(m, i)), m, i, x, ∇g)
+eval_constraint(::CPU, m, i, x::Vector{T}, ∇g) where T = T(constraint(m, i)(x, ∇g))
+eval_constraint(::GPU, m, i, x::CuVector{T}, ∇g) where T = T(constraint(m, i)(x, ∇g))
+function eval_constraint(::GPU, m, i, x::Vector, ∇g)
+    x_gpu = CuArray(x)
+    ∇g_gpu = CuArray(∇g)
+    constr = T(constraint(m, i)(x, ∇g))
+    copyto!(∇g, ∇g_gpu)
+    return constr
+end
+function eval_constraint(::CPU, m, i, x::CuVector, ∇g)
+    error("Optimization on the GPU with the constraint evaluation on the CPU is weird!")
+end
+
 ftol(m) = m.ftol[]
 xtol(m) = m.xtol[]
 grtol(m) = m.grtol[]
@@ -35,7 +62,8 @@ ftol!(m, v) = m.ftol[] = v
 xtol!(m, v) = m.xtol[] = v
 grtol!(m, v) = m.grtol[] = v
 
-MMAModel(dim, objective, args...; kwargs...) = MMAModel(whichdevice(objective), dim, objective, args...; kwargs...) 
+MMAModel(args...; kwargs...) = MMAModel{CPU}(args...; kwargs...)
+MMAModel{T}(args...; kwargs...) where T = MMAModel(T(), args...; kwargs...) 
 MMAModel(::CPU, args...; kwargs...) = MMAModel{Float64, Vector{Float64}, Vector{Function}}(args...; kwargs...)
 MMAModel(::GPU, args...; kwargs...) = MMAModel{Float64, CuVector{Float64}, Vector{Function}}(args...; kwargs...)
 

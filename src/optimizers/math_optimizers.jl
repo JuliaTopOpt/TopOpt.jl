@@ -18,34 +18,41 @@ mutable struct MMAOptimizer{T, TM<:MMAModel{T}, TO, TSO, TObj, TConstr, TW} <: A
     g_converged::Bool
     workspace::TW
 end
-whichdevice(o::MMAOptimizer) = o.obj
+whichdevice(o::MMAOptimizer) = o.model
 
-function MMAOptimizer(obj::AbstractObjective, args...; kwargs...)
-    MMAOptimizer(whichdevice(obj), obj, args...; kwargs...)
-end
+MMAOptimizer(args...; kwargs...) = MMAOptimizer{CPU}(args...; kwargs...)
+MMAOptimizer{T}(args...; kwargs...) where T = MMAOptimizer(T(), args...; kwargs...)
+function MMAOptimizer(  device::Tdev, 
+                        obj::AbstractObjective{T}, 
+                        constr, 
+                        opt = MMA.MMA87(), 
+                        subopt = Optim.ConjugateGradient(), 
+                        suboptions = Optim.Options(x_tol = sqrt(eps(T)), f_tol = zero(T), g_tol = zero(T));
 
-function MMAOptimizer(device, obj::AbstractObjective{T}, constr, opt=MMA.MMA87(), subopt=Optim.ConjugateGradient(), suboptions=Optim.Options(x_tol = sqrt(eps(T)), f_tol = zero(T), g_tol = zero(T));
-    maxiter = 100,
-    xtol = 0.001,
-    ftol = xtol,
-    grtol = NaN,
-    s_init = 0.5,
-    s_incr = 1.2,
-    s_decr = 0.7,
-    dual_caps = MMA.default_dual_caps(opt, T)) where {T}
+                        maxiter = 100,
+                        xtol = 0.001,
+                        ftol = xtol,
+                        grtol = NaN,
+                        s_init = 0.5,
+                        s_incr = 1.2,
+                        s_decr = 0.7,
+                        dual_caps = MMA.default_dual_caps(opt, T)
+                    ) where {T, Tdev}
 
     nvars = length(obj.solver.vars)
     xmin = obj.solver.xmin
-    if device isa CPU
-        model = MMAModel(nvars, obj, maxiter=maxiter, ftol=ftol, grtol=grtol, xtol=xtol, store_trace=false, extended_trace=false)
-    else
-        model = MMAModel(nvars, obj, maxiter=maxiter, ftol=ftol, grtol=grtol, xtol=xtol, store_trace=false, extended_trace=false)
-    end
+
+    model = MMAModel{Tdev}(nvars, obj, maxiter=maxiter, ftol=ftol, grtol=grtol, xtol=xtol, store_trace=false, extended_trace=false)
 
     box!(model, zero(T), one(T))
     ineq_constraint!(model, constr)
 
-    workspace = MMA.MMAWorkspace(model, obj.solver.vars, opt, subopt; s_init=s_init, 
+    if Tdev <: CPU && whichdevice(obj) isa GPU
+        x0 = Array(obj.solver.vars)
+    else
+        x0 = obj.solver.vars
+    end
+    workspace = MMA.MMAWorkspace(model, x0, opt, subopt; s_init=s_init, 
     s_incr=s_incr, s_decr=s_decr, dual_caps=dual_caps)    
 
     return MMAOptimizer(model, s_init, s_decr, s_incr, opt, subopt, dual_caps, obj, constr, T(NaN), false, T(NaN), false, T(NaN), false, workspace)

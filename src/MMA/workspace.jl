@@ -1,19 +1,19 @@
-mutable struct MMAWorkspace{T, TV1, TV2, TM, TO, TSO, TSubOptions, TTrace<:OptimizationTrace{T}, TModel<:MMAModel{T}, TPD<:PrimalData{T}, TDualSol<:DualSolution, TXUpdater<:XUpdater{T, TV1, TPD}}
+mutable struct MMAWorkspace{T, Tx, Tc, TJ, TO, TSO, TSubOptions, TTrace<:OptimizationTrace{T}, TModel<:MMAModel{T}, TPD<:PrimalData{T}, TDualSol<:DualSolution, TXUpdater<:XUpdater{T, Tx, TPD}}
     model::TModel
     optimizer::TO
     suboptimizer::TSO
     suboptions::TSubOptions
-    x0::TV1
-    x::TV1
-	x1::TV1
-	x2::TV1
+    x0::Tx
+    x::Tx
+	x1::Tx
+	x2::Tx
 	λ::TDualSol
-	l::TV2
-	u::TV2
-	∇f_x::TV1
-	g::TV2
-	ng_approx::TV2
-	∇g::TM
+	l::Tc
+	u::Tc
+	∇f_x::Tx
+	g::Tc
+	ng_approx::Tc
+	∇g::TJ
 	f_x::T
 	f_calls::Int
 	g_calls::Int
@@ -29,11 +29,11 @@ mutable struct MMAWorkspace{T, TV1, TV2, TM, TO, TSO, TSubOptions, TTrace<:Optim
 	x_residual::T
 	f_residual::T
 	gr_residual::T
-	asymptotes_updater::AsymptotesUpdater{T, TV1, TModel}
-	variable_bounds_updater::VariableBoundsUpdater{T, TV1, TPD, TModel}
-	cvx_grad_updater::ConvexApproxGradUpdater{T, TV1, TPD, TModel}
-	lift_updater::LiftUpdater{T, TV2, TPD}
-	lift_resetter::LiftResetter{T, TV2}
+	asymptotes_updater::AsymptotesUpdater{T, Tx, TModel}
+	variable_bounds_updater::VariableBoundsUpdater{T, Tx, TPD, TModel}
+	cvx_grad_updater::ConvexApproxGradUpdater{T, Tx, TPD, TModel}
+	lift_updater::LiftUpdater{T, Tc, TPD}
+	lift_resetter::LiftResetter{T, Tc}
 	x_updater::TXUpdater
 	dual_obj::DualObjVal{TPD, TXUpdater}
 	dual_obj_grad::DualObjGrad{TPD, TXUpdater}
@@ -47,7 +47,7 @@ const MMA02Workspace{T, TV1, TV2, TM, TSO, TModel, TPD} = MMAWorkspace{T, TV1, T
 Base.show(io::IO, w::MMA87Workspace) = print(io, "Workspace for the method of moving asymptotes of 1987.")
 Base.show(io::IO, w::MMA02Workspace) = print(io, "Workspace for the method of moving asymptotes of 2002.")
 
-function MMAWorkspace(model::MMAModel{T,TV}, x0::TV, optimizer=MMA02(), suboptimizer=Optim.ConjugateGradient(); suboptions=Optim.Options(x_tol=sqrt(eps(T)), f_tol=sqrt(eps(T)), g_tol=sqrt(eps(T))), s_init=T(0.5), s_incr=T(1.2), s_decr=T(0.7), dual_caps=default_dual_caps(optimizer, T)) where {T, TV}
+function MMAWorkspace(model::MMAModel{T, TV}, x0::TV, optimizer=MMA02(), suboptimizer=Optim.ConjugateGradient(); suboptions=Optim.Options(x_tol=sqrt(eps(T)), f_tol=sqrt(eps(T)), g_tol=sqrt(eps(T))), s_init=T(0.5), s_incr=T(1.2), s_decr=T(0.7), dual_caps=default_dual_caps(optimizer, T)) where {T, TV}
 
     n_i = length(constraints(model))
     n_j = dim(model)

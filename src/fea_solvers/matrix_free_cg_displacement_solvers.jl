@@ -1,6 +1,6 @@
 abstract type AbstractMatrixFreeSolver <: AbstractDisplacementSolver end
 
-mutable struct StaticMatrixFreeDisplacementSolver{T, dim, TEInfo<:ElementFEAInfo{dim}, TS<:StiffnessTopOptProblem{dim}, Tv<:AbstractVector{T}, Txes, TDofs, TP<:AbstractPenalty{T}, TI<:Integer, TStateVars<:CGStateVariables{T}, TPrecond} <: AbstractDisplacementSolver
+mutable struct StaticMatrixFreeDisplacementSolver{T, dim, TEInfo <: ElementFEAInfo{dim}, TS<:StiffnessTopOptProblem{dim}, Tv<:AbstractVector{T}, Txes, TDofs, TP<:AbstractPenalty{T}, TI<:Integer, TStateVars<:CGStateVariables{T}, TPrecond} <: AbstractDisplacementSolver
     elementinfo::TEInfo
     problem::TS
     f::Tv

@@ -21,16 +21,17 @@ approx_objvals = [330.0, 175.0, 65.0, 1413.0]
     reuse = true # adaptive penalty flag
 
     # Define a finite element solver
-    solver = FEASolver(Displacement, Direct, problem, xmin = xmin,
-    penalty = TopOpt.PowerPenalty(1.0))
+    solver = FEASolver(Displacement, CG, MatrixFree, problem, xmin = xmin,
+        penalty = TopOpt.PowerPenalty(1.0))
     # Define compliance objective
     filtering = problem isa TopOptProblems.TieBeam ? false : true
     obj = ComplianceObj(problem, solver, filtering = filtering,
+    cu_obj = TopOpt.cu(obj)
     rmin = 3.0, tracing = true, logarithm = false)
     # Define volume constraint
     constr = VolConstr(problem, solver, V)
     # Define subproblem optimizer
-    optimizer = MMAOptimizer(obj, constr, MMA.MMA87(),
+    optimizer = MMAOptimizer{GPUUtils.CPU}(cu_obj, constr, MMA.MMA87(),
         ConjugateGradient(), maxiter=1000); optimizer.obj.fevals = 0
 
     # Define continuation SIMP optimizer
