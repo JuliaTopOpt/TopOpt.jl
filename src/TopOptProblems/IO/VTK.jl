@@ -3,6 +3,8 @@ module VTK
 using ...TopOptProblems: StiffnessTopOptProblem
 using WriteVTK
 
+export  save_mesh
+
 function save_mesh(filename, problem::StiffnessTopOptProblem)
     topology = ones(getncells(TopOptProblems.getdh(problem).grid))
     vtkfile = WriteVTK.vtk_grid(filename, problem, topology)

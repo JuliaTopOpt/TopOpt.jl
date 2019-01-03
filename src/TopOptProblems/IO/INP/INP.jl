@@ -1,5 +1,7 @@
 module INP
 
+export  InpStiffness
+
 using ...TopOptProblems: Metadata, StiffnessTopOptProblem
 using JuAFEM
 

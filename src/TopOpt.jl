@@ -43,12 +43,6 @@ using .Functions
 include(joinpath("Algorithms", "Algorithms.jl"))
 using .Algorithms
 
-# Inp file parser
-include(joinpath("InpParser", "InpParser.jl"))
-
-# Export
-include(joinpath(".", "writevtk.jl"))
-
 export  simulate, 
         TopOptTrace, 
         VolConstr, 

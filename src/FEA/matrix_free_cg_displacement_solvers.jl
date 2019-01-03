@@ -101,15 +101,7 @@ function (s::StaticMatrixFreeDisplacementSolver)()
 end
 
 @define_cu(IterativeSolvers.CGStateVariables, :u, :r, :c)
-@define_cu(ElementFEAInfo, :Kes, :fes, :fixedload, :cellvolumes, :metadata, :black, :white, :varind, :cells)
-@define_cu(TopOptProblems.Metadata, :cell_dofs, :dof_cells, :node_cells, :node_dofs)
 @define_cu(StaticMatrixFreeDisplacementSolver, :f, :problem, :vars, :cg_statevars, :elementinfo, :penalty, :prev_penalty, :u, :fixed_dofs, :free_dofs, :xes)
-@define_cu(JuAFEM.ConstraintHandler, :values, :prescribed_dofs, :dh)
-@define_cu(JuAFEM.DofHandler, :grid)
-@define_cu(JuAFEM.Grid, :cells)
-for T in (PointLoadCantilever, HalfMBB, LBeam, TieBeam, InpStiffness)
-    @eval @define_cu($T, :ch, :black, :white, :varind)
-end
 
 for T in (:PowerPenalty, :RationalPenalty)
     fname = Symbol(:GPU, T)

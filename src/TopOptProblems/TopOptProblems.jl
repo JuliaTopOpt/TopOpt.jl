@@ -26,6 +26,15 @@ include(joinpath("IO", "IO.jl"))
 using .IO
 #include("makie.jl")
 
-export PointLoadCantilever, HalfMBB, LBeam, TieBeam, InpStiffness, StiffnessTopOptProblem, AbstractTopOptProblem, GlobalFEAInfo, ElementFEAInfo, YoungsModulus, assemble, assemble_f!, RaggedArray, ElementMatrix, rawmatrix, bcmatrix
+@define_cu(ElementFEAInfo, :Kes, :fes, :fixedload, :cellvolumes, :metadata, :black, :white, :varind, :cells)
+@define_cu(TopOptProblems.Metadata, :cell_dofs, :dof_cells, :node_cells, :node_dofs)
+@define_cu(JuAFEM.ConstraintHandler, :values, :prescribed_dofs, :dh)
+@define_cu(JuAFEM.DofHandler, :grid)
+@define_cu(JuAFEM.Grid, :cells)
+for T in (PointLoadCantilever, HalfMBB, LBeam, TieBeam, InpStiffness)
+    @eval @define_cu($T, :ch, :black, :white, :varind)
+end
+
+export PointLoadCantilever, HalfMBB, LBeam, TieBeam, InpStiffness, StiffnessTopOptProblem, AbstractTopOptProblem, GlobalFEAInfo, ElementFEAInfo, YoungsModulus, assemble, assemble_f!, RaggedArray, ElementMatrix, rawmatrix, bcmatrix, save_mesh
 
 end # module

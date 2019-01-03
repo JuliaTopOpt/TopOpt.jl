@@ -1,5 +1,8 @@
 module IO
 
+export  InpStiffness,
+        save_mesh
+
 include(joinpath("INP", "INP.jl"))
 using .INP
 
