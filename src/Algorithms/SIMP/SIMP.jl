@@ -1,4 +1,4 @@
-module SIMP
+abstract type AbstractSIMP <: TopOptAlgorithm end
 
 # MMA wrapper
 include("math_optimizers.jl")
@@ -14,5 +14,3 @@ include("continuation_simp.jl")
 include("polynomials.jl")
 include("polynomials2.jl")
 include("adaptive_simp.jl")
-
-end

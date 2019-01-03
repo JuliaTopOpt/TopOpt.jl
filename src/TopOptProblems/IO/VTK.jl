@@ -1,3 +1,8 @@
+module VTK
+
+using ...TopOptProblems: StiffnessTopOptProblem
+using WriteVTK
+
 function save_mesh(filename, problem::StiffnessTopOptProblem)
     topology = ones(getncells(TopOptProblems.getdh(problem).grid))
     vtkfile = WriteVTK.vtk_grid(filename, problem, topology)
@@ -47,4 +52,6 @@ function WriteVTK.vtk_grid(filename::AbstractString, problem::StiffnessTopOptPro
     end
     coords = reinterpret(T, getnodes(grid), (dim, getnnodes(grid)))
     return vtk_grid(filename, coords, cls)
+end
+
 end

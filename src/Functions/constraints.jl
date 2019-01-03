@@ -1,5 +1,3 @@
-abstract type AbstractConstraint <: Function end
-
 struct VolConstr{T, dim, TI, TV, TP<:StiffnessTopOptProblem{dim, T}, TS<:AbstractFEASolver} <: AbstractConstraint
     problem::TP
     solver::TS

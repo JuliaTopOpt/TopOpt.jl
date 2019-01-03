@@ -1,5 +1,3 @@
-abstract type AbstractObjective{T} <: Function end
-
 mutable struct ComplianceObj{T, TI<:Integer, TV<:AbstractArray, TSP<:StiffnessTopOptProblem, FS<:AbstractDisplacementSolver, CF<:AbstractCheqFilter} <: AbstractObjective{T}
 	problem::TSP
     solver::FS

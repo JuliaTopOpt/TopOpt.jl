@@ -6,9 +6,6 @@ include(joinpath("GPUUtils", "GPUUtils.jl"))
 # Method of moving asymptotes
 include(joinpath("MMA", "MMA.jl"))
 
-# Inp file parser
-include(joinpath("InpParser", "InpParser.jl"))
-
 # Topopology optimization problem definitions
 include(joinpath("TopOptProblems", "TopOptProblems.jl"))
 
@@ -36,29 +33,18 @@ using .FEA
 
 # Chequeurboard filter
 include(joinpath("CheqFilters", "CheqFilters.jl"))
+using .CheqFilters
 
-# Objectives
-include("objectives.jl")
+# Objective and constraint functions
+include(joinpath("Functions", "Functions.jl"))
+using .Functions
 
-# Constraints
-include("constraints.jl")
+# Various topology optimization algorithms
+include(joinpath("Algorithms", "Algorithms.jl"))
+using .Algorithms
 
-# Mathematical programming solver wrappers
-include(joinpath("optimizers", "math_optimizers.jl"))
-
-# Topology optimization algorithms
-abstract type TopOptAlgorithm end
-abstract type AbstractSIMP <: TopOptAlgorithm end
-
-## Traditional SIMP
-include(joinpath("simp", "simp.jl"))
-
-
-## BESO
-include(joinpath(".", "beso.jl"))
-
-## GESO
-include(joinpath(".","geso.jl"))
+# Inp file parser
+include(joinpath("InpParser", "InpParser.jl"))
 
 # Export
 include(joinpath(".", "writevtk.jl"))
