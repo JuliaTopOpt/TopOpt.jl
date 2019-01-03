@@ -2,7 +2,7 @@
 Stiffness problem imported from a .inp file.
 """
 struct InpStiffness{dim, N, TF, M, TI, TBool, GO, TInds <: AbstractVector{TI}, TMeta<:Metadata} <: StiffnessTopOptProblem{dim, TF}
-    inp_content::InpParser.InpContent{dim, TF, N, TI}
+    inp_content::InpContent{dim, TF, N, TI}
     geom_order::Type{Val{GO}}
     ch::ConstraintHandler{DofHandler{dim, N, TF, M}, TF}
     black::TBool
@@ -15,11 +15,11 @@ end
 Imports stiffness problem from a .inp file.
 """
 function InpStiffness(filepath_with_ext::AbstractString)
-    problem = InpParser.extract_inp(filepath_with_ext)
+    problem = Parser.extract_inp(filepath_with_ext)
     return InpStiffness(problem)
 end
-function InpStiffness(problem::InpParser.InpContent)
-    ch = InpParser.inp_to_juafem(problem)
+function InpStiffness(problem::Parser.InpContent)
+    ch = Parser.inp_to_juafem(problem)
     black, white = find_black_and_white(ch.dh)
     varind = find_varind(black, white)
     metadata = Metadata(ch.dh)

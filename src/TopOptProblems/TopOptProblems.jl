@@ -3,7 +3,7 @@ module TopOptProblems
 using JuAFEM, StaticArrays, LinearAlgebra
 using SparseArrays, Setfield, CuArrays
 using CUDAnative
-using ..GPUUtils
+using ..GPUUtils, ..Utilities
 using CUDAdrv: CUDAdrv
 #using Makie
 #using GeometryTypes
@@ -16,6 +16,7 @@ abstract type AbstractTopOptProblem end
 const dev = CUDAdrv.device()
 const ctx = CUDAdrv.CuContext(dev)
 
+include("utils.jl")
 include("grids.jl")
 include("metadata.jl")
 include("problem_types.jl")

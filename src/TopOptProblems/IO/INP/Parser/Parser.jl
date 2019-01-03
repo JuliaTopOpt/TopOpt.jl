@@ -1,4 +1,4 @@
-module InpParser
+module Parser
 
 using JuAFEM, SparseArrays
 

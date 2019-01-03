@@ -1,8 +1,9 @@
-using TopOpt.InpParser, JuAFEM
+using TopOpt.TopOptProblems.IO.INP
+using JuAFEM
 
 using Test
 
-cube = InpParser.import_inp(joinpath(@__DIR__, "testcube.inp"))
+cube = INP.Parser.import_inp(joinpath(@__DIR__, "testcube.inp"))
 dh = cube.dh
 grid = dh.grid
 cells = grid.cells
@@ -15,7 +16,7 @@ getdim(::JuAFEM.Cell{N}) where {N} = N
 @test JuAFEM.nnodes(cells[1]) == 10 # Quadratic tetrahedron
 @test length(grid.boundary_matrix.nzval) == 16
 
-raw_inp = InpParser.extract_inp(joinpath(@__DIR__, "testcube.inp"))
+raw_inp = INP.Parser.extract_inp(joinpath(@__DIR__, "testcube.inp"))
 @test raw_inp.celltype == "C3D10"
 @test raw_inp.E == 70_000
 @test raw_inp.ν == 0.3

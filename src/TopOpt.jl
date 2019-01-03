@@ -3,6 +3,10 @@ module TopOpt
 # GPU utilities
 include(joinpath("GPUUtils", "GPUUtils.jl"))
 
+# Utilities
+include(joinpath("Utilities", "Utilities.jl"))
+using .Utilities
+
 # Method of moving asymptotes
 include(joinpath("MMA", "MMA.jl"))
 
@@ -22,10 +26,6 @@ const dev = CUDAdrv.device()
 const ctx = CUDAdrv.CuContext(dev)
 
 #norm(a) = sqrt(dot(a,a))
-
-# Utilities
-include(joinpath("Utilities", "Utilities.jl"))
-using .Utilities
 
 # FEA solvers
 include(joinpath("FEA", "FEA.jl"))
