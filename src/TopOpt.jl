@@ -1,8 +1,15 @@
 module TopOpt
 
+# GPU utilities
 include(joinpath("GPUUtils", "GPUUtils.jl"))
+
+# Method of moving asymptotes
 include(joinpath("MMA", "MMA.jl"))
+
+# Inp file parser
 include(joinpath("InpParser", "InpParser.jl"))
+
+# Topopology optimization problem definitions
 include(joinpath("TopOptProblems", "TopOptProblems.jl"))
 
 using LinearAlgebra, Statistics
@@ -12,11 +19,7 @@ using JuAFEM, StaticArrays, CuArrays, CUDAnative, GPUArrays
 using CUDAdrv: CUDAdrv
 using ForwardDiff, IterativeSolvers#, Preconditioners
 
-using TimerOutputs
-import .GPUUtils: whichdevice
-
 CuArrays.allowscalar(false)
-const to = TimerOutput()
 const DEBUG = Base.RefValue(false)
 const dev = CUDAdrv.device()
 const ctx = CUDAdrv.CuContext(dev)
@@ -24,26 +27,15 @@ const ctx = CUDAdrv.CuContext(dev)
 #norm(a) = sqrt(dot(a,a))
 
 # Utilities
-include("utils.jl")
-
-# Trace definition
-include("traces.jl")
-
-# Penalty definitions
-include("penalties.jl")
+include(joinpath("Utilities", "Utilities.jl"))
+using .Utilities
 
 # FEA solvers
-abstract type AbstractFEASolver end
-include(joinpath("fea_solvers", "direct_displacement_solver.jl"))
-include(joinpath("fea_solvers", "assembly_cg_displacement_solvers.jl"))
-include(joinpath("fea_solvers", "matrix_free_operator.jl"))
-include(joinpath("fea_solvers", "matrix_free_cg_displacement_solvers.jl"))
-include(joinpath("fea_solvers", "matrix_free_apply_bcs.jl"))
-include(joinpath("fea_solvers", "simulate.jl"))
-include(joinpath("fea_solvers", "solvers_api.jl"))
+include(joinpath("FEA", "FEA.jl"))
+using .FEA
 
 # Chequeurboard filter
-include("cheqfilters.jl")
+include(joinpath("CheqFilters", "CheqFilters.jl"))
 
 # Objectives
 include("objectives.jl")

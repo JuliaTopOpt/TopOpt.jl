@@ -14,8 +14,6 @@ abstract type AbstractTopOptProblem end
 const dev = CUDAdrv.device()
 const ctx = CUDAdrv.CuContext(dev)
 
-#include("gpu_utils.jl")
-include("utils.jl")
 include("grids.jl")
 include("metadata.jl")
 include("problem_types.jl")
