@@ -2,24 +2,30 @@ module Functions
 
 using ..TopOptProblems, ..FEA, ..CheqFilters
 using ..Utilities, ..GPUUtils, CuArrays
+using ForwardDiff, LinearAlgebra, GPUArrays
 using Parameters: @unpack
+import CUDAdrv
 using TimerOutputs, CUDAnative, JuAFEM
 
 export  Objective,
         Constraint,
         VolumeFunction,
-        ComplianceFunction
+        ComplianceFunction,
+        AbstractFunction
 
 const to = TimerOutput()
+const dev = CUDAdrv.device()
+const ctx = CUDAdrv.CuContext(dev)
 
 abstract type AbstractFunction{T} <: Function end
 
-struct Objective{T, F <: AbstractFunction{T}} <: Function
+struct Objective{F} <: Function
     f::F
 end
 
-struct Constraint{T, F <: AbstractFunction{T}} <: Function
+struct Constraint{F, S} <: Function
     f::F
+    s::S
 end
 
 getfunction(o::Union{Objective, Constraint}) = o.f
@@ -33,10 +39,9 @@ Utilities.getprevpenalty(o::Union{Objective, Constraint}) = o |> getfunction |> 
 (o::Objective)(x, grad) = o.f(x, grad)
 
 @define_cu(Constraint, :f)
-(o::Constraint)(x, grad) = o.f(x, grad)
+(c::Constraint)(x, grad) = c.f(x, grad) - c.s
 
 include("compliance.jl")
 include("volume.jl")
 
 end
-

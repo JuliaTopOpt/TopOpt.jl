@@ -13,7 +13,7 @@ function simulate(problem::StiffnessTopOptProblem, topology = ones(getncells(Top
         else
             solver = FEASolver(Displacement, Direct, problem, xmin = xmin)
         end
-        if solver.vars isa GPUArray
+        if solver.vars isa GPUArrays.GPUArray
             solver.vars = map(round, typeof(solver.vars)(topology))
         else
             solver.vars .= Base.round.(topology)

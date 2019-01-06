@@ -83,7 +83,7 @@ function (o::ComplianceFunction{T})(x, grad) where {T}
                 o.reuse = false
             else
                 push!(topopt_trace.c_hist, obj)
-                if x isa GPUArray
+                if x isa GPUArrays.GPUArray
                     push!(topopt_trace.x_hist, Array(x))
                 else
                     push!(topopt_trace.x_hist, copy(x))

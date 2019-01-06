@@ -4,7 +4,11 @@ using ..GPUUtils, ..TopOptProblems, ..Utilities
 using JuAFEM, Setfield, TimerOutputs
 using IterativeSolvers, CuArrays, StaticArrays
 using LinearAlgebra
+import CUDAdrv
 using Parameters: @unpack
+
+const dev = CUDAdrv.device()
+const ctx = CUDAdrv.CuContext(dev)
 
 export  AbstractFEASolver,
         AbstractDisplacementSolver,

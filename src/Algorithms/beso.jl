@@ -22,7 +22,7 @@ struct BESO{TO, TC, T, TP} <: TopOptAlgorithm
     result::BESOResult{T}
 end
 
-function BESO(obj::Objective{<:Any, <:ComplianceFunction}, constr::Constraint{<:Any, <:VolumeFunction}; maxiter = 1000, tol = 0.001, p = 3., er=0.02, sens_tol = tol/100)
+function BESO(obj::Objective{<:ComplianceFunction}, constr::Constraint{<:VolumeFunction}; maxiter = 1000, tol = 0.001, p = 3., er=0.02, sens_tol = tol/100)
     penalty = obj.solver.penalty
     penalty.p = p
     T = typeof(obj.comp)
@@ -41,7 +41,7 @@ end
 
 update_penalty!(b::BESO, p::Number) = (b.penalty.p = p)
 
-function (b::BESO{TO, TC, T})(x0=copy(b.obj.solver.vars)) where {TO<:Objective{<:Any, <:ComplianceFunction}, TC<:Constraint{<:Any, <:VolumeFunction}, T}
+function (b::BESO{TO, TC, T})(x0=copy(b.obj.solver.vars)) where {TO<:Objective{<:ComplianceFunction}, TC<:Constraint{<:VolumeFunction}, T}
     @unpack sens, old_sens, er, tol, maxiter = b
     @unpack obj_trace, topology, sens_tol, vars = b    
     @unpack varind, black, white = b.obj.problem

@@ -19,7 +19,7 @@ export  CPU,
 struct CPU end
 struct GPU end
 whichdevice(::Any) = CPU()
-whichdevice(s::AbstractArray) = s isa GPUArray ? GPU() : CPU()
+whichdevice(s::AbstractArray) = s isa GPUArrays.GPUArray ? GPU() : CPU()
 
 function getfieldnames end
 function cufieldnames end

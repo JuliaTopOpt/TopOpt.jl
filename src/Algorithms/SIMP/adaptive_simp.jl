@@ -182,8 +182,8 @@ end
 #=
 Utilities.getpenalty(obj) = obj.solver.penalty
 
-dFdp(obj::Objective{<:Any, <:ComplianceFunction}) = dFdp(obj, getpenalty(obj))
-function dFdp(obj::Objective{<:Any, <:ComplianceFunction{T}}, penalty::PowerPenalty{T}) where T
+dFdp(obj::Objective{<:ComplianceFunction}) = dFdp(obj, getpenalty(obj))
+function dFdp(obj::Objective{<:ComplianceFunction{T}}, penalty::PowerPenalty{T}) where T
     p = penalty.p
     cell_comp = obj.cell_comp
     vars = obj.solver.vars

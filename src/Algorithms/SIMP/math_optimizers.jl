@@ -23,7 +23,7 @@ GPUUtils.whichdevice(o::MMAOptimizer) = o.model
 MMAOptimizer(args...; kwargs...) = MMAOptimizer{CPU}(args...; kwargs...)
 MMAOptimizer{T}(args...; kwargs...) where T = MMAOptimizer(T(), args...; kwargs...)
 function MMAOptimizer(  device::Tdev, 
-                        obj::Objective{T}, 
+                        obj::Objective{<:AbstractFunction{T}}, 
                         constr, 
                         opt = MMA.MMA87(), 
                         subopt = Optim.ConjugateGradient(), 

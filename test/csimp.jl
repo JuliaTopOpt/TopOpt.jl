@@ -29,7 +29,7 @@ approx_objvals = [330.0, 175.0, 65.0, 1413.0]
         rmin = 3.0, tracing = true, logarithm = false))
     cu_obj = TopOpt.cu(obj)
     # Define volume constraint
-    constr = Constraint(VolumeFunction(problem, solver, V))
+    constr = Constraint(VolumeFunction(problem, solver), V)
     # Define subproblem optimizer
     optimizer = MMAOptimizer{GPUUtils.CPU}(cu_obj, constr, MMA.MMA87(),
         ConjugateGradient(), maxiter=1000); optimizer.obj.fevals = 0
@@ -67,7 +67,7 @@ end
     # Define compliance objective
     filtering = problem isa TopOptProblems.TieBeam ? false : true
     constr = Constraint(ComplianceFunction(problem, solver, filtering = filtering,
-        rmin = 3.0, tracing = true, logarithm = false))
+        rmin = 3.0, tracing = true, logarithm = false), approx_objvals[i])
     cu_constr = TopOpt.cu(constr)
     # Define subproblem optimizer
     optimizer = MMAOptimizer{GPUUtils.CPU}(obj, cu_constr, MMA.MMA87(),

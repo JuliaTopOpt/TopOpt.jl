@@ -4,9 +4,13 @@ using ..GPUUtils, ..Utilities, JuAFEM
 using CuArrays, ..FEA, Statistics
 import ..GPUUtils: whichdevice
 using Parameters: @unpack
+import CUDAdrv
 
 export  AbstractCheqFilter,
         CheqFilter
+
+const dev = CUDAdrv.device()
+const ctx = CUDAdrv.CuContext(dev)
 
 abstract type AbstractCheqFilter end
 

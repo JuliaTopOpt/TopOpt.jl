@@ -8,6 +8,7 @@ module MMA
 
 using Parameters, StructArrays, Setfield, TimerOutputs, Base.Threads
 using ..GPUUtils, CuArrays, CUDAnative, KissThreading
+using GPUArrays: GPUVector
 using CUDAdrv: CUDAdrv
 
 const dev = CUDAdrv.device()
