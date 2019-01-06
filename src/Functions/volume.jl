@@ -1,4 +1,4 @@
-struct VolConstr{T, dim, TI, TV, TP<:StiffnessTopOptProblem{dim, T}, TS<:AbstractFEASolver} <: AbstractConstraint
+struct VolumeFunction{T, dim, TI, TV, TP<:StiffnessTopOptProblem{dim, T}, TS<:AbstractFEASolver} <: AbstractFunction{T}
     problem::TP
     solver::TS
     volume_fraction::T
@@ -10,10 +10,11 @@ struct VolConstr{T, dim, TI, TV, TP<:StiffnessTopOptProblem{dim, T}, TS<:Abstrac
     tracing::Bool
 	topopt_trace::TopOptTrace{T,TI}
 end
-whichdevice(v::VolConstr) = whichdevice(v.cellvolumes)
-@define_cu(VolConstr, :cellvolumes, :grad, :problem) # should be optimized to avoid replicating problem
+GPUUtils.whichdevice(v::VolumeFunction) = whichdevice(v.cellvolumes)
+@define_cu(VolumeFunction, :cellvolumes, :grad, :problem) # should be optimized to avoid replicating problem
+Utilities.getsolver(v::VolumeFunction) = v.solver
 
-function VolConstr(problem::StiffnessTopOptProblem{dim, T}, solver::AbstractFEASolver, volume_fraction::T, ::Type{TI} = Int; tracing = true) where {dim, T, TI}
+function VolumeFunction(problem::StiffnessTopOptProblem{dim, T}, solver::AbstractFEASolver, volume_fraction::T, ::Type{TI} = Int; tracing = true) where {dim, T, TI}
     cellvalues = solver.elementinfo.cellvalues
     dh = problem.ch.dh
     vars = solver.vars
@@ -35,9 +36,9 @@ function VolConstr(problem::StiffnessTopOptProblem{dim, T}, solver::AbstractFEAS
     design_volume = total_volume * volume_fraction
     fixed_volume = dot(black, cellvolumes) #+ dot(white, cellvolumes)*xmin
 
-    return VolConstr(problem, solver, volume_fraction, cellvolumes, grad, total_volume, design_volume, fixed_volume, tracing, TopOptTrace{T, TI}())
+    return VolumeFunction(problem, solver, volume_fraction, cellvolumes, grad, total_volume, design_volume, fixed_volume, tracing, TopOptTrace{T, TI}())
 end
-function (v::VolConstr{T})(x, grad) where {T}
+function (v::VolumeFunction{T})(x, grad) where {T}
     varind = v.problem.varind
     black = v.problem.black
     white = v.problem.white

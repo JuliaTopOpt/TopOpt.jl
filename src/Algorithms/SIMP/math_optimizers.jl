@@ -18,12 +18,12 @@ mutable struct MMAOptimizer{T, TM<:MMAModel{T}, TO, TSO, TObj, TConstr, TW} <: A
     g_converged::Bool
     workspace::TW
 end
-whichdevice(o::MMAOptimizer) = o.model
+GPUUtils.whichdevice(o::MMAOptimizer) = o.model
 
 MMAOptimizer(args...; kwargs...) = MMAOptimizer{CPU}(args...; kwargs...)
 MMAOptimizer{T}(args...; kwargs...) where T = MMAOptimizer(T(), args...; kwargs...)
 function MMAOptimizer(  device::Tdev, 
-                        obj::AbstractObjective{T}, 
+                        obj::Objective{T}, 
                         constr, 
                         opt = MMA.MMA87(), 
                         subopt = Optim.ConjugateGradient(), 
@@ -39,8 +39,9 @@ function MMAOptimizer(  device::Tdev,
                         dual_caps = MMA.default_dual_caps(opt, T)
                     ) where {T, Tdev}
 
-    nvars = length(obj.solver.vars)
-    xmin = obj.solver.xmin
+    solver = getsolver(obj)
+    nvars = length(solver.vars)
+    xmin = solver.xmin
 
     model = MMAModel{Tdev}(nvars, obj, maxiter=maxiter, ftol=ftol, grtol=grtol, xtol=xtol, store_trace=false, extended_trace=false)
 
@@ -48,9 +49,9 @@ function MMAOptimizer(  device::Tdev,
     ineq_constraint!(model, constr)
 
     if Tdev <: CPU && whichdevice(obj) isa GPU
-        x0 = Array(obj.solver.vars)
+        x0 = Array(solver.vars)
     else
-        x0 = obj.solver.vars
+        x0 = solver.vars
     end
     workspace = MMA.MMAWorkspace(model, x0, opt, subopt; s_init=s_init, 
     s_incr=s_incr, s_decr=s_decr, dual_caps=dual_caps)    
@@ -58,8 +59,8 @@ function MMAOptimizer(  device::Tdev,
     return MMAOptimizer(model, s_init, s_decr, s_incr, opt, subopt, dual_caps, obj, constr, T(NaN), false, T(NaN), false, T(NaN), false, workspace)
 end
 
-getpenalty(o::MMAOptimizer) = getpenalty(o.obj)
-setpenalty!(o::MMAOptimizer, p) = setpenalty!(o.obj, p)
+Utilities.getpenalty(o::MMAOptimizer) = getpenalty(o.obj)
+Utilities.setpenalty!(o::MMAOptimizer, p) = setpenalty!(o.obj, p)
 
 function (o::MMAOptimizer)(x0::AbstractVector)
     mma_results = @timeit to "MMA" begin

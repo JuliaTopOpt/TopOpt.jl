@@ -2,8 +2,8 @@ struct DualSolution{dev, T, TVCPU <: AbstractVector{T}, TVGPU <: Union{Nothing, 
     cpu::TVCPU
     gpu::TVGPU
 end
-whichdevice(::DualSolution{:CPU}) = CPU()
-whichdevice(::DualSolution{:GPU}) = GPU()
+GPUUtils.whichdevice(::DualSolution{:CPU}) = CPU()
+GPUUtils.whichdevice(::DualSolution{:GPU}) = GPU()
 
 DualSolution(x) = DualSolution{:CPU}(x)
 DualSolution{:CPU}(x) = DualSolution{:CPU, eltype(x), typeof(x), Nothing}(x, nothing)

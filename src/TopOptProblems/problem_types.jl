@@ -9,10 +9,10 @@ Abstract stiffness topology optimization problem. All subtypes must have the fol
 """
 abstract type StiffnessTopOptProblem{dim, T} <: AbstractTopOptProblem end
 
-whichdevice(p::StiffnessTopOptProblem) = whichdevice(p.ch)
-whichdevice(ch::ConstraintHandler) = whichdevice(ch.dh)
-whichdevice(dh::DofHandler) = whichdevice(dh.grid)
-whichdevice(g::JuAFEM.Grid) = whichdevice(g.cells)
+GPUUtils.whichdevice(p::StiffnessTopOptProblem) = whichdevice(p.ch)
+GPUUtils.whichdevice(ch::ConstraintHandler) = whichdevice(ch.dh)
+GPUUtils.whichdevice(dh::DofHandler) = whichdevice(dh.grid)
+GPUUtils.whichdevice(g::JuAFEM.Grid) = whichdevice(g.cells)
 
 # Fallbacks
 getdim(::StiffnessTopOptProblem{dim, T}) where {dim, T} = dim

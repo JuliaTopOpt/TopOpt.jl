@@ -1,7 +1,7 @@
 module CheqFilters
 
 using ..GPUUtils, ..Utilities, JuAFEM
-using CuArrays, ..FEA
+using CuArrays, ..FEA, Statistics
 import ..GPUUtils: whichdevice
 using Parameters: @unpack
 
@@ -15,7 +15,7 @@ struct FilterMetadata{TN,TW}
     cell_node_weights::TW
 end
 @define_cu(FilterMetadata, :cell_neighbouring_nodes, :cell_node_weights)
-whichdevice(m::FilterMetadata) = whichdevice(m.cell_neighbouring_nodes)
+GPUUtils.whichdevice(m::FilterMetadata) = whichdevice(m.cell_neighbouring_nodes)
 
 struct CheqFilter{filtering, T, TV<:AbstractVector{T}, TM<:FilterMetadata} <: AbstractCheqFilter
     filtering::Val{filtering}
@@ -26,7 +26,7 @@ struct CheqFilter{filtering, T, TV<:AbstractVector{T}, TM<:FilterMetadata} <: Ab
     cell_weights::TV
 end
 @define_cu(CheqFilter, :metadata, :nodal_grad, :last_grad, :cell_weights)
-whichdevice(c::CheqFilter) = whichdevice(c.nodal_grad)
+GPUUtils.whichdevice(c::CheqFilter) = whichdevice(c.nodal_grad)
 
 function FilterMetadata(::Type{T}, ::Type{TI}) where {T, TI}
     cell_neighbouring_nodes = Vector{TI}[]

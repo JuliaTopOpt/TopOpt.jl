@@ -16,7 +16,7 @@ struct PrimalData{T, TV1<:AbstractVector{T}, TV2, TM<:AbstractMatrix{T}}
     ∇f::TV1 # Function gradient at current iteration
     ∇g::TM # Inequality gradients [var, ineq] at current iteration
 end
-whichdevice(p::PrimalData) = whichdevice(p.x)
+GPUUtils.whichdevice(p::PrimalData) = whichdevice(p.x)
 
 struct XUpdater{T, TV, TPD<:PrimalData{T, TV}}
     pd::TPD

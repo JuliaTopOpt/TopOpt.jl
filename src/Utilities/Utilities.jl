@@ -1,6 +1,6 @@
 module Utilities
 
-using ForwardDiff, CUDAnative, CuArrays, ..GPUUtils, JuAFEM
+using ForwardDiff, CUDAnative, CuArrays, ..GPUUtils, JuAFEM, IterativeSolvers
 
 export  AbstractPenalty,
         PowerPenalty,
@@ -13,7 +13,16 @@ export  AbstractPenalty,
         density, find_black_and_white, 
         find_varind, 
         YoungsModulus,
-        PoissonRatio
+        PoissonRatio,
+        getpenalty,
+        getprevpenalty,
+        setpenalty!,
+        getsolver
+
+function getpenalty end
+function getprevpenalty end
+function setpenalty! end
+function getsolver end
 
 # Utilities
 include("utils.jl")

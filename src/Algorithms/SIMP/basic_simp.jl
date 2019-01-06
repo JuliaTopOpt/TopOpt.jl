@@ -11,7 +11,7 @@ mutable struct SIMPResult{T}
     penalty_trace::Vector{Pair{T, Int}}
     nsubproblems::Int
 end
-whichdevice(s::SIMPResult) = whichdevice(s.topology)
+GPUUtils.whichdevice(s::SIMPResult) = whichdevice(s.topology)
 
 function NewSIMPResult(::Type{T}, ncells) where {T}
     SIMPResult(fill(T(NaN), ncells), T(NaN), 0, T(NaN), false, T(NaN), false, T(NaN), false, Pair{T, Int}[], 0)
@@ -24,7 +24,7 @@ mutable struct SIMP{T, TO, TP} <: AbstractSIMP
     topologies::Vector{Vector{T}}
     tracing::Bool
 end
-whichdevice(s::SIMP) = whichdevice(s.optimizer)
+GPUUtils.whichdevice(s::SIMP) = whichdevice(s.optimizer)
 
 function SIMP(optimizer, p::T; tracing=true) where T
     penalty = getpenalty(optimizer)
@@ -36,8 +36,8 @@ function SIMP(optimizer, p::T; tracing=true) where T
     return SIMP{T, typeof(optimizer), typeof(penalty)}(optimizer, penalty, result, topologies, tracing)
 end
 
-getpenalty(s::AbstractSIMP) = s.penalty
-function setpenalty!(s::AbstractSIMP, p::Number)
+Utilities.getpenalty(s::AbstractSIMP) = s.penalty
+function Utilities.setpenalty!(s::AbstractSIMP, p::Number)
     penalty = s.penalty
     s.penalty = @set penalty.p = p
     setpenalty!(s.optimizer, p)

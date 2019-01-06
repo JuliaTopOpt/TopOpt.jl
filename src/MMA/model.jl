@@ -14,7 +14,7 @@ struct MMAModel{T, TV<:AbstractVector{T}, TC<:AbstractVector{<:Function}}
     xtol::Base.RefValue{T}
     grtol::Base.RefValue{T}
 end
-whichdevice(m::MMAModel) = whichdevice(m.box_max)
+GPUUtils.whichdevice(m::MMAModel) = whichdevice(m.box_max)
 
 dim(m::MMAModel) = m.dim
 min(m::MMAModel, i::Integer) = m.box_min[i]

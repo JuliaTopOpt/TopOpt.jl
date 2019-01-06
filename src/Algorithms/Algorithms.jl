@@ -1,8 +1,11 @@
 module Algorithms
 
-using ..MMA, ..Functions
+using ..MMA, ..Functions, Optim
 using TimerOutputs, Setfield, StaticArrays
 using Parameters: @unpack, @pack!
+using ..GPUUtils, ..Utilities
+
+export  MMAOptimizer
 
 const to = TimerOutput()
 

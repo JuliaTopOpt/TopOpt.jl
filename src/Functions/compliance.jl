@@ -1,4 +1,4 @@
-mutable struct ComplianceObj{T, TI<:Integer, TV<:AbstractArray, TSP<:StiffnessTopOptProblem, FS<:AbstractDisplacementSolver, CF<:AbstractCheqFilter} <: AbstractObjective{T}
+mutable struct ComplianceFunction{T, TI<:Integer, TV<:AbstractArray, TSP<:StiffnessTopOptProblem, FS<:AbstractDisplacementSolver, CF<:AbstractCheqFilter} <: AbstractFunction{T}
 	problem::TSP
     solver::FS
     cheqfilter::CF
@@ -11,12 +11,14 @@ mutable struct ComplianceObj{T, TI<:Integer, TV<:AbstractArray, TSP<:StiffnessTo
     fevals::TI
     logarithm::Bool
 end
-whichdevice(c::ComplianceObj) = whichdevice(c.cell_comp)
+GPUUtils.whichdevice(c::ComplianceFunction) = whichdevice(c.cell_comp)
+Utilities.getsolver(c::ComplianceFunction) = c.solver
+Utilities.getpenalty(c::ComplianceFunction) = c |> getsolver |> getpenalty
 
-function ComplianceObj(problem, solver::AbstractDisplacementSolver, args...; kwargs...)
-    ComplianceObj(whichdevice(solver), problem, solver, args...; kwargs...)
+function ComplianceFunction(problem, solver::AbstractDisplacementSolver, args...; kwargs...)
+    ComplianceFunction(whichdevice(solver), problem, solver, args...; kwargs...)
 end
-function ComplianceObj(::CPU, problem::StiffnessTopOptProblem{dim, T}, solver::AbstractDisplacementSolver, ::Type{TI}=Int; rmin = T(0), filtering = true, tracing = false, logarithm = false) where {dim, T, TI}
+function ComplianceFunction(::CPU, problem::StiffnessTopOptProblem{dim, T}, solver::AbstractDisplacementSolver, ::Type{TI}=Int; rmin = T(0), filtering = true, tracing = false, logarithm = false) where {dim, T, TI}
     cheqfilter = CheqFilter(Val(filtering), solver, rmin)
     comp = T(0)
     cell_comp = zeros(T, getncells(problem.ch.dh.grid))
@@ -24,9 +26,9 @@ function ComplianceObj(::CPU, problem::StiffnessTopOptProblem{dim, T}, solver::A
     topopt_trace = TopOptTrace{T,TI}()
     reuse = false
     fevals = TI(0)
-    return ComplianceObj(problem, solver, cheqfilter, comp, cell_comp, grad, tracing, topopt_trace, reuse, fevals, logarithm)
+    return ComplianceFunction(problem, solver, cheqfilter, comp, cell_comp, grad, tracing, topopt_trace, reuse, fevals, logarithm)
 end
-function ComplianceObj(::GPU, problem::StiffnessTopOptProblem{dim, T}, solver::AbstractDisplacementSolver, ::Type{TI}=Int; rmin = T(0), filtering = true, tracing = false, logarithm = false) where {dim, T, TI}
+function ComplianceFunction(::GPU, problem::StiffnessTopOptProblem{dim, T}, solver::AbstractDisplacementSolver, ::Type{TI}=Int; rmin = T(0), filtering = true, tracing = false, logarithm = false) where {dim, T, TI}
     cheqfilter = cu(CheqFilter(Val(filtering), solver, rmin))
     comp = T(0)
     cell_comp = zeros(CuVector{T}, getncells(problem.ch.dh.grid))
@@ -34,17 +36,12 @@ function ComplianceObj(::GPU, problem::StiffnessTopOptProblem{dim, T}, solver::A
     topopt_trace = TopOptTrace{T,TI}()
     reuse = false
     fevals = TI(0)
-    return ComplianceObj(problem, solver, cheqfilter, comp, cell_comp, grad, tracing, topopt_trace, reuse, fevals, logarithm)
+    return ComplianceFunction(problem, solver, cheqfilter, comp, cell_comp, grad, tracing, topopt_trace, reuse, fevals, logarithm)
 end
 
-@define_cu(ComplianceObj, :solver, :cell_comp, :grad, :cheqfilter)
+@define_cu(ComplianceFunction, :solver, :cell_comp, :grad, :cheqfilter)
 
-getsolver(obj::AbstractObjective) = obj.solver
-getpenalty(obj::AbstractObjective) = getpenalty(getsolver(obj))
-setpenalty!(obj::AbstractObjective, p) = setpenalty!(getsolver(obj), p)
-getprevpenalty(obj::AbstractObjective) = getprevpenalty(getsolver(obj))
-
-function (o::ComplianceObj{T})(x, grad) where {T}
+function (o::ComplianceFunction{T})(x, grad) where {T}
     @unpack cell_comp, solver, tracing, cheqfilter, topopt_trace = o
     @unpack elementinfo, u, xmin = solver
     @unpack metadata, Kes, black, white, varind = elementinfo

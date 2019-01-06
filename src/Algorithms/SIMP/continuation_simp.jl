@@ -27,7 +27,7 @@ mutable struct ContinuationSIMP{T, TO, TP, TPC, TFC} <: AbstractSIMP
     p_cont::TPC
     ftol_cont::TFC
 end
-whichdevice(c::ContinuationSIMP) = whichdevice(c.simp)
+GPUUtils.whichdevice(c::ContinuationSIMP) = whichdevice(c.simp)
 
 function ContinuationSIMP(simp::SIMP{T}; 
     steps = 40, 

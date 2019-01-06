@@ -15,7 +15,7 @@ filtering = true
 solver = FEASolver(Displacement, CG, MatrixFree, problem, xmin = xmin,
 	penalty = TopOpt.PowerPenalty(1.0))	
 cusolver = cu(solver)
-cuobj = ComplianceObj(problem, cusolver, filtering = filtering,
+cuobj = ComplianceFunction(problem, cusolver, filtering = filtering,
 rmin = 3.0, tracing = true, logarithm = false)
 
 operator = TopOpt.buildoperator(cusolver)

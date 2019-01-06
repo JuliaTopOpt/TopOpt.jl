@@ -100,10 +100,4 @@ function (s::StaticMatrixFreeDisplacementSolver)()
     nothing
 end
 
-@define_cu(IterativeSolvers.CGStateVariables, :u, :r, :c)
 @define_cu(StaticMatrixFreeDisplacementSolver, :f, :problem, :vars, :cg_statevars, :elementinfo, :penalty, :prev_penalty, :u, :fixed_dofs, :free_dofs, :xes)
-
-for T in (:PowerPenalty, :RationalPenalty)
-    fname = Symbol(:GPU, T)
-    @eval @inline CuArrays.cu(p::$T) = $fname(p.p)
-end

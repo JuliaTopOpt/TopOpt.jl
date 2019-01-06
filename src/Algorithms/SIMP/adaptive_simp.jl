@@ -14,7 +14,7 @@ mutable struct AdaptiveSIMP{T,TO,TP,TFC} <: AbstractSIMP
     toltrace::Vector{T}
     progresstrace::Vector{T}
 end
-whichdevice(a::AdaptiveSIMP) = whichdevice(a.simp)
+GPUUtils.whichdevice(a::AdaptiveSIMP) = whichdevice(a.simp)
 
 function AdaptiveSIMP(simp::SIMP{T}, ::Type{Val{filtering}}=Val{false}; 
     pstart = T(1), 
@@ -180,10 +180,10 @@ function get_tol(asimp::AdaptiveSIMP{T}) where {T}
 end
 
 #=
-getpenalty(obj) = obj.solver.penalty
+Utilities.getpenalty(obj) = obj.solver.penalty
 
-dFdp(obj::ComplianceObj) = dFdp(obj, getpenalty(obj))
-function dFdp(obj::ComplianceObj{T}, penalty::PowerPenalty{T}) where T
+dFdp(obj::Objective{<:Any, <:ComplianceFunction}) = dFdp(obj, getpenalty(obj))
+function dFdp(obj::Objective{<:Any, <:ComplianceFunction{T}}, penalty::PowerPenalty{T}) where T
     p = penalty.p
     cell_comp = obj.cell_comp
     vars = obj.solver.vars

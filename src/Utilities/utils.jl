@@ -1,3 +1,5 @@
+@define_cu(IterativeSolvers.CGStateVariables, :u, :r, :c)
+
 struct RaggedArray{TO, TV}
     offsets::TO
     values::TV

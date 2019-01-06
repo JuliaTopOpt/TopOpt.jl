@@ -10,14 +10,14 @@ struct CG  <: SolverType end
 struct MatrixFree <: SolverSubtype end
 struct Assembly <: SolverSubtype end
 
-getpenalty(solver::AbstractFEASolver) = solver.penalty
-function setpenalty!(solver::AbstractFEASolver, p)
+Utilities.getpenalty(solver::AbstractFEASolver) = solver.penalty
+function Utilities.setpenalty!(solver::AbstractFEASolver, p)
     solver.prev_penalty = solver.penalty
     penalty = solver.penalty
     solver.penalty = @set penalty.p = p
     solver
 end
-getprevpenalty(solver::AbstractFEASolver) = solver.prev_penalty
+Utilities.getprevpenalty(solver::AbstractFEASolver) = solver.prev_penalty
 
 function FEASolver(::Type{Displacement}, ::Type{Direct}, problem::StiffnessTopOptProblem{dim, T}; 
     xmin=T(1)/1000, 

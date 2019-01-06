@@ -8,7 +8,7 @@ struct MatrixFreeOperator{T, dim, TEInfo<:ElementFEAInfo{dim, T}, TDofs, Tf<:Abs
     xmin::T
     penalty::TP
 end
-whichdevice(m::MatrixFreeOperator) = whichdevice(m.vars)
+GPUUtils.whichdevice(m::MatrixFreeOperator) = whichdevice(m.vars)
 Base.size(op::MatrixFreeOperator) = (size(op, 1), size(op, 2))
 Base.size(op::MatrixFreeOperator, i) = 1 <= i <= 2 ? length(op.elementinfo.fixedload) : 1
 Base.eltype(op::MatrixFreeOperator{T}) where {T} = T

@@ -10,7 +10,13 @@ export  AbstractFEASolver,
         AbstractDisplacementSolver,
         DirectDisplacementSolver,
         PCGDisplacementSolver,
-        StaticMatrixFreeDisplacementSolver
+        StaticMatrixFreeDisplacementSolver,
+        Displacement,
+        Direct,
+        CG,
+        MatrixFree,
+        FEASolver,
+        Assembly
 
 const to = TimerOutput()
 

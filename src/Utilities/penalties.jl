@@ -2,8 +2,8 @@ abstract type AbstractPenalty{T} end
 abstract type AbstractCPUPenalty{T} <: AbstractPenalty{T} end
 abstract type AbstractGPUPenalty{T} <: AbstractPenalty{T} end
 
-whichdevice(::AbstractCPUPenalty) = CPU()
-whichdevice(::AbstractGPUPenalty) = GPU()
+GPUUtils.whichdevice(::AbstractCPUPenalty) = CPU()
+GPUUtils.whichdevice(::AbstractGPUPenalty) = GPU()
 
 CUDAnative.pow(d::TD, p::AbstractFloat) where {T, TV, TD <: ForwardDiff.Dual{T, TV, 1}} = ForwardDiff.Dual{T}(CUDAnative.pow(d.value, p), p * d.partials[1] * CUDAnative.pow(d.value, p - 1))
 
@@ -30,4 +30,8 @@ end
 import Base: copy
 copy(p::TP) where {TP<:AbstractPenalty} = TP(p.p)
 
+for T in (:PowerPenalty, :RationalPenalty)
+    fname = Symbol(:GPU, T)
+    @eval @inline CuArrays.cu(p::$T) = $fname(p.p)
+end
 CuArrays.cu(p::AbstractGPUPenalty) = p

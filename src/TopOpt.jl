@@ -45,12 +45,14 @@ using .Algorithms
 
 export  simulate, 
         TopOptTrace, 
-        VolConstr, 
+        Objective,
+        Constraint,
+        VolumeFunction, 
         DirectDisplacementSolver, 
         PCGDisplacementSolver, 
         StaticMatrixFreeDisplacementSolver, 
         CheqFilter, 
-        ComplianceObj, 
+        ComplianceFunction, 
         Displacement, 
         CG, 
         Direct, 
@@ -67,6 +69,8 @@ export  simulate,
         LogarithmicContinuation, 
         CubicSplineContinuation, 
         SigmoidContinuation, 
-        save_mesh
+        save_mesh,
+        CPU,
+        GPU
 
 end
