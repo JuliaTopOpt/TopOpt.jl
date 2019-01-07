@@ -3,7 +3,6 @@ mutable struct ContinuationSIMP{T, TO, TP, TMC, TPC, TXC, TFC, TGC, TInitC, TInc
     simp::SIMP{T,TO,TP}
     reuse::Bool
     result::SIMPResult{T}
-    topologies::Vector{Vector{T}}
     steps::Int
     maxiter_cont::TMC
     maxiter::Int
@@ -21,7 +20,6 @@ mutable struct ContinuationSIMP{T, TO, TP, TPC, TFC} <: AbstractSIMP
     simp::SIMP{T,TO,TP}
     reuse::Bool
     result::SIMPResult{T}
-    topologies::Vector{Vector{T}}
     steps::Int
     maxiter::Int
     p_cont::TPC
@@ -77,12 +75,12 @@ function ContinuationSIMP(simp::SIMP{T};
     double_solve = false,=#
     ) where T
 
-    ncells = getncells(simp.optimizer.obj.problem)
-    result = NewSIMPResult(T, ncells)
+    ncells = getncells(simp.optimizer.obj.f.problem)
+    result = NewSIMPResult(T, simp.optimizer, ncells)
 
-    return ContinuationSIMP(simp, reuse, result, simp.topologies, steps, maxiter, p_cont, ftol_cont)
+    return ContinuationSIMP(simp, reuse, result, steps, maxiter, p_cont, ftol_cont)
 
-    # return ContinuationSIMP(simp, reuse, result, simp.topologies, steps, maxiter_cont, maxiter, p_cont, xtol_cont, ftol_cont, grtol_cont, s_init_cont, s_incr_cont, s_decr_cont, double_solve)
+    # return ContinuationSIMP(simp, reuse, result, steps, maxiter_cont, maxiter, p_cont, xtol_cont, ftol_cont, grtol_cont, s_init_cont, s_incr_cont, s_decr_cont, double_solve)
 end
 
 function (c_simp::ContinuationSIMP{<:Any,<:MMAOptimizer})(x0=c_simp.simp.optimizer.obj.solver.vars, terminate_early=false)
@@ -94,55 +92,56 @@ function (c_simp::ContinuationSIMP{<:Any,<:MMAOptimizer})(x0=c_simp.simp.optimiz
 
     # Does the first function evaluation
     # Number of function evaluations is the number of iterations plus 1
-    c_simp.simp.optimizer.obj.reuse = false
+    setreuse!(c_simp.simp.optimizer, false)
 
     workspace = MMA.MMAWorkspace(model, x0, optimizer, suboptimizer, s_init=s_init, s_incr=s_incr, s_decr=s_decr, dual_caps=dual_caps)
 
-    if obj.fevals >= c_simp.maxiter
+    if maxedfevals(c_simp.simp.optimizer)
         c_simp.result = c_simp.simp.result
         return c_simp.result
     end
     c_simp.simp(workspace)
-    #error("The objective value is $(workspace.f_x). The penalty is $(c_simp.simp.penalty.p).")
 
     maxiter = workspace.model.maxiter[]
-    fevals_hist = zeros(Int, 3)
-    fevals_hist .= obj.fevals
+    #fevals_hist = zeros(Int, 3)
+    #fevals_hist .= getfevals(c_simp.simp.optimizer)
     for i in 1:c_simp.steps
-        obj.fevals >= c_simp.maxiter && break
+        maxedfevals(c_simp.simp.optimizer) && break
         workspace.iter = workspace.outer_iter = 0
         workspace.model.maxiter[] = 1
 
         workspace.converged = false
         if i == c_simp.steps
-            c_simp.simp.optimizer.obj.reuse = false
+            setreuse!(c_simp.simp.optimizer, false)
         else
-            c_simp.simp.optimizer.obj.reuse = c_simp.reuse
+            setreuse!(c_simp.simp.optimizer, c_simp.reuse)
         end
         ftol = update!(c_simp, i+1)
 
         c_simp.simp(workspace)
-        if c_simp.simp.optimizer.obj.reuse
+        if getreuse(c_simp.simp.optimizer)
             c_simp.simp.optimizer.workspace.f_x = c_simp.simp.optimizer.workspace.f_x_previous
             c_simp.simp.optimizer.workspace.f_x_previous = f_x_previous
+            #c_simp.simp.optimizer.workspace.g .= g_previous
             c_simp.simp.optimizer.workspace.x .= c_simp.simp.optimizer.workspace.x1
             c_simp.simp.optimizer.workspace.x1 .= c_simp.simp.optimizer.workspace.x2
         end
     
         if !c_simp.simp.optimizer.workspace.converged
-            c_simp.simp.optimizer.obj.reuse = false
-            while !workspace.converged && obj.fevals < c_simp.maxiter
+            setreuse!(c_simp.simp.optimizer, false)
+            while !workspace.converged && !maxedfevals(c_simp.simp.optimizer)
                 workspace.model.maxiter[] += 1
                 c_simp.simp(workspace)
             end
         end
         f_x_previous = c_simp.simp.optimizer.workspace.f_x_previous
-        for j in length(fevals_hist)-1:-1:2
-            fevals_hist[j] = fevals_hist[j-1]
-        end
-        fevals = fevals_hist[1] = obj.fevals
+        g_previous = copy(c_simp.simp.optimizer.workspace.g)
+        #for j in length(fevals_hist)-1:-1:2
+        #    fevals_hist[j] = fevals_hist[j-1]
+        #end
 
-        fevals >= c_simp.maxiter && break
+        maxedfevals(c_simp.simp.optimizer) && break
+        #=
         if terminate_early
             x_hist = obj.topopt_trace.x_hist
             x = x_hist[fevals]
@@ -159,6 +158,7 @@ function (c_simp::ContinuationSIMP{<:Any,<:MMAOptimizer})(x0=c_simp.simp.optimiz
             fractionness = sum(frac, x) / length(x)
             same && fractionness <= 0.01 && break
         end
+        =#
     end
     workspace.model.maxiter[] = maxiter
     c_simp.result = c_simp.simp.result
@@ -173,4 +173,3 @@ function update!(c_simp::ContinuationSIMP{<:Any,<:MMAOptimizer}, i)
     return ftol
 end
 frac(x) = 2*min(abs(x), abs(x - 1))
-

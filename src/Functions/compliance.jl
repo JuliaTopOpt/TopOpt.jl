@@ -10,6 +10,7 @@ mutable struct ComplianceFunction{T, TI<:Integer, TV<:AbstractArray, TSP<:Stiffn
     reuse::Bool
     fevals::TI
     logarithm::Bool
+    maxfevals::Int
 end
 GPUUtils.whichdevice(c::ComplianceFunction) = whichdevice(c.cell_comp)
 Utilities.getsolver(c::ComplianceFunction) = c.solver
@@ -18,7 +19,7 @@ Utilities.getpenalty(c::ComplianceFunction) = c |> getsolver |> getpenalty
 function ComplianceFunction(problem, solver::AbstractDisplacementSolver, args...; kwargs...)
     ComplianceFunction(whichdevice(solver), problem, solver, args...; kwargs...)
 end
-function ComplianceFunction(::CPU, problem::StiffnessTopOptProblem{dim, T}, solver::AbstractDisplacementSolver, ::Type{TI}=Int; rmin = T(0), filtering = true, tracing = false, logarithm = false) where {dim, T, TI}
+function ComplianceFunction(::CPU, problem::StiffnessTopOptProblem{dim, T}, solver::AbstractDisplacementSolver, ::Type{TI}=Int; rmin = T(0), filtering = true, tracing = false, logarithm = false, maxfevals = 10^8) where {dim, T, TI}
     cheqfilter = CheqFilter(Val(filtering), solver, rmin)
     comp = T(0)
     cell_comp = zeros(T, getncells(problem.ch.dh.grid))
@@ -26,9 +27,9 @@ function ComplianceFunction(::CPU, problem::StiffnessTopOptProblem{dim, T}, solv
     topopt_trace = TopOptTrace{T,TI}()
     reuse = false
     fevals = TI(0)
-    return ComplianceFunction(problem, solver, cheqfilter, comp, cell_comp, grad, tracing, topopt_trace, reuse, fevals, logarithm)
+    return ComplianceFunction(problem, solver, cheqfilter, comp, cell_comp, grad, tracing, topopt_trace, reuse, fevals, logarithm, maxfevals)
 end
-function ComplianceFunction(::GPU, problem::StiffnessTopOptProblem{dim, T}, solver::AbstractDisplacementSolver, ::Type{TI}=Int; rmin = T(0), filtering = true, tracing = false, logarithm = false) where {dim, T, TI}
+function ComplianceFunction(::GPU, problem::StiffnessTopOptProblem{dim, T}, solver::AbstractDisplacementSolver, ::Type{TI}=Int; rmin = T(0), filtering = true, tracing = false, logarithm = false, maxfevals = 10^8) where {dim, T, TI}
     cheqfilter = cu(CheqFilter(Val(filtering), solver, rmin))
     comp = T(0)
     cell_comp = zeros(CuVector{T}, getncells(problem.ch.dh.grid))
@@ -36,7 +37,7 @@ function ComplianceFunction(::GPU, problem::StiffnessTopOptProblem{dim, T}, solv
     topopt_trace = TopOptTrace{T,TI}()
     reuse = false
     fevals = TI(0)
-    return ComplianceFunction(problem, solver, cheqfilter, comp, cell_comp, grad, tracing, topopt_trace, reuse, fevals, logarithm)
+    return ComplianceFunction(problem, solver, cheqfilter, comp, cell_comp, grad, tracing, topopt_trace, reuse, fevals, logarithm, maxfevals)
 end
 
 @define_cu(ComplianceFunction, :solver, :cell_comp, :grad, :cheqfilter)

@@ -20,6 +20,16 @@ mutable struct MMAOptimizer{T, TM<:MMAModel{T}, TO, TSO, TObj, TConstr, TW} <: A
 end
 GPUUtils.whichdevice(o::MMAOptimizer) = o.model
 
+function Functions.maxedfevals(o::MMAOptimizer)
+    maxedfevals(o.obj) || maxedfevals(o.constr)
+end
+@inline function Functions.maxedfevals(c::Tuple{Vararg{Constraint}})
+    maxedfevals(c[1]) || maxedfevals(Base.tail(c))
+end
+function Functions.maxedfevals(c::Vector{<:Constraint})
+    all(c -> maxedfevals(c), c)
+end
+
 MMAOptimizer(args...; kwargs...) = MMAOptimizer{CPU}(args...; kwargs...)
 MMAOptimizer{T}(args...; kwargs...) where T = MMAOptimizer(T(), args...; kwargs...)
 function MMAOptimizer(  device::Tdev, 

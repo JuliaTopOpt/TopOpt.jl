@@ -3,9 +3,13 @@ module Algorithms
 using ..MMA, ..Functions, Optim
 using TimerOutputs, Setfield, StaticArrays
 using Parameters: @unpack, @pack!
-using ..GPUUtils, ..Utilities
+using ..GPUUtils, ..Utilities, JuAFEM
 
-export  MMAOptimizer
+export  MMAOptimizer,
+        SIMP,
+        ExponentialContinuation,
+        ContinuationSIMP,
+        AdaptiveSIMP
 
 const to = TimerOutput()
 

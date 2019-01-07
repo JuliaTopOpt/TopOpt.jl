@@ -32,7 +32,7 @@ function ReuseAdaptiveSIMP(simp::SIMP{T}, ::Type{Val{filtering}}=Val{false};
     adapt_pstep = true) where {T, filtering}
 
     ncells = getncells(simp.optimizer.obj.problem)
-    result = NewSIMPResult(T, ncells)
+    result = NewSIMPResult(T, simp.optimizer, ncells)
 
     innerpolynomial = PolynomialFit{T}(2, ratio)
     # `adalength` is the number of steps backward we consider when trying to adapt the penalty steps

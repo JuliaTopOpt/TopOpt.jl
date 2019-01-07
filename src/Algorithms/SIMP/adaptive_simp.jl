@@ -26,7 +26,7 @@ function AdaptiveSIMP(simp::SIMP{T}, ::Type{Val{filtering}}=Val{false};
     ratio = 0.7) where {T, filtering}
 
     ncells = getncells(simp.optimizer.obj.problem)
-    result = NewSIMPResult(T, ncells)
+    result = NewSIMPResult(T, simp.optimizer, ncells)
     innerpolynomial = PolynomialFit{T}(3, ratio)
 
     return AdaptiveSIMP(simp, pstart, pfinish, reuse, result, ftol_cont, Δp, maxiter, innerpolynomial, T(NaN), T(NaN), T(0), T[], T[])

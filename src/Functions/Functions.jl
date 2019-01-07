@@ -11,7 +11,11 @@ export  Objective,
         Constraint,
         VolumeFunction,
         ComplianceFunction,
-        AbstractFunction
+        AbstractFunction,
+        getfevals,
+        getmaxfevals,
+        maxedfevals
+
 
 const to = TimerOutput()
 const dev = CUDAdrv.device()
@@ -28,7 +32,9 @@ struct Constraint{F, S} <: Function
     s::S
 end
 
+Base.broadcastable(o::Union{Objective, Constraint}) = Ref(o)
 getfunction(o::Union{Objective, Constraint}) = o.f
+getfunction(f::AbstractFunction) = f
 GPUUtils.whichdevice(o::Union{Objective, Constraint}) = o |> getfunction |> whichdevice
 Utilities.getsolver(o::Union{Objective, Constraint}) = o |> getfunction |> getsolver
 Utilities.getpenalty(o::Union{Objective, Constraint}) = o |> getfunction |> getsolver |> getpenalty
@@ -40,6 +46,13 @@ Utilities.getprevpenalty(o::Union{Objective, Constraint}) = o |> getfunction |> 
 
 @define_cu(Constraint, :f)
 (c::Constraint)(x, grad) = c.f(x, grad) - c.s
+
+getfevals(o::Union{Constraint, Objective}) = o |> getfunction |> getfevals
+getfevals(f::AbstractFunction) = f.fevals
+getmaxfevals(o::Union{Constraint, Objective}) = o |> getfunction |> getmaxfevals
+getmaxfevals(f::AbstractFunction) = f.maxfevals
+maxedfevals(o::Union{Objective, Constraint}) = maxedfevals(o.f)
+maxedfevals(f::AbstractFunction) = getfevals(f) >= getmaxfevals(f)
 
 include("compliance.jl")
 include("volume.jl")

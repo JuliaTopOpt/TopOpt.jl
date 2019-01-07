@@ -1,4 +1,4 @@
-struct VolumeFunction{T, dim, TI, TV, TP<:StiffnessTopOptProblem{dim, T}, TS<:AbstractFEASolver} <: AbstractFunction{T}
+mutable struct VolumeFunction{T, dim, TI, TV, TP<:StiffnessTopOptProblem{dim, T}, TS<:AbstractFEASolver} <: AbstractFunction{T}
     problem::TP
     solver::TS
     cellvolumes::TV
@@ -7,12 +7,23 @@ struct VolumeFunction{T, dim, TI, TV, TP<:StiffnessTopOptProblem{dim, T}, TS<:Ab
     fixed_volume::T
     tracing::Bool
 	topopt_trace::TopOptTrace{T,TI}
+    fevals::Int
+    maxfevals::Int
+end
+
+function Base.getproperty(vf::VolumeFunction, f::Symbol)
+    f === :reuse && return false
+    return getfield(vf, f)
+end
+function Base.setproperty!(vf::VolumeFunction, f::Symbol, v)
+    f === :reuse && return false
+    return setfield!(vf, f, v)
 end
 GPUUtils.whichdevice(v::VolumeFunction) = whichdevice(v.cellvolumes)
 @define_cu(VolumeFunction, :cellvolumes, :grad, :problem) # should be optimized to avoid replicating problem
 Utilities.getsolver(v::VolumeFunction) = v.solver
 
-function VolumeFunction(problem::StiffnessTopOptProblem{dim, T}, solver::AbstractFEASolver, ::Type{TI} = Int; tracing = true) where {dim, T, TI}
+function VolumeFunction(problem::StiffnessTopOptProblem{dim, T}, solver::AbstractFEASolver, ::Type{TI} = Int; tracing = true, maxfevals = 10^8) where {dim, T, TI}
     cellvalues = solver.elementinfo.cellvalues
     dh = problem.ch.dh
     vars = solver.vars
@@ -33,7 +44,7 @@ function VolumeFunction(problem::StiffnessTopOptProblem{dim, T}, solver::Abstrac
     total_volume = sum(cellvolumes)
     fixed_volume = dot(black, cellvolumes) #+ dot(white, cellvolumes)*xmin
 
-    return VolumeFunction(problem, solver, cellvolumes, grad, total_volume, fixed_volume, tracing, TopOptTrace{T, TI}())
+    return VolumeFunction(problem, solver, cellvolumes, grad, total_volume, fixed_volume, tracing, TopOptTrace{T, TI}(), 0, maxfevals)
 end
 function (v::VolumeFunction{T})(x, grad) where {T}
     varind = v.problem.varind
