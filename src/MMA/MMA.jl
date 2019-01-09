@@ -40,11 +40,11 @@ include("workspace.jl")
 const μ = 0.1
 const ρmin = 1e-5
 
-default_dual_caps(::MMA87, ::Type{T}) where T = (T(0.9), T(1.1))
-#default_dual_caps(::MMA87, ::Type{T}) where T = (T(0.0), T(Inf))
+default_dual_caps(::Type{T}) where T = (eps(T), T(Inf))
 
+#default_dual_caps(::MMA87, ::Type{T}) where T = (T(0.9), T(1.1))
 #default_dual_caps(::MMA02, ::Type{T}) where T = (T(1), T(100))
-default_dual_caps(::MMA02, ::Type{T}) where T = (T(1e6), T(1e6))
+#default_dual_caps(::MMA02, ::Type{T}) where T = (T(1e6), T(1e6))
 
 function optimize(  model::Model{T, TV}, 
                     x0::TV, 

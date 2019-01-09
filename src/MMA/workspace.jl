@@ -28,7 +28,7 @@ end
     s_init::T = 0.5
     s_incr::T = 1.2
     s_decr::T = 0.7
-    dual_caps::Tuple{T, T} = MMA.default_dual_caps(MMA87(), Float64)
+    dual_caps::Tuple{T, T} = MMA.default_dual_caps(Float64)
     store_trace::Bool = false
     show_trace::Bool = false
     extended_trace::Bool = false
