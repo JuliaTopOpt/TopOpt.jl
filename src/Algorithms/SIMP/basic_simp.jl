@@ -83,7 +83,7 @@ function (s::SIMP{T, TO})(x0=s.optimizer.obj.f.solver.vars) where {T, TO<:MMAOpt
     return s.result
 end
 
-function (s::SIMP{T, TO})(workspace::MMA.MMAWorkspace) where {T, TO<:MMAOptimizer}
+function (s::SIMP{T, TO})(workspace::MMA.Workspace) where {T, TO<:MMAOptimizer}
     #reset_timer!(to)
     r = @timeit to "SIMP" begin
         prev_fevals = getfevals(s.optimizer)

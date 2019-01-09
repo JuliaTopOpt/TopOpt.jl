@@ -9,11 +9,14 @@ struct PrimalData{T, TV1<:AbstractVector{T}, TV2, TM<:AbstractMatrix{T}}
     ρ::TV2
     r::TV2
     r0::Base.RefValue{T}
+    x0::TV1
     x::TV1 # Optimal value for x in dual iteration
     x1::TV1 # Optimal value for x in previous outer iteration
-    f_val::Base.RefValue{T} # Function value at current iteration
-    g_val::TV2 # Inequality values at current iteration
-    ∇f::TV1 # Function gradient at current iteration
+    x2::TV1 # Optimal value for x in previous outer iteration
+    f_x::Base.RefValue{T} # Function value at current iteration
+    f_x_previous::Base.RefValue{T}
+    g::TV2 # Inequality values at current iteration
+    ∇f_x::TV1 # Function gradient at current iteration
     ∇g::TM # Inequality gradients [var, ineq] at current iteration
 end
 GPUUtils.whichdevice(p::PrimalData) = whichdevice(p.x)
@@ -77,21 +80,21 @@ function getxj(λρ, λpj, λqj, j, p0, q0, σ, x1, α, β)
 end
 
 # Primal problem functions
-struct ConvexApproxGradUpdater{T, TV, TPD<:PrimalData{T}, TM<:MMAModel{T, TV}}
+struct ConvexApproxGradUpdater{T, TV, TPD<:PrimalData{T}, TM <: Model{T, TV}}
     pd::TPD
     m::TM
 end
 
 function (gu::ConvexApproxGradUpdater{T, TV})() where {T, TV <: AbstractVector}
     @unpack pd, m = gu
-    @unpack f_val, g_val, r, x, σ, x1, p0, q0, ∇f, p, q, ρ, ∇g = pd
+    @unpack f_x, g, r, x, σ, x1, p0, q0, ∇f_x, p, q, ρ, ∇g = pd
     n = dim(m)
-    r0 = f_val[]
+    r0 = f_x[]
     r0 -= tmapreduce(+, 1:n, init = zero(T)) do j
-        getgradelement(x, σ, x1, p0, q0, ∇f, j)
+        getgradelement(x, σ, x1, p0, q0, ∇f_x, j)
     end
     for i in 1:length(constraints(m))
-        r[i] = g_val[i]
+        r[i] = g[i]
         r[i] -= tmapreduce(+, 1:n, init = zero(T)) do j
             getgradelement(x, σ, p, q, ρ[i], ∇g, (j, i))
         end
@@ -101,34 +104,34 @@ end
 
 function (gu::ConvexApproxGradUpdater{T, TV})() where {T, TV <: CuVector}
     @unpack pd, m = gu
-    @unpack f_val, g_val, r, x, σ, x1, p0, q0, ∇f, p, q, ρ, ∇g = pd
+    @unpack f_x, g, r, x, σ, x1, p0, q0, ∇f_x, p, q, ρ, ∇g = pd
     n = dim(m)
-    r0 = compute_r0(f_val[], x, σ, x1, p0, q0, ∇f)
-    update_r!(r, g_val, x, σ, p, q, ρ, ∇g)
+    r0 = compute_r0(f_x[], x, σ, x1, p0, q0, ∇f_x)
+    update_r!(r, g, x, σ, p, q, ρ, ∇g)
     pd.r0[] = r0
 end
 
-function compute_r0(r0, x::AbstractVector{T}, σ, x1, p0, q0, ∇f, ::Val{blocksize} = Val(80), ::Val{threads} = Val(256)) where {T, blocksize, threads}
+function compute_r0(r0, x::AbstractVector{T}, σ, x1, p0, q0, ∇f_x, ::Val{blocksize} = Val(80), ::Val{threads} = Val(256)) where {T, blocksize, threads}
     result = similar(x, T, (blocksize,))
-    args = (x, σ, x1, p0, q0, ∇f, result, Val(threads))
+    args = (x, σ, x1, p0, q0, ∇f_x, result, Val(threads))
     @cuda blocks = blocksize threads = threads gradupdater_kernel1(args...)
     CUDAnative.synchronize()
     r0 -= sum(Array(result))
     return r0
 end
 
-function gradupdater_kernel1(x::AbstractVector{T}, σ, x1, p0, q0, ∇f, result, ::Val{LMEM}) where {T, LMEM}
+function gradupdater_kernel1(x::AbstractVector{T}, σ, x1, p0, q0, ∇f_x, result, ::Val{LMEM}) where {T, LMEM}
     @mapreduce_block(j, length(x), +, T, LMEM, result, begin
-        getgradelement(x, σ, x1, p0, q0, ∇f, j)
+        getgradelement(x, σ, x1, p0, q0, ∇f_x, j)
     end)
 
     return
 end
 
-function update_r!(r, g_val, x::AbstractVector{T}, σ, p, q, ρ, ∇g, ::Val{blocksize} = Val(80), ::Val{threads} = Val(256)) where {T, blocksize, threads}
+function update_r!(r, g, x::AbstractVector{T}, σ, p, q, ρ, ∇g, ::Val{blocksize} = Val(80), ::Val{threads} = Val(256)) where {T, blocksize, threads}
     result = similar(x, T, (blocksize,))
     for i in 1:length(r)
-        r[i] = g_val[i]
+        r[i] = g[i]
         args = (x, σ, p, q, i, ρ[i], ∇g, result, Val(threads))
         @cuda blocks = blocksize threads = threads gradupdater_kernel2(args...)
         CUDAnative.synchronize()
@@ -145,11 +148,11 @@ function gradupdater_kernel2(x::AbstractVector{T}, σ, p, q, i, ρi, ∇g, resul
     return
 end
 
-function getgradelement(x::AbstractVector{T}, σ, x1, p0, q0, ∇f, j::Int) where {T}
+function getgradelement(x::AbstractVector{T}, σ, x1, p0, q0, ∇f_x, j::Int) where {T}
     xj = x[j]
     σj = σ[j]
     Lj, Uj = minus_plus(xj, σj) # x == x1
-    ∇fj = ∇f[j]
+    ∇fj = ∇f_x[j]
     abs2σj∇fj = abs2(σj)*∇fj
     (p0j, q0j) = ifelse(∇fj > 0, (abs2σj∇fj, zero(T)), (zero(T), -abs2σj∇fj))
     p0[j], q0[j] = p0j, q0j
@@ -168,7 +171,7 @@ function getgradelement(x::AbstractVector{T}, σ, p, q, ρi, ∇g, ji::Tuple) wh
     return (pji + qji + 2Δ)/σj
 end
 
-struct VariableBoundsUpdater{T, TV, TPD<:PrimalData{T}, TModel<:MMAModel{T, TV}}
+struct VariableBoundsUpdater{T, TV, TPD <: PrimalData{T}, TModel <: Model{T, TV}}
     pd::TPD
     m::TModel
     μ::T
@@ -214,7 +217,7 @@ function bounds_kernel(α, β, σ, x, box_max, box_min)
     return
 end
 
-struct AsymptotesUpdater{T, TV<:AbstractVector{T}, TModel<:MMAModel{T}}
+struct AsymptotesUpdater{T, TV <: AbstractVector{T}, TModel <: Model{T}}
     m::TModel
     σ::TV
     x::TV

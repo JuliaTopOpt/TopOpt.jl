@@ -80,5 +80,13 @@ function assess_convergence(x::AbstractArray{T},
 
     converged = x_converged || f_converged || gr_converged
 
-    return x_converged, f_converged, gr_converged, x_residual, f_residual, gr_residual, f_increased, converged
+    return ConvergenceState(    x_converged, 
+                                f_converged, 
+                                gr_converged, 
+                                x_residual, 
+                                f_residual, 
+                                gr_residual, 
+                                f_increased, 
+                                converged
+                            )
 end

@@ -14,8 +14,8 @@ export  Objective,
         AbstractFunction,
         getfevals,
         getmaxfevals,
-        maxedfevals
-
+        maxedfevals,
+        getnvars
 
 const to = TimerOutput()
 const dev = CUDAdrv.device()
@@ -26,10 +26,26 @@ abstract type AbstractFunction{T} <: Function end
 struct Objective{F} <: Function
     f::F
 end
+function Base.getproperty(o::Objective, s::Symbol)
+    s === :reuse && return o.f.reuse
+    return getfield(o, s)
+end
+function Base.setproperty!(o::Objective, s::Symbol, v)
+    s === :reuse && return (o.f.reuse = v)
+    return setfield!(o, s, v)
+end
 
 struct Constraint{F, S} <: Function
     f::F
     s::S
+end
+function Base.getproperty(c::Constraint, s::Symbol)
+    s === :reuse && return c.f.reuse
+    return getfield(c, s)
+end
+function Base.setproperty!(c::Constraint, s::Symbol, v)
+    s === :reuse && return (c.f.reuse = v)
+    return setfield!(c, s, v)
 end
 
 Base.broadcastable(o::Union{Objective, Constraint}) = Ref(o)
@@ -53,6 +69,8 @@ getmaxfevals(o::Union{Constraint, Objective}) = o |> getfunction |> getmaxfevals
 getmaxfevals(f::AbstractFunction) = f.maxfevals
 maxedfevals(o::Union{Objective, Constraint}) = maxedfevals(o.f)
 maxedfevals(f::AbstractFunction) = getfevals(f) >= getmaxfevals(f)
+getnvars(o::Union{Constraint, Objective}) = o |> getfunction |> getnvars
+getnvars(f::AbstractFunction) = length(f.solver.vars)
 
 include("compliance.jl")
 include("volume.jl")

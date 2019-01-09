@@ -2,6 +2,7 @@ module CheqFilters
 
 using ..GPUUtils, ..Utilities, JuAFEM
 using CuArrays, ..FEA, Statistics
+using GPUArrays: GPUVector
 import ..GPUUtils: whichdevice
 using Parameters: @unpack
 import CUDAdrv
@@ -151,7 +152,7 @@ end
 
 (cf::CheqFilter{false})(args...) = nothing
 
-function update_nodal_grad!(nodal_grad::Vector, node_cells, cell_weights, cells, cellvolumes, black, white, varind, grad)
+function update_nodal_grad!(nodal_grad::AbstractVector, node_cells, cell_weights, cells, cellvolumes, black, white, varind, grad)
     T = eltype(nodal_grad)
     for n in 1:length(nodal_grad)
         nodal_grad[n] = zero(T)
@@ -170,7 +171,7 @@ function update_nodal_grad!(nodal_grad::Vector, node_cells, cell_weights, cells,
     end
     return
     #=
-function update_nodal_grad!(nodal_grad::Vector, cell_weights, cells, cellvolumes, black, white, varind, grad)
+function update_nodal_grad!(nodal_grad::AbstractVector, cell_weights, cells, cellvolumes, black, white, varind, grad)
     T = eltype(nodal_grad)
     nodal_grad .= zero(T)
     cell_weights .= 0
@@ -189,7 +190,7 @@ function update_nodal_grad!(nodal_grad::Vector, cell_weights, cells, cellvolumes
     =#
 end
 
-function update_nodal_grad!(nodal_grad::CuVector, node_cells, args...)
+function update_nodal_grad!(nodal_grad::GPUVector, node_cells, args...)
     T = eltype(nodal_grad)
     allargs = (nodal_grad, node_cells.offsets, node_cells.values, args...)
     callkernel(dev, cheq_kernel1, allargs)
@@ -221,14 +222,14 @@ function cheq_kernel1(nodal_grad, node_cells_offsets, node_cells_values, cell_we
 end
 
 
-function normalize_grad!(nodal_grad::Vector, cell_weights)
+function normalize_grad!(nodal_grad::AbstractVector, cell_weights)
     for n in 1:length(nodal_grad)
         if cell_weights[n] > 0
             nodal_grad[n] /= cell_weights[n]
         end
     end
 end
-function normalize_grad!(nodal_grad::CuVector, cell_weights)
+function normalize_grad!(nodal_grad::GPUVector, cell_weights)
     T = eltype(nodal_grad)
     args = (nodal_grad, cell_weights)
     callkernel(dev, cheq_kernel2, args)
@@ -249,7 +250,7 @@ function cheq_kernel2(nodal_grad, cell_weights)
 end
 
 
-function update_grad!(grad::Vector, black, white, varind, cell_neighbouring_nodes, cell_node_weights, nodal_grad)
+function update_grad!(grad::AbstractVector, black, white, varind, cell_neighbouring_nodes, cell_node_weights, nodal_grad)
     @inbounds for i in 1:length(black)
         if black[i] || white[i]
             continue
@@ -266,7 +267,7 @@ function update_grad!(grad::Vector, black, white, varind, cell_neighbouring_node
     return
 end
 
-function update_grad!(grad::CuVector, black, white, varind, cell_neighbouring_nodes, cell_node_weights, nodal_grad)
+function update_grad!(grad::GPUVector, black, white, varind, cell_neighbouring_nodes, cell_node_weights, nodal_grad)
     T = eltype(grad)
     allargs = (grad, black, white, varind, cell_neighbouring_nodes.offsets, cell_neighbouring_nodes.values, cell_node_weights.values, nodal_grad)
     callkernel(dev, cheq_kernel3, allargs)

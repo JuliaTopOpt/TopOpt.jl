@@ -20,7 +20,7 @@ function g(x::AbstractVector, grad::AbstractVector, a, b)
 end
 
 ndim = 2
-m = MMAModel(ndim, f, xtol = 1e-6, store_trace=true)
+m = MMA.Model(ndim, f, xtol = 1e-6, store_trace=true)
 
 box!(m, 1, 0.0, 10.0)
 box!(m, 2, 0.0, 10.0)

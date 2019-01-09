@@ -53,6 +53,7 @@ function (v::VolumeFunction{T})(x, grad) where {T}
     cellvolumes = v.cellvolumes
     total_volume = v.total_volume
     fixed_volume = v.fixed_volume
+    v.fevals += 1
 
     tracing = v.tracing
     topopt_trace = v.topopt_trace

@@ -1,5 +1,16 @@
 abstract type AbstractContinuation end
 
+struct FixedContinuation{T} <: AbstractContinuation
+    param::T
+    length::Int
+end
+function Base.iterate(s::FixedContinuation, x=1)
+    (x > s.length) && return nothing
+    s.param, x+1
+end
+Base.length(s::FixedContinuation) = s.length
+(s::FixedContinuation{T})(x...) where T = s.param
+
 """
 p(x) = 1/(a + b*ℯ^(-c*x))
 """
@@ -58,7 +69,7 @@ end
 function PowerContinuation{T}(;b::T=T(2), start::T=T(1), finish::T=T(5), steps::Int=30, min::T=-Inf) where T
     a = (finish - start) / max(T(1), steps^b - 1)
     c = start - a
-    PowerContinuation{T}(a,b,c,steps,min)
+    PowerContinuation{T}(a, b, c, steps, min)
 end
 function Base.iterate(s::PowerContinuation, x=1)
     x > s.length && return nothing

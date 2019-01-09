@@ -1,4 +1,4 @@
-struct MMAModel{T, TV<:AbstractVector{T}, TC<:AbstractVector{<:Function}}
+mutable struct Model{T, TV<:AbstractVector{T}, TC<:AbstractVector{<:Function}}
     dim::Int
     objective::Function
     ineq_constraints::TC
@@ -9,21 +9,21 @@ struct MMAModel{T, TV<:AbstractVector{T}, TC<:AbstractVector{<:Function}}
     show_trace::Bool
     extended_trace::Bool
     # Stopping criteria
-    maxiter::Base.RefValue{Int}
-    ftol::Base.RefValue{T}
-    xtol::Base.RefValue{T}
-    grtol::Base.RefValue{T}
+    maxiter::Int
+    ftol::T
+    xtol::T
+    grtol::T
 end
-GPUUtils.whichdevice(m::MMAModel) = whichdevice(m.box_max)
+GPUUtils.whichdevice(m::Model) = whichdevice(m.box_max)
 
-dim(m::MMAModel) = m.dim
-min(m::MMAModel, i::Integer) = m.box_min[i]
-max(m::MMAModel, i::Integer) = m.box_max[i]
-min(m::MMAModel)= m.box_max
-max(m::MMAModel) = m.box_min
-objective(m::MMAModel) = m.objective
-constraints(m::MMAModel) = m.ineq_constraints
-constraint(m::MMAModel, i::Integer) = m.ineq_constraints[i]
+dim(m::Model) = m.dim
+min(m::Model, i::Integer) = m.box_min[i]
+max(m::Model, i::Integer) = m.box_max[i]
+min(m::Model)= m.box_max
+max(m::Model) = m.box_min
+objective(m::Model) = m.objective
+constraints(m::Model) = m.ineq_constraints
+constraint(m::Model, i::Integer) = m.ineq_constraints[i]
 
 eval_objective(m, x::AbstractVector{T}) where {T} = eval_objective(m, x, T[])
 eval_objective(m, x, ∇g) = eval_objective(whichdevice(objective(m)), m, x, ∇g)
@@ -55,19 +55,19 @@ function eval_constraint(::CPU, m, i, x::GPUVector, ∇g)
     error("Optimization on the GPU with the constraint evaluation on the CPU is weird!")
 end
 
-ftol(m) = m.ftol[]
-xtol(m) = m.xtol[]
-grtol(m) = m.grtol[]
-ftol!(m, v) = m.ftol[] = v
-xtol!(m, v) = m.xtol[] = v
-grtol!(m, v) = m.grtol[] = v
+ftol(m) = m.ftol
+xtol(m) = m.xtol
+grtol(m) = m.grtol
+ftol!(m, v) = m.ftol = v
+xtol!(m, v) = m.xtol = v
+grtol!(m, v) = m.grtol = v
 
-MMAModel(args...; kwargs...) = MMAModel{CPU}(args...; kwargs...)
-MMAModel{T}(args...; kwargs...) where T = MMAModel(T(), args...; kwargs...) 
-MMAModel(::CPU, args...; kwargs...) = MMAModel{Float64, Vector{Float64}, Vector{Function}}(args...; kwargs...)
-MMAModel(::GPU, args...; kwargs...) = MMAModel{Float64, CuVector{Float64}, Vector{Function}}(args...; kwargs...)
+Model(args...; kwargs...) = Model{CPU}(args...; kwargs...)
+Model{T}(args...; kwargs...) where T = Model(T(), args...; kwargs...) 
+Model(::CPU, args...; kwargs...) = Model{Float64, Vector{Float64}, Vector{Function}}(args...; kwargs...)
+Model(::GPU, args...; kwargs...) = Model{Float64, CuVector{Float64}, Vector{Function}}(args...; kwargs...)
 
-function MMAModel{T, TV, TC}(dim,
+function Model{T, TV, TC}(dim,
                   objective::Function;
                   maxiter = 200,
                   xtol = eps(T),
@@ -79,13 +79,13 @@ function MMAModel{T, TV, TC}(dim,
 
     mins = ninfsof(TV, dim)
     maxs = infsof(TV, dim)
-    MMAModel{T, TV, TC}(dim, objective, Function[],
+    Model{T, TV, TC}(dim, objective, Function[],
              mins, maxs, store_trace, show_trace, extended_trace,
-             Ref(maxiter), Ref(T(ftol)), Ref(T(xtol)), Ref(T(grtol)))
+             maxiter, T(ftol), T(xtol), T(grtol))
 end
 
 # Box constraints
-function box!(m::MMAModel, i::Integer, minb::T, maxb::T) where {T}
+function box!(m::Model, i::Integer, minb::T, maxb::T) where {T}
     if !(1 <= i <= dim(m))
         throw(ArgumentError("box constraint need to applied to an existing variable"))
     end
@@ -93,13 +93,13 @@ function box!(m::MMAModel, i::Integer, minb::T, maxb::T) where {T}
     m.box_max[i] = maxb
 end
 
-function box!(m::MMAModel, minb::T, maxb::T) where {T}
+function box!(m::Model, minb::T, maxb::T) where {T}
     nv = dim(m)
     m.box_min[1:nv] .= minb
     m.box_max[1:nv] .= maxb
 end
 
-function box!(m::MMAModel, minbs::AbstractVector{T}, maxbs::AbstractVector{T}) where {T}
+function box!(m::Model, minbs::AbstractVector{T}, maxbs::AbstractVector{T}) where {T}
     if (length(minbs) != dim(m)) || (length(minbs) != dim(m))
         throw(ArgumentError("box constraint vector must have same size as problem dimension"))
     end
@@ -108,11 +108,11 @@ function box!(m::MMAModel, minbs::AbstractVector{T}, maxbs::AbstractVector{T}) w
     map!(identity, m.box_max, maxbs)
 end
 
-function ineq_constraint!(m::MMAModel, f::Function)
+function ineq_constraint!(m::Model, f::Function)
     push!(m.ineq_constraints, f)
 end
 
-function ineq_constraint!(m::MMAModel, fs::Vector{Function})
+function ineq_constraint!(m::Model, fs::Vector{Function})
     for f in fs
         push!(m.ineq_constraints, f)
     end

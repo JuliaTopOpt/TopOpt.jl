@@ -84,7 +84,7 @@ function innersolve!(asimp::AdaptiveSIMP, x0::AbstractArray{T}, p) where T
         
     # Does the first function evaluation
     # Number of function evaluations is the number of iterations plus 1
-    workspace = MMA.MMAWorkspace(model, x0, optimizer, suboptimizer, s_init=s_init, s_incr=s_incr, s_decr=s_decr, dual_caps=dual_caps)
+    workspace = MMA.Workspace(model, x0, optimizer, suboptimizer, s_init=s_init, s_incr=s_incr, s_decr=s_decr, dual_caps=dual_caps)
     workspace.model.maxiter[] = 0
     # Record the first value in the polynomial fit struct
     newvalue!(innerpolynomial, obj.fevals, workspace.f_x)
@@ -103,7 +103,7 @@ function innersolve!(asimp::AdaptiveSIMP, x0::AbstractArray{T}, p) where T
     return workspace
 end
 
-function innersolve!(asimp::AdaptiveSIMP, workspace::MMA.MMAWorkspace, p, reuse = true)
+function innersolve!(asimp::AdaptiveSIMP, workspace::MMA.Workspace, p, reuse = true)
     prev_l = length(asimp.simp.topologies)
     prev_fevals = asimp.simp.optimizer.obj.fevals
 
@@ -148,7 +148,7 @@ function innersolve!(asimp::AdaptiveSIMP, workspace::MMA.MMAWorkspace, p, reuse 
     return workspace
 end
 
-function _innersolve!(asimp::AdaptiveSIMP{T}, workspace::MMA.MMAWorkspace, offset=0) where T
+function _innersolve!(asimp::AdaptiveSIMP{T}, workspace::MMA.Workspace, offset=0) where T
     @unpack innerpolynomial, pstart, pfinish = asimp
     p = getpenalty(asimp.simp).p
     obj = asimp.simp.optimizer.obj

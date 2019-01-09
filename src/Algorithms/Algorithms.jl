@@ -1,6 +1,6 @@
 module Algorithms
 
-using ..MMA, ..Functions, Optim
+using ..MMA, ..Functions, Optim, Parameters
 using TimerOutputs, Setfield, StaticArrays
 using Parameters: @unpack, @pack!
 using ..GPUUtils, ..Utilities, JuAFEM

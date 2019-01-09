@@ -1,21 +1,25 @@
 abstract type AbstractSIMP <: TopOptAlgorithm end
 
-function setreuse!(optimizer, reuse)
-    if isdefined(optimizer.obj.f, :reuse)
-        optimizer.obj.f.reuse = reuse
-    end
-    if isdefined(optimizer.constr.f, :reuse)
-        optimizer.constr.f.reuse = reuse
-    end
-    return
+struct ReuseStatus{TC}
+    obj::Bool
+    constr::TC
+end
+Base.any(r::ReuseStatus) = r.obj || any(r.constr)
+Base.all(r::ReuseStatus) = r.obj && all(r.constr)
+function setreuse!(optimizer, reuse::Bool)
+    optimizer.obj.f.reuse = reuse
+    setproperty!.(optimizer.constr, :reuse, reuse)
+    return getreuse(optimizer)
+end
+function setreuse!(optimizer, reuse::ReuseStatus)
+    optimizer.obj.f.reuse = reuse.obj
+    setproperty!.(optimizer.constr, :reuse, reuse.constr)
+    return getreuse(optimizer)
 end
 function getreuse(optimizer)
-    if isdefined(optimizer.obj.f, :reuse)
-        return optimizer.obj.f.reuse
-    end
-    if isdefined(optimizer.constr.f, :reuse)
-        return optimizer.constr.f.reuse
-    end
+    obj_reuse = optimizer.obj.reuse
+    constr_reuse = getproperty.(optimizer.constr, :reuse)
+    return ReuseStatus(obj_reuse, constr_reuse)
 end
 Functions.getfevals(optimizer) = FunctionEvaluations(optimizer)
 

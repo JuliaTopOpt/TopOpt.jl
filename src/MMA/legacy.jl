@@ -21,7 +21,7 @@ function update_limits!(primal_data, m, k, x1, x2, s_init, s_incr, s_decr)
 end
 
 function compute_mma!(primal_data, m)
-    @unpack x, L, U, α, β, f_val, g_val, ∇f, ∇g, p, q, p0, q0, r = primal_data
+    @unpack x, L, U, α, β, f_x, g, ∇f_x, ∇g, p, q, p0, q0, r = primal_data
     # Bound limits
     for j = 1:dim(m)
         μ = 0.1
@@ -32,10 +32,10 @@ function compute_mma!(primal_data, m)
     r0 = 0.0
     for i in 0:length(constraints(m))
         if i == 0
-            ri = f_val[]
-            ∇fi = @view ∇f[:]
+            ri = f_x[]
+            ∇fi = @view ∇f_x[:]
         else
-             ri = g_val[i]
+             ri = g[i]
              ∇fi = @view ∇g[:,i]
         end
         for j in 1:dim(m)
