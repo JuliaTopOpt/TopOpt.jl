@@ -40,7 +40,7 @@ include("workspace.jl")
 const μ = 0.1
 const ρmin = 1e-5
 
-default_dual_caps(::Type{T}) where T = (eps(T), T(Inf))
+default_dual_caps(::Type{T}) where T = (eps(T), one(T)*10^5)
 
 #default_dual_caps(::MMA87, ::Type{T}) where T = (T(0.9), T(1.1))
 #default_dual_caps(::MMA02, ::Type{T}) where T = (T(1), T(100))
@@ -57,20 +57,14 @@ function optimize(  model::Model{T, TV},
     return optimize!(workspace)
 end
 
-struct Tolerances{T}
-    x_tol::T
-    f_tol::T
-    g_tol::T
-end
-
-struct MMAResult{TO, TX, T, TState}
+mutable struct MMAResult{T, TO, TX, Ttol <: Tolerances, TState}
     optimizer::TO
     initial_x::TX
     minimizer::TX
     minimum::T
     iter::Int
     maxiter_reached::Bool
-    tol::Tolerances{T}
+    tol::Ttol
     convstate::TState
     f_calls::Int
     g_calls::Int
@@ -99,8 +93,9 @@ function optimize!(workspace::Workspace{T, TV, TM}) where {T, TV, TM}
 
     n_i = length(constraints(model))
     n_j = dim(model)
-    maxiter = model.maxiter[]
-    while !converged && iter < maxiter
+    maxiter = options.maxiter
+    outer_maxiter = options.outer_maxiter
+    while !converged && iter < maxiter && outer_iter < outer_maxiter
         outer_iter += 1
         asymptotes_updater(Iteration(outer_iter))
 
@@ -119,7 +114,7 @@ function optimize!(workspace::Workspace{T, TV, TM}) where {T, TV, TM}
             lift_resetter(Iteration(outer_iter))
         end
         lift = true
-        while lift && iter < model.maxiter[]
+        while lift && iter < options.maxiter
             iter += 1
 
             # Solve dual
@@ -155,11 +150,11 @@ function optimize!(workspace::Workspace{T, TV, TM}) where {T, TV, TM}
         end
 
         # Assess convergence
-        convstate = assess_convergence(x, x1, f_x, f_x_previous, ∇f_x, 
-            xtol(model), ftol(model), grtol(model))
+        convstate = assess_convergence(x, x1, f_x, f_x_previous, ∇f_x, options.xtol, 
+            options.ftol, options.grtol)
 
-        converged = converged && all(g) do x
-            x <= ftol(model)
+        converged = convstate.converged && all(g) do x
+            x <= options.ftol
         end
 
         # Print some trace if flag is on
@@ -174,8 +169,8 @@ function optimize!(workspace::Workspace{T, TV, TM}) where {T, TV, TM}
                             x,
                             f_x,
                             iter,
-                            iter == model.maxiter[],
-                            Tolerances(xtol(model), ftol(model), grtol(model)),
+                            iter == options.maxiter,
+                            Tolerances(options.xtol, options.ftol, options.grtol),
                             convstate,
                             f_calls,
                             g_calls,

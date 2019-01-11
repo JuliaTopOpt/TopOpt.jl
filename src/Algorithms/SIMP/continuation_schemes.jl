@@ -1,4 +1,4 @@
-abstract type AbstractContinuation end
+abstract type AbstractContinuation <: Function end
 
 struct FixedContinuation{T} <: AbstractContinuation
     param::T

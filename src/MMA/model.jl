@@ -4,15 +4,6 @@ mutable struct Model{T, TV<:AbstractVector{T}, TC<:AbstractVector{<:Function}}
     ineq_constraints::TC
     box_max::TV
     box_min::TV
-    # Trace flags
-    store_trace::Bool
-    show_trace::Bool
-    extended_trace::Bool
-    # Stopping criteria
-    maxiter::Int
-    ftol::T
-    xtol::T
-    grtol::T
 end
 GPUUtils.whichdevice(m::Model) = whichdevice(m.box_max)
 
@@ -67,21 +58,11 @@ Model{T}(args...; kwargs...) where T = Model(T(), args...; kwargs...)
 Model(::CPU, args...; kwargs...) = Model{Float64, Vector{Float64}, Vector{Function}}(args...; kwargs...)
 Model(::GPU, args...; kwargs...) = Model{Float64, CuVector{Float64}, Vector{Function}}(args...; kwargs...)
 
-function Model{T, TV, TC}(dim,
-                  objective::Function;
-                  maxiter = 200,
-                  xtol = eps(T),
-                  ftol = sqrt(eps(T)),
-                  grtol = sqrt(eps(T)),
-                  store_trace::Bool = false,
-                  show_trace::Bool = false,
-                  extended_trace::Bool = false) where {T, TV, TC}
-
+function Model{T, TV, TC}(dim, objective::Function) where {T, TV, TC}
     mins = ninfsof(TV, dim)
     maxs = infsof(TV, dim)
     Model{T, TV, TC}(dim, objective, Function[],
-             mins, maxs, store_trace, show_trace, extended_trace,
-             maxiter, T(ftol), T(xtol), T(grtol))
+             mins, maxs)
 end
 
 # Box constraints

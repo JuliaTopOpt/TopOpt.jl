@@ -12,8 +12,8 @@ macro mmatrace()
                     f_x,
                     gr_residual,
                     dt,
-                    model.store_trace[],
-                    model.show_trace[])
+                    options.store_trace,
+                    options.show_trace)
         end
     end)
 end

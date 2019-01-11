@@ -26,16 +26,11 @@ function Base.any(f, fevals::FunctionEvaluations)
     f(fevals.obj) || any(f, fevals.constr)
 end
 
-mutable struct SIMPResult{T, TF <: FunctionEvaluations}
+mutable struct SIMPResult{T, TF <: FunctionEvaluations, Tstate}
     topology::Vector{T}
     objval::T
     fevals::TF
-    x_abschange::T
-    x_converged::Bool
-    f_abschange::T
-    f_converged::Bool
-    g_residual::T
-    g_converged::Bool
+    convstate::Tstate
     penalty_trace::Vector{Pair{T, TF}}
     nsubproblems::Int
 end
@@ -44,7 +39,7 @@ GPUUtils.whichdevice(s::SIMPResult) = whichdevice(s.topology)
 function NewSIMPResult(::Type{T}, optimizer, ncells) where {T}
     FunctionEvaluations(optimizer)
     fevals = zero(FunctionEvaluations(optimizer))
-    SIMPResult(fill(T(NaN), ncells), T(NaN), fevals, T(NaN), false, T(NaN), false, T(NaN), false, Pair{T, typeof(fevals)}[], 0)
+    SIMPResult(fill(T(NaN), ncells), T(NaN), fevals, MMA.ConvergenceState(), Pair{T, typeof(fevals)}[], 0)
 end
 
 mutable struct SIMP{T, TO, TP} <: AbstractSIMP
@@ -72,25 +67,17 @@ function Utilities.setpenalty!(s::AbstractSIMP, p::Number)
 end
 
 function (s::SIMP{T, TO})(x0=s.optimizer.obj.f.solver.vars) where {T, TO<:MMAOptimizer}
-    #reset_timer!(to)
-    r = @timeit to "SIMP" begin
-        setpenalty!(s.optimizer, s.penalty.p)
-        prev_fevals = getfevals(s.optimizer)
-        mma_results = s.optimizer(x0)
-        update_result!(s, mma_results, prev_fevals)
-    end
-    #display(to)
+    setpenalty!(s.optimizer, s.penalty.p)
+    prev_fevals = getfevals(s.optimizer)
+    mma_results = s.optimizer(x0)
+    update_result!(s, mma_results, prev_fevals)
     return s.result
 end
 
 function (s::SIMP{T, TO})(workspace::MMA.Workspace) where {T, TO<:MMAOptimizer}
-    #reset_timer!(to)
-    r = @timeit to "SIMP" begin
-        prev_fevals = getfevals(s.optimizer)
-        mma_results = s.optimizer(workspace)
-        update_result!(s, mma_results, prev_fevals)
-    end
-    #display(to)
+    prev_fevals = getfevals(s.optimizer)
+    mma_results = s.optimizer(workspace)
+    update_result!(s, mma_results, prev_fevals)
     return s.result
 end
 
@@ -109,7 +96,6 @@ end
 
 function update_result!(s::SIMP{T}, mma_results, prev_fevals) where T
     # Postprocessing
-    #@debug @show mma_results.minimum
     @unpack result, optimizer = s
     @unpack obj = optimizer
     @unpack problem = obj.f
@@ -129,9 +115,7 @@ function update_result!(s::SIMP{T}, mma_results, prev_fevals) where T
     if all(x -> x > 0, extra_fevals)
         result.nsubproblems += 1
     end
-    @unpack x_abschange, x_converged, f_abschange, f_converged, g_residual, g_converged = mma_results
-    @pack! result = x_abschange, x_converged, f_abschange, f_converged, g_residual, g_converged
-
+    result.convstate = mma_results.convstate
     return result
 end
 

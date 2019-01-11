@@ -39,16 +39,17 @@ function (asimp::AdaptiveSIMP)(x0=asimp.simp.optimizer.obj.solver.vars)
 
     p = pstart
     workspace = setup_workspace(asimp, x0, p)    
+    @unpack primal_data, options, convstate = workspace
     steps = round(Int, (pfinish - pstart)/Δp)
 
-    maxiter = workspace.model.maxiter[]
+    maxiter = options.maxiter
     fevals1, fevals2, fevals = obj.fevals, obj.fevals, obj.fevals
     for i in 1:steps
         obj.fevals >= asimp.maxiter && break
         workspace.outer_iter = workspace.iter = 0
-        workspace.model.maxiter[] = 1
+        options.maxiter = 1
 
-        f_x_previous = workspace.f_x_previous
+        f_x_previous = primal_data.f_x_previous[]
         fevals2 = fevals1
         fevals1 = fevals
 
@@ -64,15 +65,15 @@ function (asimp::AdaptiveSIMP)(x0=asimp.simp.optimizer.obj.solver.vars)
         
         if workspace.converged
             if obj.reuse
-                workspace.f_x = workspace.f_x_previous
-                workspace.f_x_previous = f_x_previous
-                workspace.x .= workspace.x1
-                workspace.x1 .= workspace.x2
+                primal_data.f_x[] = primal_data.f_x_previous[]
+                primal_data.f_x_previous = f_x_previous
+                primal_data.x .= primal_data.x1
+                primal_data.x1 .= primal_data.x2
             end
         else
             obj.reuse = false
-            while !workspace.converged && obj.fevals < asimp.maxiter && workspace.iter < maxiter
-                workspace.model.maxiter[] += 1
+            while !convstate.converged && obj.fevals < asimp.maxiter && workspace.iter < maxiter
+                options.maxiter += 1
                 _innersolve!(asimp, workspace)
             end
         end
@@ -91,7 +92,7 @@ function (asimp::AdaptiveSIMP)(x0=asimp.simp.optimizer.obj.solver.vars)
             end
         end
     end
-    workspace.model.maxiter[] = maxiter
+    options.maxiter = maxiter
     asimp.result = asimp.simp.result
 
     return asimp.result
@@ -107,7 +108,7 @@ function setup_workspace(asimp::AdaptiveSIMP, x0::AbstractArray{T}, p) where T
 
     # Does the first function evaluation
     # Number of function evaluations is the number of iterations plus 1
-    workspace = MMA.Workspace(model, x0, optimizer, suboptimizer, s_init=s_init, s_incr=s_incr, s_decr=s_decr, dual_caps=dual_caps)
+    workspace = MMA.Workspace(model, x0, optimizer, suboptimizer, options = MMA.Options(s_init=s_init, s_incr=s_incr, s_decr=s_decr, dual_caps=dual_caps))
     # Record the first value in the polynomial fit struct
     newvalue!(innerpolynomial, obj.fevals, workspace.f_x)
 

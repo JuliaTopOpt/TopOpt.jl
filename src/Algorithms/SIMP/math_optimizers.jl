@@ -2,7 +2,7 @@ abstract type AbstractOptimizer end
 
 mutable struct MMAOptimizer{T, TM <: Model{T}, TO, TSO, TObj, TConstr, TW, TState <: ConvergenceState, TOptions <: MMA.Options} <: AbstractOptimizer
     model::TM
-    optimizer::TO
+    mma_alg::TO
     suboptimizer::TSO
     obj::TObj
     constr::TConstr
@@ -22,13 +22,17 @@ function Functions.maxedfevals(c::Vector{<:Constraint})
     all(c -> maxedfevals(c), c)
 end
 
-MMAOptimizer(args...; kwargs...) = MMAOptimizer{CPU}(args...; kwargs...)
-MMAOptimizer{T}(args...; kwargs...) where T = MMAOptimizer(T(), args...; kwargs...)
+function MMAOptimizer(args...; options = MMA.Options())
+    return MMAOptimizer{CPU}(args...; options = options)
+end
+function MMAOptimizer{T}(args...; options = MMA.Options()) where T
+    return MMAOptimizer(T(), args...; options = options)
+end
 function MMAOptimizer(  device::Tdev, 
                         obj::Objective{<:AbstractFunction{T}}, 
                         constr, 
                         opt = MMA.MMA87(), 
-                        subopt = Optim.ConjugateGradient(), 
+                        subopt = Optim.ConjugateGradient();
                         options = MMA.Options()
                     ) where {T, Tdev}
 
@@ -36,8 +40,7 @@ function MMAOptimizer(  device::Tdev,
     nvars = length(solver.vars)
     xmin = solver.xmin
 
-    @unpack ftol, grtol, xtol, maxiter, store_trace, extended_trace = options
-    model = Model{Tdev}(nvars, obj, maxiter=maxiter, ftol=ftol, grtol=grtol, xtol=xtol, store_trace=store_trace, extended_trace=extended_trace)
+    model = Model{Tdev}(nvars, obj)
 
     box!(model, zero(T), one(T))
     ineq_constraint!(model, constr)
@@ -48,9 +51,7 @@ function MMAOptimizer(  device::Tdev,
         x0 = solver.vars
     end
 
-    @unpack s_init, s_incr, s_decr, dual_caps = options
-    workspace = MMA.Workspace(model, x0, opt, subopt; s_init=s_init, 
-    s_incr=s_incr, s_decr=s_decr, dual_caps=dual_caps)    
+    workspace = MMA.Workspace(model, x0, opt, subopt; options = options)
 
     return MMAOptimizer(model, opt, subopt, obj, constr, workspace, ConvergenceState(T), options)
 end
@@ -74,14 +75,14 @@ function (o::MMAOptimizer)(x0::AbstractVector)
     return mma_results
 end
 function setoptions!(workspace, options)
-    @unpack model = workspace
+    @unpack options = workspace
     @unpack store_trace, show_trace, extended_trace, dual_caps = options
     @unpack maxiter, ftol, xtol, grtol, subopt_options = options
     
-    @pack! workspace = dual_caps, subopt_options
-    model.ftol[], model.xtol[], model.grtol[] = ftol, xtol, grtol
-    model.show_trace[], model.extended_trace[] = show_trace, extended_trace
-    model.store_trace[] = store_trace
+    @pack! options = dual_caps, subopt_options
+    options.ftol, options.xtol, options.grtol = ftol, xtol, grtol
+    options.show_trace, options.extended_trace = show_trace, extended_trace
+    options.store_trace = store_trace
 
     return workspace
 end
@@ -110,61 +111,58 @@ end
 # For adaptive SIMP
 function (o::MMAOptimizer)(workspace::MMA.Workspace)
     mma_results = MMA.optimize!(workspace)
-    pack_results!(o, mma_results)
+    workspace.convstate = mma_results.convstate
     return mma_results
 end
 
-function pack_results!(o, r)
-    o.x_abschange = r.x_abschange
-    o.x_converged = r.x_converged
-    o.f_abschange = r.f_abschange
-    o.f_converged = r.f_converged
-    o.g_residual = r.g_residual
-    o.g_converged = r.g_converged
-
-    return o
-end
-
-
-@with_kw struct MMAOptionsGen{Titer, Txtol, Tftol, Tgrtol, Tsinit, Tsincr, Tsdecr, Tsuboptions}
-    maxiter_cont::Titer
-    xtol_cont::Txtol
-    ftol_cont::Tftol
-    grtol_cont::Tgrtol
-    s_init_cont::Tsinit
-    s_incr_cont::Tsincr
-    s_decr_cont::Tsdecr
-    subopt_options_cont::Tsuboptions
+struct MMAOptionsGen{Titer, Touteriter, Ttol, Tsinit, Tsincr, Tsdecr, Tdualcaps, Tstore_trace, Tshow_trace, Text_trace, Tsuboptions}
+    maxiter::Titer
+    outer_maxiter::Touteriter
+    tol::Ttol
+    s_init::Tsinit
+    s_incr::Tsincr
+    s_decr::Tsdecr
+    dual_caps::Tdualcaps
+    store_trace::Tstore_trace
+    show_trace::Tshow_trace
+    extended_trace::Text_trace
+    subopt_options::Tsuboptions
 end
 function (g::MMAOptionsGen)(i)
     MMA.Options(
-        g.maxiter_cont(i),
-        g.xtol_cont(i),
-        g.ftol_cont(i),
-        g.grtol_cont(i),
-        g.s_init_cont(i),
-        g.=s_incr_cont(i),
-        g.s_decr_cont(i),
-        g.subopt_options_cont(i)
+        g.maxiter(i),
+        g.outer_maxiter(i),
+        g.tol(i),
+        g.s_init(i),
+        g.s_incr(i),
+        g.s_decr(i),
+        g.dual_caps(i),
+        g.store_trace(i),
+        g.show_trace(i),
+        g.extended_trace(i),
+        g.subopt_options(i)
     )
 end
 
 function (g::MMAOptionsGen)(options, i)
     MMA.Options(
-        optionalcall(g.maxiter_cont, options, i),
-        optionalcall(g.xtol_cont, options, i),
-        optionalcall(g.ftol_cont, options, i),
-        optionalcall(g.grtol_cont, options, i),
-        optionalcall(g.s_init_cont, options, i),
-        optionalcall(g.s_incr_cont, options, i),
-        optionalcall(g.s_decr_cont, options, i),
-        optionalcall(g.subopt_options_cont, options, i)
+        optionalcall(g, :maxiter, options, i),
+        optionalcall(g, :outer_maxiter, options, i),
+        optionalcall(g, :tol, options, i),
+        optionalcall(g, :s_init, options, i),
+        optionalcall(g, :s_incr, options, i),
+        optionalcall(g, :s_decr, options, i),
+        optionalcall(g, :dual_caps, options, i),
+        optionalcall(g, :store_trace, options, i),
+        optionalcall(g, :show_trace, options, i),        
+        optionalcall(g, :extended_trace, options, i),
+        optionalcall(g, :subopt_options, options, i)
     )
 end
-function optionalcall(f, options, i)
-    if f isa Nothing
-        return options.maxiter
+function optionalcall(g, s, options, i)
+    if getproperty(g, s) isa Nothing
+        return getproperty(options, s)
     else
-        return f(i)
+        return getproperty(g, s)(i)
     end
 end

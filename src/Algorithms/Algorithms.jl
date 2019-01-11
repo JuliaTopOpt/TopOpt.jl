@@ -9,7 +9,9 @@ export  MMAOptimizer,
         SIMP,
         ExponentialContinuation,
         ContinuationSIMP,
-        AdaptiveSIMP
+        AdaptiveSIMP,
+        MMAOptionsGen,
+        CSIMPOptions
 
 const to = TimerOutput()
 

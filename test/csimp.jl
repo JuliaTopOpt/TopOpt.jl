@@ -27,20 +27,26 @@ approx_objvals = [330.0, 175.0, 65.0, 1413.0]
     filtering = problem isa TopOptProblems.TieBeam ? false : true
     obj = Objective(ComplianceFunction(problem, solver, filtering = filtering,
         rmin = 3.0, tracing = true, logarithm = false))
-    cu_obj = TopOpt.cu(obj)
+    #cu_obj = TopOpt.cu(obj)
     # Define volume constraint
     constr = Constraint(VolumeFunction(problem, solver), V)
     # Define subproblem optimizer
-    optimizer = MMAOptimizer{GPUUtils.CPU}(cu_obj, constr, MMA.MMA87(),
-        ConjugateGradient(), maxiter=1000); optimizer.obj.fevals = 0
+    #optimizer = MMAOptimizer{CPU}(cu_obj, constr, MMA.MMA87(),
+    #    ConjugateGradient(), maxiter=1000); optimizer.obj.fevals = 0
+    mma_options = options = MMA.Options(maxiter=1000)
+    optimizer = MMAOptimizer{CPU}(obj, constr, MMA.MMA87(),
+        ConjugateGradient(), options = mma_options); optimizer.obj.f.fevals = 0
 
     # Define continuation SIMP optimizer
     simp = SIMP(optimizer, 1.0)
+
     b = log(mintol / maxtol) / steps
     a = maxtol / exp(b)
-    ftol_gen = ExponentialContinuation(a, b, 0.0, steps+1, mintol)
-    cont_simp = ContinuationSIMP(simp, start=1.0, steps=steps,
-    finish=5.0, reuse=reuse, ftol_cont=ftol_gen)
+    mma_options_gen = TopOpt.MMAOptionsGen(steps = steps, initial_options = mma_options, ftol_gen = ExponentialContinuation(a, b, 0.0, steps + 1, mintol))
+    csimp_options = TopOpt.CSIMPOptions(steps = steps, options_gen = mma_options_gen, pstart = 1.0, pfinish = 5.0)
+
+    cont_simp = ContinuationSIMP(simp, steps, csimp_options) 
+
     # Solve
     x0 = fill(1.0, length(solver.vars))
     result = cont_simp(x0)
@@ -63,23 +69,28 @@ end
     solver = FEASolver(Displacement, CG, MatrixFree, problem, xmin = xmin,
         penalty = TopOpt.PowerPenalty(1.0))
     # Define volume constraint
-    obj = Objective(VolumeFunction(problem, solver, V))
+    obj = Objective(VolumeFunction(problem, solver))
     # Define compliance objective
     filtering = problem isa TopOptProblems.TieBeam ? false : true
     constr = Constraint(ComplianceFunction(problem, solver, filtering = filtering,
         rmin = 3.0, tracing = true, logarithm = false), approx_objvals[i])
     cu_constr = TopOpt.cu(constr)
     # Define subproblem optimizer
-    optimizer = MMAOptimizer{GPUUtils.CPU}(obj, cu_constr, MMA.MMA87(),
-        ConjugateGradient(), maxiter=1000); optimizer.obj.fevals = 0
+
+    mma_options = options = MMA.Options(maxiter=1000)
+    optimizer = MMAOptimizer{CPU}(obj, constr, MMA.MMA87(),
+        ConjugateGradient(), options = mma_options); optimizer.obj.f.fevals = 0
 
     # Define continuation SIMP optimizer
     simp = SIMP(optimizer, 1.0)
+
     b = log(mintol / maxtol) / steps
     a = maxtol / exp(b)
-    ftol_gen = ExponentialContinuation(a, b, 0.0, steps+1, mintol)
-    cont_simp = ContinuationSIMP(simp, start=1.0, steps=steps,
-    finish=5.0, reuse=reuse, ftol_cont=ftol_gen)
+    mma_options_gen = TopOpt.MMAOptionsGen(steps = steps, initial_options = mma_options, ftol_gen = ExponentialContinuation(a, b, 0.0, steps + 1, mintol))
+    csimp_options = TopOpt.CSIMPOptions(steps = steps, options_gen = mma_options_gen, pstart = 1.0, pfinish = 5.0)
+
+    cont_simp = ContinuationSIMP(simp, steps, csimp_options) 
+
     # Solve
     x0 = fill(1.0, length(solver.vars))
     result = cont_simp(x0)

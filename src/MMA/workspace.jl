@@ -5,6 +5,15 @@ struct PrimalVariables{Tx}
     x2::Tx
 end
 
+@with_kw struct Tolerances{Txtol, Tftol, Tgrtol}
+    xtol::Txtol = eps(Float64)
+    ftol::Tftol = eps(Float64)
+    grtol::Tgrtol = eps(Float64)
+end
+function (tol::Tolerances{<:Function, <:Function, <:Function})(i)
+    return Tolerances(tol.xtol(i), tol.ftol(i), tol.grtol(i))
+end
+
 struct DualData{TSol, Tv}
     λ::TSol 
     l::Tv
@@ -19,12 +28,10 @@ function DualData(model::Model{T, TV}) where {T, TV}
     return DualData(λ, l, u)
 end
 
-@with_kw struct Options{T, TSubOptions <: Optim.Options}
+@with_kw mutable struct Options{T, Ttol <: Tolerances, TSubOptions <: Optim.Options}
     maxiter::Int = 100
     outer_maxiter::Int = 100
-    xtol::T = 0.001
-    ftol::T = 0.001
-    grtol::T = NaN
+    tol::Ttol = Tolerances(eps(Float64), eps(Float64), eps(Float64))
     s_init::T = 0.5
     s_incr::T = 1.2
     s_decr::T = 0.7
@@ -33,6 +40,12 @@ end
     show_trace::Bool = false
     extended_trace::Bool = false
     subopt_options::TSubOptions = Optim.Options(x_tol = sqrt(eps(Float64)), f_tol = zero(Float64), g_tol = zero(Float64))
+end
+function Base.getproperty(o::Options, f::Symbol)
+    f === :xtol && return o.tol.xtol
+    f === :ftol && return o.tol.ftol
+    f === :grtol && return o.tol.grtol
+    return getfield(o, f)
 end
 
 mutable struct Workspace{T, Tx, Tc, TO, TSO, TTrace <: OptimizationTrace{T}, TModel <: Model{T}, TPD <: PrimalData{T}, TXUpdater <: XUpdater{T, Tx, TPD}, TOptions, TState}
@@ -142,7 +155,7 @@ function Workspace( model::Model{T, TV},
     @unpack g, ∇g, x = primal_data
     update_constraints!(g, ∇g, model, x)
     tr = OptimizationTrace{T, TO}()
-    tracing = (model.store_trace[] || model.extended_trace[] || model.show_trace[])
+    tracing = (options.store_trace || options.extended_trace || options.show_trace)
 
     # Iteraton counter
     outer_iter = 0
@@ -163,7 +176,7 @@ function update_constraints!(g, ∇g, model, x)
     return g
 end
 
-@with_kw struct ConvergenceState{T}
+@with_kw mutable struct ConvergenceState{T}
     x_converged::Bool = false
     f_converged::Bool = false
     gr_converged::Bool = false
@@ -178,15 +191,15 @@ function ConvergenceState(::Type{T}) where T
 end
 
 function assess_convergence(workspace::Workspace)
-    @unpack model, primal_data = workspace
+    @unpack options, primal_data = workspace
     @unpack x, x1, f_x, f_x_previous, ∇f_x = primal_data
     return assess_convergence(  x, 
                                 x1, 
                                 f_x, 
                                 f_x_previous, 
                                 ∇f_x, 
-                                xtol(model), 
-                                ftol(model), 
-                                grtol(model)
+                                options.xtol, 
+                                options.ftol, 
+                                options.grtol
                             )
 end

@@ -1,165 +1,277 @@
-mutable struct ContinuationSIMP{T, TO, TP, TPC, TOptionsGen} <: AbstractSIMP
-    simp::SIMP{T,TO,TP}
-    reuse::Bool
-    result::SIMPResult{T}
-    steps::Int
-    maxiter::Int
-    p_cont::TPC
-    options_gen::TOptionsGen
+@with_kw mutable struct ContinuationSIMP{Tsimp, Tresult, Toptions} <: AbstractSIMP
+    simp::Tsimp
+    result::Tresult
+    options::Toptions
 end
 GPUUtils.whichdevice(c::ContinuationSIMP) = whichdevice(c.simp)
 
-function ContinuationSIMP(
-        simp::SIMP{T}; 
-        steps = 40, 
-        start = T(1), 
-        finish = T(5),
-        reuse = true,
-        p_cont = PowerContinuation{T}(b=T(1), 
-            start=start,
-            steps=steps+1,
-            finish=finish),
-        maxiter = 500,
-        options_gen = MMAOptionsGen(simp)
-    ) where T
-
-    ncells = getncells(simp.optimizer.obj.f.problem)
-    result = NewSIMPResult(T, simp.optimizer, ncells)
-
-    return ContinuationSIMP(simp, reuse, result, steps, maxiter, p_cont, options_gen)
+struct CSIMPOptions{TOptions, TPen}
+    p_cont::TPen
+    option_cont::TOptions
+    reuse::Bool
+    steps::Int
 end
 
-function MMAOptionsGen(simp::SIMP{T}) where T
-    maxiter_cont = PowerContinuation{Int}(b=1, 
-        start=simp.optimizer.model.maxiter[], 
-        steps=steps+1,
-        finish=simp.optimizer.model.maxiter[]
-    )
+function CSIMPOptions(::Type{T} = Float64; 
+                        steps = 40, 
+                        p_gen = nothing,
+                        initial_options = MMA.Options(), 
+                        pstart = T(1), 
+                        pfinish = T(5), 
+                        reuse = true,
+                        options_gen = nothing
+                    ) where T
 
-    xtol_cont = PowerContinuation{T}(b=T(1),
-        start=simp.optimizer.obj.solver.xmin,
-        steps=steps+1,
-        finish=simp.optimizer.obj.solver.xmin
-    )
+    if p_gen == nothing
+        p_cont = PowerContinuation{T}(  b = T(1), 
+                                        start = pstart,
+                                        steps = steps + 1,
+                                        finish = pfinish
+                                    )
+    else
+        @assert steps == p_gen.length - 1
+        p_cont = p_gen
+    end
+
+    if options_gen == nothing
+        options_cont = MMAOptionsGen(steps = steps, initial_options = initial_options)
+    else
+        options_cont = options_gen
+    end
+
+    return CSIMPOptions(p_cont, options_cont, reuse, steps)
+end
+
+function ContinuationSIMP(  simp::SIMP{T},
+                            steps::Int = 40, 
+                            options::CSIMPOptions = CSIMPOptions( steps = steps, 
+                                                                initial_options = deepcopy(simp.optimizer.options)
+                                                    )
+                        ) where T
+
+    @assert steps == options.steps
+    ncells = getncells(simp.optimizer.obj.f.problem)
+    result = NewSIMPResult(T, simp.optimizer, ncells)
+    return ContinuationSIMP(simp, result, options)
+end
+
+# Unused functions
+default_ftol(solver) = xmin / 10
+function default_grtol(solver)
+    @unpack xmin, problem = solver
+    return xmin / 1000 * sum(problem.elementinfo.cellvolumes) * YoungsModulus(problem)
+end
+
+function MMAOptionsGen(;    steps::Int = 40, 
+                            initial_options = MMA.Options(), 
+                            ftol_gen = nothing, 
+                            xtol_gen = nothing,
+                            grtol_gen = nothing,
+                            maxiter_gen = nothing,
+                            outer_maxiter_gen = nothing,
+                            s_init_gen = nothing,
+                            s_incr_gen = nothing,
+                            s_decr_gen = nothing,
+                            dual_caps_gen = nothing,
+                            store_trace_gen = nothing,
+                            show_trace_gen = nothing,
+                            extended_trace_gen = nothing,
+                            subopt_options_gen = nothing
+                    ) where T
     
-    ftol_cont = PowerContinuation{T}(b=T(1),
-        start=simp.optimizer.obj.solver.xmin/10,
-        steps=steps+1,
-        finish=simp.optimizer.obj.solver.xmin/10
-    )
-    
-    grtol_cont = PowerContinuation{T}(b=T(1),
-        start=simp.optimizer.obj.solver.xmin/1000*simp.optimizer.constr.total_volume*YoungsModulus(simp.optimizer.obj.problem),
-        steps=steps+1,
-        finish=simp.optimizer.obj.solver.xmin/1000*simp.optimizer.constr.total_volume*YoungsModulus(simp.optimizer.obj.problem)
-    )
-    
-    s_init_cont = PowerContinuation{T}(b=T(1),
-        start=T(0.5),
-        steps=steps+1,
-        finish=T(0.5)
-    )
-    
-    s_incr_cont = PowerContinuation{T}(b=T(1),
-        start=T(1.2),
-        steps=steps+1,
-        finish=T(1.2)
-    )
-    
-    s_decr_cont = PowerContinuation{T}(b=T(1),
-        start=T(0.7),
-        steps=steps+1,
-        finish=T(0.7)
-    )
-    
-    subopt_options_cont = FixedContinuation(Optim.Options(
-                                                    x_tol = sqrt(eps(T)), 
-                                                    f_tol = zero(T), 
-                                                    g_tol = zero(T)
-                                                ), 
-                                                steps + 1
-                                            )
-    
+    if maxiter_gen == nothing
+        maxiter_cont = FixedContinuation(initial_options.maxiter, steps + 1)
+    else
+        @assert steps == maxiter_gen.length - 1
+        maxiter_cont = maxiter_gen
+    end
+
+    if outer_maxiter_gen == nothing
+        outer_maxiter_cont = FixedContinuation(initial_options.outer_maxiter, steps + 1)
+    else
+        @assert steps == outer_maxiter_gen.length - 1
+        outer_maxiter_cont = outer_maxiter_gen
+    end
+
+    if xtol_gen == nothing
+        xtol_cont = FixedContinuation(initial_options.xtol, steps + 1)
+    else
+        @assert steps == xtol_gen.length - 1
+        xtol_cont = xtol_gen
+    end
+
+    if ftol_gen == nothing
+        ftol_cont = FixedContinuation(initial_options.ftol, steps + 1)
+    else
+        @assert steps == ftol_gen.length - 1
+        ftol_cont = ftol_gen
+    end
+
+    if grtol_gen == nothing
+        grtol_cont = FixedContinuation(initial_options.grtol, steps + 1)
+    else
+        @assert steps == grtol_gen.length - 1
+        grtol_cont = grtol_gen
+    end
+    tol_cont = MMA.Tolerances(xtol_cont, ftol_cont, grtol_cont)
+
+    if s_init_gen == nothing
+        s_init_cont = FixedContinuation(initial_options.s_init, steps + 1)
+    else
+        @assert steps == s_init_gen.length - 1
+        s_init_cont = s_init_gen
+    end
+
+    if s_incr_gen == nothing
+        s_incr_cont = FixedContinuation(initial_options.s_incr, steps + 1)
+    else
+        @assert steps == s_incr_gen.length - 1
+        s_incr_cont = s_incr_gen
+    end
+    if s_decr_gen == nothing
+
+        s_decr_cont = FixedContinuation(initial_options.s_decr, steps + 1)
+    else
+        @assert steps == s_decr_gen.length - 1
+        s_decr_cont = s_decr_gen
+    end
+
+    if dual_caps_gen == nothing
+        dual_caps_cont = FixedContinuation(initial_options.dual_caps, steps + 1)
+    else
+        @assert steps == dual_caps_gen.length - 1
+        dual_caps_cont = dual_caps_gen
+    end
+
+    if store_trace_gen == nothing
+        store_trace_cont = FixedContinuation(initial_options.store_trace, steps + 1)
+    else
+        @assert steps == store_trace_gen.length - 1
+        store_trace_cont = store_trace_gen
+    end
+
+    if show_trace_gen == nothing
+        show_trace_cont = FixedContinuation(initial_options.show_trace, steps + 1)
+    else
+        @assert steps == show_trace_gen.length - 1
+        show_trace_cont = show_trace_gen
+    end
+
+    if extended_trace_gen == nothing
+        extended_trace_cont = FixedContinuation(initial_options.extended_trace, steps + 1)
+    else
+        @assert steps == extended_trace_gen.length - 1
+        extended_trace_cont = extended_trace_gen
+    end
+
+    if subopt_options_gen == nothing
+        subopt_options_cont = FixedContinuation(initial_options.subopt_options, steps + 1)
+    else
+        @assert steps == subopt_options_gen.length - 1
+        subopt_options_cont = subopt_options_gen
+    end
+
     return MMAOptionsGen(   maxiter_cont, 
-                            xtol_cont, 
-                            ftol_cont, 
-                            grtol_cont, 
+                            outer_maxiter_cont,
+                            tol_cont, 
                             s_init_cont, 
                             s_incr_cont,
                             s_decr_cont,
+                            dual_caps_cont,
+                            store_trace_cont,
+                            show_trace_cont,
+                            extended_trace_cont,
                             subopt_options_cont
                         )
 end
 
-function (c_simp::ContinuationSIMP{<:Any,<:MMAOptimizer})(x0=c_simp.simp.optimizer.obj.solver.vars, terminate_early=false)
-    @unpack model, s_init, s_decr, s_incr, optimizer, suboptimizer, dual_caps, obj, constr, x_abschange, x_converged, f_abschange, f_converged, g_residual, g_converged = c_simp.simp.optimizer
+function reset!(w::MMA.Workspace, x0)
+    @unpack primal_data, model, suboptimizer, options = w
+    @unpack g, ∇g, x = primal_data
+    w.f_calls, w.g_calls = 1, 1
+    w.convstate = MMA.ConvergenceState()
+    primal_data.x0 .= x0
+    primal_data.x .= x0
+    MMA.update_constraints!(g, ∇g, model, x0)
+    tr = typeof(w.tr)()
+    tracing = (options.store_trace || options.extended_trace || options.show_trace)
 
-    c_simp.simp.optimizer.model.xtol[] = 0
-    c_simp.simp.optimizer.model.grtol[] = 0
+    # Iteraton counter
+    w.outer_iter = 0
+    w.iter = 0
+
+    return w
+end
+
+function (c_simp::ContinuationSIMP)(x0=copy(c_simp.simp.optimizer.obj.solver.vars), terminate_early=false)
+    @unpack optimizer = c_simp.simp
+    @unpack workspace, mma_alg, suboptimizer = optimizer 
+    @unpack obj, constr, convstate, options = optimizer
+
+    reset!(workspace, x0)
     update!(c_simp, 1)
 
     # Does the first function evaluation
     # Number of function evaluations is the number of iterations plus 1
-    setreuse!(c_simp.simp.optimizer, false)
-
-    workspace = MMA.Workspace(model, x0, optimizer, suboptimizer, s_init=s_init, s_incr=s_incr, s_decr=s_decr, dual_caps=dual_caps)
+    setreuse!(optimizer, false)
 
     if maxedfevals(c_simp.simp.optimizer)
         c_simp.result = c_simp.simp.result
         return c_simp.result
     end
     c_simp.simp(workspace)
+    f_x_previous = workspace.primal_data.f_x_previous[]
+    g_previous = copy(c_simp.simp.optimizer.workspace.primal_data.g)
 
-    maxiter = workspace.model.maxiter[]
-    for i in 1:c_simp.steps
-        maxedfevals(c_simp.simp.optimizer) && break
-        workspace.iter = workspace.outer_iter = 0
-        workspace.model.maxiter[] = 1
+    maxiter = options.maxiter
+    for i in 1:c_simp.options.steps
+        maxedfevals(optimizer) && break
+        options.maxiter = 1
 
-        workspace.converged = false
-        if i == c_simp.steps
-            setreuse!(c_simp.simp.optimizer, false)
+        workspace.convstate.converged = false
+        if i == c_simp.options.steps
+            setreuse!(optimizer, false)
         else
-            setreuse!(c_simp.simp.optimizer, c_simp.reuse)
+            setreuse!(optimizer, c_simp.options.reuse)
         end
         ftol = update!(c_simp, i+1)
 
         c_simp.simp(workspace)
-        if any(getreuse(c_simp.simp.optimizer))
-            reset_values!(c_simp.simp.optimizer.workspace, f_x_previous, g_previous)
+        if any(getreuse(optimizer))
+            undo_values!(workspace, f_x_previous, g_previous)
         end
     
-        if !c_simp.simp.optimizer.workspace.converged
+        if !workspace.convstate.converged
             setreuse!(c_simp.simp.optimizer, false)
-            while !workspace.converged && !maxedfevals(c_simp.simp.optimizer)
-                workspace.model.maxiter[] += 1
+            while !workspace.convstate.converged && !maxedfevals(optimizer)
+                options.maxiter += 1
                 c_simp.simp(workspace)
             end
         end
-        f_x_previous = c_simp.simp.optimizer.workspace.f_x_previous
-        g_previous = copy(c_simp.simp.optimizer.workspace.g)
+        f_x_previous = workspace.primal_data.f_x_previous[]
+        g_previous = copy(c_simp.simp.optimizer.workspace.primal_data.g)
 
-        maxedfevals(c_simp.simp.optimizer) && break
+        maxedfevals(optimizer) && break
     end
-    workspace.model.maxiter[] = maxiter
+    options.maxiter = maxiter
     c_simp.result = c_simp.simp.result
 end
 
-function update!(c_simp::ContinuationSIMP{<:Any,<:MMAOptimizer}, i)
-    p = c_simp.p_cont(i)
+function update!(c_simp::ContinuationSIMP, i)
+    p = c_simp.options.p_cont(i)
     setpenalty!(c_simp.simp, p)
-    options = options_gen(c_simp.simp.optimizer.options, i)
-    c_simp.simp.optimizer.model.ftol[] = ftol
+    options = c_simp.options.option_cont(c_simp.simp.optimizer.options, i)
+    c_simp.simp.optimizer.workspace.options = options
 
-    return ftol
+    return c_simp
 end
 frac(x) = 2*min(abs(x), abs(x - 1))
 
-function reset_values!(workspace, f_x_previous, g_previous)
-    workspace.f_x = workspace.f_x_previous
-    workspace.f_x_previous = f_x_previous
-    workspace.g .= g_previous
-    workspace.x .= workspace.x1
-    workspace.x1 .= workspace.x2
+function undo_values!(workspace, f_x_previous, g_previous)
+    workspace.primal_data.f_x[] = workspace.primal_data.f_x_previous[]
+    workspace.primal_data.f_x_previous[] = f_x_previous
+    workspace.primal_data.g .= g_previous
+    workspace.primal_data.x .= workspace.primal_data.x1
+    workspace.primal_data.x1 .= workspace.primal_data.x2
     return workspace
 end
