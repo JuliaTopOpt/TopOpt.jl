@@ -1,4 +1,4 @@
-struct PrimalData{T, TV1<:AbstractVector{T}, TV2, TM<:AbstractMatrix{T}}
+mutable struct PrimalData{T, TV1<:AbstractVector{T}, TV2, TM<:AbstractMatrix{T}}
     σ::TV1
     α::TV1 # Lower move limit
     β::TV1 # Upper move limit
@@ -8,13 +8,13 @@ struct PrimalData{T, TV1<:AbstractVector{T}, TV2, TM<:AbstractMatrix{T}}
     q::TM
     ρ::TV2
     r::TV2
-    r0::Base.RefValue{T}
+    r0::T
     x0::TV1
     x::TV1 # Optimal value for x in dual iteration
     x1::TV1 # Optimal value for x in previous outer iteration
     x2::TV1 # Optimal value for x in previous outer iteration
-    f_x::Base.RefValue{T} # Function value at current iteration
-    f_x_previous::Base.RefValue{T}
+    f_x::T # Function value at current iteration
+    f_x_previous::T
     g::TV2 # Inequality values at current iteration
     ∇f_x::TV1 # Function gradient at current iteration
     ∇g::TM # Inequality gradients [var, ineq] at current iteration
@@ -89,7 +89,7 @@ function (gu::ConvexApproxGradUpdater{T, TV})() where {T, TV <: AbstractVector}
     @unpack pd, m = gu
     @unpack f_x, g, r, x, σ, x1, p0, q0, ∇f_x, p, q, ρ, ∇g = pd
     n = dim(m)
-    r0 = f_x[]
+    r0 = f_x
     r0 -= tmapreduce(+, 1:n, init = zero(T)) do j
         getgradelement(x, σ, x1, p0, q0, ∇f_x, j)
     end
@@ -99,16 +99,16 @@ function (gu::ConvexApproxGradUpdater{T, TV})() where {T, TV <: AbstractVector}
             getgradelement(x, σ, p, q, ρ[i], ∇g, (j, i))
         end
     end
-    pd.r0[] = r0
+    pd.r0 = r0
 end
 
 function (gu::ConvexApproxGradUpdater{T, TV})() where {T, TV <: CuVector}
     @unpack pd, m = gu
     @unpack f_x, g, r, x, σ, x1, p0, q0, ∇f_x, p, q, ρ, ∇g = pd
     n = dim(m)
-    r0 = compute_r0(f_x[], x, σ, x1, p0, q0, ∇f_x)
+    r0 = compute_r0(f_x, x, σ, x1, p0, q0, ∇f_x)
     update_r!(r, g, x, σ, p, q, ρ, ∇g)
-    pd.r0[] = r0
+    pd.r0 = r0
 end
 
 function compute_r0(r0, x::AbstractVector{T}, σ, x1, p0, q0, ∇f_x, ::Val{blocksize} = Val(80), ::Val{threads} = Val(256)) where {T, blocksize, threads}

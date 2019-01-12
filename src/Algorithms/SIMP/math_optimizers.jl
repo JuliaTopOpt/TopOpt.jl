@@ -61,36 +61,36 @@ Utilities.setpenalty!(o::MMAOptimizer, p) = setpenalty!(o.obj, p)
 
 function (o::MMAOptimizer)(x0::AbstractVector)
     @unpack workspace, options = o
-    @unpack model, x, g, ∇f_x = workspace
+    @unpack model = workspace
+    @unpack x, g, ∇g, ∇f_x = workspace.primal_data
+
     reset_workspace!(workspace)
     setoptions!(workspace, options)
     x .= x0
-    workspace.f_x = MMA.eval_objective(model, x, ∇f_x)
+    workspace.primal_data.f_x = MMA.eval_objective(model, x, ∇f_x)
     n_i = length(MMA.constraints(model))
     map!(g, 1:n_i) do i 
         @views MMA.eval_constraint(model, i, x, ∇g[:,i])
     end
     mma_results = MMA.optimize!(workspace)
-    pack_results!(o, mma_results)
+    o.convstate, mma_results.convstate
     return mma_results
 end
 function setoptions!(workspace, options)
     @unpack options = workspace
     @unpack store_trace, show_trace, extended_trace, dual_caps = options
-    @unpack maxiter, ftol, xtol, grtol, subopt_options = options
-    
-    @pack! options = dual_caps, subopt_options
-    options.ftol, options.xtol, options.grtol = ftol, xtol, grtol
-    options.show_trace, options.extended_trace = show_trace, extended_trace
-    options.store_trace = store_trace
+    @unpack maxiter, tol, subopt_options = options
+    @pack! options = dual_caps, subopt_options, tol
+    @pack! options = show_trace, extended_trace, store_trace
 
     return workspace
 end
 
 function reset_workspace!(workspace::Workspace{T}) where T
-    @unpack primal_data, f_x = workspace
-    primal_data.r0[] = 0
-    primal_data.f_x[] = f_x
+    @unpack primal_data = workspace
+    @unpack f_x = primal_data
+    primal_data.r0 = 0
+    primal_data.f_x = f_x
     # Assess multiple types of convergence
     x_converged, f_converged, gr_converged = false, false, false
     f_increased, converged = false, false
@@ -98,12 +98,13 @@ function reset_workspace!(workspace::Workspace{T}) where T
     outer_iter, iter, f_calls, g_calls = 0, 0, 1, 1
     f_x_previous = T(NaN)
 
-    @pack! workspace = x_converged, f_converged, gr_converged
-    @pack! workspace = x_residual, f_residual, gr_residual
-    @pack! workspace = outer_iter, iter, f_calls, g_calls
-    @pack! workspace = f_x_previous
+    @pack! workspace.convstate = x_converged, f_converged, gr_converged
+    @pack! workspace.convstate = x_residual, f_residual, gr_residual
     # Maybe should remove?
-    @pack! workspace = f_increased, converged
+    @pack! workspace.convstate = f_increased, converged
+
+    @pack! workspace = outer_iter, iter, f_calls, g_calls
+    @pack! workspace.primal_data = f_x_previous
 
     return workspace
 end

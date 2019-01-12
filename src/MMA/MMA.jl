@@ -40,11 +40,7 @@ include("workspace.jl")
 const μ = 0.1
 const ρmin = 1e-5
 
-default_dual_caps(::Type{T}) where T = (eps(T), one(T)*10^5)
-
-#default_dual_caps(::MMA87, ::Type{T}) where T = (T(0.9), T(1.1))
-#default_dual_caps(::MMA02, ::Type{T}) where T = (T(1), T(100))
-#default_dual_caps(::MMA02, ::Type{T}) where T = (T(1e6), T(1e6))
+default_dual_caps(::Type{T}) where T = (eps(T), one(T))
 
 function optimize(  model::Model{T, TV}, 
                     x0::TV, 
@@ -88,8 +84,8 @@ function optimize!(workspace::Workspace{T, TV, TM}) where {T, TV, TM}
     @unpack converged, x_converged, f_converged, gr_converged = convstate
     @unpack f_increased, x_residual, f_residual, gr_residual = convstate
 
-    f_x = primal_data.f_x[]
-    f_x_previous = primal_data.f_x_previous[]
+    f_x = primal_data.f_x
+    f_x_previous = primal_data.f_x_previous
 
     n_i = length(constraints(model))
     n_j = dim(model)
@@ -139,8 +135,7 @@ function optimize!(workspace::Workspace{T, TV, TM}) where {T, TV, TM}
                 f_x = eval_objective(model, x, ∇f_x)
                 f_calls, g_calls = f_calls + 1, g_calls + 1
             end
-            primal_data.f_x_previous[] = f_x[]
-            primal_data.f_x[] = f_x
+            @pack! primal_data = f_x, f_x_previous
 
             # Evaluate the constraints and their Jacobian
             map!(g, 1:n_i) do i
@@ -153,9 +148,9 @@ function optimize!(workspace::Workspace{T, TV, TM}) where {T, TV, TM}
         convstate = assess_convergence(x, x1, f_x, f_x_previous, ∇f_x, options.xtol, 
             options.ftol, options.grtol)
 
-        converged = convstate.converged && all(g) do x
+        converged = convstate.converged && (all(g) do x
             x <= options.ftol
-        end
+        end)
 
         # Print some trace if flag is on
         @mmatrace()
@@ -170,7 +165,7 @@ function optimize!(workspace::Workspace{T, TV, TM}) where {T, TV, TM}
                             f_x,
                             iter,
                             iter == options.maxiter,
-                            Tolerances(options.xtol, options.ftol, options.grtol),
+                            options.tol,
                             convstate,
                             f_calls,
                             g_calls,

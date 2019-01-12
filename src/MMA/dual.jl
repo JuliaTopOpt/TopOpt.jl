@@ -46,7 +46,7 @@ function (dobj::DualObjVal)(λ)
     dobj.λ.cpu .= λ
     dobj.x_updater(dobj.λ)
     nv, nc = size(p)
-    φ0 = r0[] + dot(λ, r)
+    φ0 = r0 + dot(λ, r)
     φ = computeφ(φ0, p0, q0, p, q, ρ, σ, dobj.λ, x1, x)
     return -φ
 end

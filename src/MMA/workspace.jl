@@ -6,9 +6,9 @@ struct PrimalVariables{Tx}
 end
 
 @with_kw struct Tolerances{Txtol, Tftol, Tgrtol}
-    xtol::Txtol = eps(Float64)
-    ftol::Tftol = eps(Float64)
-    grtol::Tgrtol = eps(Float64)
+    xtol::Txtol = 1e-4
+    ftol::Tftol = 1e-4
+    grtol::Tgrtol = 1e-4
 end
 function (tol::Tolerances{<:Function, <:Function, <:Function})(i)
     return Tolerances(tol.xtol(i), tol.ftol(i), tol.grtol(i))
@@ -29,9 +29,9 @@ function DualData(model::Model{T, TV}) where {T, TV}
 end
 
 @with_kw mutable struct Options{T, Ttol <: Tolerances, TSubOptions <: Optim.Options}
-    maxiter::Int = 100
-    outer_maxiter::Int = 100
-    tol::Ttol = Tolerances(eps(Float64), eps(Float64), eps(Float64))
+    maxiter::Int = 1000
+    outer_maxiter::Int = 10^8
+    tol::Ttol = Tolerances()
     s_init::T = 0.5
     s_incr::T = 1.2
     s_decr::T = 0.7
@@ -39,7 +39,7 @@ end
     store_trace::Bool = false
     show_trace::Bool = false
     extended_trace::Bool = false
-    subopt_options::TSubOptions = Optim.Options(x_tol = sqrt(eps(Float64)), f_tol = zero(Float64), g_tol = zero(Float64))
+    subopt_options::TSubOptions = Optim.Options(x_tol = 1e-5, f_tol = 1e-5, g_tol = 1e-5, allow_f_increases = false)
 end
 function Base.getproperty(o::Options, f::Symbol)
     f === :xtol && return o.tol.xtol
@@ -101,8 +101,8 @@ function PrimalData(model::Model{T, TV}, optimizer, x0) where {T, TV}
     ∇g = zerosof(TM, n_j, n_i)
     
     return PrimalData(  σ, α, β, p0, q0, p, q, ρ, r, 
-                        Ref(zero(T)), x0, x, x1, x2, Ref(f_x), 
-                        Ref(f_x_previous), g, ∇f_x, ∇g
+                        zero(T), x0, x, x1, x2, f_x, 
+                        f_x_previous, g, ∇f_x, ∇g
                     )
 end
 

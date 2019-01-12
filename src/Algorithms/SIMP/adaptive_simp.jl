@@ -49,7 +49,7 @@ function (asimp::AdaptiveSIMP)(x0=asimp.simp.optimizer.obj.solver.vars)
         workspace.outer_iter = workspace.iter = 0
         options.maxiter = 1
 
-        f_x_previous = primal_data.f_x_previous[]
+        f_x_previous = primal_data.f_x_previous
         fevals2 = fevals1
         fevals1 = fevals
 
@@ -65,7 +65,7 @@ function (asimp::AdaptiveSIMP)(x0=asimp.simp.optimizer.obj.solver.vars)
         
         if workspace.converged
             if obj.reuse
-                primal_data.f_x[] = primal_data.f_x_previous[]
+                primal_data.f_x = primal_data.f_x_previous
                 primal_data.f_x_previous = f_x_previous
                 primal_data.x .= primal_data.x1
                 primal_data.x1 .= primal_data.x2

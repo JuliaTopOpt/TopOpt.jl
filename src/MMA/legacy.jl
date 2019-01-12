@@ -32,7 +32,7 @@ function compute_mma!(primal_data, m)
     r0 = 0.0
     for i in 0:length(constraints(m))
         if i == 0
-            ri = f_x[]
+            ri = f_x
             ∇fi = @view ∇f_x[:]
         else
              ri = g[i]
@@ -63,7 +63,7 @@ function compute_mma!(primal_data, m)
             r[i] = ri
         end
     end
-    primal_data.r0[] = r0
+    primal_data.r0 = r0
 end
 
 function compute_dual!(λ, primal_data)
@@ -71,7 +71,7 @@ function compute_dual!(λ, primal_data)
     update_x!(primal_data, λ)
 
     #Optimal value of Lagrangian at λ
-    φ = r0[] + dot(λ, r)
+    φ = r0 + dot(λ, r)
     @inbounds for j = 1:length(x)
         φ += (p0[j] + matdot(λ, p, j)) / (U[j] - x[j])
         φ += (q0[j] + matdot(λ, q, j)) / (x[j] - L[j])

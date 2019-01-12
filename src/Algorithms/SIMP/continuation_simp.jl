@@ -220,7 +220,7 @@ function (c_simp::ContinuationSIMP)(x0=copy(c_simp.simp.optimizer.obj.solver.var
         return c_simp.result
     end
     c_simp.simp(workspace)
-    f_x_previous = workspace.primal_data.f_x_previous[]
+    f_x_previous = workspace.primal_data.f_x_previous
     g_previous = copy(c_simp.simp.optimizer.workspace.primal_data.g)
 
     maxiter = options.maxiter
@@ -248,7 +248,7 @@ function (c_simp::ContinuationSIMP)(x0=copy(c_simp.simp.optimizer.obj.solver.var
                 c_simp.simp(workspace)
             end
         end
-        f_x_previous = workspace.primal_data.f_x_previous[]
+        f_x_previous = workspace.primal_data.f_x_previous
         g_previous = copy(c_simp.simp.optimizer.workspace.primal_data.g)
 
         maxedfevals(optimizer) && break
@@ -268,8 +268,8 @@ end
 frac(x) = 2*min(abs(x), abs(x - 1))
 
 function undo_values!(workspace, f_x_previous, g_previous)
-    workspace.primal_data.f_x[] = workspace.primal_data.f_x_previous[]
-    workspace.primal_data.f_x_previous[] = f_x_previous
+    workspace.primal_data.f_x = workspace.primal_data.f_x_previous
+    workspace.primal_data.f_x_previous = f_x_previous
     workspace.primal_data.g .= g_previous
     workspace.primal_data.x .= workspace.primal_data.x1
     workspace.primal_data.x1 .= workspace.primal_data.x2
