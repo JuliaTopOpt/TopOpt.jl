@@ -22,9 +22,9 @@ struct BESO{TO, TC, T, TP} <: TopOptAlgorithm
     result::BESOResult{T}
 end
 
-function BESO(obj::Objective{<:ComplianceFunction}, constr::Constraint{<:VolumeFunction}; maxiter = 1000, tol = 0.001, p = 3., er=0.02, sens_tol = tol/100)
+function BESO(obj::Objective{<:ComplianceFunction}, constr::Constraint{<:VolumeFunction}; maxiter = 100, tol = 0.001, p = 3., er = 0.02, sens_tol = tol/100)
     penalty = obj.solver.penalty
-    penalty.p = p
+    penalty = @set penalty.p = p
     T = typeof(obj.comp)
     topology = zeros(T, getncells(obj.problem.ch.dh.grid))
     result = BESOResult(topology, T(NaN), T(NaN), false, 0)
@@ -36,17 +36,19 @@ function BESO(obj::Objective{<:ComplianceFunction}, constr::Constraint{<:VolumeF
     old_sens = zeros(T, nvars)
     obj_trace = zeros(MVector{10, T})
 
-    return BESO{typeof(obj), typeof(constr), T, typeof(penalty)}(obj, constr, vars, topology, er, maxiter, penalty, sens, old_sens, obj_trace, tol, sens_tol, result)
+    return BESO(obj, constr, vars, topology, er, maxiter, penalty, sens, old_sens, obj_trace, tol, sens_tol, result)
 end
 
 update_penalty!(b::BESO, p::Number) = (b.penalty.p = p)
 
-function (b::BESO{TO, TC, T})(x0=copy(b.obj.solver.vars)) where {TO<:Objective{<:ComplianceFunction}, TC<:Constraint{<:VolumeFunction}, T}
+using InteractiveUtils
+
+function (b::BESO{TO, TC, T})(x0 = copy(b.obj.solver.vars)) where {TO<:Objective{<:ComplianceFunction}, TC<:Constraint{<:VolumeFunction}, T}
     @unpack sens, old_sens, er, tol, maxiter = b
     @unpack obj_trace, topology, sens_tol, vars = b    
-    @unpack varind, black, white = b.obj.problem
-    @unpack volume_fraction, total_volume, cellvolumes = b.constr
-    V = volume_fraction
+    @unpack varind, black, white = b.obj.f.problem
+    @unpack total_volume, cellvolumes = b.constr.f
+    V = b.constr.s
 
     # Initialize the topology
     for i in 1:length(topology)
@@ -61,7 +63,7 @@ function (b::BESO{TO, TC, T})(x0=copy(b.obj.solver.vars)) where {TO<:Objective{<
     end
 
     # Calculate the current volume fraction
-    true_vol = vol = dot(topology, cellvolumes)/total_volume
+    true_vol = vol = dot(topology, cellvolumes) / total_volume
     # Main loop
     change = T(1)
     iter = 0
@@ -74,8 +76,9 @@ function (b::BESO{TO, TC, T})(x0=copy(b.obj.solver.vars)) where {TO<:Objective{<
         for j in max(2, 10-iter+2):10
             obj_trace[j-1] = obj_trace[j]
         end
+        setpenalty!(b.obj, b.penalty.p)
         obj_trace[10] = b.obj(vars, sens)
-        scale!(sens, -1)
+        rmul!(sens, -1)
         if iter > 1
             @. sens = (sens + old_sens) / 2
         end
@@ -84,7 +87,7 @@ function (b::BESO{TO, TC, T})(x0=copy(b.obj.solver.vars)) where {TO<:Objective{<
             th = (l1 + l2) / 2
             for i in 1:length(topology)
                 if !black[i] && !white[i]
-                    topology[i] = (sign(sens[varind[i]] - th) > 0)
+                    topology[i] = T(sign(sens[varind[i]] - th) > 0)
                     vars[varind[i]] = topology[i]
                 end
             end
@@ -94,7 +97,7 @@ function (b::BESO{TO, TC, T})(x0=copy(b.obj.solver.vars)) where {TO<:Objective{<
                 l2 = th
             end
         end
-        true_vol = dot(topology, cellvolumes)/total_volume
+        true_vol = dot(topology, cellvolumes) / total_volume
         if iter >= 10
             l = sum(@view obj_trace[1:5])
             h = sum(@view obj_trace[6:10])

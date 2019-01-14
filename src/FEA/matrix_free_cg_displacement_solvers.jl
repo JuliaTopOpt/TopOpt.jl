@@ -90,13 +90,6 @@ function (s::StaticMatrixFreeDisplacementSolver)()
         cg!(u, operator, f, tol=tol, maxiter=cg_max_iter, log=false, statevars=cg_statevars, initially_zero=false, Pl=preconditioner)
     end
 
-    #for ind in 1:length(s.dbc.values)
-    #    d = s.dbc.dofs[ind]
-    #    v = s.dbc.values[ind]
-    #    s.u[d] = v
-    #end
-
-    #s.prev_penalty.p = s.penalty.p
     nothing
 end
 

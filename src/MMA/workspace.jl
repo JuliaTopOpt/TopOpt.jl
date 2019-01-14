@@ -1,10 +1,3 @@
-struct PrimalVariables{Tx}
-    x0::Tx
-    x::Tx
-    x1::Tx
-    x2::Tx
-end
-
 @with_kw struct Tolerances{Txtol, Tftol, Tgrtol}
     xtol::Txtol = 1e-4
     ftol::Tftol = 1e-4

@@ -4,6 +4,7 @@ using ..MMA, ..Functions, Optim, Parameters
 using TimerOutputs, Setfield, StaticArrays
 using Parameters: @unpack, @pack!
 using ..GPUUtils, ..Utilities, JuAFEM
+using LinearAlgebra
 
 export  MMAOptimizer,
         SIMP,
@@ -11,7 +12,9 @@ export  MMAOptimizer,
         ContinuationSIMP,
         AdaptiveSIMP,
         MMAOptionsGen,
-        CSIMPOptions
+        CSIMPOptions,
+        BESO,
+        GESO
 
 const to = TimerOutput()
 

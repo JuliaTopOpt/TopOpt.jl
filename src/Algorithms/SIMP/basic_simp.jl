@@ -62,6 +62,7 @@ end
 Utilities.getpenalty(s::AbstractSIMP) = s.penalty
 function Utilities.setpenalty!(s::AbstractSIMP, p::Number)
     penalty = s.penalty
+    s.prev_penalty = penalty
     s.penalty = @set penalty.p = p
     setpenalty!(s.optimizer, p)
 end

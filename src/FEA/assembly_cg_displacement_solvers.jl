@@ -68,7 +68,6 @@ function (s::PCGDisplacementSolver{T})(to) where {T}
             @timeit to "Solve system of equations" cg!(u, K, f, tol, cg_max_iter, Val{false}, cg_statevars, false, preconditioner)
         end
     end
-    #s.prev_penalty.p = s.penalty.p
 
     nothing
 end
@@ -107,11 +106,8 @@ function (s::PCGDisplacementSolver{T})(::Type{Val{safe}}=Val{false}) where {T, s
         _K = K
     end
     if preconditioner === identity
-        cg!(u, _K, f, tol=tol, maxiter=cg_max_iter, log=false, statevars=cg_statevars, initially_zero=false)
+        return cg!(u, _K, f, tol=tol, maxiter=cg_max_iter, log=false, statevars=cg_statevars, initially_zero=false)
     else
-        cg!(u, _K, f, tol=tol, maxiter=cg_max_iter, log=false, statevars=cg_statevars, initially_zero=false, Pl = preconditioner)
+        return cg!(u, _K, f, tol=tol, maxiter=cg_max_iter, log=false, statevars=cg_statevars, initially_zero=false, Pl = preconditioner)
     end
-    #s.prev_penalty.p = s.penalty.p
-    
-    nothing
 end

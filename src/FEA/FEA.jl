@@ -1,7 +1,7 @@
 module FEA
 
 using ..GPUUtils, ..TopOptProblems, ..Utilities
-using JuAFEM, Setfield, TimerOutputs
+using JuAFEM, Setfield, TimerOutputs, Preconditioners
 using IterativeSolvers, CuArrays, StaticArrays
 using LinearAlgebra
 import CUDAdrv

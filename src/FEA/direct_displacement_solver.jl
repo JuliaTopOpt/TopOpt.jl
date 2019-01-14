@@ -48,7 +48,6 @@ function (s::DirectDisplacementSolver{T})(::Type{Val{safe}}=Val{false}, ::Type{n
     catch
         T(NaN)
     end
-    #s.prev_penalty.p = s.penalty.p
  
     nothing
 end
@@ -71,6 +70,6 @@ function (s::DirectDisplacementSolver{T})(to, ::Type{Val{safe}}=Val{false}, ::Ty
     catch
         T(NaN)
     end
-    #s.prev_penalty.p = s.penalty.p
+
     nothing
 end

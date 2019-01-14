@@ -34,7 +34,7 @@ end
 
 function GESO(obj::Objective{<:ComplianceFunction}, constr::Constraint{<:VolumeFunction}; maxiter = 1000, tol = 0.001, p = 3., Pcmin = 0.6, Pcmax = 1., Pmmin = 0.5, Pmmax = 1., Pen = 3., sens_tol = tol/100, string_length = 4)
     penalty = obj.solver.penalty
-    penalty.p = p
+    penalty = @set penalty.p = p
     T = typeof(obj.comp)
     nel = getncells(obj.problem.ch.dh.grid)
     black = obj.problem.black
@@ -54,7 +54,7 @@ function GESO(obj::Objective{<:ComplianceFunction}, constr::Constraint{<:VolumeF
     children = trues(string_length, nvars)
     var_black = trues(nvars)
 
-    return GESO{typeof(obj), typeof(constr), T, typeof(penalty)}(obj, constr, vars, topology, Pcmin, Pcmax, Pmmin, Pmmax, Pen, string_length, var_volumes, cum_var_volumes, order, genotypes, children, var_black, maxiter, penalty, sens, old_sens, obj_trace, tol, sens_tol, result)
+    return GESO(obj, constr, vars, topology, Pcmin, Pcmax, Pmmin, Pmmax, Pen, string_length, var_volumes, cum_var_volumes, order, genotypes, children, var_black, maxiter, penalty, sens, old_sens, obj_trace, tol, sens_tol, result)
 end
 
 update_penalty!(b::GESO, p::Number) = (b.penalty.p = p)
@@ -193,16 +193,16 @@ function (b::GESO{TO, TC, T})(x0=copy(b.obj.solver.vars); seed=NaN) where {TO<:O
     @unpack Pcmin, Pcmax, Pmmin, Pmmax, Pen = b
     @unpack string_length, genotypes, children, var_black = b
     @unpack cum_var_volumes, var_volumes, order = b
-    @unpack varind, black, white = b.obj.problem
-    @unpack total_volume, cellvolumes, design_volume = b.constr
-    @unpack fixed_volume, volume_fraction = b.constr
-    V = volume_fraction
+    @unpack varind, black, white = b.obj.f.problem
+    @unpack total_volume, cellvolumes, fixed_volume = b.constr.f
+    V = b.constr.s
+    design_volume = V * total_volume
 
     nel = length(x0)
     nvars = length(vars)
 
     # Set seed
-    !isnan(seed) && srand(seed)
+    isnan(seed) || Random.seed!(seed)
 
     # Initialize the topology
     for i in 1:length(topology)
@@ -232,7 +232,7 @@ function (b::GESO{TO, TC, T})(x0=copy(b.obj.solver.vars); seed=NaN) where {TO<:O
             obj_trace[j-1] = obj_trace[j]
         end
         obj_trace[10] = b.obj(vars, sens)
-        scale!(sens, -1)
+        rmul!(sens, -1)
         if iter > 1
             @. sens = (sens + old_sens) / 2
         end
