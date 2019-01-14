@@ -41,8 +41,6 @@ end
 
 update_penalty!(b::BESO, p::Number) = (b.penalty.p = p)
 
-using InteractiveUtils
-
 function (b::BESO{TO, TC, T})(x0 = copy(b.obj.solver.vars)) where {TO<:Objective{<:ComplianceFunction}, TC<:Constraint{<:VolumeFunction}, T}
     @unpack sens, old_sens, er, tol, maxiter = b
     @unpack obj_trace, topology, sens_tol, vars = b    

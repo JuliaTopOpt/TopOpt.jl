@@ -35,7 +35,7 @@ version = "0.5.3"
 
 [[CUDAdrv]]
 deps = ["CUDAapi", "Libdl", "Printf"]
-git-tree-sha1 = "1b95588d489576cf9971a1a232be5667a290d2d1"
+git-tree-sha1 = "dfe527ba231b6b699f879d1d384c1d39b49fc005"
 repo-rev = "master"
 repo-url = "https://github.com/JuliaGPU/CUDAdrv.jl"
 uuid = "c5f51814-7f29-56b8-a69c-e4d8f6be1fde"
@@ -43,7 +43,7 @@ version = "1.0.0+"
 
 [[CUDAnative]]
 deps = ["Adapt", "CUDAapi", "CUDAdrv", "InteractiveUtils", "LLVM", "Libdl", "Logging", "Pkg", "Printf"]
-git-tree-sha1 = "4cb23fbd6005fdb6f5a29922ea6d71ac314e605a"
+git-tree-sha1 = "3d5f5dd4b1f4441ddb23b00c761189fa6e9b45b4"
 repo-rev = "master"
 repo-url = "https://github.com/JuliaGPU/CUDAnative.jl"
 uuid = "be33ccc6-a3ff-5ff2-a52e-74243cff1e17"
@@ -86,8 +86,8 @@ uuid = "a8cc5b0e-0ffa-5ad4-8c14-923d3ee1735f"
 version = "1.0.0"
 
 [[CuArrays]]
-deps = ["AbstractFFTs", "Adapt", "CUDAapi", "CUDAdrv", "CUDAnative", "DiffRules", "ForwardDiff", "GPUArrays", "LinearAlgebra", "MacroTools", "NNlib", "Pkg", "Printf", "Random", "SparseArrays"]
-git-tree-sha1 = "b536057582e879c7cab68177d02e1ea78e243e5a"
+deps = ["AbstractFFTs", "Adapt", "CUDAapi", "CUDAdrv", "CUDAnative", "DiffRules", "ForwardDiff", "GPUArrays", "LinearAlgebra", "MacroTools", "NNlib", "Printf", "Random", "SparseArrays"]
+git-tree-sha1 = "f458f29f8a15be80268b05e988353aa4d0625045"
 repo-rev = "master"
 repo-url = "https://github.com/JuliaGPU/CuArrays.jl"
 uuid = "3a865a2d-5b23-5a0f-bc46-62713ec82fae"
@@ -153,7 +153,7 @@ uuid = "9fa8497b-333b-5362-9e8d-4d0656e87820"
 
 [[GPUArrays]]
 deps = ["Adapt", "FFTW", "FillArrays", "LinearAlgebra", "Printf", "Random", "Serialization", "StaticArrays", "Test"]
-git-tree-sha1 = "f0016298a7c7c8f36a7a94694b6be5e8f663a948"
+git-tree-sha1 = "2b96d7f25fbea82c08a736d78cbf14df8d2100a5"
 repo-rev = "master"
 repo-url = "https://github.com/JuliaGPU/GPUArrays.jl.git"
 uuid = "0c68f7d7-f131-5f86-a1c3-88cf8149b2d7"
@@ -264,10 +264,10 @@ uuid = "77ba4419-2d1f-58cd-9bb1-8ffee604a2e3"
 version = "0.3.2"
 
 [[Optim]]
-deps = ["Calculus", "Compat", "DiffEqDiffTools", "ForwardDiff", "LineSearches", "LinearAlgebra", "NLSolversBase", "NaNMath", "Parameters", "PositiveFactorizations", "Printf", "Random", "SparseArrays", "StatsBase", "Test"]
-git-tree-sha1 = "ba60a8f4adceb8a881c683e59a799cb4d11e9e69"
+deps = ["Calculus", "DiffEqDiffTools", "ForwardDiff", "LineSearches", "LinearAlgebra", "NLSolversBase", "NaNMath", "Parameters", "PositiveFactorizations", "Printf", "Random", "SparseArrays", "StatsBase", "Test"]
+git-tree-sha1 = "0f2a6c6ff9db396cc7af15bb1cf057a26662ff17"
 uuid = "429524aa-4258-5aef-a3af-852621145aeb"
-version = "0.17.1"
+version = "0.17.2"
 
 [[OrderedCollections]]
 deps = ["Random", "Serialization", "Test"]
@@ -277,9 +277,9 @@ version = "1.0.2"
 
 [[Parameters]]
 deps = ["Markdown", "OrderedCollections", "REPL", "Test"]
-git-tree-sha1 = "40f540ec96e50c0b2b9efdb11b5e4d0c63f90923"
+git-tree-sha1 = "eec0fe16344cc14aa2e6251874ab30d62aff4f7c"
 uuid = "d96e819e-fc66-5662-9728-84c9c7592b0a"
-version = "0.10.1"
+version = "0.10.2"
 
 [[Pkg]]
 deps = ["Dates", "LibGit2", "Markdown", "Printf", "REPL", "Random", "SHA", "UUIDs"]
@@ -335,9 +335,9 @@ uuid = "9e88b42a-f829-5b0c-bbe9-9e923198166b"
 
 [[Setfield]]
 deps = ["InteractiveUtils", "MacroTools", "Test"]
-git-tree-sha1 = "e6beffe4fa1ce8200a04993ab76fcc19886e4672"
+git-tree-sha1 = "2df2e919665c99213475f3749343dab270baa43f"
 uuid = "efcf1570-3423-57d1-acb7-fd33fddbac46"
-version = "0.3.0"
+version = "0.3.1"
 
 [[SharedArrays]]
 deps = ["Distributed", "Mmap", "Random", "Serialization"]
@@ -364,9 +364,9 @@ version = "0.7.2"
 
 [[StaticArrays]]
 deps = ["InteractiveUtils", "LinearAlgebra", "Random", "Statistics", "Test"]
-git-tree-sha1 = "ebc5c2a27d91d5ec611a9861168182e2168effd3"
+git-tree-sha1 = "97c4bf0f647488dd7ac01ea12be5885f88762938"
 uuid = "90137ffa-7385-5640-81b9-e52037218182"
-version = "0.9.2"
+version = "0.10.0"
 
 [[Statistics]]
 deps = ["LinearAlgebra", "SparseArrays"]

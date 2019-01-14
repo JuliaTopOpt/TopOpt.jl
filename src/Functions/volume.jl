@@ -11,11 +11,11 @@ mutable struct VolumeFunction{T, dim, TI, TV, TP<:StiffnessTopOptProblem{dim, T}
     maxfevals::Int
 end
 
-function Base.getproperty(vf::VolumeFunction, f::Symbol)
+@inline function Base.getproperty(vf::VolumeFunction, f::Symbol)
     f === :reuse && return false
     return getfield(vf, f)
 end
-function Base.setproperty!(vf::VolumeFunction, f::Symbol, v)
+@inline function Base.setproperty!(vf::VolumeFunction, f::Symbol, v)
     f === :reuse && return false
     return setfield!(vf, f, v)
 end

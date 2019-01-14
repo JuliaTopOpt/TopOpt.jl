@@ -34,7 +34,7 @@ end
     extended_trace::Bool = false
     subopt_options::TSubOptions = Optim.Options(x_tol = 1e-5, f_tol = 1e-5, g_tol = 1e-5, allow_f_increases = false)
 end
-function Base.getproperty(o::Options, f::Symbol)
+@inline function Base.getproperty(o::Options, f::Symbol)
     f === :xtol && return o.tol.xtol
     f === :ftol && return o.tol.ftol
     f === :grtol && return o.tol.grtol

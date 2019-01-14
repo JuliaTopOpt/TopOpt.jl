@@ -26,11 +26,11 @@ abstract type AbstractFunction{T} <: Function end
 struct Objective{F} <: Function
     f::F
 end
-function Base.getproperty(o::Objective, s::Symbol)
+@inline function Base.getproperty(o::Objective, s::Symbol)
     s === :f && return getfield(o, :f)
     return getproperty(o.f, s)
 end
-function Base.setproperty!(o::Objective, s::Symbol, v)
+@inline function Base.setproperty!(o::Objective, s::Symbol, v)
     s === :f && return setfield!(o, :f, v)
     return setproperty!(o.f, s, v)
 end
@@ -39,12 +39,12 @@ struct Constraint{F, S} <: Function
     f::F
     s::S
 end
-function Base.getproperty(c::Constraint, s::Symbol)
+@inline function Base.getproperty(c::Constraint, s::Symbol)
     s === :f && return getfield(c, :f)
     s === :s && return getfield(c, :s)
     return getproperty(c.f, s)
 end
-function Base.setproperty!(c::Constraint, s::Symbol, v)
+@inline function Base.setproperty!(c::Constraint, s::Symbol, v)
     s === :f && return setfield!(c, :f, v)
     s === :s && return setfield!(c, :s, v)
     s === :reuse && return setproperty!(c.f, :reuse, v)
