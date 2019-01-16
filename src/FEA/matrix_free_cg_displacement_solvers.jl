@@ -1,6 +1,6 @@
 abstract type AbstractMatrixFreeSolver <: AbstractDisplacementSolver end
 
-mutable struct StaticMatrixFreeDisplacementSolver{T, dim, TEInfo <: ElementFEAInfo{dim}, TS<:StiffnessTopOptProblem{dim}, Tv<:AbstractVector{T}, Txes, TDofs, TP<:AbstractPenalty{T}, TI<:Integer, TStateVars<:CGStateVariables{T}, TPrecond} <: AbstractDisplacementSolver
+mutable struct StaticMatrixFreeDisplacementSolver{T, dim, TEInfo <: ElementFEAInfo{dim}, TS<:StiffnessTopOptProblem{dim}, Tv<:AbstractVector{T}, Txes, TDofs, TP<:AbstractPenalty{T}, TI<:Integer, TStateVars<:CGStateVariables{T}, TPrecond, Tconv} <: AbstractDisplacementSolver
     elementinfo::TEInfo
     problem::TS
     f::Tv
@@ -18,6 +18,7 @@ mutable struct StaticMatrixFreeDisplacementSolver{T, dim, TEInfo <: ElementFEAIn
     cg_statevars::TStateVars
     preconditioner::TPrecond
     preconditioner_initialized::Base.RefValue{Bool}
+    conv::Tconv
 end
 
 StaticMatrixFreeDisplacementSolver(sp, args...; kwargs...) = StaticMatrixFreeDisplacementSolver(whichdevice(sp), sp, args...; kwargs...)
@@ -28,13 +29,14 @@ const StaticMatrices{m,T} = Union{StaticMatrix{m,m,T}, Symmetric{T, <:StaticMatr
 end
 
 function StaticMatrixFreeDisplacementSolver(::CPU, sp::StiffnessTopOptProblem{dim, T};
-        xmin=T(1)/1000, 
-        cg_max_iter=700, 
-        tol=xmin, 
-        penalty=PowerPenalty{T}(1), 
-        prev_penalty=copy(penalty),
-        preconditioner=identity, 
-        quad_order=2) where {dim, T}
+        conv = DefaultCriteria(), 
+        xmin = one(T) / 1000, 
+        cg_max_iter = 700, 
+        tol = xmin, 
+        penalty = PowerPenalty{T}(1), 
+        prev_penalty = copy(penalty),
+        preconditioner = identity, 
+        quad_order = 2) where {dim, T}
     
     prev_penalty = @set prev_penalty.p = T(NaN)
     elementinfo = ElementFEAInfo(sp, quad_order, Val{:Static})
@@ -48,21 +50,21 @@ function StaticMatrixFreeDisplacementSolver(::CPU, sp::StiffnessTopOptProblem{di
 
     u = zeros(T, ndofs(sp.ch.dh))
     f = similar(u)
-    vars = fill(T(1), getncells(sp.ch.dh.grid) - sum(sp.black) - sum(sp.white))
+    vars = fill(one(T), getncells(sp.ch.dh.grid) - sum(sp.black) - sum(sp.white))
     cg_statevars = CGStateVariables{eltype(u),typeof(u)}(copy(u), similar(u), similar(u))
 
     fixed_dofs = sp.ch.prescribed_dofs
     free_dofs = setdiff(1:length(u), fixed_dofs)
     return StaticMatrixFreeDisplacementSolver(elementinfo, sp, f, meandiag, u, vars, 
         xes, fixed_dofs, free_dofs, penalty, prev_penalty, xmin, cg_max_iter, tol, 
-        cg_statevars, preconditioner, Ref(false))
+        cg_statevars, preconditioner, Ref(false), conv)
 end
 
 MatrixFreeOperator(solver::StaticMatrixFreeDisplacementSolver) = buildoperator(solver)
 function buildoperator(solver::StaticMatrixFreeDisplacementSolver)
     penalty = getpenalty(solver)
-    @unpack elementinfo, meandiag, vars, xmin, fixed_dofs, free_dofs, xes = solver
-    MatrixFreeOperator(elementinfo, meandiag, vars, xes, fixed_dofs, free_dofs, xmin, penalty)
+    @unpack elementinfo, meandiag, vars, xmin, fixed_dofs, free_dofs, xes, conv = solver
+    MatrixFreeOperator(solver.f, elementinfo, meandiag, vars, xes, fixed_dofs, free_dofs, xmin, penalty, conv)
 end
 
 function (s::StaticMatrixFreeDisplacementSolver)()
@@ -85,12 +87,10 @@ function (s::StaticMatrixFreeDisplacementSolver)()
         end
     end
     if preconditioner === identity
-        cg!(u, operator, f, tol=tol, maxiter=cg_max_iter, log=false, statevars=cg_statevars, initially_zero=false)
+        return cg!(u, operator, f, tol=tol, maxiter=cg_max_iter, log=false, statevars=cg_statevars, initially_zero=false)
     else
-        cg!(u, operator, f, tol=tol, maxiter=cg_max_iter, log=false, statevars=cg_statevars, initially_zero=false, Pl=preconditioner)
+        return cg!(u, operator, f, tol=tol, maxiter=cg_max_iter, log=false, statevars=cg_statevars, initially_zero=false, Pl=preconditioner)
     end
-
-    nothing
 end
 
 @define_cu(StaticMatrixFreeDisplacementSolver, :f, :problem, :vars, :cg_statevars, :elementinfo, :penalty, :prev_penalty, :u, :fixed_dofs, :free_dofs, :xes)

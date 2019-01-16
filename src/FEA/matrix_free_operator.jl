@@ -1,4 +1,17 @@
-struct MatrixFreeOperator{T, dim, TEInfo<:ElementFEAInfo{dim, T}, TDofs, Tf<:AbstractVector{T}, Txes, TP}
+abstract type AbstractMatrixOperator{Tconv} end
+
+struct MatrixOperator{Tconv, Tmat, Tvec} <: AbstractMatrixOperator{Tconv}
+    K::Tmat
+    f::Tvec
+    conv::Tconv
+end
+LinearAlgebra.mul!(c, op::MatrixOperator, b) = mul!(c, op.K, b)
+Base.size(op::MatrixOperator, i...) = size(op.K, i...)
+Base.eltype(op::MatrixOperator) = eltype(op.K)
+LinearAlgebra.:*(op::MatrixOperator, b) = mul!(similar(b), op.K, b)
+
+struct MatrixFreeOperator{Tconv, T, dim, TEInfo <: ElementFEAInfo{dim, T}, TDofs, Tf <: AbstractVector{T}, Txes, TP} <: AbstractMatrixOperator{Tconv}
+    f::Tf
     elementinfo::TEInfo
     meandiag::T
     vars::Tf
@@ -7,11 +20,12 @@ struct MatrixFreeOperator{T, dim, TEInfo<:ElementFEAInfo{dim, T}, TDofs, Tf<:Abs
     free_dofs::TDofs
     xmin::T
     penalty::TP
+    conv::Tconv
 end
 GPUUtils.whichdevice(m::MatrixFreeOperator) = whichdevice(m.vars)
 Base.size(op::MatrixFreeOperator) = (size(op, 1), size(op, 2))
 Base.size(op::MatrixFreeOperator, i) = 1 <= i <= 2 ? length(op.elementinfo.fixedload) : 1
-Base.eltype(op::MatrixFreeOperator{T}) where {T} = T
+Base.eltype(op::MatrixFreeOperator{<:Any, T}) where {T} = T
 
 import LinearAlgebra: *, mul!
 

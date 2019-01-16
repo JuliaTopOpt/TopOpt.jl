@@ -17,12 +17,12 @@ function DirectDisplacementSolver(sp::StiffnessTopOptProblem{dim, T};
     xmin=T(1)/1000, 
     penalty=PowerPenalty{T}(1), 
     prev_penalty=copy(penalty),
-    quad_order=2) where {dim, T}
+    quad_order=default_quad_order(sp)) where {dim, T}
 
     elementinfo = ElementFEAInfo(sp, quad_order, Val{:Static})
     globalinfo = GlobalFEAInfo(sp)
     u = zeros(T, ndofs(sp.ch.dh))
-    vars = fill(T(NaN), getncells(sp.ch.dh.grid) - sum(sp.black) - sum(sp.white))
+    vars = fill(one(T), getncells(sp.ch.dh.grid) - sum(sp.black) - sum(sp.white))
     varind = sp.varind
 
     prev_penalty = @set prev_penalty.p = T(NaN)

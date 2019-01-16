@@ -71,6 +71,8 @@ export  simulate,
         SigmoidContinuation, 
         save_mesh,
         CPU,
-        GPU
+        GPU,
+        DefaultCriteria,
+        EnergyCriteria
 
 end
