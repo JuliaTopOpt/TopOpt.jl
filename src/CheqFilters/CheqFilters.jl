@@ -15,16 +15,16 @@ const ctx = CUDAdrv.CuContext(dev)
 
 abstract type AbstractCheqFilter end
 
-struct FilterMetadata{TN,TW}
-    cell_neighbouring_nodes::TN
-    cell_node_weights::TW
+@params struct FilterMetadata
+    cell_neighbouring_nodes
+    cell_node_weights
 end
 @define_cu(FilterMetadata, :cell_neighbouring_nodes, :cell_node_weights)
 GPUUtils.whichdevice(m::FilterMetadata) = whichdevice(m.cell_neighbouring_nodes)
 
-struct CheqFilter{filtering, T, TV<:AbstractVector{T}, TM<:FilterMetadata} <: AbstractCheqFilter
-    filtering::Val{filtering}
-    metadata::TM
+@params struct CheqFilter{_filtering, T, TV <: AbstractVector{T}} <: AbstractCheqFilter
+    filtering::Val{_filtering}
+    metadata::FilterMetadata
     rmin::T
     nodal_grad::TV
     last_grad::TV

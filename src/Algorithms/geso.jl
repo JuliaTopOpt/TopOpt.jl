@@ -1,32 +1,32 @@
-mutable struct GESOResult{T}
-    topology::Vector{T}
+@params mutable struct GESOResult{T}
+    topology::AbstractVector{T}
     objval::T
     change::T
     converged::Bool
     fevals::Int
 end
-struct GESO{TO, TC, T, TP} <: TopOptAlgorithm 
-    obj::TO
-    constr::TC
-    vars::Vector{T}
-    topology::Vector{T}
+@params struct GESO{T} <: TopOptAlgorithm 
+    obj
+    constr
+    vars::AbstractVector{T}
+    topology::AbstractVector{T}
     Pcmin::T
     Pcmax::T
     Pmmin::T
     Pmmax::T
     Pen::T
     string_length::Int
-    var_volumes::Vector{T}
-    cum_var_volumes::Vector{T}
-    order::Vector{Int}
+    var_volumes::AbstractVector{T}
+    cum_var_volumes::AbstractVector{T}
+    order::AbstractVector{Int}
     genotypes::BitArray{2}
     children::BitArray{2}
     var_black::BitVector
     maxiter::Int
-    penalty::TP
-    sens::Vector{T}
-    old_sens::Vector{T}
-    obj_trace::MVector{10,T}
+    penalty
+    sens::AbstractVector{T}
+    old_sens::AbstractVector{T}
+    obj_trace::MVector{10, T}
     tol::T
     sens_tol::T
     result::GESOResult{T}

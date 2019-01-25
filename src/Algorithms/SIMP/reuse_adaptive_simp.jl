@@ -1,10 +1,10 @@
-mutable struct ReuseAdaptiveSIMP{T,TO,TP,TFC,TC<:CheqFilter} <: AbstractSIMP
-    simp::SIMP{T,TO,TP}
+@params mutable struct ReuseAdaptiveSIMP{T} <: AbstractSIMP
+    simp::SIMP{T}
     pstart::T
     pfinish::T
     reuse::Bool
     result::SIMPResult{T}
-    ftol_cont::TFC #speed::T
+    ftol_cont
     entertol::T
     Δp::T
     maxiter::Int
@@ -13,7 +13,7 @@ mutable struct ReuseAdaptiveSIMP{T,TO,TP,TFC,TC<:CheqFilter} <: AbstractSIMP
     prev_dfdp::T
     prev_ftol::T
     usederivative::Bool
-    cheqfilter::TC
+    cheqfilter::CheqFilter
     adapt_pstep::Bool
 end
 

@@ -1,11 +1,11 @@
 import Base: length, append!, sizehint!
 
-struct TopOptTrace{T,TI<:Integer}
-	c_hist::Vector{T}
-    v_hist::Vector{T}
-	x_hist::Vector{Vector{T}}
-	add_hist::Vector{TI}
-	rem_hist::Vector{TI}
+@params struct TopOptTrace{T, TI <: Integer}
+	c_hist::AbstractVector{T}
+    v_hist::AbstractVector{T}
+	x_hist::AbstractVector{<:AbstractVector{T}}
+	add_hist::AbstractVector{TI}
+	rem_hist::AbstractVector{TI}
 end
 TopOptTrace{T,TI}() where {T,TI<:Integer} = TopOptTrace{T,TI}(Vector{T}(), Vector{T}(), Vector{Vector{T}}(), Vector{TI}(), Vector{TI}())
 length(t::TopOptTrace) = length(t.v_hist)

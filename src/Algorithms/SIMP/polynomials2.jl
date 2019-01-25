@@ -1,7 +1,7 @@
-struct PolynomialFit{T}
+@params struct PolynomialFit{T}
     data::Tuple{Matrix{T}, Vector{T}}
-    order::Base.RefValue{Int}
-    coeffs::Vector{T}
+    order::Ref{Int}
+    coeffs::AbstractVector{T}
     ratio::T
 end
 PolynomialFit{T}(n, ratio) where T = PolynomialFit{T}((zeros(T, n+1, n+1), zeros(T, n+1)), Ref(-1), zeros(T, n+1), T(ratio))

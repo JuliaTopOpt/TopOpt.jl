@@ -1,8 +1,8 @@
 abstract type AbstractSIMP <: TopOptAlgorithm end
 
-struct ReuseStatus{TC}
+@params struct ReuseStatus
     obj::Bool
-    constr::TC
+    constr
 end
 Base.any(r::ReuseStatus) = r.obj || any(r.constr)
 Base.all(r::ReuseStatus) = r.obj && all(r.constr)

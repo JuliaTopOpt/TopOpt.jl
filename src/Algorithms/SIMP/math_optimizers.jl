@@ -1,14 +1,14 @@
 abstract type AbstractOptimizer end
 
-mutable struct MMAOptimizer{T, TM <: Model{T}, TO, TSO, TObj, TConstr, TW, TState <: ConvergenceState, TOptions <: MMA.Options} <: AbstractOptimizer
-    model::TM
-    mma_alg::TO
-    suboptimizer::TSO
-    obj::TObj
-    constr::TConstr
-    workspace::TW
-    convstate::TState
-    options::TOptions
+@params mutable struct MMAOptimizer{T} <: AbstractOptimizer
+    model::Model{T}
+    mma_alg
+    suboptimizer
+    obj
+    constr
+    workspace
+    convstate::ConvergenceState
+    options::MMA.Options
 end
 GPUUtils.whichdevice(o::MMAOptimizer) = o.model
 
@@ -116,18 +116,18 @@ function (o::MMAOptimizer)(workspace::MMA.Workspace)
     return mma_results
 end
 
-struct MMAOptionsGen{Titer, Touteriter, Ttol, Tsinit, Tsincr, Tsdecr, Tdualcaps, Tstore_trace, Tshow_trace, Text_trace, Tsuboptions}
-    maxiter::Titer
-    outer_maxiter::Touteriter
-    tol::Ttol
-    s_init::Tsinit
-    s_incr::Tsincr
-    s_decr::Tsdecr
-    dual_caps::Tdualcaps
-    store_trace::Tstore_trace
-    show_trace::Tshow_trace
-    extended_trace::Text_trace
-    subopt_options::Tsuboptions
+@params struct MMAOptionsGen
+    maxiter
+    outer_maxiter
+    tol
+    s_init
+    s_incr
+    s_decr
+    dual_caps
+    store_trace
+    show_trace
+    extended_trace
+    subopt_options
 end
 function (g::MMAOptionsGen)(i)
     MMA.Options(

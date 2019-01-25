@@ -18,7 +18,8 @@ export  AbstractPenalty,
         getpenalty,
         getprevpenalty,
         setpenalty!,
-        getsolver
+        getsolver,
+        @params
 
 function getpenalty end
 function getprevpenalty end

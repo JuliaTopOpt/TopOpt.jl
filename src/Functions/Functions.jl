@@ -6,6 +6,7 @@ using ForwardDiff, LinearAlgebra, GPUArrays
 using Parameters: @unpack
 import CUDAdrv
 using TimerOutputs, CUDAnative, JuAFEM
+using StatsFuns
 
 export  Objective,
         Constraint,
@@ -23,8 +24,8 @@ const ctx = CUDAdrv.CuContext(dev)
 
 abstract type AbstractFunction{T} <: Function end
 
-struct Objective{F} <: Function
-    f::F
+@params struct Objective <: Function
+    f
 end
 @inline function Base.getproperty(o::Objective, s::Symbol)
     s === :f && return getfield(o, :f)
@@ -35,9 +36,9 @@ end
     return setproperty!(o.f, s, v)
 end
 
-struct Constraint{F, S} <: Function
-    f::F
-    s::S
+@params struct Constraint <: Function
+    f
+    s
 end
 @inline function Base.getproperty(c::Constraint, s::Symbol)
     s === :f && return getfield(c, :f)
@@ -77,5 +78,6 @@ getnvars(f::AbstractFunction) = length(f.solver.vars)
 
 include("compliance.jl")
 include("volume.jl")
+include("stress.jl")
 
 end

@@ -7,7 +7,7 @@
 module MMA
 
 using Parameters, StructArrays, Setfield, TimerOutputs, Base.Threads
-using ..GPUUtils, CuArrays, CUDAnative, KissThreading
+using ..GPUUtils, CuArrays, CUDAnative, KissThreading, ..Utilities
 using GPUArrays: GPUVector
 using CUDAdrv: CUDAdrv
 
@@ -42,29 +42,29 @@ const ρmin = 1e-5
 
 default_dual_caps(::Type{T}) where T = (eps(T), one(T))
 
-function optimize(  model::Model{T, TV}, 
-                    x0::TV, 
+function optimize(  model::Model, 
+                    x0, 
                     optimizer = MMA02(), 
                     suboptimizer = Optim.ConjugateGradient(); 
                     options = Options()
-                ) where {T, TV}
+                )
     check_error(model, x0)
     workspace = Workspace(model, x0, optimizer, suboptimizer; options = options)
     return optimize!(workspace)
 end
 
-mutable struct MMAResult{T, TO, TX, Ttol <: Tolerances, TState}
-    optimizer::TO
-    initial_x::TX
-    minimizer::TX
+@params mutable struct MMAResult{T}
+    optimizer
+    initial_x::AbstractVector{T}
+    minimizer::AbstractVector{T}
     minimum::T
     iter::Int
     maxiter_reached::Bool
-    tol::Ttol
-    convstate::TState
-    f_calls::Int
-    g_calls::Int
-    h_calls::Int
+    tol::Tolerances
+    convstate
+    f_calls::Integer
+    g_calls::Integer
+    h_calls::Integer
 end
 
 function optimize!(workspace::Workspace{T, TV, TM}) where {T, TV, TM}

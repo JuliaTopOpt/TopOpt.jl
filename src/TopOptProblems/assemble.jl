@@ -4,24 +4,21 @@ function assemble(problem::StiffnessTopOptProblem{dim,T}, elementinfo::ElementFE
     return globalinfo
 end
 
-function assemble!(globalinfo::GlobalFEAInfo{T}, problem::StiffnessTopOptProblem{dim,T}, elementinfo::ElementFEAInfo{dim, T, TK}, vars = ones(T, getncells(getdh(problem).grid)), penalty = PowerPenalty(T(1)), xmin = T(0.001)) where {dim, T, TK}
+function assemble!(globalinfo::GlobalFEAInfo{T}, problem::StiffnessTopOptProblem{dim,T}, elementinfo::ElementFEAInfo{dim, T, TK}, vars = ones(T, getncells(getdh(problem).grid)), penalty = PowerPenalty(T(1)), xmin = T(0.001); assemble_f = true) where {dim, T, TK}
     ch = problem.ch
     dh = ch.dh
     K, f = globalinfo.K, globalinfo.f
-    f .= elementinfo.fixedload
-
+    if assemble_f
+        f .= elementinfo.fixedload
+    end
     Kes, fes = elementinfo.Kes, elementinfo.fes
     black = problem.black
     white = problem.white
     varind = problem.varind
 
-    if K isa Symmetric
-        K.data.nzval .= 0
-        assembler = JuAFEM.AssemblerSparsityPattern(K.data, f, Int[], Int[])
-    else
-        K.nzval .= 0
-        assembler = JuAFEM.AssemblerSparsityPattern(K, f, Int[], Int[])
-    end
+    _K = K isa Symmetric ? K.data : K
+    _K.nzval .= 0
+    assembler = JuAFEM.AssemblerSparsityPattern(_K, f, Int[], Int[])
 
     global_dofs = zeros(Int, ndofs_per_cell(dh))
     fe = zeros(typeof(fes[1]))
@@ -31,31 +28,37 @@ function assemble!(globalinfo::GlobalFEAInfo{T}, problem::StiffnessTopOptProblem
     for (i,cell) in enumerate(celliterator)
         celldofs!(global_dofs, dh, i)
         fe = fes[i]
-        if eltype(Kes) <: Symmetric
-            Ke = rawmatrix(Kes[i]).data
-        else
-            Ke = rawmatrix(Kes[i])
-        end
+        _Ke = rawmatrix(Kes[i])
+        Ke = _Ke isa Symmetric ? _Ke.data : _Ke
         if black[i]
-            JuAFEM.assemble!(assembler, global_dofs, Ke, fe)
+            if assemble_f
+                JuAFEM.assemble!(assembler, global_dofs, Ke, fe)
+            else
+                JuAFEM.assemble!(assembler, global_dofs, Ke)
+            end
         elseif white[i]
             px = xmin
-            fe = px * fe
             Ke = px * Ke
-            JuAFEM.assemble!(assembler, global_dofs, Ke, fe)
+            if assemble_f
+                fe = px * fe
+                JuAFEM.assemble!(assembler, global_dofs, Ke, fe)
+            else
+                JuAFEM.assemble!(assembler, global_dofs, Ke)
+            end
         else
             px = density(penalty(vars[varind[i]]), xmin)
-            fe = px * fe
             Ke = px * Ke
-            JuAFEM.assemble!(assembler, global_dofs, Ke, fe)
+            if assemble_f
+                fe = px * fe
+                JuAFEM.assemble!(assembler, global_dofs, Ke, fe)
+            else
+                JuAFEM.assemble!(assembler, global_dofs, Ke)
+            end
         end
     end
 
-    if TK <: Symmetric
-        apply!(K.data, f, ch)
-    else
-        apply!(K, f, ch)
-    end
+    _K = TK <: Symmetric ? K.data : K        
+    apply!(_K, f, ch)
 
     return 
 end

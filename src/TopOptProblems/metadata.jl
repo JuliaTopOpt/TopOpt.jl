@@ -1,9 +1,9 @@
-struct Metadata{TDofs, TDofCells, TNodeCells}
-    cell_dofs::TDofs
-    dof_cells::TDofCells
+@params struct Metadata
+    cell_dofs
+    dof_cells
     #node_first_cells::TTupleVec
-    node_cells::TNodeCells
-    node_dofs::TDofs
+    node_cells
+    node_dofs
 end
 
 function Metadata(dh::DofHandler{dim}) where dim

@@ -1,6 +1,6 @@
-struct FunctionEvaluations{TC}
+@params struct FunctionEvaluations
     obj::Int
-    constr::TC
+    constr
 end
 function FunctionEvaluations(optimizer)
     obj_fevals = getfevals(optimizer.obj)
@@ -26,12 +26,12 @@ function Base.any(f, fevals::FunctionEvaluations)
     f(fevals.obj) || any(f, fevals.constr)
 end
 
-mutable struct SIMPResult{T, TF <: FunctionEvaluations, Tstate}
-    topology::Vector{T}
+@params mutable struct SIMPResult{T, TF <: FunctionEvaluations}
+    topology::AbstractVector{T}
     objval::T
     fevals::TF
-    convstate::Tstate
-    penalty_trace::Vector{Pair{T, TF}}
+    convstate
+    penalty_trace::AbstractVector{Pair{T, TF}}
     nsubproblems::Int
 end
 GPUUtils.whichdevice(s::SIMPResult) = whichdevice(s.topology)
@@ -42,9 +42,9 @@ function NewSIMPResult(::Type{T}, optimizer, ncells) where {T}
     SIMPResult(fill(T(NaN), ncells), T(NaN), fevals, MMA.ConvergenceState(), Pair{T, typeof(fevals)}[], 0)
 end
 
-mutable struct SIMP{T, TO, TP} <: AbstractSIMP
-    optimizer::TO
-    penalty::TP
+@params mutable struct SIMP{T} <: AbstractSIMP
+    optimizer
+    penalty
     result::SIMPResult{T}
     tracing::Bool
 end

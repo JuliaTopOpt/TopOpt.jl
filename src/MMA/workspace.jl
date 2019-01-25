@@ -1,7 +1,7 @@
 @with_kw struct Tolerances{Txtol, Tftol, Tgrtol}
     xtol::Txtol = 1e-4
-    ftol::Tftol = 1e-4
-    grtol::Tgrtol = 1e-4
+    ftol::Tftol = 1e-6
+    grtol::Tgrtol = 1e-6
 end
 function (tol::Tolerances{<:Function, <:Function, <:Function})(i)
     return Tolerances(tol.xtol(i), tol.ftol(i), tol.grtol(i))
@@ -32,7 +32,7 @@ end
     store_trace::Bool = false
     show_trace::Bool = false
     extended_trace::Bool = false
-    subopt_options::TSubOptions = Optim.Options(x_tol = 1e-5, f_tol = 1e-5, g_tol = 1e-5, allow_f_increases = false)
+    subopt_options::TSubOptions = Optim.Options(allow_f_increases = false)
 end
 @inline function Base.getproperty(o::Options, f::Symbol)
     f === :xtol && return o.tol.xtol
@@ -41,7 +41,7 @@ end
     return getfield(o, f)
 end
 
-mutable struct Workspace{T, Tx, Tc, TO, TSO, TTrace <: OptimizationTrace{T}, TModel <: Model{T}, TPD <: PrimalData{T}, TXUpdater <: XUpdater{T, Tx, TPD}, TOptions, TState}
+mutable struct Workspace{T, Tx, Tc, TO, TSO, TTrace <: OptimizationTrace{T}, TModel <: Model{T}, TPD <: PrimalData{T}, TXUpdater <: XUpdater{T, Tx, TPD}, Tdual_data <: DualData, TOptions, TState}
     model::TModel
     optimizer::TO
     suboptimizer::TSO
@@ -52,7 +52,7 @@ mutable struct Workspace{T, Tx, Tc, TO, TSO, TTrace <: OptimizationTrace{T}, TMo
 	lift_updater::LiftUpdater{T, Tc, TPD}
 	lift_resetter::LiftResetter{T, Tc}
 	x_updater::TXUpdater
-    dual_data::DualData{}
+    dual_data::Tdual_data
     dual_obj::DualObjVal{TPD, TXUpdater}
 	dual_obj_grad::DualObjGrad{TPD, TXUpdater}
     tracing::Bool

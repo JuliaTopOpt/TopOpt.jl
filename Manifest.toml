@@ -6,9 +6,9 @@ version = "0.3.2"
 
 [[Adapt]]
 deps = ["LinearAlgebra", "Test"]
-git-tree-sha1 = "04d15700419b6949d76be1428ab6e0277ff43b06"
+git-tree-sha1 = "53d8fec4f662088c1202530e338a11a919407f3b"
 uuid = "79e6a3ab-5dfb-504d-930d-738a2a938a0e"
-version = "0.4.1"
+version = "0.4.2"
 
 [[AlgebraicMultigrid]]
 deps = ["Compat", "IterativeSolvers", "Random"]
@@ -33,11 +33,11 @@ version = "0.5.3"
 
 [[CUDAapi]]
 deps = ["Libdl", "Logging"]
-git-tree-sha1 = "da085c9c8668dbb37bd84573d4257b09cf33d053"
+git-tree-sha1 = "350cde12f25d297609369a9acb4c6214211675db"
 repo-rev = "master"
 repo-url = "https://github.com/JuliaGPU/CUDAapi.jl.git"
 uuid = "3895d2a7-ec45-59b8-82bb-cfc6a382f9b3"
-version = "0.5.3"
+version = "0.5.4"
 
 [[CUDAdrv]]
 deps = ["CUDAapi", "Libdl", "Printf"]
@@ -53,7 +53,7 @@ git-tree-sha1 = "3d5f5dd4b1f4441ddb23b00c761189fa6e9b45b4"
 repo-rev = "master"
 repo-url = "https://github.com/JuliaGPU/CUDAnative.jl"
 uuid = "be33ccc6-a3ff-5ff2-a52e-74243cff1e17"
-version = "0.10.1+"
+version = "1.0.0+"
 
 [[Calculus]]
 deps = ["Compat"]
@@ -97,7 +97,7 @@ git-tree-sha1 = "f458f29f8a15be80268b05e988353aa4d0625045"
 repo-rev = "master"
 repo-url = "https://github.com/JuliaGPU/CuArrays.jl"
 uuid = "3a865a2d-5b23-5a0f-bc46-62713ec82fae"
-version = "0.8.1+"
+version = "0.9.0+"
 
 [[DataStructures]]
 deps = ["InteractiveUtils", "OrderedCollections", "Random", "Serialization", "Test"]
@@ -163,7 +163,7 @@ git-tree-sha1 = "2b96d7f25fbea82c08a736d78cbf14df8d2100a5"
 repo-rev = "master"
 repo-url = "https://github.com/JuliaGPU/GPUArrays.jl.git"
 uuid = "0c68f7d7-f131-5f86-a1c3-88cf8149b2d7"
-version = "0.6.0+"
+version = "0.6.1+"
 
 [[InteractiveUtils]]
 deps = ["LinearAlgebra", "Markdown"]
@@ -248,9 +248,9 @@ uuid = "d6f4376e-aef5-505a-96c1-9c027394607a"
 
 [[Missings]]
 deps = ["Dates", "InteractiveUtils", "SparseArrays", "Test"]
-git-tree-sha1 = "adc26d2ee85a49c413464110d922cf21efc9d233"
+git-tree-sha1 = "d1d2585677f2bd93a97cfeb8faa7a0de0f982042"
 uuid = "e1d29d7a-bbdc-5cf2-9ac0-f12de2c33e28"
-version = "0.3.1"
+version = "0.4.0"
 
 [[Mmap]]
 uuid = "a63ad114-7e13-5084-954f-fe012c677804"
@@ -339,6 +339,12 @@ git-tree-sha1 = "f6fbf4ba64d295e146e49e021207993b6b48c7d1"
 uuid = "ae029012-a4dd-5104-9daa-d747884805df"
 version = "0.5.2"
 
+[[Rmath]]
+deps = ["BinaryProvider", "Libdl", "Random", "Statistics", "Test"]
+git-tree-sha1 = "9a6c758cdf73036c3239b0afbea790def1dabff9"
+uuid = "79098fc4-a85e-5d69-aa6a-4863f24498fa"
+version = "0.5.0"
+
 [[SHA]]
 uuid = "ea8e919c-243c-51af-8825-aaa63cd721ce"
 
@@ -395,6 +401,12 @@ deps = ["DataStructures", "LinearAlgebra", "Missings", "Printf", "Random", "Sort
 git-tree-sha1 = "723193a13e8078cec6dcd0b8fe245c8bfd81690e"
 uuid = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
 version = "0.25.0"
+
+[[StatsFuns]]
+deps = ["Rmath", "SpecialFunctions", "Test"]
+git-tree-sha1 = "d14bb7b03defd2deaa5675646f6783089e0556f0"
+uuid = "4c63d2b9-4356-54db-8cca-17b64c39e42c"
+version = "0.7.0"
 
 [[StructArrays]]
 deps = ["Requires", "Test"]

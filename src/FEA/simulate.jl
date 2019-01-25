@@ -1,8 +1,8 @@
 using TimerOutputs
 
-struct LinearElasticityResult{T, TV}
-    comp::T
-    u::TV
+@params struct LinearElasticityResult
+    comp
+    u
 end
 GPUUtils.whichdevice(r::LinearElasticityResult) = whichdevice(r.u)
 

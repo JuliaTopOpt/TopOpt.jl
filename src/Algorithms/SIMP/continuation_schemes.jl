@@ -1,8 +1,8 @@
 abstract type AbstractContinuation <: Function end
 
-struct FixedContinuation{T} <: AbstractContinuation
+@params struct FixedContinuation{T} <: AbstractContinuation
     param::T
-    length::Int
+    length::Integer
 end
 function Base.iterate(s::FixedContinuation, x=1)
     (x > s.length) && return nothing
@@ -14,11 +14,11 @@ Base.length(s::FixedContinuation) = s.length
 """
 p(x) = 1/(a + b*ℯ^(-c*x))
 """
-struct SigmoidContinuation{T} <: AbstractContinuation
+@params struct SigmoidContinuation{T} <: AbstractContinuation
     a::T
     b::T
     c::T
-    length::Int
+    length::Integer
     min::T
 end
 function SigmoidContinuation{T}(; c::T=T(0.1), start::T=T(1), finish::T=T(5), steps::Int=30, min::T=-Inf) where T
@@ -36,11 +36,11 @@ Base.length(s::SigmoidContinuation) = s.length
 """
 p(x) = a(x-b*steps)^3 + c
 """
-struct CubicSplineContinuation{T} <: AbstractContinuation
+@params struct CubicSplineContinuation{T} <: AbstractContinuation
     a::T
     b::T
     c::T
-    length::Int
+    length::Integer
     min::T
 end
 function CubicSplineContinuation{T}(;b::T=T(0.5), start::T=T(1), finish::T=T(5), steps::Int=30, min::T=-Inf) where T
@@ -59,11 +59,11 @@ Base.length(s::CubicSplineContinuation) = s.length
 """
 p(x) = a*x^b + c
 """
-struct PowerContinuation{T} <: AbstractContinuation
+@params struct PowerContinuation{T} <: AbstractContinuation
     a::T
     b::T
     c::T
-    length::Int
+    length::Integer
     min::T
 end
 function PowerContinuation{T}(;b::T=T(2), start::T=T(1), finish::T=T(5), steps::Int=30, min::T=-Inf) where T
@@ -81,11 +81,11 @@ Base.length(s::PowerContinuation) = s.length
 """
 p(x) = a*ℯ^(b*x) + c
 """
-struct ExponentialContinuation{T} <: AbstractContinuation
+@params struct ExponentialContinuation{T} <: AbstractContinuation
     a::T
     b::T
     c::T
-    length::Int
+    length::Integer
     min::T
 end
 function ExponentialContinuation{T}(;b::T=T(0.1), start::T=T(1), finish::T=T(5), steps::Int=30, min::T=-Inf) where T
@@ -103,11 +103,11 @@ Base.length(s::ExponentialContinuation) = s.length
 """
 p(x) = a*log(b*x) + c
 """
-struct LogarithmicContinuation{T} <: AbstractContinuation
+@params struct LogarithmicContinuation{T} <: AbstractContinuation
     a::T
     b::T
     c::T
-    length::Int
+    length::Integer
     min::T
 end
 function LogarithmicContinuation{T}(;b::T=T(1), start::T=T(1), finish::T=T(5), steps::Int=30, min::T=-Inf) where T

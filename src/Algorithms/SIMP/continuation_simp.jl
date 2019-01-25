@@ -1,15 +1,15 @@
-@with_kw mutable struct ContinuationSIMP{Tsimp, Tresult, Toptions} <: AbstractSIMP
-    simp::Tsimp
-    result::Tresult
-    options::Toptions
+@params mutable struct ContinuationSIMP <: AbstractSIMP
+    simp
+    result
+    options
 end
 GPUUtils.whichdevice(c::ContinuationSIMP) = whichdevice(c.simp)
 
-struct CSIMPOptions{TOptions, TPen}
-    p_cont::TPen
-    option_cont::TOptions
+@params struct CSIMPOptions
+    p_cont
+    option_cont
     reuse::Bool
-    steps::Int
+    steps::Integer
 end
 
 function CSIMPOptions(::Type{T} = Float64; 

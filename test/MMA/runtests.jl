@@ -58,7 +58,7 @@ let
     @test grad1 ≈ grad2
 end
 
-r = optimize(m, [1.234, 2.345], MMA.MMA02())
+r = optimize(m, [1.234, 2.345], MMA.MMA02(), options = MMA.Options(tol = MMA.Tolerances(xtol = 1e-6, ftol = 0.0, grtol = 0.0)))
 @test abs(r.minimum - sqrt(8/27)) < 1e-6
 @test norm(r.minimizer - [1/3, 8/27]) < 1e-6
 

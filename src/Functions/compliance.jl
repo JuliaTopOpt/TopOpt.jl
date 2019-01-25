@@ -1,14 +1,14 @@
-mutable struct ComplianceFunction{T, TI<:Integer, TV<:AbstractArray, TSP<:StiffnessTopOptProblem, FS<:AbstractDisplacementSolver, CF<:AbstractCheqFilter} <: AbstractFunction{T}
-	problem::TSP
-    solver::FS
-    cheqfilter::CF
+@params mutable struct ComplianceFunction{T} <: AbstractFunction{T}
+	problem::StiffnessTopOptProblem
+    solver::AbstractDisplacementSolver
+    cheqfilter::AbstractCheqFilter
     comp::T
-    cell_comp::TV
-    grad::TV
+    cell_comp::AbstractVector
+    grad::AbstractVector
     tracing::Bool
-    topopt_trace::TopOptTrace{T,TI}
+    topopt_trace::TopOptTrace{T}
     reuse::Bool
-    fevals::TI
+    fevals::Integer
     logarithm::Bool
     maxfevals::Int
 end

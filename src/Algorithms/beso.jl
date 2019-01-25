@@ -1,22 +1,22 @@
-mutable struct BESOResult{T}
-    topology::Vector{T}
+@params mutable struct BESOResult{T}
+    topology::AbstractVector{T}
     objval::T
     change::T
     converged::Bool
     fevals::Int
 end
 
-struct BESO{TO, TC, T, TP} <: TopOptAlgorithm 
-    obj::TO
-    constr::TC
+@params struct BESO{T, TP} <: TopOptAlgorithm 
+    obj
+    constr
     vars::Vector{T}
     topology::Vector{T}
     er::T
     maxiter::Int
-    penalty::TP
-    sens::Vector{T}
-    old_sens::Vector{T}
-    obj_trace::MVector{10,T}
+    penalty
+    sens::AbstractVector{T}
+    old_sens::AbstractVector{T}
+    obj_trace::MVector{10, T}
     tol::T
     sens_tol::T
     result::BESOResult{T}

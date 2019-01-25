@@ -1,12 +1,12 @@
-mutable struct VolumeFunction{T, dim, TI, TV, TP<:StiffnessTopOptProblem{dim, T}, TS<:AbstractFEASolver} <: AbstractFunction{T}
-    problem::TP
-    solver::TS
-    cellvolumes::TV
-    grad::TV
+@params mutable struct VolumeFunction{T, dim} <: AbstractFunction{T}
+    problem::StiffnessTopOptProblem{dim, T}
+    solver::AbstractFEASolver
+    cellvolumes::AbstractVector{T}
+    grad::AbstractVector{T}
     total_volume::T
     fixed_volume::T
     tracing::Bool
-	topopt_trace::TopOptTrace{T,TI}
+	topopt_trace::TopOptTrace{T}
     fevals::Int
     maxfevals::Int
 end

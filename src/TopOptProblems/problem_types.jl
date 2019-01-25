@@ -89,20 +89,20 @@ force = 1.0;
 problem = PointLoadCantilever(nels, sizes, E, ν, force)
 ```
 """
-struct PointLoadCantilever{dim, T, N, M, TBool, TInds<:AbstractVector{Int}, TG <: RectilinearGrid{dim, T, N, M}, TMeta<:Metadata, CH<:ConstraintHandler{<:DofHandler{dim, N, T, M}, T}} <: StiffnessTopOptProblem{dim, T}
-    rect_grid::TG
+@params struct PointLoadCantilever{dim, T, N, M} <: StiffnessTopOptProblem{dim, T}
+    rect_grid::RectilinearGrid{dim, T, N, M}
     E::T
     ν::T
-    ch::CH
+    ch::ConstraintHandler{<:DofHandler{dim, N, T, M}, T}
     force::T
-    force_dof::Int
-    black::TBool
-    white::TBool
-    varind::TInds
-    metadata::TMeta
+    force_dof::Integer
+    black::AbstractVector
+    white::AbstractVector
+    varind::AbstractVector{Int}
+    metadata::Metadata
 end
 
-function PointLoadCantilever(::Type{Val{CellType}}, nels::NTuple{dim,Int}, sizes::NTuple{dim}, E, ν, force) where {dim, CellType}
+function PointLoadCantilever(::Type{Val{CellType}}, nels::NTuple{dim,Int}, sizes::NTuple{dim}, E = 1.0, ν = 0.3, force = 1.0) where {dim, CellType}
     iseven(nels[2]) && (length(nels) < 3 || iseven(nels[3])) || throw("Grid does not have an even number of elements along the y and/or z axes.")
 
     _T = promote_type(eltype(sizes), typeof(E), typeof(ν), typeof(force))
@@ -223,19 +223,19 @@ force = -1.0;
 problem = HalfMBB(nels, sizes, E, ν, force)
 ```
 """
-struct HalfMBB{dim, T, N, M, TBool, TInds<:AbstractVector{Int}, TG<:RectilinearGrid{dim, T, N, M}, TMeta<:Metadata, CH<:ConstraintHandler{<:DofHandler{dim, N, T, M}, T}} <: StiffnessTopOptProblem{dim, T}
-    rect_grid::TG
+@params struct HalfMBB{dim, T, N, M} <: StiffnessTopOptProblem{dim, T}
+    rect_grid::RectilinearGrid{dim, T, N, M}
     E::T
     ν::T
-    ch::CH
+    ch::ConstraintHandler{<:DofHandler{dim, N, T, M}, T}
     force::T
-    force_dof::Int
-    black::TBool
-    white::TBool
-    varind::TInds
-    metadata::TMeta
+    force_dof::Integer
+    black::AbstractVector
+    white::AbstractVector
+    varind::AbstractVector{Int}
+    metadata::Metadata
 end
-function HalfMBB(::Type{Val{CellType}}, nels::NTuple{dim,Int}, sizes::NTuple{dim}, E, ν, force) where {dim, CellType}
+function HalfMBB(::Type{Val{CellType}}, nels::NTuple{dim,Int}, sizes::NTuple{dim}, E = 1.0, ν = 0.3, force = 1.0) where {dim, CellType}
     _T = promote_type(eltype(sizes), typeof(E), typeof(ν), typeof(force))
     if _T <: Integer
         T = Float64
@@ -323,16 +323,16 @@ end
                                 force
 ```
 """
-struct LBeam{T, N, M, TBool, TInds<:AbstractVector{Int}, TMeta<:Metadata, CH<:ConstraintHandler{<:DofHandler{2, N, T, M}, T}} <: StiffnessTopOptProblem{2, T}
+@params struct LBeam{T, N, M} <: StiffnessTopOptProblem{2, T}
     E::T
     ν::T
-    ch::CH
+    ch::ConstraintHandler{<:DofHandler{2, N, T, M}, T}
     force::T
-    force_dof::Int
-    black::TBool
-    white::TBool
-    varind::TInds
-    metadata::TMeta
+    force_dof::Integer
+    black::AbstractVector
+    white::AbstractVector
+    varind::AbstractVector{Int}
+    metadata::Metadata
 end
 function LBeam(::Type{Val{CellType}}, ::Type{T}=Float64; length = 100, height = 100, upperslab = 50, lowerslab = 50, E = 1.0, ν = 0.3, force = 1.0) where {T, CellType}
     # Create displacement field u
@@ -431,17 +431,17 @@ end
                                                               1 f
 ```
 """
-struct TieBeam{T, N, M, TBool, TInds<:AbstractVector{Int}, TMeta<:Metadata, CH<:ConstraintHandler{<:DofHandler{2, N, T, M}, T}} <: StiffnessTopOptProblem{2, T}
+@params struct TieBeam{T, N, M} <: StiffnessTopOptProblem{2, T}
     E::T
     ν::T
     force::T
-    ch::CH
-    black::TBool
-    white::TBool
-    varind::TInds
-    metadata::TMeta
+    ch::ConstraintHandler{<:DofHandler{2, N, T, M}, T}
+    black::AbstractVector
+    white::AbstractVector
+    varind::AbstractVector{Int}
+    metadata::Metadata
 end
-function TieBeam(::Type{Val{CellType}}, ::Type{T}=Float64, refine = 1, force=T(1); E=T(1), ν=T(0)) where {T, CellType}
+function TieBeam(::Type{Val{CellType}}, ::Type{T} = Float64, refine = 1, force = T(1); E = T(1), ν = T(0.3)) where {T, CellType}
     grid = TieBeamGrid(Val{CellType}, T, refine)
     dh = DofHandler(grid)
     if CellType === :Linear

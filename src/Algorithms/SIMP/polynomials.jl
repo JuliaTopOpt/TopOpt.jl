@@ -1,8 +1,8 @@
-struct PartialPolynomialFit{T}
+@params struct PartialPolynomialFit{T}
     data::Tuple{Matrix{T}, Vector{T}}
-    order::Base.RefValue{Int}
-    coeffs::Vector{T}
-    oldest::Base.RefValue{Int}
+    order::Ref{Int}
+    coeffs::AbstractVector{T}
+    oldest::Ref{Int}
 end
 function Base.convert(::Type{PartialPolynomialFit}, n::Int)
     PartialPolynomialFit{Float64}(n)
@@ -13,8 +13,8 @@ function Base.convert(::Type{PartialPolynomialFit{T}}, n::Int) where T
 end
 Base.eltype(::PartialPolynomialFit{T}) where T = T
 
-struct Derivative{TF}
-    f::TF
+@params struct Derivative
+    f
 end
 # nth order derivatives of polynomial function f using f'''(x) notation
 @inline Base.transpose(p::Union{PartialPolynomialFit, Derivative}) = Derivative(p)
@@ -114,16 +114,16 @@ function roots(poly::Union{TP, Derivative{TP}}, min=T(0), max=T(15)) where {T, T
     return _filter(root_ranges)
 end
 
-struct PolynomialQuotient{TPNum, TPDenom}
-    num::TPNum
-    denom::TPDenom
+@params struct PolynomialQuotient
+    num
+    denom
 end
 Base.:/(p1::Union{PartialPolynomialFit, Derivative}, p2::Union{PartialPolynomialFit, Derivative}) = PolynomialQuotient(p1, p2)
 Base.eltype(p::PolynomialQuotient) = promote_type(eltype(p.num), eltype(p.denom))
 
-struct PolynomialEquality{TP, TN}
-    LHS::TP
-    RHS::TN
+@params struct PolynomialEquality
+    LHS
+    RHS
 end
 Base.:(==)(p::Union{PolynomialQuotient, PartialPolynomialFit, Derivative}, n) = PolynomialEquality(p, n)
 Base.eltype(p::PolynomialEquality) = promote_type(eltype(p.LHS), typeof(p.RHS))

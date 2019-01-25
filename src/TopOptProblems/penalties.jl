@@ -1,5 +1,7 @@
 abstract type AbstractPenalty{T} end
 
+Base.broadcastable(p::AbstractPenalty) = Ref(p)
+
 mutable struct PowerPenalty{T} <: AbstractPenalty{T}
     p::T
 end

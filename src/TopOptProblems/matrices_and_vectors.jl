@@ -1,13 +1,13 @@
 const RectilinearPointLoad{dim, T, N, M} = Union{PointLoadCantilever{dim, T, N, M}, HalfMBB{dim, T, N, M}, LBeam{T, N, M}}
 
-struct ElementMatrix{T, TM <: AbstractMatrix{T}, TMask} <: AbstractMatrix{T}
+@params struct ElementMatrix{T, TM <: AbstractMatrix{T}} <: AbstractMatrix{T}
     matrix::TM
-    mask::TMask
+    mask
     meandiag::T
 end
 ElementMatrix(matrix, mask) = ElementMatrix(matrix, mask, sumdiag(matrix)/size(matrix, 1))
 
-const StaticMatrices{m,T} = Union{StaticMatrix{m,m,T}, Symmetric{T, <:StaticMatrix{m,m,T}}}
+const StaticMatrices{m, T} = Union{StaticMatrix{m, m, T}, Symmetric{T, <:StaticMatrix{m, m, T}}}
 @generated function sumdiag(K::StaticMatrices{m,T}) where {m,T}
     return reduce((ex1,ex2) -> :($ex1 + $ex2), [:(K[$j,$j]) for j in 1:m])
 end
@@ -32,18 +32,18 @@ end
     return :($(Expr(:meta, :inline)); Symmetric($TM($expr)))
 end
 
-struct ElementFEAInfo{dim, T, TKe<:AbstractMatrix{T}, Tfe<:AbstractVector{T}, TKes<:AbstractVector{TKe}, Tfes<:AbstractVector{Tfe}, Tcload<:AbstractVector{T}, refshape, TCV<:CellValues{dim, T, refshape}, dimless1, TFV<:FaceValues{dimless1, T, refshape}, TMeta<:Metadata, TBoolVec<:AbstractVector, TIndVec<:AbstractVector{Int}, TCells}
-    Kes::TKes
-    fes::Tfes
-    fixedload::Tcload
-    cellvolumes::Tcload
-    cellvalues::TCV
-    facevalues::TFV
-    metadata::TMeta
-    black::TBoolVec
-    white::TBoolVec
-    varind::TIndVec
-    cells::TCells
+@params struct ElementFEAInfo{dim, T}
+    Kes::AbstractVector{<:AbstractMatrix{T}}
+    fes::AbstractVector{<:AbstractVector{T}}
+    fixedload::AbstractVector{T}
+    cellvolumes::AbstractVector{T}
+    cellvalues::CellValues{dim, T}
+    facevalues::FaceValues{<:Any, T}
+    metadata::Metadata
+    black::AbstractVector
+    white::AbstractVector
+    varind::AbstractVector{Int}
+    cells
 end
 function ElementFEAInfo(sp, quad_order=2, ::Type{Val{mat_type}}=Val{:Static}) where {mat_type} 
     Kes, weights, dloads, cellvalues, facevalues = make_Kes_and_fes(sp, quad_order, Val{mat_type})

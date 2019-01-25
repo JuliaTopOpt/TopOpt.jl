@@ -1,8 +1,8 @@
 abstract type AbstractMatrixOperator{Tconv} end
 
-struct MatrixOperator{Tconv, Tmat, Tvec} <: AbstractMatrixOperator{Tconv}
-    K::Tmat
-    f::Tvec
+@params struct MatrixOperator{Tconv} <: AbstractMatrixOperator{Tconv}
+    K
+    f
     conv::Tconv
 end
 LinearAlgebra.mul!(c, op::MatrixOperator, b) = mul!(c, op.K, b)
@@ -10,16 +10,16 @@ Base.size(op::MatrixOperator, i...) = size(op.K, i...)
 Base.eltype(op::MatrixOperator) = eltype(op.K)
 LinearAlgebra.:*(op::MatrixOperator, b) = mul!(similar(b), op.K, b)
 
-struct MatrixFreeOperator{Tconv, T, dim, TEInfo <: ElementFEAInfo{dim, T}, TDofs, Tf <: AbstractVector{T}, Txes, TP} <: AbstractMatrixOperator{Tconv}
-    f::Tf
-    elementinfo::TEInfo
+@params struct MatrixFreeOperator{Tconv, T, dim} <: AbstractMatrixOperator{Tconv}
+    f::AbstractVector{T}
+    elementinfo::ElementFEAInfo{dim, T}
     meandiag::T
-    vars::Tf
-    xes::Txes
-    fixed_dofs::TDofs
-    free_dofs::TDofs
+    vars::AbstractVector{T}
+    xes
+    fixed_dofs
+    free_dofs
     xmin::T
-    penalty::TP
+    penalty
     conv::Tconv
 end
 GPUUtils.whichdevice(m::MatrixFreeOperator) = whichdevice(m.vars)

@@ -1,24 +1,26 @@
 abstract type AbstractMatrixFreeSolver <: AbstractDisplacementSolver end
 
-mutable struct StaticMatrixFreeDisplacementSolver{T, dim, TEInfo <: ElementFEAInfo{dim}, TS<:StiffnessTopOptProblem{dim}, Tv<:AbstractVector{T}, Txes, TDofs, TP<:AbstractPenalty{T}, TI<:Integer, TStateVars<:CGStateVariables{T}, TPrecond, Tconv} <: AbstractDisplacementSolver
-    elementinfo::TEInfo
-    problem::TS
-    f::Tv
+@params mutable struct StaticMatrixFreeDisplacementSolver{T, dim, TP <: AbstractPenalty{T}} <: AbstractDisplacementSolver
+    elementinfo::ElementFEAInfo{dim}
+    problem::StiffnessTopOptProblem{dim}
+    f::AbstractVector{T}
     meandiag::T
-    u::Tv
-    vars::Tv
-    xes::Txes
-    fixed_dofs::TDofs
-    free_dofs::TDofs
+    u::AbstractVector{T}
+    lhs::AbstractVector{T}
+    rhs::AbstractVector{T}
+    vars::AbstractVector{T}
+    xes
+    fixed_dofs
+    free_dofs
     penalty::TP
     prev_penalty::TP
     xmin::T
-    cg_max_iter::TI
+    cg_max_iter::Integer
     tol::T
-    cg_statevars::TStateVars
-    preconditioner::TPrecond
+    cg_statevars::CGStateVariables{T}
+    preconditioner
     preconditioner_initialized::Base.RefValue{Bool}
-    conv::Tconv
+    conv
 end
 
 StaticMatrixFreeDisplacementSolver(sp, args...; kwargs...) = StaticMatrixFreeDisplacementSolver(whichdevice(sp), sp, args...; kwargs...)
@@ -50,14 +52,14 @@ function StaticMatrixFreeDisplacementSolver(::CPU, sp::StiffnessTopOptProblem{di
 
     u = zeros(T, ndofs(sp.ch.dh))
     f = similar(u)
+    lhs = similar(u)
+    rhs = similar(u)
     vars = fill(one(T), getncells(sp.ch.dh.grid) - sum(sp.black) - sum(sp.white))
     cg_statevars = CGStateVariables{eltype(u),typeof(u)}(copy(u), similar(u), similar(u))
 
     fixed_dofs = sp.ch.prescribed_dofs
     free_dofs = setdiff(1:length(u), fixed_dofs)
-    return StaticMatrixFreeDisplacementSolver(elementinfo, sp, f, meandiag, u, vars, 
-        xes, fixed_dofs, free_dofs, penalty, prev_penalty, xmin, cg_max_iter, tol, 
-        cg_statevars, preconditioner, Ref(false), conv)
+    return StaticMatrixFreeDisplacementSolver(elementinfo, sp, f, meandiag, u, lhs, rhs, vars, xes, fixed_dofs, free_dofs, penalty, prev_penalty, xmin, cg_max_iter, tol, cg_statevars, preconditioner, Ref(false), conv)
 end
 
 MatrixFreeOperator(solver::StaticMatrixFreeDisplacementSolver) = buildoperator(solver)
@@ -67,18 +69,18 @@ function buildoperator(solver::StaticMatrixFreeDisplacementSolver)
     MatrixFreeOperator(solver.f, elementinfo, meandiag, vars, xes, fixed_dofs, free_dofs, xmin, penalty, conv)
 end
 
-function (s::StaticMatrixFreeDisplacementSolver)()
-    assemble_f!(s.f, s.problem, s.elementinfo, s.vars, getpenalty(s), s.xmin)
-    matrix_free_apply2f!(s.f, s.elementinfo, s.meandiag, s.vars, s.problem, getpenalty(s), s.xmin)
-    
-    u = s.u
-    f = s.f
+function (s::StaticMatrixFreeDisplacementSolver)(; assemble_f = true)
+    rhs = assemble_f ? s.f : s.rhs
+    lhs = assemble_f ? s.u : s.lhs
+
+    if assemble_f
+        assemble_f!(s.f, s.problem, s.elementinfo, s.vars, getpenalty(s), s.xmin)
+    end
+    matrix_free_apply2f!(rhs, s.elementinfo, s.meandiag, s.vars, s.problem, getpenalty(s), s.xmin)
+
+    @unpack cg_max_iter, cg_statevars = s
+    @unpack preconditioner_initialized, preconditioner, tol = s
     operator = buildoperator(s)
-    cg_max_iter = s.cg_max_iter
-    tol = s.tol
-    cg_statevars = s.cg_statevars
-    preconditioner = s.preconditioner
-    preconditioner_initialized = s.preconditioner_initialized
 
     if !(preconditioner === identity)
         if !preconditioner_initialized[]
@@ -87,10 +89,10 @@ function (s::StaticMatrixFreeDisplacementSolver)()
         end
     end
     if preconditioner === identity
-        return cg!(u, operator, f, tol=tol, maxiter=cg_max_iter, log=false, statevars=cg_statevars, initially_zero=false)
+        return cg!(lhs, operator, rhs, tol=tol, maxiter=cg_max_iter, log=false, statevars=cg_statevars, initially_zero=false)
     else
-        return cg!(u, operator, f, tol=tol, maxiter=cg_max_iter, log=false, statevars=cg_statevars, initially_zero=false, Pl=preconditioner)
+        return cg!(lhs, operator, rhs, tol=tol, maxiter=cg_max_iter, log=false, statevars=cg_statevars, initially_zero=false, Pl=preconditioner)
     end
 end
 
-@define_cu(StaticMatrixFreeDisplacementSolver, :f, :problem, :vars, :cg_statevars, :elementinfo, :penalty, :prev_penalty, :u, :fixed_dofs, :free_dofs, :xes)
+@define_cu(StaticMatrixFreeDisplacementSolver, :f, :problem, :vars, :cg_statevars, :elementinfo, :penalty, :prev_penalty, :u, :fixed_dofs, :free_dofs, :xes, :lhs, :rhs)

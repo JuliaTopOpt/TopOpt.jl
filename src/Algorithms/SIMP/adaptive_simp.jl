@@ -1,18 +1,18 @@
-mutable struct AdaptiveSIMP{T,TO,TP,TFC} <: AbstractSIMP
-    simp::SIMP{T,TO,TP}
+@params mutable struct AdaptiveSIMP{T} <: AbstractSIMP
+    simp::SIMP{T}
     pstart::T
     pfinish::T
     reuse::Bool
     result::SIMPResult{T}
-    ftol_cont::TFC #speed::T
+    ftol_cont
     Δp::T
     maxiter::Int
     innerpolynomial::PolynomialFit{T}
     prev_f::T
     prev_dfdp::T
     prev_ftol::T
-    toltrace::Vector{T}
-    progresstrace::Vector{T}
+    toltrace::AbstractVector{T}
+    progresstrace::AbstractVector{T}
 end
 GPUUtils.whichdevice(a::AdaptiveSIMP) = whichdevice(a.simp)
 
