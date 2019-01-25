@@ -6,7 +6,7 @@ using ForwardDiff, LinearAlgebra, GPUArrays
 using Parameters: @unpack
 import CUDAdrv
 using TimerOutputs, CUDAnative, JuAFEM
-using StatsFuns
+using StatsFuns, MappedArrays, LazyArrays
 
 export  Objective,
         Constraint,

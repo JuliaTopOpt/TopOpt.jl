@@ -315,3 +315,20 @@ function (knorm::KNorm)(s, g_s)
     g_s .= (s ./ out).^(k-1)
     return out
 end
+
+struct WeightedKNorm{T} <: Function
+    k::Int
+    w::T
+end
+function (wknorm::WeightedKNorm{T})(s, g_s) where {T}
+    @unpack k, w = wknorm
+    if T <: AbstractVector
+        mw = MappedArray(w -> w^(1/k), w)
+        out = norm(MappedArray(*, s, mw), k)
+    else
+        mw = w^(1/k)
+        out = norm(BroadcastArray(*, s, mw), k)
+    end
+    g_s .= (s ./ out).^(k-1) .* mw
+    return out
+end
