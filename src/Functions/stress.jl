@@ -21,6 +21,16 @@ function get_E_dE(x_e::T, penalty, E0, xmin) where T
     return p.value * E0, g
 end
 
+struct CorrectedStress <: Function end
+function (s::CorrectedStress)(x_e, sigma_vm_e, sigma_bar)
+    return x_e * (sigma_vm_e - sigma_bar)
+end
+
+struct OffsetCorrectedStress <: Function end
+function (s::OffsetCorrectedStress)(x_e, sigma_vm_e, sigma_bar)
+    return x_e * sigma_vm_e + (1 - x_e) * sigma_bar
+end
+
 function get_s(x_e, sigma_vm_e, sigma_bar)
     return x_e * sigma_vm_e + (1 - x_e) * sigma_bar
 end
@@ -241,6 +251,7 @@ end
 @params struct GlobalStress{T}
     reducer
     reducer_g::AbstractVector{T}
+    corrected_stress
     utMu::AbstractVector{T}
     Mu::AbstractArray{T}
     s::AbstractVector{T}
@@ -250,7 +261,7 @@ end
     buffer::AbstractVector{T}
     stress_temp::StressTemp
 end
-function GlobalStress(solver, sigma_bar, reducer = LogSumExp())
+function GlobalStress(solver, sigma_bar, reducer = LogSumExp(), stress = OffsetCorrectedStress())
     T = eltype(solver.u)
     dh = solver.problem.ch.dh
     k = ndofs_per_cell(dh)
@@ -263,11 +274,11 @@ function GlobalStress(solver, sigma_bar, reducer = LogSumExp())
     buffer = zeros(T, ndofs_per_cell(dh))
     reducer_g = similar(utMu)
     
-    return GlobalStress(reducer, reducer_g, utMu, Mu, s, sigma_bar, solver, global_dofs, buffer, stress_temp)
+    return GlobalStress(reducer, reducer_g, stress, utMu, Mu, s, sigma_bar, solver, global_dofs, buffer, stress_temp)
 end
 
 function (gs::GlobalStress)(x, g)
-    @unpack s, sigma_bar, Mu, utMu, buffer, stress_temp = gs
+    @unpack s, sigma_bar, Mu, utMu, buffer, stress_temp, stress = gs
     @unpack solver, global_dofs, buffer, reducer, reducer_g = gs
     @unpack elementinfo, u, penalty, problem, xmin = solver
     @unpack Kes = elementinfo
@@ -278,7 +289,7 @@ function (gs::GlobalStress)(x, g)
     solver()
     fill_Mu_utMu!(Mu, utMu, solver, stress_temp)
 
-    s .= get_s.(x, get_sigma_vm.(get_E.(x, Ref(penalty), E0, xmin), utMu), sigma_bar)
+    s .= stress.(x, get_sigma_vm.(get_E.(x, Ref(penalty), E0, xmin), utMu), sigma_bar)
     reduced = reducer(s, reducer_g)
     g .= 0
     for e1 in 1:length(g)
@@ -295,16 +306,23 @@ function (gs::GlobalStress)(x, g)
             g[e1] += dse2_dxe1 * reducer_g[e2]
         end
     end
-
     return reduced
 end
-
 
 struct LogSumExp <: Function end
 function (lse::LogSumExp)(s, g_s)
     out = logsumexp(s)
     g_s .= exp.(s .- out)
     return out
+end
+
+struct OffsetLogSumExp{T} <: Function
+    k::T
+end
+function (olse::OffsetLogSumExp)(s, g_s)
+    lse = logsumexp(s)
+    g_s .= exp.(s .- lse)
+    return out - olse.k * log(length(s))
 end
 
 struct KNorm <: Function
