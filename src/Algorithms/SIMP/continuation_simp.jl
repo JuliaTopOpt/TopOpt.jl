@@ -23,7 +23,6 @@ function CSIMPOptions(::Type{T} = Float64;
                     ) where {T}
 
     if p_gen == nothing
-        @show T(1), PowerContinuation{Float64}(b = 1.0)
         p_cont = PowerContinuation{T}( ; b = T(1), 
                                         start = pstart,
                                         steps = steps + 1,
@@ -68,6 +67,7 @@ function MMAOptionsGen(;    steps::Int = 40,
                             ftol_gen = nothing, 
                             xtol_gen = nothing,
                             grtol_gen = nothing,
+                            kkttol_gen = nothing,
                             maxiter_gen = nothing,
                             outer_maxiter_gen = nothing,
                             s_init_gen = nothing,
@@ -114,7 +114,15 @@ function MMAOptionsGen(;    steps::Int = 40,
         @assert steps == grtol_gen.length - 1
         grtol_cont = grtol_gen
     end
-    tol_cont = MMA.Tolerances(xtol_cont, ftol_cont, grtol_cont)
+
+    if kkttol_gen == nothing
+        kkttol_cont = FixedContinuation(initial_options.kkttol, steps + 1)
+    else
+        @assert steps == kkttol_gen.length - 1
+        kkttol_cont = kkttol_gen
+    end
+
+    tol_cont = MMA.Tolerances(xtol_cont, ftol_cont, grtol_cont, kkttol_cont)
 
     if s_init_gen == nothing
         s_init_cont = FixedContinuation(initial_options.s_init, steps + 1)
@@ -259,6 +267,7 @@ end
 
 function update!(c_simp::ContinuationSIMP, i)
     p = c_simp.options.p_cont(i)
+    #@show p
     setpenalty!(c_simp.simp, p)
     options = c_simp.options.option_cont(c_simp.simp.optimizer.options, i)
     c_simp.simp.optimizer.workspace.options = options

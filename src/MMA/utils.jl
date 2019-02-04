@@ -49,6 +49,7 @@ function assess_convergence(x::AbstractArray{T},
                             xtol::Real,
                             ftol::Real,
                             grtol::Real) where {T}
+    
     x_converged, f_converged, gr_converged, f_increased = false, false, false, false
 
     if x isa CuArray

@@ -1,5 +1,32 @@
 abstract type AbstractContinuation <: Function end
 
+struct RationalContinuation{T}
+    pmax::T
+    kmax::Int
+    b::T
+end
+function Base.getproperty(c::RationalContinuation, f::Symbol)
+    f === :length && return length(c)
+    return getfield(c, f)
+end
+function RationalContinuation(xmin, steps::Int)
+    pmax = (1 - xmin)/xmin
+    kmax = steps
+    b = 1/steps * (1 - sqrt(xmin)) / (1 + sqrt(xmin))
+    return RationalContinuation(pmax, kmax, b)
+end
+function Base.iterate(s::RationalContinuation, k = 1)
+    (k > s.kmax + 1) && return nothing
+    b = s.b
+    return s(k), k + 1
+end
+Base.length(s::RationalContinuation) = s.kmax + 1
+function (s::RationalContinuation{T})(k) where T
+    k = clamp(k, 1, s.kmax + 1)
+    b = s.b
+    return 4*b*(k-1) / (1 - b*(k-1))^2
+end 
+
 struct FixedContinuation{T} <: AbstractContinuation
     param::T
     length::Int
@@ -121,3 +148,12 @@ function Base.iterate(s::LogarithmicContinuation, x=1)
 end
 Base.length(s::LogarithmicContinuation) = s.length
 (s::LogarithmicContinuation{T})(x) where T = max(s.a * log(s.b * T(x)) + s.c, s.min)
+
+Continuation(::PowerPenalty; kwargs...) = Continuation(PowerPenalty; kwargs...)
+Continuation(::RationalPenalty; kwargs...) = Continuation(RationalPenalty; kwargs...)
+function Continuation(::Type{<:PowerPenalty}; steps, pmax = 5.0, kwargs...)
+    return PowerContinuation{Float64}(b = 1.0, start = 1.0, steps = steps + 1, finish = pmax)
+end
+function Continuation(::Type{<:RationalPenalty}; steps, xmin = 0.001, kwargs...)
+    return RationalContinuation(xmin, steps)
+end

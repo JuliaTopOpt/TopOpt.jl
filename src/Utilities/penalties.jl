@@ -17,15 +17,25 @@ struct GPUPowerPenalty{T} <: AbstractGPUPenalty{T}
 end
 @inline (P::GPUPowerPenalty)(x) = CUDAnative.pow(x, P.p)
 
-struct RationalPenalty{T} <: AbstractCPUPenalty{T}
+mutable struct RationalPenalty{T} <: AbstractCPUPenalty{T}
     p::T
 end
-@inline (R::RationalPenalty)(x) = sinh(R.p*x)/sinh(R.p)
+@inline (R::RationalPenalty)(x) = x / (1 + R.p * (1 - x))
 
 struct GPURationalPenalty{T} <: AbstractGPUPenalty{T}
     p::T
 end
-@inline (P::GPURationalPenalty)(x) = CUDAnative.sinh(R.p*x)/CUDAnative.sinh(R.p)
+@inline (P::GPURationalPenalty)(x) = x / (1 + R.p * (1 - x))
+
+mutable struct SinhPenalty{T} <: AbstractCPUPenalty{T}
+    p::T
+end
+@inline (R::SinhPenalty)(x) = sinh(R.p*x)/sinh(R.p)
+struct GPUSinhPenalty{T} <: AbstractGPUPenalty{T}
+    p::T
+end
+@inline (P::GPUSinhPenalty)(x) = CUDAnative.sinh(R.p*x)/CUDAnative.sinh(R.p)
+
 
 import Base: copy
 copy(p::TP) where {TP<:AbstractPenalty} = TP(p.p)

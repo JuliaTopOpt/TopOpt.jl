@@ -1,10 +1,11 @@
-@with_kw struct Tolerances{Txtol, Tftol, Tgrtol}
+@with_kw struct Tolerances{Txtol, Tftol, Tgrtol, Tkktol}
     xtol::Txtol = 1e-4
     ftol::Tftol = 1e-6
-    grtol::Tgrtol = 1e-6
+    grtol::Tgrtol = 0.0
+    kkttol::Tkktol = 1e-6
 end
-function (tol::Tolerances{<:Function, <:Function, <:Function})(i)
-    return Tolerances(tol.xtol(i), tol.ftol(i), tol.grtol(i))
+function (tol::Tolerances{<:Function, <:Function, <:Function, <:Function})(i)
+    return Tolerances(tol.xtol(i), tol.ftol(i), tol.grtol(i), tol.kkttol(i))
 end
 
 struct DualData{TSol, Tv}
@@ -38,10 +39,11 @@ end
     f === :xtol && return o.tol.xtol
     f === :ftol && return o.tol.ftol
     f === :grtol && return o.tol.grtol
+    f === :kkttol && return o.tol.kkttol
     return getfield(o, f)
 end
 
-mutable struct Workspace{T, Tx, Tc, TO, TSO, TTrace <: OptimizationTrace{T}, TModel <: Model{T}, TPD <: PrimalData{T}, TXUpdater <: XUpdater{T, Tx, TPD}, Tdual_data <: DualData, TOptions, TState}
+mutable struct Workspace{T, Tx, Tc, TO, TSO, TTrace <: OptimizationTrace{T}, TModel <: Model{T}, TPD <: PrimalData{T}, TXUpdater <: XUpdater{T, Tx, TPD}, Tdual_data <: DualData, TOptions, TConvCriteria, TState}
     model::TModel
     optimizer::TO
     suboptimizer::TSO
@@ -62,6 +64,7 @@ mutable struct Workspace{T, Tx, Tc, TO, TSO, TTrace <: OptimizationTrace{T}, TMo
 	f_calls::Int
 	g_calls::Int
     options::TOptions
+    convcriteria::TConvCriteria
     convstate::TState
 end
 const Workspace87{T, TV1, TV2, TM, TSO, TModel, TPD} = Workspace{T, TV1, TV2, TM, MMA87, TSO, TModel, TPD}
@@ -127,7 +130,8 @@ function Workspace( model::Model{T, TV},
                     x0::TV, 
                     optimizer::TO = MMA02(), 
                     suboptimizer = Optim.ConjugateGradient();
-                    options = Options()
+                    options = Options(),
+                    convcriteria = KKTCriteria()
                 ) where {T, TV, TO}
 
     primal_data = PrimalData(model, optimizer, x0)
@@ -158,7 +162,8 @@ function Workspace( model::Model{T, TV},
         model, optimizer, suboptimizer, primal_data, asymptotes_updater, 
         variable_bounds_updater, cvx_grad_updater, lift_updater, 
         lift_resetter, x_updater, dual_data, dual_obj, dual_obj_grad, 
-        tracing, tr, outer_iter, iter, f_calls, g_calls, options, convstate
+        tracing, tr, outer_iter, iter, f_calls, g_calls, options, convcriteria,
+        convstate
     )
 end
 
@@ -173,26 +178,55 @@ end
     x_converged::Bool = false
     f_converged::Bool = false
     gr_converged::Bool = false
+    kkt_converged::Bool = false
     x_residual::T = Inf
     f_residual::T = Inf
     gr_residual::T = Inf
+    kkt_residual::T = Inf
     f_increased::Bool = false
     converged::Bool = false
 end
 function ConvergenceState(::Type{T}) where T
-    ConvergenceState(false, false, false, T(Inf), T(Inf), T(Inf), false, false)
+    ConvergenceState(false, false, false, false, T(Inf), T(Inf), T(Inf), T(Inf), false, false)
 end
 
 function assess_convergence(workspace::Workspace)
-    @unpack options, primal_data = workspace
-    @unpack x, x1, f_x, f_x_previous, ∇f_x = primal_data
-    return assess_convergence(  x, 
-                                x1, 
-                                f_x, 
-                                f_x_previous, 
-                                ∇f_x, 
-                                options.xtol, 
-                                options.ftol, 
-                                options.grtol
+    @unpack options, primal_data, dual_data, model, convcriteria = workspace
+    @unpack x, x1, x2, f_x, f_x_previous, ∇f_x, ∇g, g = primal_data
+    @unpack λ = dual_data
+    @unpack box_max, box_min = model
+    @unpack xtol, ftol, grtol, kkttol = options.tol
+
+    if x isa CuArray
+        x_residual = mapreduce((x1, x2) -> abs(x1 - x2), max, x, x1, init=zero(T))
+    else
+        x_residual = maxdiff(x, x1)
+    end
+    f_residual = abs(f_x - f_x_previous)
+    gr_residual = maximum(abs, ∇f_x)
+    kkt_residual = get_kkt_residual(∇f_x, g, ∇g, λ.cpu, x, box_min, box_max)     
+
+    x_converged = x_residual < xtol
+    f_converged = f_residual / (abs(f_x) + ftol) < ftol
+    gr_converged = gr_residual < grtol
+    kkt_converged = kkt_residual < kkttol
+    f_increased = f_x > f_x_previous
+
+    if convcriteria isa DefaultCriteria
+        converged = (x_converged || f_converged) && all(x -> x <= 0, g)
+    else
+        converged = kkt_converged
+    end
+
+    return ConvergenceState(    x_converged, 
+                                f_converged, 
+                                gr_converged, 
+                                kkt_converged, 
+                                x_residual, 
+                                f_residual, 
+                                gr_residual, 
+                                kkt_residual,
+                                f_increased, 
+                                converged
                             )
 end

@@ -21,7 +21,6 @@ include("grids.jl")
 include("metadata.jl")
 include("problem_types.jl")
 include("matrices_and_vectors.jl")
-include("penalties.jl")
 include("assemble.jl")
 include(joinpath("IO", "IO.jl"))
 using .IO

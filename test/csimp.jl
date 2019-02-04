@@ -15,14 +15,37 @@ approx_objvals = [330.0, 175.0, 65.0, 1413.0]
     # Parameter settings
     V = 0.5 # volume fraction
     xmin = 0.001 # minimum density
-    maxtol = 0.01 # maximum tolerance
-    mintol = 0.0001 # minimum tolerance
     steps = 40 # maximum number of penalty steps, delta_p0 = 0.1
-    reuse = true # adaptive penalty flag
+    reuse = false # adaptive penalty flag
+    convcriteria = MMA.KKTCriteria()
+    #penalty = TopOpt.PowerPenalty(1.0)
+    penalty = TopOpt.RationalPenalty(0.0)
+    pcont = Continuation(penalty, steps = steps, xmin = xmin, pmax = 5.0)
+
+    mma_options = options = MMA.Options(maxiter=1000)
+    if convcriteria isa MMA.KKTCriteria
+        maxtol = 0.1 # maximum tolerance
+        mintol = 0.001 # minimum tolerance
+
+        b = log(mintol / maxtol) / steps
+        a = maxtol / exp(b)
+        mma_options_gen = TopOpt.MMAOptionsGen(steps = steps, initial_options = mma_options, kkttol_gen = ExponentialContinuation(a, b, 0.0, steps + 1, mintol))
+    else
+        maxtol = 0.01 # maximum tolerance
+        mintol = 0.0001 # minimum tolerance
+
+        b = log(mintol / maxtol) / steps
+        a = maxtol / exp(b)
+        mma_options_gen = TopOpt.MMAOptionsGen(steps = steps, initial_options = mma_options, ftol_gen = ExponentialContinuation(a, b, 0.0, steps + 1, mintol))
+    end
+    csimp_options = TopOpt.CSIMPOptions(steps = steps, 
+                                        options_gen = mma_options_gen, 
+                                        p_gen = pcont, 
+                                        reuse = reuse
+                                        )
 
     # Define a finite element solver
-    solver = FEASolver(Displacement, Direct, problem, xmin = xmin,
-        penalty = TopOpt.PowerPenalty(1.0))
+    solver = FEASolver(Displacement, Direct, problem, xmin = xmin, penalty = penalty)
     # Define compliance objective
     filtering = problem isa TopOptProblems.TieBeam ? false : true
     obj = Objective(ComplianceFunction(problem, solver, filtering = filtering,
@@ -33,17 +56,11 @@ approx_objvals = [330.0, 175.0, 65.0, 1413.0]
     # Define subproblem optimizer
     #optimizer = MMAOptimizer{CPU}(cu_obj, constr, MMA.MMA87(),
     #    ConjugateGradient(), maxiter=1000); optimizer.obj.fevals = 0
-    mma_options = options = MMA.Options(maxiter=1000)
     optimizer = MMAOptimizer{CPU}(obj, constr, MMA.MMA87(),
-        ConjugateGradient(), options = mma_options); optimizer.obj.f.fevals = 0
+        ConjugateGradient(), options = mma_options, convcriteria = convcriteria); optimizer.obj.f.fevals = 0
 
     # Define continuation SIMP optimizer
-    simp = SIMP(optimizer, 1.0)
-
-    b = log(mintol / maxtol) / steps
-    a = maxtol / exp(b)
-    mma_options_gen = TopOpt.MMAOptionsGen(steps = steps, initial_options = mma_options, ftol_gen = ExponentialContinuation(a, b, 0.0, steps + 1, mintol))
-    csimp_options = TopOpt.CSIMPOptions(steps = steps, options_gen = mma_options_gen, pstart = 1.0, pfinish = 5.0)
+    simp = SIMP(optimizer, penalty.p)
 
     cont_simp = ContinuationSIMP(simp, steps, csimp_options) 
 

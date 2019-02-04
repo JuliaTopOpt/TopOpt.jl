@@ -22,18 +22,19 @@ function Functions.maxedfevals(c::Vector{<:Constraint})
     all(c -> maxedfevals(c), c)
 end
 
-function MMAOptimizer(args...; options = MMA.Options())
-    return MMAOptimizer{CPU}(args...; options = options)
+function MMAOptimizer(args...; kwargs...)
+    return MMAOptimizer{CPU}(args...; kwargs...)
 end
-function MMAOptimizer{T}(args...; options = MMA.Options()) where T
-    return MMAOptimizer(T(), args...; options = options)
+function MMAOptimizer{T}(args...; kwargs...) where T
+    return MMAOptimizer(T(), args...; kwargs...)
 end
 function MMAOptimizer(  device::Tdev, 
                         obj::Objective{<:AbstractFunction{T}}, 
                         constr, 
                         opt = MMA.MMA87(), 
                         subopt = Optim.ConjugateGradient();
-                        options = MMA.Options()
+                        options = MMA.Options(),
+                        convcriteria = KKTCriteria()
                     ) where {T, Tdev}
 
     solver = getsolver(obj)
@@ -51,7 +52,7 @@ function MMAOptimizer(  device::Tdev,
         x0 = solver.vars
     end
 
-    workspace = MMA.Workspace(model, x0, opt, subopt; options = options)
+    workspace = MMA.Workspace(model, x0, opt, subopt; options = options, convcriteria = convcriteria)
 
     return MMAOptimizer(model, opt, subopt, obj, constr, workspace, ConvergenceState(T), options)
 end
@@ -92,14 +93,14 @@ function reset_workspace!(workspace::Workspace{T}) where T
     primal_data.r0 = 0
     primal_data.f_x = f_x
     # Assess multiple types of convergence
-    x_converged, f_converged, gr_converged = false, false, false
+    x_converged, f_converged, gr_converged, kkt_converged = false, false, false, false
     f_increased, converged = false, false
-    x_residual, f_residual, gr_residual = T(Inf), T(Inf), T(Inf)
+    x_residual, f_residual, gr_residual, kkt_residual = T(Inf), T(Inf), T(Inf), T(Inf)
     outer_iter, iter, f_calls, g_calls = 0, 0, 1, 1
     f_x_previous = T(NaN)
 
-    @pack! workspace.convstate = x_converged, f_converged, gr_converged
-    @pack! workspace.convstate = x_residual, f_residual, gr_residual
+    @pack! workspace.convstate = x_converged, f_converged, gr_converged, kkt_converged
+    @pack! workspace.convstate = x_residual, f_residual, gr_residual, kkt_residual
     # Maybe should remove?
     @pack! workspace.convstate = f_increased, converged
 

@@ -14,7 +14,8 @@ export  MMAOptimizer,
         MMAOptionsGen,
         CSIMPOptions,
         BESO,
-        GESO
+        GESO,
+        Continuation
 
 const to = TimerOutput()
 

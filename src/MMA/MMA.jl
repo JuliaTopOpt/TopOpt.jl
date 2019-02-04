@@ -67,6 +67,28 @@ end
     h_calls::Integer
 end
 
+abstract type ConvergenceCriteria end
+struct DefaultCriteria <: ConvergenceCriteria end
+struct KKTCriteria <: ConvergenceCriteria end
+
+function get_kkt_residual(∇f_x, g, ∇g_x, c, x, lb, ub)
+    r = mapreduce(max, 1:length(x), init = zero(eltype(x))) do j
+        if lb[j] == x[j]
+            return abs(min(0, ∇f_x[j] + dot(@view(∇g_x[j,:]), c)))
+        elseif x[j] == ub[j]
+            return abs(min(0, -∇f_x[j] - dot(@view(∇g_x[j,:]), c)))
+        elseif  lb[j] < x[j] < ub[j]
+            return zero(eltype(x))
+        else
+            throw("x is out of range.")
+        end
+    end
+    r = mapreduce(max, 1:length(g), init = r) do i
+        return abs(g[i] * c[i]) + max(g[i], 0)
+    end
+    return r
+end
+
 function optimize!(workspace::Workspace{T, TV, TM}) where {T, TV, TM}
     @unpack model, optimizer, suboptimizer, options = workspace
     @unpack primal_data, dual_data, convstate = workspace
@@ -76,22 +98,15 @@ function optimize!(workspace::Workspace{T, TV, TM}) where {T, TV, TM}
     @unpack outer_iter, iter = workspace
     
     @unpack subopt_options, dual_caps = options 
-    @unpack x0, x, x1, x2, ∇f_x, g = primal_data
+    @unpack x0, x, x1, x2, f_x, f_x_previous, ∇f_x, g, ∇g = primal_data
     @unpack ng_approx = lift_updater
-    @unpack ∇g = primal_data
     @unpack λ, l, u = dual_data 
-     
-    @unpack converged, x_converged, f_converged, gr_converged = convstate
-    @unpack f_increased, x_residual, f_residual, gr_residual = convstate
-
-    f_x = primal_data.f_x
-    f_x_previous = primal_data.f_x_previous
-
+    
     n_i = length(constraints(model))
     n_j = dim(model)
     maxiter = options.maxiter
     outer_maxiter = options.outer_maxiter
-    while !converged && iter < maxiter && outer_iter < outer_maxiter
+    while !convstate.converged && iter < maxiter && outer_iter < outer_maxiter
         outer_iter += 1
         asymptotes_updater(Iteration(outer_iter))
 
@@ -110,7 +125,7 @@ function optimize!(workspace::Workspace{T, TV, TM}) where {T, TV, TM}
             lift_resetter(Iteration(outer_iter))
         end
         lift = true
-        while lift && iter < options.maxiter
+        while !convstate.converged && lift && iter < options.maxiter
             iter += 1
 
             # Solve dual
@@ -142,15 +157,9 @@ function optimize!(workspace::Workspace{T, TV, TM}) where {T, TV, TM}
                 @views eval_constraint(model, i, x, ∇g[:,i])
             end
             lift = optimizer isa MMA87 ? false : lift_updater()
+
+            convstate = assess_convergence(workspace)
         end
-
-        # Assess convergence
-        convstate = assess_convergence(x, x1, f_x, f_x_previous, ∇f_x, options.xtol, 
-            options.ftol, options.grtol)
-
-        converged = convstate.converged && (all(g) do x
-            x <= options.ftol
-        end)
 
         # Print some trace if flag is on
         @mmatrace()
