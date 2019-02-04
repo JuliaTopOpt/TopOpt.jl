@@ -45,6 +45,7 @@ end
 @params mutable struct SIMP{T} <: AbstractSIMP
     optimizer
     penalty
+    prev_penalty
     result::SIMPResult{T}
     tracing::Bool
 end
@@ -53,10 +54,11 @@ GPUUtils.whichdevice(s::SIMP) = whichdevice(s.optimizer)
 function SIMP(optimizer, p::T; tracing=true) where T
     penalty = getpenalty(optimizer)
     penalty = @set penalty.p = p
+    prev_penalty = @set penalty.p = NaN
     ncells = getncells(optimizer.obj.f.problem)
     result = NewSIMPResult(T, optimizer, ncells)
 
-    return SIMP{T, typeof(optimizer), typeof(penalty)}(optimizer, penalty, result, tracing)
+    return SIMP(optimizer, penalty, prev_penalty, result, tracing)
 end
 
 Utilities.getpenalty(s::AbstractSIMP) = s.penalty

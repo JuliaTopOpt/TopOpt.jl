@@ -180,7 +180,7 @@ function (bu::VariableBoundsUpdater{T, TV})() where {T, TV <: AbstractVector}
     @unpack pd, m, μ = bu
     @unpack α, β, x, σ = pd
     n = dim(m)
-    αβ = StructArray{Tuple{T, T}}(α, β)
+    αβ = StructArray{Tuple{T, T}}((α, β))
     tmap!(αβ, 1:n) do j
         xj = x[j]
         Lj, Uj = minus_plus(xj, σ[j]) # x == x1 here

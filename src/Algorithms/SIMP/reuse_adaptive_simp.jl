@@ -20,7 +20,7 @@ end
 function ReuseAdaptiveSIMP(simp::SIMP{T}, ::Type{Val{filtering}}=Val{false}; 
     pstart = T(1), 
     pfinish = T(5),
-    ftol_cont = ExponentialContinuation{T}(T(0.01), T(4log(0.7)), T(0), 100, T(1e-4)), #speed = T(0.1),
+    ftol_cont = ExponentialContinuation(T(0.01), T(4log(0.7)), T(0), 100, T(1e-4)), #speed = T(0.1),
     entertol = T(1),
     Δp = T(0.1),
     reuse = true,
@@ -186,7 +186,7 @@ function _innersolve!(asimp::AdaptiveSIMP{T}, workspace::MMA.Workspace, offset=0
             maxprogress = log(1 + 1/sqrt(eps(T)))
             #progress = p - pstart
             #maxprogress = pfinish - pstart
-            #tol_cont = ExponentialContinuation{T}(asimp.speed, T(4log(0.7)), T(0), 100, T(1e-4))
+            #tol_cont = ExponentialContinuation(asimp.speed, T(4log(0.7)), T(0), 100, T(1e-4))
             ##Uncomment##grtol = max(asimp.speed*(1 - progress/maxprogress), sqrt(eps(T)))
             ftol = asimp.ftol_cont(progress/maxprogress)
             

@@ -20,10 +20,11 @@ function CSIMPOptions(::Type{T} = Float64;
                         pfinish = T(5), 
                         reuse = true,
                         options_gen = nothing
-                    ) where T
+                    ) where {T}
 
     if p_gen == nothing
-        p_cont = PowerContinuation{T}(  b = T(1), 
+        @show T(1), PowerContinuation{Float64}(b = 1.0)
+        p_cont = PowerContinuation{T}( ; b = T(1), 
                                         start = pstart,
                                         steps = steps + 1,
                                         finish = pfinish
@@ -44,7 +45,7 @@ end
 
 function ContinuationSIMP(  simp::SIMP{T},
                             steps::Int = 40, 
-                            options::CSIMPOptions = CSIMPOptions( steps = steps, 
+                            options::CSIMPOptions = CSIMPOptions(T, steps = steps, 
                                                                 initial_options = deepcopy(simp.optimizer.options)
                                                     )
                         ) where T
@@ -77,7 +78,7 @@ function MMAOptionsGen(;    steps::Int = 40,
                             show_trace_gen = nothing,
                             extended_trace_gen = nothing,
                             subopt_options_gen = nothing
-                    ) where T
+                    )
     
     if maxiter_gen == nothing
         maxiter_cont = FixedContinuation(initial_options.maxiter, steps + 1)
@@ -129,7 +130,6 @@ function MMAOptionsGen(;    steps::Int = 40,
         s_incr_cont = s_incr_gen
     end
     if s_decr_gen == nothing
-
         s_decr_cont = FixedContinuation(initial_options.s_decr, steps + 1)
     else
         @assert steps == s_decr_gen.length - 1

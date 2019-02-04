@@ -38,6 +38,8 @@ include("matrix_free_apply_bcs.jl")
 include("simulate.jl")
 include("solvers_api.jl")
 
+getcompliance(solver) = solver.u' * solver.globalinfo.K * solver.u
+
 for T in (:DirectDisplacementSolver, :PCGDisplacementSolver)
     @eval @inline CuArrays.cu(p::$T) = error("$T does not support the GPU.")
 end

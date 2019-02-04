@@ -134,7 +134,7 @@ end
     problem = TopOptProblems.TieBeam(Val{:Quadratic}, Float64);
     ncells = 100
     @test problem.E == 1
-    @test problem.ν == 0
+    @test problem.ν == 0.3
     @test problem.black == problem.white == falses(ncells)
     @test problem.force == 1
     @test problem.varind == 1:ncells

@@ -21,8 +21,8 @@ approx_objvals = [330.0, 175.0, 65.0, 1413.0]
     reuse = true # adaptive penalty flag
 
     # Define a finite element solver
-    solver = FEASolver(Displacement, CG, MatrixFree, problem, xmin = xmin,
-        penalty = TopOpt.PowerPenalty(1.0), conv = EnergyCriteria())
+    solver = FEASolver(Displacement, Direct, problem, xmin = xmin,
+        penalty = TopOpt.PowerPenalty(1.0))
     # Define compliance objective
     filtering = problem isa TopOptProblems.TieBeam ? false : true
     obj = Objective(ComplianceFunction(problem, solver, filtering = filtering,

@@ -7,7 +7,7 @@ import Base: length, append!, sizehint!
 	add_hist::AbstractVector{TI}
 	rem_hist::AbstractVector{TI}
 end
-TopOptTrace{T,TI}() where {T,TI<:Integer} = TopOptTrace{T,TI}(Vector{T}(), Vector{T}(), Vector{Vector{T}}(), Vector{TI}(), Vector{TI}())
+TopOptTrace{T, TI}() where {T, TI<:Integer} = TopOptTrace(Vector{T}(), Vector{T}(), Vector{Vector{T}}(), Vector{TI}(), Vector{TI}())
 length(t::TopOptTrace) = length(t.v_hist)
 
 topopt_trace_fields = fieldnames(TopOptTrace)
