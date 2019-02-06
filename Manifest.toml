@@ -40,20 +40,16 @@ uuid = "3895d2a7-ec45-59b8-82bb-cfc6a382f9b3"
 version = "0.5.4"
 
 [[CUDAdrv]]
-deps = ["CUDAapi", "Libdl", "Printf"]
+deps = ["CUDAapi", "Libdl", "Printf", "Test"]
 git-tree-sha1 = "dfe527ba231b6b699f879d1d384c1d39b49fc005"
-repo-rev = "master"
-repo-url = "https://github.com/JuliaGPU/CUDAdrv.jl"
 uuid = "c5f51814-7f29-56b8-a69c-e4d8f6be1fde"
-version = "1.0.1+"
+version = "1.0.1"
 
 [[CUDAnative]]
-deps = ["Adapt", "CUDAapi", "CUDAdrv", "InteractiveUtils", "LLVM", "Libdl", "Logging", "Pkg", "Printf"]
-git-tree-sha1 = "3d5f5dd4b1f4441ddb23b00c761189fa6e9b45b4"
-repo-rev = "master"
-repo-url = "https://github.com/JuliaGPU/CUDAnative.jl"
+deps = ["Adapt", "CUDAapi", "CUDAdrv", "InteractiveUtils", "LLVM", "Libdl", "Pkg", "Printf", "Statistics", "Test"]
+git-tree-sha1 = "92e3ec4f4458e43cc17be4388b68690dbef24f31"
 uuid = "be33ccc6-a3ff-5ff2-a52e-74243cff1e17"
-version = "1.0.0+"
+version = "1.0.1"
 
 [[Calculus]]
 deps = ["Compat"]
@@ -81,9 +77,9 @@ version = "1.4.0"
 
 [[Conda]]
 deps = ["Compat", "JSON", "VersionParsing"]
-git-tree-sha1 = "fb86fe40cb5b35990e368709bfdc1b46dbb99dac"
+git-tree-sha1 = "b625d802587c2150c279a40a646fba63f9bd8187"
 uuid = "8f4d0f93-b110-5947-807f-2305c1781a2d"
-version = "1.1.1"
+version = "1.2.0"
 
 [[Crayons]]
 deps = ["Test"]
@@ -92,12 +88,10 @@ uuid = "a8cc5b0e-0ffa-5ad4-8c14-923d3ee1735f"
 version = "1.0.0"
 
 [[CuArrays]]
-deps = ["AbstractFFTs", "Adapt", "CUDAapi", "CUDAdrv", "CUDAnative", "DiffRules", "ForwardDiff", "GPUArrays", "LinearAlgebra", "MacroTools", "NNlib", "Printf", "Random", "SparseArrays"]
-git-tree-sha1 = "f458f29f8a15be80268b05e988353aa4d0625045"
-repo-rev = "master"
-repo-url = "https://github.com/JuliaGPU/CuArrays.jl"
+deps = ["AbstractFFTs", "Adapt", "CUDAapi", "CUDAdrv", "CUDAnative", "DiffRules", "ForwardDiff", "GPUArrays", "LinearAlgebra", "MacroTools", "NNlib", "Pkg", "Printf", "Random", "SparseArrays", "Test"]
+git-tree-sha1 = "c1cd8792ca783987fcba2ed0d6b3b58176e6b13e"
 uuid = "3a865a2d-5b23-5a0f-bc46-62713ec82fae"
-version = "0.9.0+"
+version = "0.9.1"
 
 [[DataStructures]]
 deps = ["InteractiveUtils", "OrderedCollections", "Random", "Serialization", "Test"]
@@ -127,9 +121,9 @@ version = "0.0.3"
 
 [[DiffRules]]
 deps = ["Random", "Test"]
-git-tree-sha1 = "c49ec69428ffea0c1d1bbdc63d1a70f5df5860ad"
+git-tree-sha1 = "09d69da75967ec48a8b1ad0897ec9144ee052bf9"
 uuid = "b552c78f-8df3-52c6-915a-8e097449b14b"
-version = "0.0.7"
+version = "0.0.8"
 
 [[Distributed]]
 deps = ["LinearAlgebra", "Random", "Serialization", "Sockets"]
@@ -160,10 +154,8 @@ uuid = "9fa8497b-333b-5362-9e8d-4d0656e87820"
 [[GPUArrays]]
 deps = ["Adapt", "FFTW", "FillArrays", "LinearAlgebra", "Printf", "Random", "Serialization", "StaticArrays", "Test"]
 git-tree-sha1 = "2b96d7f25fbea82c08a736d78cbf14df8d2100a5"
-repo-rev = "master"
-repo-url = "https://github.com/JuliaGPU/GPUArrays.jl.git"
 uuid = "0c68f7d7-f131-5f86-a1c3-88cf8149b2d7"
-version = "0.6.1+"
+version = "0.6.1"
 
 [[InteractiveUtils]]
 deps = ["LinearAlgebra", "Markdown"]
@@ -193,10 +185,10 @@ version = "0.2.0"
 
 [[KissThreading]]
 deps = ["Compat", "Future"]
-git-tree-sha1 = "f7f2ea6abcf71c1296c6739ef89855a6c7834b6e"
+git-tree-sha1 = "b968578576162a004e281632a384127544069c1f"
 repo-rev = "master"
-repo-url = "https://github.com/mohamed82008/KissThreading.jl"
-uuid = "36cdf07b-9254-507f-b4f5-798eb7a84506"
+repo-url = "https://github.com/mohamed82008/KissThreading.jl/"
+uuid = "ece10b52-bc5d-5f9f-8b6e-cc9c6a4b5293"
 version = "0.0.0"
 
 [[LLVM]]
