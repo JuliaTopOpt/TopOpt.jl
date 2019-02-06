@@ -13,7 +13,6 @@
     maxfevals::Int
 end
 GPUUtils.whichdevice(c::ComplianceFunction) = whichdevice(c.cell_comp)
-Utilities.getsolver(c::ComplianceFunction) = c.solver
 Utilities.getpenalty(c::ComplianceFunction) = c |> getsolver |> getpenalty
 
 function ComplianceFunction(problem, solver::AbstractDisplacementSolver, args...; kwargs...)

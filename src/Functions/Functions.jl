@@ -16,7 +16,8 @@ export  Objective,
         getfevals,
         getmaxfevals,
         maxedfevals,
-        getnvars
+        getnvars,
+        GlobalStress
 
 const to = TimerOutput()
 const dev = CUDAdrv.device()

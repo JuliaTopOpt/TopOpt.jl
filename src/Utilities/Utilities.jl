@@ -24,7 +24,7 @@ export  AbstractPenalty,
 function getpenalty end
 function getprevpenalty end
 function setpenalty! end
-function getsolver end
+getsolver(f) = f.solver
 
 # Utilities
 include("utils.jl")

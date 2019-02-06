@@ -248,7 +248,7 @@ function _fill_Mu_utMu!( Mu::AbstractMatrix{T},
 	return Mu, utMu
 end
 
-@params struct GlobalStress{T}
+@params mutable struct GlobalStress{T} <: AbstractFunction{T}
     reducer
     reducer_g::AbstractVector{T}
     corrected_stress
@@ -260,8 +260,11 @@ end
     global_dofs::AbstractVector{<:Integer}
     buffer::AbstractVector{T}
     stress_temp::StressTemp
+    fevals::Int
+    reuse::Bool
+    maxfevals::Int
 end
-function GlobalStress(solver, sigma_bar, reducer = LogSumExp(), stress = OffsetCorrectedStress())
+function GlobalStress(solver, sigma_bar, reducer = WeightedKNorm(4, 1/length(solver.vars)), stress = OffsetCorrectedStress(); reuse = false, maxfevals = 10^8)
     T = eltype(solver.u)
     dh = solver.problem.ch.dh
     k = ndofs_per_cell(dh)
@@ -274,33 +277,41 @@ function GlobalStress(solver, sigma_bar, reducer = LogSumExp(), stress = OffsetC
     buffer = zeros(T, ndofs_per_cell(dh))
     reducer_g = similar(utMu)
     
-    return GlobalStress(reducer, reducer_g, stress, utMu, Mu, s, sigma_bar, solver, global_dofs, buffer, stress_temp)
+    return GlobalStress(reducer, reducer_g, stress, utMu, Mu, s, sigma_bar, solver, global_dofs, buffer, stress_temp, 0, reuse, maxfevals)
 end
 
 function (gs::GlobalStress)(x, g)
-    @unpack s, sigma_bar, Mu, utMu, buffer, stress_temp, stress = gs
+    @unpack s, sigma_bar, Mu, utMu, buffer, stress_temp, corrected_stress, reuse = gs
     @unpack solver, global_dofs, buffer, reducer, reducer_g = gs
     @unpack elementinfo, u, penalty, problem, xmin = solver
     @unpack Kes = elementinfo
     @unpack dh = problem.ch
     E0 = problem.E
+    gs.fevals += 1
 
     @assert length(global_dofs) == ndofs_per_cell(solver.problem.ch.dh)
-    solver()
-    fill_Mu_utMu!(Mu, utMu, solver, stress_temp)
-
-    s .= stress.(x, get_sigma_vm.(get_E.(x, Ref(penalty), E0, xmin), utMu), sigma_bar)
+    if !reuse
+        solver()
+        fill_Mu_utMu!(Mu, utMu, solver, stress_temp)
+    end
+    s .= corrected_stress.(x, get_sigma_vm.(get_E.(x, Ref(penalty), E0, xmin), utMu), sigma_bar)
     reduced = reducer(s, reducer_g)
     g .= 0
     for e1 in 1:length(g)
-        celldofs!(global_dofs, dh, e1)
-        dudxe = get_dudxe!(solver, u, Kes[e1], x[e1], penalty, E0, xmin, global_dofs)
-        @views buffer .= dudxe[global_dofs]
+        if !reuse
+            celldofs!(global_dofs, dh, e1)
+            dudxe = get_dudxe!(solver, u, Kes[e1], x[e1], penalty, E0, xmin, global_dofs)
+            @views buffer .= dudxe[global_dofs]
+        end
         for e2 in 1:length(g)
             utMu_e2 = utMu[e2]
             Ee2, dEe2 = get_E_dE(x[e2], penalty, E0, xmin)
             t1 = (e1 == e2) * (dEe2 * sqrt(utMu_e2))
-            @views t2 = (Ee2 / sqrt(utMu_e2)) * dot(buffer, Mu[:, e2])
+            if reuse
+                t2 = zero(T)
+            else
+                @views t2 = (Ee2 / sqrt(utMu_e2)) * dot(buffer, Mu[:, e2])
+            end
             dsigmae2_dxe1 = t1 + t2
             dse2_dxe1 = (e1 == e2) * (Ee2 * sqrt(utMu_e2) - sigma_bar) + x[e2] * dsigmae2_dxe1
             g[e1] += dse2_dxe1 * reducer_g[e2]

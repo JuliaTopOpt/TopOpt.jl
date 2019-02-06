@@ -195,7 +195,7 @@ version = "0.2.0"
 deps = ["Compat", "Future"]
 git-tree-sha1 = "f7f2ea6abcf71c1296c6739ef89855a6c7834b6e"
 repo-rev = "master"
-repo-url = "https://github.com/bkamins/KissThreading.jl"
+repo-url = "https://github.com/mohamed82008/KissThreading.jl"
 uuid = "36cdf07b-9254-507f-b4f5-798eb7a84506"
 version = "0.0.0"
 

@@ -58,7 +58,10 @@ function MMAOptimizer(  device::Tdev,
 end
 
 Utilities.getpenalty(o::MMAOptimizer) = getpenalty(o.obj)
-Utilities.setpenalty!(o::MMAOptimizer, p) = setpenalty!(o.obj, p)
+function Utilities.setpenalty!(o::MMAOptimizer, p)
+    setpenalty!(o.obj, p)
+    setpenalty!.(o.constr, p)
+end
 
 function (o::MMAOptimizer)(x0::AbstractVector)
     @unpack workspace, options = o

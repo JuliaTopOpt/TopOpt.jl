@@ -84,7 +84,7 @@ function get_kkt_residual(∇f_x, g, ∇g_x, c, x, lb, ub)
         end
     end
     r = mapreduce(max, 1:length(g), init = r) do i
-        return abs(g[i] * c[i]) + max(g[i], 0)
+        return max(abs(g[i] * c[i]), g[i], 0)
     end
     return r
 end

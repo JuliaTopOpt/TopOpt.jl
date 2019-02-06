@@ -21,7 +21,6 @@ end
 end
 GPUUtils.whichdevice(v::VolumeFunction) = whichdevice(v.cellvolumes)
 @define_cu(VolumeFunction, :cellvolumes, :grad, :problem) # should be optimized to avoid replicating problem
-Utilities.getsolver(v::VolumeFunction) = v.solver
 
 function VolumeFunction(problem::StiffnessTopOptProblem{dim, T}, solver::AbstractFEASolver, ::Type{TI} = Int; tracing = true, maxfevals = 10^8) where {dim, T, TI}
     cellvalues = solver.elementinfo.cellvalues

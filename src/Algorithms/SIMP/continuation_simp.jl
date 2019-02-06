@@ -211,7 +211,7 @@ function reset!(w::MMA.Workspace, x0)
     return w
 end
 
-function (c_simp::ContinuationSIMP)(x0=copy(c_simp.simp.optimizer.obj.solver.vars), terminate_early=false)
+function (c_simp::ContinuationSIMP)(x0 = copy(c_simp.simp.optimizer.obj.solver.vars), terminate_early = false)
     @unpack optimizer = c_simp.simp
     @unpack workspace, mma_alg, suboptimizer = optimizer 
     @unpack obj, constr, convstate, options = optimizer
