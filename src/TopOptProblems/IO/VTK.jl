@@ -1,6 +1,6 @@
 module VTK
 
-using ...TopOptProblems: StiffnessTopOptProblem
+using ...TopOptProblems: StiffnessTopOptProblem, JuAFEM
 using WriteVTK
 
 export  save_mesh
@@ -14,12 +14,12 @@ function WriteVTK.vtk_grid(filename::AbstractString, problem::StiffnessTopOptPro
     grid = problem.ch.dh.grid
     celltype = JuAFEM.cell_to_vtkcell(JuAFEM.getcelltype(grid))
     cls = JuAFEM.MeshCell[]
-    for (i, cell) in enumerate(CellIterator(grid))
+    for (i, cell) in enumerate(JuAFEM.CellIterator(grid))
         if topology[i] >= 0.5
-            push!(cls, JuAFEM.MeshCell(celltype, copy(getnodes(cell))))
+            push!(cls, JuAFEM.MeshCell(celltype, copy(JuAFEM.getnodes(cell))))
         end
     end
-    coords = reinterpret(T, getnodes(grid), (dim, getnnodes(grid)))
+    coords = reshape(reinterpret(T, JuAFEM.getnodes(grid)), (dim, JuAFEM.getnnodes(grid)))
     return vtk_grid(filename, coords, cls)
 end
 
@@ -43,16 +43,16 @@ function WriteVTK.vtk_grid(filename::AbstractString, problem::StiffnessTopOptPro
 
     celltype = JuAFEM.cell_to_vtkcell(JuAFEM.getcelltype(grid))
     cls = JuAFEM.MeshCell[]
-    for (i, cell) in enumerate(CellIterator(grid))
+    for (i, cell) in enumerate(JuAFEM.CellIterator(grid))
         if black[i]
-            push!(cls, JuAFEM.MeshCell(celltype, copy(getnodes(cell))))
+            push!(cls, JuAFEM.MeshCell(celltype, copy(JuAFEM.getnodes(cell))))
         elseif !white[i]
             if vars[varind[i]] >= 0.5
-                push!(cls, JuAFEM.MeshCell(celltype, copy(getnodes(cell))))
+                push!(cls, JuAFEM.MeshCell(celltype, copy(JuAFEM.getnodes(cell))))
             end
         end
     end
-    coords = reinterpret(T, getnodes(grid), (dim, getnnodes(grid)))
+    coords = reshape(reinterpret(T, JuAFEM.getnodes(grid)), (dim, JuAFEM.getnnodes(grid)))
     return vtk_grid(filename, coords, cls)
 end
 

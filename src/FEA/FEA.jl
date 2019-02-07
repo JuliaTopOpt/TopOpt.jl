@@ -3,7 +3,7 @@ module FEA
 using ..GPUUtils, ..TopOptProblems, ..Utilities
 using JuAFEM, Setfield, TimerOutputs, Preconditioners
 using IterativeSolvers, CuArrays, StaticArrays
-using LinearAlgebra
+using LinearAlgebra, GPUArrays
 import CUDAdrv
 using Parameters: @unpack
 
@@ -22,7 +22,8 @@ export  AbstractFEASolver,
         FEASolver,
         Assembly,
         DefaultCriteria,
-        EnergyCriteria
+        EnergyCriteria,
+        simulate
 
 const to = TimerOutput()
 

@@ -399,10 +399,10 @@ function RectilinearTopology(b, topology = ones(getncells(getdh(b).grid)))
     new_topology = zeros(prod(nels))
     for (i, cell) in enumerate(CellIterator(getdh(b).grid))
         sub = Int.(round.((cell.coords[1]...,))) .+ (1, 1)
-        ind = sub2ind(nels, sub...,)
+        ind = LinearIndices(nels)[sub...]
         new_topology[ind] = topology[i]
     end
-    return reshape(new_topology, nels)'
+    return copy(reshape(new_topology, nels)')
 end
 
 nnodespercell(p::LBeam{T, N}) where {T, N} = N

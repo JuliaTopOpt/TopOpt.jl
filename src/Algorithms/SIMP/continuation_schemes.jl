@@ -48,6 +48,7 @@ struct SigmoidContinuation{T} <: AbstractContinuation
     length::Int
     min::T
 end
+SigmoidContinuation(; kwargs...) = SigmoidContinuation{Float64}(; kwargs...)
 function SigmoidContinuation{T}(; c::T = T(0.1), start::T = T(1), finish::T = T(5), steps::Int = 30, min::T = -Inf) where T
     a = 1 - T(finish-start)/finish/(ℯ^(-c) - ℯ^(-steps*c)) * ℯ^(-c)
     b = T(finish-start)/finish/(ℯ^(-c) - ℯ^(-steps*c))
@@ -70,6 +71,7 @@ struct CubicSplineContinuation{T} <: AbstractContinuation
     length::Int
     min::T
 end
+CubicSplineContinuation(; kwargs...) = CubicSplineContinuation{Float64}(; kwargs...)
 function CubicSplineContinuation{T}(;b::T=T(0.5), start::T=T(1), finish::T=T(5), steps::Int=30, min::T=-Inf) where T
     a = (finish - start) / (steps^3 * (1 - b)^3 - (1 - b * steps)^3)
     c = start - a * (1 - b * steps)^3
@@ -93,6 +95,7 @@ struct PowerContinuation{T} <: AbstractContinuation
     length::Int
     min::T
 end
+PowerContinuation(; kwargs...) = PowerContinuation{Float64}(; kwargs...)
 function PowerContinuation{T}(; b=T(2), start=T(1), finish=T(5), steps::Int=30, min = -T(Inf)) where T
     a = (finish - start) / max(T(1), steps^b - 1)
     c = start - a
@@ -115,6 +118,7 @@ struct ExponentialContinuation{T} <: AbstractContinuation
     length::Int
     min::T
 end
+ExponentialContinuation(; kwargs...) = ExponentialContinuation{Float64}(; kwargs...)
 function ExponentialContinuation{T}(; b::T = T(0.1), start::T = T(1), finish::T = T(5), steps::Int = 30, min::T = -Inf) where T
     a = (finish - start) / max(T(1), ℯ^(b * steps) - ℯ^(b))
     c = start - a * ℯ^(b)
@@ -137,6 +141,7 @@ struct LogarithmicContinuation{T} <: AbstractContinuation
     length::Int
     min::T
 end
+LogarithmicContinuation(; kwargs...) = LogarithmicContinuation{Float64}(; kwargs...)
 function LogarithmicContinuation{T}(; b::T = T(1), start::T = T(1), finish::T = T(5), steps::Int = 30, min::T = -Inf) where T
     a = (finish - start) / max(T(1), log(b * steps) - log(b))
     c = start - a * log(b)
