@@ -11,6 +11,7 @@ abstract type AbstractOptimizer end
     options::MMA.Options
 end
 GPUUtils.whichdevice(o::MMAOptimizer) = o.model
+multol!(o::MMAOptimizer, m::Real) = o.options.tol *= m
 
 function Functions.maxedfevals(o::MMAOptimizer)
     maxedfevals(o.obj) || maxedfevals(o.constr)
@@ -68,14 +69,8 @@ function (o::MMAOptimizer)(x0::AbstractVector)
     @unpack model = workspace
     @unpack x, g, ∇g, ∇f_x = workspace.primal_data
 
-    reset_workspace!(workspace)
+    reset!(workspace, x0)
     setoptions!(workspace, options)
-    x .= x0
-    workspace.primal_data.f_x = MMA.eval_objective(model, x, ∇f_x)
-    n_i = length(MMA.constraints(model))
-    map!(g, 1:n_i) do i 
-        @views MMA.eval_constraint(model, i, x, ∇g[:,i])
-    end
     mma_results = MMA.optimize!(workspace)
     o.convstate, mma_results.convstate
     return mma_results
@@ -90,33 +85,21 @@ function setoptions!(workspace, options)
     return workspace
 end
 
-function reset_workspace!(workspace::Workspace{T}) where T
-    @unpack primal_data = workspace
-    @unpack f_x = primal_data
-    primal_data.r0 = 0
-    primal_data.f_x = f_x
+function reset!(w::Workspace, args...)
+    @unpack primal_data, model = w
+    # primal_data.r0 = 0
     # Assess multiple types of convergence
-    x_converged, f_converged, gr_converged, kkt_converged = false, false, false, false
-    f_increased, converged = false, false
-    x_residual, f_residual, gr_residual, kkt_residual = T(Inf), T(Inf), T(Inf), T(Inf)
-    outer_iter, iter, f_calls, g_calls = 0, 0, 1, 1
-    f_x_previous = T(NaN)
-
-    @pack! workspace.convstate = x_converged, f_converged, gr_converged, kkt_converged
-    @pack! workspace.convstate = x_residual, f_residual, gr_residual, kkt_residual
-    # Maybe should remove?
-    @pack! workspace.convstate = f_increased, converged
-
-    @pack! workspace = outer_iter, iter, f_calls, g_calls
-    @pack! workspace.primal_data = f_x_previous
-
-    return workspace
+    outer_iter, iter, f_calls, g_calls = 0, 0, 0, 0
+    @pack! w = f_calls, g_calls
+    MMA.update_values!(w, args...)
+    w.convstate = MMA.assess_convergence(w)
+    @pack! w = outer_iter, iter
+    return w
 end
 
 # For adaptive SIMP
 function (o::MMAOptimizer)(workspace::MMA.Workspace)
     mma_results = MMA.optimize!(workspace)
-    workspace.convstate = mma_results.convstate
     return mma_results
 end
 

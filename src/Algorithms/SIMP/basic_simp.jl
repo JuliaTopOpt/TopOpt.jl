@@ -69,16 +69,14 @@ function Utilities.setpenalty!(s::AbstractSIMP, p::Number)
     setpenalty!(s.optimizer, p)
 end
 
-function (s::SIMP{T, TO})(x0=s.optimizer.obj.f.solver.vars) where {T, TO<:MMAOptimizer}
+function (s::SIMP{T, TO})(x0=s.optimizer.obj.f.solver.vars, prev_fevals = getfevals(s.optimizer)) where {T, TO<:MMAOptimizer}
     setpenalty!(s.optimizer, s.penalty.p)
-    prev_fevals = getfevals(s.optimizer)
     mma_results = s.optimizer(x0)
     update_result!(s, mma_results, prev_fevals)
     return s.result
 end
 
-function (s::SIMP{T, TO})(workspace::MMA.Workspace) where {T, TO<:MMAOptimizer}
-    prev_fevals = getfevals(s.optimizer)
+function (s::SIMP{T, TO})(workspace::MMA.Workspace, prev_fevals = getfevals(s.optimizer)) where {T, TO<:MMAOptimizer}
     mma_results = s.optimizer(workspace)
     update_result!(s, mma_results, prev_fevals)
     return s.result
@@ -118,7 +116,7 @@ function update_result!(s::SIMP{T}, mma_results, prev_fevals) where T
     if all(x -> x > 0, extra_fevals)
         result.nsubproblems += 1
     end
-    result.convstate = mma_results.convstate
+    result.convstate = deepcopy(mma_results.convstate)
     return result
 end
 

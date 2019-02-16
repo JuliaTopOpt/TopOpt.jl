@@ -18,7 +18,9 @@ constraint(m::Model, i::Integer) = m.ineq_constraints[i]
 
 eval_objective(m, x::AbstractVector{T}) where {T} = eval_objective(m, x, T[])
 eval_objective(m, x, ∇g) = eval_objective(whichdevice(objective(m)), m, x, ∇g)
-eval_objective(::CPU, m, x::AbstractVector{T}, ∇g) where {T} = T(m.objective(x, ∇g))
+function eval_objective(::CPU, m, x::AbstractVector{T}, ∇g) where {T}
+    return T(m.objective(x, ∇g))
+end
 eval_objective(::GPU, m, x::GPUVector{T}, ∇g) where {T} = T(m.objective(x, ∇g))
 function eval_objective(::GPU, m, x::AbstractVector{T}, ∇g) where {T}
     x_gpu = CuArray(x)

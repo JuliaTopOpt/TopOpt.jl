@@ -193,75 +193,54 @@ function MMAOptionsGen(;    steps::Int = 40,
                         )
 end
 
-function reset!(w::MMA.Workspace, x0)
-    @unpack primal_data, model, suboptimizer, options = w
-    @unpack g, ∇g, x = primal_data
-    w.f_calls, w.g_calls = 1, 1
-    w.convstate = MMA.ConvergenceState()
-    primal_data.x0 .= x0
-    primal_data.x .= x0
-    MMA.update_constraints!(g, ∇g, model, x0)
-    tr = typeof(w.tr)()
-    tracing = (options.store_trace || options.extended_trace || options.show_trace)
-
-    # Iteraton counter
-    w.outer_iter = 0
-    w.iter = 0
-
-    return w
-end
-
 function (c_simp::ContinuationSIMP)(x0 = copy(c_simp.simp.optimizer.obj.solver.vars), terminate_early = false)
     @unpack optimizer = c_simp.simp
     @unpack workspace, mma_alg, suboptimizer = optimizer 
     @unpack obj, constr, convstate, options = optimizer
 
-    reset!(workspace, x0)
-    update!(c_simp, 1)
-
-    # Does the first function evaluation
-    # Number of function evaluations is the number of iterations plus 1
+    prev_fevals = getfevals(optimizer)
     setreuse!(optimizer, false)
+    update!(c_simp, 1)
+    # Does the first function evaluation
+    reset!(workspace, x0)
+    r = c_simp.simp(workspace, prev_fevals)
 
     if maxedfevals(c_simp.simp.optimizer)
         c_simp.result = c_simp.simp.result
         return c_simp.result
     end
-    c_simp.simp(workspace)
+
     f_x_previous = workspace.primal_data.f_x_previous
     g_previous = copy(c_simp.simp.optimizer.workspace.primal_data.g)
 
-    maxiter = options.maxiter
+    original_maxiter = options.maxiter
     for i in 1:c_simp.options.steps
         maxedfevals(optimizer) && break
-        options.maxiter = 1
+        prev_fevals = getfevals(optimizer)
+        reuse = i == c_simp.options.steps ? false : c_simp.options.reuse
+        setreuse!(optimizer, reuse)
+        update!(c_simp, i+1)
+        reset!(workspace)
 
-        workspace.convstate.converged = false
-        if i == c_simp.options.steps
-            setreuse!(optimizer, false)
-        else
-            setreuse!(optimizer, c_simp.options.reuse)
-        end
-        ftol = update!(c_simp, i+1)
+        maxiter = 1
+        workspace.options.maxiter = maxiter
+        r = c_simp.simp(workspace, prev_fevals)
 
-        c_simp.simp(workspace)
-        if any(getreuse(optimizer))
-            undo_values!(workspace, f_x_previous, g_previous)
-        end
-    
         if !workspace.convstate.converged
             setreuse!(c_simp.simp.optimizer, false)
             while !workspace.convstate.converged && !maxedfevals(optimizer)
-                options.maxiter += 1
+                maxiter += 1
+                workspace.options.maxiter = maxiter
                 c_simp.simp(workspace)
             end
+        elseif any(getreuse(optimizer))
+            undo_values!(workspace, f_x_previous, g_previous)
         end
         f_x_previous = workspace.primal_data.f_x_previous
         g_previous = copy(c_simp.simp.optimizer.workspace.primal_data.g)
 
-        maxedfevals(optimizer) && break
+        workspace.options.maxiter = original_maxiter
     end
-    options.maxiter = maxiter
     c_simp.result = c_simp.simp.result
 end
 
@@ -280,7 +259,7 @@ function undo_values!(workspace, f_x_previous, g_previous)
     workspace.primal_data.f_x = workspace.primal_data.f_x_previous
     workspace.primal_data.f_x_previous = f_x_previous
     workspace.primal_data.g .= g_previous
-    workspace.primal_data.x .= workspace.primal_data.x1
-    workspace.primal_data.x1 .= workspace.primal_data.x2
+    #workspace.primal_data.x .= workspace.primal_data.x1
+    #workspace.primal_data.x1 .= workspace.primal_data.x2
     return workspace
 end

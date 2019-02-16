@@ -1,8 +1,11 @@
 @with_kw struct Tolerances{Txtol, Tftol, Tgrtol, Tkktol}
-    xtol::Txtol = 1e-4
+    xtol::Txtol = 0.0
     ftol::Tftol = 1e-6
     grtol::Tgrtol = 0.0
     kkttol::Tkktol = 1e-6
+end
+function Base.:*(t::Tolerances, m::Real)
+    return Tolerances(t.xtol * m, t.ftol * m, t.grtol * m, t.kkttol * m)
 end
 function (tol::Tolerances{<:Function, <:Function, <:Function, <:Function})(i)
     return Tolerances(tol.xtol(i), tol.ftol(i), tol.grtol(i), tol.kkttol(i))
@@ -91,7 +94,7 @@ function PrimalData(model::Model{T, TV}, optimizer, x0) where {T, TV}
     end
     r = Vector(zerosof(TV, n_i))
     ∇f_x = nansof(TV, length(x))
-    f_x = eval_objective(model, x, ∇f_x)
+    f_x = T(NaN)
     f_x_previous = T(NaN)
     g = Vector(zerosof(TV, n_i))
     ∇g = zerosof(TM, n_j, n_i)
@@ -145,12 +148,10 @@ function Workspace( model::Model{T, TV},
     dual_obj_grad = DualObjGrad(primal_data, x_updater, dual_data.λ)
     lift_resetter = LiftResetter(primal_data.ρ, T(ρmin))
 
-    f_calls, g_calls = 1, 1
+    f_calls, g_calls = 0, 0
     convstate = ConvergenceState()
 
     # Evaluate the constraints and their gradients
-    @unpack g, ∇g, x = primal_data
-    update_constraints!(g, ∇g, model, x)
     tr = OptimizationTrace{T, TO}()
     tracing = (options.store_trace || options.extended_trace || options.show_trace)
 
@@ -158,13 +159,17 @@ function Workspace( model::Model{T, TV},
     outer_iter = 0
     iter = 0
 
-    return Workspace(
+    workspace = Workspace(
         model, optimizer, suboptimizer, primal_data, asymptotes_updater, 
         variable_bounds_updater, cvx_grad_updater, lift_updater, 
         lift_resetter, x_updater, dual_data, dual_obj, dual_obj_grad, 
         tracing, tr, outer_iter, iter, f_calls, g_calls, options, convcriteria,
         convstate
     )
+    update_values!(workspace)
+    workspace.convstate = assess_convergence(workspace)
+
+    return workspace
 end
 
 function update_constraints!(g, ∇g, model, x)
@@ -204,7 +209,7 @@ function assess_convergence(workspace::Workspace)
     end
     f_residual = abs(f_x - f_x_previous)
     gr_residual = maximum(abs, ∇f_x)
-    kkt_residual = get_kkt_residual(∇f_x, g, ∇g, λ.cpu, x, box_min, box_max)     
+    kkt_residual = get_kkt_residual(∇f_x, g, ∇g, λ.cpu, x, box_min, box_max)
 
     x_converged = x_residual < xtol
     f_converged = f_residual / (abs(f_x) + ftol) < ftol
