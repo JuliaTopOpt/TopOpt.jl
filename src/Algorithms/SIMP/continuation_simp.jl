@@ -226,6 +226,9 @@ function (c_simp::ContinuationSIMP)(x0 = copy(c_simp.simp.optimizer.obj.solver.v
         workspace.options.maxiter = maxiter
         r = c_simp.simp(workspace, prev_fevals)
 
+        if any(getreuse(optimizer))
+            undo_values!(workspace, f_x_previous, g_previous)
+        end
         if !workspace.convstate.converged
             setreuse!(c_simp.simp.optimizer, false)
             while !workspace.convstate.converged && !maxedfevals(optimizer)
@@ -233,8 +236,6 @@ function (c_simp::ContinuationSIMP)(x0 = copy(c_simp.simp.optimizer.obj.solver.v
                 workspace.options.maxiter = maxiter
                 c_simp.simp(workspace)
             end
-        elseif any(getreuse(optimizer))
-            undo_values!(workspace, f_x_previous, g_previous)
         end
         f_x_previous = workspace.primal_data.f_x_previous
         g_previous = copy(c_simp.simp.optimizer.workspace.primal_data.g)
