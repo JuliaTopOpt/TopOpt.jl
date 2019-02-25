@@ -25,6 +25,5 @@ function simulate(problem::StiffnessTopOptProblem, topology = ones(getncells(Top
 
     solver(Val{true})
     comp = dot(solver.u, solver.globalinfo.f)
-
     return LinearElasticityResult(comp, copy(solver.u))
 end

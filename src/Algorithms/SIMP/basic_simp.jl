@@ -76,7 +76,7 @@ function (s::SIMP{T, TO})(x0=s.optimizer.obj.f.solver.vars, prev_fevals = getfev
     return s.result
 end
 
-function (s::SIMP{T, TO})(workspace::MMA.Workspace, prev_fevals = getfevals(s.optimizer)) where {T, TO<:MMAOptimizer}
+function (s::SIMP{T, TO})(workspace::MMA.Workspace, prev_fevals = getfevals(s.optimizer)) where {T, TO <: MMAOptimizer}
     mma_results = s.optimizer(workspace)
     update_result!(s, mma_results, prev_fevals)
     return s.result
@@ -90,7 +90,7 @@ function get_topologies(problem, trace::TopOptTrace)
     topology = zeros(T, nel)
     for i in 1:length(x_hist)
         update_topology!(topology, black, white, x_hist[i], varind)
-        push!(topologies, topology)
+        push!(topologies, copy(topology))
     end
     return topologies
 end
