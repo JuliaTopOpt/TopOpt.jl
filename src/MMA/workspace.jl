@@ -220,7 +220,7 @@ function assess_convergence(workspace::Workspace)
     if convcriteria isa DefaultCriteria
         converged = (x_converged || f_converged) && all(x -> x <= 0, g)
     else
-        converged = kkt_converged && all(x -> x <= 0, g)
+        converged = kkt_converged# && all(x -> x <= 0, g)
     end
 
     return ConvergenceState(    x_converged, 

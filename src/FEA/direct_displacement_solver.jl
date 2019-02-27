@@ -57,11 +57,6 @@ function (s::DirectDisplacementSolver{T})(::Type{Val{safe}} = Val{false}, ::Type
     catch err
         lhs .= T(NaN)
     end
-    @show isposdef(Symmetric(K))
-    val, vector = eigs(Symmetric(K), nev=1, which=:SM)
-    @show val, maximum(abs, vector)
 
-    #@show minimum(diag(ldlt(Symmetric(K))))
-    #@show rank(Array(K)), size(K)
     nothing
 end
