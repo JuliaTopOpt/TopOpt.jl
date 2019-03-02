@@ -39,7 +39,7 @@ solver = FEASolver(Displacement, Direct, problem, xmin = xmin,
 # Define compliance objective
 
 obj = Objective(ComplianceFunction(problem, solver, filtering = true,
-    rmin = 3.0, tracing = true, logarithm = false))
+    rmin = 4.0, tracing = true, logarithm = false))
 
 # Define volume constraint
 
@@ -59,6 +59,7 @@ optimizer = MMAOptimizer{CPU}(obj, constr, MMA.MMA87(),
 simp = SIMP(optimizer, penalty.p)
 
 # Solve
+
 x0 = fill(1.0, length(solver.vars));
 result = simp(x0)
 
