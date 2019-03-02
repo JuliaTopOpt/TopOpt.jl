@@ -26,9 +26,6 @@ problem = PointLoadCantilever(Val{:Linear}, (40, 20, 20), (1.0, 1.0, 1.0), E, v,
 
 V = 0.3 # volume fraction
 xmin = 0.001 # minimum density
-maxtol = 0.1 # maximum tolerance
-mintol = 0.001 # minimum tolerance
-steps = 40 # delta_p0 = 0.1
 
 # Define a finite element solver
 
@@ -67,5 +64,4 @@ result = simp(x0)
 
 glmesh, color = GLMesh(problem, result.topology)
 mesh(glmesh, color=color)
-
 ```
