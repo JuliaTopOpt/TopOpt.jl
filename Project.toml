@@ -3,7 +3,6 @@ uuid = "53a1e1a5-51bb-58a9-8a02-02056cc81109"
 authors = ["Mohamed Tarek <mohamed82008@gmail.com>"]
 
 [deps]
-Arpack = "7d9fca2a-8960-54d3-9f78-7d1dccf2cb97"
 CUDAdrv = "c5f51814-7f29-56b8-a69c-e4d8f6be1fde"
 CUDAnative = "be33ccc6-a3ff-5ff2-a52e-74243cff1e17"
 Compat = "34da2185-b29b-5c13-b0c7-acf172513d20"
