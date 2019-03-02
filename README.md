@@ -5,7 +5,7 @@
 ```julia
 # Setup
 
-]dev https://github.com/mohamed82008/TopOpt.jl
+]add https://github.com/mohamed82008/TopOpt.jl#master
 ]add Makie
 
 # Load the package
