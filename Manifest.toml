@@ -16,6 +16,12 @@ git-tree-sha1 = "23f59a45d2c8f792356c98839cda84fcc388c8b0"
 uuid = "2169fc97-5a83-5252-b627-83903c6c433c"
 version = "0.2.1"
 
+[[Arpack]]
+deps = ["BinaryProvider", "Libdl", "LinearAlgebra", "Random", "SparseArrays", "Test"]
+git-tree-sha1 = "1ce1ce9984683f0b6a587d5bdbc688ecb480096f"
+uuid = "7d9fca2a-8960-54d3-9f78-7d1dccf2cb97"
+version = "0.3.0"
+
 [[Base64]]
 uuid = "2a0f44e3-6c83-55bd-87e4-b1978d98bd5f"
 
@@ -301,7 +307,7 @@ git-tree-sha1 = "51330bb45927379007e089997bf548fbe232589d"
 repo-rev = "master"
 repo-url = "https://github.com/FluxML/NNlib.jl.git"
 uuid = "872c559c-99b0-510c-b3b7-b6c96a88d5cd"
-version = "0.4.3"
+version = "0.4.3+"
 
 [[NaNMath]]
 deps = ["Compat"]

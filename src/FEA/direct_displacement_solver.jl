@@ -3,6 +3,8 @@ abstract type AbstractFEASolver end
 abstract type AbstractDisplacementSolver <: AbstractFEASolver end
 GPUUtils.whichdevice(s::AbstractDisplacementSolver) = whichdevice(s.u)
 
+using Arpack
+
 @params mutable struct DirectDisplacementSolver{T, dim, TP<:AbstractPenalty{T}} <: AbstractDisplacementSolver
     problem::StiffnessTopOptProblem{dim, T}
     globalinfo::GlobalFEAInfo{T}
@@ -37,7 +39,7 @@ function (s::DirectDisplacementSolver{T})(::Type{Val{safe}} = Val{false}, ::Type
     lhs = assemble_f ? s.u : s.lhs
     globalinfo = GlobalFEAInfo(s.globalinfo.K, rhs)
     assemble!(globalinfo, s.problem, s.elementinfo, s.vars, getpenalty(s), s.xmin, assemble_f = assemble_f)
-    K, f = globalinfo.K, globalinfo.f
+    K = globalinfo.K
     if safe
         m = meandiag(K)
         for i in 1:size(K,1)
@@ -46,14 +48,15 @@ function (s::DirectDisplacementSolver{T})(::Type{Val{safe}} = Val{false}, ::Type
             end
         end
     end
-    lhs .=  try 
+    try 
         if T === newT
-            Symmetric(K) \ f
+            lhs .= cholesky(Symmetric(K)) \ rhs
         else
-            Symmetric(newT.(K)) \ newT.(f)
+            lhs .= cholesky(Symmetric(newT.(K))) \ newT.(rhs)
         end
-    catch
-        T(NaN)
+    catch err
+        lhs .= T(NaN)
     end
+
     nothing
 end

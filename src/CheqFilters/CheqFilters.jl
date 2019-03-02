@@ -106,7 +106,7 @@ end
 CheqFilter{true}(args...) = CheqFilter(Val(true), args...)
 CheqFilter{false}(args...) = CheqFilter(Val(false), args...)
 
-function CheqFilter(::Val{filtering}, solver, args...) where {filtering}
+function CheqFilter(::Val{filtering}, solver::AbstractFEASolver, args...) where {filtering}
     CheqFilter(Val(filtering), whichdevice(solver), solver, args...)
 end
 
@@ -135,7 +135,7 @@ function CheqFilter(::Val{false}, ::CPU, solver::TS, rmin::T, ::Type{TI}=Int) wh
     nodal_grad = T[]
     last_grad = T[]
     cell_weights = T[]
-    return CheqFilter(Val(false), metadata, TI(0), nodal_grad, last_grad, cell_weights)
+    return CheqFilter(Val(false), metadata, rmin, nodal_grad, last_grad, cell_weights)
 end
 
 function (cf::CheqFilter{true, T})(grad, vars, elementinfo) where {T}
