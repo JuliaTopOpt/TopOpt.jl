@@ -3,8 +3,6 @@ abstract type AbstractFEASolver end
 abstract type AbstractDisplacementSolver <: AbstractFEASolver end
 GPUUtils.whichdevice(s::AbstractDisplacementSolver) = whichdevice(s.u)
 
-using Arpack
-
 @params mutable struct DirectDisplacementSolver{T, dim, TP<:AbstractPenalty{T}} <: AbstractDisplacementSolver
     problem::StiffnessTopOptProblem{dim, T}
     globalinfo::GlobalFEAInfo{T}
