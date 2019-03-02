@@ -17,14 +17,14 @@ using TopOpt, Makie
 E = 1.0 # Young’s modulus
 v = 0.3 # Poisson’s ratio
 f = 1.0 # downward force
-problem = HalfMBB(Val{:Linear}, (60, 20), (1.0, 1.0), E, v, f)
+problem = PointLoadCantilever(Val{:Linear}, (40, 20, 20), (1.0, 1.0, 1.0), E, v, f)
+# problem = HalfMBB(Val{:Linear}, (60, 20), (1.0, 1.0), E, v, f)
 # problem = PointLoadCantilever(Val{:Quadratic}, (160, 40), (1.0, 1.0), E, v, f)
 # problem = LBeam(Val{:Linear}, Float64)
-# problem = PointLoadCantilever(Val{:Linear}, (60, 20, 20), (1.0, 1.0, 1.0), E, v, f)
 
 # Parameter settings
 
-V = 0.5 # volume fraction
+V = 0.3 # volume fraction
 xmin = 0.001 # minimum density
 maxtol = 0.1 # maximum tolerance
 mintol = 0.001 # minimum tolerance
@@ -48,7 +48,7 @@ constr = Constraint(VolumeFunction(problem, solver), V)
 # Define subproblem optimizer
 
 mma_options = options = MMA.Options(maxiter = 3000, 
-    tol = MMA.Tolerances(kkttol = 0.01))
+    tol = MMA.Tolerances(kkttol = 0.001))
 convcriteria = MMA.KKTCriteria()
 optimizer = MMAOptimizer{CPU}(obj, constr, MMA.MMA87(),
     ConjugateGradient(), options = mma_options,
