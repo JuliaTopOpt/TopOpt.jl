@@ -19,6 +19,7 @@ using Reexport, Parameters, Setfield, .GPUUtils
 using JuAFEM, StaticArrays, CuArrays, CUDAnative, GPUArrays
 using CUDAdrv: CUDAdrv
 using ForwardDiff, IterativeSolvers#, Preconditioners
+@reexport using VTKDataTypes
 
 CuArrays.allowscalar(false)
 const DEBUG = Base.RefValue(false)

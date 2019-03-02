@@ -1,5 +1,35 @@
 ## Credit to Simon Danisch for most of the following code
 
+const juafem_to_vtk = Dict( Triangle => 5, 
+                            QuadraticTriangle => 22, 
+                            Quadrilateral => 9, 
+                            QuadraticQuadrilateral => 23, 
+                            Tetrahedron => 10, 
+                            QuadraticTetrahedron => 24, 
+                            Hexahedron => 12, 
+                            QuadraticHexahedron => 25
+                          )
+
+function VTKDataTypes.VTKUnstructuredData(grid::JuAFEM.Grid{dim, N}) where {dim, N}
+    celltype = juafem_to_vtk[eltype(grid.cells)]
+    celltypes = [celltype for i in 1:length(grid.cells)]
+    connectivity = copy(reinterpret(NTuple{N, Int}, grid.cells))
+    node_coords = copy(reshape(reinterpret(Float64, grid.nodes), dim, length(grid.nodes)))
+    return VTKUnstructuredData(node_coords, celltypes, connectivity)
+end
+function VTKDataTypes.VTKUnstructuredData(problem::AbstractTopOptProblem)
+    return VTKUnstructuredData(getdh(problem).grid)
+end
+VTKDataTypes.GLMesh(grid::JuAFEM.Grid; kwargs...) = GLMesh(VTKUnstructuredData(grid); kwargs...)
+VTKDataTypes.GLMesh(problem::AbstractTopOptProblem; kwargs...) = GLMesh(VTKUnstructuredData(problem); kwargs...)
+
+function VTKDataTypes.GLMesh(problem, topology; kwargs...)
+    mesh = VTKUnstructuredData(problem)
+    mesh.cell_data["topology"] = topology
+    return GLMesh(mesh, color = "topology")
+end
+
+#=
 function AbstractPlotting.to_vertices(cells::AbstractVector{<: JuAFEM.Node{N, T}}) where {N, T}
     convert_arguments(nothing, cells)[1]
 end
@@ -121,3 +151,4 @@ function visualize(mesh::JuAFEM.Grid{dim, N, T}) where {dim, N, T}
     node_displacements = zeros(T, dim, nnodes)
     visualize(mesh, node_displacements)
 end
+=#

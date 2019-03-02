@@ -5,6 +5,7 @@ using SparseArrays, Setfield, CuArrays
 using CUDAnative
 using ..GPUUtils, ..Utilities
 using CUDAdrv: CUDAdrv
+using VTKDataTypes
 #using Makie
 #using GeometryTypes
 
@@ -24,7 +25,7 @@ include("matrices_and_vectors.jl")
 include("assemble.jl")
 include(joinpath("IO", "IO.jl"))
 using .IO
-#include("makie.jl")
+include("makie.jl")
 
 @define_cu(ElementFEAInfo, :Kes, :fes, :fixedload, :cellvolumes, :metadata, :black, :white, :varind, :cells)
 @define_cu(TopOptProblems.Metadata, :cell_dofs, :dof_cells, :node_cells, :node_dofs)
