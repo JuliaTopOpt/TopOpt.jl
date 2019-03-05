@@ -25,7 +25,8 @@ VTKDataTypes.GLMesh(problem::AbstractTopOptProblem; kwargs...) = GLMesh(VTKUnstr
 
 function VTKDataTypes.GLMesh(problem, topology; kwargs...)
     mesh = VTKUnstructuredData(problem)
-    inds = findall(isequal(0), round.(topology))
+    topology = round.(topology)
+    inds = findall(isequal(0), topology)
     deleteat!(mesh.cell_connectivity, inds)
     deleteat!(mesh.cell_types, inds)
     topology = topology[setdiff(1:length(topology), inds)]
