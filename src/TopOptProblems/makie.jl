@@ -31,7 +31,7 @@ function VTKDataTypes.GLMesh(problem, topology; kwargs...)
     deleteat!(mesh.cell_types, inds)
     topology = topology[setdiff(1:length(topology), inds)]
     mesh.cell_data["topology"] = topology
-    return GLMesh(mesh, color = "topology")
+    return GLMesh(mesh, color = "topology"; kwargs...)
 end
 
 #=
