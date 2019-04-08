@@ -1,10 +1,10 @@
 """
 Stiffness problem imported from a .inp file.
 """
-struct InpStiffness{dim, N, TF, M, TI, TBool, GO, TInds <: AbstractVector{TI}, TMeta<:Metadata} <: StiffnessTopOptProblem{dim, TF}
+struct InpStiffness{dim, N, TF, TI, TBool, Tch <: ConstraintHandler, GO, TInds <: AbstractVector{TI}, TMeta<:Metadata} <: StiffnessTopOptProblem{dim, TF}
     inp_content::InpContent{dim, TF, N, TI}
     geom_order::Type{Val{GO}}
-    ch::ConstraintHandler{DofHandler{dim, N, TF, M}, TF}
+    ch::Tch
     black::TBool
     white::TBool
     varind::TInds
@@ -28,9 +28,9 @@ function InpStiffness(problem::Parser.InpContent)
 end
 
 getE(p::InpStiffness) = p.inp_content.E
-getν(p::InpStiffness) = p..inp_content.ν
+getν(p::InpStiffness) = p.inp_content.ν
 nnodespercell(::InpStiffness{dim, N}) where {dim, N} = N
-getgeomorder(p::InpStiffness{dim, N, TF, M, TI, GO}) where {dim, N, TF, M, TI, GO} = GO
+getgeomorder(p::InpStiffness{<:Any, <:Any, <:Any, <:Any, <:Any, <:Any, GO}) where {GO} = GO
 getdensity(p::InpStiffness) = p.inp_content.density
 getpressuredict(p::InpStiffness) = p.inp_content.dloads
 getcloaddict(p::InpStiffness) = p.inp_content.cloads

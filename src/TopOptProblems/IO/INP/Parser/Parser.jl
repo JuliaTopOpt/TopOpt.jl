@@ -1,6 +1,7 @@
 module Parser
 
 using JuAFEM, SparseArrays
+using .....TopOpt: find_black_and_white
 
 export extract_inp, InpContent
 

@@ -35,4 +35,13 @@ function FEASolver(::Type{Displacement}, ::Type{CG}, ::Type{Assembly}, problem; 
     PCGDisplacementSolver(problem; kwargs...)
 end
 
-default_quad_order(problem) = TopOptProblems.getgeomorder(problem) == 2 ? 6 : 4
+function default_quad_order(problem)
+    if TopOptProblems.getdim(problem) == 2 && TopOptProblems.nnodespercell(problem) == 3 || TopOptProblems.getdim(problem) == 3 && TopOptProblems.nnodespercell(problem) == 4
+        return 3
+    end
+    if TopOptProblems.getgeomorder(problem) == 2
+        return 6
+    else
+        return 4
+    end
+end
