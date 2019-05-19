@@ -33,7 +33,7 @@ function _define_cu(T, fields...)
     args = gensym()
     if eltype(fields) <: QuoteNode
         field_syms = Tuple(field.value for field in fields)
-    elseif eltype(fields) <: Symbol
+    elseif eltype(fields) <: Symbol || length(fields) == 0
         field_syms = fields
     else
         throw("Unsupported fields.")

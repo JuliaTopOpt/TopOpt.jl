@@ -55,7 +55,7 @@ function SIMP(optimizer, p::T; tracing=true) where T
     penalty = getpenalty(optimizer)
     penalty = @set penalty.p = p
     prev_penalty = @set penalty.p = NaN
-    ncells = getncells(optimizer.obj.f.problem)
+    ncells = getncells(getsolver(optimizer.obj).problem)
     result = NewSIMPResult(T, optimizer, ncells)
 
     return SIMP(optimizer, penalty, prev_penalty, result, tracing)
@@ -99,9 +99,8 @@ function update_result!(s::SIMP{T}, mma_results, prev_fevals) where T
     # Postprocessing
     @unpack result, optimizer = s
     @unpack obj = optimizer
-    @unpack problem = obj.f
+    @unpack problem = getsolver(obj)
     @unpack black, white, varind = problem
-    @unpack x_hist = obj.f.topopt_trace    
     nel = getncells(problem)
 
     update_topology!(result.topology, black, white, mma_results.minimizer, varind)

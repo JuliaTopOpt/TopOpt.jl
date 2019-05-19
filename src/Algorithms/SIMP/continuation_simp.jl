@@ -18,7 +18,7 @@ function CSIMPOptions(::Type{T} = Float64;
                         initial_options = MMA.Options(), 
                         pstart = T(1), 
                         pfinish = T(5), 
-                        reuse = true,
+                        reuse = false,
                         options_gen = nothing
                     ) where {T}
 

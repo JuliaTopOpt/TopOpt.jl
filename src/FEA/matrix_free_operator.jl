@@ -49,7 +49,7 @@ function mul!(y::TV, A::MatrixFreeOperator, x::TV) where {TV <: AbstractVector}
     for i in 1:nels
         px = ifelse(black[i], one(T), 
                     ifelse(white[i], xmin, 
-                            density(penalty(vars[varind[i]]), xmin)
+                            penalty(density(vars[varind[i]], xmin))
                         )
                     )
         xe = xes[i]
@@ -108,7 +108,7 @@ function mul_kernel1(xes::AbstractVector{TV}, x, black, white, vars, varind, cel
     while i <= nels
         px = ifelse(black[i], one(T), 
                     ifelse(white[i], xmin, 
-                            density(penalty(vars[varind[i]]), xmin)
+                            penalty(density(vars[varind[i]], xmin))
                         )
                     )
         xe = xes[i]

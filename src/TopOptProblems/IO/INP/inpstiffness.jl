@@ -14,16 +14,23 @@ end
 """
 Imports stiffness problem from a .inp file.
 """
-function InpStiffness(filepath_with_ext::AbstractString)
+function InpStiffness(filepath_with_ext::AbstractString; keep_load_cells = false)
     problem = Parser.extract_inp(filepath_with_ext)
-    return InpStiffness(problem)
+    return InpStiffness(problem; keep_load_cells = keep_load_cells)
 end
-function InpStiffness(problem::Parser.InpContent)
+function InpStiffness(problem::Parser.InpContent; keep_load_cells = false)
     ch = Parser.inp_to_juafem(problem)
     black, white = find_black_and_white(ch.dh)
-    varind = find_varind(black, white)
     metadata = Metadata(ch.dh)
     geom_order = JuAFEM.getorder(ch.dh.field_interpolations[1])
+    if keep_load_cells
+        for k in keys(problem.cloads)
+            for (c, f) in metadata.node_cells[k]
+                black[c] = 1
+            end
+        end
+    end
+    varind = find_varind(black, white)
     return InpStiffness(problem, Val{geom_order}, ch, black, white, varind, metadata)
 end
 

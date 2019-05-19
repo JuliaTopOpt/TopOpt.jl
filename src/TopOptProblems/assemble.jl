@@ -46,7 +46,7 @@ function assemble!(globalinfo::GlobalFEAInfo{T}, problem::StiffnessTopOptProblem
                 JuAFEM.assemble!(assembler, global_dofs, Ke)
             end
         else
-            px = density(penalty(vars[varind[i]]), xmin)
+            px = penalty(density(vars[varind[i]], xmin))
             Ke = px * Ke
             if assemble_f
                 fe = px * fe
@@ -101,7 +101,7 @@ function update_f!(f::Vector, fes, fixedload, dof_cells, black,
                 px = xmin
                 f[dofidx] += px * fes[cellidx][localidx]                
             else
-                px = density(penalty(vars[varind[cellidx]]), xmin)
+                px = penalty(density(vars[varind[cellidx]], xmin))
                 f[dofidx] += px * fes[cellidx][localidx]                
             end
         end
@@ -136,7 +136,7 @@ function assemble_kernel1(f, fes, fixedload, dof_cells_offsets, dof_cells_values
                 px = xmin
                 f[dofidx] += px * fes[cellidx][localidx]                
             else
-                px = density(penalty(vars[varind[cellidx]]), xmin)
+                px = penalty(density(vars[varind[cellidx]], xmin))
                 f[dofidx] += px * fes[cellidx][localidx]                
             end
         end

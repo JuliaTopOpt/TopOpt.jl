@@ -119,7 +119,7 @@ function compute_compliance(cell_comp::Vector{T}, grad, cell_dofs, Kes, u,
             obj += xmin * cell_comp[i] 
         else
             d = ForwardDiff.Dual{T}(x[varind[i]], one(T))
-            p = density(penalty(d), xmin)
+            p = penalty(density(d, xmin))
             grad[varind[i]] = -p.partials[1] * cell_comp[i]
             obj += p.value * cell_comp[i]
         end
@@ -159,7 +159,7 @@ function comp_kernel1(cell_comp::AbstractVector{T}, grad, cell_dofs, Kes, u,
         end
         if !(black[i] || white[i])
             d = ForwardDiff.Dual{T}(x[varind[i]], one(T))
-            p = density(penalty(d), xmin)
+            p = penalty(density(d, xmin))
             grad[varind[i]] = -p.partials[1] * cell_comp[i]
         end
 
@@ -189,5 +189,5 @@ end
     return ifelse(black, comp,
 		   ifelse(white, xmin * comp, 
 			       	     (d = ForwardDiff.Dual{T}(x, one(T));
-            	            p = density(penalty(d), xmin); p.value * comp)))
+            	            p = penalty(density(d, xmin)); p.value * comp)))
 end

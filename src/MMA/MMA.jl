@@ -23,7 +23,15 @@ import Optim: OnceDifferentiable, Fminbox, GradientDescent, update!,
 import Base: min, max, show
 import ..GPUUtils: whichdevice
 
-export Model, box!, ineq_constraint!, optimize, ConvergenceState, Workspace
+export  Model, 
+        box!, 
+        ineq_constraint!, 
+        optimize, 
+        ConvergenceState, 
+        Workspace, 
+        MMA87, 
+        MMA02,
+        KKTCriteria
 
 struct MMA87 <: AbstractOptimizer end
 struct MMA02 <: AbstractOptimizer end
@@ -86,6 +94,7 @@ function get_kkt_residual(∇f_x, g, ∇g_x, c, x, lb, ub)
     r = mapreduce(max, 1:length(g), init = r) do i
         return max(abs(g[i] * c[i]), g[i], 0)
     end
+    println("kkt residual: $r")
     return r
 end
 

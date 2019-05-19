@@ -51,13 +51,13 @@ solver = FEASolver(Displacement, Direct, problem, xmin = xmin, penalty = penalty
 # Define compliance objective
 filtering = problem isa TopOptProblems.TieBeam ? false : true
 obj = Objective(VolumeFunction(problem, solver))
-constr = Constraint(TopOpt.GlobalStress(solver, 1.0), 1.0)
+constr = Constraint(TopOpt.GlobalStress(solver), 1.0 + eps(0.0))
 #cu_obj = TopOpt.cu(obj)
 # Define volume constraint
 # Define subproblem optimizer
 #optimizer = MMAOptimizer{CPU}(cu_obj, constr, MMA.MMA87(),
 #    ConjugateGradient(), maxiter=1000); optimizer.obj.fevals = 0
-optimizer = MMAOptimizer{CPU}(obj, constr, MMA.MMA02(),
+optimizer = MMAOptimizer{CPU}(obj, constr, MMA.MMA87(),
     ConjugateGradient(), options = mma_options, convcriteria = convcriteria); optimizer.obj.f.fevals = 0
 
 # Define continuation SIMP optimizer

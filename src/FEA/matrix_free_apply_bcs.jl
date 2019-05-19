@@ -21,7 +21,7 @@ function update_f!(f::Vector{T}, values, prescribed_dofs, applyzero, dof_cells, 
                 (i,j) = dof_cells.values[idx]
                 px = ifelse(black[i], one(T), 
                             ifelse(white[i], xmin, 
-                            px = density(penalty(vars[varind[i]]), xmin)))
+                            px = penalty(density(vars[varind[i]], xmin))))
                 if eltype(Kes) <: Symmetric
                     Ke = Kes[i].data
                 else
@@ -59,7 +59,7 @@ function bc_kernel(f::AbstractVector{T}, values, prescribed_dofs, applyzero, dof
                 (i, j) = dof_cells_values[idx]
                 px = ifelse(black[i], one(T), 
                         ifelse(white[i], xmin, 
-                        density(penalty(vars[varind[i]]), xmin)))
+                        penalty(density(vars[varind[i]], xmin))))
                 if eltype(Kes) <: Symmetric
                     Ke = Kes[i].data
                 else

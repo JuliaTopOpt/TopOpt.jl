@@ -2,22 +2,25 @@ module Functions
 
 using ..TopOptProblems, ..FEA, ..CheqFilters
 using ..Utilities, ..GPUUtils, CuArrays
-using ForwardDiff, LinearAlgebra, GPUArrays
+using ForwardDiff, LinearAlgebra, GPUArrays, StaticArrays
 using Parameters: @unpack
 import CUDAdrv
 using TimerOutputs, CUDAnative, JuAFEM
 using StatsFuns, MappedArrays, LazyArrays
+using ..TopOptProblems: getdh
 
 export  Objective,
         Constraint,
         VolumeFunction,
         ComplianceFunction,
+        ZeroFunction,
         AbstractFunction,
         getfevals,
         getmaxfevals,
         maxedfevals,
         getnvars,
-        GlobalStress
+        GlobalStress,
+        project
 
 const to = TimerOutput()
 const dev = CUDAdrv.device()
@@ -74,8 +77,29 @@ getmaxfevals(o::Union{Constraint, Objective}) = o |> getfunction |> getmaxfevals
 getmaxfevals(f::AbstractFunction) = f.maxfevals
 maxedfevals(o::Union{Objective, Constraint}) = maxedfevals(o.f)
 maxedfevals(f::AbstractFunction) = getfevals(f) >= getmaxfevals(f)
-getnvars(o::Union{Constraint, Objective}) = o |> getfunction |> getnvars
-getnvars(f::AbstractFunction) = length(f.solver.vars)
+
+# For feasibility problems
+mutable struct ZeroFunction{T, Tsolver} <: AbstractFunction{T}
+    solver::Tsolver
+    fevals::Int
+end
+function ZeroFunction(solver::AbstractFEASolver)
+    return ZeroFunction{eltype(solver.vars), typeof(solver)}(solver, 0)
+end
+function (z::ZeroFunction)(x, g) 
+    z.fevals += 1
+    g .= 0
+    return zero(eltype(g))
+end
+
+getmaxfevals(::ZeroFunction) = Inf
+maxedfevals(::ZeroFunction) = false
+@inline function Base.getproperty(z::ZeroFunction, f::Symbol)
+    f === :reuse && return false
+    return getfield(z, f)
+end
+GPUUtils.whichdevice(z::ZeroFunction) = whichdevice(z.solver)
+GPUUtils.CuArrays.cu(::ZeroFunction{T}) where T = ZeroFunction{T}()
 
 include("compliance.jl")
 include("volume.jl")

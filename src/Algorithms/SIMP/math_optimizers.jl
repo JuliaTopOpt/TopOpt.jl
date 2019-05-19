@@ -35,7 +35,7 @@ function MMAOptimizer(  device::Tdev,
                         opt = MMA.MMA87(), 
                         subopt = Optim.ConjugateGradient();
                         options = MMA.Options(),
-                        convcriteria = KKTCriteria()
+                        convcriteria = MMA.KKTCriteria()
                     ) where {T, Tdev}
 
     solver = getsolver(obj)
@@ -45,7 +45,7 @@ function MMAOptimizer(  device::Tdev,
     model = Model{Tdev}(nvars, obj)
 
     box!(model, zero(T), one(T))
-    ineq_constraint!(model, constr)
+    ineq_constraint!.(Ref(model), constr)
 
     if Tdev <: CPU && whichdevice(obj) isa GPU
         x0 = Array(solver.vars)
@@ -88,10 +88,10 @@ end
 function reset!(w::Workspace, args...)
     @unpack primal_data, model = w
     # primal_data.r0 = 0
-    # Assess multiple types of convergence
     outer_iter, iter, f_calls, g_calls = 0, 0, 0, 0
     @pack! w = f_calls, g_calls
     MMA.update_values!(w, args...)
+    # Assess multiple types of convergence
     w.convstate = MMA.assess_convergence(w)
     @pack! w = outer_iter, iter
     return w
