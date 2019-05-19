@@ -32,7 +32,7 @@ end
     result::GESOResult{T}
 end
 
-function GESO(obj::Objective{<:ComplianceFunction}, constr::Constraint{<:VolumeFunction}; maxiter = 1000, tol = 0.001, p = 3., Pcmin = 0.6, Pcmax = 1., Pmmin = 0.5, Pmmax = 1., Pen = 3., sens_tol = tol/100, string_length = 4)
+function GESO(obj::Objective{<:ComplianceFunction}, constr::Constraint{<:VolumeFunction}; maxiter = 1000, tol = 0.001, p = 3., Pcmin = 0.6, Pcmax = 1., Pmmin = 0.5, Pmmax = 1., Pen = 3., sens_tol = tol/100, string_length = 4, k = 10)
     penalty = obj.solver.penalty
     penalty = @set penalty.p = p
     T = typeof(obj.comp)
@@ -46,7 +46,7 @@ function GESO(obj::Objective{<:ComplianceFunction}, constr::Constraint{<:VolumeF
     result = GESOResult(topology, T(NaN), T(NaN), false, 0)
     sens = zeros(T, nvars)
     old_sens = zeros(T, nvars)
-    obj_trace = zeros(MVector{10, T})
+    obj_trace = zeros(MVector{k, T})
     var_volumes = constr.cellvolumes[.!black .& .!white]
     cum_var_volumes = zeros(T, nvars)
     order = zeros(Int, nvars)
