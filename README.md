@@ -5,8 +5,14 @@
 ```julia
 # Setup
 
-]add https://github.com/mohamed82008/TopOpt.jl#master
-]add Makie
+using Pkg
+
+pkg"add https://github.com/mohamed82008/JuAFEM.jl#master"
+pkg"add https://github.com/mohamed82008/IterativeSolvers.jl#master"
+pkg"add https://github.com/mohamed82008/VTKDataTypes.jl#master"
+pkg"add https://github.com/mohamed82008/KissThreading.jl#master"
+pkg"add https://github.com/mohamed82008/TopOpt.jl#master"
+pkg"add Makie"
 
 # Load the package
 
@@ -17,6 +23,7 @@ using TopOpt, Makie
 E = 1.0 # Young’s modulus
 v = 0.3 # Poisson’s ratio
 f = 1.0 # downward force
+
 problem = PointLoadCantilever(Val{:Linear}, (40, 20, 20), (1.0, 1.0, 1.0), E, v, f)
 # problem = HalfMBB(Val{:Linear}, (60, 20), (1.0, 1.0), E, v, f)
 # problem = PointLoadCantilever(Val{:Quadratic}, (160, 40), (1.0, 1.0), E, v, f)
