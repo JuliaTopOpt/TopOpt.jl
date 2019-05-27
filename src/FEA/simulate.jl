@@ -4,7 +4,6 @@ using TimerOutputs
     comp
     u
 end
-GPUUtils.whichdevice(r::LinearElasticityResult) = whichdevice(r.u)
 
 function simulate(problem::StiffnessTopOptProblem, topology = ones(getncells(TopOptProblems.getdh(problem).grid)); round = true, hard = true, xmin = 0.001)
     if round 
@@ -13,17 +12,20 @@ function simulate(problem::StiffnessTopOptProblem, topology = ones(getncells(Top
         else
             solver = FEASolver(Displacement, Direct, problem, xmin = xmin)
         end
-        if solver.vars isa GPUArrays.GPUArray
-            solver.vars = map(round, typeof(solver.vars)(topology))
-        else
-            solver.vars .= Base.round.(topology)
-        end
     else
         solver = FEASolver(Displacement, Direct, problem, xmin = xmin)
-        copyto!(solver.vars, topology)
     end
-
+    fill_vars!(vars, problem, topology; round = round)
     solver(Val{true})
     comp = dot(solver.u, solver.globalinfo.f)
-    return LinearElasticityResult(comp, copy(solver.u))
+    return LinearElasticityResult(comp, copy(solver.u))    
+end
+
+function fill_vars!(vars::Array, topology; round)
+    if round 
+        vars .= Base.round.(topology)
+    else
+        copyto!(vars, topology)
+    end
+    return vars
 end

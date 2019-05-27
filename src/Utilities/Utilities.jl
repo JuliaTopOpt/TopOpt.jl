@@ -1,6 +1,6 @@
 module Utilities
 
-using ForwardDiff, CUDAnative, CuArrays, ..GPUUtils, JuAFEM, IterativeSolvers
+using ForwardDiff, JuAFEM, IterativeSolvers, Requires
 
 export  AbstractPenalty,
         PowerPenalty,

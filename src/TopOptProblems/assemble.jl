@@ -64,14 +64,11 @@ function assemble!(globalinfo::GlobalFEAInfo{T}, problem::StiffnessTopOptProblem
 end
 
 function assemble_f(problem::StiffnessTopOptProblem{dim,T}, elementinfo::ElementFEAInfo{dim, T}, vars::AbstractVector{T}, penalty, xmin = T(1)/1000) where {dim, T}
-    if vars isa CuArray
-        f = zeros(typeof(vars), ndofs(problem.ch.dh))
-    else
-        f = zeros(T, ndofs(problem.ch.dh))
-    end
+    f = get_f(problem, vars)
     assemble_f!(f, problem, elementinfo, vars, penalty, xmin)
     return f
 end
+get_f(problem, vars::Array) = zeros(T, ndofs(problem.ch.dh))
 
 function assemble_f!(f::AbstractVector, problem::StiffnessTopOptProblem, 
         elementinfo::ElementFEAInfo, vars::AbstractVector, penalty, xmin)
@@ -105,42 +102,6 @@ function update_f!(f::Vector, fes, fixedload, dof_cells, black,
                 f[dofidx] += px * fes[cellidx][localidx]                
             end
         end
-    end
-
-    return
-end
-
-function update_f!(f::CuVector{T}, fes, fixedload, dof_cells, black, 
-    white, penalty, vars, varind, xmin) where {T}
-
-    args = (f, fes, fixedload, dof_cells.offsets, dof_cells.values, black, 
-        white, penalty, vars, varind, xmin, length(f))
-    callkernel(dev, assemble_kernel1, args)
-    CUDAdrv.synchronize(ctx)
-end
-
-function assemble_kernel1(f, fes, fixedload, dof_cells_offsets, dof_cells_values, black, 
-    white, penalty, vars, varind, xmin, ndofs)
-
-    dofidx = @thread_global_index()
-    offset = @total_threads()
-
-    while dofidx <= ndofs
-        f[dofidx] = fixedload[dofidx]
-        r = dof_cells_offsets[dofidx] : dof_cells_offsets[dofidx+1]-1
-        for i in r
-            cellidx, localidx = dof_cells_values[i]
-            if black[cellidx]
-                f[dofidx] += fes[cellidx][localidx]
-            elseif white[cellidx]
-                px = xmin
-                f[dofidx] += px * fes[cellidx][localidx]                
-            else
-                px = penalty(density(vars[varind[cellidx]], xmin))
-                f[dofidx] += px * fes[cellidx][localidx]                
-            end
-        end
-        dofidx += offset
     end
 
     return

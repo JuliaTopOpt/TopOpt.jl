@@ -20,8 +20,6 @@ end
     f === :reuse && return false
     return setfield!(vf, f, v)
 end
-GPUUtils.whichdevice(v::VolumeFunction) = whichdevice(v.cellvolumes)
-@define_cu(VolumeFunction, :cellvolumes, :grad, :problem) # should be optimized to avoid replicating problem
 
 function project(c::Constraint{<:VolumeFunction}, x)
     V, f = c.s, c.f
@@ -107,25 +105,4 @@ function compute_volume(cellvolumes::Vector, x, fixed_volume, varind, black, whi
         end
     end
     return vol
-end
-
-function compute_volume(cellvolumes::CuVector{T}, x, fixed_volume, varind, black, white, ::Val{blocksize} = Val(80), ::Val{threads} = Val(256)) where {T, blocksize, threads}
-    result = similar(cellvolumes, T, (blocksize,))
-    args = (result, cellvolumes, x, varind, black, white, Val(threads))
-    @cuda blocks = blocksize threads = threads volume_kernel(args...)
-    CUDAnative.synchronize()
-    vol = reduce(+, Array(result)) + fixed_volume
-    return vol
-end
-
-function volume_kernel(result, cellvolumes::AbstractVector{T}, x, varind, black, white, ::Val{LMEM}) where {T, LMEM}
-    @mapreduce_block(i, length(cellvolumes), +, T, LMEM, result, begin
-        if !(black[i]) && !(white[i])
-            x[varind[i]]*cellvolumes[i]
-        else
-            zero(T)
-        end
-    end)
-
-    return
 end

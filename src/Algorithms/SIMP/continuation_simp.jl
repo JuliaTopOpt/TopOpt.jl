@@ -3,7 +3,6 @@
     result
     options
 end
-GPUUtils.whichdevice(c::ContinuationSIMP) = whichdevice(c.simp)
 
 @params struct CSIMPOptions
     p_cont

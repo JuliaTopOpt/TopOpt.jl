@@ -1,9 +1,10 @@
 module Algorithms
 
-using ..MMA, ..Functions, Optim, Parameters
+using ..MMA, ..Functions, Optim, Parameters, Requires
+using ..TopOpt: whichdevice, CPU, GPU
 using TimerOutputs, Setfield, StaticArrays
 using Parameters: @unpack, @pack!
-using ..GPUUtils, ..Utilities, JuAFEM
+using ..Utilities, JuAFEM
 using LinearAlgebra
 
 export  MMAOptimizer,

@@ -1,7 +1,6 @@
 abstract type AbstractFEASolver end
 
 abstract type AbstractDisplacementSolver <: AbstractFEASolver end
-GPUUtils.whichdevice(s::AbstractDisplacementSolver) = whichdevice(s.u)
 
 @params mutable struct DirectDisplacementSolver{T, dim, TP<:AbstractPenalty{T}} <: AbstractDisplacementSolver
     problem::StiffnessTopOptProblem{dim, T}

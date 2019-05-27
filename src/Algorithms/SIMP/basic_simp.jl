@@ -34,7 +34,6 @@ end
     penalty_trace::AbstractVector{Pair{T, TF}}
     nsubproblems::Int
 end
-GPUUtils.whichdevice(s::SIMPResult) = whichdevice(s.topology)
 
 function NewSIMPResult(::Type{T}, optimizer, ncells) where {T}
     FunctionEvaluations(optimizer)
@@ -49,7 +48,6 @@ end
     result::SIMPResult{T}
     tracing::Bool
 end
-GPUUtils.whichdevice(s::SIMP) = whichdevice(s.optimizer)
 
 function SIMP(optimizer, p::T; tracing=true) where T
     penalty = getpenalty(optimizer)

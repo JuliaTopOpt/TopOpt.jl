@@ -1,14 +1,11 @@
 module FEA
 
-using ..GPUUtils, ..TopOptProblems, ..Utilities
+using ..TopOpt: CPU, GPU
+using ..TopOptProblems, ..Utilities, Requires
 using JuAFEM, Setfield, TimerOutputs, Preconditioners
-using IterativeSolvers, CuArrays, StaticArrays
-using LinearAlgebra, GPUArrays
-import CUDAdrv
+using IterativeSolvers, StaticArrays
+using LinearAlgebra
 using Parameters: @unpack
-
-const dev = CUDAdrv.device()
-const ctx = CUDAdrv.CuContext(dev)
 
 export  AbstractFEASolver,
         AbstractDisplacementSolver,
@@ -40,10 +37,6 @@ include("simulate.jl")
 include("solvers_api.jl")
 
 getcompliance(solver) = solver.u' * solver.globalinfo.K * solver.u
-
-for T in (:DirectDisplacementSolver, :PCGDisplacementSolver)
-    @eval @inline CuArrays.cu(p::$T) = error("$T does not support the GPU.")
-end
 
 end
 

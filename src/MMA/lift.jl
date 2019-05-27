@@ -24,21 +24,6 @@ function computew(x::Vector{T}, x1, σ) where {T}
     end
 end
 
-function computew(x::CuVector{T}, x1, σ, ::Val{blocksize} = Val(80), ::Val{threads} = Val(256)) where {T, blocksize, threads}
-    result = similar(x, T, (blocksize,))
-    args = (x, x1, σ, result, Val(threads))
-    @cuda blocks = blocksize threads = threads computew_kernel(args...)
-    CUDAnative.synchronize()
-    w = sum(Array(result))
-end
-function computew_kernel(x::AbstractVector{T}, x1, σ, result, ::Val{LMEM}) where {T, LMEM}
-    @mapreduce_block(j, length(x), +, T, LMEM, result, begin
-        (x[j] - x1[j])^2 / (σ[j]^2 - (x[j] - x1[j])^2)
-    end)
-    
-    return
-end
-
 function (lu::LiftUpdater{T})(w, i::Int) where T
     @unpack ρ, g, ng_approx = lu
     gi, g_approxi = g[i], -ng_approx[i]

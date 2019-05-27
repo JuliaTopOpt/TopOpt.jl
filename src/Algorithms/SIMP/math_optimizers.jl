@@ -10,7 +10,6 @@ abstract type AbstractOptimizer end
     convstate::ConvergenceState
     options::MMA.Options
 end
-GPUUtils.whichdevice(o::MMAOptimizer) = o.model
 multol!(o::MMAOptimizer, m::Real) = o.options.tol *= m
 
 function Functions.maxedfevals(o::MMAOptimizer)

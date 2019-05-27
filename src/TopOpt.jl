@@ -1,7 +1,21 @@
 module TopOpt
 
+using Requires
+
+macro cuda_only(mod, code)
+    quote
+        @init @require CUDASupport = "97986420-7ec3-11e9-24cd-4f0e301eb539" @eval $mod begin
+            $code
+        end
+    end |> esc
+end
+
+struct CPU end
+struct GPU end
+whichdevice(::Any) = CPU()
+
 # GPU utilities
-include(joinpath("GPUUtils", "GPUUtils.jl"))
+module GPUUtils end
 
 # Utilities
 include(joinpath("Utilities", "Utilities.jl"))
@@ -14,17 +28,14 @@ include(joinpath("MMA", "MMA.jl"))
 include(joinpath("TopOptProblems", "TopOptProblems.jl"))
 
 using LinearAlgebra, Statistics
-using Reexport, Parameters, Setfield, .GPUUtils
+using Reexport, Parameters, Setfield
 @reexport using .TopOptProblems, Optim, .MMA, LineSearches
-using JuAFEM, StaticArrays, CuArrays, CUDAnative, GPUArrays
-using CUDAdrv: CUDAdrv
+using JuAFEM, StaticArrays
+
 using ForwardDiff, IterativeSolvers#, Preconditioners
 @reexport using VTKDataTypes
 
-CuArrays.allowscalar(false)
 const DEBUG = Base.RefValue(false)
-const dev = CUDAdrv.device()
-const ctx = CUDAdrv.CuContext(dev)
 
 #norm(a) = sqrt(dot(a,a))
 
@@ -43,6 +54,29 @@ using .Functions
 # Various topology optimization algorithms
 include(joinpath("Algorithms", "Algorithms.jl"))
 using .Algorithms
+
+macro init_cuda()
+    quote
+        const CuArrays = CUDASupport.CuArrays
+        const CUDAdrv = CUDASupport.CUDAdrv
+        const CUDAnative = CUDASupport.CUDAnative
+        const GPUArrays = CUDASupport.GPUArrays
+        CuArrays.allowscalar(false)
+        const dev = CUDAdrv.device()
+        const ctx = CUDAdrv.CuContext(dev)
+        using .CuArrays, .CUDAnative
+        using .GPUArrays: GPUVector, GPUArray
+    end |> esc
+end
+
+@cuda_only GPUUtils include("GPUUtils/GPUUtils.jl")
+@cuda_only Utilities include("Utilities/gpu_utilities.jl")
+@cuda_only MMA include("MMA/gpu_mma.jl")
+@cuda_only TopOptProblems include("TopOptProblems/gpu_support.jl")
+@cuda_only FEA include("FEA/gpu_solvers.jl")
+@cuda_only CheqFilters include("CheqFilters/gpu_cheqfilter.jl")
+@cuda_only Functions include("Functions/gpu_support.jl")
+@cuda_only Algorithms include("Algorithms/SIMP/gpu_simp.jl")
 
 export  simulate, 
         TopOptTrace, 

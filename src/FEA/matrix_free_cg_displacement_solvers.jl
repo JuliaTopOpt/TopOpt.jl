@@ -94,5 +94,3 @@ function (s::StaticMatrixFreeDisplacementSolver)(; assemble_f = true)
         return cg!(lhs, operator, rhs, tol=tol, maxiter=cg_max_iter, log=false, statevars=cg_statevars, initially_zero=false, Pl=preconditioner)
     end
 end
-
-@define_cu(StaticMatrixFreeDisplacementSolver, :f, :problem, :vars, :cg_statevars, :elementinfo, :penalty, :prev_penalty, :u, :fixed_dofs, :free_dofs, :xes, :lhs, :rhs)

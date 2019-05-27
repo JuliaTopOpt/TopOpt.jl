@@ -1,11 +1,10 @@
 module Functions
 
+using ..TopOpt: whichdevice, CPU, GPU
 using ..TopOptProblems, ..FEA, ..CheqFilters
-using ..Utilities, ..GPUUtils, CuArrays
-using ForwardDiff, LinearAlgebra, GPUArrays, StaticArrays
+using ..Utilities, ForwardDiff, LinearAlgebra, Requires
 using Parameters: @unpack
-import CUDAdrv
-using TimerOutputs, CUDAnative, JuAFEM
+using TimerOutputs, JuAFEM, StaticArrays
 using StatsFuns, MappedArrays, LazyArrays
 using ..TopOptProblems: getdh
 
@@ -23,8 +22,6 @@ export  Objective,
         project
 
 const to = TimerOutput()
-const dev = CUDAdrv.device()
-const ctx = CUDAdrv.CuContext(dev)
 
 abstract type AbstractFunction{T} <: Function end
 
@@ -59,16 +56,13 @@ end
 Base.broadcastable(o::Union{Objective, Constraint}) = Ref(o)
 getfunction(o::Union{Objective, Constraint}) = o.f
 getfunction(f::AbstractFunction) = f
-GPUUtils.whichdevice(o::Union{Objective, Constraint}) = o |> getfunction |> whichdevice
 Utilities.getsolver(o::Union{Objective, Constraint}) = o |> getfunction |> getsolver
 Utilities.getpenalty(o::Union{Objective, Constraint}) = o |> getfunction |> getsolver |> getpenalty
 Utilities.setpenalty!(o::Union{Objective, Constraint}, p) = setpenalty!(getsolver(getfunction(o)), p)
 Utilities.getprevpenalty(o::Union{Objective, Constraint}) = o |> getfunction |> getsolver |> getprevpenalty
 
-@define_cu(Objective, :f)
 (o::Objective)(x, grad) = o.f(x, grad)
 
-@define_cu(Constraint, :f)
 (c::Constraint)(x, grad) = c.f(x, grad) - c.s
 
 getfevals(o::Union{Constraint, Objective}) = o |> getfunction |> getfevals
@@ -98,8 +92,6 @@ maxedfevals(::ZeroFunction) = false
     f === :reuse && return false
     return getfield(z, f)
 end
-GPUUtils.whichdevice(z::ZeroFunction) = whichdevice(z.solver)
-GPUUtils.CuArrays.cu(::ZeroFunction{T}) where T = ZeroFunction{T}()
 
 include("compliance.jl")
 include("volume.jl")

@@ -34,13 +34,10 @@ macro params(struct_expr)
     esc(struct_expr)
 end
 
-@define_cu(IterativeSolvers.CGStateVariables, :u, :r, :c)
-
 struct RaggedArray{TO, TV}
     offsets::TO
     values::TV
 end
-whichdevice(ra::RaggedArray) = whichdevice(ra.offsets)
 
 function RaggedArray(vv::Vector{Vector{T}}) where T
     offsets = [1; 1 .+ accumulate(+, collect(length(v) for v in vv))]
@@ -51,7 +48,6 @@ function RaggedArray(vv::Vector{Vector{T}}) where T
     end
     RaggedArray(offsets, values)
 end
-@define_cu(RaggedArray, :offsets, :values)
 
 function Base.getindex(ra::RaggedArray, i)
     @assert 1 <= i < length(ra.offsets)

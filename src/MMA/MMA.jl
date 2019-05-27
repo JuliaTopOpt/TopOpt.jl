@@ -7,12 +7,8 @@
 module MMA
 
 using Parameters, StructArrays, Setfield, TimerOutputs, Base.Threads
-using ..GPUUtils, CuArrays, CUDAnative, KissThreading, ..Utilities
-using GPUArrays: GPUVector
-using CUDAdrv: CUDAdrv
-
-const dev = CUDAdrv.device()
-const ctx = CUDAdrv.CuContext(dev)
+using KissThreading, ..Utilities, Requires
+using ..TopOpt: CPU, GPU, whichdevice
 
 using LinearAlgebra
 
@@ -21,7 +17,6 @@ import Optim: OnceDifferentiable, Fminbox, GradientDescent, update!,
                 MultivariateOptimizationResults, OptimizationTrace, maxdiff, 
                 LineSearches, ConjugateGradient, LBFGS, AbstractOptimizer
 import Base: min, max, show
-import ..GPUUtils: whichdevice
 
 export  Model, 
         box!, 

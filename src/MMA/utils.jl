@@ -3,7 +3,6 @@ struct Iteration
 end
 
 MatrixOf(::Type{Vector{T}}) where T = Matrix{T}
-MatrixOf(::Type{CuVector{T}}) where T = CuMatrix{T}
 zerosof(::Type{TM}, n...) where TM = (TM(undef, n...) .= 0)
 onesof(::Type{TM}, n...) where TM = (TM(undef, n...) .= 1)
 infsof(::Type{TM}, n...) where TM = (TM(undef, n...) .= Inf)

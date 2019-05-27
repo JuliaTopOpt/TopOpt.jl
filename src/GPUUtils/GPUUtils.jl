@@ -1,7 +1,6 @@
-module GPUUtils
-
-using CUDAnative, GPUArrays
-import CuArrays, CUDAdrv
+using ..CUDASupport
+import ..TopOpt: @init_cuda, whichdevice, CPU, GPU
+@init_cuda()
 
 export  CPU,
         GPU,
@@ -16,9 +15,6 @@ export  CPU,
         callkernel,
         @mapreduce_block
 
-struct CPU end
-struct GPU end
-whichdevice(::Any) = CPU()
 whichdevice(s::AbstractArray) = s isa GPUArrays.GPUArray ? GPU() : CPU()
 
 function getfieldnames end
@@ -166,5 +162,3 @@ function getvalidconfig(dev, kernel, parallel_args)
     end
     return blk, thr
 end
-
-end # module

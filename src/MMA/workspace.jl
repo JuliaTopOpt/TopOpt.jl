@@ -119,14 +119,15 @@ function LiftUpdater(primal_data, model::Model{T, TV}) where {T, TV}
     return LiftUpdater(primal_data, ρ, g, ng_approx, n_j)
 end
 
+Base.Symbol(::GPU) = :GPU
+Base.Symbol(::Type{GPU}) = :GPU
+Base.Symbol(::CPU) = :CPU
+Base.Symbol(::Type{CPU}) = :CPU
+
 function DualSolution(model::Model{T, TV}) where {T, TV}
     dev = whichdevice(model)
     n_i = length(constraints(model))
-    if dev isa CPU
-        return DualSolution{:CPU}(Vector(onesof(TV, n_i)))
-    else
-        return DualSolution{:GPU}(Vector(onesof(TV, n_i)))
-    end
+    return DualSolution{Symbol(dev)}(Vector(onesof(TV, n_i)))
 end
 
 function Workspace( model::Model{T, TV}, 
@@ -201,12 +202,10 @@ function assess_convergence(workspace::Workspace)
     @unpack λ = dual_data
     @unpack box_max, box_min = model
     @unpack xtol, ftol, grtol, kkttol = options.tol
+    T = eltype(x)
 
-    if x isa CuArray
-        x_residual = mapreduce((x1, x2) -> abs(x1 - x2), max, x, x1, init=zero(T))
-    else
-        x_residual = maxdiff(x, x1)
-    end
+    # `maxdiff` but works for `CuArray`
+    x_residual = mapreduce((x) -> abs(x[1] - x[2]), max, zip(x, x1), init=zero(T))
     f_residual = abs(f_x - f_x_previous)
     gr_residual = maximum(abs, ∇f_x)
     kkt_residual = get_kkt_residual(∇f_x, g, ∇g, λ.cpu, x, box_min, box_max)
