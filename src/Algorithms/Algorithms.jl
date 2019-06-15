@@ -1,7 +1,7 @@
 module Algorithms
 
 using ..MMA, ..Functions, Optim, Parameters, Requires
-using ..TopOpt: whichdevice, CPU, GPU
+using ..TopOpt: whichdevice, AbstractDevice, CPU, GPU
 using TimerOutputs, Setfield, StaticArrays
 using Parameters: @unpack, @pack!
 using ..Utilities, JuAFEM

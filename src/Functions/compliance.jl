@@ -28,7 +28,7 @@ function ComplianceFunction(::CPU, problem::StiffnessTopOptProblem{dim, T}, solv
     return ComplianceFunction(problem, solver, cheqfilter, comp, cell_comp, grad, tracing, topopt_trace, reuse, fevals, logarithm, maxfevals)
 end
 
-function (o::ComplianceFunction{T})(x, grad) where {T}
+function (o::ComplianceFunction{T})(x, grad = o.grad) where {T}
     @unpack cell_comp, solver, tracing, cheqfilter, topopt_trace = o
     @unpack elementinfo, u, xmin = solver
     @unpack metadata, Kes, black, white, varind = elementinfo
@@ -63,7 +63,9 @@ function (o::ComplianceFunction{T})(x, grad) where {T}
             #o.comp = obj
         end
         cheqfilter(grad, x, elementinfo)
-        copyto!(o.grad, grad)
+        if o.grad !== grad
+            copyto!(o.grad, grad)
+        end
         
         if o.tracing
             if o.reuse

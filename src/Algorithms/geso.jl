@@ -32,7 +32,7 @@ end
     result::GESOResult{T}
 end
 
-function GESO(obj::Objective{<:ComplianceFunction}, constr::Constraint{<:VolumeFunction}; maxiter = 1000, tol = 0.001, p = 3., Pcmin = 0.6, Pcmax = 1., Pmmin = 0.5, Pmmax = 1., Pen = 3., sens_tol = tol/100, string_length = 4, k = 10)
+function GESO(obj::Objective{<:Any, <:ComplianceFunction}, constr::Constraint{<:Any, <:VolumeFunction}; maxiter = 1000, tol = 0.001, p = 3., Pcmin = 0.6, Pcmax = 1., Pmmin = 0.5, Pmmax = 1., Pen = 3., sens_tol = tol/100, string_length = 4, k = 10)
     penalty = obj.solver.penalty
     penalty = @set penalty.p = p
     T = typeof(obj.comp)
@@ -187,7 +187,7 @@ function update!(var_black, children, genotypes, Pc, Pm, high_class, mid_class, 
     return var_black
 end
 
-function (b::GESO{TO, TC, T})(x0=copy(b.obj.solver.vars); seed=NaN) where {TO<:Objective{<:ComplianceFunction}, TC<:Constraint{<:VolumeFunction}, T}
+function (b::GESO{TO, TC, T})(x0=copy(b.obj.solver.vars); seed=NaN) where {TO<:Objective{<:Any, <:ComplianceFunction}, TC<:Constraint{<:Any, <:VolumeFunction}, T}
     @unpack sens, old_sens, tol, maxiter = b
     @unpack obj_trace, topology, sens_tol, vars = b
     @unpack Pcmin, Pcmax, Pmmin, Pmmax, Pen = b

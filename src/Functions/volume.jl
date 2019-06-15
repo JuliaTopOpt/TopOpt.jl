@@ -21,7 +21,7 @@ end
     return setfield!(vf, f, v)
 end
 
-function project(c::Constraint{<:VolumeFunction}, x)
+function project(c::Constraint{<:Any, <:VolumeFunction}, x)
     V, f = c.s, c.f
     cellvolumes = f.cellvolumes
     if f.fraction
@@ -58,10 +58,12 @@ function VolumeFunction(problem::StiffnessTopOptProblem{dim, T}, solver::Abstrac
     end
     total_volume = sum(cellvolumes)
     fixed_volume = dot(black, cellvolumes)
-
+    if fraction
+        grad ./= total_volume
+    end
     return VolumeFunction(problem, solver, cellvolumes, grad, total_volume, fixed_volume, tracing, TopOptTrace{T, TI}(), fraction, 0, maxfevals)
 end
-function (v::VolumeFunction{T})(x, grad) where {T}
+function (v::VolumeFunction{T})(x, grad = nothing) where {T}
     varind = v.problem.varind
     black = v.problem.black
     white = v.problem.white
@@ -79,18 +81,11 @@ function (v::VolumeFunction{T})(x, grad) where {T}
     vol = compute_volume(cellvolumes, x, fixed_volume, varind, black, white)
 
     constrval = fraction ? vol / total_volume : vol
-    if fraction
-        constrval = vol / total_volume
-        grad .= v.grad ./ total_volume
-        if tracing
-            push!(topopt_trace.v_hist, vol/total_volume)
-        end
-    else
-        constrval = vol
-        grad .= v.grad    
-        if tracing
-            push!(topopt_trace.v_hist, vol)
-        end
+    if grad !== nothing
+        grad .= v.grad
+    end
+    if tracing
+        push!(topopt_trace.v_hist, vol/total_volume)
     end
 
     return constrval

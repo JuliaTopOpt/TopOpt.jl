@@ -24,7 +24,10 @@ end
 Functions.getfevals(optimizer) = FunctionEvaluations(optimizer)
 
 # MMA wrapper
-include("math_optimizers.jl")
+include("mma_optimizer.jl")
+
+# Fminbox wrapper
+include("box_optimizer.jl")
 
 # Basic SIMP
 include("basic_simp.jl")

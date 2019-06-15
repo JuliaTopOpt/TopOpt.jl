@@ -10,8 +10,9 @@ macro cuda_only(mod, code)
     end |> esc
 end
 
-struct CPU end
-struct GPU end
+abstract type AbstractDevice end
+struct CPU <: AbstractDevice end
+struct GPU <: AbstractDevice end
 whichdevice(::Any) = CPU()
 
 # GPU utilities
@@ -36,7 +37,7 @@ using ForwardDiff, IterativeSolvers#, Preconditioners
 @reexport using VTKDataTypes
 
 const DEBUG = Base.RefValue(false)
-
+function dim end
 #norm(a) = sqrt(dot(a,a))
 
 # FEA solvers
@@ -54,6 +55,9 @@ using .Functions
 # Various topology optimization algorithms
 include(joinpath("Algorithms", "Algorithms.jl"))
 using .Algorithms
+
+include("AugLag/AugLag.jl")
+using .AugLag
 
 macro init_cuda()
     quote

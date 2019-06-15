@@ -1,12 +1,13 @@
 module Functions
 
-using ..TopOpt: whichdevice, CPU, GPU
+using ..TopOpt: whichdevice, CPU, GPU, TopOpt
 using ..TopOptProblems, ..FEA, ..CheqFilters
 using ..Utilities, ForwardDiff, LinearAlgebra, Requires
 using Parameters: @unpack
 using TimerOutputs, JuAFEM, StaticArrays
 using StatsFuns, MappedArrays, LazyArrays
 using ..TopOptProblems: getdh
+using SparseArrays
 
 export  Objective,
         Constraint,
@@ -24,10 +25,15 @@ export  Objective,
 const to = TimerOutput()
 
 abstract type AbstractFunction{T} <: Function end
+abstract type AbstractConstraint{T} <: AbstractFunction{T} end
 
-@params struct Objective <: Function
+@params struct Objective{T} <: AbstractFunction{T}
     f
 end
+Objective(::Type{T}, f) where {T} = Objective{T, typeof(f)}(f)
+Objective(f::AbstractFunction{T}) where {T} = Objective(T, f)
+Objective(f::Function) = Objective(Float64, f)
+
 @inline function Base.getproperty(o::Objective, s::Symbol)
     s === :f && return getfield(o, :f)
     return getproperty(o.f, s)
@@ -37,10 +43,31 @@ end
     return setproperty!(o.f, s, v)
 end
 
-@params struct Constraint <: Function
+@params struct BlockConstraint{T} <: AbstractConstraint{T}
+    f
+    s
+    dim::Int
+end
+function BlockConstraint(::Type{T}, f, s, dim = dim(f)) where {T}
+    return BlockConstraint{T, typeof(f), typeof(s)}(f, s, dim)
+end
+function BlockConstraint(f::AbstractFunction{T}, s, dim = dim(f)) where {T}
+    return BlockConstraint(T, f, s, dim)
+end
+function BlockConstraint(f::Function, s, dim = dim(f))
+    return BlockConstraint(Float64, f, s, dim)
+end
+TopOpt.dim(c::BlockConstraint) = c.dim
+
+@params struct Constraint{T} <: AbstractConstraint{T}
     f
     s
 end
+Constraint(::Type{T}, f, s) where {T} = Constraint{T, typeof(f), typeof(s)}(f, s)
+Constraint(f::AbstractFunction{T}, s) where {T} = Constraint(T, f, s)
+Constraint(f::Function, s) = Constraint(Float64, f, s)
+TopOpt.dim(c::Constraint) = 1
+
 @inline function Base.getproperty(c::Constraint, s::Symbol)
     s === :f && return getfield(c, :f)
     s === :s && return getfield(c, :s)
@@ -61,9 +88,9 @@ Utilities.getpenalty(o::Union{Objective, Constraint}) = o |> getfunction |> gets
 Utilities.setpenalty!(o::Union{Objective, Constraint}, p) = setpenalty!(getsolver(getfunction(o)), p)
 Utilities.getprevpenalty(o::Union{Objective, Constraint}) = o |> getfunction |> getsolver |> getprevpenalty
 
-(o::Objective)(x, grad) = o.f(x, grad)
+(o::Objective)(args...) = o.f(args...)
 
-(c::Constraint)(x, grad) = c.f(x, grad) - c.s
+(c::Constraint)(args...) = c.f(args...) - c.s
 
 getfevals(o::Union{Constraint, Objective}) = o |> getfunction |> getfevals
 getfevals(f::AbstractFunction) = f.fevals
@@ -80,16 +107,19 @@ end
 function ZeroFunction(solver::AbstractFEASolver)
     return ZeroFunction{eltype(solver.vars), typeof(solver)}(solver, 0)
 end
-function (z::ZeroFunction)(x, g) 
+function (z::ZeroFunction)(x, g=nothing)
     z.fevals += 1
+    if g !== nothing
     g .= 0
+    end
     return zero(eltype(g))
 end
 
 getmaxfevals(::ZeroFunction) = Inf
 maxedfevals(::ZeroFunction) = false
-@inline function Base.getproperty(z::ZeroFunction, f::Symbol)
+@inline function Base.getproperty(z::ZeroFunction{T}, f::Symbol) where {T}
     f === :reuse && return false
+    f === :grad && return zero(T)
     return getfield(z, f)
 end
 

@@ -11,6 +11,10 @@ abstract type AbstractOptimizer end
     options::MMA.Options
 end
 multol!(o::MMAOptimizer, m::Real) = o.options.tol *= m
+function setbounds!(o::MMAOptimizer, x, w)
+    o.model.box_min .= max.(0, x .- w)
+    o.model.box_max .= min.(1, x .+ w)
+end
 
 function Functions.maxedfevals(o::MMAOptimizer)
     maxedfevals(o.obj) || maxedfevals(o.constr)
@@ -28,14 +32,17 @@ end
 function MMAOptimizer{T}(args...; kwargs...) where T
     return MMAOptimizer(T(), args...; kwargs...)
 end
+function MMAOptimizer{T}(::AbstractDevice, args...; kwargs...) where T
+    throw("Check your types.")
+end
 function MMAOptimizer(  device::Tdev, 
-                        obj::Objective{<:AbstractFunction{T}}, 
+                        obj::Objective{T, <:AbstractFunction{T}}, 
                         constr, 
                         opt = MMA.MMA87(), 
                         subopt = Optim.ConjugateGradient();
                         options = MMA.Options(),
                         convcriteria = MMA.KKTCriteria()
-                    ) where {T, Tdev}
+                    ) where {T, Tdev <: AbstractDevice}
 
     solver = getsolver(obj)
     nvars = length(solver.vars)
