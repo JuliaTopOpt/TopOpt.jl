@@ -69,6 +69,6 @@ result = simp(x0)
 
 # Visualize the result using Makie.jl
 
-glmesh, color = GLMesh(problem, result.topology)
-mesh(glmesh, color=color)
+glmesh = GLMesh(problem, result.topology)
+mesh(glmesh)
 ```

@@ -13,6 +13,7 @@
     maxfevals::Int
 end
 Utilities.getpenalty(c::ComplianceFunction) = c |> getsolver |> getpenalty
+Utilities.setpenalty!(c::ComplianceFunction, p) = setpenalty!(getsolver(c), p)
 
 function ComplianceFunction(problem, solver::AbstractDisplacementSolver, args...; kwargs...)
     ComplianceFunction(whichdevice(solver), problem, solver, args...; kwargs...)

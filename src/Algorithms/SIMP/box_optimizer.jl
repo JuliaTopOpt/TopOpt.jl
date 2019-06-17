@@ -1,8 +1,8 @@
 @params mutable struct BoxOptimizer{T} <: AbstractOptimizer
-    obj
-    lb
-    ub
-    suboptimizer
+    obj::AbstractFunction{T}
+    lb::AbstractVector{T}
+    ub::AbstractVector{T}
+    suboptimizer::Optim.FirstOrderOptimizer
     options::Optim.Options
 end
 function setbounds!(o::BoxOptimizer, x, w)
@@ -22,9 +22,9 @@ function BoxOptimizer{T}(::AbstractDevice, args...; kwargs...) where T
     throw("Check your types.")
 end
 function BoxOptimizer(  device::Tdev, 
-                        obj::Objective{T, <:AbstractFunction{T}}, 
-                        subopt = Optim.ConjugateGradient();
-                        options = Optim.Options(allow_f_increases=true, x_tol=-1e-4, f_tol=-1e-4)
+                        obj::AbstractFunction{T}, 
+                        subopt::Optim.FirstOrderOptimizer = GradientDescent(linesearch=BackTracking());
+                        options = Optim.Options(allow_f_increases=false, x_tol=1e-3, f_tol=1e-3, g_tol=1e-3)
                     ) where {T, Tdev <: AbstractDevice}
 
     solver = getsolver(obj)
@@ -48,15 +48,7 @@ function Utilities.setpenalty!(o::BoxOptimizer, p)
 end
 
 function (o::BoxOptimizer)(x0::AbstractVector)
-    @unpack options, obj, lb, ub, subopt = o
-    function fg!(F,G,x)
-        if G != nothing && F != nothing
-            return obj(x, G)
-        elseif F != nothing
-            return obj(x)
-        else
-            return nothing
-        end
-    end
-    return Optim.optimize(Optim.only_fg!(fg!), lb, ub, x0, Optim.Fminbox(subopt), options)
+    @unpack options, obj, lb, ub, suboptimizer = o
+    grad_func = (g, x) -> obj(x, g)
+    return Optim.optimize(obj, grad_func, lb, ub, x0, Optim.Fminbox(suboptimizer), options)
 end

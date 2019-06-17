@@ -4,6 +4,7 @@ using ..TopOpt: @params, TopOpt, dim
 using ..TopOpt.Functions: Constraint, AbstractConstraint, AbstractFunction, Objective
 using Parameters
 using ..TopOpt.Algorithms: setbounds!
+using ..TopOpt.Utilities: Utilities, setpenalty!
 
 abstract type AbstractConstraintBlock end
 
@@ -172,7 +173,16 @@ end
     grad::AbstractVector{T}
 end
 LagrangianFunction(obj, penalty) = LagrangianFunction(obj, penalty, similar(obj.grad))
-
+function Utilities.setpenalty!(lag::LagrangianFunction, p)
+    setpenalty!(lag.obj, p)
+    for c in lag.penalty.eq.block
+        setpenalty!(c, p)
+    end
+    for c in lag.penalty.ineq.block
+        setpenalty!(c, p)
+    end
+    return lag
+end
 function Base.getproperty(func::LagrangianFunction, f::Symbol)
     f === :obj && return getfield(func, :obj)
     f === :penalty && return getfield(func, :penalty)
@@ -236,9 +246,20 @@ function reset!(alg::AbstractLagrangianAlgorithm)
     end
 end
 
+macro print_verbose()
+    esc(quote
+        println("Lagrangian min = $(result.minimum)")
+        println("Gradient inf-norm = $(maximum(abs, lag.grad))")
+        max_eq_infeas = length(eq.grad_λ) == 0 ? 0.0 : maximum(abs, eq.grad_λ)
+        max_ineq_infeas = length(ineq.grad_λ) == 0 ? 0.0 : maximum(x -> max(0, x), ineq.grad_λ)
+        println("Max eq infeasibility = $(max_eq_infeas)")
+        println("Max ineq infeasibility = $(max_ineq_infeas)\n")
+    end)
+end
+
 for Talg in (:AugmentedLagrangianAlgorithm, :LagrangianAlgorithm)
     @eval begin
-        function (alg::$Talg)(x0)
+        function (alg::$Talg)(x0; verbose=true)
             @unpack optimizer, lag, n, x, prev_grad, w, α = alg
             @unpack eq, ineq = lag.penalty
             if $Talg <: AugmentedLagrangianAlgorithm
@@ -247,23 +268,33 @@ for Talg in (:AugmentedLagrangianAlgorithm, :LagrangianAlgorithm)
             end
             T = eltype(x0)
             x .= x0
+            r0 = r[]
+
             setbounds!(optimizer, x, w)
+            r[] = 0
+            verbose && println("r = $(r[])")
             result = optimizer(x)
+            verbose && @print_verbose()
+
             x .= result.minimizer
             prev_grad .= lag.grad
             prev_l = result.minimum
+
             setbounds!(optimizer, x, w)
-            for i in 2:n
+            r[] = r0
+            for i in 1:n
                 if length(eq.λ) > 0
                     eq.λ .+= α .* eq.grad_λ
                 end
                 if length(ineq.λ) > 0
                     ineq.λ .+= max.(α .* ineq.grad_λ, zero(T))
                 end
-                if $Talg <: AugmentedLagrangianAlgorithm
+                if i > 1 && $Talg <: AugmentedLagrangianAlgorithm
                     r[] *= γ
                 end
+                verbose && println("r = $(r[])")
                 result = optimizer(x)
+                verbose && @print_verbose()
                 w, update = getbounds(w, prev_grad, x, result.minimizer, prev_l, result.minimum)
                 if update
                     x .= result.minimizer
@@ -278,7 +309,9 @@ for Talg in (:AugmentedLagrangianAlgorithm, :LagrangianAlgorithm)
 end
 
 function getbounds(w, prev_grad, x_prev, x, prev_l, l)
-    mu = (l - prev_l) / (dot(prev_grad, x) - dot(prev_grad, x_prev))
+    return w, true
+    # Trust region method from paper isn't working properly
+    mu = abs(l - prev_l) / abs(dot(prev_grad, x) - dot(prev_grad, x_prev))
     if mu <= 0.25
         return w / 4, false
     elseif 0.25 < mu <= 0.75

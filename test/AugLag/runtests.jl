@@ -142,6 +142,47 @@ end
     @test norm(result.minimizer - [1/3, 8/27]) < 1e-3
 end
 
+@testset "Lagrangian algorithm - Box - Compliance" begin
+    problem = PointLoadCantilever(Val{:Linear}, (160, 40), (1.0, 1.0), 1.0, 0.3, 1.0)
+    solver = FEASolver(Displacement, Direct, problem, xmin = 0.001, penalty = TopOpt.PowerPenalty(1.0))
+
+    comp = ComplianceFunction(problem, solver, filtering = true, rmin = 4.0,
+        tracing = true, logarithm = false)
+    constr = Constraint(VolumeFunction(problem, solver), 0.5)
+    ineq_block = IneqConstraintBlock((constr,), [0.0], [0.0])
+    eq_block = EqConstraintBlock((), [], [])
+    pen = AugmentedPenalty(eq_block, ineq_block, Ref(1.0))
+
+    obj = LagrangianFunction(comp, pen)
+    x = similar(solver.vars); x .= 0.9;
+    optimizer = BoxOptimizer(obj, GradientDescent())
+    #=
+    mma_options = options = MMA.Options(maxiter = 1000, 
+        tol = MMA.Tolerances(kkttol = 0.001))
+    convcriteria = MMA.KKTCriteria()
+    optimizer = MMAOptimizer(Objective(obj), constr, MMA.MMA87(),
+        ConjugateGradient(), options = mma_options,
+        convcriteria = convcriteria)
+    =#
+
+    w = 0.5; gamma=2.0; alpha=1.0
+    alg = AugmentedLagrangianAlgorithm(optimizer, obj, 20, copy(x), w, gamma, alpha)
+    AugLag.reset!(alg);
+    alg.lag.penalty.r[] = 1.0
+    result = alg(x, verbose=true)
+
+    for p in 1.2:0.2:3.0
+        global optimizer, x, result, alg, obj, w, gamma, alpha
+        TopOpt.setpenalty!(optimizer, p)
+        x = copy(result.minimizer)
+        alg = AugmentedLagrangianAlgorithm(optimizer, obj, 20, copy(x), w, gamma, alpha)
+        AugLag.reset!(alg);
+        alg.lag.penalty.r[] = 1.0
+        result = alg(x, verbose=true)
+    end
+    @test constr(result.minimizer) < 1e-3
+end
+
 # Currently gives a sub-optimal feasible solution
 # First order KKT conditions are satisfied
 #=
