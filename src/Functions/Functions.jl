@@ -14,6 +14,14 @@ export  Objective,
         VolumeFunction,
         ComplianceFunction,
         ZeroFunction,
+        Sum,
+        Product,
+        BinPenaltyFunction,
+        LinAggregation,
+        QuadAggregation,
+        QuadMaxAggregation,
+        LinQuadAggregation,
+        LinQuadMaxAggregation,
         AbstractFunction,
         getfevals,
         getmaxfevals,
@@ -126,5 +134,9 @@ end
 include("compliance.jl")
 include("volume.jl")
 include("stress.jl")
+include("integrality_penalty.jl")
+include("sum.jl")
+include("product.jl")
+include("lin_quad_aggregation.jl")
 
 end

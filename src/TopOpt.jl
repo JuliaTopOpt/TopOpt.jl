@@ -1,6 +1,6 @@
 module TopOpt
 
-using Requires
+using Requires, Reexport
 
 macro cuda_only(mod, code)
     quote
@@ -50,7 +50,7 @@ using .CheqFilters
 
 # Objective and constraint functions
 include(joinpath("Functions", "Functions.jl"))
-using .Functions
+@reexport using .Functions
 
 # Various topology optimization algorithms
 include(joinpath("Algorithms", "Algorithms.jl"))

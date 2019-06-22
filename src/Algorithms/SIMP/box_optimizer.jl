@@ -23,8 +23,8 @@ function BoxOptimizer{T}(::AbstractDevice, args...; kwargs...) where T
 end
 function BoxOptimizer(  device::Tdev, 
                         obj::AbstractFunction{T}, 
-                        subopt::Optim.FirstOrderOptimizer = GradientDescent(linesearch=BackTracking());
-                        options = Optim.Options(allow_f_increases=false, x_tol=1e-3, f_tol=1e-3, g_tol=1e-3)
+                        subopt::Optim.FirstOrderOptimizer = ConjugateGradient();
+                        options = Optim.Options(allow_f_increases=true, x_tol=1e-5, f_tol=1e-5, g_tol=1e-2)
                     ) where {T, Tdev <: AbstractDevice}
 
     solver = getsolver(obj)

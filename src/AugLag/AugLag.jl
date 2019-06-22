@@ -1,5 +1,6 @@
 module AugLag
 
+using FillArrays, CatViews, Optim, LineSearches, LinearAlgebra
 using ..TopOpt: @params, TopOpt, dim
 using ..TopOpt.Functions: Constraint, AbstractConstraint, AbstractFunction, Objective
 using Parameters
@@ -153,8 +154,6 @@ end
     r::Base.RefValue{T}
 end
 
-using LinearAlgebra
-
 function (pen::AugmentedPenalty)(x, grad_x; reset_grad = true)
     if reset_grad
         grad_x .= 0
@@ -194,6 +193,7 @@ function (l::LagrangianFunction)(x, grad=l.grad)
     grad .= 0
     p = obj(x, grad)
     p += penalty(x, grad, reset_grad=false)
+
     if grad !== l.grad
         l.grad .= grad
     end
@@ -206,30 +206,23 @@ abstract type AbstractLagrangianAlgorithm end
 @params struct LagrangianAlgorithm <: AbstractLagrangianAlgorithm
     optimizer
     lag
-    n::Int
     x
     prev_grad
-    w
-    α
 end
-function LagrangianAlgorithm(optimizer, lag::LagrangianFunction, n::Int, x, w = 0.25, α = 0.1)
+function LagrangianAlgorithm(optimizer, lag::LagrangianFunction, n::Int, x)
     prev_grad = similar(x)
-    return LagrangianAlgorithm(optimizer, lag, n, x, prev_grad, w, α)
+    return LagrangianAlgorithm(optimizer, lag, x, prev_grad)
 end
 
 @params struct AugmentedLagrangianAlgorithm <: AbstractLagrangianAlgorithm
     optimizer
     lag
-    n::Int
     x
     prev_grad
-    w
-    γ
-    α
 end
-function AugmentedLagrangianAlgorithm(optimizer, lag::AugmentedLagrangianFunction, n::Int, x, w = 0.25, γ = 1.2, α = 0.1)
+function AugmentedLagrangianAlgorithm(optimizer, lag::AugmentedLagrangianFunction, x)
     prev_grad = similar(x)
-    return AugmentedLagrangianAlgorithm(optimizer, lag, n, x, prev_grad, w, γ, α)
+    return AugmentedLagrangianAlgorithm(optimizer, lag, x, prev_grad)
 end
 
 function reset!(alg::AbstractLagrangianAlgorithm)
@@ -246,6 +239,12 @@ function reset!(alg::AbstractLagrangianAlgorithm)
     end
 end
 
+@params struct AugLagResult{T}
+    minimizer::AbstractVector{T}
+    minimum::T
+    fevals::Int
+end
+
 macro print_verbose()
     esc(quote
         println("Lagrangian min = $(result.minimum)")
@@ -257,53 +256,67 @@ macro print_verbose()
     end)
 end
 
+function catview(v1, v2)
+    if length(v1) == 0 && length(v2) != 0
+        return CatView(v2)
+    elseif length(v1) != 0 && length(v2) == 0
+        return CatView(v1)
+    elseif length(v1) != 0 && length(v2) != 0
+        return CatView(v1, v2)
+    else
+        T1, T2 = eltype(v1), eltype(v2)
+        return CatView(promote_type(T1, T2)[])
+    end
+end
+
 for Talg in (:AugmentedLagrangianAlgorithm, :LagrangianAlgorithm)
     @eval begin
-        function (alg::$Talg)(x0; verbose=true)
-            @unpack optimizer, lag, n, x, prev_grad, w, α = alg
+        function (alg::$Talg)(x0; verbose=false, half_on_decrease=true, inner_iterations=5, outer_iterations=10, alpha=500.0, gamma=1.2, trust_region=1.0)
+            @unpack optimizer, lag, x, prev_grad = alg
             @unpack eq, ineq = lag.penalty
             if $Talg <: AugmentedLagrangianAlgorithm
-                @unpack γ = alg
                 @unpack r = lag.penalty
             end
             T = eltype(x0)
             x .= x0
-            r0 = r[]
-
-            setbounds!(optimizer, x, w)
-            r[] = 0
-            verbose && println("r = $(r[])")
+            setbounds!(optimizer, x, trust_region)
             result = optimizer(x)
-            verbose && @print_verbose()
-
             x .= result.minimizer
-            prev_grad .= lag.grad
-            prev_l = result.minimum
+            func_evals = 0
 
-            setbounds!(optimizer, x, w)
-            r[] = r0
-            for i in 1:n
-                if length(eq.λ) > 0
-                    eq.λ .+= α .* eq.grad_λ
+            #λ_lb = CatView(Fill(T(-Inf), length(eq.λ)), Fill(zero(T), length(ineq.λ)))
+            #λ_ub = Fill(T(Inf), length(eq.λ) + length(ineq.λ))
+
+            for i in 1:($Talg <: AugmentedLagrangianAlgorithm ? outer_iterations : 1)
+                if $Talg <: AugmentedLagrangianAlgorithm
+                    r[] *= gamma
+                    verbose && println("r = $(r[])")
                 end
-                if length(ineq.λ) > 0
-                    ineq.λ .+= max.(α .* ineq.grad_λ, zero(T))
-                end
-                if i > 1 && $Talg <: AugmentedLagrangianAlgorithm
-                    r[] *= γ
-                end
-                verbose && println("r = $(r[])")
                 result = optimizer(x)
+                func_evals += result.f_calls + result.g_calls
+                x .= result.minimizer
                 verbose && @print_verbose()
-                w, update = getbounds(w, prev_grad, x, result.minimizer, prev_l, result.minimum)
-                if update
+                v1 = result.minimum
+                λ_step_size = alpha
+                for j in 1:inner_iterations
+                    eq.λ .= eq.λ .+ λ_step_size .* eq.grad_λ
+                    ineq.λ .= max.(ineq.λ .+ λ_step_size .* ineq.grad_λ, 0)
+                    result = optimizer(x)
+                    func_evals += result.f_calls + result.g_calls
                     x .= result.minimizer
-                    prev_grad .= lag.grad
-                    prev_l = result.minimum
+                    verbose && @print_verbose()
+                    v2 = result.minimum
+                    if half_on_decrease && v2 <= v1
+                        λ_step_size /= 2
+                    end
+                    v1 = v2
                 end
-                setbounds!(optimizer, x, w)
+                #prev_grad .= lag.grad
+                #prev_l = result.minimum
+                #w, update = getbounds(w, prev_grad, x, result.minimizer, prev_l, result.minimum)
+                setbounds!(optimizer, x, trust_region)
             end
-            return result
+            return AugLagResult(result.minimizer, lag.obj(result.minimizer), func_evals)
         end
     end
 end
