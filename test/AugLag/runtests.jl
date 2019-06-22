@@ -79,7 +79,7 @@ end
 
     ineq_block = IneqConstraintBlock((constr,), [1000.0], [0.0])
     eq_block = EqConstraintBlock((), [], [])
-    pen = AugmentedPenalty(eq_block, ineq_block, Ref(0.1))
+    pen = AugmentedPenalty(eq_block, ineq_block, 0.1)
 
     x = rand(2)*10
     grad = similar(x)
@@ -108,7 +108,7 @@ end
     @test isapprox(grad_constr, grad_g, rtol = 1e-5)
 
     ineq_block = IneqConstraintBlock((constr,), [0.0], [0.0])
-    augpen = AugLag.AugmentedPenalty(eq_block, ineq_block, Ref(10.0))
+    augpen = AugLag.AugmentedPenalty(eq_block, ineq_block, 10.0)
     pval = augpen(x, grad)
     grad_fdm = FDM.grad(central_fdm(5, 1), x -> augpen(x, similar(x)), x)
     @test pval == 10*max(constr(x, similar(x)), 0)^2
@@ -127,7 +127,7 @@ end
 
     ineq_block = IneqConstraintBlock((constr1, constr2), [0.0, 0.0], [0.0, 0.0])
     eq_block = EqConstraintBlock((), [], [])
-    pen = AugmentedPenalty(eq_block, ineq_block, Ref(1.0))
+    pen = AugmentedPenalty(eq_block, ineq_block, 1.0)
     lag = LagrangianFunction(obj, pen)
 
     x = [0.9, 0.9]
@@ -165,7 +165,7 @@ end
     constr = Constraint(VolumeFunction(problem, solver), 0.3)
     ineq_block = IneqConstraintBlock((constr,), [100.0], [0.0])
     eq_block = EqConstraintBlock((), [], [])
-    pen = AugmentedPenalty(eq_block, ineq_block, Ref(100.0))
+    pen = AugmentedPenalty(eq_block, ineq_block, 100.0)
     obj = LagrangianFunction(comp, pen)
 
     optimizer = BoxOptimizer(obj)
@@ -191,7 +191,7 @@ end
     
     ineq_block = IneqConstraintBlock((constr1,), [0.0], [0.0])
     eq_block = EqConstraintBlock((), [], [])
-    pen = AugmentedPenalty(eq_block, ineq_block, Ref(1.0))
+    pen = AugmentedPenalty(eq_block, ineq_block, 1.0)
     lag = LagrangianFunction(obj, pen)
 
     model = MMA.Model(ndim, lag)
@@ -203,7 +203,7 @@ end
     w = 1.0; gamma=1.2; alpha=1.0
     alg = AugmentedLagrangianAlgorithm(optimizer, lag, copy(x))
     AugLag.reset!(alg);
-    result = alg(x, outer_iterations=20, inner_iterations=5, trust_region=w, alpha=alpha, gamma=gamma)
+    result = alg(x, outer_iterations=100, inner_iterations=5, trust_region=w, alpha=alpha, gamma=gamma)
     
     @test constr1(result.minimizer) < 1e-2
     @test constr2(result.minimizer) < 1e-2

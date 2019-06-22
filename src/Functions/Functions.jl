@@ -42,6 +42,8 @@ Objective(::Type{T}, f) where {T} = Objective{T, typeof(f)}(f)
 Objective(f::AbstractFunction{T}) where {T} = Objective(T, f)
 Objective(f::Function) = Objective(Float64, f)
 
+TopOpt.dim(o::Objective) = TopOpt.dim(o.f)
+
 @inline function Base.getproperty(o::Objective, s::Symbol)
     s === :f && return getfield(o, :f)
     return getproperty(o.f, s)

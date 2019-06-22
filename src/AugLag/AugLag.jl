@@ -2,7 +2,7 @@ module AugLag
 
 using FillArrays, CatViews, Optim, LineSearches, LinearAlgebra
 using ..TopOpt: @params, TopOpt, dim
-using ..TopOpt.Functions: Constraint, AbstractConstraint, AbstractFunction, Objective
+using ..TopOpt.Functions: Constraint, AbstractConstraint, AbstractFunction, Objective, LinAggregation, LinQuadAggregation, LinQuadMaxAggregation
 using Parameters
 using ..TopOpt.Algorithms: setbounds!
 using ..TopOpt.Utilities: Utilities, setpenalty!
@@ -29,23 +29,22 @@ TopOpt.dim(c::IneqConstraintBlock{<:Array}) = mapreduce(dim, +, c.block, init=0)
 
 abstract type AbstractPenalty{T} <: AbstractFunction{T} end
 
+## Linear penalty ##
+
 @params struct LinearPenalty{T} <: AbstractPenalty{T}
     eq::EqConstraintBlock
     ineq::IneqConstraintBlock
+    grad_temp::AbstractVector{T}
 end
 function LinearPenalty(eq::EqConstraintBlock, ineq::IneqConstraintBlock)
-    T1 = eltype(eq.λ)
-    T2 = eltype(ineq.λ)
-    if length(eq.λ) > 0 && length(ineq.λ) > 0
-        T = promote_type(T1, T2)
-    elseif length(eq.λ) > 0
-        T = T1
-    elseif length(ineq.λ) > 0
-        T = T2
+    if length(eq.block) > 0
+        grad_temp = similar(eq.block[1].grad)
+    elseif length(ineq.block) > 0
+        grad_temp = similar(ineq.block[1].grad)
     else
-        T = Float64
+        grad_temp = Float64[]
     end
-    LinearPenalty{T, typeof(eq), typeof(ineq)}(eq, ineq)
+    LinearPenalty(eq, ineq, grad_temp)
 end
 
 function (d::LinearPenalty)(x, grad_x; reset_grad=true)
@@ -54,117 +53,102 @@ function (d::LinearPenalty)(x, grad_x; reset_grad=true)
         #d.eq.grad_λ .= 0
         #d.ineq.grad_λ .= 0
     end
-    v = @views compute_lin_penalty(x, grad_x, d.eq.λ, d.eq.grad_λ, d.eq.block, 0, false)
-    v += @views compute_lin_penalty(x, grad_x, d.ineq.λ, d.ineq.grad_λ, d.ineq.block, 0, false)
+    @unpack eq, ineq, grad_temp = d
+    v = @views compute_lin_penalty(x, grad_x, eq.λ, eq.grad_λ, eq.block, grad_temp, 0)
+    v += @views compute_lin_penalty(x, grad_x, ineq.λ, ineq.grad_λ, ineq.block, grad_temp, 0)
     return v
 end
 
-@inline function compute_lin_penalty(x, grad_x, λ, grad_λ, block::Tuple, offset, reset_grad)
+@inline function compute_lin_penalty(x, grad_x, λ, grad_λ, block::Tuple, grad_temp, offset)
     length(block) === 0 && return zero(eltype(x))
     range =  offset + 1 : offset + dim(block[1])
-    p = @views compute_lin_penalty(block[1], x, grad_x, λ[range], grad_λ[range], reset_grad)
-    p += compute_lin_penalty(x, grad_x, λ, grad_λ, Base.tail(block), offset+dim(block[1]), false)
+    p = @views compute_lin_penalty(block[1], x, grad_x, λ[range], grad_λ[range], grad_temp)
+    p += compute_lin_penalty(x, grad_x, λ, grad_λ, Base.tail(block), grad_temp, offset + dim(block[1]))
     return p
 end
-@inline function compute_lin_penalty(x, grad_x, λ, grad_λ, block::AbstractArray, offset, reset_grad)
+@inline function compute_lin_penalty(x, grad_x, λ, grad_λ, block::AbstractArray{<:Function}, grad_temp, offset)
     length(block) == 0 && return zero(eltype(x))
     range =  offset + 1 : offset + dim(block[1])
-    p = @views compute_lin_penalty(block[1], x, grad_x, λ[range], grad_λ[range], reset_grad)
+    p = @views compute_lin_penalty(block[1], x, grad_x, λ[range], grad_λ[range], grad_temp)
     for i in 2:length(block)
         offset += dim(block[i-1])
         range =  offset + 1 : offset + dim(block[i])
-        p += @views compute_lin_penalty(block[i], x, grad_x, λ[range], grad_λ[range], false)
+        p += @views compute_lin_penalty(block[i], x, grad_x, λ[range], grad_λ[range], grad_temp)
     end
     return p
 end
 # Should be overloaded for block constraints
-@inline function compute_lin_penalty(f::AbstractConstraint, x::AbstractArray{<:Real}, grad_x::AbstractArray{<:Real}, λ::AbstractArray{<:Real}, grad_λ::AbstractArray{<:Real}, reset_grad::Bool)
-    @assert dim(f) == 1
-    if reset_grad
-        grad_x .= 0
-    end
-    v = f(x)
-    grad_λ[1] = v
-    v *= λ[1]
-    grad_x .+= f.grad .* λ[1]
+@inline function compute_lin_penalty(f::AbstractConstraint, x, grad_x, λ, grad_λ, grad_temp)
+    func1 = LinAggregation(f, grad_λ, λ, grad_temp, 0, 1)
+    v = func1(x)
+    grad_x .+= func1.grad
     return v
 end
 
-@inline function compute_quad_penalty_ineq(x, grad_x, block::Tuple, r, reset_grad)
-    length(block) === 0 && return zero(eltype(x))
-    p = compute_quad_penalty_ineq(block[1], x, grad_x, r, reset_grad)
-    p += compute_quad_penalty_ineq(x, grad_x, Base.tail(block), r, false)
-    return p
-end
-@inline function compute_quad_penalty_ineq(x, grad_x, block::AbstractArray, r, reset_grad)
-    length(block) == 0 && return zero(eltype(x))
-    p = compute_quad_penalty_ineq(block[1], x, grad_x, r, reset_grad)
-    for i in 2:length(block)
-        p += compute_quad_penalty_ineq(block[i], x, grad_x, r, false)
-    end
-    return p
-end
-# To be efficiently defined for each block function
-function compute_quad_penalty_ineq(f::AbstractConstraint, x::AbstractArray{<:Real}, g::AbstractArray{<:Real}, r, reset_grad::Bool)
-    @assert dim(f) == 1
-    T = eltype(x)
-    if reset_grad
-        g .= 0
-    end
-    v = f(x)
-    if v > 0
-        g .+= f.grad .* 2*v*r
-        v = r*v^2
-    else
-        v = zero(T)
-    end
-    return v
-end
-
-@inline function compute_quad_penalty_eq(x, grad_x, g::Tuple, r, reset_grad)
-    length(g) === 0 && return zero(eltype(x))
-    p = compute_quad_penalty_eq(g.block[1], x, grad_x, r, reset_grad)
-    p += compute_quad_penalty_eq(x, grad_x, Base.tail(g.block), r, false)
-    return p
-end
-@inline function compute_quad_penalty_eq(x, grad_x, block::AbstractArray, r, reset_grad)
-    length(block) == 0 && return zero(eltype(x))
-    p = compute_quad_penalty_eq(block[1], x, grad_x, r, reset_grad)
-    for i in 2:length(block)
-        p += compute_quad_penalty_eq(block[i], x, grad_x, r, false)
-    end
-    return p
-end
-# To be efficiently defined for each block function
-function compute_quad_penalty_eq(f::AbstractConstraint, x::AbstractArray{<:Real}, g::AbstractArray{<:Real}, r, reset_grad::Bool)
-    @assert dim(f) == 1
-    if reset_grad
-        g .= 0
-    end
-    v = f(x)
-    m = 2*r*v
-    v = r*v^2
-    g .+= f.grad .* m
-    return v
-end
+## Augmented penalty ##
 
 @params struct AugmentedPenalty{T} <: AbstractPenalty{T}
     eq::EqConstraintBlock
     ineq::IneqConstraintBlock
     r::Base.RefValue{T}
+    grad_temp::AbstractVector{T}
+end
+function AugmentedPenalty(eq::EqConstraintBlock, ineq::IneqConstraintBlock, r::T) where {T}
+    @assert !(typeof(r) <: Ref)
+    if length(eq.block) > 0
+        grad_temp = similar(eq.block[1].grad)
+    elseif length(ineq.block) > 0
+        grad_temp = similar(ineq.block[1].grad)
+    else
+        grad_temp = T[]
+    end
+    return AugmentedPenalty(eq, ineq, Ref{eltype(grad_temp)}(r), grad_temp)
 end
 
 function (pen::AugmentedPenalty)(x, grad_x; reset_grad = true)
     if reset_grad
         grad_x .= 0
     end
-    @unpack eq, ineq, r = pen
-    p = @views compute_lin_penalty(x, grad_x, eq.λ, eq.grad_λ, eq.block, 0, false)
-    p += @views compute_quad_penalty_eq(x, grad_x, eq.block, r[], false)
-    p += @views compute_lin_penalty(x, grad_x, ineq.λ, ineq.grad_λ, ineq.block, 0, false)
-    p += @views compute_quad_penalty_ineq(x, grad_x, ineq.block, r[], false)
+    @unpack eq, ineq, r, grad_temp = pen
+    p = compute_lin_quad_penalty(x, grad_x, eq.λ, eq.grad_λ, eq.block, r[], grad_temp, 0, true)
+    p += compute_lin_quad_penalty(x, grad_x, ineq.λ, ineq.grad_λ, ineq.block, r[], grad_temp, 0, false)
     return p
 end
+
+@inline function compute_lin_quad_penalty(x, grad_x, λ, grad_λ, block::Tuple, r, grad_temp, offset, equality)
+    length(block) === 0 && return zero(eltype(x))
+    range =  offset + 1 : offset + dim(block[1])
+    p = @views compute_lin_quad_penalty(block[1], x, grad_x, λ[range], grad_λ[range], r, grad_temp, equality)
+    p += compute_lin_quad_penalty(x, grad_x, λ, grad_λ, Base.tail(block), r, grad_temp, offset + dim(block[1]), equality)
+    return p
+end
+
+@inline function compute_lin_quad_penalty(x, grad_x, block::AbstractArray{<:Function}, r, grad_temp, equality)
+    length(block) == 0 && return zero(eltype(x))
+    range =  offset + 1 : offset + dim(block[1])
+    p = @views compute_lin_quad_penalty(block[1], x, grad_x, λ[range], grad_λ[range], r, grad_temp, equality)
+    for i in 2:length(block)
+        offset += dim(block[i-1])
+        range =  offset + 1 : offset + dim(block[i])
+        p += @views compute_lin_quad_penalty(block[i], x, grad_x, λ[range], grad_λ[range], r, grad_temp, equality)
+    end
+    return p
+end
+
+@inline function compute_lin_quad_penalty(f::AbstractConstraint, x, grad_x, λ, grad_λ, r, grad_temp, equality)
+    if equality
+        func1 = LinQuadAggregation(f, grad_λ, λ, r, grad_temp, 0, 1)
+        v = func1(x)
+        grad_x .+= func1.grad
+    else
+        func2 = LinQuadMaxAggregation(f, grad_λ, λ, r, grad_temp, 0, 1)
+        v = func2(x)
+        grad_x .+= func2.grad
+    end
+    return v
+end
+
+## Lagrangian function ##
 
 @params struct LagrangianFunction{T} <: AbstractFunction{T}
     obj::AbstractFunction{T}
@@ -172,6 +156,8 @@ end
     grad::AbstractVector{T}
 end
 LagrangianFunction(obj, penalty) = LagrangianFunction(obj, penalty, similar(obj.grad))
+TopOpt.dim(l::LagrangianFunction) = 1
+
 function Utilities.setpenalty!(lag::LagrangianFunction, p)
     setpenalty!(lag.obj, p)
     for c in lag.penalty.eq.block
@@ -200,6 +186,8 @@ function (l::LagrangianFunction)(x, grad=l.grad)
     return p
 end
 const AugmentedLagrangianFunction = LagrangianFunction{<:Any, <:Any, <:AugmentedPenalty}
+
+## Lagrangian algorithm ##
 
 abstract type AbstractLagrangianAlgorithm end
 

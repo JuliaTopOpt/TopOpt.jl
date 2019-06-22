@@ -20,7 +20,7 @@ using TopOpt.Algorithms: BoxOptimizer
         constr = Constraint(VolumeFunction(problem, solver), 0.5)
         ineq_block = IneqConstraintBlock((constr,), [1.0e3], [0.0])
         eq_block = EqConstraintBlock((), [], [])
-        pen = AugmentedPenalty(eq_block, ineq_block, Ref(1.0))
+        pen = AugmentedPenalty(eq_block, ineq_block, 1.0)
 
         lag = LagrangianFunction(obj, pen)
         x = similar(solver.vars); x .= 0.5;
