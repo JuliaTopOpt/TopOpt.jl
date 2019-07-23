@@ -101,6 +101,15 @@ end
     test_grad(agg4, x)
     test_grad(agg5, x)
 
+    x = rand(2)*10
+    function lag_dual(λ, grad_λ)
+        agg1.weights .= λ
+        f = agg1(x)
+        grad_λ .= agg1.fval; 
+        return f
+    end
+    test_grad(lag_dual, [0.5])
+
     grad_g = similar(grad)
     grad_constr = similar(grad)
     g(x, grad_g)
