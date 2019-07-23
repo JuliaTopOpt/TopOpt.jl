@@ -2,7 +2,7 @@ module AugLag
 
 using FillArrays, CatViews, Optim, LineSearches, LinearAlgebra
 using ..TopOpt: @params, TopOpt, dim
-using ..TopOpt.Functions: Constraint, AbstractConstraint, AbstractFunction, Objective, LinAggregation, LinQuadAggregation, LinQuadMaxAggregation
+using ..TopOpt.Functions: Constraint, AbstractConstraint, AbstractFunction, Objective, LinAggregation, LinQuadAggregation
 using Parameters
 using ..TopOpt.Algorithms: setbounds!
 using ..TopOpt.Utilities: Utilities, setpenalty!
@@ -136,15 +136,9 @@ end
 end
 
 @inline function compute_lin_quad_penalty(f::AbstractConstraint, x, grad_x, λ, grad_λ, r, grad_temp, equality)
-    if equality
-        func1 = LinQuadAggregation(f, grad_λ, λ, r, grad_temp, 0, 1)
-        v = func1(x)
-        grad_x .+= func1.grad
-    else
-        func2 = LinQuadMaxAggregation(f, grad_λ, λ, r, grad_temp, 0, 1)
-        v = func2(x)
-        grad_x .+= func2.grad
-    end
+    func = LinQuadAggregation(f, grad_λ, λ, r, !equality, grad_temp, 0, 1)
+    v = func(x)
+    grad_x .+= func.grad
     return v
 end
 

@@ -84,23 +84,31 @@ end
     x = rand(2)*10
     grad = similar(x)
 
+    # Augmented Lagrangian objective
     lag = Objective(LagrangianFunction(obj, pen))
     test_grad(lag, x)
 
+    # Linear penalty
     linpen = AugLag.LinearPenalty(eq_block, ineq_block)
     test_grad(linpen, x)
 
+    # Aggregations
     agg1 = LinAggregation(lag, [0.5])
-    agg2 = QuadAggregation(lag, 0.5)
-    agg3 = QuadMaxAggregation(lag, 0.5)
-    agg4 = LinQuadAggregation(lag, [0.5], 0.5)
-    agg5 = LinQuadMaxAggregation(lag, [0.5], 0.5)
+    agg2 = QuadAggregation(lag, 0.5, max=false)
+    agg3 = QuadAggregation(lag, 0.5, max=true)
+    agg4 = LinQuadAggregation(lag, [0.5], 0.5, max=false)
+    agg5 = LinQuadAggregation(lag, [0.5], 0.5, max=true)
     test_grad(agg1, x)
     test_grad(agg2, x)
     test_grad(agg3, x)
     test_grad(agg4, x)
     test_grad(agg5, x)
 
+    # Feasible
+    agg3([0.1, 0.1])
+    @test agg3.grad == [0.0, 0.0]
+
+    # Dual with 0 objective
     x = rand(2)*10
     function lag_dual(λ, grad_λ)
         agg1.weights .= λ
@@ -110,12 +118,14 @@ end
     end
     test_grad(lag_dual, [0.5])
 
+    # Function vs constraint
     grad_g = similar(grad)
     grad_constr = similar(grad)
     g(x, grad_g)
     constr(x, grad_constr)
     @test isapprox(grad_constr, grad_g, rtol = 1e-5)
 
+    # Augmented penalty function
     ineq_block = IneqConstraintBlock((constr,), [0.0], [0.0])
     augpen = AugLag.AugmentedPenalty(eq_block, ineq_block, 10.0)
     pval = augpen(x, grad)

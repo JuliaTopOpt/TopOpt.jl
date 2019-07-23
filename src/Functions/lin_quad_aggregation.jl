@@ -1,20 +1,21 @@
-@params mutable struct LinAggregation{T} <: AbstractFunction{T}
+abstract type AbstractAggregation{T} <: AbstractFunction{T} end
+@inline function Base.getproperty(vf::AbstractAggregation, f::Symbol)
+    f === :reuse && return vf.f.reuse
+    f === :solver && return vf.f.solver
+    return getfield(vf, f)
+end
+@inline function Base.setproperty!(vf::AbstractAggregation, f::Symbol, v)
+    f === :reuse && return setproperty!(vf.f, f, v)
+    return setfield!(vf, f, v)
+end
+    
+@params mutable struct LinAggregation{T} <: AbstractAggregation{T}
     f::AbstractFunction{T}
     fval::AbstractVector{T}
     weights::AbstractVector{T}
     grad::AbstractVector{T}
     fevals::Int
     maxfevals::Int
-end
-
-@inline function Base.getproperty(vf::LinAggregation, f::Symbol)
-    f === :reuse && return vf.f.reuse
-    f === :solver && return vf.f.solver
-    return getfield(vf, f)
-end
-@inline function Base.setproperty!(vf::LinAggregation, f::Symbol, v)
-    f === :reuse && return setproperty!(vf.f, f, v)
-    return setfield!(vf, f, v)
 end
 
 function LinAggregation(f::AbstractFunction{T}, weights::AbstractVector{T}; maxfevals = 10^8) where {T}
@@ -26,104 +27,80 @@ end
 function (v::LinAggregation{T})(x, grad = v.grad) where {T}
     @assert length(v.weights) == length(v.fval) == 1
     v.fevals += 1
-    v.fval[1] = v.f(x)
-    grad .= v.f.grad .* v.weights[1]
-    val = v.fval[1] * v.weights[1]
+    v.fval .= v.f(x)
+    jtvp!(grad, v.f, x, v.weights, runf=false)
     if grad !== v.grad
         v.grad .= grad
     end
-    return val
+    return dot(v.fval, v.weights)
 end
 
-for TF in (:QuadAggregation, :QuadMaxAggregation)
-    @eval begin
-        @params mutable struct $TF{T} <: AbstractFunction{T}
-            f::AbstractFunction{T}
-            fval::AbstractVector{T}
-            weight::T
-            grad::AbstractVector{T}
-            fevals::Int
-            maxfevals::Int
-        end
-
-        @inline function Base.getproperty(vf::$TF, f::Symbol)
-            f === :reuse && return vf.f.reuse
-            f === :solver && return vf.f.solver
-            return getfield(vf, f)
-        end
-        @inline function Base.setproperty!(vf::$TF, f::Symbol, v)
-            f === :reuse && return setproperty!(vf.f, f, v)
-            return setfield!(vf, f, v)
-        end
-
-        function $TF(f::AbstractFunction{T}, weight::T; maxfevals = 10^8) where {T}
-            grad = similar(f.grad)
-            fval = similar(grad, TopOpt.dim(f))
-            return $TF(f, fval, weight, grad, 0, maxfevals)
-        end
-        # To be defined efficiently for every block constraint
-        function (v::$TF{T})(x, grad = v.grad) where {T}
-            @assert TopOpt.dim(v.f) == length(v.fval) == 1
-            v.fevals += 1
-            v.fval[1] = v.f(x)
-            if $TF <: QuadAggregation
-                val = v.fval[1]
-            else
-                val = max(v.fval[1], 0)
-            end
-            grad .= v.f.grad .* v.weight .* 2 * val
-            val = v.weight * val^2
-            if grad !== v.grad
-                v.grad .= grad
-            end
-            return val
-        end
+@params mutable struct QuadAggregation{T} <: AbstractFunction{T}
+    f::AbstractFunction{T}
+    fval::AbstractVector{T}
+    weight::T
+    max::Bool
+    grad::AbstractVector{T}
+    fevals::Int
+    maxfevals::Int
+end
+function QuadAggregation(f::AbstractFunction{T}, weight::T; max=false, maxfevals=10^8) where {T}
+    grad = similar(f.grad)
+    fval = similar(grad, TopOpt.dim(f))
+    return QuadAggregation(f, fval, weight, max, grad, 0, maxfevals)
+end
+function (v::QuadAggregation{T})(x, grad = v.grad) where {T}
+    @assert TopOpt.dim(v.f) == length(v.fval) == 1
+    v.fevals += 1
+    v.fval .= v.f(x)
+    val = v.max ? max.(v.fval, 0) : v.fval
+    jtvp!(grad, v.f, x, 2*v.weight .* val, runf=false)
+    if grad !== v.grad
+        v.grad .= grad
     end
+    return v.weight * dot(val, val)
 end
 
-for TF in (:LinQuadAggregation, :LinQuadMaxAggregation)
-    @eval begin
-        @params mutable struct $TF{T} <: AbstractFunction{T}
-            f::AbstractFunction{T}
-            fval::AbstractVector{T}
-            lin_weights::AbstractVector{T}
-            quad_weight::T
-            grad::AbstractVector{T}
-            fevals::Int
-            maxfevals::Int
-        end
-
-        @inline function Base.getproperty(vf::$TF, f::Symbol)
-            f === :reuse && return vf.f.reuse
-            f === :solver && return vf.f.solver
-            return getfield(vf, f)
-        end
-        @inline function Base.setproperty!(vf::$TF, f::Symbol, v)
-            f === :reuse && return setproperty!(vf.f, f, v)
-            return setfield!(vf, f, v)
-        end
-
-        function $TF(f::AbstractFunction{T}, lin_weights::AbstractVector{T}, quad_weight::T; maxfevals = 10^8) where {T}
-            grad = similar(f.grad)
-            fval = similar(grad, TopOpt.dim(f))
-            return $TF(f, fval, lin_weights, quad_weight, grad, 0, maxfevals)
-        end
-        # To be defined efficiently for every block constraint
-        function (v::$TF{T})(x, grad = v.grad) where {T}
-            @assert TopOpt.dim(v.f) == length(v.fval) == length(v.lin_weights) == 1
-            v.fval[1] = v.f(x)
-            if $TF <: LinQuadAggregation
-                val_quad = v.fval[1]
-            else
-                val_quad = max(v.fval[1], 0)
-            end
-            grad .= v.f.grad .* (v.quad_weight * 2 * val_quad .+ v.lin_weights[1])
-            val = val_quad^2 * v.quad_weight + v.fval[1] * v.lin_weights[1]
-            v.fevals += 1
-            if grad !== v.grad
-                v.grad .= grad
-            end
-            return val
-        end
+@params mutable struct LinQuadAggregation{T} <: AbstractFunction{T}
+    f::AbstractFunction{T}
+    fval::AbstractVector{T}
+    lin_weights::AbstractVector{T}
+    quad_weight::T
+    max::Bool
+    grad::AbstractVector{T}
+    fevals::Int
+    maxfevals::Int
+end
+function LinQuadAggregation(f::AbstractFunction{T}, lin_weights::AbstractVector{T}, quad_weight::T; max=false, maxfevals=10^8) where {T}
+    grad = similar(f.grad)
+    fval = similar(grad, TopOpt.dim(f))
+    return LinQuadAggregation(f, fval, lin_weights, quad_weight, max, grad, 0, maxfevals)
+end
+function (v::LinQuadAggregation{T})(x, grad = v.grad) where {T}
+    @assert TopOpt.dim(v.f) == length(v.fval) == length(v.lin_weights) == 1
+    v.fevals += 1
+    v.fval .= v.f(x)
+    val = v.max ? max.(v.fval, 0) : v.fval
+    jtvp!(grad, v.f, x, 2*v.quad_weight .* val .+ v.lin_weights, runf=false)
+    if grad !== v.grad 
+        v.grad .= grad
     end
+    return v.quad_weight * dot(val, val) + dot(v.fval, v.lin_weights)
+end
+
+"""
+    jtvp!(out, f, x, v; runf = true)
+
+Finds the product `J'v` and writes it to `out`, where `J` is the Jacobian of `f` at `x`. If `runf` is `true`, the function `f` will be run, otherwise the function will be assumed to have been run by the caller.
+"""
+function jtvp!(out, f, x, v; runf = true) end
+
+# Fallback for scalar-valued functions
+function jtvp!(out, f::AbstractFunction, x, v; runf = true) # assumes the function was run already
+    runf && f(x)
+    @assert length(v) == 1
+    @assert all(isfinite, f.grad)
+    @assert all(isfinite, v)
+    out .= f.grad .* v
+    return out
 end
