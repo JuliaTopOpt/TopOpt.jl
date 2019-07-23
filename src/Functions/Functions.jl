@@ -140,5 +140,8 @@ include("integrality_penalty.jl")
 include("sum.jl")
 include("product.jl")
 include("lin_quad_aggregation.jl")
+include("trace.jl")
+include("expected_compliance.jl")
+include("block_compliance.jl")
 
 end
