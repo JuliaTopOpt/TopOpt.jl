@@ -9,28 +9,22 @@ using ..TopOpt.Utilities: Utilities, setpenalty!
 
 abstract type AbstractConstraintBlock end
 
-@params struct EqConstraintBlock <: AbstractConstraintBlock
-    block::Union{Function, AbstractArray{<:Function}, Tuple{Vararg{Function}}}
-    λ
-    grad_λ
+for blockT in (:EqConstraintBlock, :IneqConstraintBlock)
+    @eval begin
+        @params struct $blockT <: AbstractConstraintBlock
+            block::Union{Function, AbstractArray{<:Function}, Tuple{Vararg{Function}}}
+            λ
+            grad_λ
+        end
+        TopOpt.dim(c::$blockT{<:Function}) = 1
+        TopOpt.dim(c::$blockT{<:Tuple}) = sum(dim.(c.block))
+        TopOpt.dim(c::$blockT{<:Array}) = mapreduce(dim, +, c.block, init=0)
+    end
 end
-TopOpt.dim(c::EqConstraintBlock{<:Function}) = 1
-TopOpt.dim(c::EqConstraintBlock{<:Tuple}) = sum(dim.(c.block))
-TopOpt.dim(c::EqConstraintBlock{<:Array}) = mapreduce(dim, +, c.block, init=0)
-
-@params struct IneqConstraintBlock <: AbstractConstraintBlock
-    block::Union{Function, Vector{<:Function}, Tuple{Vararg{Function}}}
-    λ
-    grad_λ
-end
-TopOpt.dim(c::IneqConstraintBlock{<:Function}) = 1
-TopOpt.dim(c::IneqConstraintBlock{<:Tuple}) = sum(dim.(c.block))
-TopOpt.dim(c::IneqConstraintBlock{<:Array}) = mapreduce(dim, +, c.block, init=0)
 
 abstract type AbstractPenalty{T} <: AbstractFunction{T} end
 
 ## Linear penalty ##
-
 @params struct LinearPenalty{T} <: AbstractPenalty{T}
     eq::EqConstraintBlock
     ineq::IneqConstraintBlock
@@ -50,8 +44,6 @@ end
 function (d::LinearPenalty)(x, grad_x; reset_grad=true)
     if reset_grad
         grad_x .= 0
-        #d.eq.grad_λ .= 0
-        #d.ineq.grad_λ .= 0
     end
     @unpack eq, ineq, grad_temp = d
     v = @views compute_lin_penalty(x, grad_x, eq.λ, eq.grad_λ, eq.block, grad_temp, 0)
@@ -122,7 +114,6 @@ end
     p += compute_lin_quad_penalty(x, grad_x, λ, grad_λ, Base.tail(block), r, grad_temp, offset + dim(block[1]), equality)
     return p
 end
-
 @inline function compute_lin_quad_penalty(x, grad_x, block::AbstractArray{<:Function}, r, grad_temp, equality)
     length(block) == 0 && return zero(eltype(x))
     range =  offset + 1 : offset + dim(block[1])
@@ -134,7 +125,6 @@ end
     end
     return p
 end
-
 @inline function compute_lin_quad_penalty(f::AbstractConstraint, x, grad_x, λ, grad_λ, r, grad_temp, equality)
     func = LinQuadAggregation(f, grad_λ, λ, r, !equality, grad_temp, 0, 1)
     v = func(x)
