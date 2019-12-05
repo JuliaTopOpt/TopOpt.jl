@@ -1,6 +1,6 @@
 module AugLag
 
-using FillArrays, CatViews, Optim, LineSearches, LinearAlgebra
+using FillArrays, Optim, LineSearches, LinearAlgebra
 using ..TopOpt: @params, TopOpt, dim
 using ..TopOpt.Functions: Constraint, AbstractConstraint, AbstractFunction, Objective, LinAggregation, LinQuadAggregation
 using Parameters
