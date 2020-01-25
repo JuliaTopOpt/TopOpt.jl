@@ -1,5 +1,6 @@
 module TopOpt
 
+const PENALTY_BEFORE_INTERPOLATION = true
 using Requires, Reexport
 
 macro cuda_only(mod, code)
@@ -22,15 +23,12 @@ module GPUUtils end
 include(joinpath("Utilities", "Utilities.jl"))
 using .Utilities
 
-# Method of moving asymptotes
-include(joinpath("MMA", "MMA.jl"))
-
 # Topopology optimization problem definitions
 include(joinpath("TopOptProblems", "TopOptProblems.jl"))
 
 using LinearAlgebra, Statistics
 using Reexport, Parameters, Setfield
-@reexport using .TopOptProblems, Optim, .MMA, LineSearches
+@reexport using .TopOptProblems, Optim, LineSearches
 using JuAFEM, StaticArrays
 
 using ForwardDiff, IterativeSolvers#, Preconditioners
@@ -38,6 +36,8 @@ using ForwardDiff, IterativeSolvers#, Preconditioners
 
 const DEBUG = Base.RefValue(false)
 function dim end
+getnvars(f) = length(f.grad)
+function jtvp! end
 #norm(a) = sqrt(dot(a,a))
 
 # FEA solvers
@@ -52,9 +52,16 @@ using .CheqFilters
 include(joinpath("Functions", "Functions.jl"))
 @reexport using .Functions
 
+# Method of moving asymptotes
+include(joinpath("MMA", "MMA.jl"))
+@reexport using .MMA
+
 # Various topology optimization algorithms
 include(joinpath("Algorithms", "Algorithms.jl"))
 using .Algorithms
+
+# Flux optimisers
+include(joinpath("FluxOptimisers", "Optimise.jl"))
 
 include("AugLag/AugLag.jl")
 using .AugLag
@@ -82,17 +89,21 @@ end
 @cuda_only Functions include("Functions/gpu_support.jl")
 @cuda_only Algorithms include("Algorithms/SIMP/gpu_simp.jl")
 
-export  simulate, 
+export  TopOpt,
+        simulate, 
         TopOptTrace, 
         Objective,
         Constraint,
-        ZeroFunction,
-        VolumeFunction,
+        Zero,
+        Volume,
         DirectDisplacementSolver,
         PCGDisplacementSolver,
         StaticMatrixFreeDisplacementSolver,
-        CheqFilter,
-        ComplianceFunction,
+        SensFilter,
+        DensityFilter,
+        Compliance,
+        MeanCompliance,
+        BlockCompliance,
         Displacement,
         CG,
         Direct,
@@ -119,6 +130,8 @@ export  simulate,
         RationalPenalty,
         SinhPenalty,
         MMA87,
-        MMA02
-
+        MMA02,
+        HeavisideProjection,
+        ProjectedPenalty,
+        PowerPenalty
 end

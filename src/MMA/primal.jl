@@ -58,7 +58,7 @@ function getxj(λρ, λpj, λqj, j, p0, q0, σ, x1, α, β)
 end
 
 # Primal problem functions
-struct ConvexApproxGradUpdater{T, TV, TPD<:PrimalData{T}, TM <: Model{T, TV}}
+struct ConvexApproxGradUpdater{T, TV, TPD<:PrimalData{T}, TM <: AbstractModel{T, TV}}
     pd::TPD
     m::TM
 end
@@ -103,7 +103,7 @@ function getgradelement(x::AbstractVector{T}, σ, p, q, ρi, ∇g, ji::Tuple) wh
     return (pji + qji + 2Δ)/σj
 end
 
-struct VariableBoundsUpdater{T, TV, TPD <: PrimalData{T}, TModel <: Model{T, TV}}
+struct VariableBoundsUpdater{T, TV, TPD <: PrimalData{T}, TModel <: AbstractModel{T, TV}}
     pd::TPD
     m::TModel
     μ::T
@@ -123,7 +123,7 @@ function (bu::VariableBoundsUpdater{T, TV})() where {T, TV <: AbstractVector}
     return
 end
 
-struct AsymptotesUpdater{T, TV <: AbstractVector{T}, TModel <: Model{T}}
+struct AsymptotesUpdater{T, TV <: AbstractVector{T}, TModel <: AbstractModel{T}}
     m::TModel
     σ::TV
     x::TV

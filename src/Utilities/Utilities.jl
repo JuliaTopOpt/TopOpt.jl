@@ -5,6 +5,10 @@ using ForwardDiff, JuAFEM, IterativeSolvers, Requires
 export  AbstractPenalty,
         PowerPenalty,
         RationalPenalty,
+        HeavisideProjection,
+        SigmoidProjection,
+        ProjectedPenalty,
+        setpenalty,
         TopOptTrace, 
         RaggedArray,
         @debug,
@@ -19,7 +23,8 @@ export  AbstractPenalty,
         getprevpenalty,
         setpenalty!,
         getsolver,
-        @params
+        @params,
+        @forward_property
 
 function getpenalty end
 function getprevpenalty end

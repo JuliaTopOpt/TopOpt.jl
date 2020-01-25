@@ -2,27 +2,26 @@ module CheqFilters
 
 using ..Utilities, JuAFEM, Requires
 using ..FEA, Statistics
-using ..TopOpt: CPU
-import ..TopOpt: whichdevice
+using ..TopOpt: CPU, TopOpt, ElementFEAInfo
+import ..TopOpt: whichdevice, PENALTY_BEFORE_INTERPOLATION
 using Parameters: @unpack
+using SparseArrays, LinearAlgebra
+using ForwardDiff
 
 export  AbstractCheqFilter,
-        CheqFilter
+        SensFilter,
+        DensityFilter,
+        ProjectedDensityFilter,
+        AbstractSensFilter,
+        AbstractDensityFilter
 
 abstract type AbstractCheqFilter end
+abstract type AbstractSensFilter <: AbstractCheqFilter end
+abstract type AbstractDensityFilter <: AbstractCheqFilter end
 
 @params struct FilterMetadata
     cell_neighbouring_nodes
     cell_node_weights
-end
-
-@params struct CheqFilter{_filtering, T, TV <: AbstractVector{T}} <: AbstractCheqFilter
-    filtering::Val{_filtering}
-    metadata::FilterMetadata
-    rmin::T
-    nodal_grad::TV
-    last_grad::TV
-    cell_weights::TV
 end
 
 function FilterMetadata(::Type{T}, ::Type{TI}) where {T, TI}
@@ -95,116 +94,7 @@ function get_neighbour_info(problem, rmin::T) where {T}
     return all_neighbouring_nodes, all_node_weights
 end
 
-CheqFilter{true}(args...) = CheqFilter(Val(true), args...)
-CheqFilter{false}(args...) = CheqFilter(Val(false), args...)
-
-function CheqFilter(::Val{filtering}, solver::AbstractFEASolver, args...) where {filtering}
-    CheqFilter(Val(filtering), whichdevice(solver), solver, args...)
-end
-
-function CheqFilter(::Val{true}, ::CPU, solver::TS, rmin::T, ::Type{TI}=Int) where {T, TI<:Integer, TS<:AbstractFEASolver}
-    metadata = FilterMetadata(solver, rmin, TI)
-    TM = typeof(metadata)
-    problem = solver.problem
-    grid = problem.ch.dh.grid
-    nnodes = getnnodes(grid)
-    nodal_grad = zeros(T, nnodes)
-    TV = typeof(nodal_grad)
-
-    black = problem.black
-    white = problem.white
-    nel = length(black)
-    nfc = sum(black) + sum(white)
-    last_grad = zeros(T, nel-nfc)
-
-    cell_weights = zeros(T, nnodes)
-    
-    return CheqFilter(Val(true), metadata, rmin, nodal_grad, last_grad, cell_weights)
-end
-
-function CheqFilter(::Val{false}, ::CPU, solver::TS, rmin::T, ::Type{TI}=Int) where {T, TS<:AbstractFEASolver, TI<:Integer}
-    metadata = FilterMetadata(T, TI)
-    nodal_grad = T[]
-    last_grad = T[]
-    cell_weights = T[]
-    return CheqFilter(Val(false), metadata, rmin, nodal_grad, last_grad, cell_weights)
-end
-
-function (cf::CheqFilter{true, T})(grad, vars, elementinfo) where {T}
-    cf.rmin <= 0 && return
-    @unpack nodal_grad, cell_weights, metadata = cf
-    @unpack black, white, varind, cellvolumes, cells = elementinfo
-    @unpack cell_neighbouring_nodes, cell_node_weights = metadata
-    node_cells = elementinfo.metadata.node_cells
-
-    update_nodal_grad!(nodal_grad, node_cells, cell_weights, cells, cellvolumes, black, white, varind, grad)
-    normalize_grad!(nodal_grad, cell_weights)
-    update_grad!(grad, black, white, varind, cell_neighbouring_nodes, cell_node_weights, nodal_grad)
-end
-
-(cf::CheqFilter{false})(args...) = nothing
-
-function update_nodal_grad!(nodal_grad::AbstractVector, node_cells, cell_weights, cells, cellvolumes, black, white, varind, grad)
-    T = eltype(nodal_grad)
-    for n in 1:length(nodal_grad)
-        nodal_grad[n] = zero(T)
-        cell_weights[n] = zero(T)
-        r = node_cells.offsets[n]:node_cells.offsets[n+1]-1
-        for i in r
-            c = node_cells.values[i][1]
-            if black[c] || white[c]
-                continue
-            end
-            ind = varind[c]
-            w = cellvolumes[c]
-            cell_weights[n] += w
-            nodal_grad[n] += w * grad[ind]
-        end
-    end
-    return
-    #=
-function update_nodal_grad!(nodal_grad::AbstractVector, cell_weights, cells, cellvolumes, black, white, varind, grad)
-    T = eltype(nodal_grad)
-    nodal_grad .= zero(T)
-    cell_weights .= 0
-    @inbounds for i in 1:length(cells)
-        if black[i] || white[i]
-            continue
-        end
-        nodes = cells[i].nodes
-        for n in nodes
-            ind = varind[i]
-            w = cellvolumes[i]
-            cell_weights[n] += w
-            nodal_grad[n] += w*grad[ind]
-        end
-    end
-    =#
-end
-
-function normalize_grad!(nodal_grad::AbstractVector, cell_weights)
-    for n in 1:length(nodal_grad)
-        if cell_weights[n] > 0
-            nodal_grad[n] /= cell_weights[n]
-        end
-    end
-end
-
-function update_grad!(grad::AbstractVector, black, white, varind, cell_neighbouring_nodes, cell_node_weights, nodal_grad)
-    @inbounds for i in 1:length(black)
-        if black[i] || white[i]
-            continue
-        end
-        ind = varind[i]
-        nodes = cell_neighbouring_nodes[ind]
-        if length(nodes) == 0
-            continue
-        end
-        weights = cell_node_weights[ind]
-        grad[ind] = dot(view(nodal_grad, nodes), weights) / sum(weights)
-    end
-
-    return
-end
+include("sens_filter.jl")
+include("density_filter.jl")
 
 end

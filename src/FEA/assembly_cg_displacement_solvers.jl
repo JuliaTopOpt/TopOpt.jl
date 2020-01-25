@@ -25,8 +25,7 @@ function PCGDisplacementSolver(sp::StiffnessTopOptProblem{dim, T};
     prev_penalty=copy(penalty),
     preconditioner=identity, 
     quad_order=default_quad_order(sp)) where {dim, T, Tconv}
-
-    prev_penalty = @set prev_penalty.p = T(NaN)
+    prev_penalty = setpenalty(prev_penalty, T(NaN))
     elementinfo = ElementFEAInfo(sp, quad_order, Val{:Static})
     globalinfo = GlobalFEAInfo(sp)
     u = zeros(T, ndofs(sp.ch.dh))
@@ -41,10 +40,10 @@ function PCGDisplacementSolver(sp::StiffnessTopOptProblem{dim, T};
 end
 
 function (s::PCGDisplacementSolver{T})(::Type{Val{safe}} = Val{false}; assemble_f = true) where {T, safe}
-    rhs = assemble_f ? s.globalinfo.f : s.rhs
+    globalinfo = s.globalinfo
+    rhs = assemble_f ? globalinfo.f : s.rhs
     lhs = assemble_f ? s.u : s.lhs
-    globalinfo = GlobalFEAInfo(s.globalinfo.K, rhs)
-    assemble!(globalinfo, s.problem, s.elementinfo, s.vars, s.penalty, s.xmin, assemble_f = assemble_f)
+    assemble!(s.globalinfo, s.problem, s.elementinfo, s.vars, s.penalty, s.xmin, assemble_f = assemble_f)
     Tconv = typeof(s.conv)
     K, f = globalinfo.K, globalinfo.f
     if safe

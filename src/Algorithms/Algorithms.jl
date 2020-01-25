@@ -1,7 +1,8 @@
 module Algorithms
 
 using ..MMA, ..Functions, Optim, Parameters, Requires
-using ..TopOpt: whichdevice, AbstractDevice, CPU, GPU
+using ..MMA: AbstractModel
+using ..TopOpt: whichdevice, AbstractDevice, CPU, GPU, PENALTY_BEFORE_INTERPOLATION
 using TimerOutputs, Setfield, StaticArrays
 using Parameters: @unpack, @pack!
 using ..Utilities, JuAFEM

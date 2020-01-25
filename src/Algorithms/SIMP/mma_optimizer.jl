@@ -1,7 +1,7 @@
 abstract type AbstractOptimizer end
 
 @params mutable struct MMAOptimizer{T} <: AbstractOptimizer
-    model::Model{T}
+    model::AbstractModel{T}
     mma_alg
     suboptimizer
     obj
@@ -33,6 +33,7 @@ function MMAOptimizer{T}(args...; kwargs...) where T
     return MMAOptimizer(T(), args...; kwargs...)
 end
 function MMAOptimizer{T}(::AbstractDevice, args...; kwargs...) where T
+    @show typeof(args[1])
     throw("Check your types.")
 end
 function MMAOptimizer(  device::Tdev, 
@@ -48,8 +49,7 @@ function MMAOptimizer(  device::Tdev,
     nvars = length(solver.vars)
     xmin = solver.xmin
 
-    model = Model{Tdev}(nvars, obj)
-
+    model = MMA.Model{Tdev}(nvars, obj)
     box!(model, zero(T), one(T))
     ineq_constraint!.(Ref(model), constr)
 

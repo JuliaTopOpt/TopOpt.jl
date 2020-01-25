@@ -16,7 +16,7 @@ struct DualData{TSol, Tv}
     l::Tv
     u::Tv
 end
-function DualData(model::Model{T, TV}) where {T, TV}
+function DualData(model::AbstractModel{T, TV}) where {T, TV}
     n_i = length(constraints(model))
     λ = DualSolution(model)
     # Initial data and bounds for Optim to solve dual problem
@@ -30,7 +30,7 @@ end
     outer_maxiter::Int = 10^8
     tol::Ttol = Tolerances()
     s_init::T = 0.5
-    s_incr::T = 1.2
+    s_incr::T = 1.1
     s_decr::T = 0.7
     dual_caps::Tuple{T, T} = MMA.default_dual_caps(Float64)
     store_trace::Bool = false
@@ -46,7 +46,7 @@ end
     return getfield(o, f)
 end
 
-mutable struct Workspace{T, Tx, Tc, TO, TSO, TTrace <: OptimizationTrace{T}, TModel <: Model{T}, TPD <: PrimalData{T}, TXUpdater <: XUpdater{T, Tx, TPD}, Tdual_data <: DualData, TOptions, TConvCriteria, TState}
+mutable struct Workspace{T, Tx, TModel <: AbstractModel{T}, Tc, TO, TSO, TTrace <: OptimizationTrace{T}, TPD <: PrimalData{T}, TXUpdater <: XUpdater{T, Tx, TPD}, Tdual_data <: DualData, TOptions, TConvCriteria, TState}
     model::TModel
     optimizer::TO
     suboptimizer::TSO
@@ -70,13 +70,10 @@ mutable struct Workspace{T, Tx, Tc, TO, TSO, TTrace <: OptimizationTrace{T}, TMo
     convcriteria::TConvCriteria
     convstate::TState
 end
-const Workspace87{T, TV1, TV2, TM, TSO, TModel, TPD} = Workspace{T, TV1, TV2, TM, MMA87, TSO, TModel, TPD}
-const Workspace02{T, TV1, TV2, TM, TSO, TModel, TPD} = Workspace{T, TV1, TV2, TM, MMA02, TSO, TModel, TPD}
 
-Base.show(io::IO, w::Workspace87) = print(io, "Workspace for the method of moving asymptotes of 1987.")
-Base.show(io::IO, w::Workspace02) = print(io, "Workspace for the method of moving asymptotes of 2002.")
+Base.show(io::IO, w::Workspace) = print(io, "Workspace for the method of moving asymptotes.")
 
-function PrimalData(model::Model{T, TV}, optimizer, x0) where {T, TV}
+function PrimalData(model::AbstractModel{T, TV}, optimizer, x0) where {T, TV}
     n_i = length(constraints(model))
     n_j = dim(model)
 
@@ -111,7 +108,7 @@ function AsymptotesUpdater(primal_data, model, options)
     return AsymptotesUpdater(model, σ, x, x1, x2, s_init, s_incr, s_decr)
 end
 
-function LiftUpdater(primal_data, model::Model{T, TV}) where {T, TV}
+function LiftUpdater(primal_data, model::AbstractModel{T, TV}) where {T, TV}
     @unpack ρ, g = primal_data
     n_i = length(constraints(model))
     n_j = dim(model)
@@ -124,13 +121,13 @@ Base.Symbol(::Type{GPU}) = :GPU
 Base.Symbol(::CPU) = :CPU
 Base.Symbol(::Type{CPU}) = :CPU
 
-function DualSolution(model::Model{T, TV}) where {T, TV}
+function DualSolution(model::AbstractModel{T, TV}) where {T, TV}
     dev = whichdevice(model)
     n_i = length(constraints(model))
     return DualSolution{Symbol(dev)}(Vector(onesof(TV, n_i)))
 end
 
-function Workspace( model::Model{T, TV}, 
+function Workspace( model::AbstractModel{T, TV}, 
                     x0::TV, 
                     optimizer::TO = MMA02(), 
                     suboptimizer = Optim.ConjugateGradient();
@@ -209,17 +206,23 @@ function assess_convergence(workspace::Workspace)
     f_residual = abs(f_x - f_x_previous)
     gr_residual = maximum(abs, ∇f_x)
     kkt_residual = get_kkt_residual(∇f_x, g, ∇g, λ.cpu, x, box_min, box_max)
+    ipopt_residual = get_ipopt_residual(model, ∇f_x, g, ∇g, λ.cpu, x, box_min, box_max)
 
     x_converged = x_residual < xtol
     f_converged = f_residual / (abs(f_x) + ftol) < ftol
     gr_converged = gr_residual < grtol
     kkt_converged = kkt_residual < kkttol
+    ipopt_converged = ipopt_residual < kkttol
     f_increased = f_x > f_x_previous
 
     if convcriteria isa DefaultCriteria
         converged = (x_converged || f_converged) && all(x -> x <= 0, g)
-    else
+    elseif convcriteria isa KKTCriteria
         converged = kkt_converged# && all(x -> x <= 0, g)
+    elseif convcriteria isa IpoptCriteria
+        converged = ipopt_converged
+    else
+        throw("Unsupported convergence criteria for MMA.")
     end
 
     return ConvergenceState(    x_converged, 

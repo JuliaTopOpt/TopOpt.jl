@@ -125,18 +125,28 @@ function get_cell_volumes(sp::StiffnessTopOptProblem{dim, T}, cellvalues) where 
     return cellvolumes
 end
 
-mutable struct GlobalFEAInfo{T, TK<:AbstractMatrix{T}, Tf<:AbstractVector{T}}
+mutable struct GlobalFEAInfo{T, TK<:AbstractMatrix{T}, Tf<:AbstractVector{T}, Tchol}
     K::TK
     f::Tf
+    cholK::Tchol
 end
 
 GlobalFEAInfo(::Type{T}) where T = GlobalFEAInfo{T}()
 
 GlobalFEAInfo() = GlobalFEAInfo{Float64}()
 
-GlobalFEAInfo{T}() where T = GlobalFEAInfo{T, SparseMatrixCSC{T, Int}, Vector{T}}(sparse(zeros(T, 0, 0)), zeros(T, 0))
+GlobalFEAInfo{T}() where T = GlobalFEAInfo{T, SparseMatrixCSC{T, Int}, Vector{T}}(sparse(zeros(T, 0, 0)), zeros(T, 0), cholesky(one(T)))
 
-GlobalFEAInfo(sp::StiffnessTopOptProblem) = GlobalFEAInfo(make_empty_K(sp), make_empty_f(sp))
+function GlobalFEAInfo(sp::StiffnessTopOptProblem)
+    K = make_empty_K(sp)
+    f = make_empty_f(sp)
+    if K isa AbstractSparseMatrix || K isa Symmetric && K.data isa AbstractSparseMatrix
+        chol = cholesky(spdiagm(0=>ones(size(K, 1))))
+    else
+        chol = cholesky(Matrix{eltype(K)}(I, size(K)...))
+    end
+    return GlobalFEAInfo(K, f, chol)
+end
 
 make_empty_K(sp::StiffnessTopOptProblem) = Symmetric(create_sparsity_pattern(sp.ch.dh))
 

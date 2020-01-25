@@ -31,9 +31,15 @@ function bc_kernel(f::AbstractVector{T}, values, prescribed_dofs, applyzero, dof
         if !applyzero && v != 0 
             for idx in r
                 (i, j) = dof_cells_values[idx]
-                px = ifelse(black[i], one(T), 
-                        ifelse(white[i], xmin, 
-                        penalty(density(vars[varind[i]], xmin))))
+                if PENALTY_BEFORE_INTERPOLATION
+                    px = ifelse(black[i], one(T), 
+                    ifelse(white[i], xmin, 
+                    density(penalty(vars[varind[i]]), xmin)))
+                else
+                    px = ifelse(black[i], one(T), 
+                    ifelse(white[i], xmin, 
+                    penalty(density(vars[varind[i]], xmin))))
+                end
                 if eltype(Kes) <: Symmetric
                     Ke = Kes[i].data
                 else
@@ -80,11 +86,19 @@ function mul_kernel1(xes::AbstractVector{TV}, x, black, white, vars, varind, cel
     i = @thread_global_index()
     offset = @total_threads()
     while i <= nels
-        px = ifelse(black[i], one(T), 
-                    ifelse(white[i], xmin, 
-                            penalty(density(vars[varind[i]], xmin))
-                        )
-                    )
+        if PENALTY_BEFORE_INTERPOLATION
+            px = ifelse(black[i], one(T), 
+            ifelse(white[i], xmin, 
+                    density(penalty(vars[varind[i]]), xmin)
+                )
+            )
+        else
+            px = ifelse(black[i], one(T), 
+            ifelse(white[i], xmin, 
+                    penalty(density(vars[varind[i]], xmin))
+                )
+            )
+        end
         xe = xes[i]
         for j in 1:N
             xe = @set xe[j] = x[cell_dofs[j, i]]

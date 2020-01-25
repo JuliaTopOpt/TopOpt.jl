@@ -50,7 +50,7 @@ csimp_options = TopOpt.CSIMPOptions(steps = steps,
 solver = FEASolver(Displacement, Direct, problem, xmin = xmin, penalty = penalty)
 # Define compliance objective
 filtering = problem isa TopOptProblems.TieBeam ? false : true
-obj = Objective(VolumeFunction(problem, solver))
+obj = Objective(Volume(problem, solver))
 constr = Constraint(TopOpt.GlobalStress(solver), 1.0 + eps(0.0))
 #cu_obj = TopOpt.cu(obj)
 # Define volume constraint

@@ -97,7 +97,7 @@ problem = PointLoadCantilever(nels, sizes, E, ν, force)
     metadata::Metadata
 end
 
-function PointLoadCantilever(::Type{Val{CellType}}, nels::NTuple{dim,Int}, sizes::NTuple{dim}, E = 1.0, ν = 0.3, force = 1.0) where {dim, CellType}
+function PointLoadCantilever(::Type{Val{CellType}}, nels::NTuple{dim,Int}, sizes::NTuple{dim}, E = 1.0, ν = 0.3, force = 0.0) where {dim, CellType}
     iseven(nels[2]) && (length(nels) < 3 || iseven(nels[3])) || throw("Grid does not have an even number of elements along the y and/or z axes.")
 
     _T = promote_type(eltype(sizes), typeof(E), typeof(ν), typeof(force))
@@ -230,7 +230,7 @@ problem = HalfMBB(nels, sizes, E, ν, force)
     varind::AbstractVector{Int}
     metadata::Metadata
 end
-function HalfMBB(::Type{Val{CellType}}, nels::NTuple{dim,Int}, sizes::NTuple{dim}, E = 1.0, ν = 0.3, force = 1.0) where {dim, CellType}
+function HalfMBB(::Type{Val{CellType}}, nels::NTuple{dim,Int}, sizes::NTuple{dim}, E = 1.0, ν = 0.3, force = 0.0) where {dim, CellType}
     _T = promote_type(eltype(sizes), typeof(E), typeof(ν), typeof(force))
     if _T <: Integer
         T = Float64
@@ -329,7 +329,7 @@ end
     varind::AbstractVector{Int}
     metadata::Metadata
 end
-function LBeam(::Type{Val{CellType}}, ::Type{T}=Float64; length = 100, height = 100, upperslab = 50, lowerslab = 50, E = 1.0, ν = 0.3, force = 1.0) where {T, CellType}
+function LBeam(::Type{Val{CellType}}, ::Type{T}=Float64; length = 100, height = 100, upperslab = 50, lowerslab = 50, E = 1.0, ν = 0.3, force = 0.0) where {T, CellType}
     # Create displacement field u
     grid = LGrid(Val{CellType}, T, length=length, height=height, upperslab=upperslab, 
         lowerslab=lowerslab)

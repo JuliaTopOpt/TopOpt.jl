@@ -51,8 +51,8 @@ end
 
 function SIMP(optimizer, p::T; tracing=true) where T
     penalty = getpenalty(optimizer)
-    penalty = @set penalty.p = p
-    prev_penalty = @set penalty.p = NaN
+    penalty = setpenalty(penalty, p)
+    prev_penalty = setpenalty(penalty, NaN)
     ncells = getncells(getsolver(optimizer.obj).problem)
     result = NewSIMPResult(T, optimizer, ncells)
 
@@ -63,11 +63,11 @@ Utilities.getpenalty(s::AbstractSIMP) = s.penalty
 function Utilities.setpenalty!(s::AbstractSIMP, p::Number)
     penalty = s.penalty
     s.prev_penalty = penalty
-    s.penalty = @set penalty.p = p
+    s.penalty = setpenalty(penalty, p)
     setpenalty!(s.optimizer, p)
 end
 
-function (s::SIMP{T, TO})(x0=s.optimizer.obj.f.solver.vars, prev_fevals = getfevals(s.optimizer)) where {T, TO<:MMAOptimizer}
+function (s::SIMP{T, TO})(x0=s.optimizer.obj.f.solver.vars, prev_fevals = getfevals(s.optimizer)) where {T, TO <: MMAOptimizer}
     setpenalty!(s.optimizer, s.penalty.p)
     mma_results = s.optimizer(x0)
     update_result!(s, mma_results, prev_fevals)

@@ -2,6 +2,7 @@
     simp
     result
     options
+    callback
 end
 
 @params struct CSIMPOptions
@@ -45,13 +46,14 @@ function ContinuationSIMP(  simp::SIMP{T},
                             steps::Int = 40, 
                             options::CSIMPOptions = CSIMPOptions(T, steps = steps, 
                                                                 initial_options = deepcopy(simp.optimizer.options)
-                                                    )
+                                                    ),
+                            callback=(i)->()
                         ) where T
 
     @assert steps == options.steps
     ncells = getncells(simp.optimizer.obj.f.problem)
     result = NewSIMPResult(T, simp.optimizer, ncells)
-    return ContinuationSIMP(simp, result, options)
+    return ContinuationSIMP(simp, result, options, callback)
 end
 
 # Unused functions
@@ -202,6 +204,7 @@ function (c_simp::ContinuationSIMP)(x0 = copy(c_simp.simp.optimizer.obj.solver.v
     update!(c_simp, 1)
     # Does the first function evaluation
     reset!(workspace, x0)
+    c_simp.callback(0)
     r = c_simp.simp(workspace, prev_fevals)
 
     if maxedfevals(c_simp.simp.optimizer)
@@ -214,6 +217,7 @@ function (c_simp::ContinuationSIMP)(x0 = copy(c_simp.simp.optimizer.obj.solver.v
 
     original_maxiter = options.maxiter
     for i in 1:c_simp.options.steps
+        c_simp.callback(i)
         maxedfevals(optimizer) && break
         prev_fevals = getfevals(optimizer)
         reuse = i == c_simp.options.steps ? false : c_simp.options.reuse

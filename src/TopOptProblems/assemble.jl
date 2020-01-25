@@ -37,7 +37,11 @@ function assemble!(globalinfo::GlobalFEAInfo{T}, problem::StiffnessTopOptProblem
                 JuAFEM.assemble!(assembler, global_dofs, Ke)
             end
         elseif white[i]
-            px = xmin
+            if PENALTY_BEFORE_INTERPOLATION
+                px = xmin
+            else
+                px = penalty(xmin)
+            end
             Ke = px * Ke
             if assemble_f
                 fe = px * fe
@@ -46,7 +50,11 @@ function assemble!(globalinfo::GlobalFEAInfo{T}, problem::StiffnessTopOptProblem
                 JuAFEM.assemble!(assembler, global_dofs, Ke)
             end
         else
-            px = penalty(density(vars[varind[i]], xmin))
+            if PENALTY_BEFORE_INTERPOLATION
+                px = density(penalty(vars[varind[i]]), xmin)
+            else
+                px = penalty(density(vars[varind[i]], xmin))
+            end
             Ke = px * Ke
             if assemble_f
                 fe = px * fe
@@ -95,10 +103,18 @@ function update_f!(f::Vector, fes, fixedload, dof_cells, black,
             if black[cellidx]
                 f[dofidx] += fes[cellidx][localidx]
             elseif white[cellidx]
-                px = xmin
+                if PENALTY_BEFORE_INTERPOLATION
+                    px = xmin
+                else
+                    px = penalty(xmin)
+                end
                 f[dofidx] += px * fes[cellidx][localidx]                
             else
-                px = penalty(density(vars[varind[cellidx]], xmin))
+                if PENALTY_BEFORE_INTERPOLATION
+                    px = density(penalty(vars[varind[cellidx]]), xmin)
+                else
+                    px = penalty(density(vars[varind[cellidx]], xmin))
+                end
                 f[dofidx] += px * fes[cellidx][localidx]                
             end
         end

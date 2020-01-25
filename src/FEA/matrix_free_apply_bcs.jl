@@ -19,9 +19,15 @@ function update_f!(f::Vector{T}, values, prescribed_dofs, applyzero, dof_cells, 
         if !applyzero && v != 0 
             for idx in r
                 (i,j) = dof_cells.values[idx]
-                px = ifelse(black[i], one(T), 
-                            ifelse(white[i], xmin, 
-                            px = penalty(density(vars[varind[i]], xmin))))
+                if PENALTY_BEFORE_INTERPOLATION
+                    px = ifelse(black[i], one(T), 
+                    ifelse(white[i], xmin, 
+                    px = density(penalty(vars[varind[i]]), xmin)))
+                else
+                    px = ifelse(black[i], one(T), 
+                    ifelse(white[i], xmin, 
+                    px = penalty(density(vars[varind[i]], xmin))))
+                end
                 if eltype(Kes) <: Symmetric
                     Ke = Kes[i].data
                 else

@@ -10,24 +10,27 @@ using ..TopOpt: GPU
 whichdevice(o::Union{Objective, Constraint}) = o |> getfunction |> whichdevice
 @define_cu(Objective, :f)
 @define_cu(Constraint, :f)
-whichdevice(z::ZeroFunction) = whichdevice(z.solver)
-CuArrays.cu(::ZeroFunction{T}) where T = ZeroFunction{T}()
+whichdevice(z::Zero) = whichdevice(z.solver)
+CuArrays.cu(::Zero{T}) where T = Zero{T}()
 
 ### Compliance
 
-whichdevice(c::ComplianceFunction) = whichdevice(c.cell_comp)
+whichdevice(c::Compliance) = whichdevice(c.cell_comp)
+whichdevice(c::MeanCompliance) = whichdevice(c.compliance)
 
-function ComplianceFunction(::GPU, problem::StiffnessTopOptProblem{dim, T}, solver::AbstractDisplacementSolver, ::Type{TI}=Int; rmin = T(0), filtering = true, tracing = false, logarithm = false, maxfevals = 10^8) where {dim, T, TI}
-    cheqfilter = cu(CheqFilter(Val(filtering), solver, rmin))
+hutch_rand!(v::CuArray) = v .= round.(CuArrays.CURAND.curand(size(v))) .* 2 .- 1
+
+function Compliance(::GPU, problem::StiffnessTopOptProblem{dim, T}, solver::AbstractDisplacementSolver, ::Type{TI}=Int; rmin = T(0), filtering = false, tracing = false, logarithm = false, maxfevals = 10^8) where {dim, T, TI}
+    cheqfilter = cu(SensFilter(Val(filtering), solver, rmin))
     comp = T(0)
     cell_comp = zeros(CuVector{T}, getncells(problem.ch.dh.grid))
     grad = CuVector(fill(T(NaN), length(cell_comp) - sum(problem.black) - sum(problem.white)))
     topopt_trace = TopOptTrace{T,TI}()
     reuse = false
     fevals = TI(0)
-    return ComplianceFunction(problem, solver, cheqfilter, comp, cell_comp, grad, tracing, topopt_trace, reuse, fevals, logarithm, maxfevals)
+    return Compliance(problem, solver, cheqfilter, comp, cell_comp, grad, tracing, topopt_trace, reuse, fevals, logarithm, maxfevals)
 end
-@define_cu(ComplianceFunction, :solver, :cell_comp, :grad, :cheqfilter)
+@define_cu(Compliance, :solver, :cell_comp, :grad, :cheqfilter)
 
 function compute_compliance(cell_comp::CuVector{T}, grad, cell_dofs, Kes, u, 
                             black, white, varind, x, penalty, xmin) where {T}
@@ -41,7 +44,7 @@ function compute_compliance(cell_comp::CuVector{T}, grad, cell_dofs, Kes, u,
 end
 
 # CUDA kernels
-function comp_kernel1(cell_comp::AbstractVector{T}, grad, cell_dofs, Kes, u, 
+function comp_kernel1(cell_comp::AbstractVector{T}, grad, cell_dofs, Kes, u,
                         black, white, varind, x, penalty, xmin) where {T}
 
     i = @thread_global_index()
@@ -60,7 +63,11 @@ function comp_kernel1(cell_comp::AbstractVector{T}, grad, cell_dofs, Kes, u,
         end
         if !(black[i] || white[i])
             d = ForwardDiff.Dual{T}(x[varind[i]], one(T))
-            p = penalty(density(d, xmin))
+            if PENALTY_BEFORE_INTERPOLATION
+                p = density(penalty(d), xmin)
+            else
+                p = penalty(density(d, xmin))
+            end
             grad[varind[i]] = -p.partials[1] * cell_comp[i]
         end
 
@@ -86,17 +93,24 @@ function comp_kernel2(result, cell_comp::AbstractVector{T}, x, varind, black, wh
     return
 end
 @inline function w_comp(comp::T, x, black, white, penalty, xmin) where {T}
-    return ifelse(black, comp,
-            ifelse(white, xmin * comp, 
-                            (d = ForwardDiff.Dual{T}(x, one(T));
-                            p = penalty(density(d, xmin)); p.value * comp)))
+    if PENALTY_BEFORE_INTERPOLATION
+        return ifelse(black, comp,
+        ifelse(white, xmin * comp, 
+                        (d = ForwardDiff.Dual{T}(x, one(T));
+                        p = density(penalty(d), xmin); p.value * comp)))
+    else
+        return ifelse(black, comp,
+        ifelse(white, xmin * comp, 
+                        (d = ForwardDiff.Dual{T}(x, one(T));
+                        p = penalty(density(d, xmin)); p.value * comp)))
+    end
 end
 
 
 ### Volume
 
-whichdevice(v::VolumeFunction) = whichdevice(v.cellvolumes)
-@define_cu(VolumeFunction, :cellvolumes, :grad, :problem) # should be optimized to avoid replicating problem
+whichdevice(v::Volume) = whichdevice(v.cellvolumes)
+@define_cu(Volume, :cellvolumes, :grad, :problem) # should be optimized to avoid replicating problem
 
 function compute_volume(cellvolumes::CuVector{T}, x, fixed_volume, varind, black, white, ::Val{blocksize} = Val(80), ::Val{threads} = Val(256)) where {T, blocksize, threads}
     result = similar(cellvolumes, T, (blocksize,))

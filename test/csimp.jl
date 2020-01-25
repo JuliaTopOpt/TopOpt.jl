@@ -49,11 +49,11 @@ approx_objvals = [330.0, 175.0, 65.0, 1413.0]
     solver = FEASolver(Displacement, Direct, problem, xmin = xmin, penalty = penalty)
     # Define compliance objective
     filtering = problem isa TopOptProblems.TieBeam ? false : true
-    obj = Objective(ComplianceFunction(problem, solver, filtering = filtering,
+    obj = Objective(Compliance(problem, solver, filtering = filtering,
         rmin = 3.0, tracing = true, logarithm = false))
     #cu_obj = TopOpt.cu(obj)
     # Define volume constraint
-    constr = Constraint(VolumeFunction(problem, solver), V)
+    constr = Constraint(Volume(problem, solver), V)
     # Define subproblem optimizer
     #optimizer = MMAOptimizer{CPU}(cu_obj, constr, MMA.MMA87(),
     #    ConjugateGradient(), maxiter=1000); optimizer.obj.fevals = 0
@@ -87,10 +87,10 @@ end
     solver = FEASolver(Displacement, CG, MatrixFree, problem, xmin = xmin,
         penalty = TopOpt.PowerPenalty(1.0))
     # Define volume constraint
-    obj = Objective(VolumeFunction(problem, solver))
+    obj = Objective(Volume(problem, solver))
     # Define compliance objective
     filtering = problem isa TopOptProblems.TieBeam ? false : true
-    constr = Constraint(ComplianceFunction(problem, solver, filtering = filtering,
+    constr = Constraint(Compliance(problem, solver, filtering = filtering,
         rmin = 3.0, tracing = true, logarithm = false), approx_objvals[i])
     cu_constr = TopOpt.cu(constr)
     # Define subproblem optimizer

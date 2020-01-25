@@ -15,7 +15,8 @@ function simulate(problem::StiffnessTopOptProblem, topology = ones(getncells(Top
     else
         solver = FEASolver(Displacement, Direct, problem, xmin = xmin)
     end
-    fill_vars!(vars, problem, topology; round = round)
+    vars = solver.vars
+    fill_vars!(vars, topology; round = round)
     solver(Val{true})
     comp = dot(solver.u, solver.globalinfo.f)
     return LinearElasticityResult(comp, copy(solver.u))    

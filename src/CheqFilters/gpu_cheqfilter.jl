@@ -8,8 +8,8 @@ using ..GPUUtils
 @define_cu(FilterMetadata, :cell_neighbouring_nodes, :cell_node_weights)
 whichdevice(m::FilterMetadata) = whichdevice(m.cell_neighbouring_nodes)
 
-@define_cu(CheqFilter, :metadata, :nodal_grad, :last_grad, :cell_weights)
-whichdevice(c::CheqFilter) = whichdevice(c.nodal_grad)
+@define_cu(SensFilter, :metadata, :nodal_grad, :last_grad, :cell_weights)
+whichdevice(c::SensFilter) = whichdevice(c.nodal_grad)
 
 function update_nodal_grad!(nodal_grad::CuVector, node_cells, args...)
     T = eltype(nodal_grad)

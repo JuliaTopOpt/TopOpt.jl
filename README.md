@@ -33,6 +33,7 @@ problem = PointLoadCantilever(Val{:Linear}, (40, 20, 20), (1.0, 1.0, 1.0), E, v,
 
 V = 0.3 # volume fraction
 xmin = 0.001 # minimum density
+rmin = 4.0 # density filter radius
 
 # Define a finite element solver
 
@@ -42,19 +43,19 @@ solver = FEASolver(Displacement, Direct, problem, xmin = xmin,
 
 # Define compliance objective
 
-obj = Objective(ComplianceFunction(problem, solver, filtering = true,
-    rmin = 4.0, tracing = true, logarithm = false))
+obj = Objective(TopOpt.Compliance(problem, solver, filterT = DensityFilter,
+    rmin = rmin, tracing = true, logarithm = false))
 
 # Define volume constraint
 
-constr = Constraint(VolumeFunction(problem, solver), V)
+constr = Constraint(TopOpt.Volume(problem, solver, filterT = DensityFilter, rmin = rmin), V)
 
 # Define subproblem optimizer
 
 mma_options = options = MMA.Options(maxiter = 3000, 
     tol = MMA.Tolerances(kkttol = 0.001))
 convcriteria = MMA.KKTCriteria()
-optimizer = MMAOptimizer{CPU}(obj, constr, MMA.MMA87(),
+optimizer = MMAOptimizer(obj, constr, MMA.MMA87(),
     ConjugateGradient(), options = mma_options,
     convcriteria = convcriteria)
 

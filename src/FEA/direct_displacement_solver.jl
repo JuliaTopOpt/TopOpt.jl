@@ -28,13 +28,14 @@ function DirectDisplacementSolver(sp::StiffnessTopOptProblem{dim, T};
     vars = fill(one(T), getncells(sp.ch.dh.grid) - sum(sp.black) - sum(sp.white))
     varind = sp.varind
 
-    prev_penalty = @set prev_penalty.p = T(NaN)
+    prev_penalty = setpenalty(prev_penalty, T(NaN))
     return DirectDisplacementSolver(sp, globalinfo, elementinfo, u, lhs, rhs, vars, penalty, prev_penalty, xmin)
 end
-function (s::DirectDisplacementSolver{T})(::Type{Val{safe}} = Val{false}, ::Type{newT} = T; assemble_f = true) where {T, safe, newT}
-    rhs = assemble_f ? s.globalinfo.f : s.rhs
+function (s::DirectDisplacementSolver{T})(::Type{Val{safe}} = Val{false}, ::Type{newT} = T; assemble_f = true, reuse_chol=false) where {T, safe, newT}
+    globalinfo = s.globalinfo
+    rhs = assemble_f ? globalinfo.f : s.rhs
     lhs = assemble_f ? s.u : s.lhs
-    globalinfo = GlobalFEAInfo(s.globalinfo.K, rhs)
+    N = size(globalinfo.K, 1)
     assemble!(globalinfo, s.problem, s.elementinfo, s.vars, getpenalty(s), s.xmin, assemble_f = assemble_f)
     K = globalinfo.K
     if safe
@@ -45,15 +46,25 @@ function (s::DirectDisplacementSolver{T})(::Type{Val{safe}} = Val{false}, ::Type
             end
         end
     end
-    try 
-        if T === newT
-            lhs .= cholesky(Symmetric(K)) \ rhs
-        else
-            lhs .= cholesky(Symmetric(newT.(K))) \ newT.(rhs)
+    nans = false
+    if !reuse_chol
+        try 
+            if T === newT
+                globalinfo.cholK = cholesky(Symmetric(K))
+            else
+                globalinfo.cholK = cholesky(Symmetric(newT.(K)))
+            end
+        catch err
+            lhs .= T(NaN)
+            nans = true
         end
-    catch err
-        lhs .= T(NaN)
     end
-
+    if !nans
+        if T === newT
+            lhs .= globalinfo.cholK \ rhs
+        else
+            lhs .= globalinfo.cholK \ newT.(rhs)
+        end
+    end
     nothing
 end

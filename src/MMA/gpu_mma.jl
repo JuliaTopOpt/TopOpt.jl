@@ -10,7 +10,7 @@ MatrixOf(::Type{CuVector{T}}) where T = CuMatrix{T}
 
 ### Model
 
-whichdevice(m::Model) = whichdevice(m.box_max)
+whichdevice(m::AbstractModel) = whichdevice(m.box_max)
 eval_objective(::GPU, m, x::GPUVector{T}, ∇g) where {T} = T(m.objective(x, ∇g))
 function eval_objective(::GPU, m, x::AbstractVector{T}, ∇g) where {T}
     x_gpu = CuArray(x)

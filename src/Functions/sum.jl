@@ -14,6 +14,7 @@ end
 @inline function Base.getproperty(vf::Sum, f::Symbol)
     f === :reuse && return vf.f1.reuse && vf.f2.reuse
     f === :solver && return vf.f1.solver
+    f === :val && return (vf.f1.val .+ vf.f2.val)
     return getfield(vf, f)
 end
 @inline function Base.setproperty!(vf::Sum, f::Symbol, v)

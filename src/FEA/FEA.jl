@@ -1,9 +1,9 @@
 module FEA
 
-using ..TopOpt: CPU, GPU
+using ..TopOpt: CPU, GPU, PENALTY_BEFORE_INTERPOLATION
 using ..TopOptProblems, ..Utilities, Requires
 using JuAFEM, Setfield, TimerOutputs, Preconditioners
-using IterativeSolvers, StaticArrays
+using IterativeSolvers, StaticArrays, SparseArrays
 using LinearAlgebra
 using Parameters: @unpack
 
@@ -27,6 +27,7 @@ const to = TimerOutput()
 # FEA solvers
 abstract type AbstractFEASolver end
 
+include("grid_utils.jl")
 include("matrix_free_operator.jl")
 include("convergence_criteria.jl")
 include("direct_displacement_solver.jl")

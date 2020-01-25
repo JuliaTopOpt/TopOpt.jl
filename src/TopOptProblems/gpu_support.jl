@@ -32,7 +32,11 @@ function assemble_kernel1(f, fes, fixedload, dof_cells_offsets, dof_cells_values
                 px = xmin
                 f[dofidx] += px * fes[cellidx][localidx]                
             else
-                px = penalty(density(vars[varind[cellidx]], xmin))
+                if PENALTY_BEFORE_INTERPOLATION
+                    px = density(penalty(vars[varind[cellidx]]), xmin)
+                else
+                    px = penalty(density(vars[varind[cellidx]], xmin))
+                end
                 f[dofidx] += px * fes[cellidx][localidx]                
             end
         end

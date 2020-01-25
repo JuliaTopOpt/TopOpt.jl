@@ -171,21 +171,21 @@ end
 
     x = similar(solver.vars); x .= 0.7;
 
-    comp = ComplianceFunction(problem, solver, filtering = false,
+    comp = Compliance(problem, solver, filtering = false,
         rmin = 4.0, tracing = true, logarithm = false)
     test_grad(comp, x)
 
-    vol = VolumeFunction(problem, solver)
+    vol = Volume(problem, solver)
     test_grad(vol, x)
 
-    bin_pen = BinPenaltyFunction(solver, 0.5)
+    bin_pen = BinPenalty(solver, 0.5)
     test_grad(bin_pen, x)
 
-    constr = Constraint(VolumeFunction(problem, solver), 0.3)
+    constr = Constraint(Volume(problem, solver), 0.3)
     ineq_block = IneqConstraintBlock((constr,), [100.0], [0.0])
     eq_block = EqConstraintBlock((), [], [])
     pen = AugmentedPenalty(eq_block, ineq_block, 100.0)
-    obj = LagrangianFunction(comp, pen)
+    obj = Lagrangian(comp, pen)
 
     optimizer = BoxOptimizer(obj)
     w = 1.0; gamma=2.0; alpha=0.5

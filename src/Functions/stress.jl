@@ -14,12 +14,20 @@ end
 get_sigma_vm(E_e, utMu_e) = E_e * sqrt(utMu_e)
 
 function get_E(x_e::T, penalty, E0, xmin) where T
-    return E0 * penalty(density(x_e, xmin))
+    if PENALTY_BEFORE_INTERPOLATION
+        return E0 * density(penalty(x_e), xmin)
+    else
+        return E0 * penalty(density(x_e, xmin))
+    end
 end
 
 function get_E_dE(x_e::T, penalty, E0, xmin) where T
     d = ForwardDiff.Dual{T}(x_e, one(T))
-    p = penalty(density(d, xmin))
+    if PENALTY_BEFORE_INTERPOLATION
+        p = density(penalty(d, xmin))
+    else
+        p = penalty(density(d, xmin))
+    end
     g = p.partials[1] * E0
     return p.value * E0, g
 end

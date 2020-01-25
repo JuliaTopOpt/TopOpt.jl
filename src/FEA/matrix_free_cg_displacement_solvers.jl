@@ -40,7 +40,7 @@ function StaticMatrixFreeDisplacementSolver(::CPU, sp::StiffnessTopOptProblem{di
         preconditioner = identity, 
         quad_order = 2) where {dim, T}
     
-    prev_penalty = @set prev_penalty.p = T(NaN)
+    prev_penalty = setpenalty(prev_penalty, T(NaN))
     elementinfo = ElementFEAInfo(sp, quad_order, Val{:Static})
     if eltype(elementinfo.Kes) <: Symmetric
         f = x -> sumdiag(rawmatrix(x).data)

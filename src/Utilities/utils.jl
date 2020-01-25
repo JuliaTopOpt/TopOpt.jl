@@ -52,7 +52,7 @@ end
 function Base.getindex(ra::RaggedArray, i)
     @assert 1 <= i < length(ra.offsets)
     r = ra.offsets[i]:ra.offsets[i+1]-1
-    @assert 1 <= r[1] && r[end] <= length(ra.values)
+    @assert 1 <= r.start && r.stop <= length(ra.values)
     return @view ra.values[r]
 end
 function Base.getindex(ra::RaggedArray, i, j)
@@ -127,5 +127,20 @@ macro debug(expr)
         if DEBUG[]
             $(esc(expr))
         end
+    end
+end
+
+@generated function _getproperty(c::T, ::Val{fallback}, ::Val{f}) where {T, fallback, f}
+    f ∈ fieldnames(T) && return :(getfield(c, $(QuoteNode(f))))
+    return :(getproperty(getfield(c, $(QuoteNode(fallback))), $(QuoteNode(f))))
+end
+@generated function _setproperty!(c::T, ::Val{fallback}, ::Val{f}, val) where {T, fallback, f}
+    f ∈ fieldnames(T) && return :(setfield!(c, $(QuoteNode(f)), val))
+    return :(setproperty!(getfield(c, $(QuoteNode(fallback))), $(QuoteNode(f)), val))
+end
+macro forward_property(T, field)
+    quote
+        Base.getproperty(c::$(esc(T)), f::Symbol) = _getproperty(c, Val($(QuoteNode(field))), Val(f))
+        Base.setproperty!(c::$(esc(T)), f::Symbol, val) = _setproperty!(c, Val($(QuoteNode(field))), Val(f), val)
     end
 end

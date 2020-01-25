@@ -46,11 +46,19 @@ function mul!(y::TV, A::MatrixFreeOperator, x::TV) where {TV <: AbstractVector}
     @unpack penalty, xmin, vars, fixed_dofs, free_dofs, xes = A
     
     for i in 1:nels
-        px = ifelse(black[i], one(T), 
-                    ifelse(white[i], xmin, 
-                            penalty(density(vars[varind[i]], xmin))
-                        )
-                    )
+        if PENALTY_BEFORE_INTERPOLATION
+            px = ifelse(black[i], one(T), 
+            ifelse(white[i], xmin, 
+                    density(penalty(vars[varind[i]]), xmin)
+                )
+            )
+        else
+            px = ifelse(black[i], one(T), 
+            ifelse(white[i], xmin, 
+                    penalty(density(vars[varind[i]], xmin))
+                )
+            )
+        end
         xe = xes[i]
         for j in 1:dofspercell
             xe = @set xe[j] = x[cell_dofs[j,i]]

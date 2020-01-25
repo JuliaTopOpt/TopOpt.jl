@@ -12,17 +12,17 @@ using TopOpt.Algorithms: BoxOptimizer
         problem = HalfMBB(Val{:Linear}, (60, 20), (1.0, 1.0), 1.0, 0.3, 1.0)
         solver = FEASolver(Displacement, Direct, problem, xmin = 0.01, penalty = TopOpt.PowerPenalty(1.0))
 
-        comp = ComplianceFunction(problem, solver, filtering = false, rmin = 4.0,
+        comp = Compliance(problem, solver, filtering = false, rmin = 4.0,
             tracing = true, logarithm = false)
-        bin_pen = BinPenaltyFunction(solver, 1.0)
+        bin_pen = BinPenalty(solver, 1.0)
         obj = comp + bin_pen
 
-        constr = Constraint(VolumeFunction(problem, solver), 0.5)
+        constr = Constraint(Volume(problem, solver), 0.5)
         ineq_block = IneqConstraintBlock((constr,), [1.0e3], [0.0])
         eq_block = EqConstraintBlock((), [], [])
         pen = AugmentedPenalty(eq_block, ineq_block, 1.0)
 
-        lag = LagrangianFunction(obj, pen)
+        lag = Lagrangian(obj, pen)
         x = similar(solver.vars); x .= 0.5;
         optimizer = BoxOptimizer(lag, Optim.LBFGS(), options=Optim.Options(allow_outer_f_increases=false, x_tol=1e-5, f_tol=1e-3, g_tol=1e-2, outer_iterations=10))
 

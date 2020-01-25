@@ -46,7 +46,6 @@ function WriteVTK.vtk_grid(filename::AbstractString, problem::StiffnessTopOptPro
             end
         end
     end
-    @show length(cls)
     coords = reshape(reinterpret(T, JuAFEM.getnodes(grid)), (dim, JuAFEM.getnnodes(grid)))
     return vtk_grid(filename, coords, cls)
 end

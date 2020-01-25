@@ -26,7 +26,8 @@ export  Model,
         Workspace, 
         MMA87, 
         MMA02,
-        KKTCriteria
+        KKTCriteria,
+        IpoptCriteria
 
 struct MMA87 <: AbstractOptimizer end
 struct MMA02 <: AbstractOptimizer end
@@ -45,7 +46,7 @@ const ρmin = 1e-5
 
 default_dual_caps(::Type{T}) where T = (eps(T), one(T))
 
-function optimize(  model::Model, 
+function optimize(  model::AbstractModel, 
                     x0, 
                     optimizer = MMA02(), 
                     suboptimizer = Optim.ConjugateGradient(); 
@@ -73,23 +74,50 @@ end
 abstract type ConvergenceCriteria end
 struct DefaultCriteria <: ConvergenceCriteria end
 struct KKTCriteria <: ConvergenceCriteria end
+struct IpoptCriteria <: ConvergenceCriteria end
 
 function get_kkt_residual(∇f_x, g, ∇g_x, c, x, lb, ub)
+    T = eltype(x)
     r = mapreduce(max, 1:length(x), init = zero(eltype(x))) do j
-        if lb[j] == x[j]
-            return abs(min(0, ∇f_x[j] + dot(@view(∇g_x[j,:]), c)))
-        elseif x[j] == ub[j]
-            return abs(min(0, -∇f_x[j] - dot(@view(∇g_x[j,:]), c)))
-        elseif  lb[j] < x[j] < ub[j]
-            return zero(eltype(x))
+        _r = ∇f_x[j] + dot(@view(∇g_x[j,:]), c)
+        if lb[j] >= x[j]
+            return abs(min(0, _r))
+        elseif x[j] >= ub[j]
+            return max(0, _r)
         else
-            throw("x is out of range.")
+            return abs(_r)
         end
     end
     r = mapreduce(max, 1:length(g), init = r) do i
-        return max(abs(g[i] * c[i]), g[i], 0)
+        return max(g[i], 0)
+        #return max(abs(g[i] * c[i]), g[i], 0)
     end
     println("kkt residual: $r")
+    return r
+end
+function get_ipopt_residual(model::Model, ∇f_x, g, ∇g_x, c, x, lb, ub)
+    n = length(x)
+    m = length(c)
+    s = zero(eltype(x))
+    r = mapreduce(max, 1:n, init = zero(eltype(x))) do j
+        _r = ∇f_x[j] + dot(@view(∇g_x[j,:]), c)
+        if lb[j] >= x[j]
+            dj = _r
+            s += max(dj, 0)
+            return abs(min(0, dj))
+        elseif x[j] >= ub[j]
+            yj = -_r
+            s += max(yj, 0)
+            return abs(min(0, yj))
+        else
+            return abs(_r)
+        end
+    end
+    param = 100
+    sd = max(param, (sum(abs, c) + s) / (n + m)) / param
+    r = max(r / sd, max(0, maximum(g)))
+    #r = max(r / sd, max(0, maximum(g)), maximum(i -> abs(g[i]*c[i]), 1:length(c)))
+    println("ipopt residual: $r")
     return r
 end
 
@@ -135,7 +163,7 @@ function update_values!(w, _x = nothing)
     return w
 end
 
-function optimize!(workspace::Workspace{T, TV, TM}) where {T, TV, TM}
+function optimize!(workspace::Workspace{T, TV, TM}) where {T, TV, TM <: Model}
     @unpack model, optimizer, suboptimizer, options = workspace
     @unpack primal_data, dual_data = workspace
     @unpack asymptotes_updater, variable_bounds_updater = workspace 
