@@ -30,7 +30,7 @@ end
     outer_maxiter::Int = 10^8
     tol::Ttol = Tolerances()
     s_init::T = 0.5
-    s_incr::T = 1.1
+    s_incr::T = 1.2
     s_decr::T = 0.7
     dual_caps::Tuple{T, T} = MMA.default_dual_caps(Float64)
     store_trace::Bool = false
