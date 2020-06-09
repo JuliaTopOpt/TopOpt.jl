@@ -8,7 +8,6 @@
 using Pkg
 
 pkg"add https://github.com/mohamed82008/JuAFEM.jl#master"
-pkg"add https://github.com/mohamed82008/IterativeSolvers.jl#master"
 pkg"add https://github.com/mohamed82008/VTKDataTypes.jl#master"
 pkg"add https://github.com/mohamed82008/KissThreading.jl#master"
 pkg"add https://github.com/mohamed82008/TopOpt.jl#master"
