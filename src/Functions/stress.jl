@@ -24,7 +24,7 @@ end
 function get_E_dE(x_e::T, penalty, E0, xmin) where T
     d = ForwardDiff.Dual{T}(x_e, one(T))
     if PENALTY_BEFORE_INTERPOLATION
-        p = density(penalty(d, xmin))
+        p = density(penalty(d), xmin)
     else
         p = penalty(density(d, xmin))
     end
