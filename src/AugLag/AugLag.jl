@@ -342,11 +342,27 @@ function primaltransition(opt::Union{CG, LBFGS}, sol::Solution, prev_trans::Unio
     grad = lag.grad
     x = sol.primal.x
     if opt isa LBFGS
-        line = opt.invH * grad
+        mask = (x .> lb .+ xtol) .& (x .< ub .- xtol)
+        _grad = zeros(length(grad))
+        line = zeros(length(grad))
+        _grad[mask] = grad[mask]
+        line[.!mask] = grad[.!mask]
+        _line = opt.invH * _grad
+        line[mask] = _line[mask]
         update!(opt.invH, grad, x)
     else
         if use_cg
-            line = getcg(grad, prev_grad, prev_cg, initial)
+            mask = (x .> lb .+ xtol) .& (x .< ub .- xtol)
+            _grad = zeros(length(grad))
+            _prev_cg = zeros(length(grad))
+            _prev_grad = zeros(length(grad))
+            rem = zeros(length(grad))
+            _grad[mask] = grad[mask]
+            _prev_grad[mask] = prev_grad[mask]
+            _prev_cg[mask] = prev_cg[mask]
+            rem[.!mask] = grad[.!mask]
+            _line = getcg(_grad, _prev_grad, _prev_cg, initial)
+            line = _line + rem
         else
             line = grad
         end
@@ -377,12 +393,12 @@ function primaltransition(opt::Union{CG, LBFGS}, sol::Solution, prev_trans::Unio
     objchange = abs(sol.objval - prev_sol.objval) / (abs(prev_sol.objval) + ftol)
     penaltychange =  abs(sol.penaltyval - prev_sol.penaltyval) / (abs(prev_sol.penaltyval) + ftol)
     converged = objchange <= ftol && (penaltychange <= ftol || sol.violation <= infeastol)
-    converged = ipopt_converged(sol.primal.x, lb, ub, lag.grad, sol.dual.ineq_λ, sol.dual.eq_λ, sol.violation, ftol)
+    converged = ipopt_converged(sol.primal.x, lb, ub, lag.grad, sol.dual.ineq_λ, sol.dual.eq_λ, sol.violation, ftol, ignore_infeasibility=true)
 
     return sol, trans, converged, func_evals
 end
 
-function ipopt_converged(x, lb, ub, lag_grad, ineq_λ, eq_λ, violation, tol)
+function ipopt_converged(x, lb, ub, lag_grad, ineq_λ, eq_λ, violation, tol; ignore_infeasibility=false)
     T = eltype(lag_grad)
     z = map(1:length(lag_grad)) do i 
         if x[i] <= lb[i] && lag_grad[i] > 0
@@ -404,7 +420,10 @@ function ipopt_converged(x, lb, ub, lag_grad, ineq_λ, eq_λ, violation, tol)
     s += sum(abs, z)
     n = length(ineq_λ) + length(eq_λ) + length(lag_grad)
     sd = max(smax, s/n)/smax
-    residual = max(norm(lag_grad + z, Inf)/sd, violation)
+    residual = norm(lag_grad + z, Inf)/sd
+    if !ignore_infeasibility
+        residual = max(residual, violation)
+    end
     @show residual
     return residual <= tol
 end
@@ -443,7 +462,7 @@ end
     eq_step
     islarge
 end
-function dualtransition(opt::Union{CG, LBFGS}, sol::Solution, prev_trans::Union{DualTransition, Nothing}, lag, alpha0, nhalves, λtol, ftol, use_cg, dual_margin, func_evals, verbose, factor)
+function dualtransition(opt::Union{CG, LBFGS}, sol::Solution, prev_trans::Union{DualTransition, Nothing}, lag, alpha0, nhalves, λtol, ftol, use_cg, dual_margin, func_evals, verbose, factor, lb, ub)
     initial = prev_trans isa Nothing
     prev_sol = deepcopy(sol)
     length(sol.primal.x) == 0 && throw("Empty primal solution.")
@@ -506,9 +525,9 @@ function dualtransition(opt::Union{CG, LBFGS}, sol::Solution, prev_trans::Union{
     verbose && println("ineq_step = $(ineq_step), maximum(ineq_λ) = $(maximum(sol.dual.ineq_λ)), minimum(ineq_λ) = $(minimum(sol.dual.ineq_λ)), maximum(ineq_grad) = $(maximum(ineq_grad)), minimum(ineq_grad) = $(minimum(ineq_grad)), maximum(ineq_line) = $(maximum(ineq_line)), minimum(ineq_line) = $(minimum(ineq_line))")
     verbose && println("eq_step = $(eq_step), eq = $(sol.dual.eq_λ), eq_grad = $(eq_grad), eq_line = $(eq_line)")
 
-    penaltychange =  abs(sol.penaltyval - prev_sol.penaltyval) / (abs(prev_sol.penaltyval) + ftol)
-    converged = penaltychange <= ftol
-    #converged = ipopt_converged(sol.primal.x, lb, ub, lag.grad, sol.dual.ineq_λ, sol.dual.eq_λ, sol.violation, ftol)
+    #penaltychange =  abs(sol.penaltyval - prev_sol.penaltyval) / (abs(prev_sol.penaltyval) + ftol)
+    #converged = penaltychange <= ftol
+    converged = ipopt_converged(sol.primal.x, lb, ub, lag.grad, sol.dual.ineq_λ, sol.dual.eq_λ, sol.violation, ftol, ignore_infeasibility=false)
 
     return sol, trans, converged, func_evals
 end
@@ -581,8 +600,9 @@ for Talg in (:AugmentedLagrangianAlgorithm, :LagrangianAlgorithm)
                     else
                         break
                     end
-                    if j > 1 && primal_converged
-                        println("    Breaking primal early: objval = $(sol.objval), penalty = $(sol.penaltyval).")
+                    if primal_converged
+                    #if j > 1 && primal_converged
+                            println("    Breaking primal early: objval = $(sol.objval), penalty = $(sol.penaltyval).")
                         break
                     end
                     if adapt_trust_region
@@ -594,7 +614,7 @@ for Talg in (:AugmentedLagrangianAlgorithm, :LagrangianAlgorithm)
                     println("    Breaking dual early: objval = $(sol.objval), penalty = $(sol.penaltyval).")
                     break
                 end
-                sol, dual_trans, dual_converged, func_evals = dualtransition(dual_optim, sol, dual_trans, lag, dual_alpha, dual_nhalves, λtol, ftol, dual_cg, dual_margin, func_evals, true, 1/dual_step_adapt_factor0)
+                sol, dual_trans, dual_converged, func_evals = dualtransition(dual_optim, sol, dual_trans, lag, dual_alpha, dual_nhalves, λtol, ftol, dual_cg, dual_margin, func_evals, true, 1/dual_step_adapt_factor0, optimizer.lb, optimizer.ub)
                 # Adapt the maximum step size
                 if adapt_dual_step == 1
                     dual_alpha = min(dual_alpha0, 2*max(dual_trans.ineq_step, dual_trans.eq_step))
