@@ -4,17 +4,33 @@
     F::TS
     grad_temp::AbstractVector{T}
 end
-function MeanCompliance(problem::MultiLoad, solver::AbstractDisplacementSolver, args...; method = :exact_svd, sample_once = true, nv = 1, sample_method = :hutch, kwargs...)
+function MeanCompliance(problem::MultiLoad, solver::AbstractDisplacementSolver, args...; method = :exact_svd, sample_once = true, nv = nothing, V = nothing, sample_method = :hutch, kwargs...)
     if method == :exact
         method = ExactMean(problem.F)
     elseif method == :exact_svd
         method = ExactSVDMean(problem.F)
     elseif method == :trace || method == :approx
-        sample_method = sample_method == :hadamard ? hadamard! : hutch_rand!
-        method = TraceEstimationMean(problem.F, nv, sample_once, sample_method)
+        if sample_method isa Symbol
+            sample_method = sample_method == :hadamard ? hadamard! : hutch_rand!
+        end
+        if V === nothing
+            nv = nv === nothing ? 1 : nv
+            method = TraceEstimationMean(problem.F, nv, sample_once, sample_method)
+        else
+            nv = nv === nothing ? size(V, 2) : nv
+            method = TraceEstimationMean(problem.F, view(V, :, 1:nv), sample_once, sample_method)
+        end
     else
-        sample_method = sample_method == :hadamard ? hadamard! : hutch_rand!
-        method = TraceEstimationSVDMean(problem.F, nv, sample_once, sample_method)
+        if sample_method isa Symbol
+            sample_method = sample_method == :hadamard ? hadamard! : hutch_rand!
+        end
+        if V === nothing
+            nv = nv === nothing ? 1 : nv
+            method = TraceEstimationSVDMean(problem.F, nv, sample_once, sample_method)
+        else
+            nv = nv === nothing ? size(V, 2) : nv
+            method = TraceEstimationSVDMean(problem.F, view(V, :, 1:nv), sample_once, sample_method)
+        end
     end
     comp = Compliance(whichdevice(solver), problem.problem, solver, args...; kwargs...)
     return MeanCompliance(comp, method, problem.F, similar(comp.grad))
@@ -159,7 +175,7 @@ function hadamard3!(V)
 	V .= H[1:n, :]
 	return V
 end
-function hadamard!(V)
+function hadamard2!(V)
 	n, nv = size(V)
 	H = ones(Int, 1, 1)
 	while size(H, 1) < nv
@@ -172,7 +188,7 @@ function hadamard!(V)
 	V .= H[1:n, :]
 	return V
 end
-function hadamard2!(V)
+function hadamard!(V)
 	n, nv = size(V)
 	H = ones(Int, 1, 1)
 	while size(H, 1) < nv
