@@ -54,6 +54,12 @@ function TraceEstimationSVDMean(F::SparseMatrixCSC, nv::Int, sample_once::Bool=t
     US = ExactSVDMean(F).US
     V = zeros(eltype(F), size(US, 2), nv)
     sample_method(V)
+    sample_once = sample_method === hadamard! || sample_once
+    return TraceEstimationSVDMean(US, size(F, 2), V, sample_once, sample_method)
+end
+function TraceEstimationSVDMean(F::SparseMatrixCSC, V::AbstractMatrix, sample_once::Bool=true, sample_method=hutch_rand!)
+    US = ExactSVDMean(F).US
+    sample_once = sample_method === hadamard! || sample_once
     return TraceEstimationSVDMean(US, size(F, 2), V, sample_once, sample_method)
 end
 
@@ -117,6 +123,15 @@ function DiagonalEstimation(F::SparseMatrixCSC, nv::Int, nE::Int, sample_once::B
     Y = zeros(eltype(F), size(F, 1), nv)
     Q = similar(Y)
     temp = zeros(eltype(F), nE)
+    sample_once = sample_method === hadamard! || sample_once
+    return DiagonalEstimation(F, V, Y, Q, temp, sample_once, sample_method)
+end
+function DiagonalEstimation(F::SparseMatrixCSC, V::AbstractMatrix, nE::Int, sample_once::Bool=true, sample_method=hadamard!)
+    nv = size(V, 2)
+    Y = zeros(eltype(F), size(F, 1), nv)
+    Q = similar(Y)
+    temp = zeros(eltype(F), nE)
+    sample_once = sample_method === hadamard! || sample_once
     return DiagonalEstimation(F, V, Y, Q, temp, sample_once, sample_method)
 end
 

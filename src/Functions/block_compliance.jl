@@ -13,7 +13,8 @@ function BlockCompliance(
     args...; 
     method = :exact,
     sample_once = true,
-    nv = 1,
+    nv = nothing,
+    V = nothing,
     sample_method = :hutch,
     decay = 1.0,
     kwargs...
@@ -24,8 +25,16 @@ function BlockCompliance(
     elseif method == :exact_svd
         method = ExactSVDDiagonal(problem.F, length(comp.grad))
     else
-        sample_method = sample_method == :hadamard ? hadamard! : hutch_rand!
-        method = DiagonalEstimation(problem.F, nv, length(comp.grad), sample_once, sample_method)
+        if sample_method isa Symbol
+            sample_method = sample_method == :hadamard ? hadamard! : hutch_rand!
+        end
+        if V === nothing
+            nv = nv === nothing ? 1 : nv
+            method = DiagonalEstimation(problem.F, nv, length(comp.grad), sample_once, sample_method)
+        else
+            nv = nv === nothing ? size(V, 2) : nv
+            method = DiagonalEstimation(problem.F, view(V, :, 1:nv), length(comp.grad), sample_once, sample_method)
+        end
     end
     val = similar(comp.grad, size(problem.F, 2))
     val .= 0

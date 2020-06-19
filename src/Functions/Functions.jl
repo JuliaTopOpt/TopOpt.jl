@@ -36,7 +36,9 @@ export  Objective,
         getnvars,
         GlobalStress,
         project,
-        generate_scenarios
+        generate_scenarios,
+        hutch_rand!,
+        hadamard!
 
 const to = TimerOutput()
 
