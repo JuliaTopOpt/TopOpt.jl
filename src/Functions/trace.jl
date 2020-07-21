@@ -16,7 +16,10 @@ function ExactSVDMean(F::SparseMatrixCSC)
     rows = unique(F.rowval)
     Fc = Matrix(F[rows, :])
     svdfact = svd(Fc)
-    inds = findall(x -> x != 0, svdfact.S)
+    threshold = 1e-6
+    @show length(svdfact.S)
+    inds = findall(x -> x > threshold, svdfact.S)
+    @show length(inds)
     US_dense = svdfact.U[:,inds] * Diagonal(svdfact.S[inds])
     I = Int[]
     J = Int[]
@@ -88,7 +91,10 @@ function ExactSVDDiagonal(F::SparseMatrixCSC, nE::Int)
     rows = unique(F.rowval)
     Fc = Matrix(F[rows, :])
     svdfact = svd(Fc)
-    inds = findall(x -> x != 0, svdfact.S)
+    threshold = 1e-6
+    @show length(svdfact.S)
+    inds = findall(x -> x > threshold, svdfact.S)
+    @show length(inds)
     US_dense = svdfact.U[:,inds] * Diagonal(svdfact.S[inds])
     V = svdfact.V[:,inds]
     I = Int[]

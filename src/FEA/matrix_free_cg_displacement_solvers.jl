@@ -69,10 +69,12 @@ function buildoperator(solver::StaticMatrixFreeDisplacementSolver)
     MatrixFreeOperator(solver.f, elementinfo, meandiag, vars, xes, fixed_dofs, free_dofs, xmin, penalty, conv)
 end
 
-function (s::StaticMatrixFreeDisplacementSolver)(; assemble_f = true)
-    rhs = assemble_f ? s.f : s.rhs
-    lhs = assemble_f ? s.u : s.lhs
-
+function (s::StaticMatrixFreeDisplacementSolver)(
+    ; assemble_f = true,
+    rhs = assemble_f ? s.f : s.rhs,
+    lhs = assemble_f ? s.u : s.lhs,
+    kwargs...,
+)
     if assemble_f
         assemble_f!(s.f, s.problem, s.elementinfo, s.vars, getpenalty(s), s.xmin)
     end

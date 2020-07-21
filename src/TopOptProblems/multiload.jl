@@ -19,7 +19,7 @@ end
 for F in (:getE, :getν, :nnodespercell, :getcloaddict, :getdim, :getpressuredict, :getfacesets)
     @eval $F(p::MultiLoad) = $F(p.problem)
 end
-function MultiLoad(problem::StiffnessTopOptProblem, load_rules, N::Int)
+function MultiLoad(problem::StiffnessTopOptProblem, N::Int, load_rules::Vector{<:Pair})
     I = Int[]
     J = Int[]
     V = Float64[]
@@ -28,13 +28,22 @@ function MultiLoad(problem::StiffnessTopOptProblem, load_rules, N::Int)
         for i in 1:N
             load = f()
             append!(I, dofs)
-            push!(J, i, i)
+            push!(J, fill(i, length(dofs))...)
             append!(V, load)
         end
     end
     F = sparse(I, J, V, ndofs(problem.ch.dh), N)
     return MultiLoad(problem, F)
 end
+function MultiLoad(
+    problem::StiffnessTopOptProblem,
+    N::Int,
+    dist::Distributions.Distribution = Uniform(-2, 2),
+)
+    F = generate_random_loads(problem, N, dist, random_direction)
+    return MultiLoad(problem, F)
+end
+
 function find_nearest_dofs(problem, p)
     grid = problem.ch.dh.grid
     shortest = Inf
@@ -55,3 +64,52 @@ struct RandomMagnitude{Tf, Tdist} <: Function
     dist::Tdist
 end
 (rm::RandomMagnitude)() = rm.f .* rand(rm.dist)
+
+function random_direction()
+    theta = rand() * 2 * π
+    return [cos(theta), sin(theta)]
+end
+
+function get_surface_dofs(problem::StiffnessTopOptProblem)
+	dh = problem.ch.dh
+	boundary_matrix = dh.grid.boundary_matrix
+	interpolation = dh.field_interpolations[1]
+	celliterator = JuAFEM.CellIterator(dh)
+	node_dofs = problem.metadata.node_dofs
+
+	faces, cells, _ = findnz(boundary_matrix)
+    surface_node_inds = Int[]
+    for i in 1:length(cells)
+	    cellind = cells[i]
+	    faceind = faces[i]
+	    face = [JuAFEM.faces(interpolation)[faceind]...]
+	    JuAFEM.reinit!(celliterator, cellind)
+        nodeinds = celliterator.nodes[face]
+        append!(surface_node_inds, nodeinds)
+    end
+    unique!(surface_node_inds)
+    return node_dofs[:, surface_node_inds]
+end
+
+function generate_random_loads(
+    problem::StiffnessTopOptProblem,
+    N::Int,
+    scalar::Distributions.Distribution = Distributions.Uniform(-2, 2),
+    direction::Function = random_direction,
+)
+    loadrule = () -> direction() .* rand(scalar)
+    surface_dofs = get_surface_dofs(problem)
+
+    FI = Int[]
+	FJ = Int[]
+	FV = Float64[]
+    nodeinds = rand(1:size(surface_dofs, 2), N)
+	for i in 1:N
+        load = loadrule()
+        dofs = surface_dofs[:, nodeinds[i]]
+	    append!(FI, dofs)
+	    push!(FJ, i, i)
+	    append!(FV, load)
+	end
+	return sparse(FI, FJ, FV)
+end
