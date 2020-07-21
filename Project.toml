@@ -6,6 +6,7 @@ version = "0.1.0"
 [deps]
 CatViews = "81a5f4ea-a946-549a-aa7e-2a7f63a27d31"
 Compat = "34da2185-b29b-5c13-b0c7-acf172513d20"
+Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
 FillArrays = "1a297f60-69ca-5386-bcde-b61e274b549b"
 ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
 IterativeSolvers = "42fd0dbc-a981-5370-80f2-aaf504508153"

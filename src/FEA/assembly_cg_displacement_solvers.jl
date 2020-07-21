@@ -39,11 +39,15 @@ function PCGDisplacementSolver(sp::StiffnessTopOptProblem{dim, T};
     return PCGDisplacementSolver(sp, globalinfo, elementinfo, u, lhs, rhs, vars, penalty, prev_penalty, xmin, cg_max_iter, tol, cg_statevars, preconditioner, Ref(false), conv)
 end
 
-function (s::PCGDisplacementSolver{T})(::Type{Val{safe}} = Val{false}; assemble_f = true) where {T, safe}
+function (s::PCGDisplacementSolver{T})(
+    ::Type{Val{safe}} = Val{false};
+    assemble_f = true,
+    rhs = assemble_f ? s.globalinfo.f : s.rhs,
+    lhs = assemble_f ? s.u : s.lhs,
+    kwargs...,
+) where {T, safe}
     globalinfo = s.globalinfo
-    rhs = assemble_f ? globalinfo.f : s.rhs
-    lhs = assemble_f ? s.u : s.lhs
-    assemble!(s.globalinfo, s.problem, s.elementinfo, s.vars, s.penalty, s.xmin, assemble_f = assemble_f)
+    assemble!(globalinfo, s.problem, s.elementinfo, s.vars, s.penalty, s.xmin, assemble_f = assemble_f)
     Tconv = typeof(s.conv)
     K, f = globalinfo.K, globalinfo.f
     if safe

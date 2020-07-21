@@ -95,14 +95,8 @@ end
 function compute_exact_bc(bc, F, Y)
     @unpack compliance, raw_val = bc
     @unpack solver = compliance
-    raw_val .= 0
-    for i in 1:size(F, 2)
-        @views solver.rhs .= F[:,i]
-        solver(assemble_f = false, reuse_chol = (i > 1))
-        invKfi = solver.lhs
-        Y[:,i] .= invKfi
-        raw_val[i] = dot(solver.rhs, invKfi)
-    end
+    solver(rhs = F, lhs = Y, assemble_f = false)
+    raw_val .= vec(sum(F .* Y, dims = 1))
     return raw_val
 end
 function compute_jtvp!_bc(out, bc, method::ExactDiagonal, w)
@@ -126,11 +120,7 @@ function compute_exact_svd_bc(bc, F, US, V, Q, Y)
     @unpack compliance, raw_val = bc
     @unpack solver = compliance
     raw_val .= 0
-    for i in 1:size(US, 2)
-        @views solver.rhs .= US[:,i]
-        solver(assemble_f = false, reuse_chol = (i > 1))
-        Q[:,i] = solver.lhs
-    end
+    solver(assemble_f = false, rhs = US, lhs = Q)
     for i in 1:length(raw_val)
         raw_val[i] = (F[:,i]' * Q) * V[i,:]
     end

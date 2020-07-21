@@ -31,10 +31,16 @@ function DirectDisplacementSolver(sp::StiffnessTopOptProblem{dim, T};
     prev_penalty = setpenalty(prev_penalty, T(NaN))
     return DirectDisplacementSolver(sp, globalinfo, elementinfo, u, lhs, rhs, vars, penalty, prev_penalty, xmin)
 end
-function (s::DirectDisplacementSolver{T})(::Type{Val{safe}} = Val{false}, ::Type{newT} = T; assemble_f = true, reuse_chol=false) where {T, safe, newT}
+function (s::DirectDisplacementSolver{T})(
+    ::Type{Val{safe}} = Val{false},
+    ::Type{newT} = T;
+    assemble_f = true,
+    reuse_chol=false,
+    rhs = assemble_f ? s.globalinfo.f : s.rhs,
+    lhs = assemble_f ? s.u : s.lhs,
+    kwargs...,
+) where {T, safe, newT}
     globalinfo = s.globalinfo
-    rhs = assemble_f ? globalinfo.f : s.rhs
-    lhs = assemble_f ? s.u : s.lhs
     N = size(globalinfo.K, 1)
     assemble!(globalinfo, s.problem, s.elementinfo, s.vars, getpenalty(s), s.xmin, assemble_f = assemble_f)
     K = globalinfo.K
