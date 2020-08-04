@@ -1,3 +1,5 @@
+[![Documentation](https://img.shields.io/badge/doc-latest-blue.svg)](https://mohamed82008.github.io/TopOpt.jl/stable)
+
 # TopOpt
 
 ## Example
