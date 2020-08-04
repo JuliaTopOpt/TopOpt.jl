@@ -80,7 +80,6 @@ API:
 
 Example:
 ```
-
 nels = (60,20);
 sizes = (1.0,1.0);
 E = 1.0;
@@ -108,7 +107,6 @@ problem = PointLoadCantilever(Val{celltype}, nels, sizes, E, ν, force)
     varind::AbstractVector{Int}
     metadata::Metadata
 end
-
 function PointLoadCantilever(::Type{Val{CellType}}, nels::NTuple{dim,Int}, sizes::NTuple{dim}, E = 1.0, ν = 0.3, force = 0.0) where {dim, CellType}
     iseven(nels[2]) && (length(nels) < 3 || iseven(nels[3])) || throw("Grid does not have an even number of elements along the y and/or z axes.")
 
@@ -228,7 +226,6 @@ API:
 
 Example:
 ```
-
 nels = (60,20);
 sizes = (1.0,1.0);
 E = 1.0;
@@ -385,7 +382,6 @@ API:
 
 Example:
 ```
-
 E = 1.0;
 ν = 0.3;
 force = 1.0;
