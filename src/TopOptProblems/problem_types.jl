@@ -44,6 +44,11 @@ struct PointLoadCantilever{dim, T, N, M} <: StiffnessTopOptProblem{dim, T}
 end
 ```
 
+API:
+```
+    PointLoadCantilever(::Type{Val{CellType}}, nels::NTuple{dim,Int}, sizes::NTuple{dim}, E, ν, force) where {dim, CellType}
+```
+
 `dim`: dimension of the problem
 
 `T`: number type for computations and coordinates
@@ -65,13 +70,13 @@ end
 
 `force_dof`: dof number at which the force is applied
 
-`metadata`:: Metadata having various cell-node-dof relationships
+`metadata`: Metadata having various cell-node-dof relationships
 
+`nels`: number of elements in each direction, a 2-tuple for 2D problems and a 3-tuple for 3D problems
 
-API:
-```
-    PointLoadCantilever(nels::NTuple{dim,Int}, sizes::NTuple{dim}, E, ν, force) where {dim}
-```
+`sizes`: the size of each element in each direction, a 2-tuple for 2D problems and a 3-tuple for 3D problems
+
+`CellType`: can be either `:Linear` or `:Quadratic` to determine the order of the geometric and field basis functions and element type. Only isoparametric elements are supported for now.
 
 Example:
 ```
@@ -81,7 +86,14 @@ sizes = (1.0,1.0);
 E = 1.0;
 ν = 0.3;
 force = 1.0;
-problem = PointLoadCantilever(nels, sizes, E, ν, force)
+
+# Linear elements and linear basis functions
+celltype = :Linear
+
+# Quadratic elements and quadratic basis functions
+#celltype = :Quadratic
+
+problem = PointLoadCantilever(Val{celltype}, nels, sizes, E, ν, force)
 ```
 """
 @params struct PointLoadCantilever{dim, T, N, M} <: StiffnessTopOptProblem{dim, T}
@@ -180,6 +192,11 @@ struct HalfMBB{dim, T, N, M} <: StiffnessTopOptProblem{dim, T}
 end
 ```
 
+API:
+```
+    HalfMBB(::Type{Val{CellType}}, nels::NTuple{dim,Int}, sizes::NTuple{dim}, E, ν, force) where {dim, CellType}
+```
+
 `dim`: dimension of the problem
 
 `T`: number type for computations and coordinates
@@ -200,12 +217,14 @@ end
 
 `force_dof`: dof number at which the force is applied
 
-`metadata`:: Metadata having various cell-node-dof relationships
+`metadata`: Metadata having various cell-node-dof relationships
 
-API:
-```
-    HalfMBB(nels::NTuple{dim,Int}, sizes::NTuple{dim}, E, ν, force) where {dim}
-```
+`nels`: number of elements in each direction, a 2-tuple for 2D problems and a 3-tuple for 3D problems
+
+`sizes`: the size of each element in each direction, a 2-tuple for 2D problems and a 3-tuple for 3D problems
+
+`CellType`: can be either `:Linear` or `:Quadratic` to determine the order of the geometric and field basis functions and element type. Only isoparametric elements are supported for now.
+
 
 Example:
 ```
@@ -215,7 +234,14 @@ sizes = (1.0,1.0);
 E = 1.0;
 ν = 0.3;
 force = -1.0;
-problem = HalfMBB(nels, sizes, E, ν, force)
+
+# Linear elements and linear basis functions
+celltype = :Linear
+
+# Quadratic elements and quadratic basis functions
+#celltype = :Quadratic
+
+problem = HalfMBB(Val{celltype}, nels, sizes, E, ν, force)
 ```
 """
 @params struct HalfMBB{dim, T, N, M} <: StiffnessTopOptProblem{dim, T}
@@ -316,6 +342,61 @@ end
 .                               . |
 ................................. v
                                 force
+
+struct LBeam{T, N, M} <: StiffnessTopOptProblem{2, T}
+    E::T
+    ν::T
+    ch::ConstraintHandler{<:DofHandler{2, N, T, M}, T}
+    force::T
+    force_dof::Integer
+    black::AbstractVector
+    white::AbstractVector
+    varind::AbstractVector{Int}
+    metadata::Metadata
+end
+```
+
+API:
+```
+    LBeam(::Type{Val{CellType}}, ::Type{T}=Float64; length = 100, height = 100, upperslab = 50, lowerslab = 50, E = 1.0, ν = 0.3, force = 0.0) where {T, CellType}
+```
+
+`T`: number type for computations and coordinates
+
+`N`: number of nodes in a cell of the grid
+
+`M`: number of faces in a cell of the grid
+
+`E`: Young's modulus
+
+`ν`: Poisson's ration
+
+`ch`: a JuAFEM.ConstraintHandler struct
+
+`force`: force at the center right of the cantilever beam (positive is downward)
+
+`force_dof`: dof number at which the force is applied
+
+`metadata`:: Metadata having various cell-node-dof relationships
+
+`length`, `height`, `upperslab` and `lowerslab` are explained in [`LGrid`](@ref).
+
+`CellType`: can be either `:Linear` or `:Quadratic` to determine the order of the geometric and field basis functions and element type. Only isoparametric elements are supported for now.
+
+Example:
+```
+
+E = 1.0;
+ν = 0.3;
+force = 1.0;
+
+# Linear elements and linear basis functions
+celltype = :Linear
+
+# Quadratic elements and quadratic basis functions
+#celltype = :Quadratic
+
+problem = LBeam(Val{celltype}, E = E, ν = ν, force = force)
 ```
 """
 @params struct LBeam{T, N, M} <: StiffnessTopOptProblem{2, T}
