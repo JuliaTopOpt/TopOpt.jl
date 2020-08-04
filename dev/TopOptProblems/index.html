@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>TopOptProblems · TopOpt.jl</title><link href="https://fonts.googleapis.com/css?family=Lato|Roboto+Mono" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.11.1/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL=".."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../assets/documenter.js"></script><script src="../siteinfo.js"></script><script src="../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-dark.css" data-theme-name="documenter-dark"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit">TopOpt.jl</span></div><form class="docs-search" action="../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../">TopOpt.jl Documentation</a></li><li class="is-active"><a class="tocitem" href>TopOptProblems</a><ul class="internal"><li><a class="tocitem" href="#Problem-types"><span>Problem types</span></a></li><li><a class="tocitem" href="#Finite-element-backend"><span>Finite element backend</span></a></li><li><a class="tocitem" href="#Element-matrices-and-vectors"><span>Element matrices and vectors</span></a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>TopOptProblems</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>TopOptProblems</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/mohamed82008/TopOpt.jl/blob/master/docs/src/TopOptProblems.md" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="TopOptProblems"><a class="docs-heading-anchor" href="#TopOptProblems"><code>TopOptProblems</code></a><a id="TopOptProblems-1"></a><a class="docs-heading-anchor-permalink" href="#TopOptProblems" title="Permalink"></a></h1><p>This sub-module of <code>TopOpt</code> defines a number of standard topology optimization problems for the convenient testing of algorithms.</p><h2 id="Problem-types"><a class="docs-heading-anchor" href="#Problem-types">Problem types</a><a id="Problem-types-1"></a><a class="docs-heading-anchor-permalink" href="#Problem-types" title="Permalink"></a></h2><article class="docstring"><header><a class="docstring-binding" id="TopOpt.TopOptProblems.StiffnessTopOptProblem" href="#TopOpt.TopOptProblems.StiffnessTopOptProblem"><code>TopOpt.TopOptProblems.StiffnessTopOptProblem</code></a> — <span class="docstring-category">Type</span></header><section><div><p>Abstract stiffness topology optimization problem. All subtypes must have the following fields:     ch::ConstraintHandler     black::BitVector     white::BitVector     varind::AbstractVector{Int}     metadata::Metadata</p></div></section></article><article class="docstring"><header><a class="docstring-binding" id="TopOpt.TopOptProblems.PointLoadCantilever" href="#TopOpt.TopOptProblems.PointLoadCantilever"><code>TopOpt.TopOptProblems.PointLoadCantilever</code></a> — <span class="docstring-category">Type</span></header><section><div><pre><code class="language-julia">///**********************************
+///*                                *
+///*                                * |
+///*                                * |
+///********************************** v
+
+
+struct PointLoadCantilever{dim, T, N, M} &lt;: StiffnessTopOptProblem{dim, T}
+    rect_grid::RectilinearGrid{dim, T, N, M}
+    E::T
+    ν::T
+    ch::ConstraintHandler{DofHandler{dim, N, T, M}, T}
+    force::T
+    force_dof::Int
+    metadata::Metadata
+end</code></pre><p><code>dim</code>: dimension of the problem</p><p><code>T</code>: number type for computations and coordinates</p><p><code>N</code>: number of nodes in a cell of the grid</p><p><code>M</code>: number of faces in a cell of the grid</p><p><code>rect_grid</code>: a RectilinearGrid struct</p><p><code>E</code>: Young&#39;s modulus</p><p><code>ν</code>: Poisson&#39;s ration</p><p><code>ch</code>: a JuAFEM.ConstraintHandler struct</p><p><code>force</code>: force at the center right of the cantilever beam (positive is downward)</p><p><code>force_dof</code>: dof number at which the force is applied</p><p><code>metadata</code>:: Metadata having various cell-node-dof relationships</p><p>API:</p><pre><code class="language-none">    PointLoadCantilever(nels::NTuple{dim,Int}, sizes::NTuple{dim}, E, ν, force) where {dim}</code></pre><p>Example:</p><pre><code class="language-none">
+nels = (60,20);
+sizes = (1.0,1.0);
+E = 1.0;
+ν = 0.3;
+force = 1.0;
+problem = PointLoadCantilever(nels, sizes, E, ν, force)</code></pre></div></section></article><article class="docstring"><header><a class="docstring-binding" id="TopOpt.TopOptProblems.HalfMBB" href="#TopOpt.TopOptProblems.HalfMBB"><code>TopOpt.TopOptProblems.HalfMBB</code></a> — <span class="docstring-category">Type</span></header><section><div><pre><code class="language-julia"> |
+ |
+ v
+O*********************************
+O*                               *
+O*                               *
+O*                               *
+O*********************************
+                                 O
+
+struct HalfMBB{dim, T, N, M} &lt;: StiffnessTopOptProblem{dim, T}
+    rect_grid::RectilinearGrid{dim, T, N, M}
+    E::T
+    ν::T
+    ch::ConstraintHandler{DofHandler{dim, N, T, M}, T}
+    force::T
+    force_dof::Int
+    metadata::Metadata
+end</code></pre><p><code>dim</code>: dimension of the problem</p><p><code>T</code>: number type for computations and coordinates</p><p><code>N</code>: number of nodes in a cell of the grid</p><p><code>M</code>: number of faces in a cell of the grid</p><p><code>rect_grid</code>: a RectilinearGrid struct</p><p><code>E</code>: Young&#39;s modulus</p><p><code>ν</code>: Poisson&#39;s ration</p><p><code>ch</code>: a JuAFEM.ConstraintHandler struct</p><p><code>force</code>: force at the top left of half the MBB (positive is downward)</p><p><code>force_dof</code>: dof number at which the force is applied</p><p><code>metadata</code>:: Metadata having various cell-node-dof relationships</p><p>API:</p><pre><code class="language-none">    HalfMBB(nels::NTuple{dim,Int}, sizes::NTuple{dim}, E, ν, force) where {dim}</code></pre><p>Example:</p><pre><code class="language-none">
+nels = (60,20);
+sizes = (1.0,1.0);
+E = 1.0;
+ν = 0.3;
+force = -1.0;
+problem = HalfMBB(nels, sizes, E, ν, force)</code></pre></div></section></article><article class="docstring"><header><a class="docstring-binding" id="TopOpt.TopOptProblems.LBeam" href="#TopOpt.TopOptProblems.LBeam"><code>TopOpt.TopOptProblems.LBeam</code></a> — <span class="docstring-category">Type</span></header><section><div><pre><code class="language-julia">////////////
+............
+.          .
+.          .
+.          . 
+.          .                    
+.          ......................
+.                               .
+.                               . 
+.                               . |
+................................. v
+                                force</code></pre></div></section></article><article class="docstring"><header><a class="docstring-binding" id="TopOpt.TopOptProblems.TieBeam" href="#TopOpt.TopOptProblems.TieBeam"><code>TopOpt.TopOptProblems.TieBeam</code></a> — <span class="docstring-category">Type</span></header><section><div><pre><code class="language-julia">                                                               1
+                                                               
+                                                              OOO
+                                                              ...
+                                                              . .
+                                                           4  . . 
+                                30                            . .   
+/ . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . &lt;-
+/ .                                                                 . &lt;- 2 f 
+/ .    3                                                            . &lt;- 
+/ . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . &lt;-
+                                                              ^^^
+                                                              |||
+                                                              1 f</code></pre></div></section></article><article class="docstring"><header><a class="docstring-binding" id="TopOpt.TopOptProblems.IO.INP.InpStiffness" href="#TopOpt.TopOptProblems.IO.INP.InpStiffness"><code>TopOpt.TopOptProblems.IO.INP.InpStiffness</code></a> — <span class="docstring-category">Type</span></header><section><div><p>Stiffness problem imported from a .inp file.</p></div></section></article><h2 id="Finite-element-backend"><a class="docs-heading-anchor" href="#Finite-element-backend">Finite element backend</a><a id="Finite-element-backend-1"></a><a class="docs-heading-anchor-permalink" href="#Finite-element-backend" title="Permalink"></a></h2><p>Currently, <code>TopOpt</code> uses a <a href="https://github.com/mohamed82008/JuAFEM.jl">forked version</a> of <a href="https://github.com/KristofferC/JuAFEM.jl"><code>JuAFEM.jl</code></a>. This means that all the problems above are described in the language and types of <code>JuAFEM</code>.</p><p>The fork is needed for GPU support but the main package should also work on the CPU. The changes in the fork should make it back to the main repo at some point.</p><h2 id="Element-matrices-and-vectors"><a class="docs-heading-anchor" href="#Element-matrices-and-vectors">Element matrices and vectors</a><a id="Element-matrices-and-vectors-1"></a><a class="docs-heading-anchor-permalink" href="#Element-matrices-and-vectors" title="Permalink"></a></h2><p>Generating the element stiffness matrices and load vectors from a linear elasticity stiffness problem <code>sp::StiffnessTopOptProblem</code> using a Gaussian quadrature order <code>quad_order</code> is done using:</p><pre><code class="language-julia">elementinfo = ElementFEAInfo(sp, quad_order)</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../">« TopOpt.jl Documentation</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> on <span class="colophon-date" title="Tuesday 4 August 2020 11:07">Tuesday 4 August 2020</span>. Using Julia version 1.5.0.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
