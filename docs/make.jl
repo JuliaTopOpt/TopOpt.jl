@@ -10,3 +10,7 @@ makedocs(
         "TopOptProblems" => "TopOptProblems.md",
     ],
 )
+
+deploydocs(
+    repo = "github.com/mohamed82008/TopOpt.jl.git",
+)
