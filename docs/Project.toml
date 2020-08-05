@@ -2,5 +2,4 @@
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
 JuAFEM = "30d91d44-8115-11e8-1d28-c19a5ac16de8"
 KissThreading = "ece10b52-bc5d-5f9f-8b6e-cc9c6a4b5293"
-TopOpt = "53a1e1a5-51bb-58a9-8a02-02056cc81109"
 VTKDataTypes = "10d27dd1-1d0f-5a4c-b178-bd2d0045a217"
