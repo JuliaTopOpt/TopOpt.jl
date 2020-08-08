@@ -25,21 +25,18 @@ end
 
 StaticMatrixFreeDisplacementSolver(sp, args...; kwargs...) = StaticMatrixFreeDisplacementSolver(whichdevice(sp), sp, args...; kwargs...)
 
-const StaticMatrices{m,T} = Union{StaticMatrix{m,m,T}, Symmetric{T, <:StaticMatrix{m,m,T}}}
-@generated function sumdiag(K::StaticMatrices{m,T}) where {m,T}
-    return reduce((ex1,ex2) -> :($ex1 + $ex2), [:(K[$j,$j]) for j in 1:m])
-end
-
-function StaticMatrixFreeDisplacementSolver(::CPU, sp::StiffnessTopOptProblem{dim, T};
-        conv = DefaultCriteria(), 
-        xmin = one(T) / 1000, 
-        cg_max_iter = 700, 
-        tol = xmin, 
-        penalty = PowerPenalty{T}(1), 
-        prev_penalty = copy(penalty),
-        preconditioner = identity, 
-        quad_order = 2) where {dim, T}
-    
+function StaticMatrixFreeDisplacementSolver(
+    ::CPU,
+    sp::StiffnessTopOptProblem{dim, T};
+    conv = DefaultCriteria(), 
+    xmin = one(T) / 1000, 
+    cg_max_iter = 700, 
+    tol = xmin, 
+    penalty = PowerPenalty{T}(1), 
+    prev_penalty = copy(penalty),
+    preconditioner = identity, 
+    quad_order = 2,
+) where {dim, T}
     prev_penalty = setpenalty(prev_penalty, T(NaN))
     elementinfo = ElementFEAInfo(sp, quad_order, Val{:Static})
     if eltype(elementinfo.Kes) <: Symmetric

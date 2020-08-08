@@ -29,7 +29,7 @@ end
 function ApproxInverseHessian(g::AbstractVector, n::Int)
     S = similar(g, length(g), n)
     Y = similar(S)
-    p = similar(g)
+    p = similar(g, n)
     prev_x = similar(g)
     prev_g = similar(g)
     S .= 0

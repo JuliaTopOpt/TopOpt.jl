@@ -1,10 +1,13 @@
-using Revise, FDM, Test
+#using Revise
+using FiniteDifferences, Test
 using TopOpt
 using TopOpt.AugLag
 using Test, LinearAlgebra
 
-using TopOpt.AugLag: Constraint, Objective, LagrangianAlgorithm, AugmentedLagrangianAlgorithm, LagrangianFunction, AugmentedPenalty, IneqConstraintBlock, EqConstraintBlock
+using TopOpt.AugLag: Constraint, Objective, LagrangianAlgorithm, AugmentedLagrangianAlgorithm, Lagrangian, AugmentedPenalty, IneqConstraintBlock, EqConstraintBlock
 using TopOpt.Algorithms: BoxOptimizer
+
+const FDM = FiniteDifferences
 
 struct F <: Function
     grad
@@ -32,6 +35,8 @@ end
 
 struct MMAOpt{TM}
     model::TM
+    lb
+    ub
 end
 function (o::MMAOpt)(x)
     model = o.model
@@ -66,7 +71,7 @@ ndim = 2
 function test_grad(f, x)
     grad1 = similar(x)
     f(x, grad1)
-    grad2 = FDM.grad(central_fdm(5, 1), x -> f(x, similar(x)), x)
+    grad2 = FDM.grad(central_fdm(5, 1), x -> f(x, similar(x)), x)[1]
     @test isapprox(grad1, grad2, rtol = 1e-5)
 end
 
@@ -85,7 +90,7 @@ end
     grad = similar(x)
 
     # Augmented Lagrangian objective
-    lag = Objective(LagrangianFunction(obj, pen))
+    lag = Objective(Lagrangian(obj, pen))
     test_grad(lag, x)
 
     # Linear penalty
@@ -129,7 +134,7 @@ end
     ineq_block = IneqConstraintBlock((constr,), [0.0], [0.0])
     augpen = AugLag.AugmentedPenalty(eq_block, ineq_block, 10.0)
     pval = augpen(x, grad)
-    grad_fdm = FDM.grad(central_fdm(5, 1), x -> augpen(x, similar(x)), x)
+    grad_fdm = FDM.grad(central_fdm(5, 1), x -> augpen(x, similar(x)), x)[1]
     @test pval == 10*max(constr(x, similar(x)), 0)^2
     @test isapprox(grad_fdm, grad, rtol=1e-5)
     @test isapprox(2*10*sqrt(pval/10)*grad_g, grad_fdm, rtol=1e-5)
@@ -147,18 +152,18 @@ end
     ineq_block = IneqConstraintBlock((constr1, constr2), [0.0, 0.0], [0.0, 0.0])
     eq_block = EqConstraintBlock((), [], [])
     pen = AugmentedPenalty(eq_block, ineq_block, 1.0)
-    lag = LagrangianFunction(obj, pen)
+    lag = Lagrangian(obj, pen)
 
     x = [0.9, 0.9]
     grad = similar(x)
 
     lb = zeros(2); ub = ones(2);
     optimizer = BoxOpt(lag, lb, ub)
-    
+
     w = 0.25; gamma=1.5; alpha=10.0
     alg = AugmentedLagrangianAlgorithm(optimizer, lag, copy(x))
     AugLag.reset!(alg);
-    result = alg(x, outer_iterations=20, trust_region=w, gamma=gamma, alpha=alpha)
+    result = alg(x; outer_iterations=20, trust_region=w, gamma=gamma, primal_alpha0=alpha)
     @test constr1(result.minimizer) < 1e-3
     @test constr2(result.minimizer) < 1e-3
     @test abs(result.minimum - sqrt(8/27)) < 1e-3
@@ -171,7 +176,7 @@ end
 
     x = similar(solver.vars); x .= 0.7;
 
-    comp = Compliance(problem, solver, filtering = false,
+    comp = Compliance(problem, solver, filterT = nothing,
         rmin = 4.0, tracing = true, logarithm = false)
     test_grad(comp, x)
 
@@ -192,11 +197,12 @@ end
     alg = AugmentedLagrangianAlgorithm(optimizer, obj, copy(x))
     AugLag.reset!(alg);
     alg.lag.penalty.r[] = 1.0
-    result = alg(x, outer_iterations=20, trust_region=w, gamma=gamma, alpha=alpha)
+    result = alg(x, outer_iterations=20, trust_region=w, gamma=gamma, primal_alpha0=alpha)
 
     @test constr(result.minimizer) < 1e-3
 end
 
+#=
 @testset "Lagrangian algorithm - MMA" begin
     f = F(zeros(ndim))
     g1 = G(zeros(ndim), 2, 0)
@@ -211,21 +217,22 @@ end
     ineq_block = IneqConstraintBlock((constr1,), [0.0], [0.0])
     eq_block = EqConstraintBlock((), [], [])
     pen = AugmentedPenalty(eq_block, ineq_block, 1.0)
-    lag = LagrangianFunction(obj, pen)
+    lag = Lagrangian(obj, pen)
 
     model = MMA.Model(ndim, lag)
     box!(model, 1, 0.0, 1.0)
     box!(model, 2, 0.0, 1.0)    
     ineq_constraint!(model, constr2)
-    optimizer = MMAOpt(model)
+    optimizer = MMAOpt(model, zeros(ndim), ones(ndim))
 
-    w = 1.0; gamma=1.2; alpha=1.0
+    w = 1.0; gamma=1.1; alpha=1.0
     alg = AugmentedLagrangianAlgorithm(optimizer, lag, copy(x))
     AugLag.reset!(alg);
-    result = alg(x, outer_iterations=100, inner_iterations=5, trust_region=w, alpha=alpha, gamma=gamma)
+    result = alg(x, outer_iterations=20, inner_iterations=100, trust_region=w, primal_alpha0=alpha, gamma=gamma)
     
     @test constr1(result.minimizer) < 1e-2
     @test constr2(result.minimizer) < 1e-2
     @test abs(result.minimum - sqrt(8/27)) < 1e-2
     @test norm(result.minimizer - [1/3, 8/27]) < 1e-2 
 end
+=#

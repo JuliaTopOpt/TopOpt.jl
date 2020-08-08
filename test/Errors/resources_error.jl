@@ -11,11 +11,11 @@ maxtol = 0.01 # maximum tolerance
 mintol = 0.0001 # minimum tolerance
 steps = 40 # maximum number of penalty steps, delta_p0 = 0.1
 reuse = true # adaptive penalty flag
-filtering = true
+filterT = DensityFilter
 solver = FEASolver(Displacement, CG, MatrixFree, problem, xmin = xmin,
 	penalty = TopOpt.PowerPenalty(1.0))	
 cusolver = cu(solver)
-cuobj = ComplianceFunction(problem, cusolver, filtering = filtering,
+cuobj = ComplianceFunction(problem, cusolver, filterT = DensityFilter,
 rmin = 3.0, tracing = true, logarithm = false)
 
 operator = TopOpt.buildoperator(cusolver)

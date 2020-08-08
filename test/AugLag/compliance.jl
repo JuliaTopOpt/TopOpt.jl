@@ -1,10 +1,13 @@
-using Revise, FDM, Test
+#using Revise
+using FiniteDifferences, Test
 using TopOpt
 using TopOpt.AugLag
 using Test, LinearAlgebra
 
-using TopOpt.AugLag: Constraint, Objective, LagrangianAlgorithm, AugmentedLagrangianAlgorithm, LagrangianFunction, AugmentedPenalty, IneqConstraintBlock, EqConstraintBlock
+using TopOpt.AugLag: Constraint, Objective, LagrangianAlgorithm, AugmentedLagrangianAlgorithm, Lagrangian, AugmentedPenalty, IneqConstraintBlock, EqConstraintBlock
 using TopOpt.Algorithms: BoxOptimizer
+
+const FDM = FiniteDifferences
 
 @testset "Compliance" begin
     function solve()
@@ -12,7 +15,7 @@ using TopOpt.Algorithms: BoxOptimizer
         problem = HalfMBB(Val{:Linear}, (60, 20), (1.0, 1.0), 1.0, 0.3, 1.0)
         solver = FEASolver(Displacement, Direct, problem, xmin = 0.01, penalty = TopOpt.PowerPenalty(1.0))
 
-        comp = Compliance(problem, solver, filtering = false, rmin = 4.0,
+        comp = Compliance(problem, solver, filterT = DensityFilter, rmin = 4.0,
             tracing = true, logarithm = false)
         bin_pen = BinPenalty(solver, 1.0)
         obj = comp + bin_pen
@@ -32,7 +35,7 @@ using TopOpt.Algorithms: BoxOptimizer
         bin_pen.s = 1e-3
         w = 1.0; gamma=1.05; alpha=500.0
         for i in 1:3
-            result = alg(copy(alg.x), verbose=true, outer_iterations=2, alpha=alpha, gamma=gamma, trust_region=w)
+            result = alg(copy(alg.x), verbose=true, outer_iterations=2, primal_alpha0=alpha, gamma=gamma, trust_region=w)
             bin_pen.s *= 10
             alpha /= 2
         end

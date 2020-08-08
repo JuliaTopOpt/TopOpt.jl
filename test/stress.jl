@@ -1,4 +1,5 @@
-using Revise, TopOpt
+#using Revise
+using TopOpt
 
 E = 1.0 # Young’s modulus
 v = 0.3 # Poisson’s ratio
@@ -49,7 +50,7 @@ csimp_options = TopOpt.CSIMPOptions(steps = steps,
 # Define a finite element solver
 solver = FEASolver(Displacement, Direct, problem, xmin = xmin, penalty = penalty)
 # Define compliance objective
-filtering = problem isa TopOptProblems.TieBeam ? false : true
+filterT = problem isa TopOptProblems.TieBeam ? nothing : DensityFilter
 obj = Objective(Volume(problem, solver))
 constr = Constraint(TopOpt.GlobalStress(solver), 1.0 + eps(0.0))
 #cu_obj = TopOpt.cu(obj)

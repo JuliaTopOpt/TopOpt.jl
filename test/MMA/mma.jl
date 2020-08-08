@@ -1,6 +1,5 @@
 using TopOpt.MMA
 using Test, LinearAlgebra
-
 using TopOpt.MMA: eval_constraint, eval_objective, dim
 
 function f(x::AbstractVector, grad::AbstractVector)

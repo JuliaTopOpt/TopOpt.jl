@@ -99,7 +99,7 @@ end
 # L-beam problem
 @testset "L-beam" begin
     global E, ν, force
-    problem = LBeam(Val{:Linear}, Float64); 
+    problem = LBeam(Val{:Linear}, Float64, force=force); 
     ncells = 100*50 + 50*50
     @test problem.E == E
     @test problem.ν == ν
