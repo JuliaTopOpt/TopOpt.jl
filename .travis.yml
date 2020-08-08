@@ -1,11 +1,16 @@
 language: julia
-
+branches:
+  only:
+    - master
 os:
   - linux
-
-julia:
-  - 1.5
-
+matrix:
+  include:
+    - julia: 1.5
+    - julia: nightly
+  allow_failures:
+    - julia: nightly
+  fast_finish: true
 notifications:
   email: false
 
