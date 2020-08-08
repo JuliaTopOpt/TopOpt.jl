@@ -1,11 +1,12 @@
 #using Revise
 using FiniteDifferences, Test
-using TopOpt
+using TopOpt, Random
 using TopOpt.AugLag
 using Test, LinearAlgebra
 
 using TopOpt.AugLag: Constraint, Objective, LagrangianAlgorithm, AugmentedLagrangianAlgorithm, Lagrangian, AugmentedPenalty, IneqConstraintBlock, EqConstraintBlock
 using TopOpt.Algorithms: BoxOptimizer
+Random.seed!(1)
 
 const FDM = FiniteDifferences
 
