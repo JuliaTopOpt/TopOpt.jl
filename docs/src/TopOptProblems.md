@@ -47,7 +47,15 @@ The fork is needed for GPU support but the main package should also work on the 
 
 ## Element matrices and vectors
 
-Generating the element stiffness matrices and load vectors from a linear elasticity stiffness problem `sp::StiffnessTopOptProblem` using a Gaussian quadrature order `quad_order` is done using:
-```julia
-elementinfo = ElementFEAInfo(sp, quad_order)
+### `ElementFEAInfo`
+
+```@docs
+ElementFEAInfo
 ```
+
+### `GlobalFEAInfo`
+
+```@docs
+GlobalFEAInfo
+```
+

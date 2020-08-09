@@ -83,16 +83,36 @@ function ElementFEAInfo(
     )
 end
 
+"""
+    struct GlobalFEAInfo{T, TK<:AbstractMatrix{T}, Tf<:AbstractVector{T}, Tchol}
+        K::TK
+        f::Tf
+        cholK::Tchol
+    end
+
+An instance of `GlobalFEAInfo` hosts the global stiffness matrix `K`, the load vector `f` and the cholesky decomposition of the `K`, `cholK`.
+"""
 mutable struct GlobalFEAInfo{T, TK<:AbstractMatrix{T}, Tf<:AbstractVector{T}, Tchol}
     K::TK
     f::Tf
     cholK::Tchol
 end
-GlobalFEAInfo(::Type{T}) where {T} = GlobalFEAInfo{T}()
-GlobalFEAInfo() = GlobalFEAInfo{Float64}()
+
+"""
+    GlobalFEAInfo(::Type{T}=Float64)
+
+Constructs an empty instance of `GlobalFEAInfo` where the field `K` is an empty sparse matrix of element type `T` and the field `f` is an empty dense vector of element type `T`.
+"""
+GlobalFEAInfo(::Type{T}=Float64) where {T} = GlobalFEAInfo{T}()
 function GlobalFEAInfo{T}() where {T}
     return GlobalFEAInfo(sparse(zeros(T, 0, 0)), zeros(T, 0), cholesky(one(T)))
 end
+
+"""
+    GlobalFEAInfo(sp::StiffnessTopOptProblem)
+
+Constructs an instance of `GlobalFEAInfo` where the field `K` is a sparse matrix with the correct size and sparsity pattern for the problem instance `sp`. The field `f` is a dense vector of the appropriate size. The values in `K` and `f` are meaningless though and require calling the function `assemble!` to update.
+"""
 function GlobalFEAInfo(sp::StiffnessTopOptProblem)
     K = initialize_K(sp)
     f = initialize_f(sp)
@@ -105,11 +125,21 @@ function GlobalFEAInfo(
     chol = cholesky(spdiagm(0=>ones(size(K, 1))))
     return GlobalFEAInfo{eltype(K), typeof(K), typeof(f), typeof(chol)}(K, f, chol)
 end
+"""
+    GlobalFEAInfo(K, f)
+
+Constructs an instance of `GlobalFEAInfo` with global stiffness matrix `K` and load vector `f`.
+"""
 function GlobalFEAInfo(K, f)
     chol = cholesky(Matrix{eltype(K)}(I, size(K)...))
     return GlobalFEAInfo{eltype(K), typeof(K), typeof(f), typeof(chol)}(K, f, chol)
 end
 
+"""
+    get_cell_volumes(sp::StiffnessTopOptProblem{dim, T}, cellvalues)
+
+Calculates an approximation of the element volumes by approximating the volume integral of 1 over each element using Gaussian quadrature. `cellvalues` is a `JuAFEM` struct that facilitates the computation of the integral. To initialize `cellvalues` for an element with index `cell`, `JuAFEM.reinit!(cellvalues, cell)` can be called. Calling `JuAFEM.getdetJdV(cellvalues, q_point)` then computes the value of the determinant of the Jacobian of the geometric basis functions at the point `q_point` in the reference element. The sum of such values for all integration points is the volume approximation.
+"""
 function get_cell_volumes(sp::StiffnessTopOptProblem{dim, T}, cellvalues) where {dim, T}
     dh = sp.ch.dh
     cellvolumes = zeros(T, getncells(dh.grid))
