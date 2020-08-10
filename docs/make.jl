@@ -7,6 +7,7 @@ makedocs(
     ),
     pages = [
         "index.md",
+        "Quick start" => "QuickStart.md",
         "TopOptProblems" => "TopOptProblems.md",
     ],
 )
