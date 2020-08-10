@@ -99,7 +99,7 @@ mutable struct GlobalFEAInfo{T, TK<:AbstractMatrix{T}, Tf<:AbstractVector{T}, Tc
 end
 
 """
-    GlobalFEAInfo(::Type{T}=Float64)
+    GlobalFEAInfo(::Type{T}=Float64) where {T}
 
 Constructs an empty instance of `GlobalFEAInfo` where the field `K` is an empty sparse matrix of element type `T` and the field `f` is an empty dense vector of element type `T`.
 """

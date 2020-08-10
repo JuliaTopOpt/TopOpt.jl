@@ -58,6 +58,6 @@ ElementFEAInfo(sp, quad_order, ::Type{Val{mat_type}}) where {mat_type}
 
 ```@docs
 GlobalFEAInfo
-GlobalFEAInfo(::Type{T}=Float64)
+GlobalFEAInfo(::Type{T}=Float64) where {T}
 GlobalFEAInfo(sp::StiffnessTopOptProblem)
 ```
