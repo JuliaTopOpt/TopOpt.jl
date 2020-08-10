@@ -45,7 +45,7 @@ Currently, `TopOpt` uses a [forked version](https://github.com/mohamed82008/JuAF
 
 The fork is needed for GPU support but the main package should also work on the CPU. The changes in the fork should make it back to the main repo at some point.
 
-## Element matrices and vectors
+## Matrices and vectors
 
 ### `ElementFEAInfo`
 
