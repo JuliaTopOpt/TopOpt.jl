@@ -51,11 +51,13 @@ The fork is needed for GPU support but the main package should also work on the 
 
 ```@docs
 ElementFEAInfo
+ElementFEAInfo(sp, quad_order, ::Type{Val{mat_type}}) where {mat_type}
 ```
 
 ### `GlobalFEAInfo`
 
 ```@docs
 GlobalFEAInfo
+GlobalFEAInfo(::Type{T}=Float64)
+GlobalFEAInfo(sp::StiffnessTopOptProblem)
 ```
-

@@ -22,7 +22,7 @@ An instance of the `ElementFEAInfo` type stores element information such as:
 - `black`: a `BitVector` such that `black[i]` is 1 iff element `i` must be part of any feasible design.
 - `white`: a `BitVector` such that `white[i]` is 1 iff element `i` must never be part of any feasible design.
 - `varind`: a vector such that `varind[i]` gives the decision variable index of element `i`.
-- `cells`: the cell connectivities,
+- `cells`: the cell connectivities.
 """
 @params struct ElementFEAInfo{dim, T}
     Kes::AbstractVector{<:AbstractMatrix{T}}
