@@ -1,3 +1,7 @@
+stages:
+  - name: Test
+  - name: Documentation
+
 language: julia
 branches:
   only:
