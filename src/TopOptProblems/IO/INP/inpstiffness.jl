@@ -1,4 +1,5 @@
 """
+```
 struct InpStiffness{dim, N, TF, TI, TBool, Tch <: ConstraintHandler, GO, TInds <: AbstractVector{TI}, TMeta<:Metadata} <: StiffnessTopOptProblem{dim, TF}
     inp_content::InpContent{dim, TF, N, TI}
     geom_order::Type{Val{GO}}
@@ -8,6 +9,7 @@ struct InpStiffness{dim, N, TF, TI, TBool, Tch <: ConstraintHandler, GO, TInds <
     varind::TInds
     metadata::TMeta
 end
+```
 
 - `dim`: dimension of the problem
 - `TF`: number type for computations and coordinates
