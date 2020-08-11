@@ -15,38 +15,19 @@ struct RectilinearGrid{dim, T, N, M} <: AbstractGrid{dim, T}
 end
 ```
 
-`dim`: dimension of the problem
+A type that represents a rectilinear grid with corner points `corners`.
 
-`T`: number type for computations and coordinates
-
-`N`: number of nodes in a cell of the grid
-
-`M`: number of faces in a cell of the grid
-
-
-`grid`: a JuAFEM.Grid struct
-
-`nels`: number of elements in every dimension
-
-`sizes`: dimensions of each rectilinear cell
-
-`corners`: 2 corner points of the rectilinear grid
-
-`white_cells`: cells fixed to be void during optimization
-
-`black_cells`: cells fixed to have material during optimization
-
-`constant_cells`: cells fixed to be either void or have material during optimization
-
-
-API:
-
-`function RectilinearGrid(nels::NTuple{dim,Int}, sizes::NTuple{dim,T}) where {dim,T}`
-
-
-Example:
-
-`rectgrid = RectilinearGrid((60,20), (1.0,1.0))`
+- `dim`: dimension of the problem
+- `T`: number type for computations and coordinates
+- `N`: number of nodes in a cell of the grid
+- `M`: number of faces in a cell of the grid
+- `grid`: a JuAFEM.Grid struct
+- `nels`: number of elements in every dimension
+- `sizes`: dimensions of each rectilinear cell
+- `corners`: 2 corner points of the rectilinear grid
+- `white_cells`: cells fixed to be void during optimization
+- `black_cells`: cells fixed to have material during optimization
+- `constant_cells`: cells fixed to be either void or have material during optimization
 """
 struct RectilinearGrid{dim, T, N, M, TG<:JuAFEM.Grid{dim, N, T, M}} <: AbstractGrid{dim, T}
     grid::TG
@@ -57,22 +38,23 @@ struct RectilinearGrid{dim, T, N, M, TG<:JuAFEM.Grid{dim, N, T, M}} <: AbstractG
     black_cells::BitVector
     constant_cells::BitVector
 end
-nnodespercell(::RectilinearGrid{dim,T,N,M}) where {dim, T, N, M} = N
-nfacespercell(::RectilinearGrid{dim,T,N,M}) where {dim, T, N, M} = M
 
-left(rectgrid::RectilinearGrid, x) = x[1] ≈ rectgrid.corners[1][1]
-right(rectgrid::RectilinearGrid, x) = x[1] ≈ rectgrid.corners[2][1]
-bottom(rectgrid::RectilinearGrid, x) = x[2] ≈ rectgrid.corners[1][2]
-top(rectgrid::RectilinearGrid, x) = x[2] ≈ rectgrid.corners[2][2]
-back(rectgrid::RectilinearGrid, x) = x[3] ≈ rectgrid.corners[1][3]
-front(rectgrid::RectilinearGrid, x) = x[3] ≈ rectgrid.corners[2][3]
-middlex(rectgrid::RectilinearGrid, x) = x[1] ≈ (rectgrid.corners[1][1] + rectgrid.corners[2][1]) / 2
-middley(rectgrid::RectilinearGrid, x) = x[2] ≈ (rectgrid.corners[1][2] + rectgrid.corners[2][2]) / 2
-middlez(rectgrid::RectilinearGrid, x) = x[3] ≈ (rectgrid.corners[1][3] + rectgrid.corners[2][3]) / 2
+"""
+    RectilinearGrid(::Type{Val{CellType}}, nels::NTuple{dim,Int}, sizes::NTuple{dim,T}) where {dim, T, CellType}
 
-nnodes(cell::Type{JuAFEM.Cell{dim,N,M}}) where {dim, N, M} = N
-nnodes(cell::JuAFEM.Cell) = nnodes(typeof(cell))
+Constructs an instance of [`RectilinearGrid`](@ref).
 
+- `dim`: dimension of the problem
+- `T`: number type for coordinates
+- `nels`: number of elements in every dimension
+- `sizes`: dimensions of each rectilinear cell
+
+Example:
+
+```
+rectgrid = RectilinearGrid((60,20), (1.0,1.0))
+```
+"""
 function RectilinearGrid(::Type{Val{CellType}}, nels::NTuple{dim,Int}, sizes::NTuple{dim,T}) where {dim, T, CellType}
     if dim === 2
         if CellType === :Linear
@@ -93,27 +75,50 @@ function RectilinearGrid(::Type{Val{CellType}}, nels::NTuple{dim,Int}, sizes::NT
     return RectilinearGrid(grid, nels, sizes, (corner1, corner2), falses(ncells), falses(ncells), falses(ncells))
 end
 
+nnodespercell(::RectilinearGrid{dim,T,N,M}) where {dim, T, N, M} = N
+nfacespercell(::RectilinearGrid{dim,T,N,M}) where {dim, T, N, M} = M
+
+left(rectgrid::RectilinearGrid, x) = x[1] ≈ rectgrid.corners[1][1]
+right(rectgrid::RectilinearGrid, x) = x[1] ≈ rectgrid.corners[2][1]
+bottom(rectgrid::RectilinearGrid, x) = x[2] ≈ rectgrid.corners[1][2]
+top(rectgrid::RectilinearGrid, x) = x[2] ≈ rectgrid.corners[2][2]
+back(rectgrid::RectilinearGrid, x) = x[3] ≈ rectgrid.corners[1][3]
+front(rectgrid::RectilinearGrid, x) = x[3] ≈ rectgrid.corners[2][3]
+middlex(rectgrid::RectilinearGrid, x) = x[1] ≈ (rectgrid.corners[1][1] + rectgrid.corners[2][1]) / 2
+middley(rectgrid::RectilinearGrid, x) = x[2] ≈ (rectgrid.corners[1][2] + rectgrid.corners[2][2]) / 2
+middlez(rectgrid::RectilinearGrid, x) = x[3] ≈ (rectgrid.corners[1][3] + rectgrid.corners[2][3]) / 2
+
+nnodes(cell::Type{JuAFEM.Cell{dim,N,M}}) where {dim, N, M} = N
+nnodes(cell::JuAFEM.Cell) = nnodes(typeof(cell))
+
 """
-Examples:
+    LGrid(::Type{Val{CellType}}, ::Type{T}; length = 100, height = 100, upperslab = 50, lowerslab = 50) where {T, CellType}
+    LGrid(::Type{Val{CellType}}, nel1::NTuple{2,Int}, nel2::NTuple{2,Int}, LL::Vec{2,T}, UR::Vec{2,T}, MR::Vec{2,T}) where {CellType, T}
+
+Constructs a `JuAFEM.Grid` that represents the following L-shaped grid.
 
 ```
-grid = LGrid(upperslab = 30, lowerslab = 70)
-grid = LGrid(Val{:Linear}, (2, 4), (2, 2), Vec{2,Float64}((0.0,0.0)), Vec{2,Float64}((2.0, 4.0)), Vec{2,Float64}((4.0, 2.0)))
-```
-
-```
-        upperslab
+        upperslab   UR
        ............
        .          .
        .          .
        .          . 
-height .          .                    
+height .          .                     MR
        .          ......................
        .                               .
        .                               . lowerslab
        .                               .
        .................................
-                    length
+     LL             length
+
+
+```
+
+Examples:
+
+```
+LGrid(upperslab = 30, lowerslab = 70)
+LGrid(Val{:Linear}, (2, 4), (2, 2), Vec{2,Float64}((0.0,0.0)), Vec{2,Float64}((2.0, 4.0)), Vec{2,Float64}((4.0, 2.0)))
 ```
 """
 function LGrid(::Type{Val{CellType}}, ::Type{T}; length = 100, height = 100, upperslab = 50, lowerslab = 50) where {T, CellType}
@@ -123,24 +128,6 @@ function LGrid(::Type{Val{CellType}}, ::Type{T}; length = 100, height = 100, upp
         Vec{2,T}((0.0,0.0)), Vec{2,T}((T(upperslab), T(height))), 
         Vec{2,T}((T(length), T(lowerslab))))
 end
-
-# Quadrilateral
-"""
-```
-            UR
- ............
- .          .
- .          .
- .          . 
- .          .                    MR
- .          ......................
- .                               .
- .                               .
- .                               .
- .................................
-LL
-```
-"""
 function LGrid(::Type{Val{CellType}}, nel1::NTuple{2,Int}, nel2::NTuple{2,Int}, 
     LL::Vec{2,T}, UR::Vec{2,T}, MR::Vec{2,T}) where {CellType, T}
 

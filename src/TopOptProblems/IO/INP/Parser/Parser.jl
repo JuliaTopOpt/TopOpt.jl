@@ -5,6 +5,37 @@ using .....TopOpt: find_black_and_white
 
 export extract_inp, InpContent
 
+"""
+```
+struct InpContent{dim, TF, N, TI}
+    node_coords::Vector{NTuple{dim,TF}}
+    celltype::String
+    cells::Vector{NTuple{N,TI}}
+    nodesets::Dict{String,Vector{TI}}
+    cellsets::Dict{String,Vector{TI}}
+    E::TF
+    ν::TF
+    density::TF
+    nodedbcs::Dict{String, Vector{Tuple{TI,TF}}}
+    cloads::Dict{Int, Vector{TF}}
+    facesets::Dict{String, Vector{Tuple{TI,TI}}}
+    dloads::Dict{String, TF}
+end
+```
+
+- `node_coords`: a vector of node coordinates.
+- `celltype`: a cell type code in the INP convention 
+- `cells`: a vector of cell connectivities
+- `nodesets`: a dictionary mapping a node set name to a vector of node indices
+- `cellsets`: a dictionary mapping a cell set name to a vector of cell indices
+- `E`: Young's modulus
+- `ν`: Poisson ratio
+- `density`: physical density of the material
+- `nodedbcs`: a dictionary mapping a node set name to a vector of tuples of type `Tuple{Int, Float64}` specifying a Dirichlet boundary condition on that node set. Each tuple in the vector specifies the local index of a constrained degree of freedom and its fixed value. A 3-dimensional field has 3 degrees of freedom per node for example. So the index can be 1, 2 or 3.
+- `cloads`: a dictionary mapping a node index to a load vector on that node.
+- `facesets`: a dictionary mapping a face set name to a vector of `Tuple{Int,Int}` tuples where each tuple is a face index. The first integer is the cell index where the face is and the second integer is the local face index in the cell according to the VTK convention.
+- `dloads`: a dictionary of distributed loads mapping face set names to a normal traction load value.
+"""
 struct InpContent{dim, TF, N, TI}
     node_coords::Vector{NTuple{dim,TF}}
     celltype::String
