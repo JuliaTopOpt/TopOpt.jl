@@ -1,12 +1,14 @@
 using JuAFEM: Cell
 
 """
-Abstract stiffness topology optimization problem. All subtypes must have the following fields:
-    ch::ConstraintHandler
-    black::BitVector
-    white::BitVector
-    varind::AbstractVector{Int}
-    metadata::Metadata
+    abstract type StiffnessTopOptProblem{dim, T} <: AbstractTopOptProblem end
+
+An abstract stiffness topology optimization problem. All subtypes must have the following fields:
+- `ch`: a `JuAFEM.ConstraintHandler` struct
+- `metadata`: Metadata having various cell-node-dof relationships
+- `black`: a `BitVector` of length equal to the number of elements where `black[e]` is 1 iff the `e`^th element must be part of the final design
+- `white`:  a `BitVector` of length equal to the number of elements where `white[e]` is 1 iff the `e`^th element must not be part of the final design
+- `varind`: an `AbstractVector{Int}` of length equal to the number of elements where `varind[e]` gives the index of the decision variable corresponding to element `e`. Because some elements can be fixed to be black or white, not every element has a decision variable associated.
 """
 abstract type StiffnessTopOptProblem{dim, T} <: AbstractTopOptProblem end
 
@@ -34,7 +36,7 @@ JuAFEM.getncells(problem::StiffnessTopOptProblem) = JuAFEM.getncells(getdh(probl
 ///********************************** v
 
 
-struct PointLoadCantilever{dim, T, N, M} <: StiffnessTopOptProblem{dim, T}
+@params struct PointLoadCantilever{dim, T, N, M} <: StiffnessTopOptProblem{dim, T}
     rect_grid::RectilinearGrid{dim, T, N, M}
     E::T
     ν::T
@@ -48,39 +50,44 @@ struct PointLoadCantilever{dim, T, N, M} <: StiffnessTopOptProblem{dim, T}
 end
 ```
 
-API:
-```
+- `dim`: dimension of the problem
+- `T`: number type for computations and coordinates
+- `N`: number of nodes in a cell of the grid
+- `M`: number of faces in a cell of the grid
+- `rect_grid`: a RectilinearGrid struct
+- `E`: Young's modulus
+- `ν`: Poisson's ration
+- `force`: force at the center right of the cantilever beam (positive is downward)
+- `force_dof`: dof number at which the force is applied
+- `ch`: a `JuAFEM.ConstraintHandler` struct
+- `metadata`: Metadata having various cell-node-dof relationships
+- `black`: a `BitVector` of length equal to the number of elements where `black[e]` is 1 iff the `e`^th element must be part of the final design
+- `white`:  a `BitVector` of length equal to the number of elements where `white[e]` is 1 iff the `e`^th element must not be part of the final design
+- `varind`: an `AbstractVector{Int}` of length equal to the number of elements where `varind[e]` gives the index of the decision variable corresponding to element `e`. Because some elements can be fixed to be black or white, not every element has a decision variable associated.
+"""
+@params struct PointLoadCantilever{dim, T, N, M} <: StiffnessTopOptProblem{dim, T}
+    rect_grid::RectilinearGrid{dim, T, N, M}
+    E::T
+    ν::T
+    ch::ConstraintHandler{<:DofHandler{dim, <:Cell{dim,N,M}, T}, T}
+    force::T
+    force_dof::Integer
+    black::AbstractVector
+    white::AbstractVector
+    varind::AbstractVector{Int}
+    metadata::Metadata
+end
+
+"""
     PointLoadCantilever(::Type{Val{CellType}}, nels::NTuple{dim,Int}, sizes::NTuple{dim}, E, ν, force) where {dim, CellType}
-```
 
-`dim`: dimension of the problem
-
-`T`: number type for computations and coordinates
-
-`N`: number of nodes in a cell of the grid
-
-`M`: number of faces in a cell of the grid
-
-
-`rect_grid`: a RectilinearGrid struct
-
-`E`: Young's modulus
-
-`ν`: Poisson's ration
-
-`ch`: a JuAFEM.ConstraintHandler struct
-
-`force`: force at the center right of the cantilever beam (positive is downward)
-
-`force_dof`: dof number at which the force is applied
-
-`metadata`: Metadata having various cell-node-dof relationships
-
-`nels`: number of elements in each direction, a 2-tuple for 2D problems and a 3-tuple for 3D problems
-
-`sizes`: the size of each element in each direction, a 2-tuple for 2D problems and a 3-tuple for 3D problems
-
-`CellType`: can be either `:Linear` or `:Quadratic` to determine the order of the geometric and field basis functions and element type. Only isoparametric elements are supported for now.
+- `dim`: dimension of the problem
+- `E`: Young's modulus
+- `ν`: Poisson's ration
+- `force`: force at the center right of the cantilever beam (positive is downward)
+- `nels`: number of elements in each direction, a 2-tuple for 2D problems and a 3-tuple for 3D problems
+- `sizes`: the size of each element in each direction, a 2-tuple for 2D problems and a 3-tuple for 3D problems
+- `CellType`: can be either `:Linear` or `:Quadratic` to determine the order of the geometric and field basis functions and element type. Only isoparametric elements are supported for now.
 
 Example:
 ```
@@ -99,18 +106,6 @@ celltype = :Linear
 problem = PointLoadCantilever(Val{celltype}, nels, sizes, E, ν, force)
 ```
 """
-@params struct PointLoadCantilever{dim, T, N, M} <: StiffnessTopOptProblem{dim, T}
-    rect_grid::RectilinearGrid{dim, T, N, M}
-    E::T
-    ν::T
-    ch::ConstraintHandler{<:DofHandler{dim, <:Cell{dim,N,M}, T}, T}
-    force::T
-    force_dof::Integer
-    black::AbstractVector
-    white::AbstractVector
-    varind::AbstractVector{Int}
-    metadata::Metadata
-end
 function PointLoadCantilever(::Type{Val{CellType}}, nels::NTuple{dim,Int}, sizes::NTuple{dim}, E = 1.0, ν = 0.3, force = 1.0) where {dim, CellType}
     iseven(nels[2]) && (length(nels) < 3 || iseven(nels[3])) || throw("Grid does not have an even number of elements along the y and/or z axes.")
 
@@ -187,46 +182,54 @@ struct HalfMBB{dim, T, N, M} <: StiffnessTopOptProblem{dim, T}
     rect_grid::RectilinearGrid{dim, T, N, M}
     E::T
     ν::T
-    ch::ConstraintHandler{DofHandler{dim, N, T, M}, T}
+    ch::ConstraintHandler{<:DofHandler{dim, <:Cell{dim,N,M}, T}, T}
     force::T
-    force_dof::Int
+    force_dof::Integer
+    black::AbstractVector
+    white::AbstractVector
+    varind::AbstractVector{Int}
     metadata::Metadata
 end
 ```
 
-API:
-```
+- `dim`: dimension of the problem
+- `T`: number type for computations and coordinates
+- `N`: number of nodes in a cell of the grid
+- `M`: number of faces in a cell of the grid
+- `rect_grid`: a RectilinearGrid struct
+- `E`: Young's modulus
+- `ν`: Poisson's ration
+- `force`: force at the top left of half the MBB (positive is downward)
+- `force_dof`: dof number at which the force is applied
+- `ch`: a `JuAFEM.ConstraintHandler` struct
+- `metadata`: Metadata having various cell-node-dof relationships
+- `black`: a `BitVector` of length equal to the number of elements where `black[e]` is 1 iff the `e`^th element must be part of the final design
+- `white`:  a `BitVector` of length equal to the number of elements where `white[e]` is 1 iff the `e`^th element must not be part of the final design
+- `varind`: an `AbstractVector{Int}` of length equal to the number of elements where `varind[e]` gives the index of the decision variable corresponding to element `e`. Because some elements can be fixed to be black or white, not every element has a decision variable associated.
+"""
+@params struct HalfMBB{dim, T, N, M} <: StiffnessTopOptProblem{dim, T}
+    rect_grid::RectilinearGrid{dim, T, N, M}
+    E::T
+    ν::T
+    ch::ConstraintHandler{<:DofHandler{dim, <:Cell{dim,N,M}, T}, T}
+    force::T
+    force_dof::Integer
+    black::AbstractVector
+    white::AbstractVector
+    varind::AbstractVector{Int}
+    metadata::Metadata
+end
+
+"""
     HalfMBB(::Type{Val{CellType}}, nels::NTuple{dim,Int}, sizes::NTuple{dim}, E, ν, force) where {dim, CellType}
-```
 
-`dim`: dimension of the problem
-
-`T`: number type for computations and coordinates
-
-`N`: number of nodes in a cell of the grid
-
-`M`: number of faces in a cell of the grid
-
-`rect_grid`: a RectilinearGrid struct
-
-`E`: Young's modulus
-
-`ν`: Poisson's ration
-
-`ch`: a JuAFEM.ConstraintHandler struct
-
-`force`: force at the top left of half the MBB (positive is downward)
-
-`force_dof`: dof number at which the force is applied
-
-`metadata`: Metadata having various cell-node-dof relationships
-
-`nels`: number of elements in each direction, a 2-tuple for 2D problems and a 3-tuple for 3D problems
-
-`sizes`: the size of each element in each direction, a 2-tuple for 2D problems and a 3-tuple for 3D problems
-
-`CellType`: can be either `:Linear` or `:Quadratic` to determine the order of the geometric and field basis functions and element type. Only isoparametric elements are supported for now.
-
+- `dim`: dimension of the problem
+- `E`: Young's modulus
+- `ν`: Poisson's ration
+- `force`: force at the top left of half the MBB (positive is downward)
+- `nels`: number of elements in each direction, a 2-tuple for 2D problems and a 3-tuple for 3D problems
+- `sizes`: the size of each element in each direction, a 2-tuple for 2D problems and a 3-tuple for 3D problems
+- `CellType`: can be either `:Linear` or `:Quadratic` to determine the order of the geometric and field basis functions and element type. Only isoparametric elements are supported for now.
 
 Example:
 ```
@@ -245,18 +248,6 @@ celltype = :Linear
 problem = HalfMBB(Val{celltype}, nels, sizes, E, ν, force)
 ```
 """
-@params struct HalfMBB{dim, T, N, M} <: StiffnessTopOptProblem{dim, T}
-    rect_grid::RectilinearGrid{dim, T, N, M}
-    E::T
-    ν::T
-    ch::ConstraintHandler{<:DofHandler{dim, <:Cell{dim,N,M}, T}, T}
-    force::T
-    force_dof::Integer
-    black::AbstractVector
-    white::AbstractVector
-    varind::AbstractVector{Int}
-    metadata::Metadata
-end
 function HalfMBB(::Type{Val{CellType}}, nels::NTuple{dim,Int}, sizes::NTuple{dim}, E = 1.0, ν = 0.3, force = 1.0) where {dim, CellType}
     _T = promote_type(eltype(sizes), typeof(E), typeof(ν), typeof(force))
     if _T <: Integer
@@ -357,32 +348,40 @@ struct LBeam{T, N, M} <: StiffnessTopOptProblem{2, T}
 end
 ```
 
-API:
-```
+- `T`: number type for computations and coordinates
+- `N`: number of nodes in a cell of the grid
+- `M`: number of faces in a cell of the grid
+- `E`: Young's modulus
+- `ν`: Poisson's ration
+- `force`: force at the center right of the cantilever beam (positive is downward)
+- `force_dof`: dof number at which the force is applied
+- `ch`: a `JuAFEM.ConstraintHandler` struct
+- `metadata`: Metadata having various cell-node-dof relationships
+- `black`: a `BitVector` of length equal to the number of elements where `black[e]` is 1 iff the `e`^th element must be part of the final design
+- `white`:  a `BitVector` of length equal to the number of elements where `white[e]` is 1 iff the `e`^th element must not be part of the final design
+- `varind`: an `AbstractVector{Int}` of length equal to the number of elements where `varind[e]` gives the index of the decision variable corresponding to element `e`. Because some elements can be fixed to be black or white, not every element has a decision variable associated.
+"""
+@params struct LBeam{T, N, M} <: StiffnessTopOptProblem{2, T}
+    E::T
+    ν::T
+    ch::ConstraintHandler{<:DofHandler{2, <:Cell{2,N,M}, T}, T}
+    force::T
+    force_dof::Integer
+    black::AbstractVector
+    white::AbstractVector
+    varind::AbstractVector{Int}
+    metadata::Metadata
+end
+
+"""
     LBeam(::Type{Val{CellType}}, ::Type{T}=Float64; length = 100, height = 100, upperslab = 50, lowerslab = 50, E = 1.0, ν = 0.3, force = 1.0) where {T, CellType}
-```
 
-`T`: number type for computations and coordinates
-
-`N`: number of nodes in a cell of the grid
-
-`M`: number of faces in a cell of the grid
-
-`E`: Young's modulus
-
-`ν`: Poisson's ration
-
-`ch`: a JuAFEM.ConstraintHandler struct
-
-`force`: force at the center right of the cantilever beam (positive is downward)
-
-`force_dof`: dof number at which the force is applied
-
-`metadata`:: Metadata having various cell-node-dof relationships
-
-`length`, `height`, `upperslab` and `lowerslab` are explained in [`LGrid`](@ref).
-
-`CellType`: can be either `:Linear` or `:Quadratic` to determine the order of the geometric and field basis functions and element type. Only isoparametric elements are supported for now.
+- `T`: number type for computations and coordinates
+- `E`: Young's modulus
+- `ν`: Poisson's ration
+- `force`: force at the center right of the cantilever beam (positive is downward)
+- `length`, `height`, `upperslab` and `lowerslab` are explained in [`LGrid`](@ref).
+- `CellType`: can be either `:Linear` or `:Quadratic` to determine the order of the geometric and field basis functions and element type. Only isoparametric elements are supported for now.
 
 Example:
 ```
@@ -399,17 +398,6 @@ celltype = :Linear
 problem = LBeam(Val{celltype}, E = E, ν = ν, force = force)
 ```
 """
-@params struct LBeam{T, N, M} <: StiffnessTopOptProblem{2, T}
-    E::T
-    ν::T
-    ch::ConstraintHandler{<:DofHandler{2, <:Cell{2,N,M}, T}, T}
-    force::T
-    force_dof::Integer
-    black::AbstractVector
-    white::AbstractVector
-    varind::AbstractVector{Int}
-    metadata::Metadata
-end
 function LBeam(::Type{Val{CellType}}, ::Type{T}=Float64; length = 100, height = 100, upperslab = 50, lowerslab = 50, E = 1.0, ν = 0.3, force = 1.0) where {T, CellType}
     # Create displacement field u
     grid = LGrid(Val{CellType}, T, length=length, height=height, upperslab=upperslab, 
@@ -505,7 +493,30 @@ end
                                                               ^^^
                                                               |||
                                                               1 f
+
+struct TieBeam{T, N, M} <: StiffnessTopOptProblem{2, T}
+    E::T
+    ν::T
+    force::T
+    ch::ConstraintHandler{<:DofHandler{2, N, T, M}, T}
+    black::AbstractVector
+    white::AbstractVector
+    varind::AbstractVector{Int}
+    metadata::Metadata
+end
 ```
+
+- `T`: number type for computations and coordinates
+- `N`: number of nodes in a cell of the grid
+- `M`: number of faces in a cell of the grid
+- `E`: Young's modulus
+- `ν`: Poisson's ration
+- `force`: force at the center right of the cantilever beam (positive is downward)
+- `ch`: a `JuAFEM.ConstraintHandler` struct
+- `metadata`: Metadata having various cell-node-dof relationships
+- `black`: a `BitVector` of length equal to the number of elements where `black[e]` is 1 iff the `e`^th element must be part of the final design
+- `white`:  a `BitVector` of length equal to the number of elements where `white[e]` is 1 iff the `e`^th element must not be part of the final design
+- `varind`: an `AbstractVector{Int}` of length equal to the number of elements where `varind[e]` gives the index of the decision variable corresponding to element `e`. Because some elements can be fixed to be black or white, not every element has a decision variable associated.
 """
 @params struct TieBeam{T, N, M} <: StiffnessTopOptProblem{2, T}
     E::T
@@ -517,6 +528,17 @@ end
     varind::AbstractVector{Int}
     metadata::Metadata
 end
+
+"""
+    TieBeam(::Type{Val{CellType}}, ::Type{T} = Float64, refine = 1, force = T(1); E = T(1), ν = T(0.3)) where {T, CellType}
+
+- `T`: number type for computations and coordinates
+- `E`: Young's modulus
+- `ν`: Poisson's ration
+- `force`: force at the center right of the cantilever beam (positive is downward)
+- `refine`: an integer value of 1 or greater that specifies the mesh refinement extent. A value of 1 gives the standard tie-beam problem in literature.
+- `CellType`: can be either `:Linear` or `:Quadratic` to determine the order of the geometric and field basis functions and element type. Only isoparametric elements are supported for now.
+"""
 function TieBeam(::Type{Val{CellType}}, ::Type{T} = Float64, refine = 1, force = T(1); E = T(1), ν = T(0.3)) where {T, CellType}
     grid = TieBeamGrid(Val{CellType}, T, refine)
     dh = DofHandler(grid)
