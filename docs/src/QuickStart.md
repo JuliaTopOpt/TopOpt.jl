@@ -5,9 +5,6 @@
 ```julia
 using Pkg
 
-pkg"add https://github.com/mohamed82008/JuAFEM.jl#master"
-pkg"add https://github.com/mohamed82008/VTKDataTypes.jl#master"
-pkg"add https://github.com/mohamed82008/KissThreading.jl#master"
 pkg"add https://github.com/mohamed82008/TopOpt.jl#master"
 pkg"add Makie"
 ```
@@ -72,5 +69,16 @@ result = simp(x0)
 # Visualize the result using Makie.jl
 
 glmesh = GLMesh(problem, result.topology)
-mesh(glmesh)
+
+# workaround : https://github.com/JuliaPlots/Makie.jl/issues/647
+function GeometryBasics.Mesh(glmesh::GeometryTypes.GLNormalVertexcolorMesh)
+    newverts = reinterpret(GeometryBasics.Point{3, Float32}, glmesh.vertices)
+    newfaces = reinterpret(GeometryBasics.NgonFace{3, GeometryBasics.OffsetInteger{-1, UInt32}}, glmesh.faces)
+    newnormals = reinterpret(GeometryBasics.Vec{3, Float32}, glmesh.normals)
+    return GeometryBasics.Mesh(meta(newverts; normals = newnormals, color = glmesh.color), newfaces)
+end
+
+geo_basic_mesh = GeometryBasics.Mesh(glmesh)
+mesh(geo_basic_mesh)
+
 ```

@@ -1,3 +1,4 @@
+using JuAFEM: Cell
 
 """
 Abstract stiffness topology optimization problem. All subtypes must have the following fields:
@@ -37,9 +38,12 @@ struct PointLoadCantilever{dim, T, N, M} <: StiffnessTopOptProblem{dim, T}
     rect_grid::RectilinearGrid{dim, T, N, M}
     E::T
     ν::T
-    ch::ConstraintHandler{DofHandler{dim, N, T, M}, T}
+    ch::ConstraintHandler{<:DofHandler{dim, <:Cell{dim,N,M}, T}, T}
     force::T
-    force_dof::Int
+    force_dof::Integer
+    black::AbstractVector
+    white::AbstractVector
+    varind::AbstractVector{Int}
     metadata::Metadata
 end
 ```
@@ -99,7 +103,7 @@ problem = PointLoadCantilever(Val{celltype}, nels, sizes, E, ν, force)
     rect_grid::RectilinearGrid{dim, T, N, M}
     E::T
     ν::T
-    ch::ConstraintHandler{<:DofHandler{dim, N, T, M}, T}
+    ch::ConstraintHandler{<:DofHandler{dim, <:Cell{dim,N,M}, T}, T}
     force::T
     force_dof::Integer
     black::AbstractVector
@@ -245,7 +249,7 @@ problem = HalfMBB(Val{celltype}, nels, sizes, E, ν, force)
     rect_grid::RectilinearGrid{dim, T, N, M}
     E::T
     ν::T
-    ch::ConstraintHandler{<:DofHandler{dim, N, T, M}, T}
+    ch::ConstraintHandler{<:DofHandler{dim, <:Cell{dim,N,M}, T}, T}
     force::T
     force_dof::Integer
     black::AbstractVector
@@ -343,7 +347,7 @@ end
 struct LBeam{T, N, M} <: StiffnessTopOptProblem{2, T}
     E::T
     ν::T
-    ch::ConstraintHandler{<:DofHandler{2, N, T, M}, T}
+    ch::ConstraintHandler{<:DofHandler{2, <:Cell{2,N,M}, T}, T}
     force::T
     force_dof::Integer
     black::AbstractVector
@@ -398,7 +402,7 @@ problem = LBeam(Val{celltype}, E = E, ν = ν, force = force)
 @params struct LBeam{T, N, M} <: StiffnessTopOptProblem{2, T}
     E::T
     ν::T
-    ch::ConstraintHandler{<:DofHandler{2, N, T, M}, T}
+    ch::ConstraintHandler{<:DofHandler{2, <:Cell{2,N,M}, T}, T}
     force::T
     force_dof::Integer
     black::AbstractVector
@@ -507,7 +511,7 @@ end
     E::T
     ν::T
     force::T
-    ch::ConstraintHandler{<:DofHandler{2, N, T, M}, T}
+    ch::ConstraintHandler{<:DofHandler{2, <:Cell{2,N,M}, T}, T}
     black::AbstractVector
     white::AbstractVector
     varind::AbstractVector{Int}
