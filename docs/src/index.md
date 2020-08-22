@@ -2,7 +2,7 @@
 
 ## Introduction
 
-`TopOpt` is a a topology optimization package written in the [Julia](https://github.com/JuliaLang/julia).
+`TopOpt` is a a topology optimization package written in [Julia](https://github.com/JuliaLang/julia).
 
 The main functionalities of the package include:
 
