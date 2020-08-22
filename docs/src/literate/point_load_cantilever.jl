@@ -10,7 +10,7 @@
 #md # The full program, without comments, can be found in the next [section](@ref point-load-cantilever-plain-program).
 
 using TopOpt, Makie
-import GeometryBasics, GeometryTypes
+import GeometryBasics
 
 # ### Define the problem
 E = 1.0 # Young’s modulus

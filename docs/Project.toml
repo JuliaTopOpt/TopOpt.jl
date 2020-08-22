@@ -1,5 +1,6 @@
 [deps]
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
+GeometryBasics = "5c1252a2-5f33-56bf-86c9-59e7332b4326"
 JuAFEM = "30d91d44-8115-11e8-1d28-c19a5ac16de8"
 KissThreading = "ece10b52-bc5d-5f9f-8b6e-cc9c6a4b5293"
 Literate = "98b081ad-f1c9-55d3-8b20-4c87d4299306"

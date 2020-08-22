@@ -4,7 +4,7 @@
 [![Build Status](https://travis-ci.org/YingboMa/SafeTestsets.jl.svg?branch=master)](https://travis-ci.org/mohamed82008/TopOpt.jl)
 [![codecov](https://codecov.io/gh/mohamed82008/TopOpt.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/mohamed82008/TopOpt.jl)
 
-`TopOpt` is a a topology optimization package written in [Julia](https://github.com/JuliaLang/julia).
+`TopOpt` is a topology optimization package written in [Julia](https://github.com/JuliaLang/julia).
 
 ## Documentation
 
