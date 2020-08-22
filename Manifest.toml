@@ -171,6 +171,12 @@ version = "0.10.12"
 deps = ["Random"]
 uuid = "9fa8497b-333b-5362-9e8d-4d0656e87820"
 
+[[GeometryBasics]]
+deps = ["IterTools", "LinearAlgebra", "StaticArrays", "StructArrays", "Tables"]
+git-tree-sha1 = "119f32f9c2b497b49cd3f7f513b358b82660294c"
+uuid = "5c1252a2-5f33-56bf-86c9-59e7332b4326"
+version = "0.2.15"
+
 [[GeometryTypes]]
 deps = ["ColorTypes", "FixedPointNumbers", "LinearAlgebra", "StaticArrays"]
 git-tree-sha1 = "34bfa994967e893ab2f17b864eec221b3521ba4d"

@@ -1,6 +1,9 @@
 *.jl.cov
 *.jl.*.cov
 *.jl.mem
-docs/build/
 
 .vscode
+
+docs/build/
+docs/site/
+docs/src/examples/

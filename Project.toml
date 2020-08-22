@@ -9,6 +9,8 @@ Compat = "34da2185-b29b-5c13-b0c7-acf172513d20"
 Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
 FillArrays = "1a297f60-69ca-5386-bcde-b61e274b549b"
 ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
+GeometryBasics = "5c1252a2-5f33-56bf-86c9-59e7332b4326"
+GeometryTypes = "4d00f742-c7ba-57c2-abde-4428a4b178cb"
 IterativeSolvers = "42fd0dbc-a981-5370-80f2-aaf504508153"
 JuAFEM = "30d91d44-8115-11e8-1d28-c19a5ac16de8"
 Juno = "e5e0dc1b-0480-54bc-9374-aad01c23163d"
@@ -40,12 +42,10 @@ julia = "1"
 
 [extras]
 FiniteDifferences = "26cc04aa-876d-5657-8c51-4c34ba976000"
-GeometryBasics = "5c1252a2-5f33-56bf-86c9-59e7332b4326"
-GeometryTypes = "4d00f742-c7ba-57c2-abde-4428a4b178cb"
+Makie = "ee78f7c6-11fb-53f2-987a-cfe4a2b5a57a"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 SafeTestsets = "1bc83da4-3b8d-516f-aca4-4fe02f6d838f"
-Serialization = "9e88b42a-f829-5b0c-bbe9-9e923198166b"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
-test = ["FiniteDifferences", "Random", "SafeTestsets", "Test", "GeometryBasics", "GeometryTypes", "Serialization"]
+test = ["FiniteDifferences", "Random", "SafeTestsets", "Test", "Makie"]
