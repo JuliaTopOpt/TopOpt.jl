@@ -19,7 +19,7 @@ The best way to get started with `TopOpt` is to look at the documented examples.
 
 ## Installation
 
-In Julia v1.0 you can install JuAFEM from the Pkg REPL (press `]` in the Julia
+In Julia v1.0 you can install packages from the Pkg REPL (press `]` in the Julia
 REPL to enter `pkg>` mode):
 
 ```
