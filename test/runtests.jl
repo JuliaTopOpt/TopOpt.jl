@@ -12,3 +12,4 @@ end
     include("AugLag/compliance.jl")
 end
 @safetestset "Global Stress Tests" begin include("stress.jl") end
+@safetestset "Example Tests" begin include("test_examples.jl") end

@@ -1,3 +1,4 @@
+using JuAFEM: Cell
 
 """
     abstract type StiffnessTopOptProblem{dim, T} <: AbstractTopOptProblem end
@@ -35,13 +36,16 @@ JuAFEM.getncells(problem::StiffnessTopOptProblem) = JuAFEM.getncells(getdh(probl
 ///********************************** v
 
 
-struct PointLoadCantilever{dim, T, N, M} <: StiffnessTopOptProblem{dim, T}
+@params struct PointLoadCantilever{dim, T, N, M} <: StiffnessTopOptProblem{dim, T}
     rect_grid::RectilinearGrid{dim, T, N, M}
     E::T
     ν::T
-    ch::ConstraintHandler{DofHandler{dim, N, T, M}, T}
+    ch::ConstraintHandler{<:DofHandler{dim, <:Cell{dim,N,M}, T}, T}
     force::T
-    force_dof::Int
+    force_dof::Integer
+    black::AbstractVector
+    white::AbstractVector
+    varind::AbstractVector{Int}
     metadata::Metadata
 end
 ```
@@ -65,7 +69,7 @@ end
     rect_grid::RectilinearGrid{dim, T, N, M}
     E::T
     ν::T
-    ch::ConstraintHandler{<:DofHandler{dim, N, T, M}, T}
+    ch::ConstraintHandler{<:DofHandler{dim, <:Cell{dim,N,M}, T}, T}
     force::T
     force_dof::Integer
     black::AbstractVector
@@ -178,9 +182,12 @@ struct HalfMBB{dim, T, N, M} <: StiffnessTopOptProblem{dim, T}
     rect_grid::RectilinearGrid{dim, T, N, M}
     E::T
     ν::T
-    ch::ConstraintHandler{DofHandler{dim, N, T, M}, T}
+    ch::ConstraintHandler{<:DofHandler{dim, <:Cell{dim,N,M}, T}, T}
     force::T
-    force_dof::Int
+    force_dof::Integer
+    black::AbstractVector
+    white::AbstractVector
+    varind::AbstractVector{Int}
     metadata::Metadata
 end
 ```
@@ -204,7 +211,7 @@ end
     rect_grid::RectilinearGrid{dim, T, N, M}
     E::T
     ν::T
-    ch::ConstraintHandler{<:DofHandler{dim, N, T, M}, T}
+    ch::ConstraintHandler{<:DofHandler{dim, <:Cell{dim,N,M}, T}, T}
     force::T
     force_dof::Integer
     black::AbstractVector
@@ -331,7 +338,7 @@ end
 struct LBeam{T, N, M} <: StiffnessTopOptProblem{2, T}
     E::T
     ν::T
-    ch::ConstraintHandler{<:DofHandler{2, N, T, M}, T}
+    ch::ConstraintHandler{<:DofHandler{2, <:Cell{2,N,M}, T}, T}
     force::T
     force_dof::Integer
     black::AbstractVector
@@ -357,7 +364,7 @@ end
 @params struct LBeam{T, N, M} <: StiffnessTopOptProblem{2, T}
     E::T
     ν::T
-    ch::ConstraintHandler{<:DofHandler{2, N, T, M}, T}
+    ch::ConstraintHandler{<:DofHandler{2, <:Cell{2,N,M}, T}, T}
     force::T
     force_dof::Integer
     black::AbstractVector
@@ -515,7 +522,7 @@ end
     E::T
     ν::T
     force::T
-    ch::ConstraintHandler{<:DofHandler{2, N, T, M}, T}
+    ch::ConstraintHandler{<:DofHandler{2, <:Cell{2,N,M}, T}, T}
     black::AbstractVector
     white::AbstractVector
     varind::AbstractVector{Int}

@@ -4,11 +4,11 @@ const Vec = JuAFEM.Vec
 
 """
 ```
-struct RectilinearGrid{dim, T, N, M} <: AbstractGrid{dim, T}
-    grid::JuAFEM.Grid{dim, N, T, M}
+struct RectilinearGrid{dim, T, N, M, TG<:JuAFEM.Grid{dim, <:JuAFEM.Cell{dim,N,M}, T}} <: AbstractGrid{dim, T}
+    grid::TG
     nels::NTuple{dim, Int}
     sizes::NTuple{dim, T}
-    corners::NTuple{2, Vec{dim,T}}
+    corners::NTuple{2, Vec{dim, T}}
     white_cells::BitVector
     black_cells::BitVector
     constant_cells::BitVector
@@ -29,11 +29,11 @@ A type that represents a rectilinear grid with corner points `corners`.
 - `black_cells`: cells fixed to have material during optimization
 - `constant_cells`: cells fixed to be either void or have material during optimization
 """
-struct RectilinearGrid{dim, T, N, M, TG<:JuAFEM.Grid{dim, N, T, M}} <: AbstractGrid{dim, T}
+@params struct RectilinearGrid{dim, T, N, M, TG<:JuAFEM.Grid{dim, <:JuAFEM.Cell{dim,N,M}, T}} <: AbstractGrid{dim, T}
     grid::TG
     nels::NTuple{dim, Int}
     sizes::NTuple{dim, T}
-    corners::NTuple{2, Vec{dim, T}}
+    corners::NTuple{2, Vec{dim,T}}
     white_cells::BitVector
     black_cells::BitVector
     constant_cells::BitVector
