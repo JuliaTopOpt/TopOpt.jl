@@ -56,12 +56,16 @@ include(joinpath("Functions", "Functions.jl"))
 include(joinpath("MMA", "MMA.jl"))
 @reexport using .MMA
 
+# Flux optimisers
+include(joinpath("FluxOptimisers", "Optimise.jl"))
+
+# Hybrid method of moving asymptotes and augmented Lagrangian
+include(joinpath("MMALag", "MMALag.jl"))
+@reexport using .MMALag
+
 # Various topology optimization algorithms
 include(joinpath("Algorithms", "Algorithms.jl"))
 using .Algorithms
-
-# Flux optimisers
-include(joinpath("FluxOptimisers", "Optimise.jl"))
 
 include("AugLag/AugLag.jl")
 using .AugLag

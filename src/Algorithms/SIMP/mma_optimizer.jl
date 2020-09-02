@@ -36,20 +36,25 @@ function MMAOptimizer{T}(::AbstractDevice, args...; kwargs...) where T
     @show typeof(args[1])
     throw("Check your types.")
 end
-function MMAOptimizer(  device::Tdev, 
-                        obj::Objective{T, <:AbstractFunction{T}}, 
-                        constr, 
-                        opt = MMA.MMA87(), 
-                        subopt = Optim.ConjugateGradient();
-                        options = MMA.Options(),
-                        convcriteria = MMA.KKTCriteria()
-                    ) where {T, Tdev <: AbstractDevice}
+function MMAOptimizer(
+    device::Tdev,
+    obj::Objective{T, <:AbstractFunction{T}},
+    constr,
+    opt = MMA.MMA87(),
+    subopt = Optim.ConjugateGradient();
+    options = MMA.Options(),
+    convcriteria = MMA.KKTCriteria()
+) where {T, Tdev <: AbstractDevice}
 
     solver = getsolver(obj)
     nvars = length(solver.vars)
     xmin = solver.xmin
 
-    model = MMA.Model{Tdev}(nvars, obj)
+    if opt isa MMALag20
+        model = MMALag.Model{Tdev}(nvars, obj, opt.aug)
+    else
+        model = MMA.Model{Tdev}(nvars, obj)
+    end
     box!(model, zero(T), one(T))
     ineq_constraint!.(Ref(model), constr)
 
@@ -59,9 +64,10 @@ function MMAOptimizer(  device::Tdev,
         x0 = solver.vars
     end
 
-    workspace = MMA.Workspace(model, x0, opt, subopt; options = options, convcriteria = convcriteria)
+    mma_opt = opt isa MMALag20 ? opt.mma_alg : opt
+    workspace = MMA.Workspace(model, x0, mma_opt, subopt; options = options, convcriteria = convcriteria)
 
-    return MMAOptimizer(model, opt, subopt, obj, constr, workspace, ConvergenceState(T), options)
+    return MMAOptimizer(model, mma_opt, subopt, obj, constr, workspace, ConvergenceState(T), options)
 end
 
 Utilities.getpenalty(o::MMAOptimizer) = getpenalty(o.obj)

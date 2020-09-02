@@ -47,10 +47,10 @@ const ρmin = 1e-5
 default_dual_caps(::Type{T}) where T = (eps(T), one(T))
 
 function optimize(  model::AbstractModel, 
-                    x0, 
-                    optimizer = MMA02(), 
-                    suboptimizer = Optim.ConjugateGradient(); 
-                    options = Options()
+                    x0,
+                    optimizer = MMA02(),
+                    suboptimizer = Optim.ConjugateGradient();
+                    options = Options(),
                 )
     check_error(model, x0)
     workspace = Workspace(model, x0, optimizer, suboptimizer; options = options)

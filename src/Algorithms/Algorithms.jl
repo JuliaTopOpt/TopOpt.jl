@@ -1,6 +1,6 @@
 module Algorithms
 
-using ..MMA, ..Functions, Optim, Parameters, Requires
+using ..MMA, ..MMALag, ..Functions, Optim, Parameters, Requires
 using ..MMA: AbstractModel
 using ..TopOpt: whichdevice, AbstractDevice, CPU, GPU, PENALTY_BEFORE_INTERPOLATION
 using TimerOutputs, Setfield, StaticArrays
