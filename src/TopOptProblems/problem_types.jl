@@ -572,3 +572,83 @@ getdim(::TieBeam) = 2
 nnodespercell(::TieBeam{T, N}) where {T, N} = N
 getpressuredict(p::TieBeam{T}) where {T} = Dict{String, T}("rightload"=>2*p.force, "bottomload"=>-p.force)
 getfacesets(p::TieBeam) = getdh(p).grid.facesets
+
+
+"""
+```
+    ******************************
+    * Pin1         F1 ―――>       *
+    *  o            |            * 
+    *               v            *
+    *  Pin2                      *
+    *    o     F2 ―――>           *
+    *           |                *
+    *           v                *
+    ******************************
+
+    RayProblem(nels, pins, loads)
+
+Constructs an instance of the type `RayProblem` that is a 2D beam with:
+ - Number of elements `nels`, e.g. `(60, 20)` where each element is a 1 x 1 square,
+ - Pinned locations `pins` where each pinned location is a `Vector` of length 2, e.g. `[[1, 18], [2, 8]]` indicating the locations of the pins, and
+ - Loads specified in `loads` where `loads` is a dictionary mapping the location of each load to its vector value, e.g. `Dict([10, 18] => [1.0, -1.0], [5, 5] => [1.0, -1.0])` which defines a load of `[1.0, -1.0]` at the point located at `[10, 18]` and a similar load at the point located at `[5, 5]`.
+```
+"""
+@params struct RayProblem{T, N, M} <: StiffnessTopOptProblem{2, T}
+    rect_grid::RectilinearGrid{2, T, N, M}
+    E::T
+    ν::T
+    ch::ConstraintHandler{<:DofHandler{2, <:Cell{2, N, M}, T}, T}
+    loads::Dict
+    black::AbstractVector
+    white::AbstractVector
+    varind::AbstractVector{Int}
+    metadata::Metadata
+end
+function RayProblem(nels::NTuple{2, Int}, pins::Vector{<:Vector}, loads::Dict{<:Vector, <:Vector})
+    T = Float64
+    rect_grid = RectilinearGrid(Val{:Linear}, nels, (1.0, 1.0))
+    dim = length(nels)
+
+    for (i, pin) in enumerate(pins)
+        if haskey(rect_grid.grid.nodesets, "fixed$i")
+            pop!(rect_grid.grid.nodesets, "fixed$i")
+        end
+        addnodeset!(rect_grid.grid, "fixed$i", x -> x ≈ pin)
+    end
+    for (i, k) in enumerate(keys(loads))
+        if haskey(rect_grid.grid.nodesets, "force$i") 
+            pop!(rect_grid.grid.nodesets, "force$i")
+        end
+        addnodeset!(rect_grid.grid, "force$i", x -> x ≈ k);
+    end
+
+    # Create displacement field u
+    dh = DofHandler(rect_grid.grid)
+    ip = Lagrange{2, RefCube, 1}()
+    push!(dh, :u, dim, ip) # Add a displacement field        
+    close!(dh)
+
+    ch = ConstraintHandler(dh)
+
+    for i in 1:length(pins)
+        dbc = Dirichlet(:u, getnodeset(rect_grid.grid, "fixed$i"), (x,t) -> zeros(T, dim), collect(1:dim))
+        add!(ch, dbc)
+    end
+    close!(ch)
+    t = T(0)
+    update!(ch, t)
+
+    metadata = Metadata(dh)
+    black, white = find_black_and_white(dh)
+    varind = find_varind(black, white)
+    
+    loadsdict = Dict{Int, Vector{Float64}}(map(enumerate(keys(loads))) do (i, k)
+        fnode = Tuple(getnodeset(rect_grid.grid, "force$i"))[1]
+        (fnode => loads[k])
+    end)
+
+    return RayProblem(rect_grid, 1.0, 0.3, ch, loadsdict, black, white, varind, metadata)
+end
+nnodespercell(p::RayProblem) = nnodespercell(p.rect_grid)
+getcloaddict(p::RayProblem) = p.loads
