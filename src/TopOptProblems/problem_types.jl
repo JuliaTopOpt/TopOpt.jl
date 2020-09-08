@@ -461,7 +461,7 @@ function RectilinearTopology(b, topology = ones(getncells(getdh(b).grid)))
         throw("Unsupported geometry.")
     end
     new_topology = zeros(prod(nels))
-    for (i, cell) in enumerate(CellIterator(getdh(b).grid))
+    for (i, cell) in enumerate(CellIterator(getdh(b)))
         sub = Int.(round.((cell.coords[1]...,))) .+ (1, 1)
         ind = LinearIndices(nels)[sub...]
         new_topology[ind] = topology[i]
