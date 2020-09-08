@@ -13,12 +13,15 @@ abstract type AbstractDisplacementSolver <: AbstractFEASolver end
     penalty::TP
     prev_penalty::TP
     xmin::T
+    qr::Bool
 end
 function DirectDisplacementSolver(sp::StiffnessTopOptProblem{dim, T};
     xmin=T(1)/1000, 
     penalty=PowerPenalty{T}(1), 
     prev_penalty=copy(penalty),
-    quad_order=default_quad_order(sp)) where {dim, T}
+    quad_order=default_quad_order(sp),
+    qr = false,
+) where {dim, T}
 
     elementinfo = ElementFEAInfo(sp, quad_order, Val{:Static})
     globalinfo = GlobalFEAInfo(sp)
@@ -29,7 +32,7 @@ function DirectDisplacementSolver(sp::StiffnessTopOptProblem{dim, T};
     varind = sp.varind
 
     prev_penalty = setpenalty(prev_penalty, T(NaN))
-    return DirectDisplacementSolver(sp, globalinfo, elementinfo, u, lhs, rhs, vars, penalty, prev_penalty, xmin)
+    return DirectDisplacementSolver(sp, globalinfo, elementinfo, u, lhs, rhs, vars, penalty, prev_penalty, xmin, qr)
 end
 function (s::DirectDisplacementSolver{T})(
     ::Type{Val{safe}} = Val{false},
@@ -56,9 +59,17 @@ function (s::DirectDisplacementSolver{T})(
     if !reuse_chol
         try 
             if T === newT
-                globalinfo.cholK = cholesky(Symmetric(K))
+                if s.qr
+                    globalinfo.qrK = qr(K.data)
+                else
+                    globalinfo.cholK = cholesky(Symmetric(K))
+                end
             else
-                globalinfo.cholK = cholesky(Symmetric(newT.(K)))
+                if s.qr
+                    globalinfo.qrK = qr((newT.(K)).data)
+                else
+                    globalinfo.cholK = cholesky(Symmetric(newT.(K)))
+                end
             end
         catch err
             lhs .= T(NaN)
@@ -67,9 +78,17 @@ function (s::DirectDisplacementSolver{T})(
     end
     if !nans
         if T === newT
-            lhs .= globalinfo.cholK \ rhs
+            if s.qr
+                lhs .= globalinfo.qrK \ rhs
+            else
+                lhs .= globalinfo.cholK \ rhs
+            end
         else
-            lhs .= globalinfo.cholK \ newT.(rhs)
+            if s.qr
+                lhs .= globalinfo.qrK \ newT.(rhs)
+            else
+                lhs .= globalinfo.cholK \ newT.(rhs)
+            end
         end
     end
     nothing
