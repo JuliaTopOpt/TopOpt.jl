@@ -68,9 +68,11 @@ LGrid
 
 ## Finite element backend
 
-Currently, `TopOpt` uses a [forked version](https://github.com/mohamed82008/JuAFEM.jl) of [`JuAFEM.jl`](https://github.com/KristofferC/JuAFEM.jl). This means that all the problems above are described in the language and types of `JuAFEM`.
+Currently, `TopOpt` uses [`JuAFEM.jl`](https://github.com/KristofferC/JuAFEM.jl) for FEA-related modeling. 
+This means that all the problems above are described in the language and types of `JuAFEM`.
 
-The fork is needed for GPU support but the main package should also work on the CPU. The changes in the fork should make it back to the main repo at some point.
+We used to use a [forked version](https://github.com/mohamed82008/JuAFEM.jl) of `JuAFEM.jl`
+for GPU support but the main package should also work on the CPU. Currently, these features are disabled.
 
 ## Matrices and vectors
 

@@ -68,6 +68,12 @@ function Base.setindex!(ra::RaggedArray, v, i, j)
     ra.values[r[i]] = v
 end
 
+"""
+compute a index map from element indices into free nodal dofs.
+
+# Returns
+- `varind`: an `AbstractVector{Int}` of length equal to the number of elements where `varind[e]` gives the index of the decision variable corresponding to element `e`. Because some elements can be fixed to be black or white, not every element has a decision variable associated.
+"""
 function find_varind(black, white, ::Type{TI}=Int) where TI
     nel = length(black)
     nel == length(white) || throw("Black and white vectors should be of the same length")
