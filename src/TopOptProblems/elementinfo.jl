@@ -16,6 +16,7 @@
 An instance of the `ElementFEAInfo` type stores element information such as:
 - `Kes`: the element stiffness matrices,
 - `fes`: the element load vectors,
+- `fixedload`: TODO,
 - `cellvolumes`: the element volumes,
 - `cellvalues` and `facevalues`: two `JuAFEM` types that facilitate cell and face iteration and queries.
 - `metadata`: that stores degree of freedom (dof) to node mapping, dof to cell mapping, etc.
@@ -29,13 +30,17 @@ An instance of the `ElementFEAInfo` type stores element information such as:
     fes::AbstractVector{<:AbstractVector{T}}
     fixedload::AbstractVector{T}
     cellvolumes::AbstractVector{T}
-    cellvalues::CellValues{dim, T}
-    facevalues::FaceValues{<:Any, T}
+    cellvalues::CellValues{<:Any, dim, T}
+    facevalues::FaceValues{<:Any, <:Any, T}
     metadata::Metadata
     black::AbstractVector
     white::AbstractVector
     varind::AbstractVector{Int}
     cells
+end
+
+function Base.show(io::Base.IO, ::MIME"text/plain", efeainfo::ElementFEAInfo)
+    print(io, "ElementFEAInfo: Kes |$(length(efeainfo.Kes))|, fes |$(length(efeainfo.fes))|, fixedload |$(length(efeainfo.fixedload))|, cells |$(length(efeainfo.cells))|")
 end
 
 """

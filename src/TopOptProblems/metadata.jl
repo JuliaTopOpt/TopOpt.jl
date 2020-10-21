@@ -1,3 +1,21 @@
+"""
+    struct Metadata
+        cell_dofs
+        dof_cells
+        node_cells
+        node_dofs
+    end
+
+An instance of the `Metadata` type stores ... information such as:
+- `cell_dofs`: a `ndof_per_cell` x `ncells` matrix that maps `[localdofidx, cellidx]` into dof idx
+    cell_dofs[j,cellidx] = j-th nodal dof of cell `cellidx`
+- `dof_cells`: a `ndof` x `(Vector of Tuple{Int, Int})` RaggedArray that maps dof into cell and its local dof idx
+    dof_cells[dofidx] = [(cellidx, cell's local dof idx), ...]
+- `node_cells`: a `ndof` x `(Vector of Tuple{Int, Int})` RaggedArray that maps dof into cell and its local dof idx
+    node_cells[dofidx] = [(cellidx, cell's local dof idx), ...]
+- `node_dofs`: a `ndofspernode x nnodes` Matrix that maps `[localdofidx, node_idx]` into dof indices
+    node_dofs[j,nodeidx] = j-th dof of node `nodeidx`
+"""
 @params struct Metadata
     cell_dofs
     dof_cells
@@ -16,6 +34,9 @@ function Metadata(dh::DofHandler{dim}) where dim
     meta = Metadata(cell_dofs, dof_cells, node_cells, node_dofs)
 end
 
+"""
+Returns a `ndof_per_cell` x `ncells` matrix that maps `[localdofidx, cellidx]` into nof index
+"""
 function get_cell_dofs_matrix(dh)
     cell_dofs = zeros(Int, ndofs_per_cell(dh), getncells(dh.grid))
     for i in 1:size(cell_dofs, 2)
@@ -27,6 +48,18 @@ function get_cell_dofs_matrix(dh)
     cell_dofs
 end
 
+"""
+Inputs
+======
+- `dh`: DofHandler
+- `cell_dofs`: matrix `ndof_per_cell` x `ncells`: cell_dofs[j,i] = j-th nodal dof of cell i
+
+Returns
+=======
+- a RaggedArray that maps dof into cell and its local dof idx
+    `ndof` x (Vector of Tuple{Int, Int})
+        dof_cells_matrix[dofidx] = [(cellidx, cell's local dof idx), ...]
+"""
 function get_dof_cells_matrix(dh, cell_dofs)
     dof_cells_vecofvecs = [Vector{Tuple{Int,Int}}() for i in 1:ndofs(dh)]
     l = 0
@@ -55,6 +88,13 @@ function get_node_first_cells(dh)
     return node_first_cells
 end
 
+"""
+Returns
+=======
+- A RaggedArray that maps dof index into connected cell indices
+    `ndof` x (Vector of Tuple{Int, Int})
+        dof_cells_matrix[nodeidx] = [(cellidx, cell's local nodal idx), ...]
+"""
 function get_node_cells(dh)
     node_cells_vecofvecs = [Vector{Tuple{Int,Int}}() for i in 1:ndofs(dh)]
     l = 0
@@ -69,6 +109,11 @@ end
 
 node_field_offset(dh, f) = sum(view(dh.field_dims, 1:f-1))
 
+"""
+Returns
+=======
+- A `ndofspernode x nnodes` Matrix that maps `[localdofidx, node_idx]` into dof indices
+"""
 function get_node_dofs(dh::DofHandler)
     ndofspernode = sum(dh.field_dims)
     nfields = length(dh.field_dims)
@@ -95,6 +140,5 @@ function get_node_dofs(dh::DofHandler)
             end
         end
     end
-
     return node_dofs
 end
