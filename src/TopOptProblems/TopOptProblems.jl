@@ -24,6 +24,7 @@ include("elementmatrix.jl")
 include("matrices_and_vectors.jl")
 include("elementinfo.jl")
 include("assemble.jl")
+include("buckling.jl")
 include(joinpath("IO", "IO.jl"))
 using .IO
 include("makie.jl")
