@@ -2,7 +2,8 @@ using Test
 using TopOpt
 
 # Define problem, can also be imported from .inp files
-nels = (60,20)
+# nels = (60,20)
+nels = (30,10)
 sizes = (1.0,1.0)
 E = 1.0;
 ν = 0.3;
@@ -12,14 +13,18 @@ problem = PointLoadCantilever(Val{:Linear}, nels, sizes, E, ν, force);
 # @show TopOpt.TopOptProblems.getdim(problem)
 
 # Build element stiffness matrices and force vectors
-einfo = ElementFEAInfo(problem);
+# einfo = ElementFEAInfo(problem);
 
 # Assemble global stiffness matrix and force vector
-ginfo = assemble(problem, einfo);
+# ginfo = assemble(problem, einfo);
 
 # Solve for node displacements
-u = ginfo.K \ ginfo.f
+# u = ginfo.K \ ginfo.f
 # @show u
+
+solver = FEASolver(Displacement, Direct, problem)
+solver()
+u = solver.u
 
 using TopOpt.TopOptProblems: visualize
 visualize(problem, u)
@@ -41,3 +46,5 @@ visualize(problem, u)
 
 # # Minimum eigenvalue of the system K x = λ Kσ x
 # λ = 1/r.λ[1]
+
+# https://mohamed82008.github.io/ScienceLounge/text/2018/07/11/The-buckle-dance/

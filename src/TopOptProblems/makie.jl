@@ -1,3 +1,5 @@
+# TODO wrap Plotting into its submodule
+
 ## Credit to Simon Danisch for most of the following code
 import GeometryBasics, GeometryTypes
 import AbstractPlotting
