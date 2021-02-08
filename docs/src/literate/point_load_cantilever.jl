@@ -9,7 +9,7 @@
 # Now we solve the problem in JuAFEM. What follows is a program spliced with comments.
 #md # The full program, without comments, can be found in the next [section](@ref point-load-cantilever-plain-program).
 
-using TopOpt, GLMakie
+using TopOpt, Makie
 import GeometryBasics
 
 # ### Define the problem
@@ -54,7 +54,7 @@ result = simp(x0);
 
 # ### Visualize the result using GLMakie.jl
 result_mesh = GeometryBasics.Mesh(problem, result.topology);
-GLMakie.mesh(result_mesh)
+Makie.mesh(result_mesh)
 
 #md # ## [Plain Program](@id point-load-cantilever-plain-program)
 #md #

@@ -2,12 +2,13 @@ using Test
 using TopOpt
 import JuAFEM
 import GeometryBasics
-import GLMakie
+import Makie
 
 # Define problem, can also be imported from .inp files
-# nels = (60,20)
-nels = (30,10)
-sizes = (1.0,1.0)
+# nels = (30,10)
+# sizes = (1.0,1.0)
+nels = (40, 20, 20) 
+sizes = (1.0,1.0,1.0)
 E = 1.0;
 ν = 0.3;
 force = -1.0;
@@ -35,7 +36,7 @@ u = solver.u
 
 using TopOpt.TopOptProblems.Visualization: visualize
 # visualize(problem)
-visualize(problem, u)
+scene, layout = visualize(problem, u; default_exagg_scale=0.07)
 
 # using GeometryBasics, Makie
 # using JuAFEM
