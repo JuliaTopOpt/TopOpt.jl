@@ -1,67 +1,7 @@
-# TODO wrap Plotting into its submodule
-
-## Credit to Simon Danisch for most of the following code
-import GeometryBasics, GeometryTypes
 import AbstractPlotting
-import Makie
+import GLMakie
+using AbstractPlotting.MakieLayout: layoutscene
 using GeometryBasics: GLTriangleFace
-# using AbstractPlotting: Point2f0, Point3f0
-
-"""
-map JuAFEM cell type to VTKDataTypes cell type
-"""
-const juafem_to_vtk = Dict( Triangle => 5, 
-                            QuadraticTriangle => 22, 
-                            Quadrilateral => 9, 
-                            QuadraticQuadrilateral => 23, 
-                            Tetrahedron => 10, 
-                            QuadraticTetrahedron => 24, 
-                            Hexahedron => 12, 
-                            QuadraticHexahedron => 25
-                          )
-
-"""
-https://github.com/mohamed82008/VTKDataTypes.jl
-"""
-function VTKDataTypes.VTKUnstructuredData(grid::JuAFEM.Grid{dim, <:JuAFEM.Cell{dim,N,M}, T}) where {dim, N, M, T}
-    celltype = juafem_to_vtk[eltype(grid.cells)]
-    celltypes = [celltype for i in 1:length(grid.cells)]
-    connectivity = copy(reinterpret(NTuple{N, Int}, grid.cells))
-    node_coords = copy(reshape(reinterpret(Float64, grid.nodes), dim, length(grid.nodes)))
-    return VTKUnstructuredData(node_coords, celltypes, connectivity)
-end
-function VTKDataTypes.VTKUnstructuredData(problem::AbstractTopOptProblem)
-    return VTKUnstructuredData(getdh(problem).grid)
-end
-VTKDataTypes.GLMesh(grid::JuAFEM.Grid; kwargs...) = GLMesh(VTKUnstructuredData(grid); kwargs...)
-VTKDataTypes.GLMesh(problem::AbstractTopOptProblem; kwargs...) = GLMesh(VTKUnstructuredData(problem); kwargs...)
-
-```
-workaround taken from https://github.com/JuliaPlots/Makie.jl/issues/647
-TODO: should directly convert VTKDataTypes.VTKUnstructuredData to GeometryBasics.Mesh
-Do not want to spend more time on this now...
-```
-function GeometryBasics.Mesh(glmesh::GeometryTypes.GLNormalVertexcolorMesh)
-    newverts = reinterpret(GeometryBasics.Point{3, Float32}, glmesh.vertices)
-    newfaces = reinterpret(GeometryBasics.NgonFace{3, GeometryBasics.OffsetInteger{-1, UInt32}}, glmesh.faces)
-    newnormals = reinterpret(GeometryBasics.Vec{3, Float32}, glmesh.normals)
-    return GeometryBasics.Mesh(GeometryBasics.meta(newverts; normals = newnormals, color = glmesh.color), newfaces)
-end
-
-"""
-Get mesh of the topopt problem with a given topology indicator vector
-"""
-function GeometryBasics.Mesh(problem::AbstractTopOptProblem, topology::Array{T,1}; kwargs...) where {T}
-    mesh = VTKUnstructuredData(problem)
-    topology = round.(topology)
-    inds = findall(isequal(0), topology)
-    deleteat!(mesh.cell_connectivity, inds)
-    deleteat!(mesh.cell_types, inds)
-    topology = topology[setdiff(1:length(topology), inds)]
-    mesh.cell_data["topology"] = topology
-    glmesh = GLMesh(mesh, color = "topology"; kwargs...)
-    return GeometryBasics.Mesh(glmesh)
-end
 
 ################################
 # visualize problem, including supports and loads
@@ -178,7 +118,7 @@ end
 
 
 ################################
-#  archived below
+# Credit to Simon Danisch for most of the following code
 
 # https://github.com/JuliaPlots/AbstractPlotting.jl/blob/f16321dee2c77ac9c753fed9b1074a2df7b10db8/src/utilities/utilities.jl#L188
 # https://github.com/JuliaPlots/AbstractPlotting.jl/blob/444813136a506eba8b5b03e2125c7a5f24e825cb/src/conversions.jl#L522
@@ -236,57 +176,81 @@ function AbstractPlotting.convert_arguments(P, x::AbstractVector{<:JuAFEM.Node{N
     convert_arguments(P, reinterpret(Point{N, T}, x))
 end
 
-function visualize(mesh::JuAFEM.Grid{dim, <:JuAFEM.AbstractCell, TT}, u) where {dim, TT}
+################################
+
+function visualize(mesh::JuAFEM.Grid{dim, <:JuAFEM.AbstractCell, TT}, u; 
+        default_support_scale=1.0, default_load_scale=1.0, ) where {dim, TT}
     T = eltype(u)
     nnodes = length(mesh.nodes)
+    # * initialize the makie scene
+    scene, layout = layoutscene() #resolution = (1200, 900)
+
     #TODO make this work without creating a Node
     if dim == 2
         nodes = Vector{JuAFEM.Node}(undef, nnodes)
         for (i, node) in enumerate(mesh.nodes)
             nodes[i] = JuAFEM.Node((node.x[1], node.x[2], zero(T)))
         end
-        # nodes = broadcast(1:nnodes, mesh.nodes) do i, node
-        #     JuAFEM.Node(ntuple(Val{3}) do j
-        #         if j < 3
-        #             node.x[j]
-        #         else
-        #             zero(T)
-        #         end
-        #     end)
-        # end
         u = [u; zeros(T, 1, nnodes)]
+
+        ax1 = layout[1, 1] = Axis(scene)
+        # tightlimits!(ax1)
+        # ax1.aspect = AxisAspect(1)
+        ax1.aspect = DataAspect()
     else
         nodes = mesh.nodes
+
+        # https://jkrumbiegel.github.io/MakieLayout.jl/v0.3/layoutables/#LScene-1
+        # https://makie.juliaplots.org/stable/cameras.html#D-Camera
+        ax1 = layout[1, 1] = LScene(scene, camera = cam3d!, raw = false)
     end
 
+    # TODO show the ground mesh in another Axis https://makie.juliaplots.org/stable/makielayout/grids.html
+    # ax1.title = "TopOpt result"
+
+    # * support / load appearance control
+    lsgrid = labelslidergrid!(scene,
+        ["support scale", "load scale"],
+        Ref(LinRange(0.01:0.01:10)); # same range for every slider via broadcast
+        # formats = [x -> "$(round(x, digits = 2))$s" for s in ["", "", ""]],
+        # width = 350,
+        tellheight = false,
+    )
+    set_close_to!(lsgrid.sliders[1], 1.0)
+    set_close_to!(lsgrid.sliders[2], 1.0)
+    layout[2, 1] = lsgrid.layout
+
+    # * deformation control
+    exagg_ls = labelslider!(scene, "deformation exaggeration:", 0:0.01:10.0)
+    set_close_to!(exagg_ls.slider, 1.0)
+    layout[3, 1] = exagg_ls.layout
+
+    # undeformed mesh
     cnode = AbstractPlotting.Node(zeros(Float32, length(mesh.nodes)))
-    scene = Makie.mesh(nodes, mesh.cells, color = cnode, colorrange = (0.0, 33.0), shading = false);
+    scene = GLMakie.mesh(nodes, mesh.cells, color = cnode, colorrange = (0.0, 33.0), shading = false);
 
-    # mplot = scene[end]
-
-    # new_nodes = broadcast(1:length(mesh.nodes), nodes) do i, node
-    #     JuAFEM.Node(ntuple(Val{3}) do j
-    #         node.x[j] + u[j, i]
-    #     end)
+    # * deformed mesh
+    exagg_deformed_nodes = lift(s -> 
+        [JuAFEM.Node(Tuple([node.x[j] + s * u[j, i] for j=1:3])) for (i, node) in enumerate(nodes)], 
+        exagg_ls.slider.value)
+    # new_nodes = Vector{JuAFEM.Node}(undef, length(nodes))
+    # for (i, node) in enumerate(nodes)
+    #     new_nodes[i] = JuAFEM.Node(Tuple([node.x[j] + u[j, i] for j=1:3]))
     # end
-    new_nodes = Vector{JuAFEM.Node}(undef, length(nodes))
-    for (i, node) in enumerate(nodes)
-        new_nodes[i] = JuAFEM.Node(Tuple([node.x[j] + u[j, i] for j=1:3]))
-    end
-    Makie.mesh!(scene, new_nodes, mesh.cells, color = (:gray, 0.4))
+    GLMakie.mesh!(scene, exagg_deformed_nodes, mesh.cells, color = (:gray, 0.4))
 
-    Makie.scatter!(AbstractPlotting.Point3f0.(getfield.(new_nodes, :x)), markersize = 0.1);
+    GLMakie.scatter!(AbstractPlotting.Point3f0.(getfield.(new_nodes, :x)), markersize = 0.1);
     # # TODO make mplot[1] = new_nodes work
     # mplot.input_args[1][] = new_nodes
     # # TODO make mplot[:color] = displace work
     # push!(cnode, displace)
 
-    points = AbstractPlotting.Point3f0.(getfield.(nodes, :x))
+    # points = AbstractPlotting.Point3f0.(getfield.(nodes, :x))
     # GeometryTypes.Vec{3, Float64}
     # displacevec = reinterpret(AbstractPlotting.Vec3f0, u, (size(u, 2),))
-    displacevec = AbstractPlotting.Vec3f0.([u[:,i] for i=1:size(u,2)])
-    displace = norm.(displacevec)
-    Makie.arrows!(points, displacevec, linecolor = (:black, 0.3))
+    # displacevec = AbstractPlotting.Vec3f0.([u[:,i] for i=1:size(u,2)])
+    # displace = norm.(displacevec)
+    # GLMakie.arrows!(points, displacevec, linecolor = (:black, 0.3))
 
     scene
 end
@@ -312,14 +276,15 @@ function visualize(problem::StiffnessTopOptProblem{dim, T}) where {dim, T}
     visualize(mesh, node_displacements)
 end
 
-# function visualize(problem::StiffnessTopOptProblem, topology::AbstractVector)
-#     old_grid = problem.ch.dh.grid
-#     new_grid = JuAFEM.Grid(old_grid.cells[Bool.(round.(Int, topology))], old_grid.nodes)
-#     visualize(new_grid)
-# end
-
 function visualize(mesh::JuAFEM.Grid{dim, N, T}) where {dim, N, T}
     nnodes = JuAFEM.getnnodes(mesh)
     node_displacements = zeros(T, dim, nnodes)
     visualize(mesh, node_displacements)
 end
+
+# TODO visualize a given topology, with deformation vector options
+# function visualize(problem::StiffnessTopOptProblem, topology::AbstractVector)
+#     old_grid = problem.ch.dh.grid
+#     new_grid = JuAFEM.Grid(old_grid.cells[Bool.(round.(Int, topology))], old_grid.nodes)
+#     visualize(new_grid)
+# end

@@ -1,5 +1,8 @@
 using Test
 using TopOpt
+import JuAFEM
+import GeometryBasics
+import GLMakie
 
 # Define problem, can also be imported from .inp files
 # nels = (60,20)
@@ -26,9 +29,13 @@ solver = FEASolver(Displacement, Direct, problem)
 solver()
 u = solver.u
 
-using TopOpt.TopOptProblems: visualize
-visualize(problem, u)
+# ncells = JuAFEM.getncells(problem)
+# result_mesh = GeometryBasics.Mesh(problem, ones(ncells));
+# GLMakie.mesh(result_mesh);
+
+using TopOpt.TopOptProblems.Visualization: visualize
 # visualize(problem)
+visualize(problem, u)
 
 # using GeometryBasics, Makie
 # using JuAFEM

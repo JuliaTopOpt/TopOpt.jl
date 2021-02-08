@@ -9,7 +9,7 @@
 # Now we solve the problem in JuAFEM. What follows is a program spliced with comments.
 #md # The full program, without comments, can be found in the next [section](@ref point-load-cantilever-plain-program).
 
-using TopOpt, Makie
+using TopOpt, GLMakie
 import GeometryBasics
 
 # ### Define the problem
@@ -17,7 +17,7 @@ E = 1.0 # Young’s modulus
 v = 0.3 # Poisson’s ratio
 f = 1.0; # downward force
 
-nels = (12, 6, 6) # change to (40, 20, 20) for a more high-res result
+nels = (40, 20, 20) 
 problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0, 1.0), E, v, f);
 
 # ### Parameter settings
@@ -26,7 +26,7 @@ xmin = 0.001 # minimum density
 rmin = 4.0; # density filter radius
 
 # ### Define a finite element solver
-penalty = TopOpt.PowerPenalty(3.0)
+penalty = TopOpt.PowerPenalty(3.0) # 3.0
 solver = FEASolver(Displacement, Direct, problem, xmin = xmin,
     penalty = penalty);
 
@@ -52,10 +52,9 @@ simp = SIMP(optimizer, penalty.p);
 x0 = fill(1.0, length(solver.vars))
 result = simp(x0);
 
-# ### Visualize the result using Makie.jl
+# ### Visualize the result using GLMakie.jl
 result_mesh = GeometryBasics.Mesh(problem, result.topology);
-
-mesh(result_mesh);
+GLMakie.mesh(result_mesh)
 
 #md # ## [Plain Program](@id point-load-cantilever-plain-program)
 #md #
