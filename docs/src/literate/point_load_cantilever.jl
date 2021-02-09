@@ -26,7 +26,7 @@ xmin = 0.001 # minimum density
 rmin = 4.0; # density filter radius
 
 # ### Define a finite element solver
-penalty = TopOpt.PowerPenalty(3.0) # 3.0
+penalty = TopOpt.PowerPenalty(3.0)
 solver = FEASolver(Displacement, Direct, problem, xmin = xmin,
     penalty = penalty);
 
@@ -52,9 +52,14 @@ simp = SIMP(optimizer, penalty.p);
 x0 = fill(1.0, length(solver.vars))
 result = simp(x0);
 
-# ### Visualize the result using GLMakie.jl
-result_mesh = GeometryBasics.Mesh(problem, result.topology);
-Makie.mesh(result_mesh)
+# ### Visualize the result using Makie.jl
+using TopOpt.TopOptProblems.Visualization: visualize
+fig = visualize(problem; topology=result.topology, 
+    default_exagg_scale=0.07, scale_range=10.0, vector_linewidth=3, vector_arrowsize=0.5)
+Makie.display(fig)
+# or convert it to a Mesh
+# result_mesh = GeometryBasics.Mesh(problem, result.topology);
+# Makie.mesh(result_mesh)
 
 #md # ## [Plain Program](@id point-load-cantilever-plain-program)
 #md #
