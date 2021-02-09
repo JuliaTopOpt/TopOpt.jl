@@ -989,7 +989,9 @@ version = "1.3.2"
 
 [[Tensors]]
 deps = ["ForwardDiff", "LinearAlgebra", "SIMD", "Statistics"]
-git-tree-sha1 = "b2ac703de1090ac4fa92e9a469b063fee285bda1"
+git-tree-sha1 = "9ea045a06eb94c923966208e347a38436d8c74f3"
+repo-rev = "master"
+repo-url = "https://github.com/yijiangh/Tensors.jl.git"
 uuid = "48a634ad-e948-5137-8d70-aa71f2a747f4"
 version = "1.4.3"
 

@@ -11,7 +11,7 @@ nels = (20, 10, 10)
 sizes = (1.0,1.0,1.0)
 E = 1.0;
 ν = 0.3;
-force = 1.0;
+force = -1.0;
 # problem = PointLoadCantilever(nels, sizes, E, ν, force)
 problem = PointLoadCantilever(Val{:Linear}, nels, sizes, E, ν, force);
 # @show TopOpt.TopOptProblems.getdim(problem)

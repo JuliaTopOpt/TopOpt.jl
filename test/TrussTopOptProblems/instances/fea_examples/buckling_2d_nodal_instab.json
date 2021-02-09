@@ -1,0 +1,102 @@
+{
+ "unit": "meter", 
+ "materials": [
+  {
+   "E": 200000000.0, 
+   "name": "DummyMaterial", 
+   "family": "DummyMaterial", 
+   "elem_tags": [], 
+   "E_unit": "kN/m2", 
+   "type_name": "ISO"
+  }
+ ], 
+ "dimension": 2, 
+ "generate_time": "12/15/2020 07:30", 
+ "elements": [
+  {
+   "end_node_inds": [
+    0, 
+    1
+   ], 
+   "elem_tag": ""
+  }, 
+  {
+   "end_node_inds": [
+    0, 
+    2
+   ], 
+   "elem_tag": ""
+  }
+ ], 
+ "supports": [
+  {
+   "node_ind": 1, 
+   "condition": [
+    1, 
+    1
+   ]
+  }, 
+  {
+   "node_ind": 2, 
+   "condition": [
+    1, 
+    0
+   ]
+  }
+ ], 
+ "node_num": 3, 
+ "TO_model_type": "buckling_analysis", 
+ "_info": "Adapted from doi:10.1016/j.ijsolstr.2014.03.003.", 
+ "model_name": "nodal_instab_2d", 
+ "element_num": 2, 
+ "model_type": "truss", 
+ "loadcases": {
+  "0": {
+   "ploads": [
+    {
+     "node_ind": 2, 
+     "force": [
+      0,
+      -500.0
+     ], 
+     "loadcase": 0, 
+     "force_unit": "kN"
+    }
+   ], 
+   "lc_ind": 0
+  }
+ }, 
+ "cross_secs": [
+  {
+   "A": 0.006,
+   "name": "", 
+   "family": "", 
+   "elem_tags": [
+   ], 
+   "A_unit": "m2"
+  }
+ ], 
+ "nodes": [
+  {
+   "node_ind": 0, 
+   "point": [
+    0.0, 
+    1.0
+   ]
+  }, 
+  {
+   "node_ind": 1, 
+   "point": [
+    0.0, 
+    0.0
+   ]
+  }, 
+  {
+   "node_ind": 2, 
+   "point": [
+    0.0, 
+    2.0
+   ]
+  }
+ ]
+}

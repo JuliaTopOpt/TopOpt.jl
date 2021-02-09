@@ -113,10 +113,9 @@ function visualize(mesh::JuAFEM.Grid{dim, <:JuAFEM.AbstractCell, TT}, u;
     lsgrid = labelslidergrid!(fig,
         ["deformation exaggeration","support scale", "load scale"],
         [LinRange(0.0:0.01:exagg_range), LinRange(0.0:0.01:scale_range), LinRange(0.0:0.01:scale_range)];
-        # formats = [x -> "$(round(x, digits = 2))$s" for s in ["", "", ""]],
         width = Auto(),
         # tellwidth = true,
-        horizontal = false,
+        # horizontal = false,
     )
     set_close_to!(lsgrid.sliders[1], default_exagg_scale)
     set_close_to!(lsgrid.sliders[2], default_support_scale)

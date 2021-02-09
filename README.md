@@ -18,7 +18,7 @@ REPL to enter `pkg>` mode):
 
 <!-- pkg> add https://github.com/KristofferC/JuAFEM.jl.git -->
 ```julia
-pkg> add https://github.com/yijiangh/Tensors.jl.git
+pkg> add https://github.com/yijiangh/Tensors.jl.git#master
 pkg> add https://github.com/yijiangh/JuAFEM.jl.git
 pkg> add https://github.com/mohamed82008/VTKDataTypes.jl#master
 pkg> add https://github.com/mohamed82008/KissThreading.jl#master

@@ -13,3 +13,8 @@ end
 end
 @safetestset "Global Stress Tests" begin include("stress.jl") end
 @safetestset "Example Tests" begin include("test_examples.jl") end
+
+@safetestset "Truss Problem Tests" begin
+    include("TrussTopOptProblems/test_problem.jl")
+    include("TrussTopOptProblems/test_fea.jl")
+end
