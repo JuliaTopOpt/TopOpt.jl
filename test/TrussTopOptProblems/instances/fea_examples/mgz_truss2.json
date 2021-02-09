@@ -1,0 +1,182 @@
+{
+ "unit": "meter", 
+ "materials": [
+  {
+   "E": 200000000.0, 
+   "name": "DummyMaterial", 
+   "family": "DummyMaterial", 
+   "elem_tags": [], 
+   "E_unit": "kN/m2", 
+   "type_name": "ISO"
+  }
+ ], 
+ "dimension": 3, 
+ "generate_time": "10/21/2020 10:25", 
+ "elements": [
+  {
+   "end_node_inds": [
+    0, 
+    1
+   ], 
+   "elem_tag": "ab"
+  }, 
+  {
+   "end_node_inds": [
+    0, 
+    2
+   ], 
+   "elem_tag": "ac"
+  }, 
+  {
+   "end_node_inds": [
+    0, 
+    3
+   ], 
+   "elem_tag": "ad"
+  }, 
+  {
+   "end_node_inds": [
+    0, 
+    4
+   ], 
+   "elem_tag": "ae"
+  }
+ ], 
+ "supports": [
+  {
+   "node_ind": 1, 
+   "condition": [
+    1, 
+    1, 
+    1
+   ]
+  }, 
+  {
+   "node_ind": 2, 
+   "condition": [
+    1, 
+    1, 
+    1
+   ]
+  }, 
+  {
+   "node_ind": 3, 
+   "condition": [
+    1, 
+    1, 
+    1
+   ]
+  }, 
+  {
+   "node_ind": 4, 
+   "condition": [
+    1, 
+    1, 
+    1
+   ]
+  }
+ ], 
+ "node_num": 5, 
+ "TO_model_type": "analysis", 
+ "_info": "mgz textbook P104 Example 5.4", 
+ "model_name": "mgz_truss2", 
+ "element_num": 4, 
+ "model_type": "truss", 
+ "loadcases": {
+  "0": {
+   "ploads": [
+    {
+     "node_ind": 0, 
+     "force": [
+      200, 
+      600, 
+      -800
+     ], 
+     "loadcase": 0, 
+     "force_unit": "kN"
+    }
+   ], 
+   "lc_ind": 0
+  }
+ }, 
+ "cross_secs": [
+  {
+   "A": 0.02, 
+   "name": "", 
+   "family": "", 
+   "elem_tags": [
+    "ab"
+   ], 
+   "A_unit": "m2"
+  }, 
+  {
+   "A": 0.029999999999999999, 
+   "name": "", 
+   "family": "", 
+   "elem_tags": [
+    "ac"
+   ], 
+   "A_unit": "m2"
+  }, 
+  {
+   "A": 0.040000000000000001, 
+   "name": "", 
+   "family": "", 
+   "elem_tags": [
+    "ad"
+   ], 
+   "A_unit": "m2"
+  }, 
+  {
+   "A": 0.029999999999999999, 
+   "name": "", 
+   "family": "", 
+   "elem_tags": [
+    "ae"
+   ], 
+   "A_unit": "m2"
+  }
+ ], 
+ "nodes": [
+  {
+   "node_ind": 0, 
+   "point": [
+    2, 
+    4, 
+    8
+   ]
+  }, 
+  {
+   "node_ind": 1, 
+   "point": [
+    0, 
+    0, 
+    0
+   ]
+  }, 
+  {
+   "node_ind": 2, 
+   "point": [
+    8, 
+    0, 
+    0
+   ]
+  }, 
+  {
+   "node_ind": 3, 
+   "point": [
+    8, 
+    6, 
+    0
+   ]
+  }, 
+  {
+   "node_ind": 4, 
+   "point": [
+    0, 
+    6, 
+    0
+   ]
+  }
+ ]
+}

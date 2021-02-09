@@ -95,6 +95,7 @@ end
 const g = [0., 9.81, 0.] # N/kg or m/s^2
 
 # Element stiffness matrices are StaticArrays
+# `weights` : a vector of `xdim` vectors, element_id => self-weight load vector
 function _make_Kes_and_weights(
     dh::DofHandler{dim, N, T},
     ::Type{Tuple{MatrixType, VectorType}},
@@ -199,6 +200,11 @@ function _make_Kes_and_weights(
     return Kes, weights
 end
 
+"""
+    _make_dload(problem)
+
+Assemble a sparse vector for boundary (face) distributed loads
+"""
 function _make_dloads(fes, problem, facevalues)
     dim = getdim(problem)
     N = nnodespercell(problem)
@@ -246,6 +252,11 @@ function _make_dloads(fes, problem, facevalues)
     return dloads
 end
 
+"""
+    make_cload(problem)
+
+Assemble a sparse vector for concentrated loads
+"""
 function make_cload(problem)
     T = floattype(problem)
     dim = getdim(problem)

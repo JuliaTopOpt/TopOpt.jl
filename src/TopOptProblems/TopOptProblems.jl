@@ -8,8 +8,6 @@ using ..Utilities: @forward_property
 import Distributions
 
 using VTKDataTypes
-#using Makie
-#using GeometryTypes
 
 import JuAFEM: assemble!
 
@@ -24,9 +22,13 @@ include("elementmatrix.jl")
 include("matrices_and_vectors.jl")
 include("elementinfo.jl")
 include("assemble.jl")
+include("buckling.jl")
+
 include(joinpath("IO", "IO.jl"))
 using .IO
-include("makie.jl")
+
+include(joinpath("Visualization", "Visualization.jl"))
+using .Visualization
 
 export PointLoadCantilever, HalfMBB, LBeam, TieBeam, InpStiffness, StiffnessTopOptProblem, AbstractTopOptProblem, GlobalFEAInfo, ElementFEAInfo, YoungsModulus, assemble, assemble_f!, RaggedArray, ElementMatrix, rawmatrix, bcmatrix, save_mesh, RandomMagnitude, MultiLoad
 

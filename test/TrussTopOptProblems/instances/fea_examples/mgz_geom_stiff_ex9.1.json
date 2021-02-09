@@ -1,0 +1,111 @@
+{
+ "node_num": 3, 
+ "element_num": 2, 
+ "unit": "meter", 
+ "materials": [
+  {
+   "E": 200000000, 
+   "name": "DummyMaterial", 
+   "family": "DummyMaterial", 
+   "elem_tags": [], 
+   "E_unit": "kN/m2", 
+   "type_name": "ISO"
+  }
+ ], 
+ "dimension": 2, 
+ "generate_time": "2/2/2021 17:13", 
+ "elements": [
+  {
+   "end_node_inds": [
+    0, 
+    1
+   ], 
+   "elem_tag": "ab"
+  },
+  {
+   "end_node_inds": [
+    1, 
+    2
+   ], 
+   "elem_tag": "bc"
+  }
+ ], 
+ "supports": [
+  {
+   "node_ind": 0, 
+   "condition": [
+    1, 
+    1
+   ]
+  }, 
+  {
+   "node_ind": 2, 
+   "condition": [
+    1, 
+    1
+   ]
+  }
+ ], 
+ "TO_model_type": "buckling_analysis", 
+ "model_name": "MGZ p.247", 
+ "model_type": "truss", 
+ "loadcases": {
+  "0": {
+   "ploads": [
+    {
+     "node_ind": 1, 
+     "force": [
+      1,
+      -1
+     ], 
+     "loadcase": 0, 
+     "force_unit": "kN"
+    }
+   ], 
+   "lc_ind": 0
+  }
+ }, 
+ "cross_secs": [
+  {
+   "A": 0.000002,
+   "name": "", 
+   "family": "", 
+   "elem_tags": [
+       "ab"
+   ], 
+   "A_unit": "m2"
+  },
+  {
+   "A": 0.005,
+   "name": "", 
+   "family": "", 
+   "elem_tags": [
+       "bc"
+   ], 
+   "A_unit": "m2"
+  }
+ ], 
+ "nodes": [
+  {
+   "node_ind": 0, 
+   "point": [
+    0.0, 
+    4.0
+   ]
+  }, 
+  {
+   "node_ind": 1, 
+   "point": [
+    4.0, 
+    4.0
+   ]
+  },
+  {
+   "node_ind": 2,
+   "point": [
+    4.0, 
+    0.0
+   ]
+  }
+ ]
+}

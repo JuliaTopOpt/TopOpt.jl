@@ -1,0 +1,112 @@
+{
+ "unit": "meter", 
+ "materials": [
+  {
+   "E": 200000000.0, 
+   "name": "DummyMaterial", 
+   "family": "DummyMaterial", 
+   "elem_tags": [], 
+   "E_unit": "kN/m2", 
+   "type_name": "ISO"
+  }
+ ], 
+ "dimension": 2, 
+ "generate_time": "10/20/2020 22:30", 
+ "elements": [
+  {
+   "end_node_inds": [
+    0, 
+    1
+   ], 
+   "elem_tag": "ab"
+  }, 
+  {
+   "end_node_inds": [
+    0, 
+    2
+   ], 
+   "elem_tag": "ac"
+  }
+ ], 
+ "supports": [
+  {
+   "node_ind": 1, 
+   "condition": [
+    1, 
+    1
+   ]
+  }, 
+  {
+   "node_ind": 2, 
+   "condition": [
+    1, 
+    1
+   ]
+  }
+ ], 
+ "node_num": 3, 
+ "TO_model_type": "analysis", 
+ "_info": "mgz textbook P21 Example 2.1", 
+ "model_name": "mgz_truss1", 
+ "element_num": 2, 
+ "model_type": "truss", 
+ "loadcases": {
+  "0": {
+   "ploads": [
+    {
+     "node_ind": 0, 
+     "force": [
+      500.0, 
+      0
+     ], 
+     "loadcase": 0, 
+     "force_unit": "kN"
+    }
+   ], 
+   "lc_ind": 0
+  }
+ }, 
+ "cross_secs": [
+  {
+   "A": 0.0060000000000000001, 
+   "name": "", 
+   "family": "", 
+   "elem_tags": [
+    "ab"
+   ], 
+   "A_unit": "m2"
+  }, 
+  {
+   "A": 0.0080000000000000002, 
+   "name": "", 
+   "family": "", 
+   "elem_tags": [
+    "ac"
+   ], 
+   "A_unit": "m2"
+  }
+ ], 
+ "nodes": [
+  {
+   "node_ind": 0, 
+   "point": [
+    6.0, 
+    4.0
+   ]
+  }, 
+  {
+   "node_ind": 1, 
+   "point": [
+    0.0, 
+    0.0
+   ]
+  }, 
+  {
+   "node_ind": 2, 
+   "point": [
+    9.0, 
+    0.0
+   ]
+  }
+ ]
+}

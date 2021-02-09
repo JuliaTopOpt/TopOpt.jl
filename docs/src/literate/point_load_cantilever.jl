@@ -17,7 +17,7 @@ E = 1.0 # Young’s modulus
 v = 0.3 # Poisson’s ratio
 f = 1.0; # downward force
 
-nels = (12, 6, 6) # change to (40, 20, 20) for a more high-res result
+nels = (40, 20, 20) 
 problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0, 1.0), E, v, f);
 
 # ### Parameter settings
@@ -53,9 +53,13 @@ x0 = fill(1.0, length(solver.vars))
 result = simp(x0);
 
 # ### Visualize the result using Makie.jl
-result_mesh = GeometryBasics.Mesh(problem, result.topology);
-
-mesh(result_mesh);
+using TopOpt.TopOptProblems.Visualization: visualize
+fig = visualize(problem; topology=result.topology, 
+    default_exagg_scale=0.07, scale_range=10.0, vector_linewidth=3, vector_arrowsize=0.5)
+Makie.display(fig)
+# or convert it to a Mesh
+# result_mesh = GeometryBasics.Mesh(problem, result.topology);
+# Makie.mesh(result_mesh)
 
 #md # ## [Plain Program](@id point-load-cantilever-plain-program)
 #md #
