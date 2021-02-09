@@ -1,8 +1,11 @@
 # References
 
-## `Tim`
+TODO: write about JSON file specs.
 
-![tim_solution](./tim.png)
+## `tim2d` and `tim3d`
+
+![tim_2d](./images/tim_2d.png)
+![tim_2d](./images/tim_3d.png)
 
 Taken from: 
 
