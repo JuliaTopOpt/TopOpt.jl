@@ -1,9 +1,10 @@
 import AbstractPlotting
 import Makie
-using AbstractPlotting: lift, cam3d!
-using AbstractPlotting.MakieLayout: layoutscene, DataAspect, Axis, labelslidergrid!, set_close_to!,
+using AbstractPlotting: lift, cam3d!, Point3f0, Vec3f0, Figure, Auto
+using AbstractPlotting.MakieLayout: DataAspect, Axis, labelslidergrid!, set_close_to!,
     labelslider!, LScene
 using GeometryBasics: GLTriangleFace
+using ..TopOptProblems: getcloaddict
 
 ################################
 # Credit to Simon Danisch for the conversion code below
@@ -67,11 +68,14 @@ end
 ################################
 
 function visualize(mesh::JuAFEM.Grid{dim, <:JuAFEM.AbstractCell, TT}, u; 
-        default_support_scale=1.0, default_load_scale=1.0, scale_range=1.0, default_exagg_scale=1.0, exagg_range=1.0) where {dim, TT}
+        cloaddict=undef,
+        vector_arrowsize=1.0, vector_linewidth=1.0,
+        default_support_scale=1.0, default_load_scale=1.0, scale_range=1.0, 
+        default_exagg_scale=1.0, exagg_range=1.0) where {dim, TT}
     T = eltype(u)
     nnodes = length(mesh.nodes)
     # * initialize the makie scene
-    scene, layout = layoutscene() #resolution = (1200, 900)
+    fig = Figure(resolution = (1200, 800))
 
     #TODO make this work without creating a Node
     if dim == 2
@@ -81,7 +85,7 @@ function visualize(mesh::JuAFEM.Grid{dim, <:JuAFEM.AbstractCell, TT}, u;
         end
         u = [u; zeros(T, 1, nnodes)]
 
-        ax1 = layout[1, 1] = Axis(scene)
+        ax1 = Axis(fig[1,1])
         # tightlimits!(ax1)
         # ax1.aspect = AxisAspect(1)
         ax1.aspect = DataAspect()
@@ -90,49 +94,86 @@ function visualize(mesh::JuAFEM.Grid{dim, <:JuAFEM.AbstractCell, TT}, u;
 
         # https://jkrumbiegel.github.io/MakieLayout.jl/v0.3/layoutables/#LScene-1
         # https://makie.juliaplots.org/stable/cameras.html#D-Camera
-        ax1 = layout[1, 1] = LScene(scene, camera = cam3d!, raw = false)
+        # ax1 = layout[1, 1] = LScene(scene, camera = cam3d!, raw = false)
+        ax1 = LScene(fig[1,1], scenekw = (camera = cam3d!, raw = false), height=750)
     end
-
     # TODO show the ground mesh in another Axis https://makie.juliaplots.org/stable/makielayout/grids.html
     # ax1.title = "TopOpt result"
 
     # * support / load appearance / deformatione exaggeration control
-    lsgrid = labelslidergrid!(scene,
-        ["support scale", "load scale", "deformation exaggeration"],
-        [LinRange(0.0:0.01:scale_range), LinRange(0.0:0.01:scale_range), LinRange(0.0:0.01:exagg_range)];
+    lsgrid = labelslidergrid!(fig,
+        ["deformation exaggeration","support scale", "load scale"],
+        [LinRange(0.0:0.01:exagg_range), LinRange(0.0:0.01:scale_range), LinRange(0.0:0.01:scale_range)];
         # formats = [x -> "$(round(x, digits = 2))$s" for s in ["", "", ""]],
-        # width = 200,
-        tellheight = false,
+        width = Auto(),
+        # tellwidth = true,
+        horizontal = false,
     )
-    set_close_to!(lsgrid.sliders[1], default_support_scale)
-    set_close_to!(lsgrid.sliders[2], default_load_scale)
-    set_close_to!(lsgrid.sliders[3], default_exagg_scale)
-    layout[2, 1] = lsgrid.layout
+    set_close_to!(lsgrid.sliders[1], default_exagg_scale)
+    set_close_to!(lsgrid.sliders[2], default_support_scale)
+    set_close_to!(lsgrid.sliders[3], default_load_scale)
+    fig[2,1] = lsgrid.layout
 
-    # undeformed mesh
-    # cnode = AbstractPlotting.Node(zeros(Float32, length(mesh.nodes)))
+    # * undeformed mesh
     Makie.mesh!(ax1, nodes, mesh.cells, color = (:gray, 0.4), shading = false);
 
     # * deformed mesh
     exagg_deformed_nodes = lift(s -> 
         [JuAFEM.Node(Tuple([node.x[j] + s * u[j, i] for j=1:3])) for (i, node) in enumerate(nodes)], 
-        lsgrid.sliders[3].value)
+        lsgrid.sliders[1].value)
     new_nodes = Vector{JuAFEM.Node}(undef, length(nodes))
-    # for (i, node) in enumerate(nodes)
-    #     new_nodes[i] = JuAFEM.Node(Tuple([node.x[j] + u[j, i] for j=1:3]))
-    # end
-    Makie.mesh!(ax1, exagg_deformed_nodes, mesh.cells, color = (:purple, 0.4))
+    Makie.mesh!(ax1, exagg_deformed_nodes, mesh.cells, color = (:cyan, 0.4))
 
-    # Makie.scatter!(ax1, AbstractPlotting.Point3f0.(getfield.(new_nodes, :x)), markersize = 0.1);
-
-    # points = AbstractPlotting.Point3f0.(getfield.(nodes, :x))
+    # * dot points for deformation nodes
+    # Makie.scatter!(ax1, Point3f0.(getfield.(new_nodes, :x)), markersize = 0.1);
+    # points = Point3f0.(getfield.(nodes, :x))
+    # * deformation vectors
     # GeometryTypes.Vec{3, Float64}
-    # displacevec = reinterpret(AbstractPlotting.Vec3f0, u, (size(u, 2),))
-    # displacevec = AbstractPlotting.Vec3f0.([u[:,i] for i=1:size(u,2)])
+    # displacevec = reinterpret(Vec3f0, u, (size(u, 2),))
+    # displacevec = Vec3f0.([u[:,i] for i=1:size(u,2)])
     # displace = norm.(displacevec)
     # Makie.arrows!(points, displacevec, linecolor = (:black, 0.3))
 
-    scene, layout
+    # TODO pressure loads?
+    # * load vectors
+    if cloaddict !== undef
+        loaded_nodes = Point3f0.(nodes[node_ind].x for (node_ind, _) in cloaddict)
+        Makie.arrows!(ax1, 
+            loaded_nodes,
+            lift(s -> Vec3f0.(s .* load_vec for (_, load_vec) in cloaddict), lsgrid.sliders[3].value), 
+            linecolor=:purple, arrowcolor=:purple,
+            arrowsize=vector_arrowsize, linewidth=vector_linewidth)
+        Makie.scatter!(ax1, loaded_nodes) #, markersize = lift(s -> s * 3, lsgrid.sliders[2].value))
+    end
+
+    # * support vectors
+    for (nodeset_name, node_ids) in mesh.nodesets
+        vectors = []
+        if occursin("fixed_u1", nodeset_name)
+            push!(vectors, [1.0, 0.0, 0.0])
+        elseif occursin("fixed_u2", nodeset_name)
+            push!(vectors, [0.0, 1.0, 0.0])
+        elseif occursin("fixed_u3", nodeset_name)
+            push!(vectors, [0.0, 0.0, 1.0])
+        elseif occursin("fixed_all", nodeset_name)
+            push!(vectors, [1.0, 0.0, 0.0])
+            push!(vectors, [0.0, 1.0, 0.0])
+            push!(vectors, [0.0, 0.0, 1.0])
+        else
+            continue
+        end
+        fixed_nodes = Point3f0.(nodes[node_ind].x for node_ind in node_ids)
+        for v in vectors
+            Makie.arrows!(ax1, 
+                fixed_nodes,
+                lift(s -> [Vec3f0(s .* v) for nid in node_ids], lsgrid.sliders[2].value), 
+                linecolor=:orange, arrowcolor=:orange,
+                arrowsize=vector_arrowsize, linewidth=vector_linewidth)
+        end
+        Makie.scatter!(ax1, fixed_nodes) #, markersize = lift(s -> s * 3, lsgrid.sliders[1].value))
+    end
+
+    fig
 end
 
 """
@@ -143,7 +184,8 @@ function visualize(problem::StiffnessTopOptProblem{dim, T}, u; kwargs...) where 
     node_dofs = problem.metadata.node_dofs
     nnodes = JuAFEM.getnnodes(mesh)
     node_displacements = reshape(u[node_dofs], dim, nnodes)
-    visualize(mesh, node_displacements; kwargs...)
+    cloaddict = getcloaddict(problem)
+    visualize(mesh, node_displacements; cloaddict=cloaddict, kwargs...)
 end
 
 """
@@ -153,7 +195,8 @@ function visualize(problem::StiffnessTopOptProblem{dim, T}; kwargs...) where {di
     mesh = problem.ch.dh.grid
     nnodes = JuAFEM.getnnodes(mesh)
     node_displacements = zeros(T, dim, nnodes)
-    visualize(mesh, node_displacements; kwargs...)
+    cloaddict = getcloaddict(problem)
+    visualize(mesh, node_displacements; cloaddict=cloaddict, kwargs...)
 end
 
 function visualize(mesh::JuAFEM.Grid{dim, N, T}; kwargs...) where {dim, N, T}

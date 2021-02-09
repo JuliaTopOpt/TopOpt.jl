@@ -7,11 +7,11 @@ import Makie
 # Define problem, can also be imported from .inp files
 # nels = (30,10)
 # sizes = (1.0,1.0)
-nels = (40, 20, 20) 
+nels = (20, 10, 10) 
 sizes = (1.0,1.0,1.0)
 E = 1.0;
 ν = 0.3;
-force = -1.0;
+force = 1.0;
 # problem = PointLoadCantilever(nels, sizes, E, ν, force)
 problem = PointLoadCantilever(Val{:Linear}, nels, sizes, E, ν, force);
 # @show TopOpt.TopOptProblems.getdim(problem)
@@ -35,8 +35,9 @@ u = solver.u
 # GLMakie.mesh(result_mesh);
 
 using TopOpt.TopOptProblems.Visualization: visualize
-# visualize(problem)
-scene, layout = visualize(problem, u; default_exagg_scale=0.07)
+# fig = visualize(problem)
+fig = visualize(problem, u; default_exagg_scale=0.07, scale_range=10.0, vector_linewidth=3, vector_arrowsize=0.5)
+Makie.display(fig)
 
 # using GeometryBasics, Makie
 # using JuAFEM
