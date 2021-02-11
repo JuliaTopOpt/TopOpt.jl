@@ -1,7 +1,7 @@
 name = "TopOpt"
 uuid = "53a1e1a5-51bb-58a9-8a02-02056cc81109"
 authors = ["mohamed82008 <mohamed82008@gmail.com>"]
-version = "0.1.0"
+version = "0.2.0"
 
 [deps]
 AbstractPlotting = "537997a7-5e4e-5d89-9595-2241ea00577e"
@@ -45,13 +45,3 @@ WriteVTK = "64499a7a-5c06-52f2-abe2-ccb03c286192"
 
 [compat]
 julia = "1"
-
-[extras]
-FiniteDifferences = "26cc04aa-876d-5657-8c51-4c34ba976000"
-Makie = "ee78f7c6-11fb-53f2-987a-cfe4a2b5a57a"
-Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
-SafeTestsets = "1bc83da4-3b8d-516f-aca4-4fe02f6d838f"
-Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
-
-[targets]
-test = ["FiniteDifferences", "Random", "SafeTestsets", "Test", "Makie"]
