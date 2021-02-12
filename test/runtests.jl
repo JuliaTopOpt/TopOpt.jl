@@ -6,7 +6,6 @@ using Test, SafeTestsets
     include("TopOptProblems/problems.jl")
     #include("TopOptProblems/metadata.jl")
 end
-@safetestset "CSIMP Tests" begin include("csimp.jl") end
 @safetestset "AugLag Tests" begin
     include("AugLag/auglag.jl")
     include("AugLag/compliance.jl")
@@ -18,3 +17,5 @@ end
     include("TrussTopOptProblems/test_problem.jl")
     include("TrussTopOptProblems/test_fea.jl")
 end
+
+# @safetestset "CSIMP Tests" begin include("csimp.jl") end

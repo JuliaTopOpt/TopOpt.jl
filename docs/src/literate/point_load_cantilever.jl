@@ -9,8 +9,8 @@
 # Now we solve the problem in JuAFEM. What follows is a program spliced with comments.
 #md # The full program, without comments, can be found in the next [section](@ref point-load-cantilever-plain-program).
 
-using TopOpt, Makie
-import GeometryBasics
+using TopOpt
+import Makie
 
 # ### Define the problem
 E = 1.0 # Young’s modulus
@@ -57,7 +57,9 @@ using TopOpt.TopOptProblems.Visualization: visualize
 fig = visualize(problem; topology=result.topology, 
     default_exagg_scale=0.07, scale_range=10.0, vector_linewidth=3, vector_arrowsize=0.5)
 Makie.display(fig)
+
 # or convert it to a Mesh
+# import GeometryBasics
 # result_mesh = GeometryBasics.Mesh(problem, result.topology);
 # Makie.mesh(result_mesh)
 
