@@ -26,8 +26,9 @@ bc = CantileverBoundaryConditions(nelx, nely)
 problem = ComplianceProblem(bc, penal)
 gui = GUI(problem, "Topology Optimization Example")
 topopt_filter = DensityBasedFilter(nelx, nely, rmin)
-solver = TopOptSolver(problem, volfrac, topopt_filter, gui)
+solver = TopOptSolver(problem, volfrac, topopt_filter, gui, maxeval=2000, ftol_rel=1e-3)
 x_opt = solver.optimize(x)
+print("#of evals: {}".format(solver.opt.get_numevals()))
 
 print('Total time: {}'.format(time.time() - start_time))
 

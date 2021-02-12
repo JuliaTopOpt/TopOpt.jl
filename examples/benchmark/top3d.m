@@ -15,7 +15,8 @@ displayflag = 0;  % Display intermediate structure flag
 
 % USER-DEFINED MATERIAL PROPERTIES
 E0 = 1.0;         % Young's modulus of solid material
-Emin = 1e-9;      % Young's modulus of void-like material
+% Emin = 1e-9;      % Young's modulus of void-like material
+Emin = 0.001;      % Young's modulus of void-like material
 nu = 0.3;         % Poisson's ratio
 
 % USER-DEFINED LOAD DOFs

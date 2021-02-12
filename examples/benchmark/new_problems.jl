@@ -1,6 +1,6 @@
 # TODO we should have an instruction for defining new problems
-module NewTopOptProblems
-export NewPointLoadCantilever
+# module NewTopOptProblems
+# export NewPointLoadCantilever
 
 using JuAFEM
 using TopOpt
@@ -100,4 +100,4 @@ function TopOptProblems.getcloaddict(p::NewPointLoadCantilever{dim, T}) where {d
     return Dict{Int, Vector{T}}(fnode => f)
 end
 
-end # end NewTopOptProblems module
+# end # end NewTopOptProblems module

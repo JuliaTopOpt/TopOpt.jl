@@ -4,7 +4,8 @@ function softbeso(nelx,nely,volfrac,er,rmin);
 x(1:nely,1:nelx) = 1.; vol=1.; i = 0; change = 1.; penal = 3.;
 % START iTH ITERATION
 while change > 0.001   
-  i = i + 1;  vol = max(vol*(1-er),volfrac);
+  i = i + 1;  
+  vol = max(vol*(1-er),volfrac);
   if i >1; olddc = dc; end
 % FE-ANALYSIS
   [U]=FE(nelx,nely,x,penal);         

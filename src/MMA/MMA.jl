@@ -92,7 +92,7 @@ function get_kkt_residual(∇f_x, g, ∇g_x, c, x, lb, ub)
         return max(g[i], 0)
         #return max(abs(g[i] * c[i]), g[i], 0)
     end
-    println("kkt residual: $r")
+    # println("kkt residual: $r")
     return r
 end
 function get_ipopt_residual(model::Model, ∇f_x, g, ∇g_x, c, x, lb, ub)
@@ -117,7 +117,7 @@ function get_ipopt_residual(model::Model, ∇f_x, g, ∇g_x, c, x, lb, ub)
     sd = max(param, (sum(abs, c) + s) / (n + m)) / param
     r = max(r / sd, max(0, maximum(g)))
     #r = max(r / sd, max(0, maximum(g)), maximum(i -> abs(g[i]*c[i]), 1:length(c)))
-    println("ipopt residual: $r")
+    # println("ipopt residual: $r")
     return r
 end
 
