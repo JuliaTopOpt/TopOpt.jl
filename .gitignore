@@ -11,3 +11,5 @@ docs/src/examples/
 # Manifest.toml
 # /Manifest.toml
 /test/Manifest.toml
+
+*/__pycache__
