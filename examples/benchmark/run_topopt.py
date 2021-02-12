@@ -1,4 +1,5 @@
 # pip install cvxpy nlopt topopt
+# https://github.com/zfergus/topopt
 
 import time
 import numpy

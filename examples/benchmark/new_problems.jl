@@ -9,8 +9,7 @@ using TopOpt.TopOptProblems: left, right, bottom, middley, middlez,
     nnodespercell, nfacespercell, find_black_and_white, find_varind
 using TopOpt.Utilities: @params
 
-# @params 
-struct NewPointLoadCantilever{dim, T, N, M} <: StiffnessTopOptProblem{dim, T}
+@params struct NewPointLoadCantilever{dim, T, N, M} <: StiffnessTopOptProblem{dim, T}
     rect_grid::RectilinearGrid{dim, T, N, M}
     E::T
     ν::T
@@ -88,11 +87,14 @@ function NewPointLoadCantilever(::Type{Val{CellType}}, nels::NTuple{dim,Int}, si
     black, white = find_black_and_white(dh)
     varind = find_varind(black, white)
     
-    return PointLoadCantilever(rect_grid, E, ν, ch, force, force_dof, black, white, varind, metadata)
+    return NewPointLoadCantilever(rect_grid, E, ν, ch, force, force_dof, black, white, varind, metadata)
 end
 
+# used in FEA to determine default quad order
 TopOptProblems.nnodespercell(p::NewPointLoadCantilever) = nnodespercell(p.rect_grid)
-function getcloaddict(p::NewPointLoadCantilever{dim, T}) where {dim, T}
+
+# ! important, used for specification!
+function TopOptProblems.getcloaddict(p::NewPointLoadCantilever{dim, T}) where {dim, T}
     f = T[0, -p.force, 0]
     fnode = Tuple(getnodeset(p.rect_grid.grid, "down_force"))[1]
     return Dict{Int, Vector{T}}(fnode => f)

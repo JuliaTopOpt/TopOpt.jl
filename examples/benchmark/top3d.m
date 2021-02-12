@@ -10,7 +10,7 @@ tic
 
 % USER-DEFINED LOOP PARAMETERS
 maxloop = 200;    % Maximum number of iterations
-tolx = 0.01;      % Terminarion criterion
+tolx = 0.001;      % Terminarion criterion
 displayflag = 0;  % Display intermediate structure flag
 
 % USER-DEFINED MATERIAL PROPERTIES
