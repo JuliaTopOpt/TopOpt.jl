@@ -29,25 +29,25 @@ jobs:
         if: ${{ matrix.julia-version == '^1.6.0-0' && matrix.os == 'ubuntu-latest' }}
         with:
           file: lcov.info
-  docs:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        julia-version: ['^1.6.0-0',]
-        os: ['ubuntu-latest',]
-    steps:
-      - uses: actions/checkout@v2
-      - uses: julia-actions/setup-julia@v1
-        with:
-          version: ${{ matrix.julia-version }}
-      - name: Install Makie's dependencies
-        run: |
-          apt-get -qq update
-          apt-get install -y cmake xorg-dev mesa-utils # glfw
-      - name: Install dependencies
-        run: julia --project=docs -e 'using Pkg; Pkg.instantiate(); Pkg.update()'
-      - name: Build and deploy
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          DOCUMENTER_KEY: ${{ secrets.DOCUMENTER_KEY }}
-        run: julia --project=docs --color=yes docs/make.jl
+  # docs:
+  #   runs-on: ${{ matrix.os }}
+  #   strategy:
+  #     matrix:
+  #       julia-version: ['^1.6.0-0',]
+  #       os: ['ubuntu-latest',]
+  #   steps:
+  #     - uses: actions/checkout@v2
+  #     - uses: julia-actions/setup-julia@v1
+  #       with:
+  #         version: ${{ matrix.julia-version }}
+  #     - name: Install Makie's dependencies
+  #       run: |
+  #         apt-get -qq update
+  #         apt-get install -y cmake xorg-dev mesa-utils # glfw
+  #     - name: Install dependencies
+  #       run: julia --project=docs -e 'using Pkg; Pkg.instantiate(); Pkg.update()'
+  #     - name: Build and deploy
+  #       env:
+  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  #         DOCUMENTER_KEY: ${{ secrets.DOCUMENTER_KEY }}
+  #       run: julia --project=docs --color=yes docs/make.jl
