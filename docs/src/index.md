@@ -4,13 +4,6 @@
 
 `TopOpt` is a topology optimization package written in [Julia](https://github.com/JuliaLang/julia).
 
-The main functionalities of the package include:
-
-* ...
-* ...
-
-The best way to get started with `TopOpt` is to look at the documented examples.
-
 !!! note
 
     `TopOpt` is still under development. If you find a bug, or have
@@ -19,18 +12,31 @@ The best way to get started with `TopOpt` is to look at the documented examples.
 
 ## Installation
 
-In Julia v1.0 you can install packages from the Pkg REPL (press `]` in the Julia
-REPL to enter `pkg>` mode):
+In Julia v1.0+ you can install packages using Julia's package manager as follows:
 
-```
-pkg> add https://github.com/KristofferC/JuAFEM.jl.git
-pkg> add https://github.com/mohamed82008/VTKDataTypes.jl#master
-pkg> add https://github.com/mohamed82008/KissThreading.jl#master
-pkg> add https://github.com/mohamed82008/TopOpt.jl#master
+```julia
+using Pkg
+pkg"add https://github.com/yijiangh/Tensors.jl.git#master"
+pkg"add https://github.com/yijiangh/JuAFEM.jl.git"
+pkg"add https://github.com/mohamed82008/VTKDataTypes.jl#master"
+pkg"add https://github.com/mohamed82008/Nonconvex.jl#master"
+pkg"add https://github.com/mohamed82008/TopOpt.jl#master"
 ```
 
-To load the package, use
+which will track the `master` branch of the package. To additionally load the visualization submodule of `TopOpt`, you will need to install `Makie.jl` using:
+
+```julia
+pkg"add Makie"
+```
+
+To load the package, use:
 
 ```julia
 using TopOpt
+```
+
+and to optionally load the visualization sub-module as part of `TopOpt`, use:
+
+```julia
+using TopOpt, Makie
 ```

@@ -506,14 +506,6 @@ git-tree-sha1 = "09aeec87bdc9c1fa70d0b508dfa94a21acd280d9"
 uuid = "5ab0869b-81aa-558d-bb23-cbf5423bbe9b"
 version = "0.6.2"
 
-[[KissThreading]]
-deps = ["Future", "Random"]
-git-tree-sha1 = "22868d5880e7a167edd16f353b532ada8d1b58fe"
-repo-rev = "master"
-repo-url = "https://github.com/mohamed82008/KissThreading.jl"
-uuid = "ece10b52-bc5d-5f9f-8b6e-cc9c6a4b5293"
-version = "0.0.0"
-
 [[LAME_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
 git-tree-sha1 = "df381151e871f41ee86cee4f5f6fd598b8a68826"
