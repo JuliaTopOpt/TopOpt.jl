@@ -1,6 +1,8 @@
 using TopOpt, Nonconvex, Zygote, FiniteDifferences, LinearAlgebra, Test, Random, SparseArrays
 const FDM = FiniteDifferences
 
+Random.seed!(1)
+
 @testset "Compliance" begin
     nels = (10, 10)
     problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
@@ -77,7 +79,6 @@ end
     base_problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
     dense_load_inds = vec(TopOpt.TopOptProblems.get_surface_dofs(base_problem))
     dense_rank = 3
-    Random.seed!(1)
     F = spzeros(TopOpt.JuAFEM.ndofs(base_problem.ch.dh), nloads)
     Fsize = size(F)
     for i in 1:dense_rank
@@ -105,7 +106,6 @@ end
 @testset "Local stress" begin
     nels = (10, 10)
     problem = PointLoadCantilever(Val{:Quadratic}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
-    Random.seed!(1)
     for F in (MacroVonMisesStress, MicroVonMisesStress)
         for p in (1.0, 2.0, 3.0)
             solver = FEASolver(Displacement, Direct, problem, xmin = 0.001, penalty = TopOpt.PowerPenalty(p))
