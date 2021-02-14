@@ -79,6 +79,26 @@ function RaggedArray(vv::Vector{Vector{T}}) where T
     RaggedArray(offsets, values)
 end
 
+function Base.iterate(ra::RaggedArray, state = (1, 1))
+    (i, j) = state
+    if j >= length(ra.offsets) - 1 && i >= ra.offsets[j + 1] - ra.offsets[j]
+        return nothing
+    elseif i < ra.offsets[j + 1] - ra.offsets[j]
+        (i, j) = (i + 1, j)
+    else
+        (i, j) = (1, j + 1)
+        if ra.offsets[j + 1] - ra.offsets[j] == 0
+            while ra.offsets[j + 1] - ra.offsets[j] == 0 && j < length(ra.offsets) - 1
+                (i, j) = (1, j + 1)
+            end
+            if j >= length(ra.offsets) - 1 && i >= ra.offsets[j + 1] - ra.offsets[j]
+                return nothing
+            end    
+        end
+    end
+    return getindex(ra, i, j), (i, j)
+end
+
 function Base.getindex(ra::RaggedArray, i)
     @assert 1 <= i < length(ra.offsets)
     r = ra.offsets[i]:ra.offsets[i+1]-1
