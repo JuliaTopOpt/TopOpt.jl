@@ -243,9 +243,6 @@ end
 		VTu[3] = 3*Tu[3]
 
         utMu_e = dot(Tu, VTu)
-        if isinf(utMu_e) || isnan(utMu_e)
-            @show utMu_e, u
-        end
         @assert utMu_e >= 0
         utMu[cellidx] = utMu_e
         Mu[cellidx] = Te' * VTu
@@ -363,100 +360,4 @@ function ChainRulesCore.rrule(f::MicroVonMisesStress, x)
             return -dot(lhs[global_dofs], bcmatrix(Kes[e]) * u[global_dofs]) * dρe
         end
     end)
-end
-
-@params mutable struct GlobalStress{T} <: AbstractFunction{T}
-    reducer
-    reducer_g::AbstractVector{T}
-    utMu::AbstractVector{T}
-    Mu::AbstractArray
-    sigma_vm::AbstractVector{T}
-    solver
-    global_dofs::AbstractVector{<:Integer}
-    buffer::AbstractVector{T}
-    stress_temp::StressTemp
-    fevals::Int
-    reuse::Bool
-    maxfevals::Int
-end
-function GlobalStress(solver, reducer = WeightedKNorm(4, 1/length(solver.vars)); reuse = false, maxfevals = 10^8)
-    T = eltype(solver.u)
-    dh = solver.problem.ch.dh
-    k = ndofs_per_cell(dh)
-    N = getncells(dh.grid)
-    global_dofs = zeros(Int, k)
-    Mu = zeros(SVector{k, T}, N)
-    utMu = zeros(T, N)
-    stress_temp = StressTemp(solver)
-    sigma_vm = similar(utMu)
-    buffer = zeros(T, ndofs_per_cell(dh))
-    reducer_g = similar(utMu)
-
-    return GlobalStress(reducer, reducer_g, utMu, Mu, sigma_vm, solver, global_dofs, buffer, stress_temp, 0, reuse, maxfevals)
-end
-
-function (gs::GlobalStress{T})(x, g) where {T}
-    @unpack sigma_vm, Mu, utMu, buffer, stress_temp = gs
-    @unpack reuse, solver, global_dofs, buffer, reducer, reducer_g = gs
-    @unpack elementinfo, u, penalty, problem, xmin = solver
-    @unpack Kes = elementinfo
-    @unpack dh = problem.ch
-    E0 = problem.E
-    gs.fevals += 1
-
-    @assert length(global_dofs) == ndofs_per_cell(solver.problem.ch.dh)
-    if !reuse
-        solver()
-        fill_Mu_utMu!(Mu, utMu, solver, stress_temp)
-    end
-    sigma_vm .= get_sigma_vm.(get_ρ.(x, Ref(penalty), xmin), utMu)
-    reduced = reducer(sigma_vm, reducer_g)
-    for e in 1:length(Mu)
-        Ee = get_ρ(x[e], penalty, xmin) * E0
-        Mu[e] *= reducer_g[e] * Ee^2 / sigma_vm[e]
-    end
-    lhs = backsolve!(solver, Mu, global_dofs)
-
-    for ep in 1:length(g)
-        Eep, dEep = get_ρ_dρ(x[ep], penalty, xmin) * E0
-        celldofs!(global_dofs, dh, ep)
-        t1 = reducer_g[ep] * Eep / sigma_vm[ep] * dEep * utMu[ep]
-        @views t2 = -dEep * dot(lhs[global_dofs], bcmatrix(Kes[ep]) * u[global_dofs])
-        g[ep] = t1 + t2
-    end
-
-    return reduced
-end
-
-struct LogSumExp <: Function end
-function (lse::LogSumExp)(s, g_s)
-    out = logsumexp(s)
-    g_s .= exp.(s .- out)
-    return out
-end
-
-struct KNorm <: Function
-    k::Int
-end
-function (knorm::KNorm)(s, g_s)
-    out = norm(s, knorm.k)
-    g_s .= (s ./ out).^(k-1)
-    return out
-end
-
-struct WeightedKNorm{T} <: Function
-    k::Int
-    w::T
-end
-function (wknorm::WeightedKNorm{T})(s, g_s) where {T}
-    @unpack k, w = wknorm
-    if T <: AbstractVector
-        mw = MappedArray(w -> w^(1/k), w)
-        out = norm(MappedArray(*, s, mw), k)
-    else
-        mw = w^(1/k)
-        out = norm(BroadcastArray(*, s, mw), k)
-    end
-    g_s .= (s ./ out).^(k-1) .* mw
-    return out
 end
