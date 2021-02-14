@@ -40,12 +40,12 @@ jobs:
       - uses: julia-actions/setup-julia@v1
         with:
           version: ${{ matrix.julia-version }}
-      - name: Install dependencies
-        run: julia --project=docs -e 'using Pkg; Pkg.instantiate(); Pkg.update()'
       - name: Install Makie's dependencies
         run: |
           apt-get -qq update
           apt-get install -y cmake xorg-dev mesa-utils # glfw
+      - name: Install dependencies
+        run: julia --project=docs -e 'using Pkg; Pkg.instantiate(); Pkg.update()'
       - name: Build and deploy
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
