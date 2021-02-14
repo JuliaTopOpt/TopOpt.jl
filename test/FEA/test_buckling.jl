@@ -34,10 +34,14 @@ u = solver.u
 # result_mesh = GeometryBasics.Mesh(problem, ones(ncells));
 # GLMakie.mesh(result_mesh);
 
-using TopOpt.TopOptProblems.Visualization: visualize
-# fig = visualize(problem)
-fig = visualize(problem, u; default_exagg_scale=0.07, scale_range=10.0, vector_linewidth=3, vector_arrowsize=0.5)
-# Makie.display(fig)
+if get(ENV, "CI", nothing) != "true"
+    @eval begin
+        using TopOpt.TopOptProblems.Visualization: visualize
+        # fig = visualize(problem)
+        fig = visualize(problem, u; default_exagg_scale=0.07, scale_range=10.0, vector_linewidth=3, vector_arrowsize=0.5)
+        # Makie.display(fig)
+    end
+end
 
 # using GeometryBasics, Makie
 # using JuAFEM

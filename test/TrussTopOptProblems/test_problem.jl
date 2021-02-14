@@ -71,11 +71,13 @@ ins_dir = joinpath(@__DIR__, "instances", "ground_meshes");
 
     solver()
 
-    fig = visualize(
-        problem, solver.u; crosssecs = result.topology, vector_arrowsize = 0.1,
-        vector_linewidth=0.8, default_exagg_scale=ndim == 3 ? 1.0 : 0.01,
-        exagg_range = ndim == 3 ? 10.0 : 0.1,
-    )
+    if get(ENV, "CI", nothing) != "true"
+        fig = visualize(
+            problem, solver.u; crosssecs = result.topology, vector_arrowsize = 0.1,
+            vector_linewidth=0.8, default_exagg_scale=ndim == 3 ? 1.0 : 0.01,
+            exagg_range = ndim == 3 ? 10.0 : 0.1,
+        )
+    end
 
     # import Makie
     # Makie.display(fig)
