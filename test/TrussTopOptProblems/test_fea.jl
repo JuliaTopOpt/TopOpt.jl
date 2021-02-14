@@ -6,7 +6,9 @@ using JuAFEM: cellid, getcoordinates, CellIterator
 using TopOpt
 using TopOpt.TopOptProblems: boundingbox, nnodespercell, getgeomorder, getmetadata, getdh, getE, getdim
 using TopOpt.TrussTopOptProblems: getA, default_quad_order
-using TopOpt.TrussTopOptProblems.TrussVisualization: visualize
+if get(ENV, "CI", nothing) != "true"
+    using TopOpt.TrussTopOptProblems.TrussVisualization: visualize
+end
 
 include("utils.jl")
 
