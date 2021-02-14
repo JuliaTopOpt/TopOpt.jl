@@ -6,7 +6,7 @@ using ..TopOpt: whichdevice, AbstractDevice, CPU, GPU, PENALTY_BEFORE_INTERPOLAT
 using TimerOutputs, Setfield, StaticArrays
 using Parameters: @unpack, @pack!
 using ..Utilities, JuAFEM
-using LinearAlgebra
+using LinearAlgebra, Zygote
 
 export  Optimizer,
         SIMP,
