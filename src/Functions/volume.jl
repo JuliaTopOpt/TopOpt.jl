@@ -12,7 +12,8 @@
     maxfevals::Int
     cheqfilter
 end
-TopOpt.dim(::Volume) = 1
+Base.show(::IO, ::MIME{Symbol("text/plain")}, ::Volume) = println("TopOpt volume (fraction) function")
+Nonconvex.getdim(::Volume) = 1
 @inline function Base.getproperty(vf::Volume, f::Symbol)
     f === :reuse && return false
     return getfield(vf, f)
@@ -22,7 +23,7 @@ end
     return setfield!(vf, f, v)
 end
 
-function project(c::Constraint{<:Any, <:Volume}, x)
+function project(c::IneqConstraint{<:Any, <:Volume}, x)
     V, f = c.s, c.f
     cellvolumes = f.cellvolumes
     if f.fraction
@@ -44,7 +45,7 @@ function project(c::Constraint{<:Any, <:Volume}, x)
 end
 
 function Volume(problem::StiffnessTopOptProblem{dim, T}, solver::AbstractFEASolver, ::Type{TI} = Int; filterT = nothing, preproj = nothing, postproj = nothing, rmin = T(0), fraction = true, tracing = true, maxfevals = 10^8) where {dim, T, TI}
-    rmin == 0 && filterT != nothing && throw("Cannot use a filter radius of 0 in a density filter.")
+    rmin == 0 && filterT !== nothing && throw("Cannot use a filter radius of 0 in a density filter.")
     dh = problem.ch.dh
     varind = problem.varind
     black = problem.black
@@ -111,6 +112,10 @@ function (v::Volume{T})(x, grad = nothing) where {T}
     end
 
     return constrval
+end
+function ChainRulesCore.rrule(vol::Volume, x)
+    grad = similar(vol.grad)
+    return vol(x, grad), Δ -> (nothing, Δ * grad)
 end
 
 function compute_volume(cellvolumes::Vector, x, fixed_volume, varind, black, white)

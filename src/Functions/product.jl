@@ -5,7 +5,7 @@
     fevals::Int
     maxfevals::Int
 end
-TopOpt.dim(p::Product) = dim(p.f)
+Nonconvex.getdim(p::Product) = Nonconvex.getdim(p.f)
 Base.:*(f::AbstractFunction, s::Real) = s*f
 function Base.:*(s, f::AbstractFunction{T}) where {T}
     return Product(f, s, similar(f.grad, T), 0, 10^8)
@@ -25,7 +25,7 @@ end
 function (v::Product{T})(x, grad = v.grad) where {T}
     v.fevals += 1
     t = v.s * v.f(x)
-    if dim(v.f) == 1
+    if Nonconvex.getdim(v.f) == 1
         mul!(grad, v.s, v.f.grad)
         if grad !== v.grad
             v.grad .= grad

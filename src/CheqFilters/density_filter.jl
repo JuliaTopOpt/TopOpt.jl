@@ -4,14 +4,15 @@
     rmin::T
     jacobian::AbstractMatrix{T}
 end
-TopOpt.dim(f::DensityFilter) = size(f.jacobian, 1)
+Base.show(::IO, ::MIME{Symbol("text/plain")}, ::DensityFilter) = println("TopOpt density filter")
+Nonconvex.getdim(f::DensityFilter) = size(f.jacobian, 1)
 DensityFilter{true}(args...) = DensityFilter(Val(true), args...)
 DensityFilter{false}(args...) = DensityFilter(Val(false), args...)
 
+DensityFilter(solver; rmin) = DensityFilter(Val(true), solver, rmin)
 function DensityFilter(::Val{filtering}, solver::AbstractFEASolver, args...) where {filtering}
     DensityFilter(Val(filtering), whichdevice(solver), solver, args...)
 end
-
 function DensityFilter(::Val{true}, ::CPU, solver::TS, rmin::T, ::Type{TI}=Int) where {T, TI<:Integer, TS<:AbstractFEASolver}
     metadata = FilterMetadata(solver, rmin, TI)
     TM = typeof(metadata)
@@ -30,7 +31,7 @@ end
 function DensityFilter(::Val{false}, ::CPU, solver::TS, rmin::T, ::Type{TI}=Int) where {T, TS<:AbstractFEASolver, TI<:Integer}
     metadata = FilterMetadata(T, TI)
     cell_weights = T[]
-    jacobian = T[]
+    jacobian = zeros(T, 0, 0)
     return DensityFilter(Val(false), metadata, rmin, jacobian)
 end
 
@@ -44,6 +45,9 @@ end
 function TopOpt.jtvp!(out, cf::DensityFilter{true}, x, w; runf=true)
     mul!(out, cf.jacobian', w)
     return out
+end
+function ChainRulesCore.rrule(f::DensityFilter{true}, x)
+    f(x), Δ -> (nothing, f.jacobian' * Δ)
 end
 
 (cf::DensityFilter{false})(x) = x
@@ -126,7 +130,7 @@ end
     preproj
     postproj
 end
-TopOpt.dim(f::ProjectedDensityFilter) = TopOpt.dim(f.filter)
+Nonconvex.getdim(f::ProjectedDensityFilter) = Nonconvex.getdim(f.filter)
 function (cf::ProjectedDensityFilter)(x)
     if cf.preproj isa Nothing
         fx = x

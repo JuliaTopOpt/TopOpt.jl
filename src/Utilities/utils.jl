@@ -1,3 +1,33 @@
+"""
+    @params struct_def
+
+A macro that changes all fields' types to type parameters while respecting the type bounds specificied by the user. For example:
+```
+@params struct MyType{T}
+    f1::T
+    f2::AbstractVector{T}
+    f3::AbstractVector{<:Real}
+    f4
+end
+```
+will define:
+```
+struct MyType{T, T1 <: T, T2 <: AbstractVector{T}, T3 <: AbstractVector{<:Real}, T4}
+    f1::T1
+    f2::T1
+    f3::T3
+    f4::T4
+end
+```
+The default non-parameteric constructor, e.g. `MyType(f1, f2, f3, f4)`, will always work if all the type parameters used in the type header are used in the field types. Using a type parameter in the type header that is not used in the field types such as:
+```
+struct MyType{T}
+    f1
+    f2
+end
+```
+is not recommended.
+"""
 macro params(struct_expr)
     header = struct_expr.args[2]
     fields = @view struct_expr.args[3].args[2:2:end]
@@ -68,12 +98,6 @@ function Base.setindex!(ra::RaggedArray, v, i, j)
     ra.values[r[i]] = v
 end
 
-"""
-compute a index map from element indices into free nodal dofs.
-
-# Returns
-- `varind`: an `AbstractVector{Int}` of length equal to the number of elements where `varind[e]` gives the index of the decision variable corresponding to element `e`. Because some elements can be fixed to be black or white, not every element has a decision variable associated.
-"""
 function find_varind(black, white, ::Type{TI}=Int) where TI
     nel = length(black)
     nel == length(white) || throw("Black and white vectors should be of the same length")

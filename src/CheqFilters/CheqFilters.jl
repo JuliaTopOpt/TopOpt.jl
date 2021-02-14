@@ -7,6 +7,8 @@ import ..TopOpt: whichdevice, PENALTY_BEFORE_INTERPOLATION
 using Parameters: @unpack
 using SparseArrays, LinearAlgebra
 using ForwardDiff
+using Nonconvex: Nonconvex
+using ChainRulesCore
 
 export  AbstractCheqFilter,
         SensFilter,
@@ -23,6 +25,7 @@ abstract type AbstractDensityFilter <: AbstractCheqFilter end
     cell_neighbouring_nodes
     cell_node_weights
 end
+Base.show(::IO, ::MIME{Symbol("text/plain")}, ::FilterMetadata) = println("TopOpt filter metadata")
 
 function FilterMetadata(::Type{T}, ::Type{TI}) where {T, TI}
     cell_neighbouring_nodes = Vector{TI}[]

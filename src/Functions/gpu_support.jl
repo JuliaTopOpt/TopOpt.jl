@@ -7,9 +7,9 @@ using ..TopOpt: GPU
 
 ### General
 
-whichdevice(o::Union{Objective, Constraint}) = o |> getfunction |> whichdevice
+whichdevice(o::Union{Objective, IneqConstraint}) = o |> getfunction |> whichdevice
 @define_cu(Objective, :f)
-@define_cu(Constraint, :f)
+@define_cu(IneqConstraint, :f)
 whichdevice(z::Zero) = whichdevice(z.solver)
 CuArrays.cu(::Zero{T}) where T = Zero{T}()
 

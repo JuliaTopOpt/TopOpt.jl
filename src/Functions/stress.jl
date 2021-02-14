@@ -11,25 +11,25 @@ function backsolve!(solver, Mu, global_dofs)
     return solver.lhs
 end
 
-get_sigma_vm(E_e, utMu_e) = E_e * sqrt(utMu_e)
+get_sigma_vm(ρ_e, utMu_e) = ρ_e * sqrt(utMu_e)
 
-function get_E(x_e::T, penalty, E0, xmin) where T
+function get_ρ(x_e::T, penalty, xmin) where T
     if PENALTY_BEFORE_INTERPOLATION
-        return E0 * density(penalty(x_e), xmin)
+        return density(penalty(x_e), xmin)
     else
-        return E0 * penalty(density(x_e, xmin))
+        return penalty(density(x_e, xmin))
     end
 end
 
-function get_E_dE(x_e::T, penalty, E0, xmin) where T
+function get_ρ_dρ(x_e::T, penalty, xmin) where T
     d = ForwardDiff.Dual{T}(x_e, one(T))
     if PENALTY_BEFORE_INTERPOLATION
         p = density(penalty(d), xmin)
     else
         p = penalty(density(d, xmin))
     end
-    g = p.partials[1] * E0
-    return p.value * E0, g
+    g = p.partials[1]
+    return p.value, g
 end
 
 @inline function get_ϵ(u, ∇ϕ, i, j)
@@ -91,11 +91,11 @@ end
     return Tu
 end
 
-@inline function fill_T!(T, ::Val{3}, cellvalues, ν)
+@inline function fill_T!(T, ::Val{3}, cellvalues, E0, ν)
     # assumes cellvalues is initialized before passing
     dim = 3
-    temp1 = ν/(1-ν^2)
-    temp2 = ν*(1+ν)
+    temp1 = E0*ν/(1-ν^2)
+    temp2 = E0*ν*(1+ν)
     q_point = 1
     n_basefuncs = size(T, 2) ÷ dim
     @assert size(T, 1) == 6
@@ -126,11 +126,11 @@ end
     return T
 end
 
-@inline function fill_T!(T, ::Val{2}, cellvalues, ν)
+@inline function fill_T!(T, ::Val{2}, cellvalues, E0, ν)
     # assumes cellvalues is initialized before passing
     dim = 2
-    temp1 = ν/(1-ν^2)
-    temp2 = ν*(1+ν)
+    temp1 = E0*ν/(1-ν^2)
+    temp2 = E0*ν*(1+ν)
     q_point = 1
     n_basefuncs = size(T, 2) ÷ dim
     @assert size(T, 1) == 3
@@ -168,34 +168,37 @@ function StressTemp(solver)
 
     return StressTemp(VTu, Tu, Te, global_dofs)
 end
+Zygote.@nograd StressTemp
 
 function fill_Mu_utMu!(Mu, utMu, solver, stress_temp::StressTemp)
     @unpack problem, elementinfo, u = solver
-    @unpack ch, ν = problem
+    @unpack ch, ν, E = problem
     @unpack dh = ch
     @unpack VTu, Tu, Te, global_dofs = stress_temp
 
-    _fill_Mu_utMu!(Mu, utMu, dh, elementinfo, u, ν, global_dofs, Tu, VTu, Te)
+    _fill_Mu_utMu!(Mu, utMu, dh, elementinfo, u, E, ν, global_dofs, Tu, VTu, Te)
     return Mu, utMu
 end
 
-@inline function _fill_Mu_utMu!( Mu::AbstractVector, 
-                        utMu::AbstractVector{T}, 
-                        dh::DofHandler{3}, 
-                        elementinfo, 
-                        u, 
-                        ν, 
-                        global_dofs = zeros(Int, ndofs_per_cell(dh)), 
-                        Tu = zeros(T, 6),
-                        VTu = zeros(T, 6), 
-                        Te = zeros(T, 6, ndofs_per_cell(dh))
-                      ) where {T}
+@inline function _fill_Mu_utMu!(
+    Mu::AbstractVector, 
+    utMu::AbstractVector{T}, 
+    dh::DofHandler{3}, 
+    elementinfo, 
+    u,
+    E0,
+    ν, 
+    global_dofs = zeros(Int, ndofs_per_cell(dh)), 
+    Tu = zeros(T, 6),
+    VTu = zeros(T, 6), 
+    Te = zeros(T, 6, ndofs_per_cell(dh))
+) where {T}
     dim = 3
     @unpack cellvalues = elementinfo
     for (cellidx, cell) in enumerate(CellIterator(dh))
         reinit!(cellvalues, cell)
         # Same for all elements
-        fill_T!(Te, Val(3), cellvalues, ν)
+        fill_T!(Te, Val(3), cellvalues, E0, ν)
         celldofs!(global_dofs, dh, cellidx)
         @views mul!(Tu, Te, u[global_dofs])
 
@@ -214,22 +217,24 @@ end
 	return Mu, utMu
 end
 
-@inline function _fill_Mu_utMu!( Mu::AbstractVector, 
-                        utMu::AbstractVector{T}, 
-                        dh::DofHandler{2}, 
-                        elementinfo, 
-                        u, 
-                        ν, 
-                        global_dofs = zeros(Int, ndofs_per_cell(dh)), 
-                        Tu = zeros(T, 3),
-                        VTu = zeros(T, 3), 
-                        Te = zeros(T, 3, ndofs_per_cell(dh))
-                      ) where {T}
+@inline function _fill_Mu_utMu!(
+    Mu::AbstractVector, 
+    utMu::AbstractVector{T}, 
+    dh::DofHandler{2}, 
+    elementinfo, 
+    u, 
+    E0,
+    ν, 
+    global_dofs = zeros(Int, ndofs_per_cell(dh)), 
+    Tu = zeros(T, 3),
+    VTu = zeros(T, 3), 
+    Te = zeros(T, 3, ndofs_per_cell(dh))
+) where {T}
     dim = 2
     @unpack cellvalues = elementinfo
     for (cellidx, cell) in enumerate(CellIterator(dh))
         reinit!(cellvalues, cell)
-        fill_T!(Te, Val(2), cellvalues, ν)
+        fill_T!(Te, Val(2), cellvalues, E0, ν)
         celldofs!(global_dofs, dh, cellidx)
         @views mul!(Tu, Te, u[global_dofs])
 
@@ -243,6 +248,118 @@ end
         Mu[cellidx] = Te' * VTu
 	end
 	return Mu, utMu
+end
+
+@params mutable struct MacroVonMisesStress{T} <: AbstractFunction{T}
+    utMu::AbstractVector{T}
+    Mu::AbstractArray
+    sigma_vm::AbstractVector{T}
+    solver
+    global_dofs::AbstractVector{<:Integer}
+    stress_temp::StressTemp
+    fevals::Int
+    reuse::Bool
+    maxfevals::Int
+end
+function MacroVonMisesStress(solver; reuse = false, maxfevals = 10^8)
+    T = eltype(solver.u)
+    dh = solver.problem.ch.dh
+    k = ndofs_per_cell(dh)
+    N = getncells(dh.grid)
+    global_dofs = zeros(Int, k)
+    Mu = zeros(SVector{k, T}, N)
+    utMu = zeros(T, N)
+    stress_temp = StressTemp(solver)
+    sigma_vm = similar(utMu)
+
+    return MacroVonMisesStress(utMu, Mu, sigma_vm, solver, global_dofs, stress_temp, 0, reuse, maxfevals)
+end
+function (ls::MacroVonMisesStress{T})(x) where {T}
+    @unpack sigma_vm, Mu, utMu, stress_temp = ls
+    @unpack reuse, solver, global_dofs = ls
+    @unpack penalty, problem, xmin = solver
+    E0 = problem.E
+    ls.fevals += 1
+
+    @assert length(global_dofs) == ndofs_per_cell(solver.problem.ch.dh)
+    solver.vars .= x
+    if !reuse
+        solver()
+        fill_Mu_utMu!(Mu, utMu, solver, stress_temp)
+    end
+    sigma_vm .= get_sigma_vm.(get_ρ.(x, Ref(penalty), xmin), utMu)
+    return copy(sigma_vm)
+end
+function ChainRulesCore.rrule(vonmises::MacroVonMisesStress, x)
+    @unpack Mu, utMu, stress_temp = vonmises
+    @unpack reuse, solver, global_dofs = vonmises
+    @unpack penalty, problem, u, xmin = solver
+    dh = getdh(problem)
+    @unpack Kes = solver.elementinfo
+    E0 = problem.E
+    vonmises.fevals += 1
+
+    sigma_vm = vonmises(x)
+    return sigma_vm, Δ -> (nothing, begin
+        for e in 1:length(Mu)
+            ρe = get_ρ(x[e], penalty, xmin)
+            Mu[e] *= Δ[e] * ρe^2 / sigma_vm[e]
+        end
+        lhs = backsolve!(solver, Mu, global_dofs)
+        map(1:length(Δ)) do e
+            ρe, dρe = get_ρ_dρ(x[e], penalty, xmin)
+            celldofs!(global_dofs, dh, e)
+            t1 = Δ[e] * sigma_vm[e] / ρe * dρe
+            @views t2 = -dot(lhs[global_dofs], bcmatrix(Kes[e]) * u[global_dofs]) * dρe
+            return t1  + t2
+        end
+    end)
+end
+#getdim(f::MacroVonMisesStress) = length(f.sigma_vm)
+
+@params struct MicroVonMisesStress{T} <: AbstractFunction{T}
+    vonmises::MacroVonMisesStress{T}
+end
+MicroVonMisesStress(args...; kwargs...) = MicroVonMisesStress(MacroVonMisesStress(args...; kwargs...))
+function (f::MicroVonMisesStress)(x)
+    @unpack vonmises = f
+    @unpack sigma_vm, Mu, utMu, stress_temp = vonmises
+    @unpack reuse, solver, global_dofs = vonmises
+    @unpack penalty, problem, xmin = solver
+    vonmises.fevals += 1
+    @assert length(global_dofs) == ndofs_per_cell(solver.problem.ch.dh)
+    solver.vars .= x
+    if !reuse
+        solver()
+        fill_Mu_utMu!(Mu, utMu, solver, stress_temp)
+    end
+    out = sqrt.(utMu)
+    sigma_vm .= get_ρ.(x, Ref(penalty), xmin) .* out
+    return out
+end
+function ChainRulesCore.rrule(f::MicroVonMisesStress, x)
+    @unpack vonmises = f
+    @unpack Mu, utMu, stress_temp, sigma_vm = vonmises
+    @unpack reuse, solver, global_dofs = vonmises
+    @unpack penalty, problem, u, xmin = solver
+    dh = getdh(problem)
+    @unpack Kes = solver.elementinfo
+    E0 = problem.E
+    vonmises.fevals += 1
+
+    out = f(x)
+    return out, Δ -> (nothing, begin
+        for e in 1:length(Mu)
+            ρe = get_ρ(x[e], penalty, xmin)
+            Mu[e] *= Δ[e] * ρe / sigma_vm[e]
+        end
+        lhs = backsolve!(solver, Mu, global_dofs)
+        map(1:length(Δ)) do e
+            ρe, dρe = get_ρ_dρ(x[e], penalty, xmin)
+            celldofs!(global_dofs, dh, e)
+            return -dot(lhs[global_dofs], bcmatrix(Kes[e]) * u[global_dofs]) * dρe
+        end
+    end)
 end
 
 @params mutable struct GlobalStress{T} <: AbstractFunction{T}
@@ -289,16 +406,16 @@ function (gs::GlobalStress{T})(x, g) where {T}
         solver()
         fill_Mu_utMu!(Mu, utMu, solver, stress_temp)
     end
-    sigma_vm .= get_sigma_vm.(get_E.(x, Ref(penalty), E0, xmin), utMu)
+    sigma_vm .= get_sigma_vm.(get_ρ.(x, Ref(penalty), xmin), utMu)
     reduced = reducer(sigma_vm, reducer_g)
     for e in 1:length(Mu)
-        Ee = get_E(x[e], penalty, E0, xmin)
+        Ee = get_ρ(x[e], penalty, xmin) * E0
         Mu[e] *= reducer_g[e] * Ee^2 / sigma_vm[e]
     end
     lhs = backsolve!(solver, Mu, global_dofs)
 
     for ep in 1:length(g)
-        Eep, dEep = get_E_dE(x[ep], penalty, E0, xmin)
+        Eep, dEep = get_ρ_dρ(x[ep], penalty, xmin) * E0
         celldofs!(global_dofs, dh, ep)
         t1 = reducer_g[ep] * Eep / sigma_vm[ep] * dEep * utMu[ep]
         @views t2 = -dEep * dot(lhs[global_dofs], bcmatrix(Kes[ep]) * u[global_dofs])

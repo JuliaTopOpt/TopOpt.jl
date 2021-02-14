@@ -8,7 +8,7 @@ function Base.log(f::AbstractFunction{T}) where {T}
     return Log(f, similar(f.grad, T), 0, 10^8)
 end
 
-TopOpt.dim(l::Log) = dim(l.f)
+Nonconvex.getdim(l::Log) = Nonconvex.getdim(l.f)
 @inline function Base.getproperty(vf::Log, f::Symbol)
     f === :f && return getfield(vf, :f)
     f === :grad && return getfield(vf, :grad)
@@ -27,7 +27,7 @@ end
 function (v::Log{T})(x, grad = v.grad) where {T}
     v.fevals += 1
     t = v.f(x) .+ sqrt(eps(T))
-    if dim(v.f) == 1
+    if Nonconvex.getdim(v.f) == 1
         grad .= v.f.grad ./ t
         if grad !== v.grad
             v.grad .= grad

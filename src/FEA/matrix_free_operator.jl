@@ -5,6 +5,7 @@ abstract type AbstractMatrixOperator{Tconv} end
     f
     conv::Tconv
 end
+Base.show(::IO, ::MIME{Symbol("text/plain")}, ::MatrixOperator) = println("TopOpt matrix linear operator")
 LinearAlgebra.mul!(c, op::MatrixOperator, b) = mul!(c, op.K, b)
 Base.size(op::MatrixOperator, i...) = size(op.K, i...)
 Base.eltype(op::MatrixOperator) = eltype(op.K)
@@ -22,6 +23,7 @@ LinearAlgebra.:*(op::MatrixOperator, b) = mul!(similar(b), op.K, b)
     penalty
     conv::Tconv
 end
+Base.show(::IO, ::MIME{Symbol("text/plain")}, ::MatrixFreeOperator) = println("TopOpt matrix-free linear operator")
 Base.size(op::MatrixFreeOperator) = (size(op, 1), size(op, 2))
 Base.size(op::MatrixFreeOperator, i) = 1 <= i <= 2 ? length(op.elementinfo.fixedload) : 1
 Base.eltype(op::MatrixFreeOperator{<:Any, T}) where {T} = T

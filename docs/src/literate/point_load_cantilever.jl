@@ -27,35 +27,46 @@ rmin = 4.0; # density filter radius
 
 # ### Define a finite element solver
 penalty = TopOpt.PowerPenalty(3.0)
-solver = FEASolver(Displacement, Direct, problem, xmin = xmin,
-    penalty = penalty);
+solver = FEASolver(
+    Displacement, Direct, problem, xmin = xmin, penalty = penalty,
+)
 
 # ### Define compliance objective
-obj = Objective(TopOpt.Compliance(problem, solver, filterT = DensityFilter,
-    rmin = rmin, tracing = true, logarithm = false));
+comp = TopOpt.Compliance(problem, solver)
+filter = DensityFilter(solver, rmin = rmin)
+obj = Objective(x -> comp(filter(x)))
 
 # ### Define volume constraint
-constr = Constraint(TopOpt.Volume(problem, solver, filterT = DensityFilter, rmin = rmin), V);
+volfrac = TopOpt.Volume(problem, solver)
+constr = IneqConstraint(
+    x -> volfrac(filter(x)),
+    V,
+)
 
 # ### Define subproblem optimizer
-mma_options = options = MMA.Options(maxiter = 3000, 
-    tol = MMA.Tolerances(kkttol = 0.001))
-convcriteria = MMA.KKTCriteria()
-optimizer = MMAOptimizer(obj, constr, MMA.MMA87(),
-    ConjugateGradient(), options = mma_options,
-    convcriteria = convcriteria);
+mma_options = options = Nonconvex.MMAOptions(
+    maxiter = 3000, tol = Nonconvex.Tolerance(kkt = 0.001),
+)
+convcriteria = Nonconvex.KKTCriteria()
+x0 = fill(1.0, length(solver.vars))
+optimizer = Optimizer(
+    obj, constr, x0, Nonconvex.MMA87(),
+    options = mma_options, convcriteria = convcriteria,
+)
 
 # ### Define SIMP optimizer
-simp = SIMP(optimizer, penalty.p);
+simp = SIMP(optimizer, solver, penalty.p);
 
 # ### Solve
-x0 = fill(1.0, length(solver.vars))
 result = simp(x0);
 
 # ### Visualize the result using Makie.jl
 using TopOpt.TopOptProblems.Visualization: visualize
-fig = visualize(problem; topology=result.topology, 
-    default_exagg_scale=0.07, scale_range=10.0, vector_linewidth=3, vector_arrowsize=0.5)
+
+fig = visualize(
+    problem; topology = result.topology, default_exagg_scale = 0.07,
+    scale_range = 10.0, vector_linewidth = 3, vector_arrowsize = 0.5,
+)
 Makie.display(fig)
 # or convert it to a Mesh
 # result_mesh = GeometryBasics.Mesh(problem, result.topology);

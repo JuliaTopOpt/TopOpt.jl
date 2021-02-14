@@ -15,7 +15,7 @@ end
     return setfield!(vf, f, v)
 end
 
-function project(c::Constraint{<:Any, <:BinPenalty}, x)
+function project(c::IneqConstraint{<:Any, <:BinPenalty}, x)
     return round.(x)
 end
 

@@ -3,7 +3,7 @@
     w::T
     grad::AbstractVector{T}
 end
-TopOpt.dim(::MeanVar) = 1
+Nonconvex.getdim(::MeanVar) = 1
 MeanVar(block::AbstractFunction{T}, w::T) where {T} = MeanVar(block, w, zeros(T, TopOpt.getnvars(block)))
 @forward_property MeanVar block
 
@@ -28,7 +28,7 @@ end
     w::T
     grad::AbstractVector{T}
 end
-TopOpt.dim(::MeanStd) = 1
+Nonconvex.getdim(::MeanStd) = 1
 MeanStd(block::AbstractFunction{T}, w::T) where {T} = MeanStd(block, w, zeros(T, TopOpt.getnvars(block)))
 @forward_property MeanStd block
 
@@ -53,7 +53,7 @@ end
     f
     grad::AbstractVector{T}
 end
-TopOpt.dim(::ScalarValued) = 1
+Nonconvex.getdim(::ScalarValued) = 1
 ScalarValued(block::AbstractFunction{T}, f) where {T} = ScalarValued(block, f, zeros(T, TopOpt.getnvars(block)))
 @forward_property ScalarValued block
 

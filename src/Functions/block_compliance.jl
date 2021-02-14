@@ -10,7 +10,7 @@ end
 function BlockCompliance(
     problem::MultiLoad, 
     solver::AbstractDisplacementSolver, 
-    args...; 
+    args...;
     method = :exact,
     sample_once = true,
     nv = nothing,
@@ -65,9 +65,19 @@ function (bc::BlockCompliance{T})(x) where {T}
     return val
 end
 
+function ChainRulesCore.rrule(bc::BlockCompliance, x)
+    return bc(x), Δ -> begin
+        @assert Nonconvex.getdim(bc) == length(Δ)
+        newΔ = similar(Δ, length(x))
+        newΔ .= 0
+        jtvp!(newΔ, bc, x, Δ; runf=false)
+        return (nothing, newΔ)
+    end
+end
+
 function TopOpt.jtvp!(out, bc::BlockCompliance, x, w; runf=true)
     @assert length(out) == length(x)
-    @assert dim(bc) == length(w)
+    @assert Nonconvex.getdim(bc) == length(w)
     @unpack compliance = bc
     @unpack cheqfilter, solver = compliance
     @unpack elementinfo = solver
@@ -84,10 +94,9 @@ function TopOpt.jtvp!(out, bc::BlockCompliance, x, w; runf=true)
     return out
 end
 
-TopOpt.dim(f::BlockCompliance) = length(f.val)
+Nonconvex.getdim(f::BlockCompliance) = length(f.val)
 TopOpt.getnvars(f::BlockCompliance) = length(f.compliance.grad)
 Utilities.getpenalty(c::BlockCompliance) = c.compliance |> getsolver |> getpenalty
-BlockConstraint(f::BlockCompliance, s::Number) = BlockConstraint(f, s, dim(f))
 
 function compute_block_compliance(ec::BlockCompliance, m::ExactDiagonal)
     compute_exact_bc(ec, m.F, m.Y)

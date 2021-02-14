@@ -20,7 +20,7 @@ end
 
 function LinAggregation(f::AbstractFunction{T}, weights::AbstractVector{T}; maxfevals = 10^8) where {T}
     grad = similar(f.grad)
-    fval = similar(grad, TopOpt.dim(f))
+    fval = similar(grad, Nonconvex.getdim(f))
     return LinAggregation(f, fval, weights, grad, 0, maxfevals)
 end
 # To be defined efficiently for every block constraint
@@ -46,11 +46,11 @@ end
 end
 function QuadAggregation(f::AbstractFunction{T}, weight::T; max=false, maxfevals=10^8) where {T}
     grad = similar(f.grad)
-    fval = similar(grad, TopOpt.dim(f))
+    fval = similar(grad, Nonconvex.getdim(f))
     return QuadAggregation(f, fval, weight, max, grad, 0, maxfevals)
 end
 function (v::QuadAggregation{T})(x, grad = v.grad) where {T}
-    @assert TopOpt.dim(v.f) == length(v.fval)
+    @assert Nonconvex.getdim(v.f) == length(v.fval)
     v.fevals += 1
     v.fval .= v.f(x)
     val = v.max ? max.(v.fval, 0) : v.fval
@@ -73,11 +73,11 @@ end
 end
 function LinQuadAggregation(f::AbstractFunction{T}, lin_weights::AbstractVector{T}, quad_weight::T; max=false, maxfevals=10^8) where {T}
     grad = similar(f.grad)
-    fval = similar(grad, TopOpt.dim(f))
+    fval = similar(grad, Nonconvex.getdim(f))
     return LinQuadAggregation(f, fval, lin_weights, quad_weight, max, grad, 0, maxfevals)
 end
 function (v::LinQuadAggregation{T})(x, grad = v.grad) where {T}
-    @assert TopOpt.dim(v.f) == length(v.fval) == length(v.lin_weights)
+    @assert Nonconvex.getdim(v.f) == length(v.fval) == length(v.lin_weights)
     v.fevals += 1
     v.fval .= v.f(x)
     val = v.max ? max.(v.fval, 0) : v.fval

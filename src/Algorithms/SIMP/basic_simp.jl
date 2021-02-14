@@ -26,37 +26,35 @@ function Base.any(f, fevals::FunctionEvaluations)
     f(fevals.obj) || any(f, fevals.constr)
 end
 
-@params mutable struct SIMPResult{T, TF <: FunctionEvaluations}
+@params mutable struct SIMPResult{T}
     topology::AbstractVector{T}
     objval::T
-    fevals::TF
     convstate
-    penalty_trace::AbstractVector{Pair{T, TF}}
     nsubproblems::Int
 end
+Base.show(::IO, ::MIME{Symbol("text/plain")}, ::SIMPResult) = println("TopOpt SIMP result")
 
 function NewSIMPResult(::Type{T}, optimizer, ncells) where {T}
-    FunctionEvaluations(optimizer)
-    fevals = zero(FunctionEvaluations(optimizer))
-    SIMPResult(fill(T(NaN), ncells), T(NaN), fevals, MMA.ConvergenceState(), Pair{T, typeof(fevals)}[], 0)
+    return SIMPResult(fill(T(NaN), ncells), T(NaN), Nonconvex.ConvergenceState(), 0)
 end
 
 @params mutable struct SIMP{T} <: AbstractSIMP
     optimizer
     penalty
     prev_penalty
+    solver
     result::SIMPResult{T}
     tracing::Bool
 end
+Base.show(::IO, ::MIME{Symbol("text/plain")}, ::SIMP) = println("TopOpt SIMP algorithm")
 
-function SIMP(optimizer, p::T; tracing=true) where T
-    penalty = getpenalty(optimizer)
+function SIMP(optimizer, solver, p::T; tracing=true) where T
+    penalty = getpenalty(solver)
     penalty = setpenalty(penalty, p)
     prev_penalty = setpenalty(penalty, NaN)
-    ncells = getncells(getsolver(optimizer.obj).problem)
+    ncells = getncells(solver.problem)
     result = NewSIMPResult(T, optimizer, ncells)
-
-    return SIMP(optimizer, penalty, prev_penalty, result, tracing)
+    return SIMP(optimizer, penalty, prev_penalty, solver, result, tracing)
 end
 
 Utilities.getpenalty(s::AbstractSIMP) = s.penalty
@@ -64,19 +62,19 @@ function Utilities.setpenalty!(s::AbstractSIMP, p::Number)
     penalty = s.penalty
     s.prev_penalty = penalty
     s.penalty = setpenalty(penalty, p)
-    setpenalty!(s.optimizer, p)
+    setpenalty!(s.solver, p)
 end
 
-function (s::SIMP{T, TO})(x0=s.optimizer.obj.f.solver.vars, prev_fevals = getfevals(s.optimizer)) where {T, TO <: MMAOptimizer}
-    setpenalty!(s.optimizer, s.penalty.p)
+function (s::SIMP{T, TO})(x0 = s.solver.vars) where {T, TO <: Optimizer}
+    setpenalty!(s.solver, s.penalty.p)
     mma_results = s.optimizer(x0)
-    update_result!(s, mma_results, prev_fevals)
+    update_result!(s, mma_results)
     return s.result
 end
 
-function (s::SIMP{T, TO})(workspace::MMA.Workspace, prev_fevals = getfevals(s.optimizer)) where {T, TO <: MMAOptimizer}
+function (s::SIMP{T, TO})(workspace::Nonconvex.Workspace) where {T, TO <: Optimizer}
     mma_results = s.optimizer(workspace)
-    update_result!(s, mma_results, prev_fevals)
+    update_result!(s, mma_results)
     return s.result
 end
 
@@ -93,26 +91,15 @@ function get_topologies(problem, trace::TopOptTrace)
     return topologies
 end
 
-function update_result!(s::SIMP{T}, mma_results, prev_fevals) where T
+function update_result!(s::SIMP{T}, mma_results) where T
     # Postprocessing
     @unpack result, optimizer = s
-    @unpack obj = optimizer
-    @unpack problem = getsolver(obj)
+    @unpack problem = s.solver
     @unpack black, white, varind = problem
     nel = getncells(problem)
 
     update_topology!(result.topology, black, white, mma_results.minimizer, varind)
     result.objval = mma_results.minimum
-    
-    new_fevals = getfevals(optimizer)
-    extra_fevals = new_fevals - prev_fevals
-    result.fevals += extra_fevals
-    if s.tracing
-        push!(result.penalty_trace, (getpenalty(s).p => extra_fevals))
-    end
-    if all(x -> x > 0, extra_fevals)
-        result.nsubproblems += 1
-    end
     result.convstate = deepcopy(mma_results.convstate)
     return result
 end
@@ -127,6 +114,5 @@ function update_topology!(topology, black, white, x, varind)
             topology[i] = x[varind[i]]
         end
     end
-
-    return
+    return topology
 end

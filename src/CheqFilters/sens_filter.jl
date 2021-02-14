@@ -7,6 +7,7 @@
     last_grad::TV
     cell_weights::TV
 end
+Base.show(::IO, ::MIME{Symbol("text/plain")}, ::SensFilter) = println("TopOpt sensitivity filter")
 
 SensFilter{true}(args...) = SensFilter(Val(true), args...)
 SensFilter{false}(args...) = SensFilter(Val(false), args...)

@@ -16,6 +16,7 @@
     preconditioner_initialized::Ref{Bool}
     conv
 end
+Base.show(::IO, ::MIME{Symbol("text/plain")}, x::PCGDisplacementSolver) = println("TopOpt preconditioned conjugate gradient iterative solver")
 function PCGDisplacementSolver(sp::StiffnessTopOptProblem{dim, T};
     conv = DefaultCriteria(),
     xmin=T(1)/1000, 

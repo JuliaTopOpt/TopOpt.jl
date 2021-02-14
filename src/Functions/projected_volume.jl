@@ -13,7 +13,7 @@
     fevals::Int
     maxfevals::Int
 end
-TopOpt.dim(::ProjectedVolume) = 1
+Nonconvex.getdim(::ProjectedVolume) = 1
 @inline function Base.getproperty(vf::ProjectedVolume, f::Symbol)
     f === :reuse && return false
     return getfield(vf, f)

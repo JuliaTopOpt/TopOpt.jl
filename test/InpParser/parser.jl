@@ -1,4 +1,4 @@
-using TopOpt.TopOptProblems.IO.INP
+using TopOpt.TopOptProblems.InputOutput.INP
 using JuAFEM
 
 using Test

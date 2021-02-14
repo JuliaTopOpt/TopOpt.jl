@@ -21,8 +21,9 @@ end
     sens_tol::T
     result::BESOResult{T}
 end
+Base.show(::IO, ::MIME{Symbol("text/plain")}, ::BESO) = println("TopOpt BESO algorithm")
 
-function BESO(obj::Objective{<:Any, <:Compliance}, constr::Constraint{<:Any, <:Volume}; maxiter = 200, tol = 0.0001, p = 3.0, er = 0.02, sens_tol = tol/100, k = 10)
+function BESO(obj::Objective{<:Any, <:Compliance}, constr::IneqConstraint{<:Any, <:Volume}; maxiter = 200, tol = 0.0001, p = 3.0, er = 0.02, sens_tol = tol/100, k = 10)
     T = typeof(obj.comp)
     topology = zeros(T, getncells(obj.problem.ch.dh.grid))
     result = BESOResult(topology, T(NaN), T(NaN), false, 0)
@@ -39,7 +40,7 @@ end
 
 update_penalty!(b::BESO, p::Number) = (b.p = p)
 
-function (b::BESO{T, TO, TC})(x0 = copy(b.obj.solver.vars)) where {TO<:Objective{<:Any, <:Compliance}, TC<:Constraint{<:Any, <:Volume}, T}
+function (b::BESO{T, TO, TC})(x0 = copy(b.obj.solver.vars)) where {TO<:Objective{<:Any, <:Compliance}, TC<:IneqConstraint{<:Any, <:Volume}, T}
     @unpack sens, old_sens, er, tol, maxiter = b
     @unpack obj_trace, topology, sens_tol, vars = b    
     @unpack varind, black, white = b.obj.f.problem

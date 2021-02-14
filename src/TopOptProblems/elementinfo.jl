@@ -16,7 +16,6 @@
 An instance of the `ElementFEAInfo` type stores element information such as:
 - `Kes`: the element stiffness matrices,
 - `fes`: the element load vectors,
-- `fixedload`: TODO,
 - `cellvolumes`: the element volumes,
 - `cellvalues` and `facevalues`: two `JuAFEM` types that facilitate cell and face iteration and queries.
 - `metadata`: that stores degree of freedom (dof) to node mapping, dof to cell mapping, etc.
@@ -97,11 +96,13 @@ end
 
 An instance of `GlobalFEAInfo` hosts the global stiffness matrix `K`, the load vector `f` and the cholesky decomposition of the `K`, `cholK`.
 """
-mutable struct GlobalFEAInfo{T, TK<:AbstractMatrix{T}, Tf<:AbstractVector{T}, Tchol}
-    K::TK
-    f::Tf
-    cholK::Tchol
+@params mutable struct GlobalFEAInfo{T}
+    K::AbstractMatrix{T}
+    f::AbstractVector{T}
+    cholK
+    qrK
 end
+Base.show(::IO, ::MIME{Symbol("text/plain")}, ::GlobalFEAInfo) = println("TopOpt global FEA information")
 
 """
     GlobalFEAInfo(::Type{T}=Float64) where {T}
@@ -110,7 +111,7 @@ Constructs an empty instance of `GlobalFEAInfo` where the field `K` is an empty 
 """
 GlobalFEAInfo(::Type{T}=Float64) where {T} = GlobalFEAInfo{T}()
 function GlobalFEAInfo{T}() where {T}
-    return GlobalFEAInfo(sparse(zeros(T, 0, 0)), zeros(T, 0), cholesky(one(T)))
+    return GlobalFEAInfo(sparse(zeros(T, 0, 0)), zeros(T, 0), cholesky(one(T)), qr(one(T)))
 end
 
 """
@@ -128,8 +129,10 @@ function GlobalFEAInfo(
     f,
 )
     chol = cholesky(spdiagm(0=>ones(size(K, 1))))
-    return GlobalFEAInfo{eltype(K), typeof(K), typeof(f), typeof(chol)}(K, f, chol)
+    qrfact = qr(spdiagm(0=>ones(size(K, 1))))
+    return GlobalFEAInfo{eltype(K), typeof(K), typeof(f), typeof(chol), typeof(qrfact)}(K, f, chol, qrfact)
 end
+
 """
     GlobalFEAInfo(K, f)
 
@@ -137,7 +140,8 @@ Constructs an instance of `GlobalFEAInfo` with global stiffness matrix `K` and l
 """
 function GlobalFEAInfo(K, f)
     chol = cholesky(Matrix{eltype(K)}(I, size(K)...))
-    return GlobalFEAInfo{eltype(K), typeof(K), typeof(f), typeof(chol)}(K, f, chol)
+    qrfact = qr(Matrix{eltype(K)}(I, size(K)...))
+    return GlobalFEAInfo(K, f, chol, qrfact)
 end
 
 """

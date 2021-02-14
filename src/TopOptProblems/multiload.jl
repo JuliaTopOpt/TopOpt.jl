@@ -88,7 +88,7 @@ function get_surface_dofs(problem::StiffnessTopOptProblem)
         append!(surface_node_inds, nodeinds)
     end
     unique!(surface_node_inds)
-    return node_dofs[:, surface_node_inds]
+    return setdiff(node_dofs[:, surface_node_inds], problem.ch.prescribed_dofs)
 end
 
 function generate_random_loads(
