@@ -17,19 +17,6 @@ export  Objective,
         Compliance,
         MeanCompliance,
         BlockCompliance,
-        MeanVar,
-        MeanStd,
-        ScalarValued,
-        Zero,
-        Sum,
-        Product,
-        Log,
-        BinPenalty,
-        LinAggregation,
-        QuadAggregation,
-        QuadMaxAggregation,
-        LinQuadAggregation,
-        LinQuadMaxAggregation,
         AbstractFunction,
         getfevals,
         getmaxfevals,
@@ -154,11 +141,6 @@ end
 include("compliance.jl")
 include("volume.jl")
 include("stress.jl")
-include("integrality_penalty.jl")
-include("sum.jl")
-include("product.jl")
-include("log.jl")
-include("lin_quad_aggregation.jl")
 include("trace.jl")
 include("mean_compliance.jl")
 include("block_compliance.jl")
