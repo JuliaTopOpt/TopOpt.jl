@@ -2,7 +2,9 @@ using Test
 using TopOpt
 using TopOpt.TopOptProblems: getE
 using Base.Iterators
-using TopOpt.TrussTopOptProblems.TrussVisualization: visualize
+if get(ENV, "CI", nothing) != "true"
+    @eval using TopOpt.TrussTopOptProblems.TrussVisualization: visualize
+end
 
 ins_dir = joinpath(@__DIR__, "instances", "ground_meshes");
 
