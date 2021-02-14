@@ -210,7 +210,7 @@ end
 		VTu[6] = 3*Tu[6]
 
         utMu_e = dot(Tu, VTu)
-        @assert utMu_e > 0
+        @assert utMu_e >= 0
         utMu[cellidx] = utMu_e
         Mu[cellidx] = Te' * VTu
 	end
@@ -243,7 +243,10 @@ end
 		VTu[3] = 3*Tu[3]
 
         utMu_e = dot(Tu, VTu)
-        @assert utMu_e > 0
+        if isinf(utMu_e) || isnan(utMu_e)
+            @show utMu_e, u
+        end
+        @assert utMu_e >= 0
         utMu[cellidx] = utMu_e
         Mu[cellidx] = Te' * VTu
 	end

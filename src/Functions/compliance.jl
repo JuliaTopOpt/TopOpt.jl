@@ -47,7 +47,6 @@ function (o::Compliance{T})(x, grad = o.grad) where {T}
         #    grad .= o.grad
         #    return o.comp
         #end
-
         penalty = getpenalty(o)
         if o.reuse
             if !tracing
@@ -56,6 +55,7 @@ function (o::Compliance{T})(x, grad = o.grad) where {T}
         else
             o.fevals += 1
             setpenalty!(solver, penalty.p)
+            solver.vars .= x
             solver()
         end
         obj = compute_compliance(cell_comp, grad, cell_dofs, Kes, u, 
@@ -101,6 +101,7 @@ end
 function compute_compliance(cell_comp::Vector{T}, grad, cell_dofs, Kes, u, 
                             black, white, varind, x, penalty, xmin) where {T}
     obj = zero(T)
+    grad .= 0
     @inbounds for i in 1:size(cell_dofs, 2)
         cell_comp[i] = zero(T)
         Ke = rawmatrix(Kes[i])

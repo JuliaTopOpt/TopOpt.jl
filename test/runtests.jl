@@ -1,15 +1,18 @@
 using Test, SafeTestsets
 
 @safetestset "InpParser Tests" begin
-    include("InpParser/parser.jl")
+    include("inp_parser/parser.jl")
 end
 @safetestset "TopOptProblems Tests" begin
-    include("TopOptProblems/problems.jl")
-    include("TopOptProblems/metadata.jl")
+    include("topopt_problems/problems.jl")
+    include("topopt_problems/metadata.jl")
+end
+@safetestset "Functions" begin
+    include("functions.jl")
 end
 @safetestset "Truss Problem Tests" begin
-    include("TrussTopOptProblems/test_problem.jl")
-    include("TrussTopOptProblems/test_fea.jl")
+    include("truss_topopt_problems/test_problem.jl")
+    include("truss_topopt_problems/test_fea.jl")
 end
 @safetestset "Examples" begin
     @safetestset "CSIMP" begin
