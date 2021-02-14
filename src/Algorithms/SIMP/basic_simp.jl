@@ -1,31 +1,3 @@
-@params struct FunctionEvaluations
-    obj::Int
-    constr
-end
-function FunctionEvaluations(optimizer)
-    obj_fevals = getfevals(optimizer.obj)
-    constr_fevals = getfevals.(optimizer.constr)
-    return FunctionEvaluations(obj_fevals, constr_fevals)
-end
-
-Base.zero(t::FunctionEvaluations) = FunctionEvaluations(zero(t.obj), zero.(t.constr))
-for f in (:-, :+)
-    @eval begin
-        function Base.$(f)(f1::FunctionEvaluations, f2::FunctionEvaluations)
-            obj_fevals = $(f)(f1.obj, f2.obj)
-            constr_fevals = $(f).(f1.constr, f2.constr)
-            return FunctionEvaluations(obj_fevals, constr_fevals)
-        end
-    end
-end
-Base.broadcastable(f::FunctionEvaluations) = Ref(f)
-function Base.all(f, fevals::FunctionEvaluations)
-    f(fevals.obj) && all(f, fevals.constr)
-end
-function Base.any(f, fevals::FunctionEvaluations)
-    f(fevals.obj) || any(f, fevals.constr)
-end
-
 @params mutable struct SIMPResult{T}
     topology::AbstractVector{T}
     objval::T

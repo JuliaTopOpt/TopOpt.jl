@@ -190,7 +190,6 @@ function (c_simp::ContinuationSIMP)(
     @unpack workspace = optimizer 
     @unpack options = workspace
 
-    #setreuse!(optimizer, false)
     update!(c_simp, 1)
     # Does the first function evaluation
     reset!(workspace, x0)
@@ -203,8 +202,6 @@ function (c_simp::ContinuationSIMP)(
     original_maxiter = options.maxiter
     for i in 1:c_simp.options.steps
         c_simp.callback(i)
-        #reuse = i == c_simp.options.steps ? false : c_simp.options.reuse
-        #setreuse!(optimizer, reuse)
         update!(c_simp, i+1)
         reset!(workspace)
 
@@ -212,11 +209,7 @@ function (c_simp::ContinuationSIMP)(
         workspace.options.maxiter = maxiter
         r = c_simp.simp(workspace)
 
-        #if any(getreuse(optimizer))
-        #    undo_values!(workspace, f_x_previous, g_previous)
-        #end
         if !workspace.solution.convstate.converged
-            #setreuse!(c_simp.simp.optimizer, false)
             while !workspace.solution.convstate.converged
                 maxiter += 1
                 workspace.options.maxiter = maxiter
