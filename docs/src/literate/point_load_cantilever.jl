@@ -9,8 +9,7 @@
 # Now we solve the problem in JuAFEM. What follows is a program spliced with comments.
 #md # The full program, without comments, can be found in the next [section](@ref point-load-cantilever-plain-program).
 
-using TopOpt, Makie
-import GeometryBasics
+using TopOpt, Makie, GeometryBasics
 
 # ### Define the problem
 E = 1.0 # Young’s modulus

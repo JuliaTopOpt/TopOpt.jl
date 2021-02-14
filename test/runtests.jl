@@ -18,7 +18,7 @@ end
     @safetestset "Global Stress" begin
         include("examples/stress.jl")
     end
-    @safetestset "More examples" begin
-        include("examples/test_examples.jl")
-    end
+    #@safetestset "More examples" begin
+    #    include("examples/test_examples.jl")
+    #end
 end
