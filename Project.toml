@@ -44,6 +44,7 @@ TimerOutputs = "a759f4b9-e2f1-59dc-863e-4aeb61b1ea8f"
 Tracker = "9f7883ad-71c0-57eb-9f7f-b5c9e6d3789c"
 VTKDataTypes = "10d27dd1-1d0f-5a4c-b178-bd2d0045a217"
 WriteVTK = "64499a7a-5c06-52f2-abe2-ccb03c286192"
+Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
 
 [compat]
 julia = "1"
