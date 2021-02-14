@@ -25,3 +25,6 @@ jobs:
           arch: ${{ matrix.arch }}
       - uses: julia-actions/julia-buildpkg@latest
       - uses: julia-actions/julia-runtest@latest
+      - uses: codecov/codecov-action@v1
+        with:
+          file: lcov.info
