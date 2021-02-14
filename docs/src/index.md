@@ -17,7 +17,7 @@ In Julia v1.0+ you can install packages using Julia's package manager as follows
 ```julia
 using Pkg
 pkg"add https://github.com/yijiangh/Tensors.jl.git#master"
-pkg"add https://github.com/yijiangh/JuAFEM.jl.git"
+pkg"add https://github.com/yijiangh/JuAFEM.jl.git#master"
 pkg"add https://github.com/mohamed82008/VTKDataTypes.jl#master"
 pkg"add https://github.com/mohamed82008/Nonconvex.jl#master"
 pkg"add https://github.com/mohamed82008/TopOpt.jl#master"
