@@ -4,6 +4,7 @@ using TopOpt
 E = 1.0 # Young’s modulus
 v = 0.3 # Poisson’s ratio
 f = 1.0 # downward force
+rmin = 3.0
 
 problems = Any[
     PointLoadCantilever(Val{:Linear}, (60, 20), (1.0, 1.0), E, v, f), 
