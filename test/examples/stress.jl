@@ -1,5 +1,5 @@
 # using Revise
-using TopOpt
+using TopOpt, LinearAlgebra
 
 E = 1.0 # Young’s modulus
 v = 0.3 # Poisson’s ratio
