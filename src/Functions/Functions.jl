@@ -144,6 +144,5 @@ include("stress.jl")
 include("trace.jl")
 include("mean_compliance.jl")
 include("block_compliance.jl")
-include("mean_var_std.jl")
 
 end
