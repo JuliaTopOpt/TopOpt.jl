@@ -161,7 +161,7 @@ function compute_inner(inner::AbstractVector{T}, u1, u2, cell_dofs, Kes,
             else
                 p = penalty(density(d, xmin))
             end
-            inner[varind[i]] = -p.partials[1] * cell_comp[i]
+            inner[varind[i]] = -p.partials[1] * cell_comp
         end
     end
 
