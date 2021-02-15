@@ -13,6 +13,7 @@ An element stiffness matrix. `matrix` is the unconstrained element stiffness mat
     meandiag::T
 end
 ElementMatrix(matrix, mask) = ElementMatrix(matrix, mask, sumdiag(matrix)/size(matrix, 1))
+Base.show(::IO, ::MIME{Symbol("text/plain")}, ::ElementMatrix) = println("TopOpt element matrix")
 
 """
     rawmatrix(m::ElementMatrix)

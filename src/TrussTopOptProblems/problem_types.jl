@@ -162,4 +162,4 @@ JuAFEM.faces(c::Line2d) = ((c.nodes[1],c.nodes[2]),)
 JuAFEM.edges(c::Line3d) = ((c.nodes[1],c.nodes[2]),) 
 
 JuAFEM.default_interpolation(::Union{Type{Line},Type{Line2d},Type{Line3d}}) = Lagrange{1,RefCube,1}()
-JuAFEM.default_interpolation(::Type{QuadraticLine}) = Lagrange{1,RefCube,2}()
+#JuAFEM.default_interpolation(::Type{QuadraticLine}) = Lagrange{1,RefCube,2}()

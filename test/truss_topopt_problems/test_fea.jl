@@ -6,7 +6,9 @@ using JuAFEM: cellid, getcoordinates, CellIterator
 using TopOpt
 using TopOpt.TopOptProblems: boundingbox, nnodespercell, getgeomorder, getmetadata, getdh, getE, getdim
 using TopOpt.TrussTopOptProblems: getA, default_quad_order
-using TopOpt.TrussTopOptProblems.TrussVisualization: visualize
+if get(ENV, "CI", nothing) != "true"
+    using TopOpt.TrussTopOptProblems.TrussVisualization: visualize
+end
 
 include("utils.jl")
 
@@ -62,8 +64,10 @@ ins_dir = joinpath(@__DIR__, "instances", "fea_examples");
     solver = FEASolver(Displacement, Direct, problem)
     solver()
 
-    ## TODO plot analysis result with
-    fig = visualize(problem, solver.u)
+    if get(ENV, "CI", nothing) != "true"
+        ## TODO plot analysis result with
+        fig = visualize(problem, solver.u)
+    end
 
     # we use kN for force and m for length
     # thus, pressure/modulus is in kN/m

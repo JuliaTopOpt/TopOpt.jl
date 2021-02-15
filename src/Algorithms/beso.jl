@@ -6,9 +6,10 @@
     fevals::Int
 end
 
-@params struct BESO{T, TO, TC} <: TopOptAlgorithm 
-    obj::TO
-    constr::TC
+@params struct BESO{T} <: TopOptAlgorithm 
+    comp::Compliance
+    vol::IneqConstraint{<:Any, <:Volume}
+    filter
     vars::Vector{T}
     topology::Vector{T}
     er::T
@@ -21,30 +22,35 @@ end
     sens_tol::T
     result::BESOResult{T}
 end
+Base.show(::IO, ::MIME{Symbol("text/plain")}, ::BESO) = println("TopOpt BESO algorithm")
 
-function BESO(obj::Objective{<:Any, <:Compliance}, constr::Constraint{<:Any, <:Volume}; maxiter = 200, tol = 0.0001, p = 3.0, er = 0.02, sens_tol = tol/100, k = 10)
-    T = typeof(obj.comp)
-    topology = zeros(T, getncells(obj.problem.ch.dh.grid))
+function BESO(comp::Compliance, vol::IneqConstraint{<:Any, <:Volume}, filter; maxiter = 200, tol = 0.0001, p = 3.0, er = 0.02, sens_tol = tol/100, k = 10)
+    solver = comp.solver
+    T = eltype(solver.vars)
+    solver = comp.solver
+    topology = zeros(T, getncells(solver.problem.ch.dh.grid))
     result = BESOResult(topology, T(NaN), T(NaN), false, 0)
-    black = obj.problem.black
-    white = obj.problem.white
+    black = solver.problem.black
+    white = solver.problem.white
     nvars = length(topology) - sum(black) - sum(white)
     vars = zeros(T, nvars)
     sens = zeros(T, nvars)
     old_sens = zeros(T, nvars)
     obj_trace = zeros(MVector{k, T})
 
-    return BESO(obj, constr, vars, topology, er, maxiter, p, sens, old_sens, obj_trace, tol, sens_tol, result)
+    return BESO(comp, vol, filter, vars, topology, er, maxiter, p, sens, old_sens, obj_trace, tol, sens_tol, result)
 end
 
 update_penalty!(b::BESO, p::Number) = (b.p = p)
 
-function (b::BESO{T, TO, TC})(x0 = copy(b.obj.solver.vars)) where {TO<:Objective{<:Any, <:Compliance}, TC<:Constraint{<:Any, <:Volume}, T}
+function (b::BESO)(x0 = copy(b.obj.solver.vars))
+    T = eltype(x0)
     @unpack sens, old_sens, er, tol, maxiter = b
-    @unpack obj_trace, topology, sens_tol, vars = b    
-    @unpack varind, black, white = b.obj.f.problem
-    @unpack total_volume, cellvolumes = b.constr.f
-    V = b.constr.s
+    @unpack obj_trace, topology, sens_tol, vars = b
+    @unpack solver = b.comp
+    @unpack varind, black, white = solver.problem
+    @unpack total_volume, cellvolumes = b.vol.f
+    V = b.vol.s
     k = length(obj_trace)
 
     # Initialize the topology
@@ -64,6 +70,7 @@ function (b::BESO{T, TO, TC})(x0 = copy(b.obj.solver.vars)) where {TO<:Objective
     # Main loop
     change = T(1)
     iter = 0
+    setpenalty!(solver, b.p)
     while (change > tol || true_vol > V) && iter < maxiter
         iter += 1
         if iter > 1
@@ -73,8 +80,8 @@ function (b::BESO{T, TO, TC})(x0 = copy(b.obj.solver.vars)) where {TO<:Objective
         for j in max(2, k-iter+2):k
             obj_trace[j-1] = obj_trace[j]
         end
-        setpenalty!(b.obj, b.p)
-        obj_trace[k] = b.obj(vars, sens)
+        obj_trace[k], pb = Zygote.pullback(x -> b.comp(b.filter(x)), vars)
+        sens = pb(1.0)[1]
         rmul!(sens, -1)
         if iter > 1
             @. sens = (sens + old_sens) / 2

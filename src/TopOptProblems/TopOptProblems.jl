@@ -25,11 +25,11 @@ include("assemble.jl")
 include("buckling.jl")
 
 include(joinpath("IO", "IO.jl"))
-using .IO
+using .InputOutput
 
-include(joinpath("Visualization", "Visualization.jl"))
+include("Visualization/Visualization.jl")
 using .Visualization
 
-export PointLoadCantilever, HalfMBB, LBeam, TieBeam, InpStiffness, StiffnessTopOptProblem, AbstractTopOptProblem, GlobalFEAInfo, ElementFEAInfo, YoungsModulus, assemble, assemble_f!, RaggedArray, ElementMatrix, rawmatrix, bcmatrix, save_mesh, RandomMagnitude, MultiLoad
+export RayProblem, PointLoadCantilever, HalfMBB, LBeam, TieBeam, InpStiffness, StiffnessTopOptProblem, AbstractTopOptProblem, GlobalFEAInfo, ElementFEAInfo, YoungsModulus, assemble, assemble_f!, RaggedArray, ElementMatrix, rawmatrix, bcmatrix, save_mesh, RandomMagnitude, MultiLoad
 
 end # module

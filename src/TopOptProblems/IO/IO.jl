@@ -1,4 +1,4 @@
-module IO
+module InputOutput
 
 export  InpStiffness,
         save_mesh

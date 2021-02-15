@@ -22,7 +22,7 @@ abstract type AbstractMatrixFreeSolver <: AbstractDisplacementSolver end
     preconditioner_initialized::Base.RefValue{Bool}
     conv
 end
-
+Base.show(::IO, ::MIME{Symbol("text/plain")}, x::StaticMatrixFreeDisplacementSolver) = println("TopOpt matrix free conjugate gradient iterative solver")
 StaticMatrixFreeDisplacementSolver(sp, args...; kwargs...) = StaticMatrixFreeDisplacementSolver(whichdevice(sp), sp, args...; kwargs...)
 
 function StaticMatrixFreeDisplacementSolver(

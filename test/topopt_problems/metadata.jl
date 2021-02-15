@@ -105,6 +105,27 @@
                         (3, 4),
                         (3, 3),
                         (4, 3)]
-    @test problem.metadata.node_first_cells == node_first_cells
-
+    # First node is the first cell's first node.
+    @test problem.metadata.node_cells[1] == [(1, 1)]
+    # Second node is the first cell's second node,
+    # and the second cell's first node.
+    @test problem.metadata.node_cells[2] == [(1, 2), (2, 1)]
+    # Third node is the second cell's second node.
+    @test problem.metadata.node_cells[3] == [(2, 2)]
+    # Fourth node is the first cell's fourth node,
+    # and the third cell's first node.
+    @test problem.metadata.node_cells[4] == [(1, 4), (3, 1)]
+    # Fifth node is the first cell's third node, the second cell's fourth node,
+    # the third cell's second node and the fourth cell's first node.
+    @test problem.metadata.node_cells[5] == [(1, 3), (2, 4), (3, 2), (4, 1)]
+    # Sixth node is the second cell's third node,
+    # and the fourth cell's second node.
+    @test problem.metadata.node_cells[6] == [(2, 3), (4, 2)]
+    # Seventh node is the third cell's fourth node.
+    @test problem.metadata.node_cells[7] == [(3, 4)]
+    # Eigth node is the third cell's third node,
+    # and the fourth cell's fourth node.
+    @test problem.metadata.node_cells[8] == [(3, 3), (4, 4)]
+    # Ninth node is the fourth cell's third node.
+    @test problem.metadata.node_cells[9] == [(4, 3)]
 end

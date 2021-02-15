@@ -4,6 +4,7 @@ using TimerOutputs
     comp
     u
 end
+Base.show(::IO, ::MIME{Symbol("text/plain")}, ::LinearElasticityResult) = println("TopOpt linear elasticity result")
 
 function simulate(problem::StiffnessTopOptProblem, topology = ones(getncells(TopOptProblems.getdh(problem).grid)); round = true, hard = true, xmin = 0.001)
     if round 

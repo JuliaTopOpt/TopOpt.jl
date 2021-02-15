@@ -9,10 +9,10 @@
 An instance of the `Metadata` type stores ... information such as:
 - `cell_dofs`: a `ndof_per_cell` x `ncells` matrix that maps `[localdofidx, cellidx]` into dof idx
     cell_dofs[j,cellidx] = j-th nodal dof of cell `cellidx`
-- `dof_cells`: a `ndof` x `(Vector of Tuple{Int, Int})` RaggedArray that maps dof into cell and its local dof idx
+- `dof_cells`: a `ncells_per_dof` x `ndofs` `RaggedArray` of `Tuple{Int, Int}` that maps each dof to its cells and its local dof idx in each cell
     dof_cells[dofidx] = [(cellidx, cell's local dof idx), ...]
-- `node_cells`: a `ndof` x `(Vector of Tuple{Int, Int})` RaggedArray that maps dof into cell and its local dof idx
-    node_cells[dofidx] = [(cellidx, cell's local dof idx), ...]
+- `node_cells`: a `ncells_per_node` x `nnodes` `RaggedArray` of `Tuple{Int, Int}` that maps each node to its cells and its local idx in each cell
+    node_cells[node_idx] = [(cellidx, cell's local node idx), ...]
 - `node_dofs`: a `ndofspernode x nnodes` Matrix that maps `[localdofidx, node_idx]` into dof indices
     node_dofs[j,nodeidx] = j-th dof of node `nodeidx`
 """

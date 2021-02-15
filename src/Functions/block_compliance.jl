@@ -9,8 +9,7 @@
 end
 function BlockCompliance(
     problem::MultiLoad, 
-    solver::AbstractDisplacementSolver, 
-    args...; 
+    solver::AbstractDisplacementSolver;
     method = :exact,
     sample_once = true,
     nv = nothing,
@@ -19,7 +18,7 @@ function BlockCompliance(
     decay = 1.0,
     kwargs...
 )
-    comp = Compliance(whichdevice(solver), problem.problem, solver, args...; kwargs...)
+    comp = Compliance(problem.problem, solver; kwargs...)
     if method == :exact
         method = ExactDiagonal(problem.F, length(comp.grad))
     elseif method == :exact_svd
@@ -45,14 +44,10 @@ end
 
 function (bc::BlockCompliance{T})(x) where {T}
     @unpack compliance, method, raw_val, val, decay = bc
-    @unpack solver, cheqfilter = compliance
+    @unpack solver = compliance
+    solver.vars .= x
     @timeit to "Eval obj and grad" begin
         penalty = getpenalty(bc)
-        if cheqfilter isa AbstractDensityFilter
-            copyto!(solver.vars, cheqfilter(x))
-        else
-            copyto!(solver.vars, x)
-        end
         bc.fevals += 1
         setpenalty!(solver, penalty.p)
         compute_block_compliance(bc, method) # Modifies raw_val
@@ -65,29 +60,33 @@ function (bc::BlockCompliance{T})(x) where {T}
     return val
 end
 
+function ChainRulesCore.rrule(bc::BlockCompliance, x)
+    return bc(x), Δ -> begin
+        @assert Nonconvex.getdim(bc) == length(Δ)
+        newΔ = similar(Δ, length(x))
+        newΔ .= 0
+        jtvp!(newΔ, bc, x, Δ; runf=false)
+        return (nothing, newΔ)
+    end
+end
+
 function TopOpt.jtvp!(out, bc::BlockCompliance, x, w; runf=true)
     @assert length(out) == length(x)
-    @assert dim(bc) == length(w)
+    @assert Nonconvex.getdim(bc) == length(w)
     @unpack compliance = bc
-    @unpack cheqfilter, solver = compliance
+    @unpack solver = compliance
     @unpack elementinfo = solver
     runf && bc(x)
     if compliance.logarithm
         w = w ./ bc.raw_val
     end
     compute_jtvp!_bc(out, bc, bc.method, w)
-    if cheqfilter isa AbstractDensityFilter
-        out .= jtvp!(similar(out), cheqfilter, x, out)
-    else
-        cheqfilter(out)
-    end
     return out
 end
 
-TopOpt.dim(f::BlockCompliance) = length(f.val)
+Nonconvex.getdim(f::BlockCompliance) = length(f.val)
 TopOpt.getnvars(f::BlockCompliance) = length(f.compliance.grad)
 Utilities.getpenalty(c::BlockCompliance) = c.compliance |> getsolver |> getpenalty
-BlockConstraint(f::BlockCompliance, s::Number) = BlockConstraint(f, s, dim(f))
 
 function compute_block_compliance(ec::BlockCompliance, m::ExactDiagonal)
     compute_exact_bc(ec, m.F, m.Y)

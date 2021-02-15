@@ -5,40 +5,42 @@
     converged::Bool
     fevals::Int
 end
-@params struct GESO{T} <: TopOptAlgorithm 
-    obj
-    constr
-    vars::AbstractVector{T}
-    topology::AbstractVector{T}
-    Pcmin::T
-    Pcmax::T
-    Pmmin::T
-    Pmmax::T
-    Pen::T
+struct GESO <: TopOptAlgorithm 
+    comp::Compliance
+    vol::IneqConstraint{<:Any, <:Volume}
+    filter
+    vars::AbstractVector
+    topology::AbstractVector
+    Pcmin
+    Pcmax
+    Pmmin
+    Pmmax
+    Pen
     string_length::Int
-    var_volumes::AbstractVector{T}
-    cum_var_volumes::AbstractVector{T}
+    var_volumes::AbstractVector
+    cum_var_volumes::AbstractVector
     order::AbstractVector{Int}
     genotypes::BitArray{2}
     children::BitArray{2}
     var_black::BitVector
     maxiter::Int
     penalty
-    sens::AbstractVector{T}
-    old_sens::AbstractVector{T}
-    obj_trace::MVector{10, T}
-    tol::T
-    sens_tol::T
-    result::GESOResult{T}
+    sens::AbstractVector
+    old_sens::AbstractVector
+    obj_trace::MVector{10}
+    tol
+    sens_tol
+    result::GESOResult
 end
+Base.show(::IO, ::MIME{Symbol("text/plain")}, ::GESO) = println("TopOpt GESO algorithm")
 
-function GESO(obj::Objective{<:Any, <:Compliance}, constr::Constraint{<:Any, <:Volume}; maxiter = 1000, tol = 0.001, p = 3., Pcmin = 0.6, Pcmax = 1., Pmmin = 0.5, Pmmax = 1., Pen = 3., sens_tol = tol/100, string_length = 4, k = 10)
-    penalty = obj.solver.penalty
+function GESO(comp::Compliance, constr::IneqConstraint{<:Any, <:Volume}, filter; maxiter = 1000, tol = 0.001, p = 3., Pcmin = 0.6, Pcmax = 1., Pmmin = 0.5, Pmmax = 1., Pen = 3., sens_tol = tol/100, string_length = 4, k = 10)
+    penalty = comp.solver.penalty
     penalty = setpenalty(penalty, p)
-    T = typeof(obj.comp)
-    nel = getncells(obj.problem.ch.dh.grid)
-    black = obj.problem.black
-    white = obj.problem.white
+    solver = comp.solver
+    T = eltype(solver.vars)
+    nel = getncells(solver.problem.ch.dh.grid)
+    @unpack white, black = solver.problem
     nvars = nel - sum(black) - sum(white)
     vars = zeros(T, nvars)
 
@@ -54,7 +56,7 @@ function GESO(obj::Objective{<:Any, <:Compliance}, constr::Constraint{<:Any, <:V
     children = trues(string_length, nvars)
     var_black = trues(nvars)
 
-    return GESO(obj, constr, vars, topology, Pcmin, Pcmax, Pmmin, Pmmax, Pen, string_length, var_volumes, cum_var_volumes, order, genotypes, children, var_black, maxiter, penalty, sens, old_sens, obj_trace, tol, sens_tol, result)
+    return GESO(comp, constr, filter, vars, topology, Pcmin, Pcmax, Pmmin, Pmmax, Pen, string_length, var_volumes, cum_var_volumes, order, genotypes, children, var_black, maxiter, penalty, sens, old_sens, obj_trace, tol, sens_tol, result)
 end
 
 update_penalty!(b::GESO, p::Number) = (b.penalty.p = p)
@@ -187,15 +189,16 @@ function update!(var_black, children, genotypes, Pc, Pm, high_class, mid_class, 
     return var_black
 end
 
-function (b::GESO{TO, TC, T})(x0=copy(b.obj.solver.vars); seed=NaN) where {TO<:Objective{<:Any, <:Compliance}, TC<:Constraint{<:Any, <:Volume}, T}
+function (b::GESO)(x0 = copy(b.comp.solver.vars); seed=NaN)
     @unpack sens, old_sens, tol, maxiter = b
     @unpack obj_trace, topology, sens_tol, vars = b
     @unpack Pcmin, Pcmax, Pmmin, Pmmax, Pen = b
     @unpack string_length, genotypes, children, var_black = b
     @unpack cum_var_volumes, var_volumes, order = b
-    @unpack varind, black, white = b.obj.f.problem
-    @unpack total_volume, cellvolumes, fixed_volume = b.constr.f
-    V = b.constr.s
+    @unpack varind, black, white = b.comp.solver.problem
+    @unpack total_volume, cellvolumes, fixed_volume = b.vol.f
+    T = eltype(x0)
+    V = b.vol.s
     design_volume = V * total_volume
 
     nel = length(x0)
@@ -231,7 +234,8 @@ function (b::GESO{TO, TC, T})(x0=copy(b.obj.solver.vars); seed=NaN) where {TO<:O
         for j in max(2, 10-iter+2):10
             obj_trace[j-1] = obj_trace[j]
         end
-        obj_trace[10] = b.obj(vars, sens)
+        obj_trace[10], pb = Zygote.pullback(x -> b.comp(b.filter(x)), vars)
+        sens = pb(1.0)[1]
         rmul!(sens, -1)
         if iter > 1
             @. sens = (sens + old_sens) / 2

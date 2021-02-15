@@ -7,14 +7,17 @@
     last_grad::TV
     cell_weights::TV
 end
+Base.show(::IO, ::MIME{Symbol("text/plain")}, ::SensFilter) = println("TopOpt sensitivity filter")
 
 SensFilter{true}(args...) = SensFilter(Val(true), args...)
 SensFilter{false}(args...) = SensFilter(Val(false), args...)
 
-function SensFilter(::Val{filtering}, solver::AbstractFEASolver, args...) where {filtering}
-    SensFilter(Val(filtering), whichdevice(solver), solver, args...)
+function SensFilter(solver::AbstractFEASolver; rmin)
+    return SensFilter(Val(true), solver, rmin)
 end
-
+function SensFilter(::Val{filtering}, solver::AbstractFEASolver, args...) where {filtering}
+    return SensFilter(Val(filtering), whichdevice(solver), solver, args...)
+end
 function SensFilter(::Val{true}, ::CPU, solver::TS, rmin::T, ::Type{TI}=Int) where {T, TI<:Integer, TS<:AbstractFEASolver}
     metadata = FilterMetadata(solver, rmin, TI)
     TM = typeof(metadata)
@@ -45,19 +48,21 @@ function SensFilter(::Val{false}, ::CPU, solver::TS, rmin::T, ::Type{TI}=Int) wh
     return SensFilter(Val(false), elementinfo, metadata, rmin, nodal_grad, last_grad, cell_weights)
 end
 
-function (cf::SensFilter{true, T})(grad) where {T}
-    cf.rmin <= 0 && return
-    @unpack elementinfo, nodal_grad, cell_weights, metadata = cf
-    @unpack black, white, varind, cellvolumes, cells = elementinfo
-    @unpack cell_neighbouring_nodes, cell_node_weights = metadata
-    node_cells = elementinfo.metadata.node_cells
-
-    update_nodal_grad!(nodal_grad, node_cells, cell_weights, cells, cellvolumes, black, white, varind, grad)
-    normalize_grad!(nodal_grad, cell_weights)
-    update_grad!(grad, black, white, varind, cell_neighbouring_nodes, cell_node_weights, nodal_grad)
+(cf::SensFilter)(x) = x
+function ChainRulesCore.rrule(cf::SensFilter{true}, x)
+    x, Δ -> begin
+        cf.rmin <= 0 && return (nothing, Δ)
+        newΔ = copy(Δ)
+        @unpack elementinfo, nodal_grad, cell_weights, metadata = cf
+        @unpack black, white, varind, cellvolumes, cells = elementinfo
+        @unpack cell_neighbouring_nodes, cell_node_weights = metadata
+        node_cells = elementinfo.metadata.node_cells
+        update_nodal_grad!(nodal_grad, node_cells, cell_weights, cells, cellvolumes, black, white, varind, Δ)
+        normalize_grad!(nodal_grad, cell_weights)
+        update_grad!(newΔ, black, white, varind, cell_neighbouring_nodes, cell_node_weights, nodal_grad)
+        return (nothing, newΔ)
+    end
 end
-
-(cf::SensFilter{false})(args...) = nothing
 
 function update_nodal_grad!(nodal_grad::AbstractVector, node_cells, cell_weights, cells, cellvolumes, black, white, varind, grad)
     T = eltype(nodal_grad)
@@ -76,25 +81,7 @@ function update_nodal_grad!(nodal_grad::AbstractVector, node_cells, cell_weights
             nodal_grad[n] += w * grad[ind]
         end
     end
-    return
-    #=
-function update_nodal_grad!(nodal_grad::AbstractVector, cell_weights, cells, cellvolumes, black, white, varind, grad)
-    T = eltype(nodal_grad)
-    nodal_grad .= zero(T)
-    cell_weights .= 0
-    @inbounds for i in 1:length(cells)
-        if black[i] || white[i]
-            continue
-        end
-        nodes = cells[i].nodes
-        for n in nodes
-            ind = varind[i]
-            w = cellvolumes[i]
-            cell_weights[n] += w
-            nodal_grad[n] += w*grad[ind]
-        end
-    end
-    =#
+    return nodal_grad
 end
 
 function normalize_grad!(nodal_grad::AbstractVector, cell_weights)

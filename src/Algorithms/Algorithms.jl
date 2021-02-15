@@ -1,14 +1,14 @@
 module Algorithms
 
-using ..MMA, ..Functions, Optim, Parameters, Requires
-using ..MMA: AbstractModel
+using Nonconvex, ..Functions, Optim, Parameters, Requires
+using Nonconvex: AbstractModel
 using ..TopOpt: whichdevice, AbstractDevice, CPU, GPU, PENALTY_BEFORE_INTERPOLATION
 using TimerOutputs, Setfield, StaticArrays
 using Parameters: @unpack, @pack!
 using ..Utilities, JuAFEM
-using LinearAlgebra
+using LinearAlgebra, Zygote
 
-export  MMAOptimizer,
+export  Optimizer,
         SIMP,
         ExponentialContinuation,
         ContinuationSIMP,

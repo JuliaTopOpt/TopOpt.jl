@@ -19,6 +19,8 @@ whichdevice(::Any) = CPU()
 # GPU utilities
 module GPUUtils end
 
+@reexport using Nonconvex
+
 # Utilities
 include(joinpath("Utilities", "Utilities.jl"))
 using .Utilities
@@ -40,7 +42,6 @@ using ForwardDiff, IterativeSolvers#, Preconditioners
 @reexport using VTKDataTypes
 
 const DEBUG = Base.RefValue(false)
-function dim end
 getnvars(f) = length(f.grad)
 function jtvp! end
 #norm(a) = sqrt(dot(a,a))
@@ -57,19 +58,10 @@ using .CheqFilters
 include(joinpath("Functions", "Functions.jl"))
 @reexport using .Functions
 
-# Method of moving asymptotes
-include(joinpath("MMA", "MMA.jl"))
-@reexport using .MMA
-
 # Various topology optimization algorithms
 include(joinpath("Algorithms", "Algorithms.jl"))
 using .Algorithms
 
-# Flux optimisers
-include(joinpath("FluxOptimisers", "Optimise.jl"))
-
-include("AugLag/AugLag.jl")
-using .AugLag
 
 macro init_cuda()
     quote
@@ -87,7 +79,6 @@ end
 
 @cuda_only GPUUtils include("GPUUtils/GPUUtils.jl")
 @cuda_only Utilities include("Utilities/gpu_utilities.jl")
-@cuda_only MMA include("MMA/gpu_mma.jl")
 @cuda_only TopOptProblems include("TopOptProblems/gpu_support.jl")
 @cuda_only FEA include("FEA/gpu_solvers.jl")
 @cuda_only CheqFilters include("CheqFilters/gpu_cheqfilter.jl")
@@ -98,7 +89,7 @@ export  TopOpt,
         simulate, 
         TopOptTrace, 
         Objective,
-        Constraint,
+        IneqConstraint,
         Zero,
         Volume,
         DirectDisplacementSolver,
@@ -115,7 +106,7 @@ export  TopOpt,
         Assembly,
         MatrixFree,
         FEASolver,
-        MMAOptimizer,
+        Optimizer,
         SIMP,
         ContinuationSIMP,
         BESO,

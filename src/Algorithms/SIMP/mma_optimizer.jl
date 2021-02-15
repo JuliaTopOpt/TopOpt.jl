@@ -1,111 +1,87 @@
 abstract type AbstractOptimizer end
 
-@params mutable struct MMAOptimizer{T} <: AbstractOptimizer
-    model::AbstractModel{T}
-    mma_alg
-    suboptimizer
-    obj
-    constr
+@params mutable struct Optimizer{Tdev} <: AbstractOptimizer
+    model::AbstractModel
+    alg
     workspace
-    convstate::ConvergenceState
-    options::MMA.Options
+    dev::Tdev
 end
-multol!(o::MMAOptimizer, m::Real) = o.options.tol *= m
-function setbounds!(o::MMAOptimizer, x, w)
+Base.show(::IO, ::MIME{Symbol("text/plain")}, ::Optimizer) = println("TopOpt optimizer")
+
+multol!(o::Optimizer, m::Real) = o.options.tol *= m
+function setbounds!(o::Optimizer, x, w)
     o.model.box_min .= max.(0, x .- w)
     o.model.box_max .= min.(1, x .+ w)
 end
 
-function Functions.maxedfevals(o::MMAOptimizer)
-    maxedfevals(o.obj) || maxedfevals(o.constr)
-end
-@inline function Functions.maxedfevals(c::Tuple{Vararg{Constraint}})
-    maxedfevals(c[1]) || maxedfevals(Base.tail(c))
-end
-function Functions.maxedfevals(c::Vector{<:Constraint})
-    all(c -> maxedfevals(c), c)
-end
+function Optimizer(
+    obj::Objective,
+    constr,
+    vars,
+    opt = Nonconvex.MMA87(),
+    device::Tdev = CPU();
+    options = Nonconvex.MMAOptions(),
+    convcriteria = Nonconvex.KKTCriteria(),
+) where {Tdev <: AbstractDevice}
 
-function MMAOptimizer(args...; kwargs...)
-    return MMAOptimizer{CPU}(args...; kwargs...)
-end
-function MMAOptimizer{T}(args...; kwargs...) where T
-    return MMAOptimizer(T(), args...; kwargs...)
-end
-function MMAOptimizer{T}(::AbstractDevice, args...; kwargs...) where T
-    @show typeof(args[1])
-    throw("Check your types.")
-end
-function MMAOptimizer(  device::Tdev, 
-                        obj::Objective{T, <:AbstractFunction{T}}, 
-                        constr, 
-                        opt = MMA.MMA87(), 
-                        subopt = Optim.ConjugateGradient();
-                        options = MMA.Options(),
-                        convcriteria = MMA.KKTCriteria()
-                    ) where {T, Tdev <: AbstractDevice}
-
-    solver = getsolver(obj)
-    nvars = length(solver.vars)
-    xmin = solver.xmin
-
-    model = MMA.Model{Tdev}(nvars, obj)
-    box!(model, zero(T), one(T))
-    ineq_constraint!.(Ref(model), constr)
-
-    if Tdev <: CPU && whichdevice(obj) isa GPU
-        x0 = Array(solver.vars)
-    else
-        x0 = solver.vars
-    end
-
-    workspace = MMA.Workspace(model, x0, opt, subopt; options = options, convcriteria = convcriteria)
-
-    return MMAOptimizer(model, opt, subopt, obj, constr, workspace, ConvergenceState(T), options)
+    T = eltype(vars)
+    nvars = length(vars)
+    x0 = copy(vars)
+    model = Nonconvex.Model(obj)
+    addvar!(model, zeros(T, nvars), ones(T, nvars))
+    add_ineq_constraint!(model, Nonconvex.IneqConstraint(constr, zero(T)))
+    workspace = Nonconvex.Workspace(model, opt, x0; options = options, convcriteria = convcriteria)
+    return Optimizer(model, opt, workspace, device)
 end
 
-Utilities.getpenalty(o::MMAOptimizer) = getpenalty(o.obj)
-function Utilities.setpenalty!(o::MMAOptimizer, p)
-    setpenalty!(o.obj, p)
-    setpenalty!.(o.constr, p)
+Utilities.getpenalty(o::Optimizer) = getpenalty(o.solver)
+function Utilities.setpenalty!(o::Optimizer, p)
+    setpenalty!(o.solver, p)
 end
 
-function (o::MMAOptimizer)(x0::AbstractVector)
-    @unpack workspace, options = o
-    @unpack model = workspace
-    @unpack x, g, ∇g, ∇f_x = workspace.primal_data
-
+function (o::Optimizer)(x0::AbstractVector)
+    @unpack workspace = o
+    @unpack options, model = workspace
     reset!(workspace, x0)
     setoptions!(workspace, options)
-    mma_results = MMA.optimize!(workspace)
-    o.convstate, mma_results.convstate
+    mma_results = Nonconvex.optimize!(workspace)
     return mma_results
 end
-function setoptions!(workspace, options)
-    @unpack options = workspace
-    @unpack store_trace, show_trace, extended_trace, dual_caps = options
-    @unpack maxiter, tol, subopt_options = options
-    @pack! options = dual_caps, subopt_options, tol
-    @pack! options = show_trace, extended_trace, store_trace
-
+function setoptions!(workspace::Nonconvex.Workspace, options)
+    workspace.options = options
     return workspace
 end
 
-function reset!(w::Workspace, args...)
-    @unpack primal_data, model = w
-    # primal_data.r0 = 0
-    outer_iter, iter, f_calls, g_calls = 0, 0, 0, 0
-    @pack! w = f_calls, g_calls
-    MMA.update_values!(w, args...)
-    # Assess multiple types of convergence
-    w.convstate = MMA.assess_convergence(w)
-    @pack! w = outer_iter, iter
+function reset!(w::Nonconvex.MMAWorkspace, x0 = nothing)
+    @unpack solution = w
+    outer_iter, iter, fcalls = 0, 0, 0, 0
+    @pack! w = fcalls, iter, outer_iter
+    if x0 !== nothing
+        w.x0 .= x0
+        w.tempx .= solution.prevx
+        solution.prevx .= solution.x
+        solution.x .= x0
+        Nonconvex.updateapprox!(w.dualmodel, x0)
+    end
+    Nonconvex.assess_convergence!(w)
+    return w
+end
+
+function reset!(w::Nonconvex.AugLagWorkspace, x0 = nothing)
+    @unpack solution = w
+    outer_iter, iter, fcalls = 0, 0, 0, 0
+    @pack! w = fcalls, iter, outer_iter
+    if x0 !== nothing
+        solution.prevx .= solution.x
+        solution.x .= x0
+    end
+    #Nonconvex.assess_convergence!(w)
     return w
 end
 
 # For adaptive SIMP
-function (o::MMAOptimizer)(workspace::MMA.Workspace)
-    mma_results = MMA.optimize!(workspace)
+function (o::Optimizer)(workspace::Nonconvex.Workspace)
+    mma_results = Nonconvex.optimize!(workspace)
     return mma_results
 end
 
@@ -116,41 +92,39 @@ end
     s_init
     s_incr
     s_decr
-    dual_caps
     store_trace
     show_trace
-    extended_trace
-    subopt_options
+    auto_scale
+    dual_options
 end
+Base.show(::IO, ::MIME{Symbol("text/plain")}, ::MMAOptionsGen) = println("TopOpt MMA options generator")
 function (g::MMAOptionsGen)(i)
-    MMA.Options(
-        g.maxiter(i),
-        g.outer_maxiter(i),
-        g.tol(i),
-        g.s_init(i),
-        g.s_incr(i),
-        g.s_decr(i),
-        g.dual_caps(i),
-        g.store_trace(i),
-        g.show_trace(i),
-        g.extended_trace(i),
-        g.subopt_options(i)
+    Nonconvex.MMAOptions(
+        maxiter = g.maxiter(i),
+        outer_maxiter = g.outer_maxiter(i),
+        tol = g.tol(i),
+        s_init = g.s_init(i),
+        s_incr = g.s_incr(i),
+        s_decr = g.s_decr(i),
+        store_trace = g.store_trace(i),
+        show_trace = g.show_trace(i),
+        auto_scale = g.auto_scale(i),
+        dual_options = g.dual_options(i)
     )
 end
 
 function (g::MMAOptionsGen)(options, i)
-    MMA.Options(
-        optionalcall(g, :maxiter, options, i),
-        optionalcall(g, :outer_maxiter, options, i),
-        optionalcall(g, :tol, options, i),
-        optionalcall(g, :s_init, options, i),
-        optionalcall(g, :s_incr, options, i),
-        optionalcall(g, :s_decr, options, i),
-        optionalcall(g, :dual_caps, options, i),
-        optionalcall(g, :store_trace, options, i),
-        optionalcall(g, :show_trace, options, i),        
-        optionalcall(g, :extended_trace, options, i),
-        optionalcall(g, :subopt_options, options, i)
+    Nonconvex.MMAOptions(
+        maxiter = optionalcall(g, :maxiter, options, i),
+        outer_maxiter = optionalcall(g, :outer_maxiter, options, i),
+        tol = optionalcall(g, :tol, options, i),
+        s_init = optionalcall(g, :s_init, options, i),
+        s_incr = optionalcall(g, :s_incr, options, i),
+        s_decr = optionalcall(g, :s_decr, options, i),
+        store_trace = optionalcall(g, :store_trace, options, i),
+        show_trace = optionalcall(g, :show_trace, options, i),
+        auto_scale = optionalcall(g, :auto_scale, options, i),
+        dual_options = optionalcall(g, :dual_options, options, i)
     )
 end
 function optionalcall(g, s, options, i)

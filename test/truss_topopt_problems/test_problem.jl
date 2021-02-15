@@ -2,7 +2,9 @@ using Test
 using TopOpt
 using TopOpt.TopOptProblems: getE
 using Base.Iterators
-using TopOpt.TrussTopOptProblems.TrussVisualization: visualize
+if get(ENV, "CI", nothing) != "true"
+    @eval using TopOpt.TrussTopOptProblems.TrussVisualization: visualize
+end
 
 ins_dir = joinpath(@__DIR__, "instances", "ground_meshes");
 
@@ -45,33 +47,39 @@ ins_dir = joinpath(@__DIR__, "instances", "ground_meshes");
     # TODO TopOpt.LogBarrier
     # TODO linear_elasticity, du/dx
     # * Compliance
-    obj = Objective(TopOpt.Compliance(problem, solver, filterT = nothing,
-        rmin = rmin, tracing = true, logarithm = false));
+    comp = TopOpt.Compliance(problem, solver)
+    obj = Objective(comp)
+    volfrac = TopOpt.Volume(problem, solver)
+    constr = IneqConstraint(volfrac, V)
 
-    constr = Constraint(TopOpt.Volume(problem, solver, filterT = nothing, rmin = rmin), V);
-
-    mma_options = options = MMA.Options(maxiter = 3000,
-        tol = MMA.Tolerances(kkttol = 0.001))
-    convcriteria = MMA.KKTCriteria()
-    optimizer = MMAOptimizer(obj, constr, MMA.MMA87(),
-        ConjugateGradient(), options = mma_options,
-        convcriteria = convcriteria);
-
-    simp = SIMP(optimizer, penalty.p);
+    mma_options = options = Nonconvex.MMAOptions(
+        maxiter = 3000, tol = Nonconvex.Tolerance(kkt = 0.001),
+    )
+    convcriteria = Nonconvex.KKTCriteria()
+    x0 = fill(V, length(solver.vars))
+    optimizer = Optimizer(
+        obj, constr, x0, Nonconvex.MMA87(),
+        options = mma_options, convcriteria = convcriteria,
+    )
+    simp = SIMP(optimizer, solver, penalty.p)
 
     # ? 1.0 might induce an infeasible solution, which gives the optimizer a hard time to escape 
     # from infeasible regions and return a result
-    x0 = fill(V, length(solver.vars))
     result = simp(x0);
 
     println("="^10)
-    println("tim-$(problem_dim) - LC $(lc_ind) - #elements $(ncells), #dof: $(ncells*ndim): opt iter $(result.fevals)")
+    println("tim-$(problem_dim) - LC $(lc_ind) - #elements $(ncells), #dof: $(ncells*ndim): opt iter $(simp.optimizer.workspace.iter)")
     println("$(result.convstate)")
 
     solver()
 
-    fig = visualize(problem, solver.u; crosssecs=result.topology, vector_arrowsize=0.1, vector_linewidth=0.8, 
-        default_exagg_scale=ndim == 3 ? 1.0 : 0.01, exagg_range=ndim == 3 ? 10.0 : 0.1)
+    if get(ENV, "CI", nothing) != "true"
+        fig = visualize(
+            problem, solver.u; crosssecs = result.topology, vector_arrowsize = 0.1,
+            vector_linewidth=0.8, default_exagg_scale=ndim == 3 ? 1.0 : 0.01,
+            exagg_range = ndim == 3 ? 10.0 : 0.1,
+        )
+    end
 
     # import Makie
     # Makie.display(fig)
