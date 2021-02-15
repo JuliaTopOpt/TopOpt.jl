@@ -17,7 +17,8 @@ jobs:
         julia-version: ['^1.6.0-0',]
         os: ['ubuntu-latest',]
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout
+        uses: actions/checkout@v2
       - uses: julia-actions/setup-julia@v1
         with:
           version: ${{ matrix.julia-version }}

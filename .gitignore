@@ -2,8 +2,16 @@
 *.jl.*.cov
 *.jl.mem
 
-.vscode
-
 docs/build/
 docs/site/
 docs/src/examples/
+
+.vscode
+.DS_Store
+# Manifest.toml
+# /Manifest.toml
+/test/Manifest.toml
+
+*/__pycache__
+
+examples/benchmark/iterations

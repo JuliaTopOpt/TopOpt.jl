@@ -67,7 +67,9 @@ fig = visualize(
     scale_range = 10.0, vector_linewidth = 3, vector_arrowsize = 0.5,
 )
 Makie.display(fig)
+
 # or convert it to a Mesh
+# import GeometryBasics
 # result_mesh = GeometryBasics.Mesh(problem, result.topology);
 # Makie.mesh(result_mesh)
 

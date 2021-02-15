@@ -32,3 +32,5 @@ end
     end
     #@safetestset "More examples" include("examples/test_examples.jl")
 end
+
+# @safetestset "CSIMP Tests" begin include("csimp.jl") end

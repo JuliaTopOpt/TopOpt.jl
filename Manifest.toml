@@ -14,9 +14,9 @@ version = "1.0.0"
 
 [[AbstractPlotting]]
 deps = ["Animations", "ColorBrewer", "ColorSchemes", "ColorTypes", "Colors", "Contour", "Distributions", "DocStringExtensions", "FFMPEG", "FileIO", "FixedPointNumbers", "Formatting", "FreeType", "FreeTypeAbstraction", "GeometryBasics", "GridLayoutBase", "ImageIO", "IntervalSets", "Isoband", "KernelDensity", "LinearAlgebra", "Markdown", "Match", "Observables", "Packing", "PlotUtils", "PolygonOps", "Printf", "Random", "Serialization", "Showoff", "SignedDistanceFields", "SparseArrays", "StaticArrays", "Statistics", "StatsBase", "StructArrays", "UnicodeFun"]
-git-tree-sha1 = "886ce837b67d360448e484125c8dd9dfccae34a8"
+git-tree-sha1 = "9873608c358d25205508500b42821f092af49fb2"
 uuid = "537997a7-5e4e-5d89-9595-2241ea00577e"
-version = "0.15.16"
+version = "0.15.17"
 
 [[Adapt]]
 deps = ["LinearAlgebra"]
@@ -88,9 +88,9 @@ version = "0.7.50"
 
 [[ChainRulesCore]]
 deps = ["Compat", "LinearAlgebra", "SparseArrays"]
-git-tree-sha1 = "53fed426c9af1eb68e63b3999e96454c2db79757"
+git-tree-sha1 = "d3d0a4e0d5bc03a6c97f4d249c8a471fc20a2f33"
 uuid = "d360d2e6-b24c-11e9-a2a3-2a2ae2dbcce4"
-version = "0.9.27"
+version = "0.9.28"
 
 [[CodeTracking]]
 deps = ["InteractiveUtils", "UUIDs"]
