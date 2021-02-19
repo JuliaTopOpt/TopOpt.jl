@@ -9,18 +9,18 @@ using TopOpt.TopOptProblems: left, right, bottom, middley, middlez,
     nnodespercell, nfacespercell, find_black_and_white, find_varind
 using TopOpt.Utilities: @params
 
-@params struct NewPointLoadCantilever{dim, T, N, M} <: StiffnessTopOptProblem{dim, T}
-    rect_grid::RectilinearGrid{dim, T, N, M}
-    E::T
-    ν::T
-    ch::ConstraintHandler{<:DofHandler{dim, <:Cell{dim,N,M}, T}, T}
-    force::T
-    force_dof::Integer
-    black::AbstractVector
-    white::AbstractVector
-    varind::AbstractVector{Int}
-    metadata::Metadata
-end
+# @params struct NewPointLoadCantilever{dim, T, N, M} <: StiffnessTopOptProblem{dim, T}
+#     rect_grid::RectilinearGrid{dim, T, N, M}
+#     E::T
+#     ν::T
+#     ch::ConstraintHandler{<:DofHandler{dim, <:Cell{dim,N,M}, T}, T}
+#     force::T
+#     force_dof::Integer
+#     black::AbstractVector
+#     white::AbstractVector
+#     varind::AbstractVector{Int}
+#     metadata::Metadata
+# end
 
 function NewPointLoadCantilever(::Type{Val{CellType}}, nels::NTuple{dim,Int}, sizes::NTuple{dim}, E = 1.0, ν = 0.3, force = 1.0) where {dim, CellType}
     iseven(nels[2]) && (length(nels) < 3 || iseven(nels[3])) || throw("Grid does not have an even number of elements along the y and/or z axes.")
@@ -49,8 +49,10 @@ function NewPointLoadCantilever(::Type{Val{CellType}}, nels::NTuple{dim,Int}, si
     # ! only change?
     # addnodeset!(rect_grid.grid, "down_force", x -> right(rect_grid, x) && middley(rect_grid, x));
     if dim == 3
+        @show "haha"
         addnodeset!(rect_grid.grid, "down_force", x -> right(rect_grid, x) && 
-            bottom(rect_grid, x) && middlez(rect_grid, x));
+            bottom(rect_grid, x));
+            #  && middlez(rect_grid, x));
     else
         addnodeset!(rect_grid.grid, "down_force", x -> right(rect_grid, x) && 
             right(rect_grid, x) && middley(rect_grid, x));
@@ -73,11 +75,16 @@ function NewPointLoadCantilever(::Type{Val{CellType}}, nels::NTuple{dim,Int}, si
     add!(ch, dbc)
     close!(ch)
     t = T(0)
-    update!(ch, t)
+    JuAFEM.update!(ch, t)
 
     metadata = Metadata(dh)
     
-    fnode = Tuple(getnodeset(rect_grid.grid, "down_force"))[1]
+    load_dict = Dict{Int, Vector{T}}()
+    for fnode in getnodeset(p.rect_grid.grid, "down_force")
+    	load_dict[fnode] = [0, -p.force, 0]
+    end
+
+    for fnode in getnodeset(rect_grid.grid, "down_force"))[1]
     node_dofs = metadata.node_dofs
     force_dof = node_dofs[2, fnode]
 

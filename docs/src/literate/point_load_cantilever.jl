@@ -59,14 +59,14 @@ simp = SIMP(optimizer, solver, penalty.p);
 # ### Solve
 result = simp(x0);
 
-# ### Visualize the result using Makie.jl
-using TopOpt.TopOptProblems.Visualization: visualize
-
-fig = visualize(
-    problem; topology = result.topology, default_exagg_scale = 0.07,
-    scale_range = 10.0, vector_linewidth = 3, vector_arrowsize = 0.5,
-)
-Makie.display(fig)
+# ### (Optional) Visualize the result using Makie.jl
+# Need to run `using Pkg; Pkg.add(Makie)` first
+# using TopOpt.TopOptProblems.Visualization: visualize
+# fig = visualize(
+#     problem; topology = result.topology, default_exagg_scale = 0.07,
+#     scale_range = 10.0, vector_linewidth = 3, vector_arrowsize = 0.5,
+# )
+# Makie.display(fig)
 
 # or convert it to a Mesh
 # import GeometryBasics
