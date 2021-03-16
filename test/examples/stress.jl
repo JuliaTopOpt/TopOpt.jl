@@ -19,6 +19,9 @@ problem_names = [
     "Tie-beam",
 ]
 
+println("Global Stress")
+println("-"^10)
+
 for i in 1:length(problems)
     println(problem_names[i])
     problem = problems[i]

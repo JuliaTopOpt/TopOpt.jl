@@ -79,6 +79,7 @@ function visualize(mesh::JuAFEM.Grid{dim, <:JuAFEM.AbstractCell, TT}, u;
     nnodes = length(mesh.nodes)
     if topology !== undef
         mesh_cells = mesh.cells[Bool.(round.(Int, topology))]
+        # TODO display opacity accroding to topology values
         # undeformed_mesh_color = [(:gray,t) for t in topology]
     else
         mesh_cells = mesh.cells

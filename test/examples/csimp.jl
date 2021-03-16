@@ -19,6 +19,7 @@ problem_names = [
 
 # NOTE: non-convexity + computational error lead to different solutions that satisfy the KKT tolerance
 println("Continuation SIMP")
+println("-"^10)
 
 for i in 1:length(problems)
     println(problem_names[i])

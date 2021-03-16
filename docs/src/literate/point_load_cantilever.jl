@@ -9,20 +9,20 @@
 # Now we solve the problem in JuAFEM. What follows is a program spliced with comments.
 #md # The full program, without comments, can be found in the next [section](@ref point-load-cantilever-plain-program).
 
-using TopOpt, Makie, GeometryBasics
+using TopOpt 
 
 # ### Define the problem
 E = 1.0 # Young’s modulus
 v = 0.3 # Poisson’s ratio
 f = 1.0; # downward force
 
-nels = (40, 20, 20) 
+nels = (30, 10, 10) 
 problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0, 1.0), E, v, f);
 
 # ### Parameter settings
 V = 0.3 # volume fraction
 xmin = 0.001 # minimum density
-rmin = 4.0; # density filter radius
+rmin = 2.0; # density filter radius
 
 # ### Define a finite element solver
 penalty = TopOpt.PowerPenalty(3.0)
@@ -42,12 +42,15 @@ constr = IneqConstraint(
     V,
 )
 
+# Printout iterations
+# Nonconvex.show_residuals[] = true
+
 # ### Define subproblem optimizer
 mma_options = options = Nonconvex.MMAOptions(
     maxiter = 3000, tol = Nonconvex.Tolerance(kkt = 0.001),
 )
 convcriteria = Nonconvex.KKTCriteria()
-x0 = fill(1.0, length(solver.vars))
+x0 = fill(V, length(solver.vars))
 optimizer = Optimizer(
     obj, constr, x0, Nonconvex.MMA87(),
     options = mma_options, convcriteria = convcriteria,
@@ -69,7 +72,7 @@ result = simp(x0);
 # Makie.display(fig)
 
 # or convert it to a Mesh
-# import GeometryBasics
+# import Makie, GeometryBasics
 # result_mesh = GeometryBasics.Mesh(problem, result.topology);
 # Makie.mesh(result_mesh)
 
