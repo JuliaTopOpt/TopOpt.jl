@@ -21,7 +21,7 @@ problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0, 1.0), E, v, f);
 
 # ### Parameter settings
 V = 0.3 # volume fraction
-xmin = 0.001 # minimum density
+xmin = 1e-6 # minimum density
 rmin = 2.0; # density filter radius
 
 # ### Define a finite element solver
@@ -47,7 +47,7 @@ constr = IneqConstraint(
 
 # ### Define subproblem optimizer
 mma_options = options = Nonconvex.MMAOptions(
-    maxiter = 3000, tol = Nonconvex.Tolerance(kkt = 0.001),
+    maxiter = 3000, tol = Nonconvex.Tolerance(x = 1e-3, f = 1e-3, kkt = 0.001),
 )
 convcriteria = Nonconvex.KKTCriteria()
 x0 = fill(V, length(solver.vars))
@@ -72,6 +72,7 @@ result = simp(x0);
 # Makie.display(fig)
 
 # or convert it to a Mesh
+# Need to run `using Pkg; Pkg.add(GeometryBasics)` first
 # import Makie, GeometryBasics
 # result_mesh = GeometryBasics.Mesh(problem, result.topology);
 # Makie.mesh(result_mesh)

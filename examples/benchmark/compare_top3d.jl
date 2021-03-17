@@ -1,7 +1,10 @@
 using TopOpt
 # import Makie
 # using TopOpt.TopOptProblems.Visualization: visualize
-include("./new_problems.jl")
+try
+    include("./new_problems.jl")
+catch
+end
 
 using TimerOutputs
 
@@ -50,11 +53,11 @@ using TimerOutputs
     # TODO MMA02 converge to weird results under this criteria
     mma_options = options = Nonconvex.MMAOptions(
         maxiter = 400, 
-        tol = Nonconvex.Tolerance(x = 1e-3, f = 1e-3),
+        tol = Nonconvex.Tolerance(x = 1e-3, f = 1e-9),
         )
     ipopt_options = Nonconvex.IpoptOptions(
         maxiter = 400, 
-        tol = Nonconvex.Tolerance(x = 1e-3, f = 1e-3),
+        tol = Nonconvex.Tolerance(x = 1e-3, f = 1e-6),
     )
 
     convcriteria = Nonconvex.GenericCriteria()
@@ -63,12 +66,12 @@ using TimerOutputs
     x0 = fill(V, length(solver.vars))
     @timeit to "optimizer def" optimizer = Optimizer(obj, constr, x0, 
         Nonconvex.MMA87(),
-        # Nonconvex.MMA02(),
         options = mma_options,
         # Nonconvex.IpoptAlg(),
         # options = ipopt_options,
         convcriteria = convcriteria
         );
+    # Nonconvex.MMA02(),
 
     # Define SIMP optimizer
     @timeit to "simp def" simp = SIMP(optimizer, solver, penalty.p);
@@ -86,9 +89,9 @@ using TimerOutputs
     @show optimizer.workspace.iter
 
     # # Visualize the result using Makie.jl
-    # fig = visualize(problem; topology=result.topology, 
-    #     default_exagg_scale=0.07, scale_range=10.0, vector_linewidth=3, vector_arrowsize=0.5)
-    # Makie.display(fig)
+    fig = visualize(problem; topology=result.topology, 
+        default_exagg_scale=0.07, scale_range=10.0, vector_linewidth=3, vector_arrowsize=0.5)
+    Makie.display(fig)
 
     # return problem, result
 # end

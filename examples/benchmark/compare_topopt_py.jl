@@ -66,6 +66,7 @@ using TimerOutputs
     @timeit to "simp run" result = simp(x0);
 
     # Print the timings in the default way
+    println()
     show(to)
 
     @show result.convstate

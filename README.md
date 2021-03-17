@@ -10,7 +10,7 @@
 
 ## Installation
 
-To install `TopOpt.jl`, you can either (1) add it to an existing Julia environment or (2) clone and use its shipped environment.
+To install `TopOpt.jl`, you can either (1) add it to an existing Julia environment or (2) [clone and use its shipped environment](https://pkgdocs.julialang.org/v1/environments/#Using-someone-else's-project).
 The second option is recommended for new users who simply wants to try this package out.
 
 ### Adding `TopOpt` to an existing Julia environment
