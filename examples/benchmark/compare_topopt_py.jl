@@ -1,17 +1,15 @@
 using TopOpt
+import Makie
 using TopOpt.TopOptProblems.Visualization: visualize
-# include("./new_problems.jl")
 
 using TimerOutputs
-import Makie
 
-global problem, result
-
-function run_topopt()
+# function run_topopt()
     println("Start running.")
     # https://github.com/KristofferC/TimerOutputs.jl
     to = TimerOutput()
     reset_timer!(to)
+    Nonconvex.show_residuals[] = false
 
     # Define the problem
     E = 1.0 # Young’s modulus
@@ -20,15 +18,12 @@ function run_topopt()
 
     # Parameter settings
     V = 0.3 # volume fraction
-    xmin = 1e-3
-    # minimum density
-    rmin = 4.0; # density filter radius
+    # xmin = 0.001 # minimum density
+    xmin = 1e-6 # minimum density
+    rmin = 2.0; # density filter radius
 
-    nels = (180, 60) 
+    nels = (360, 120) 
     sizes = (1.0, 1.0)
-    # nels = (160, 40) 
-    # sizes = (1.0, 1.0)
-    # @timeit to "problem def" problem = NewTopOptProblems.NewPointLoadCantilever(Val{:Linear}, nels, sizes, E, v, f);
     @timeit to "problem def" problem = PointLoadCantilever(Val{:Linear}, nels, sizes, E, v, f);
 
     # Define a finite element solver
@@ -37,44 +32,51 @@ function run_topopt()
         penalty = penalty);
 
     # Define compliance objective
-    @timeit to "objective def" obj = Objective(TopOpt.Compliance(problem, solver, filterT = DensityFilter, #SensFilter
-        rmin = rmin, tracing = false, logarithm = false));
+    @timeit to "objective def" begin
+        # Define compliance objective
+        comp = Compliance(problem, solver)
+        filter = DensityFilter(solver, rmin = rmin)
+        obj = Objective(x -> comp(filter(x)))
+    end
 
     # Define volume constraint
-    @timeit to "constraint def" constr = Constraint(TopOpt.Volume(problem, solver, filterT = DensityFilter, rmin = rmin), V);
+    @timeit to "constraint def" begin
+        volfrac = TopOpt.Volume(problem, solver)
+        constr = IneqConstraint(x -> volfrac(filter(x)), V)
+    end
 
     # Define subproblem optimizer
-    mma_options = options = MMA.Options(maxiter = 1000, 
-        # tol = MMA.Tolerances(ftol = 0.001),
-        tol = MMA.Tolerances(kkttol = 0.001),
-        # s_init = 1.0, 
-        # s_decr = 1.0, s_incr = 1.0
+    # ! seems to be absolute diff
+    mma_options = options = Nonconvex.MMAOptions(maxiter = 1000, 
+        tol = Nonconvex.Tolerance(x = 1e-3, f = 1e-3, kkt = 1e-3),
         )
-    # mma_options = options = MMA.Options(maxiter = 3000, 
-    #     tol = MMA.Tolerances(kkttol = 0.001))
-    convcriteria = MMA.KKTCriteria()
-    # convcriteria = MMA.DefaultCriteria()
-    @timeit to "optimizer def" optimizer = MMAOptimizer(obj, constr, MMA.MMA87(),
-        ConjugateGradient(), options = mma_options,
+    convcriteria = Nonconvex.GenericCriteria()
+    # convcriteria = Nonconvex.KKTCriteria()
+
+    x0 = fill(V, length(solver.vars))
+    @timeit to "optimizer def" optimizer = Optimizer(obj, constr, x0, Nonconvex.MMA87(),
+        options = mma_options,
         convcriteria = convcriteria);
 
     # Define SIMP optimizer
-    @timeit to "simp def" simp = SIMP(optimizer, penalty.p);
+    @timeit to "simp def" simp = SIMP(optimizer, solver, penalty.p);
 
     # Solve
     # initial solution, critical to set it to volfrac! (blame non-convexity :)
-    x0 = fill(V, length(solver.vars))
     @timeit to "simp run" result = simp(x0);
 
     # Print the timings in the default way
     show(to)
 
     @show result.convstate
+    @show result.objval
 
-    # Visualize the result using Makie.jl
+    # # Visualize the result using Makie.jl
     fig = visualize(problem; topology=result.topology, 
         default_exagg_scale=0.07, scale_range=10.0, vector_linewidth=3, vector_arrowsize=0.5)
     Makie.display(fig)
-end
 
-run_topopt()
+    # return problem, result
+# end
+
+# problem, result = run_topopt();
