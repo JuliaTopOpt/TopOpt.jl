@@ -1,7 +1,7 @@
 using TopOpt
-import Makie
-using TopOpt.TopOptProblems.Visualization: visualize
-# include("./new_problems.jl")
+# import Makie
+# using TopOpt.TopOptProblems.Visualization: visualize
+include("./new_problems.jl")
 
 using TimerOutputs
 
@@ -86,9 +86,9 @@ using TimerOutputs
     @show optimizer.workspace.iter
 
     # # Visualize the result using Makie.jl
-    fig = visualize(problem; topology=result.topology, 
-        default_exagg_scale=0.07, scale_range=10.0, vector_linewidth=3, vector_arrowsize=0.5)
-    Makie.display(fig)
+    # fig = visualize(problem; topology=result.topology, 
+    #     default_exagg_scale=0.07, scale_range=10.0, vector_linewidth=3, vector_arrowsize=0.5)
+    # Makie.display(fig)
 
     # return problem, result
 # end
