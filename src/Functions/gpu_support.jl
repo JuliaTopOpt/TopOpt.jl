@@ -5,14 +5,6 @@ using ..GPUUtils
 import ..TopOpt: whichdevice
 using ..TopOpt: GPU
 
-### General
-
-whichdevice(o::Union{Objective, IneqConstraint}) = o |> getfunction |> whichdevice
-@define_cu(Objective, :f)
-@define_cu(IneqConstraint, :f)
-whichdevice(z::Zero) = whichdevice(z.solver)
-CuArrays.cu(::Zero{T}) where T = Zero{T}()
-
 ### Compliance
 
 whichdevice(c::Compliance) = whichdevice(c.cell_comp)
@@ -20,15 +12,14 @@ whichdevice(c::MeanCompliance) = whichdevice(c.compliance)
 
 hutch_rand!(v::CuArray) = v .= round.(CuArrays.CURAND.curand(size(v))) .* 2 .- 1
 
-function Compliance(::GPU, problem::StiffnessTopOptProblem{dim, T}, solver::AbstractDisplacementSolver, ::Type{TI}=Int; rmin = T(0), filtering = false, tracing = false, logarithm = false, maxfevals = 10^8) where {dim, T, TI}
-    cheqfilter = cu(SensFilter(Val(filtering), solver, rmin))
+function Compliance(::GPU, problem::StiffnessTopOptProblem{dim, T}, solver::AbstractDisplacementSolver, ::Type{TI}=Int; tracing = false, logarithm = false, maxfevals = 10^8) where {dim, T, TI}
     comp = T(0)
     cell_comp = zeros(CuVector{T}, getncells(problem.ch.dh.grid))
     grad = CuVector(fill(T(NaN), length(cell_comp) - sum(problem.black) - sum(problem.white)))
     topopt_trace = TopOptTrace{T,TI}()
     reuse = false
     fevals = TI(0)
-    return Compliance(problem, solver, cheqfilter, comp, cell_comp, grad, tracing, topopt_trace, reuse, fevals, logarithm, maxfevals)
+    return Compliance(problem, solver, comp, cell_comp, grad, tracing, topopt_trace, reuse, fevals, logarithm, maxfevals)
 end
 @define_cu(Compliance, :solver, :cell_comp, :grad, :cheqfilter)
 

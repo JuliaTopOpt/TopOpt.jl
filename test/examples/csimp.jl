@@ -28,21 +28,21 @@ for i in 1:length(problems)
     V = 0.5 # volume fraction
     xmin = 0.001 # minimum density
     rmin = 3.0
-    steps = 40 # maximum number of penalty steps, delta_p0 = 0.1
+    steps = 10 # maximum number of penalty steps, delta_p0 = 0.5
     reuse = true # adaptive penalty flag
-    convcriteria = Nonconvex.GenericCriteria()
+    convcriteria = Nonconvex.KKTCriteria()
     penalty = TopOpt.PowerPenalty(1.0)
     pcont = Continuation(penalty, steps = steps, xmin = xmin, pmax = 5.0)
 
     mma_options = options = Nonconvex.MMAOptions(maxiter=1000)
     maxtol = 0.01 # maximum tolerance
-    mintol = 0.0001 # minimum tolerance
+    mintol = 0.001 # minimum tolerance
     b = log(mintol / maxtol) / steps
     a = maxtol / exp(b)
     mma_options_gen = TopOpt.MMAOptionsGen(
         steps = steps,
         initial_options = mma_options,
-        ftol_gen = ExponentialContinuation(a, b, 0.0, steps + 1, mintol),
+        kkttol_gen = ExponentialContinuation(a, b, 0.0, steps + 1, mintol),
     )
     csimp_options = TopOpt.CSIMPOptions(
         steps = steps, 
@@ -60,11 +60,11 @@ for i in 1:length(problems)
     else
         DensityFilter(solver, rmin = rmin)
     end
-    obj = Objective(x -> comp(filter(x)))
+    obj = x -> comp(filter(x))
 
     # Define volume constraint
     volfrac = Volume(problem, solver)
-    constr = IneqConstraint(x -> volfrac(filter(x)), V)
+    constr = x -> volfrac(filter(x)) - V
 
     # Define subproblem optimizer
     x0 = fill(V, length(solver.vars))

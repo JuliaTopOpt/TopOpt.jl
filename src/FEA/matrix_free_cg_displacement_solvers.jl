@@ -33,11 +33,10 @@ function StaticMatrixFreeDisplacementSolver(
     cg_max_iter = 700, 
     tol = xmin, 
     penalty = PowerPenalty{T}(1), 
-    prev_penalty = copy(penalty),
+    prev_penalty = deepcopy(penalty),
     preconditioner = identity, 
     quad_order = 2,
 ) where {dim, T}
-    prev_penalty = setpenalty(prev_penalty, T(NaN))
     elementinfo = ElementFEAInfo(sp, quad_order, Val{:Static})
     if eltype(elementinfo.Kes) <: Symmetric
         f = x -> sumdiag(rawmatrix(x).data)

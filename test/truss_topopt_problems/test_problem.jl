@@ -48,9 +48,9 @@ ins_dir = joinpath(@__DIR__, "instances", "ground_meshes");
     # TODO linear_elasticity, du/dx
     # * Compliance
     comp = TopOpt.Compliance(problem, solver)
-    obj = Objective(comp)
+    obj = comp
     volfrac = TopOpt.Volume(problem, solver)
-    constr = IneqConstraint(volfrac, V)
+    constr = x -> volfrac(x) - V
 
     mma_options = options = Nonconvex.MMAOptions(
         maxiter = 3000, tol = Nonconvex.Tolerance(kkt = 0.001),

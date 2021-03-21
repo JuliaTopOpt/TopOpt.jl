@@ -19,7 +19,7 @@ Base.show(::IO, ::MIME{Symbol("text/plain")}, x::DirectDisplacementSolver) = pri
 function DirectDisplacementSolver(sp::StiffnessTopOptProblem{dim, T};
     xmin=T(1)/1000, 
     penalty=PowerPenalty{T}(1), 
-    prev_penalty=copy(penalty),
+    prev_penalty=deepcopy(penalty),
     quad_order=default_quad_order(sp),
     qr = false,
 ) where {dim, T}
@@ -31,8 +31,6 @@ function DirectDisplacementSolver(sp::StiffnessTopOptProblem{dim, T};
     rhs = similar(u)
     vars = fill(one(T), getncells(sp.ch.dh.grid) - sum(sp.black) - sum(sp.white))
     varind = sp.varind
-
-    prev_penalty = setpenalty(prev_penalty, T(NaN))
     return DirectDisplacementSolver(sp, globalinfo, elementinfo, u, lhs, rhs, vars, penalty, prev_penalty, xmin, qr)
 end
 function (s::DirectDisplacementSolver{T})(

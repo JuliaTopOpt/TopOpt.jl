@@ -2,7 +2,7 @@ abstract type AbstractPenalty{T} end
 abstract type AbstractCPUPenalty{T} <: AbstractPenalty{T} end
 abstract type AbstractProjection end
 
-struct PowerPenalty{T} <: AbstractCPUPenalty{T}
+mutable struct PowerPenalty{T} <: AbstractCPUPenalty{T}
     p::T
 end
 @inline (P::PowerPenalty)(x) = x^(P.p)
@@ -42,5 +42,11 @@ copy(p::HeavisideProjection) = HeavisideProjection(p.β)
 copy(p::SigmoidProjection) = SigmoidProjection(p.β)
 copy(p::ProjectedPenalty) = ProjectedPenalty(copy(p.penalty), copy(p.proj))
 
-setpenalty(P::T, p) where {T <: AbstractPenalty} = T(p)
-setpenalty(P::ProjectedPenalty, p) = ProjectedPenalty(setpenalty(P.penalty, p), copy(P.proj))
+function Utilities.setpenalty!(P::AbstractPenalty, p)
+    P.p = p
+    return P
+end
+function Utilities.setpenalty!(P::ProjectedPenalty, p)
+    P.penalty.p = p
+    return P
+end

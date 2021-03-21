@@ -229,7 +229,6 @@ function update!(c_simp::ContinuationSIMP, i)
     setpenalty!(c_simp.simp, p)
     options = c_simp.options.option_cont(c_simp.simp.optimizer.workspace.options, i)
     c_simp.simp.optimizer.workspace.options = options
-
     return c_simp
 end
 frac(x) = 2*min(abs(x), abs(x - 1))

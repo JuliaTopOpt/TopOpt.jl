@@ -38,7 +38,7 @@ end
 
 function (ec::MeanCompliance{T})(x, grad = ec.grad) where {T}
     @unpack compliance, F, method = ec
-    @unpack cell_comp, solver, tracing, cheqfilter, topopt_trace = compliance
+    @unpack cell_comp, solver, tracing, topopt_trace = compliance
     @unpack elementinfo, u, xmin = solver
     @unpack metadata, Kes, black, white, varind = elementinfo
     @unpack cell_dofs = metadata
@@ -50,11 +50,7 @@ function (ec::MeanCompliance{T})(x, grad = ec.grad) where {T}
         #end
 
         penalty = getpenalty(ec)    
-        if cheqfilter isa AbstractDensityFilter
-            copyto!(solver.vars, cheqfilter(x))
-        else
-            copyto!(solver.vars, x)
-        end
+        copyto!(solver.vars, x)
         compliance.fevals += 1
         setpenalty!(solver, penalty.p)
         obj = compute_mean_compliance(ec, method, solver.vars, grad)
@@ -64,11 +60,6 @@ function (ec::MeanCompliance{T})(x, grad = ec.grad) where {T}
             grad ./= obj
         else
             compliance.comp = obj
-        end
-        if cheqfilter isa AbstractDensityFilter
-            grad .= jtvp!(similar(grad), cheqfilter, x, grad)
-        else
-            cheqfilter(grad)
         end
         if compliance.grad !== grad
             copyto!(compliance.grad, grad)

@@ -15,7 +15,7 @@ function setbounds!(o::Optimizer, x, w)
 end
 
 function Optimizer(
-    obj::Objective,
+    obj,
     constr,
     vars,
     opt = Nonconvex.MMA87(),
@@ -29,7 +29,7 @@ function Optimizer(
     x0 = copy(vars)
     model = Nonconvex.Model(obj)
     addvar!(model, zeros(T, nvars), ones(T, nvars))
-    add_ineq_constraint!(model, Nonconvex.IneqConstraint(constr, zero(T)))
+    add_ineq_constraint!(model, Nonconvex.FunctionWrapper(constr, length(constr(x0))))
     workspace = Nonconvex.Workspace(model, opt, x0; options = options, convcriteria = convcriteria)
     return Optimizer(model, opt, workspace, device)
 end
@@ -37,6 +37,7 @@ end
 Utilities.getpenalty(o::Optimizer) = getpenalty(o.solver)
 function Utilities.setpenalty!(o::Optimizer, p)
     setpenalty!(o.solver, p)
+    return o
 end
 
 function (o::Optimizer)(x0::AbstractVector)
@@ -52,6 +53,12 @@ function setoptions!(workspace::Nonconvex.Workspace, options)
     return workspace
 end
 
+function reset!(w::Nonconvex.Workspace, x0 = nothing)
+    if x0 !== nothing
+        w.x0 .= x0
+    end
+    return w
+end
 function reset!(w::Nonconvex.MMAWorkspace, x0 = nothing)
     @unpack solution = w
     outer_iter, iter, fcalls = 0, 0, 0, 0

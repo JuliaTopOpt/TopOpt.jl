@@ -42,9 +42,6 @@ using ForwardDiff, IterativeSolvers#, Preconditioners
 @reexport using VTKDataTypes
 
 const DEBUG = Base.RefValue(false)
-getnvars(f) = length(f.grad)
-function jtvp! end
-#norm(a) = sqrt(dot(a,a))
 
 # FEA solvers
 include(joinpath("FEA", "FEA.jl"))
@@ -88,18 +85,11 @@ end
 export  TopOpt,
         simulate, 
         TopOptTrace, 
-        Objective,
-        IneqConstraint,
-        Zero,
-        Volume,
         DirectDisplacementSolver,
         PCGDisplacementSolver,
         StaticMatrixFreeDisplacementSolver,
         SensFilter,
         DensityFilter,
-        Compliance,
-        MeanCompliance,
-        BlockCompliance,
         Displacement,
         CG,
         Direct,

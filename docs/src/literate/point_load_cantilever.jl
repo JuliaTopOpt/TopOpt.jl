@@ -33,21 +33,18 @@ solver = FEASolver(
 # ### Define compliance objective
 comp = TopOpt.Compliance(problem, solver)
 filter = DensityFilter(solver, rmin = rmin)
-obj = Objective(x -> comp(filter(x)))
+obj = x -> comp(filter(x))
 
 # ### Define volume constraint
 volfrac = TopOpt.Volume(problem, solver)
-constr = IneqConstraint(
-    x -> volfrac(filter(x)),
-    V,
-)
+constr = x -> volfrac(filter(x)) - V
 
 # ### Define subproblem optimizer
 mma_options = options = Nonconvex.MMAOptions(
     maxiter = 3000, tol = Nonconvex.Tolerance(kkt = 0.001),
 )
 convcriteria = Nonconvex.KKTCriteria()
-x0 = fill(1.0, length(solver.vars))
+x0 = fill(V, length(solver.vars))
 optimizer = Optimizer(
     obj, constr, x0, Nonconvex.MMA87(),
     options = mma_options, convcriteria = convcriteria,

@@ -8,7 +8,8 @@ end
 
 @params struct BESO{T} <: TopOptAlgorithm 
     comp::Compliance
-    vol::IneqConstraint{<:Any, <:Volume}
+    vol::Volume
+    vol_limit
     filter
     vars::Vector{T}
     topology::Vector{T}
@@ -24,7 +25,7 @@ end
 end
 Base.show(::IO, ::MIME{Symbol("text/plain")}, ::BESO) = println("TopOpt BESO algorithm")
 
-function BESO(comp::Compliance, vol::IneqConstraint{<:Any, <:Volume}, filter; maxiter = 200, tol = 0.0001, p = 3.0, er = 0.02, sens_tol = tol/100, k = 10)
+function BESO(comp::Compliance, vol::Volume, vol_limit, filter; maxiter = 200, tol = 0.0001, p = 3.0, er = 0.02, sens_tol = tol/100, k = 10)
     solver = comp.solver
     T = eltype(solver.vars)
     solver = comp.solver
@@ -38,7 +39,7 @@ function BESO(comp::Compliance, vol::IneqConstraint{<:Any, <:Volume}, filter; ma
     old_sens = zeros(T, nvars)
     obj_trace = zeros(MVector{k, T})
 
-    return BESO(comp, vol, filter, vars, topology, er, maxiter, p, sens, old_sens, obj_trace, tol, sens_tol, result)
+    return BESO(comp, vol, vol_limit, filter, vars, topology, er, maxiter, p, sens, old_sens, obj_trace, tol, sens_tol, result)
 end
 
 update_penalty!(b::BESO, p::Number) = (b.p = p)
@@ -49,8 +50,8 @@ function (b::BESO)(x0 = copy(b.obj.solver.vars))
     @unpack obj_trace, topology, sens_tol, vars = b
     @unpack solver = b.comp
     @unpack varind, black, white = solver.problem
-    @unpack total_volume, cellvolumes = b.vol.f
-    V = b.vol.s
+    @unpack total_volume, cellvolumes = b.vol
+    V = b.vol_limit
     k = length(obj_trace)
 
     # Initialize the topology

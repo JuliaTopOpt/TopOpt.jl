@@ -7,7 +7,8 @@
 end
 struct GESO <: TopOptAlgorithm 
     comp::Compliance
-    vol::IneqConstraint{<:Any, <:Volume}
+    vol::Volume
+    vol_limit
     filter
     vars::AbstractVector
     topology::AbstractVector
@@ -34,9 +35,9 @@ struct GESO <: TopOptAlgorithm
 end
 Base.show(::IO, ::MIME{Symbol("text/plain")}, ::GESO) = println("TopOpt GESO algorithm")
 
-function GESO(comp::Compliance, constr::IneqConstraint{<:Any, <:Volume}, filter; maxiter = 1000, tol = 0.001, p = 3., Pcmin = 0.6, Pcmax = 1., Pmmin = 0.5, Pmmax = 1., Pen = 3., sens_tol = tol/100, string_length = 4, k = 10)
+function GESO(comp::Compliance, vol::Volume, vol_limit, filter; maxiter = 1000, tol = 0.001, p = 3., Pcmin = 0.6, Pcmax = 1., Pmmin = 0.5, Pmmax = 1., Pen = 3., sens_tol = tol/100, string_length = 4, k = 10)
     penalty = comp.solver.penalty
-    penalty = setpenalty(penalty, p)
+    setpenalty!(penalty, p)
     solver = comp.solver
     T = eltype(solver.vars)
     nel = getncells(solver.problem.ch.dh.grid)
@@ -49,17 +50,20 @@ function GESO(comp::Compliance, constr::IneqConstraint{<:Any, <:Volume}, filter;
     sens = zeros(T, nvars)
     old_sens = zeros(T, nvars)
     obj_trace = zeros(MVector{k, T})
-    var_volumes = constr.cellvolumes[.!black .& .!white]
+    var_volumes = vol.cellvolumes[.!black .& .!white]
     cum_var_volumes = zeros(T, nvars)
     order = zeros(Int, nvars)
     genotypes = trues(string_length, nvars)
     children = trues(string_length, nvars)
     var_black = trues(nvars)
 
-    return GESO(comp, constr, filter, vars, topology, Pcmin, Pcmax, Pmmin, Pmmax, Pen, string_length, var_volumes, cum_var_volumes, order, genotypes, children, var_black, maxiter, penalty, sens, old_sens, obj_trace, tol, sens_tol, result)
+    return GESO(comp, vol, vol_limit, filter, vars, topology, Pcmin, Pcmax, Pmmin, Pmmax, Pen, string_length, var_volumes, cum_var_volumes, order, genotypes, children, var_black, maxiter, penalty, sens, old_sens, obj_trace, tol, sens_tol, result)
 end
 
-update_penalty!(b::GESO, p::Number) = (b.penalty.p = p)
+function Utilities.setpenalty!(b::GESO, p::Number)
+    b.penalty.p = p
+    return b
+end
 
 get_progress(current_volume, total_volume, design_volume) = clamp(min((total_volume - current_volume) / (total_volume - design_volume), current_volume / design_volume), 0, 1)
 
@@ -196,9 +200,9 @@ function (b::GESO)(x0 = copy(b.comp.solver.vars); seed=NaN)
     @unpack string_length, genotypes, children, var_black = b
     @unpack cum_var_volumes, var_volumes, order = b
     @unpack varind, black, white = b.comp.solver.problem
-    @unpack total_volume, cellvolumes, fixed_volume = b.vol.f
+    @unpack total_volume, cellvolumes, fixed_volume = b.vol
     T = eltype(x0)
-    V = b.vol.s
+    V = b.vol_limit
     design_volume = V * total_volume
 
     nel = length(x0)

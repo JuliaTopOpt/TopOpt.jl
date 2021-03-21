@@ -12,15 +12,15 @@ struct Assembly <: SolverSubtype end
 
 Utilities.getpenalty(solver::AbstractFEASolver) = solver.penalty
 function Utilities.setpenalty!(solver::AbstractFEASolver, p)
-    solver.prev_penalty = solver.penalty
+    solver.prev_penalty = deepcopy(solver.penalty)
     if p isa AbstractPenalty
         solver.penalty = p
     elseif p isa Number
-        solver.penalty = setpenalty(solver.penalty, p)    
+        setpenalty!(solver.penalty, p)    
     else
         throw("Unsupported penalty value $p.")
     end
-    solver
+    return solver
 end
 Utilities.getprevpenalty(solver::AbstractFEASolver) = solver.prev_penalty
 

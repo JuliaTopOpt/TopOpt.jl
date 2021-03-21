@@ -10,7 +10,6 @@
     fraction::Bool
     fevals::Int
     maxfevals::Int
-    cheqfilter
 end
 Base.show(::IO, ::MIME{Symbol("text/plain")}, ::Volume) = println("TopOpt volume (fraction) function")
 Nonconvex.getdim(::Volume) = 1
@@ -23,8 +22,7 @@ end
     return setfield!(vf, f, v)
 end
 
-function project(c::IneqConstraint{<:Any, <:Volume}, x)
-    V, f = c.s, c.f
+function project(f::Volume, V, x)
     cellvolumes = f.cellvolumes
     if f.fraction
         V = V * f.total_volume        
@@ -44,27 +42,13 @@ function project(c::IneqConstraint{<:Any, <:Volume}, x)
     return x
 end
 
-function Volume(problem::StiffnessTopOptProblem{dim, T}, solver::AbstractFEASolver, ::Type{TI} = Int; filterT = nothing, preproj = nothing, postproj = nothing, rmin = T(0), fraction = true, tracing = true, maxfevals = 10^8) where {dim, T, TI}
-    rmin == 0 && filterT !== nothing && throw("Cannot use a filter radius of 0 in a density filter.")
+function Volume(problem::StiffnessTopOptProblem{dim, T}, solver::AbstractFEASolver, ::Type{TI} = Int; fraction = true, tracing = true, maxfevals = 10^8) where {dim, T, TI}
     dh = problem.ch.dh
     varind = problem.varind
     black = problem.black
     white = problem.white
     vars = solver.vars
     cellvolumes = solver.elementinfo.cellvolumes
-
-    if filterT isa Nothing
-        cheqfilter = SensFilter(Val(false), solver, rmin)
-    elseif filterT isa SensFilter
-        cheqfilter = SensFilter(Val(false), solver, rmin)
-    else
-        if preproj isa Nothing && postproj isa Nothing
-            cheqfilter = DensityFilter(Val(true), solver, rmin)
-        else
-            cheqfilter = ProjectedDensityFilter(DensityFilter(Val(true), solver, rmin), preproj, postproj)
-        end
-    end
-
     grad = zeros(T, length(vars))
     for (i, cell) in enumerate(CellIterator(dh))
         if !(black[i]) && !(white[i])
@@ -76,7 +60,7 @@ function Volume(problem::StiffnessTopOptProblem{dim, T}, solver::AbstractFEASolv
     if fraction
         grad ./= total_volume
     end
-    return Volume(problem, solver, cellvolumes, grad, total_volume, fixed_volume, tracing, TopOptTrace{T, TI}(), fraction, 0, maxfevals, cheqfilter)
+    return Volume(problem, solver, cellvolumes, grad, total_volume, fixed_volume, tracing, TopOptTrace{T, TI}(), fraction, 0, maxfevals)
 end
 function (v::Volume{T})(x, grad = nothing) where {T}
     varind = v.problem.varind
@@ -93,19 +77,11 @@ function (v::Volume{T})(x, grad = nothing) where {T}
     dh = v.problem.ch.dh
     xmin = v.solver.xmin
 
-    if v.cheqfilter isa AbstractDensityFilter
-        fx = v.cheqfilter(x)
-    else
-        fx = x
-    end
-    vol = compute_volume(cellvolumes, fx, fixed_volume, varind, black, white)
+    vol = compute_volume(cellvolumes, x, fixed_volume, varind, black, white)
 
     constrval = fraction ? vol / total_volume : vol
     if grad !== nothing
         grad .= v.grad
-        if v.cheqfilter isa AbstractDensityFilter
-            grad .= TopOpt.jtvp!(similar(grad), v.cheqfilter, x, grad)
-        end
     end
     if tracing
         push!(topopt_trace.v_hist, vol/total_volume)
