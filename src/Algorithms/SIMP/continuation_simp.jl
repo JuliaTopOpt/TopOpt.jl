@@ -106,7 +106,7 @@ function MMAOptionsGen(;
     end
 
     if ftol_gen == nothing
-        ftol_cont = FixedContinuation(initial_options.tol.f, steps + 1)
+        ftol_cont = FixedContinuation(initial_options.tol.frel, steps + 1)
     else
         @assert steps == ftol_gen.length - 1
         ftol_cont = ftol_gen
