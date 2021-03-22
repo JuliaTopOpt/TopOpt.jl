@@ -15,7 +15,7 @@ GENERATED_EXAMPLES = [joinpath("examples", f) for f in (
     "global_stress.md",
     )]
 
-bib = CitationBibliography(joinpath(@__FILE__, "biblio", "ref.bib"))
+bib = CitationBibliography(joinpath(@__DIR__, "biblio", "ref.bib"))
 makedocs(
     bib,
     sitename = "TopOpt.jl",
@@ -29,7 +29,8 @@ makedocs(
         "API Reference" => [
             "reference/TopOptProblems.md",
             "reference/Algorithms.md",
-        ]
+        ],
+        "Bibliography" => "bibliography.md"
     ],
 )
 
