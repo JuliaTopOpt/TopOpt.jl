@@ -65,27 +65,20 @@ function ChainRulesCore.rrule(bc::BlockCompliance, x)
         @assert Nonconvex.getdim(bc) == length(Δ)
         newΔ = similar(Δ, length(x))
         newΔ .= 0
-        jtvp!(newΔ, bc, x, Δ; runf=false)
+        @unpack compliance = bc
+        @unpack solver = compliance
+        @unpack elementinfo = solver
+        if compliance.logarithm
+            w = Δ ./ bc.raw_val
+        else
+            w = Δ
+        end
+        compute_jtvp!_bc(newΔ, bc, bc.method, w)
         return (nothing, newΔ)
     end
 end
 
-function TopOpt.jtvp!(out, bc::BlockCompliance, x, w; runf=true)
-    @assert length(out) == length(x)
-    @assert Nonconvex.getdim(bc) == length(w)
-    @unpack compliance = bc
-    @unpack solver = compliance
-    @unpack elementinfo = solver
-    runf && bc(x)
-    if compliance.logarithm
-        w = w ./ bc.raw_val
-    end
-    compute_jtvp!_bc(out, bc, bc.method, w)
-    return out
-end
-
 Nonconvex.getdim(f::BlockCompliance) = length(f.val)
-TopOpt.getnvars(f::BlockCompliance) = length(f.compliance.grad)
 Utilities.getpenalty(c::BlockCompliance) = c.compliance |> getsolver |> getpenalty
 
 function compute_block_compliance(ec::BlockCompliance, m::ExactDiagonal)

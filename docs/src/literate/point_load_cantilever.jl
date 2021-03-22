@@ -33,14 +33,11 @@ solver = FEASolver(
 # ### Define compliance objective
 comp = TopOpt.Compliance(problem, solver)
 filter = DensityFilter(solver, rmin = rmin)
-obj = Objective(x -> comp(filter(x)))
+obj = x -> comp(filter(x))
 
 # ### Define volume constraint
 volfrac = TopOpt.Volume(problem, solver)
-constr = IneqConstraint(
-    x -> volfrac(filter(x)),
-    V,
-)
+constr = x -> volfrac(filter(x)) - V
 
 # Printout iterations
 # Nonconvex.show_residuals[] = true

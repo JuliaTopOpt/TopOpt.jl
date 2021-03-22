@@ -42,19 +42,11 @@ function (cf::DensityFilter{true, T})(x) where {T}
     mul!(out, jacobian, x)
     return out
 end
-function TopOpt.jtvp!(out, cf::DensityFilter{true}, x, w; runf=true)
-    mul!(out, cf.jacobian', w)
-    return out
-end
 function ChainRulesCore.rrule(f::DensityFilter{true}, x)
     f(x), Δ -> (nothing, f.jacobian' * Δ)
 end
 
 (cf::DensityFilter{false})(x) = x
-function TopOpt.jtvp!(out, cf::DensityFilter{false}, x, w; runf=true)
-    out .= w
-    return out
-end
 
 function getJacobian(solver, metadata::FilterMetadata)
     @unpack elementinfo, problem = solver
@@ -142,23 +134,6 @@ function (cf::ProjectedDensityFilter)(x)
         out = fx
     else
         out = cf.postproj.(fx)
-    end
-    return out
-end
-function TopOpt.jtvp!(out, cf::ProjectedDensityFilter, x, w; runf=true)
-    if cf.preproj isa Nothing
-        fx = cf.filter(x)
-    else
-        fx = cf.filter(cf.preproj.(x))
-    end
-    if cf.postproj isa Nothing
-        w2 = w
-    else
-        w2 = ForwardDiff.derivative.(Ref(cf.postproj), fx) .* w
-    end
-    TopOpt.jtvp!(out, cf.filter, x, w2; runf=false)
-    if !(cf.preproj isa Nothing)
-        out .= ForwardDiff.derivative.(Ref(cf.preproj), x) .* out
     end
     return out
 end

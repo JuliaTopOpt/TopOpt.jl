@@ -19,14 +19,15 @@ end
 Base.show(::IO, ::MIME{Symbol("text/plain")}, x::PCGDisplacementSolver) = println("TopOpt preconditioned conjugate gradient iterative solver")
 function PCGDisplacementSolver(sp::StiffnessTopOptProblem{dim, T};
     conv = DefaultCriteria(),
-    xmin=T(1)/1000, 
-    cg_max_iter=700, 
-    tol=xmin, 
-    penalty=PowerPenalty{T}(1), 
-    prev_penalty=copy(penalty),
-    preconditioner=identity, 
-    quad_order=default_quad_order(sp)) where {dim, T, Tconv}
-    prev_penalty = setpenalty(prev_penalty, T(NaN))
+    xmin = T(1)/1000,
+    cg_max_iter = 700,
+    tol = xmin,
+    penalty = PowerPenalty{T}(1),
+    prev_penalty = deepcopy(penalty),
+    preconditioner = identity,
+    quad_order = default_quad_order(sp),
+) where {dim, T}
+
     elementinfo = ElementFEAInfo(sp, quad_order, Val{:Static})
     globalinfo = GlobalFEAInfo(sp)
     u = zeros(T, ndofs(sp.ch.dh))

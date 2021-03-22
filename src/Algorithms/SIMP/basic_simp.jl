@@ -22,8 +22,8 @@ Base.show(::IO, ::MIME{Symbol("text/plain")}, ::SIMP) = println("TopOpt SIMP alg
 
 function SIMP(optimizer, solver, p::T; tracing=true) where T
     penalty = getpenalty(solver)
-    penalty = setpenalty(penalty, p)
-    prev_penalty = setpenalty(penalty, NaN)
+    prev_penalty = deepcopy(penalty)
+    setpenalty!(penalty, p)
     ncells = getncells(solver.problem)
     result = NewSIMPResult(T, optimizer, ncells)
     return SIMP(optimizer, penalty, prev_penalty, solver, result, tracing)
@@ -32,9 +32,10 @@ end
 Utilities.getpenalty(s::AbstractSIMP) = s.penalty
 function Utilities.setpenalty!(s::AbstractSIMP, p::Number)
     penalty = s.penalty
-    s.prev_penalty = penalty
-    s.penalty = setpenalty(penalty, p)
+    s.prev_penalty = deepcopy(penalty)
+    setpenalty!(penalty, p)
     setpenalty!(s.solver, p)
+    return s
 end
 
 function (s::SIMP{T, TO})(x0 = s.solver.vars) where {T, TO <: Optimizer}
@@ -72,7 +73,9 @@ function update_result!(s::SIMP{T}, mma_results) where T
 
     update_topology!(result.topology, black, white, mma_results.minimizer, varind)
     result.objval = mma_results.minimum
-    result.convstate = deepcopy(mma_results.convstate)
+    if hasproperty(mma_results, :convstate)
+        result.convstate = deepcopy(mma_results.convstate)
+    end
     return result
 end
 

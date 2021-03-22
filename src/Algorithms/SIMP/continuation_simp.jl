@@ -106,7 +106,7 @@ function MMAOptionsGen(;
     end
 
     if ftol_gen == nothing
-        ftol_cont = FixedContinuation(initial_options.tol.f, steps + 1)
+        ftol_cont = FixedContinuation(initial_options.tol.frel, steps + 1)
     else
         @assert steps == ftol_gen.length - 1
         ftol_cont = ftol_gen
@@ -229,7 +229,6 @@ function update!(c_simp::ContinuationSIMP, i)
     setpenalty!(c_simp.simp, p)
     options = c_simp.options.option_cont(c_simp.simp.optimizer.workspace.options, i)
     c_simp.simp.optimizer.workspace.options = options
-
     return c_simp
 end
 frac(x) = 2*min(abs(x), abs(x - 1))

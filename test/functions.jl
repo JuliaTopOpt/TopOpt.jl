@@ -26,12 +26,13 @@ end
     problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
     for p in (1.0, 2.0, 3.0)
         solver = FEASolver(Displacement, Direct, problem, xmin = 0.01, penalty = TopOpt.PowerPenalty(p))
-        vol = TopOpt.IneqConstraint(Volume(problem, solver), 0.3)
+        vol = Volume(problem, solver)
+        constr = x -> vol(x) - 0.3
         for i in 1:3
             x = rand(prod(nels))
-            val1, grad1 = Nonconvex.value_gradient(vol, x)
-            val2, grad2 = vol(x), Zygote.gradient(vol, x)[1]
-            grad3 = FDM.grad(central_fdm(5, 1), vol, x)[1]
+            val1, grad1 = Nonconvex.value_gradient(constr, x)
+            val2, grad2 = constr(x), Zygote.gradient(constr, x)[1]
+            grad3 = FDM.grad(central_fdm(5, 1), constr, x)[1]
             @test val1 == val2
             @test norm(grad1 - grad2) == 0
             @test norm(grad2 - grad3) <= 1e-5
@@ -88,7 +89,7 @@ end
     for p in (1.0, 2.0, 3.0)
         solver = FEASolver(Displacement, Direct, problem, xmin = 0.01, penalty = TopOpt.PowerPenalty(p))
         exact_svd_block = BlockCompliance(problem, solver, method = :exact)
-        constr = TopOpt.BlockIneqConstraint(exact_svd_block, 1000.0)
+        constr = Nonconvex.FunctionWrapper(x -> exact_svd_block(x) .- 1000.0, length(exact_svd_block(solver.vars)))
         for i in 1:3
             x = clamp.(rand(prod(nels)), 0.1, 1.0)
             v = rand(nloads)
