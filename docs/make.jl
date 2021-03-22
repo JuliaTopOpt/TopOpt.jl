@@ -5,17 +5,17 @@ using DocumenterCitations
 # import ...
 
 # Generate examples
-# include("generate.jl")
+include("generate.jl")
 
-# GENERATED_EXAMPLES = [joinpath("examples", f) for f in (
-#     "simp.md",
-#     "beso.md",
-#     "geso.md",
-#     "csimp.md",
-#     "global_stress.md",
-#     )]
+GENERATED_EXAMPLES = [joinpath("examples", f) for f in (
+    "simp.md",
+    "beso.md",
+    "geso.md",
+    "csimp.md",
+    "global_stress.md",
+    )]
 
-bib = CitationBibliography(joinpath("biblio", "ref.bib"))
+bib = CitationBibliography(joinpath(@__FILE__, "biblio", "ref.bib"))
 makedocs(
     bib,
     sitename = "TopOpt.jl",
