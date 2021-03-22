@@ -32,9 +32,6 @@ geso = GESO(comp, volfrac, 0.5, sensfilter)
 x0 = ones(length(solver.vars))
 result = geso(x0)
 
-@show optimizer.workspace.iter
-@show result.objval
-
 # ### (Optional) Visualize the result using Makie.jl
 # Need to run `using Pkg; Pkg.add(Makie)` first
 # ```julia

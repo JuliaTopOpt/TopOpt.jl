@@ -1,5 +1,5 @@
 """
-Continuous SIMP algorithm, see [Tarek_Ray_2020](@cite).
+Continuous SIMP algorithm, see [TarekRay2020](@cite).
 """
 @params mutable struct ContinuationSIMP <: AbstractSIMP
     simp

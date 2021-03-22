@@ -32,14 +32,13 @@ beso = BESO(comp, volfrac, 0.5, sensfilter)
 x0 = ones(length(solver.vars))
 result = beso(x0)
 
-@show optimizer.workspace.iter
-@show result.objval
-
 # ### (Optional) Visualize the result using Makie.jl
 # Need to run `using Pkg; Pkg.add(Makie)` first
+# ```julia
 # using TopOpt.TopOptProblems.Visualization: visualize
 # fig = visualize(problem; topology = result.topology)
 # Makie.display(fig)
+# ```
 
 #md # ## [Plain Program](@id beso-plain-program)
 #md #

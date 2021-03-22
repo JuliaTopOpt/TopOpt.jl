@@ -6,6 +6,10 @@
     fevals::Int
 end
 
+
+"""
+The BESO algorithm, see [HuangXie2010](@cite).
+"""
 @params struct BESO{T} <: TopOptAlgorithm 
     comp::Compliance
     vol::Volume

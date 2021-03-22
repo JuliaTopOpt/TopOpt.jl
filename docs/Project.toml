@@ -1,8 +1,9 @@
 [deps]
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
+DocumenterCitations = "daee34ce-89f3-4625-b898-19384cb65244"
 JuAFEM = "30d91d44-8115-11e8-1d28-c19a5ac16de8"
 Literate = "98b081ad-f1c9-55d3-8b20-4c87d4299306"
+Nonconvex = "01bcebdf-4d21-426d-b5c4-6132c1619978"
 Tensors = "48a634ad-e948-5137-8d70-aa71f2a747f4"
 VTKDataTypes = "10d27dd1-1d0f-5a4c-b178-bd2d0045a217"
-Nonconvex = "01bcebdf-4d21-426d-b5c4-6132c1619978"
 Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
