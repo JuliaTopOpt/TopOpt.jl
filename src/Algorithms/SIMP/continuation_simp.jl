@@ -1,3 +1,6 @@
+"""
+Continuous SIMP algorithm, see [Tarek_Ray_2020](@cite).
+"""
 @params mutable struct ContinuationSIMP <: AbstractSIMP
     simp
     result

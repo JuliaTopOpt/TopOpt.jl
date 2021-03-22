@@ -1,4 +1,5 @@
 using Documenter, TopOpt
+using DocumenterCitations
 
 # Load packages to avoid precompilation output in the docs
 # import ...
@@ -7,10 +8,17 @@ using Documenter, TopOpt
 include("generate.jl")
 
 GENERATED_EXAMPLES = [joinpath("examples", f) for f in (
-    "point_load_cantilever.md",
+    "simp.md",
+    "beso.md",
+    "geso.md",
+    "csimp.md",
+    "stress.md",
     )]
 
+
+bib = CitationBibliography("ref.bib")
 makedocs(
+    bib,
     sitename = "TopOpt.jl",
     format = Documenter.HTML(
         prettyurls = get(ENV, "CI", nothing) == "true"
