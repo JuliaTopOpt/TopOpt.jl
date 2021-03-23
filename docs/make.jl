@@ -25,7 +25,7 @@ makedocs(
     # doctest = false,
     pages = [
         "Home" => "index.md",
-        # "Examples" => GENERATED_EXAMPLES,
+        "Examples" => GENERATED_EXAMPLES,
         "API Reference" => [
             "reference/TopOptProblems.md",
             "reference/Algorithms.md",
