@@ -21,14 +21,12 @@ end
     @safetestset "CSIMP" begin
         include("examples/csimp.jl")
     end
-    @safetestset "BESO" begin
-        include("examples/beso.jl")
-    end
-    @safetestset "GESO" begin
-        include("examples/geso.jl")
-    end
     @safetestset "Global Stress" begin
         include("examples/global_stress.jl")
     end
-    #@safetestset "More examples" include("examples/test_examples.jl")
+    @safetestset "More examples" begin 
+        include("examples/test_examples.jl")
+    end
 end
+
+# @safetestset "CSIMP Tests" begin include("csimp.jl") end

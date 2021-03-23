@@ -5,6 +5,10 @@
     converged::Bool
     fevals::Int
 end
+
+"""
+The GESO algorithm, see [LiuYiLiShen2008](@cite).
+"""
 struct GESO <: TopOptAlgorithm 
     comp::Compliance
     vol::Volume

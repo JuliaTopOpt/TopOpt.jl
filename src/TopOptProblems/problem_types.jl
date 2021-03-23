@@ -220,7 +220,7 @@ end
     varind::AbstractVector{Int}
     metadata::Metadata
 end
-Base.show(::IO, ::MIME{Symbol("text/plain")}, ::HalfMBB) = println("TopOpt half MBB probem")
+Base.show(::IO, ::MIME{Symbol("text/plain")}, ::HalfMBB) = println("TopOpt half MBB problem")
 
 """
     HalfMBB(::Type{Val{CellType}}, nels::NTuple{dim,Int}, sizes::NTuple{dim}, E, ν, force) where {dim, CellType}

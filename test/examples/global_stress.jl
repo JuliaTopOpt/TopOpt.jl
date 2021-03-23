@@ -19,6 +19,9 @@ problem_names = [
     "Tie-beam",
 ]
 
+println("Global Stress")
+println("-"^10)
+
 for i in 1:length(problems)
     println(problem_names[i])
     problem = problems[i]
@@ -27,7 +30,6 @@ for i in 1:length(problems)
     xmin = 0.001 # minimum density
     steps = 40 # maximum number of penalty steps, delta_p0 = 0.1
     convcriteria = Nonconvex.KKTCriteria()
-    #penalty = TopOpt.PowerPenalty(1.0)
     penalty = TopOpt.PowerPenalty(1.0)
     # Define a finite element solver
     solver = FEASolver(
@@ -44,7 +46,6 @@ for i in 1:length(problems)
 
     obj = x -> volfrac(filter(x))
     constr = x -> norm(stress(filter(x)), 5) - 1.0
-    #constr = x -> stress(filter(x)) .- 1.0
     # Define subproblem optimizer
     x0 = fill(1.0, length(solver.vars))
     options = Nonconvex.MMAOptions(

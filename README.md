@@ -4,14 +4,16 @@
 <!-- [![Build Status](https://travis-ci.org/YingboMa/SafeTestsets.jl.svg?branch=master)](https://travis-ci.org/mohamed82008/TopOpt.jl) -->
 [![Actions Status](https://github.com/mohamed82008/TopOpt.jl/workflows/CI/badge.svg)](https://github.com/mohamed82008/TopOpt.jl/actions)
 [![codecov](https://codecov.io/gh/mohamed82008/TopOpt.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/mohamed82008/TopOpt.jl)
+[![Documentation](https://img.shields.io/badge/doc-latest-blue.svg)](https://mohamed82008.github.io/TopOpt.jl/dev)
 
 `TopOpt` is a topology optimization package written in [Julia](https://github.com/JuliaLang/julia).
 
-## Documentation
-
-[![Documentation](https://img.shields.io/badge/doc-latest-blue.svg)](https://mohamed82008.github.io/TopOpt.jl/dev)
-
 ## Installation
+
+To install `TopOpt.jl`, you can either (1) add it to an existing Julia environment or (2) [clone and use its shipped environment](https://pkgdocs.julialang.org/v1/environments/#Using-someone-else's-project).
+The second option is recommended for new users who simply wants to try this package out.
+
+### Adding `TopOpt` to an existing Julia environment
 
 In Julia v1.0+ you can install packages using Julia's package manager as follows:
 
@@ -20,7 +22,6 @@ using Pkg
 pkg"add https://github.com/yijiangh/Tensors.jl.git#master"
 pkg"add https://github.com/yijiangh/JuAFEM.jl.git#master"
 pkg"add https://github.com/mohamed82008/VTKDataTypes.jl#master"
-pkg"add https://github.com/mohamed82008/Nonconvex.jl#master"
 pkg"add https://github.com/mohamed82008/TopOpt.jl#master"
 ```
 

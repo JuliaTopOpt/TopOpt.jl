@@ -13,7 +13,7 @@ using ..TopOptProblems: getcloaddict
 # https://github.com/JuliaPlots/AbstractPlotting.jl/blob/f16321dee2c77ac9c753fed9b1074a2df7b10db8/src/utilities/utilities.jl#L188
 # https://github.com/JuliaPlots/AbstractPlotting.jl/blob/444813136a506eba8b5b03e2125c7a5f24e825cb/src/conversions.jl#L522
 function AbstractPlotting.to_vertices(nodes::Vector{<:JuAFEM.Node})
-    return AbstractPlotting.Point3f0.([n.x for n in nodes])
+    return Point3f0.([n.x for n in nodes])
 end
 
 function AbstractPlotting.to_triangles(cells::AbstractVector{<: JuAFEM.Cell})
@@ -79,6 +79,8 @@ function visualize(mesh::JuAFEM.Grid{dim, <:JuAFEM.AbstractCell, TT}, u;
     nnodes = length(mesh.nodes)
     if topology !== undef
         mesh_cells = mesh.cells[Bool.(round.(Int, topology))]
+        # TODO display opacity accroding to topology values
+        # undeformed_mesh_color = [(:gray,t) for t in topology]
     else
         mesh_cells = mesh.cells
     end
@@ -147,13 +149,15 @@ function visualize(mesh::JuAFEM.Grid{dim, <:JuAFEM.AbstractCell, TT}, u;
     # TODO pressure loads?
     # * load vectors
     if cloaddict !== undef
-        loaded_nodes = Point3f0.(nodes[node_ind].x for (node_ind, _) in cloaddict)
-        Makie.arrows!(ax1, 
-            loaded_nodes,
-            lift(s -> Vec3f0.(s .* load_vec for (_, load_vec) in cloaddict), lsgrid.sliders[3].value), 
-            linecolor=:purple, arrowcolor=:purple,
-            arrowsize=vector_arrowsize, linewidth=vector_linewidth)
-        Makie.scatter!(ax1, loaded_nodes) #, markersize = lift(s -> s * 3, lsgrid.sliders[2].value))
+        if length(cloaddict) > 0
+            loaded_nodes = Point3f0.(nodes[node_ind].x for (node_ind, _) in cloaddict)
+            Makie.arrows!(ax1, 
+                loaded_nodes,
+                lift(s -> Vec3f0.(s .* load_vec for (_, load_vec) in cloaddict), lsgrid.sliders[3].value), 
+                linecolor=:purple, arrowcolor=:purple,
+                arrowsize=vector_arrowsize, linewidth=vector_linewidth)
+            Makie.scatter!(ax1, loaded_nodes) #, markersize = lift(s -> s * 3, lsgrid.sliders[2].value))
+        end
     end
 
     # * support vectors

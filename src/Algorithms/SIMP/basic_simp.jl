@@ -10,6 +10,9 @@ function NewSIMPResult(::Type{T}, optimizer, ncells) where {T}
     return SIMPResult(fill(T(NaN), ncells), T(NaN), Nonconvex.ConvergenceState(), 0)
 end
 
+"""
+The vanilla SIMP algorithm, see [Bendsoe1989](@cite).
+"""
 @params mutable struct SIMP{T} <: AbstractSIMP
     optimizer
     penalty
