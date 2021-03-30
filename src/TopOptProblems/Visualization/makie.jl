@@ -1,5 +1,5 @@
 import AbstractPlotting
-import Makie
+import .Makie
 using LinearAlgebra: norm
 using AbstractPlotting: lift, cam3d!, Point3f0, Vec3f0, Figure, Auto
 using AbstractPlotting.MakieLayout: DataAspect, Axis, labelslidergrid!, set_close_to!,

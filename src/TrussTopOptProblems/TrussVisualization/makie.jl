@@ -1,7 +1,7 @@
 using AbstractPlotting: lift, cam3d!, Point3f0, Vec3f0, Figure, Auto, linesegments!, Point2f0
 using AbstractPlotting.MakieLayout: DataAspect, Axis, labelslidergrid!, set_close_to!,
     labelslider!, LScene
-import Makie
+import .Makie
 
 using ...TopOpt.TopOptProblems: getdim
 using ..TrussTopOptProblems: TrussProblem, get_fixities_node_set_name
