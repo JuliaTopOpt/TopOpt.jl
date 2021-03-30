@@ -1,7 +1,7 @@
 using TopOpt.TopOptProblems
 using Test
 
-using JuAFEM
+using Ferrite
 using TopOpt.TopOptProblems: boundingbox
 
 E = 1.0
@@ -170,6 +170,6 @@ end
         end
     end
     @test sum(length, getindex.((grid.facesets,), ["bottomload", "rightload", "toproller", "leftfixed"])) == 8
-	@test JuAFEM.getorder(problem.ch.dh.field_interpolations[1]) == 2
-	@test JuAFEM.nnodes(grid.cells[1]) == 9
+	@test Ferrite.getorder(problem.ch.dh.field_interpolations[1]) == 2
+	@test Ferrite.nnodes(grid.cells[1]) == 9
 end

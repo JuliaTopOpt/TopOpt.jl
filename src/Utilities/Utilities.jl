@@ -1,6 +1,6 @@
 module Utilities
 
-using ForwardDiff, JuAFEM, IterativeSolvers, Requires
+using ForwardDiff, Ferrite, IterativeSolvers, Requires
 
 export  AbstractPenalty,
         PowerPenalty,

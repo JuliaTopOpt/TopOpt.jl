@@ -1,6 +1,6 @@
 module TrussTopOptProblems
 
-using JuAFEM, StaticArrays, LinearAlgebra
+using Ferrite, StaticArrays, LinearAlgebra
 using SparseArrays
 using ..TopOpt
 using ..TopOpt.Utilities
@@ -19,7 +19,7 @@ struct TrussFEACrossSec{T} <: AbstractFEACrossSec
     A::T # cross section area
 end
 
-import JuAFEM: assemble!
+import Ferrite: assemble!
 
 # TODO apply @params to all the problem struct
 

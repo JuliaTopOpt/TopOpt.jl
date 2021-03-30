@@ -4,7 +4,7 @@ using ..TopOpt: dim, whichdevice, CPU, GPU, TopOpt, PENALTY_BEFORE_INTERPOLATION
 using ..TopOptProblems, ..FEA, ..CheqFilters
 using ..Utilities, ForwardDiff, LinearAlgebra, Requires
 using Parameters: @unpack
-using TimerOutputs, JuAFEM, StaticArrays
+using TimerOutputs, Ferrite, StaticArrays
 using StatsFuns, MappedArrays, LazyArrays
 using ..TopOptProblems: getdh
 using SparseArrays, Tracker, Statistics, ChainRulesCore, Zygote

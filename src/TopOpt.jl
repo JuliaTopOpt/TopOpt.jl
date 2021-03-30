@@ -36,7 +36,7 @@ using Reexport, Parameters, Setfield
 include(joinpath("TrussTopOptProblems", "TrussTopOptProblems.jl"))
 @reexport using .TrussTopOptProblems
 
-using JuAFEM, StaticArrays
+using Ferrite, StaticArrays
 
 using ForwardDiff, IterativeSolvers#, Preconditioners
 @reexport using VTKDataTypes

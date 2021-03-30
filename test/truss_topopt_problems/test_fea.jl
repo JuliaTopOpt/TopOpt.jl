@@ -1,7 +1,7 @@
 using Test
 using LinearAlgebra
-using JuAFEM
-using JuAFEM: cellid, getcoordinates, CellIterator
+using Ferrite
+using Ferrite: cellid, getcoordinates, CellIterator
 
 using TopOpt
 using TopOpt.TopOptProblems: boundingbox, nnodespercell, getgeomorder, getmetadata, getdh, getE, getdim
@@ -32,7 +32,7 @@ ins_dir = joinpath(@__DIR__, "instances", "fea_examples");
     problem = TrussProblem(Val{:Linear}, node_points, elements, loads, fixities, mats, crosssecs);
 
     @test getdim(problem) == ndim
-    @test JuAFEM.getncells(problem) == ncells
+    @test Ferrite.getncells(problem) == ncells
     @test getE(problem) == [m.E for m in mats]
     @test problem.black == problem.white == falses(ncells)
     @test problem.force == loads

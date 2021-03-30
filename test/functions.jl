@@ -80,7 +80,7 @@ end
     base_problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
     dense_load_inds = vec(TopOpt.TopOptProblems.get_surface_dofs(base_problem))
     dense_rank = 3
-    F = spzeros(TopOpt.JuAFEM.ndofs(base_problem.ch.dh), nloads)
+    F = spzeros(TopOpt.Ferrite.ndofs(base_problem.ch.dh), nloads)
     Fsize = size(F)
     for i in 1:dense_rank
         F += sparsevec(dense_load_inds, randn(length(dense_load_inds)) / dense_rank, Fsize[1]) * randn(Fsize[2])'

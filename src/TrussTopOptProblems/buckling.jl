@@ -76,10 +76,10 @@ function buckling(problem::TrussProblem{xdim, T}, ginfo, einfo; u=undef) where {
 
     if Kσ isa Symmetric
         Kσ.data.nzval .= 0
-        assembler = JuAFEM.AssemblerSparsityPattern(Kσ.data, T[], Int[], Int[])
+        assembler = Ferrite.AssemblerSparsityPattern(Kσ.data, T[], Int[], Int[])
     else
         Kσ.nzval .= 0
-        assembler = JuAFEM.AssemblerSparsityPattern(Kσ, T[], Int[], Int[])
+        assembler = Ferrite.AssemblerSparsityPattern(Kσ, T[], Int[], Int[])
     end
 
     # * assemble global geometric stiffness matrix
@@ -91,9 +91,9 @@ function buckling(problem::TrussProblem{xdim, T}, ginfo, einfo; u=undef) where {
     for (i,cell) in enumerate(_celliterator)
         celldofs!(global_dofs, dh, i)
         if TK <: Symmetric
-            JuAFEM.assemble!(assembler, global_dofs, Kσs[i].data)
+            Ferrite.assemble!(assembler, global_dofs, Kσs[i].data)
         else
-            JuAFEM.assemble!(assembler, global_dofs, Kσs[i])
+            Ferrite.assemble!(assembler, global_dofs, Kσs[i])
         end
     end
 

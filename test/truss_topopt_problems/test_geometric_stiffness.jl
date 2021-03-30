@@ -1,7 +1,7 @@
 using Test
 using LinearAlgebra
 using LinearAlgebra: norm
-using JuAFEM
+using Ferrite
 using StaticArrays
 
 using TopOpt

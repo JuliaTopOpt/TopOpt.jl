@@ -5,7 +5,7 @@ import Makie
 
 using ...TopOpt.TopOptProblems: getdim
 using ..TrussTopOptProblems: TrussProblem, get_fixities_node_set_name
-using JuAFEM
+using Ferrite
 using LinearAlgebra: norm
 
 """
@@ -28,8 +28,8 @@ function visualize(problem::TrussProblem, u;
     default_exagg_scale=1.0, exagg_range=10.0,
     default_element_linewidth_scale=6.0, element_linewidth_range=10.0)
     ndim = getdim(problem)
-    ncells = JuAFEM.getncells(problem)
-    nnodes = JuAFEM.getnnodes(problem)
+    ncells = Ferrite.getncells(problem)
+    nnodes = Ferrite.getnnodes(problem)
 
     fig = Figure(resolution = (1200, 800))
 
@@ -111,7 +111,7 @@ function visualize(problem::TrussProblem, u;
     # * fixties vectors
     for i=1:ndim
         nodeset_name = get_fixities_node_set_name(i)
-        fixed_node_ids = JuAFEM.getnodeset(problem.truss_grid.grid, nodeset_name)
+        fixed_node_ids = Ferrite.getnodeset(problem.truss_grid.grid, nodeset_name)
         dir = zeros(ndim)
         dir[i] = 1.0
         scaled_base_pts = lift(s->[PtT(nodes[node_id].x) - PtT(dir*s) for node_id in fixed_node_ids], 
@@ -143,7 +143,7 @@ function visualize(problem::TrussProblem, u;
 end
 
 function visualize(problem::TrussProblem{xdim, T}; kwargs...) where {xdim, T}
-    nnodes = JuAFEM.getnnodes(problem)
+    nnodes = Ferrite.getnnodes(problem)
     u = zeros(T, xdim * nnodes)
     visualize(problem, u; kwargs...)
 end

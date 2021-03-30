@@ -2,9 +2,9 @@ import GeometryBasics, GeometryTypes
 using ..TopOptProblems: getdh
 
 """
-map JuAFEM cell type to VTKDataTypes cell type
+map Ferrite cell type to VTKDataTypes cell type
 """
-const juafem_to_vtk = Dict( Triangle => 5, 
+const ferrite_to_vtk = Dict( Triangle => 5, 
                             QuadraticTriangle => 22, 
                             Quadrilateral => 9, 
                             QuadraticQuadrilateral => 23, 
@@ -15,10 +15,10 @@ const juafem_to_vtk = Dict( Triangle => 5,
                           )
 
 """
-Converting a JuAFEM grid to a VTKUnstructuredData from [VTKDataTypes](https://github.com/mohamed82008/VTKDataTypes.jl).
+Converting a Ferrite grid to a VTKUnstructuredData from [VTKDataTypes](https://github.com/mohamed82008/VTKDataTypes.jl).
 """
-function VTKDataTypes.VTKUnstructuredData(grid::JuAFEM.Grid{dim, <:JuAFEM.Cell{dim,N,M}, T}) where {dim, N, M, T}
-    celltype = juafem_to_vtk[eltype(grid.cells)]
+function VTKDataTypes.VTKUnstructuredData(grid::Ferrite.Grid{dim, <:Ferrite.Cell{dim,N,M}, T}) where {dim, N, M, T}
+    celltype = ferrite_to_vtk[eltype(grid.cells)]
     celltypes = [celltype for i in 1:length(grid.cells)]
     connectivity = copy(reinterpret(NTuple{N, Int}, grid.cells))
     node_coords = copy(reshape(reinterpret(Float64, grid.nodes), dim, length(grid.nodes)))
@@ -27,7 +27,7 @@ end
 function VTKDataTypes.VTKUnstructuredData(problem::AbstractTopOptProblem)
     return VTKUnstructuredData(getdh(problem).grid)
 end
-VTKDataTypes.GLMesh(grid::JuAFEM.Grid; kwargs...) = GLMesh(VTKUnstructuredData(grid); kwargs...)
+VTKDataTypes.GLMesh(grid::Ferrite.Grid; kwargs...) = GLMesh(VTKUnstructuredData(grid); kwargs...)
 VTKDataTypes.GLMesh(problem::AbstractTopOptProblem; kwargs...) = GLMesh(VTKUnstructuredData(problem); kwargs...)
 
 ```

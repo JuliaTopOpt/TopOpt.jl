@@ -1,6 +1,6 @@
 using ..TopOpt.TopOptProblems: getgeomorder, getdh, getE, getν, getdensity, gettypes
 using LinearAlgebra: norm
-import JuAFEM: getngeobasefunctions, getn_scalarbasefunctions
+import Ferrite: getngeobasefunctions, getn_scalarbasefunctions
 
 """
 Generate element stiffness matrices
@@ -22,7 +22,7 @@ function make_Kes_and_fes(problem::TrussProblem{xdim, T}, quad_order, ::Type{Val
     As = getA(problem)
 
     ξdim = getξdim(problem)
-    refshape = JuAFEM.getrefshape(dh.field_interpolations[1])
+    refshape = Ferrite.getrefshape(dh.field_interpolations[1])
 
     # Shape functions and quadrature rule
     interpolation_space = Lagrange{ξdim, refshape, geom_order}()
@@ -102,7 +102,7 @@ function _make_Kes_and_weights(
 end
 
 @inline function truss_reinit!(cv::CellValues{ξdim,xdim,T}, ci::CellIterator{xdim,N,T}, crossec::T) where {ξdim,xdim,N,T}
-    JuAFEM.check_compatible_geointerpolation(cv, ci)
+    Ferrite.check_compatible_geointerpolation(cv, ci)
     truss_reinit!(cv, ci.coords, crossec)
 end
 

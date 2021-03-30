@@ -55,7 +55,7 @@ IO.INP.Parser.InpContent
 
 ## Grids
 
-Grid types are defined in `TopOptProblems` because a number of topology optimization problems share the same underlying grid but apply the loads and boundary conditions at different locations. For example, the `PointLoadCantilever` and `HalfMBB` problems use the same rectilinear grid type, `RectilinearGrid`, under the hood. The `LBeam` problem uses the `LGrid` function under the hood to construct an L-shaped `JuAFEM.Grid`. New problem types can be defined using the same grids but different loads or boundary conditions.
+Grid types are defined in `TopOptProblems` because a number of topology optimization problems share the same underlying grid but apply the loads and boundary conditions at different locations. For example, the `PointLoadCantilever` and `HalfMBB` problems use the same rectilinear grid type, `RectilinearGrid`, under the hood. The `LBeam` problem uses the `LGrid` function under the hood to construct an L-shaped `Ferrite.Grid`. New problem types can be defined using the same grids but different loads or boundary conditions.
 
 ```@docs
 RectilinearGrid
@@ -68,10 +68,10 @@ LGrid
 
 ## Finite element backend
 
-Currently, `TopOpt` uses [`JuAFEM.jl`](https://github.com/KristofferC/JuAFEM.jl) for FEA-related modeling. 
-This means that all the problems above are described in the language and types of `JuAFEM`.
+Currently, `TopOpt` uses [`Ferrite.jl`](https://github.com/KristofferC/Ferrite.jl) for FEA-related modeling. 
+This means that all the problems above are described in the language and types of `Ferrite`.
 
-We used to use a [forked version](https://github.com/mohamed82008/JuAFEM.jl) of `JuAFEM.jl`
+We used to use a [forked version](https://github.com/mohamed82008/Ferrite.jl) of `Ferrite.jl`
 for GPU support but the main package should also work on the CPU. Currently, these features are disabled.
 
 ## Matrices and vectors

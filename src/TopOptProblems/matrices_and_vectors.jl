@@ -67,7 +67,7 @@ function make_Kes_and_fes(problem, quad_order, ::Type{Val{mat_type}}) where {mat
     ν = getν(problem)
     ρ = getdensity(problem)
 
-    refshape = JuAFEM.getrefshape(dh.field_interpolations[1])
+    refshape = Ferrite.getrefshape(dh.field_interpolations[1])
 
     λ = E*ν / ((1 + ν) * (1 - 2*ν))
     μ = E / (2*(1 + ν))
@@ -221,7 +221,7 @@ function _make_dloads(fes, problem, facevalues)
     dh = getdh(problem)
     grid = dh.grid
     boundary_matrix = grid.boundary_matrix
-    cell_coords = zeros(JuAFEM.Vec{dim, T}, N)
+    cell_coords = zeros(Ferrite.Vec{dim, T}, N)
     n_basefuncs = getnbasefunctions(facevalues)
     for k in keys(pressuredict)
         t = -pressuredict[k] # traction = negative the pressure

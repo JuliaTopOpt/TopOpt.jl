@@ -6,7 +6,7 @@ get_fixities_node_set_name(i) = "fixed_u$(i)"
 struct TrussProblem{xdim,T,N,M} <: StiffnessTopOptProblem{xdim,T}
     truss_grid::TrussGrid{xdim,T,N,M} # ground truss mesh
     materials::Vector{TrussFEAMaterial{T}}
-    ch::ConstraintHandler{<:DofHandler{xdim,<:JuAFEM.Cell{xdim,N,M},T},T}
+    ch::ConstraintHandler{<:DofHandler{xdim,<:Ferrite.Cell{xdim,N,M},T},T}
     force::Dict{Int, SVector{xdim, T}}
     black::AbstractVector
     white::AbstractVector
@@ -16,12 +16,12 @@ end
 # - `force_dof`: dof number at which the force is applied
 
 gettrussgrid(sp::TrussProblem) = sp.truss_grid
-getJuaFEMgrid(sp::TrussProblem) = sp.truss_grid.grid
+getFerritegrid(sp::TrussProblem) = sp.truss_grid.grid
 
 TopOpt.TopOptProblems.getE(sp::TrussProblem) = [m.E for m in sp.materials]
 TopOpt.TopOptProblems.getν(sp::TrussProblem) = [m.ν for m in sp.materials]
 getA(sp::TrussProblem) = [cs.A for cs in sp.truss_grid.crosssecs]
-JuAFEM.getnnodes(problem::StiffnessTopOptProblem) = JuAFEM.getnnodes(getdh(problem).grid)
+Ferrite.getnnodes(problem::StiffnessTopOptProblem) = Ferrite.getnnodes(getdh(problem).grid)
 
 function TrussProblem(::Type{Val{CellType}}, node_points::Dict{iT, SVector{xdim, T}}, elements::Dict{iT, Tuple{iT, iT}}, 
     loads::Dict{iT, SVector{xdim, T}}, supports::Dict{iT, SVector{xdim, fT}}, mats=TrussFEAMaterial{T}(1.0, 0.3), crosssecs=TrussFEACrossSec{T}(1.0)) where {xdim, T, iT, fT, CellType}
@@ -145,21 +145,20 @@ getξdim(::TrussProblem) = 1
 
 #######################################
 # * extra Cell types for Line elements
-# https://github.com/lijas/JuAFEM.jl/blob/line2/src/Grid/grid.jl
+# https://github.com/lijas/Ferrite.jl/blob/line2/src/Grid/grid.jl
 
-const Line2d = Cell{2,2,2}
-const Line3d = Cell{3,2,2}
-const QuadraticLine = Cell{1,3,2}
+# const Line2d = Cell{2,2,2}
+# const Line3d = Cell{3,2,2}
+# const QuadraticLine = Cell{1,3,2}
 
-# 1D: vertices, Line is defined in JuAFEM
-JuAFEM.faces(c::Union{QuadraticLine}) = (c.nodes[1], c.nodes[2])
-JuAFEM.vertices(c::Union{Line2d,Line3d,QuadraticLine}) = (c.nodes[1], c.nodes[2])
+# # 1D: vertices, Line is defined in Ferrite
+# Ferrite.faces(c::Union{QuadraticLine}) = (c.nodes[1], c.nodes[2])
+# Ferrite.vertices(c::Union{Line2d,Line3d,QuadraticLine}) = (c.nodes[1], c.nodes[2])
 
-# 2D: vertices, faces
-JuAFEM.faces(c::Line2d) = ((c.nodes[1],c.nodes[2]),) 
+# # 2D: vertices, faces
+# Ferrite.faces(c::Line2d) = ((c.nodes[1],c.nodes[2]),) 
 
-# 3D: vertices, edges, faces
-JuAFEM.edges(c::Line3d) = ((c.nodes[1],c.nodes[2]),) 
+# # 3D: vertices, edges, faces
+# Ferrite.edges(c::Line3d) = ((c.nodes[1],c.nodes[2]),) 
 
-JuAFEM.default_interpolation(::Union{Type{Line},Type{Line2d},Type{Line3d}}) = Lagrange{1,RefCube,1}()
-#JuAFEM.default_interpolation(::Type{QuadraticLine}) = Lagrange{1,RefCube,2}()
+# Ferrite.default_interpolation(::Union{Type{Line},Type{Line2d},Type{Line3d}}) = Lagrange{1,RefCube,1}()

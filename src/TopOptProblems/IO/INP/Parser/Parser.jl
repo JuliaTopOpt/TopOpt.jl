@@ -1,6 +1,6 @@
 module Parser
 
-using JuAFEM, SparseArrays
+using Ferrite, SparseArrays
 using .....TopOpt: find_black_and_white
 
 export extract_inp, InpContent
@@ -61,7 +61,7 @@ include(joinpath("FeatureExtractors", "extract_dload.jl"))
 include(joinpath("FeatureExtractors", "extract_material.jl"))
 include(joinpath("FeatureExtractors", "extract_nodes.jl"))
 include(joinpath("FeatureExtractors", "extract_set.jl"))
-include(joinpath("inp_to_juafem.jl"))
+include(joinpath("inp_to_ferrite.jl"))
 
 function extract_inp(filepath_with_ext)
     file = open(filepath_with_ext, "r")

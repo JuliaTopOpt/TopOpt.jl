@@ -1,7 +1,7 @@
 module Visualization
 
 using ..TopOptProblems: AbstractTopOptProblem, StiffnessTopOptProblem
-using JuAFEM, VTKDataTypes, Requires
+using Ferrite, VTKDataTypes, Requires
 
 # export ...
 include("mesh_types.jl")

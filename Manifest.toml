@@ -335,6 +335,12 @@ git-tree-sha1 = "acebe244d53ee1b461970f8910c235b259e772ef"
 uuid = "9aa1b823-49e4-5ca5-8b0f-3971ec8bab6a"
 version = "0.3.2"
 
+[[Ferrite]]
+deps = ["LinearAlgebra", "Reexport", "SparseArrays", "Tensors", "WriteVTK"]
+git-tree-sha1 = "500416f69e52588ae5c0cc18fe69ed7410190dbf"
+uuid = "c061ca5d-56c9-439f-9c0e-210fe06d3992"
+version = "0.3.0"
+
 [[FileIO]]
 deps = ["Pkg", "Requires", "UUIDs"]
 git-tree-sha1 = "b4fdad5fe06e0226348301b5163925ac1ae8b64b"
@@ -567,14 +573,6 @@ deps = ["Krylov", "LinearAlgebra", "LinearOperators", "Logging", "NLPModels", "N
 git-tree-sha1 = "c7ca96552d4096098f7d5cf30958a78cbae218a6"
 uuid = "10dff2fc-5484-5881-a0e0-c90441020f8a"
 version = "0.5.0"
-
-[[JuAFEM]]
-deps = ["LinearAlgebra", "Reexport", "SparseArrays", "Tensors", "WriteVTK"]
-git-tree-sha1 = "f1ecdcac398281c509274bcfa4ae23fc1ad10042"
-repo-rev = "master"
-repo-url = "https://github.com/yijiangh/JuAFEM.jl.git"
-uuid = "30d91d44-8115-11e8-1d28-c19a5ac16de8"
-version = "0.2.0"
 
 [[JuliaInterpreter]]
 deps = ["CodeTracking", "InteractiveUtils", "Random", "UUIDs"]
@@ -943,7 +941,7 @@ uuid = "01435c0c-c90d-11e9-3788-63660f8fbccc"
 version = "0.2.0"
 
 [[Pkg]]
-deps = ["Artifacts", "Dates", "Downloads", "LibGit2", "Libdl", "Logging", "Markdown", "Printf", "REPL", "Random", "SHA", "Serialization", "TOML", "Tar", "UUIDs", "p7zip_jll"]
+deps = ["Artifacts", "Dates", "Downloads", "LibGit2", "Libdl", "Logging", "Markdown", "Printf", "REPL", "Random", "SHA", "Serialization", "TOML", "Tar", "UUIDs"]
 uuid = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
 
 [[PkgVersion]]
@@ -1357,10 +1355,6 @@ version = "1.3.6+6"
 [[nghttp2_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "8e850ede-7688-5339-a07c-302acd2aaf8d"
-
-[[p7zip_jll]]
-deps = ["Artifacts", "Libdl"]
-uuid = "3f19e933-33d8-53b3-aaab-bd5110c3b7a0"
 
 [[x264_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]

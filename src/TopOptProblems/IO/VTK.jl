@@ -1,6 +1,6 @@
 module VTK
 
-using ...TopOptProblems: TopOptProblems, StiffnessTopOptProblem, JuAFEM
+using ...TopOptProblems: TopOptProblems, StiffnessTopOptProblem, Ferrite
 using WriteVTK
 
 export  save_mesh
@@ -29,24 +29,24 @@ function WriteVTK.vtk_grid(filename::AbstractString, problem::StiffnessTopOptPro
     grid = problem.ch.dh.grid
     full_top = length(vars) == length(TopOptProblems.getdh(problem).grid.cells)
 
-    celltype = JuAFEM.cell_to_vtkcell(JuAFEM.getcelltype(grid))
-    cls = JuAFEM.MeshCell[]
-    for (i, cell) in enumerate(JuAFEM.CellIterator(grid))
+    celltype = Ferrite.cell_to_vtkcell(Ferrite.getcelltype(grid))
+    cls = Ferrite.MeshCell[]
+    for (i, cell) in enumerate(Ferrite.CellIterator(grid))
         if full_top
             if vars[i] >= 0.5
-                push!(cls, JuAFEM.MeshCell(celltype, copy(JuAFEM.getnodes(cell))))
+                push!(cls, Ferrite.MeshCell(celltype, copy(Ferrite.getnodes(cell))))
             end
         else
             if black[i]
-                push!(cls, JuAFEM.MeshCell(celltype, copy(JuAFEM.getnodes(cell))))
+                push!(cls, Ferrite.MeshCell(celltype, copy(Ferrite.getnodes(cell))))
             elseif !white[i]
                 if vars[varind[i]] >= 0.5
-                    push!(cls, JuAFEM.MeshCell(celltype, copy(JuAFEM.getnodes(cell))))
+                    push!(cls, Ferrite.MeshCell(celltype, copy(Ferrite.getnodes(cell))))
                 end
             end
         end
     end
-    coords = reshape(reinterpret(T, JuAFEM.getnodes(grid)), (dim, JuAFEM.getnnodes(grid)))
+    coords = reshape(reinterpret(T, Ferrite.getnodes(grid)), (dim, Ferrite.getnnodes(grid)))
     return vtk_grid(filename, coords, cls)
 end
 

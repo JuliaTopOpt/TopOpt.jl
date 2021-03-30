@@ -5,7 +5,7 @@ using Nonconvex: AbstractModel
 using ..TopOpt: whichdevice, AbstractDevice, CPU, GPU, PENALTY_BEFORE_INTERPOLATION
 using TimerOutputs, Setfield, StaticArrays
 using Parameters: @unpack, @pack!
-using ..Utilities, JuAFEM
+using ..Utilities, Ferrite
 using LinearAlgebra, Zygote
 
 export  Optimizer,

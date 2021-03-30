@@ -1,6 +1,6 @@
 module TopOptProblems
 
-using JuAFEM, StaticArrays, LinearAlgebra
+using Ferrite, StaticArrays, LinearAlgebra
 using SparseArrays, Setfield, Requires
 using ..TopOpt.Utilities
 using ..TopOpt: PENALTY_BEFORE_INTERPOLATION
@@ -9,7 +9,7 @@ import Distributions
 
 using VTKDataTypes
 
-import JuAFEM: assemble!
+import Ferrite: assemble!
 
 abstract type AbstractTopOptProblem end
 

@@ -17,7 +17,7 @@ An instance of the `ElementFEAInfo` type stores element information such as:
 - `Kes`: the element stiffness matrices,
 - `fes`: the element load vectors,
 - `cellvolumes`: the element volumes,
-- `cellvalues` and `facevalues`: two `JuAFEM` types that facilitate cell and face iteration and queries.
+- `cellvalues` and `facevalues`: two `Ferrite` types that facilitate cell and face iteration and queries.
 - `metadata`: that stores degree of freedom (dof) to node mapping, dof to cell mapping, etc.
 - `black`: a `BitVector` such that `black[i]` is 1 iff element `i` must be part of any feasible design.
 - `white`: a `BitVector` such that `white[i]` is 1 iff element `i` must never be part of any feasible design.
@@ -29,8 +29,8 @@ An instance of the `ElementFEAInfo` type stores element information such as:
     fes::AbstractVector{<:AbstractVector{T}}
     fixedload::AbstractVector{T}
     cellvolumes::AbstractVector{T}
-    cellvalues::CellValues{<:Any, dim, T}
-    facevalues::FaceValues{<:Any, <:Any, T}
+    cellvalues::CellValues{dim, T, <:Any}
+    facevalues::FaceValues{<:Any, T, <:Any}
     metadata::Metadata
     black::AbstractVector
     white::AbstractVector
@@ -147,14 +147,14 @@ end
 """
     get_cell_volumes(sp::StiffnessTopOptProblem{dim, T}, cellvalues)
 
-Calculates an approximation of the element volumes by approximating the volume integral of 1 over each element using Gaussian quadrature. `cellvalues` is a `JuAFEM` struct that facilitates the computation of the integral. To initialize `cellvalues` for an element with index `cell`, `JuAFEM.reinit!(cellvalues, cell)` can be called. Calling `JuAFEM.getdetJdV(cellvalues, q_point)` then computes the value of the determinant of the Jacobian of the geometric basis functions at the point `q_point` in the reference element. The sum of such values for all integration points is the volume approximation.
+Calculates an approximation of the element volumes by approximating the volume integral of 1 over each element using Gaussian quadrature. `cellvalues` is a `Ferrite` struct that facilitates the computation of the integral. To initialize `cellvalues` for an element with index `cell`, `Ferrite.reinit!(cellvalues, cell)` can be called. Calling `Ferrite.getdetJdV(cellvalues, q_point)` then computes the value of the determinant of the Jacobian of the geometric basis functions at the point `q_point` in the reference element. The sum of such values for all integration points is the volume approximation.
 """
 function get_cell_volumes(sp::StiffnessTopOptProblem{dim, T}, cellvalues) where {dim, T}
     dh = sp.ch.dh
     cellvolumes = zeros(T, getncells(dh.grid))
     for (i, cell) in enumerate(CellIterator(dh))
         reinit!(cellvalues, cell)
-        cellvolumes[i] = sum(JuAFEM.getdetJdV(cellvalues, q_point) for q_point in 1:JuAFEM.getnquadpoints(cellvalues))
+        cellvolumes[i] = sum(Ferrite.getdetJdV(cellvalues, q_point) for q_point in 1:Ferrite.getnquadpoints(cellvalues))
     end
     return cellvolumes
 end

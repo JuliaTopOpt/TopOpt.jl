@@ -52,7 +52,7 @@ function get_cell_volumes(sp::TrussProblem{xdim, T}, cellvalues) where {xdim, T}
     cellvolumes = zeros(T, getncells(dh.grid))
     for (i, cell) in enumerate(CellIterator(dh))
         truss_reinit!(cellvalues, cell, As[i])
-        cellvolumes[i] = sum(JuAFEM.getdetJdV(cellvalues, q_point) for q_point in 1:JuAFEM.getnquadpoints(cellvalues))
+        cellvolumes[i] = sum(Ferrite.getdetJdV(cellvalues, q_point) for q_point in 1:Ferrite.getnquadpoints(cellvalues))
     end
     return cellvolumes
 end
