@@ -66,6 +66,12 @@ version = "0.6.4"
 [[Artifacts]]
 uuid = "56f22d72-fd6d-98f1-02f0-08ddc0907c33"
 
+[[Automa]]
+deps = ["DataStructures", "Printf", "Random", "Test", "TranscodingStreams"]
+git-tree-sha1 = "c81526bf5f6fb4616b4e22a3cd62ac20e255fd3c"
+uuid = "67c07d97-cdcb-5c2c-af73-a7f9c32a568b"
+version = "0.8.0"
+
 [[AxisAlgorithms]]
 deps = ["LinearAlgebra", "Random", "SparseArrays", "WoodburyMatrices"]
 git-tree-sha1 = "a4d07a1c313392a77042855df46c5f534076fab9"
@@ -74,6 +80,23 @@ version = "1.0.0"
 
 [[Base64]]
 uuid = "2a0f44e3-6c83-55bd-87e4-b1978d98bd5f"
+
+[[BibInternal]]
+git-tree-sha1 = "96bd77118a0998d374ca0e14d79518bb03e72e15"
+uuid = "2027ae74-3657-4b95-ae00-e2f7d55c3e64"
+version = "0.2.5"
+
+[[BibParser]]
+deps = ["Automa", "BibInternal", "DataStructures"]
+git-tree-sha1 = "ca965e4614fe0d674c6c385c69c6dda9de191c6b"
+uuid = "13533e5b-e1c2-4e57-8cef-cac5e52f6474"
+version = "0.1.10"
+
+[[Bibliography]]
+deps = ["BibInternal", "BibParser", "DataStructures"]
+git-tree-sha1 = "f291657f8bc98e6756a2082733c36a3c5b3c5cc0"
+uuid = "f1be7e48-bf82-45af-a471-ae754a193061"
+version = "0.2.6"
 
 [[BenchmarkTools]]
 deps = ["JSON", "Logging", "Printf", "Statistics", "UUIDs"]
