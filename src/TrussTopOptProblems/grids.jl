@@ -40,7 +40,7 @@ function _LinearTrussGrid(node_points::Dict{iT, SVector{xdim, T}}, elements::Dic
 
     # * Generate cells, Line2d or Line3d
     @assert xdim ∈ [2,3]
-    CellType = xdim == 2 ? Line2d : Line3d
+    CellType = xdim == 2 ? Line2D : Line3D
     cells = Vector{CellType}(undef, length(elements))
     for (e_ind, element) in elements
         cells[e_ind] = CellType((element...,))
@@ -66,9 +66,9 @@ end
 
 ################################
 
-function Base.show(io::Base.IO, ::MIME"text/plain", grid::Ferrite.Grid{xdim, Ferrite.Cell{xdim,2,2}}) where {xdim}
-    print(io, "$(typeof(grid)) with $(getncells(grid)) $(extra_celltypes[eltype(grid.cells)]) cells and $(getnnodes(grid)) nodes")
-end
+# function Base.show(io::Base.IO, ::MIME"text/plain", grid::Ferrite.Grid{xdim, Union{Line2D, Line3D}}) where {xdim}
+#     print(io, "$(typeof(grid)) with $(getncells(grid)) $(extra_celltypes[eltype(grid.cells)]) cells and $(getnnodes(grid)) nodes")
+# end
 
-const extra_celltypes = Dict{DataType, String}(Ferrite.Cell{2,2,2}  => "Line2D", 
-                                               Ferrite.Cell{3,2,2}  => "Line3D")
+# const extra_celltypes = Dict{DataType, String}(Line2D  => "Line2D", 
+#                                                Line3D  => "Line3D")

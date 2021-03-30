@@ -2,8 +2,7 @@ using ..TopOpt.TopOptProblems: StiffnessTopOptProblem, Metadata
 
 get_fixities_node_set_name(i) = "fixed_u$(i)"
 
-# @params
-struct TrussProblem{xdim,T,N,M} <: StiffnessTopOptProblem{xdim,T}
+@params struct TrussProblem{xdim,T,N,M} <: StiffnessTopOptProblem{xdim,T}
     truss_grid::TrussGrid{xdim,T,N,M} # ground truss mesh
     materials::Vector{TrussFEAMaterial{T}}
     ch::ConstraintHandler{<:DofHandler{xdim,<:Ferrite.Cell{xdim,N,M},T},T}
@@ -33,7 +32,6 @@ function TrussProblem(::Type{Val{CellType}}, node_points::Dict{iT, SVector{xdim,
     #     T = _T
     # end
     if CellType === :Linear
-        # TODO load should be added here as well
         truss_grid = TrussGrid(node_points, elements, supports; crosssecs)
         geom_order = 1
     else
@@ -140,8 +138,6 @@ end
 function default_quad_order(::TrussProblem)
     return 1
 end
-
-getξdim(::TrussProblem) = 1
 
 #######################################
 # * extra Cell types for Line elements

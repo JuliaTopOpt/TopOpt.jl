@@ -23,9 +23,7 @@ import Ferrite: assemble!
 
 # TODO apply @params to all the problem struct
 
-# include("utils.jl")
 include("grids.jl")
-# include("metadata.jl")
 include("problem_types.jl")
 include("matrices_and_vectors.jl")
 include("elementinfo.jl")

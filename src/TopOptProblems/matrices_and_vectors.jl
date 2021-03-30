@@ -96,18 +96,9 @@ const g = [0., 9.81, 0.] # N/kg or m/s^2
 
 # Element stiffness matrices are StaticArrays
 # `weights` : a vector of `xdim` vectors, element_id => self-weight load vector
-function _make_Kes_and_weights(
-    dh::DofHandler{dim, N, T},
-    ::Type{Tuple{MatrixType, VectorType}},
-    ::Type{Val{n_basefuncs}},
-    ::Type{Val{Kesize}},
-    C,
-    ρ,
-    quadrature_rule,
-    cellvalues,
-) where {
-    dim, N, T, MatrixType <: StaticArray, VectorType, n_basefuncs, Kesize,
-}
+function _make_Kes_and_weights(dh::DofHandler{dim, N, T}, ::Type{Tuple{MatrixType, VectorType}},
+    ::Type{Val{n_basefuncs}}, ::Type{Val{Kesize}}, C, ρ, quadrature_rule, cellvalues) where {
+    dim, N, T, MatrixType <: StaticArray, VectorType, n_basefuncs, Kesize}
     # Calculate element stiffness matrices
     nel = getncells(dh.grid)
     body_force = ρ .* g # Force per unit volume
