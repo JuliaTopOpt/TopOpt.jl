@@ -9,7 +9,7 @@ using Ferrite
 using LinearAlgebra: norm
 
 """
-    scene, layout = draw_truss_problem(problem; crosssecs=result.topology)
+    scene, layout = draw_truss_problem(problem; topology=result.topology)
 """
 # function visualize(problem::TrussProblem; kwargs...)
 #     scene, layout = layoutscene() #resolution = (1200, 900)
@@ -19,7 +19,7 @@ using LinearAlgebra: norm
 # end
 
 function visualize(problem::TrussProblem, u;
-    crosssecs=nothing, 
+    topology=nothing, 
     # stress=nothing, 
     undeformed_mesh_color=(:gray, 1.0),
     deformed_mesh_color=(:cyan, 0.4),
@@ -33,9 +33,9 @@ function visualize(problem::TrussProblem, u;
 
     fig = Figure(resolution = (1200, 800))
 
-    if crosssecs !== nothing
-        @assert(ncells == length(crosssecs))
-        a = reshape([crosssecs crosssecs]', 2*ncells)
+    if topology !== nothing
+        @assert(ncells == length(topology))
+        a = reshape([topology topology]', 2*ncells)
         # a ./= maximum(a)
     else
         a = ones(2*ncells)

@@ -1,6 +1,7 @@
+using Base: @propagate_inbounds
 using ..TopOpt.TopOptProblems: getdh, getE, getν, getdensity, gettypes
 using LinearAlgebra: norm
-using Ferrite: getngeobasefunctions, getn_scalarbasefunctions, getdim, getrefshape, value
+using Ferrite: getdim, getrefshape, value, getlowerdim
 
 """
 Generate element stiffness matrices
@@ -23,13 +24,14 @@ function make_Kes_and_fes(problem::TrussProblem{xdim, T}, quad_order, ::Type{Val
     # * Shape functions and quadrature rule
     interpolation_space = Ferrite.default_interpolation(getcelltype(problem.truss_grid.grid))
     # Lagrange{ξdim, refshape, geom_order}()
-    @show ξdim = getdim(interpolation_space)
-    @show refshape = getrefshape(dh.field_interpolations[1])
-    @show quadrature_rule = QuadratureRule{ξdim, refshape}(quad_order)
+    ξdim = getdim(interpolation_space)
+    refshape = getrefshape(dh.field_interpolations[1])
+    quadrature_rule = QuadratureRule{ξdim, refshape}(quad_order)
     cellvalues = GenericCellScalarValues(T, quadrature_rule, interpolation_space; xdim=xdim)
 
     # * A Line element's faces are not meaningful in truss problems
-    facevalues = undef # FaceScalarValues(QuadratureRule{ξdim-1, refshape}(quad_order), interpolation_space)
+    # placeholder to make type right
+    facevalues = FaceScalarValues(QuadratureRule{ξdim-1, refshape}(quad_order), interpolation_space)
 
     # * Calculate element stiffness matrices
     n_basefuncs = getnbasefunctions(cellvalues)
@@ -96,6 +98,23 @@ function GenericCellScalarValues(::Type{T}, quad_rule::QuadratureRule{ξdim,shap
     end
     detJdV = fill(T(NaN), n_qpoints)
     GenericCellScalarValues{ξdim,xdim,T,shape}(N, dNdx, dNdξ, detJdV, M, dMdξ, quad_rule.weights)
+end
+
+# common values
+using Ferrite: getnbasefunctions, getngeobasefunctions, getnquadpoints
+getn_scalarbasefunctions(cv::GenericCellScalarValues) = size(cv.N, 1)
+@propagate_inbounds shape_gradient(cv::GenericCellScalarValues, q_point::Int, base_func::Int) = cv.dNdx[base_func, q_point]
+@propagate_inbounds getdetJdV(cv::GenericCellScalarValues, q_point::Int) = cv.detJdV[q_point]
+
+############################
+
+"""
+    pinv(::Tensor{order, dim})
+
+Compute the pseudo-inverse of a Vector tensor.
+"""
+function LinearAlgebra.pinv(t::Vec{dim, T}) where {dim, T}
+    LinearAlgebra.Transpose{T, Vec{dim, T}}(t / sum(t.^2))
 end
 
 ############################
@@ -184,11 +203,8 @@ function truss_reinit!(cv::GenericCellScalarValues{ξdim,xdim,T}, x::AbstractVec
         detJ > 0.0 || throw(ArgumentError("det(J) is not positive: det(J) = $(detJ)"))
         cv.detJdV[i] = detJ * w * crossec
         Jinv = pinv(dxdξ)
-        @show Jinv
         for j in 1:n_func_basefuncs
             # cv.dNdξ[j, i] is a 1-1 tensor here
-            @show cv.dNdξ[j, i]
-            @show cv.dNdx[j, i]
             cv.dNdx[j, i] = cv.dNdξ[j, i][1] * Jinv'
         end
     end

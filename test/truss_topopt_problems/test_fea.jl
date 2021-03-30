@@ -6,9 +6,10 @@ using Ferrite: cellid, getcoordinates, CellIterator
 using TopOpt
 using TopOpt.TopOptProblems: boundingbox, nnodespercell, getgeomorder, getmetadata, getdh, getE, getdim
 using TopOpt.TrussTopOptProblems: getA, default_quad_order
-if get(ENV, "CI", nothing) != "true"
-    using TopOpt.TrussTopOptProblems.TrussVisualization: visualize
-end
+# if get(ENV, "CI", nothing) != "true"
+#     import Makie
+#     using TopOpt.TrussTopOptProblems.TrussVisualization: visualize
+# end
 
 include("utils.jl")
 
@@ -20,8 +21,8 @@ u_solutions = [
 ]
 ins_dir = joinpath(@__DIR__, "instances", "fea_examples");
 
-# @testset "Truss problem solve - $(problem_json[i])" for i in 1:length(problem_json)
-    i = 3
+@testset "Truss problem solve - $(problem_json[i])" for i in 1:length(problem_json)
+    # i = 3
     file_name = problem_json[i]
     problem_file = joinpath(ins_dir, file_name)
 
@@ -64,10 +65,11 @@ ins_dir = joinpath(@__DIR__, "instances", "fea_examples");
     solver = FEASolver(Displacement, Direct, problem)
     solver()
 
-    if get(ENV, "CI", nothing) != "true"
-        ## TODO plot analysis result with
-        fig = visualize(problem, solver.u)
-    end
+    # if get(ENV, "CI", nothing) != "true"
+    #     ## TODO plot analysis result with
+    #     fig = visualize(problem, solver.u)
+    #     Makie.display(fig)
+    # end
 
     # we use kN for force and m for length
     # thus, pressure/modulus is in kN/m
@@ -76,4 +78,4 @@ ins_dir = joinpath(@__DIR__, "instances", "fea_examples");
     to_K_full = solver.globalinfo.K.data
     @assert norm(solver.u - u_solutions[i]) < 3e-4
 
-# end # end test set
+end # end test set
