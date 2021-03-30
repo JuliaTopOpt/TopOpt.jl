@@ -67,10 +67,10 @@ version = "0.6.4"
 uuid = "56f22d72-fd6d-98f1-02f0-08ddc0907c33"
 
 [[Automa]]
-deps = ["DataStructures", "Printf", "Random", "Test", "TranscodingStreams"]
-git-tree-sha1 = "c81526bf5f6fb4616b4e22a3cd62ac20e255fd3c"
+deps = ["Printf", "ScanByte", "TranscodingStreams"]
+git-tree-sha1 = "d50976f217489ce799e366d9561d56a98a30d7fe"
 uuid = "67c07d97-cdcb-5c2c-af73-a7f9c32a568b"
-version = "0.8.0"
+version = "0.8.2"
 
 [[AxisAlgorithms]]
 deps = ["LinearAlgebra", "Random", "SparseArrays", "WoodburyMatrices"]
@@ -80,6 +80,12 @@ version = "1.0.0"
 
 [[Base64]]
 uuid = "2a0f44e3-6c83-55bd-87e4-b1978d98bd5f"
+
+[[BenchmarkTools]]
+deps = ["JSON", "Logging", "Printf", "Statistics", "UUIDs"]
+git-tree-sha1 = "9e62e66db34540a0c919d72172cc2f642ac71260"
+uuid = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
+version = "0.5.0"
 
 [[BibInternal]]
 git-tree-sha1 = "96bd77118a0998d374ca0e14d79518bb03e72e15"
@@ -97,12 +103,6 @@ deps = ["BibInternal", "BibParser", "DataStructures"]
 git-tree-sha1 = "f291657f8bc98e6756a2082733c36a3c5b3c5cc0"
 uuid = "f1be7e48-bf82-45af-a471-ae754a193061"
 version = "0.2.6"
-
-[[BenchmarkTools]]
-deps = ["JSON", "Logging", "Printf", "Statistics", "UUIDs"]
-git-tree-sha1 = "9e62e66db34540a0c919d72172cc2f642ac71260"
-uuid = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
-version = "0.5.0"
 
 [[BinaryProvider]]
 deps = ["Libdl", "Logging", "SHA"]
@@ -298,9 +298,9 @@ version = "0.8.4"
 
 [[Documenter]]
 deps = ["Base64", "Dates", "DocStringExtensions", "InteractiveUtils", "JSON", "LibGit2", "Logging", "Markdown", "REPL", "Test", "Unicode"]
-git-tree-sha1 = "1c593d1efa27437ed9dd365d1143c594b563e138"
+git-tree-sha1 = "fb1ff838470573adc15c71ba79f8d31328f035da"
 uuid = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
-version = "0.25.1"
+version = "0.25.2"
 
 [[DocumenterCitations]]
 deps = ["Bibliography", "Documenter", "Markdown", "Unicode"]
@@ -483,6 +483,12 @@ deps = ["Base64", "Dates", "IniFile", "MbedTLS", "NetworkOptions", "Sockets", "U
 git-tree-sha1 = "c9f380c76d8aaa1fa7ea9cf97bddbc0d5b15adc2"
 uuid = "cd3eb016-35fb-5094-929b-558a96fad6f3"
 version = "0.9.5"
+
+[[IOCapture]]
+deps = ["Logging"]
+git-tree-sha1 = "1868e4e7ad2f93d8de0904d89368c527b46aa6a1"
+uuid = "b5f81e59-6552-4d32-b1f0-c071b021bf89"
+version = "0.2.1"
 
 [[IRTools]]
 deps = ["InteractiveUtils", "MacroTools", "Test"]
@@ -712,6 +718,12 @@ deps = ["FastClosures", "LinearAlgebra", "Printf", "SparseArrays", "TimerOutputs
 git-tree-sha1 = "cda4478875ce04a2719162090e4f046f64fa7b60"
 uuid = "5c8ed15e-5a4c-59e4-a42b-c7e8811fb125"
 version = "1.2.1"
+
+[[Literate]]
+deps = ["Base64", "IOCapture", "JSON", "REPL"]
+git-tree-sha1 = "501a1a74a0c825037860d36d87d703e987d39dbc"
+uuid = "98b081ad-f1c9-55d3-8b20-4c87d4299306"
+version = "2.8.1"
 
 [[Logging]]
 uuid = "56ddb016-857b-54e1-b83d-db4d58db5568"
@@ -1112,6 +1124,12 @@ uuid = "ea8e919c-243c-51af-8825-aaa63cd721ce"
 git-tree-sha1 = "2318299b4c8e8fe06f6f9114fb4404bd1461ae48"
 uuid = "fdea26ae-647d-5447-a871-4b548cad5224"
 version = "3.3.0"
+
+[[ScanByte]]
+deps = ["Libdl", "SIMD"]
+git-tree-sha1 = "9cc2955f2a254b18be655a4ee70bc4031b2b189e"
+uuid = "7b38b023-a4d7-4c5e-8d43-3f3097f304eb"
+version = "0.3.0"
 
 [[Serialization]]
 uuid = "9e88b42a-f829-5b0c-bbe9-9e923198166b"
