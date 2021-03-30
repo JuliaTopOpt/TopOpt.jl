@@ -16,11 +16,13 @@ E = 1.0 # Young’s modulus
 v = 0.3 # Poisson’s ratio
 f = 1.0; # downward force
 
+nels = (30, 10, 10) 
+problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0, 1.0), E, v, f);
+
+# See also the detailed API of `PointLoadCantilever`:
 #md # ```@docs
 #md # TopOpt.TopOptProblems.PointLoadCantilever
 #md # ```
-nels = (30, 10, 10) 
-problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0, 1.0), E, v, f);
 
 # ### Parameter settings
 V = 0.3 # volume fraction

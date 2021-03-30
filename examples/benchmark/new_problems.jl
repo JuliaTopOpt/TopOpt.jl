@@ -2,7 +2,7 @@
 # module NewTopOptProblems
 # export NewPointLoadCantilever
 
-using JuAFEM
+using Ferrite
 using TopOpt
 using TopOpt.TopOptProblems: RectilinearGrid, Metadata
 using TopOpt.TopOptProblems: left, right, bottom, middley, middlez,
@@ -74,7 +74,7 @@ function NewPointLoadCantilever(::Type{Val{CellType}}, nels::NTuple{dim,Int}, si
     add!(ch, dbc)
     close!(ch)
     t = T(0)
-    JuAFEM.update!(ch, t)
+    Ferrite.update!(ch, t)
 
     metadata = Metadata(dh)
     load_dict = Dict{Int, Vector{T}}()

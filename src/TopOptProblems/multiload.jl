@@ -74,7 +74,7 @@ function get_surface_dofs(problem::StiffnessTopOptProblem)
 	dh = problem.ch.dh
 	boundary_matrix = dh.grid.boundary_matrix
 	interpolation = dh.field_interpolations[1]
-	celliterator = JuAFEM.CellIterator(dh)
+	celliterator = Ferrite.CellIterator(dh)
 	node_dofs = problem.metadata.node_dofs
 
 	faces, cells, _ = findnz(boundary_matrix)
@@ -82,8 +82,8 @@ function get_surface_dofs(problem::StiffnessTopOptProblem)
     for i in 1:length(cells)
 	    cellind = cells[i]
 	    faceind = faces[i]
-	    face = [JuAFEM.faces(interpolation)[faceind]...]
-	    JuAFEM.reinit!(celliterator, cellind)
+	    face = [Ferrite.faces(interpolation)[faceind]...]
+	    Ferrite.reinit!(celliterator, cellind)
         nodeinds = celliterator.nodes[face]
         append!(surface_node_inds, nodeinds)
     end

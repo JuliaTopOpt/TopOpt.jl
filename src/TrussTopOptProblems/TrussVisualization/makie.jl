@@ -1,15 +1,15 @@
 using AbstractPlotting: lift, cam3d!, Point3f0, Vec3f0, Figure, Auto, linesegments!, Point2f0
 using AbstractPlotting.MakieLayout: DataAspect, Axis, labelslidergrid!, set_close_to!,
     labelslider!, LScene
-import Makie
+import .Makie
 
 using ...TopOpt.TopOptProblems: getdim
 using ..TrussTopOptProblems: TrussProblem, get_fixities_node_set_name
-using JuAFEM
+using Ferrite
 using LinearAlgebra: norm
 
 """
-    scene, layout = draw_truss_problem(problem; crosssecs=result.topology)
+    scene, layout = draw_truss_problem(problem; topology=result.topology)
 """
 # function visualize(problem::TrussProblem; kwargs...)
 #     scene, layout = layoutscene() #resolution = (1200, 900)
@@ -19,7 +19,7 @@ using LinearAlgebra: norm
 # end
 
 function visualize(problem::TrussProblem, u;
-    crosssecs=nothing, 
+    topology=nothing, 
     # stress=nothing, 
     undeformed_mesh_color=(:gray, 1.0),
     deformed_mesh_color=(:cyan, 0.4),
@@ -28,14 +28,14 @@ function visualize(problem::TrussProblem, u;
     default_exagg_scale=1.0, exagg_range=10.0,
     default_element_linewidth_scale=6.0, element_linewidth_range=10.0)
     ndim = getdim(problem)
-    ncells = JuAFEM.getncells(problem)
-    nnodes = JuAFEM.getnnodes(problem)
+    ncells = Ferrite.getncells(problem)
+    nnodes = Ferrite.getnnodes(problem)
 
     fig = Figure(resolution = (1200, 800))
 
-    if crosssecs !== nothing
-        @assert(ncells == length(crosssecs))
-        a = reshape([crosssecs crosssecs]', 2*ncells)
+    if topology !== nothing
+        @assert(ncells == length(topology))
+        a = reshape([topology topology]', 2*ncells)
         # a ./= maximum(a)
     else
         a = ones(2*ncells)
@@ -111,7 +111,7 @@ function visualize(problem::TrussProblem, u;
     # * fixties vectors
     for i=1:ndim
         nodeset_name = get_fixities_node_set_name(i)
-        fixed_node_ids = JuAFEM.getnodeset(problem.truss_grid.grid, nodeset_name)
+        fixed_node_ids = Ferrite.getnodeset(problem.truss_grid.grid, nodeset_name)
         dir = zeros(ndim)
         dir[i] = 1.0
         scaled_base_pts = lift(s->[PtT(nodes[node_id].x) - PtT(dir*s) for node_id in fixed_node_ids], 
@@ -143,7 +143,7 @@ function visualize(problem::TrussProblem, u;
 end
 
 function visualize(problem::TrussProblem{xdim, T}; kwargs...) where {xdim, T}
-    nnodes = JuAFEM.getnnodes(problem)
+    nnodes = Ferrite.getnnodes(problem)
     u = zeros(T, xdim * nnodes)
     visualize(problem, u; kwargs...)
 end

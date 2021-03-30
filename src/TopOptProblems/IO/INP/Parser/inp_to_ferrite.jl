@@ -22,10 +22,10 @@ end
 
 function import_inp(filepath_with_ext)
     problem = extract_inp(filepath_with_ext)
-    return inp_to_juafem(problem)
+    return inp_to_ferrite(problem)
 end
 
-function inp_to_juafem(problem::InpContent)
+function inp_to_ferrite(problem::InpContent)
     _celltype = problem.celltype
     if _celltype == "CPS3"
         # Linear triangle
@@ -119,13 +119,13 @@ function inp_to_juafem(problem::InpContent)
 end
 
 function extract_boundary_matrix(grid::Grid{dim}) where dim
-    nfaces = length(JuAFEM.faces(grid.cells[1]))
+    nfaces = length(Ferrite.faces(grid.cells[1]))
     ncells = length(grid.cells)
     countedbefore = Dict{NTuple{dim,Int},Bool}()
     boundary_matrix = ones(Bool, nfaces, ncells) # Assume all are boundary faces
     for (ci, cell) in enumerate(getcells(grid))    
-        for (fi, face) in enumerate(JuAFEM.faces(cell))
-            sface = JuAFEM.sortface(face) # TODO: faces(cell) may as well just return the sorted list
+        for (fi, face) in enumerate(Ferrite.faces(cell))
+            sface = Ferrite.sortface(face) # TODO: faces(cell) may as well just return the sorted list
             token = Base.ht_keyindex2!(countedbefore, sface)
             if token > 0 # haskey(countedbefore, sface)
                 boundary_matrix[fi, ci] = 0

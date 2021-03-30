@@ -2,7 +2,7 @@ module FEA
 
 using ..TopOpt: TopOpt, CPU, GPU, PENALTY_BEFORE_INTERPOLATION, whichdevice
 using ..TopOptProblems, ..Utilities, Requires
-using JuAFEM, Setfield, TimerOutputs, Preconditioners
+using Ferrite, Setfield, TimerOutputs, Preconditioners
 using IterativeSolvers, StaticArrays, SparseArrays
 using LinearAlgebra
 using Parameters: @unpack

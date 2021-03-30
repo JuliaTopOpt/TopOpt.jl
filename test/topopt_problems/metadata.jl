@@ -10,21 +10,21 @@
     # 1   2   3              
 
     #Node coords:
-    #JuAFEM.Node{2,Float64}([0.0, 0.0])
-    #JuAFEM.Node{2,Float64}([1.0, 0.0])
-    #JuAFEM.Node{2,Float64}([2.0, 0.0])
-    #JuAFEM.Node{2,Float64}([0.0, 1.0])
-    #JuAFEM.Node{2,Float64}([1.0, 1.0])
-    #JuAFEM.Node{2,Float64}([2.0, 1.0])
-    #JuAFEM.Node{2,Float64}([0.0, 2.0])
-    #JuAFEM.Node{2,Float64}([1.0, 2.0])
-    #JuAFEM.Node{2,Float64}([2.0, 2.0])
+    #Ferrite.Node{2,Float64}([0.0, 0.0])
+    #Ferrite.Node{2,Float64}([1.0, 0.0])
+    #Ferrite.Node{2,Float64}([2.0, 0.0])
+    #Ferrite.Node{2,Float64}([0.0, 1.0])
+    #Ferrite.Node{2,Float64}([1.0, 1.0])
+    #Ferrite.Node{2,Float64}([2.0, 1.0])
+    #Ferrite.Node{2,Float64}([0.0, 2.0])
+    #Ferrite.Node{2,Float64}([1.0, 2.0])
+    #Ferrite.Node{2,Float64}([2.0, 2.0])
 
     #Cells
-    #JuAFEM.Cell{2,4,4}((1, 2, 5, 4))
-    #JuAFEM.Cell{2,4,4}((2, 3, 6, 5))
-    #JuAFEM.Cell{2,4,4}((4, 5, 8, 7))
-    #JuAFEM.Cell{2,4,4}((5, 6, 9, 8))
+    #Ferrite.Cell{2,4,4}((1, 2, 5, 4))
+    #Ferrite.Cell{2,4,4}((2, 3, 6, 5))
+    #Ferrite.Cell{2,4,4}((4, 5, 8, 7))
+    #Ferrite.Cell{2,4,4}((5, 6, 9, 8))
 
     # 7   8   9              
     #  x--x--x      x--x--x
@@ -66,10 +66,10 @@
         @test node.x.data == coords[i]
     end
 
-    cells = [JuAFEM.Cell{2,4,4}((1, 2, 5, 4)),
-        JuAFEM.Cell{2,4,4}((2, 3, 6, 5)),
-        JuAFEM.Cell{2,4,4}((4, 5, 8, 7)),
-        JuAFEM.Cell{2,4,4}((5, 6, 9, 8))]
+    cells = [Ferrite.Cell{2,4,4}((1, 2, 5, 4)),
+        Ferrite.Cell{2,4,4}((2, 3, 6, 5)),
+        Ferrite.Cell{2,4,4}((4, 5, 8, 7)),
+        Ferrite.Cell{2,4,4}((5, 6, 9, 8))]
     @test problem.ch.dh.grid.cells == cells
 
     node_dofs = [1 3  9 7 5 11 15 13 17;
@@ -88,7 +88,7 @@
 
     dof_cells = problem.metadata.dof_cells
     cell_dofs = problem.metadata.cell_dofs
-    for i in 1:JuAFEM.ndofs(problem.ch.dh)
+    for i in 1:Ferrite.ndofs(problem.ch.dh)
         d_cells = dof_cells[i]
         for c in d_cells
             (cellid, localdof) = c

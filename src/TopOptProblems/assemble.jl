@@ -18,7 +18,7 @@ function assemble!(globalinfo::GlobalFEAInfo{T}, problem::StiffnessTopOptProblem
 
     _K = K isa Symmetric ? K.data : K
     _K.nzval .= 0
-    assembler = JuAFEM.AssemblerSparsityPattern(_K, f, Int[], Int[])
+    assembler = Ferrite.AssemblerSparsityPattern(_K, f, Int[], Int[])
 
     global_dofs = zeros(Int, ndofs_per_cell(dh))
     fe = zeros(typeof(fes[1]))
@@ -32,9 +32,9 @@ function assemble!(globalinfo::GlobalFEAInfo{T}, problem::StiffnessTopOptProblem
         Ke = _Ke isa Symmetric ? _Ke.data : _Ke
         if black[i]
             if assemble_f
-                JuAFEM.assemble!(assembler, global_dofs, Ke, fe)
+                Ferrite.assemble!(assembler, global_dofs, Ke, fe)
             else
-                JuAFEM.assemble!(assembler, global_dofs, Ke)
+                Ferrite.assemble!(assembler, global_dofs, Ke)
             end
         elseif white[i]
             if PENALTY_BEFORE_INTERPOLATION
@@ -45,9 +45,9 @@ function assemble!(globalinfo::GlobalFEAInfo{T}, problem::StiffnessTopOptProblem
             Ke = px * Ke
             if assemble_f
                 fe = px * fe
-                JuAFEM.assemble!(assembler, global_dofs, Ke, fe)
+                Ferrite.assemble!(assembler, global_dofs, Ke, fe)
             else
-                JuAFEM.assemble!(assembler, global_dofs, Ke)
+                Ferrite.assemble!(assembler, global_dofs, Ke)
             end
         else
             if PENALTY_BEFORE_INTERPOLATION
@@ -58,9 +58,9 @@ function assemble!(globalinfo::GlobalFEAInfo{T}, problem::StiffnessTopOptProblem
             Ke = px * Ke
             if assemble_f
                 fe = px * fe
-                JuAFEM.assemble!(assembler, global_dofs, Ke, fe)
+                Ferrite.assemble!(assembler, global_dofs, Ke, fe)
             else
-                JuAFEM.assemble!(assembler, global_dofs, Ke)
+                Ferrite.assemble!(assembler, global_dofs, Ke)
             end
         end
     end

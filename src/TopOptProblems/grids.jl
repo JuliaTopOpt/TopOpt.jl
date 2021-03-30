@@ -1,10 +1,10 @@
 abstract type AbstractGrid{dim, T} end
 
-const Vec = JuAFEM.Vec
+const Vec = Ferrite.Vec
 
 """
 ```
-struct RectilinearGrid{dim, T, N, M, TG<:JuAFEM.Grid{dim, <:JuAFEM.Cell{dim,N,M}, T}} <: AbstractGrid{dim, T}
+struct RectilinearGrid{dim, T, N, M, TG<:Ferrite.Grid{dim, <:Ferrite.Cell{dim,N,M}, T}} <: AbstractGrid{dim, T}
     grid::TG
     nels::NTuple{dim, Int}
     sizes::NTuple{dim, T}
@@ -21,7 +21,7 @@ A type that represents a rectilinear grid with corner points `corners`.
 - `T`: number type for computations and coordinates
 - `N`: number of nodes in a cell of the grid
 - `M`: number of faces in a cell of the grid
-- `grid`: a JuAFEM.Grid struct
+- `grid`: a Ferrite.Grid struct
 - `nels`: number of elements in every dimension
 - `sizes`: dimensions of each rectilinear cell
 - `corners`: 2 corner points of the rectilinear grid
@@ -29,7 +29,7 @@ A type that represents a rectilinear grid with corner points `corners`.
 - `black_cells`: cells fixed to have material during optimization
 - `constant_cells`: cells fixed to be either void or have material during optimization
 """
-@params struct RectilinearGrid{dim, T, N, M, TG<:JuAFEM.Grid{dim, <:JuAFEM.Cell{dim,N,M}, T}} <: AbstractGrid{dim, T}
+@params struct RectilinearGrid{dim, T, N, M, TG<:Ferrite.Grid{dim, <:Ferrite.Cell{dim,N,M}, T}} <: AbstractGrid{dim, T}
     grid::TG
     nels::NTuple{dim, Int}
     sizes::NTuple{dim, T}
@@ -70,7 +70,7 @@ function RectilinearGrid(::Type{Val{CellType}}, nels::NTuple{dim,Int}, sizes::NT
     grid = generate_grid(geoshape, nels, corner1, corner2);
 
     N = nnodes(geoshape)
-    M = JuAFEM.nfaces(geoshape)
+    M = Ferrite.nfaces(geoshape)
     ncells = prod(nels)
     return RectilinearGrid(grid, nels, sizes, (corner1, corner2), falses(ncells), falses(ncells), falses(ncells))
 end
@@ -88,14 +88,14 @@ middlex(rectgrid::RectilinearGrid, x) = x[1] ≈ (rectgrid.corners[1][1] + rectg
 middley(rectgrid::RectilinearGrid, x) = x[2] ≈ (rectgrid.corners[1][2] + rectgrid.corners[2][2]) / 2
 middlez(rectgrid::RectilinearGrid, x) = x[3] ≈ (rectgrid.corners[1][3] + rectgrid.corners[2][3]) / 2
 
-nnodes(cell::Type{JuAFEM.Cell{dim,N,M}}) where {dim, N, M} = N
-nnodes(cell::JuAFEM.Cell) = nnodes(typeof(cell))
+nnodes(cell::Type{Ferrite.Cell{dim,N,M}}) where {dim, N, M} = N
+nnodes(cell::Ferrite.Cell) = nnodes(typeof(cell))
 
 """
     LGrid(::Type{Val{CellType}}, ::Type{T}; length = 100, height = 100, upperslab = 50, lowerslab = 50) where {T, CellType}
     LGrid(::Type{Val{CellType}}, nel1::NTuple{2,Int}, nel2::NTuple{2,Int}, LL::Vec{2,T}, UR::Vec{2,T}, MR::Vec{2,T}) where {CellType, T}
 
-Constructs a `JuAFEM.Grid` that represents the following L-shaped grid.
+Constructs a `Ferrite.Grid` that represents the following L-shaped grid.
 
 ```
         upperslab   UR
@@ -161,7 +161,7 @@ function _LinearLGrid(nel1::NTuple{2,Int}, nel2::NTuple{2,Int},
     _LR = Vec{2,T}((UR[1], LL[2]))
     _UL = Vec{2,T}((LL[1], MR[2]))
     _UR = Vec{2,T}((UR[1], MR[2]))
-    JuAFEM._generate_2d_nodes!(nodes, n_nodes_x1, n_nodes_y1, LL, _LR, _UR, _UL)
+    Ferrite._generate_2d_nodes!(nodes, n_nodes_x1, n_nodes_y1, LL, _LR, _UR, _UL)
 
     node_array1 = reshape(collect(1:n_nodes1), (n_nodes_x1, n_nodes_y1))
     for j in 1:nel_y1, i in 1:nel_x1
@@ -185,7 +185,7 @@ function _LinearLGrid(nel1::NTuple{2,Int}, nel2::NTuple{2,Int},
     _LL = Vec{2,T}((_LR[1] + offsetstep, _LR[2]))
     _LR = Vec{2,T}((MR[1], LL[2]))
     _UL = Vec{2,T}((_UR[1] + offsetstep, MR[2]))
-    JuAFEM._generate_2d_nodes!(nodes, n_nodes_x2, n_nodes_y2, _LL, _LR, MR, _UL)
+    Ferrite._generate_2d_nodes!(nodes, n_nodes_x2, n_nodes_y2, _LL, _LR, MR, _UL)
 
     node_array2 = reshape(collect(indexoffset+1:indexoffset+n_nodes2), (n_nodes_x2, n_nodes_y2))
     for j in 1:nel_y2
@@ -220,7 +220,7 @@ function _LinearLGrid(nel1::NTuple{2,Int}, nel2::NTuple{2,Int},
     _LL = Vec{2,T}((LL[1], MR[2] + offsetstep))
     _LR = Vec{2,T}((UR[1], MR[2] + offsetstep))
     _UL = Vec{2,T}((LL[1], UR[2]))
-    JuAFEM._generate_2d_nodes!(nodes, n_nodes_x3, n_nodes_y3, _LL, _LR, UR, _UL)
+    Ferrite._generate_2d_nodes!(nodes, n_nodes_x3, n_nodes_y3, _LL, _LR, UR, _UL)
 
     # Generate cells
     node_array3 = reshape(collect(indexoffset+1:indexoffset+n_nodes3), (n_nodes_x3, n_nodes_y3))
@@ -240,7 +240,7 @@ function _LinearLGrid(nel1::NTuple{2,Int}, nel2::NTuple{2,Int},
         end
     end
     
-    boundary_matrix = JuAFEM.boundaries_to_sparse(boundary)
+    boundary_matrix = Ferrite.boundaries_to_sparse(boundary)
 
     return Grid(cells, nodes, facesets=facesets, nodesets=nodesets, 
         boundary_matrix=boundary_matrix)
@@ -269,7 +269,7 @@ function _QuadraticLGrid(nel1::NTuple{2,Int}, nel2::NTuple{2,Int},
     _LR = Vec{2,T}((UR[1], LL[2]))
     _UL = Vec{2,T}((LL[1], MR[2]))
     _UR = Vec{2,T}((UR[1], MR[2]))
-    JuAFEM._generate_2d_nodes!(nodes, n_nodes_x1, n_nodes_y1, LL, _LR, _UR, _UL)
+    Ferrite._generate_2d_nodes!(nodes, n_nodes_x1, n_nodes_y1, LL, _LR, _UR, _UL)
 
     node_array1 = reshape(collect(1:n_nodes1), (n_nodes_x1, n_nodes_y1))
     for j in 1:nel_y1, i in 1:nel_x1
@@ -297,7 +297,7 @@ function _QuadraticLGrid(nel1::NTuple{2,Int}, nel2::NTuple{2,Int},
     _LL = Vec{2,T}((_LR[1] + offsetstep, _LR[2]))
     _LR = Vec{2,T}((MR[1], LL[2]))
     _UL = Vec{2,T}((_UR[1] + offsetstep, MR[2]))
-    JuAFEM._generate_2d_nodes!(nodes, n_nodes_x2, n_nodes_y2, _LL, _LR, MR, _UL)
+    Ferrite._generate_2d_nodes!(nodes, n_nodes_x2, n_nodes_y2, _LL, _LR, MR, _UL)
 
     node_array2 = reshape(collect(indexoffset+1:indexoffset+n_nodes2), (n_nodes_x2, n_nodes_y2))
     for j in 1:nel_y2
@@ -344,7 +344,7 @@ function _QuadraticLGrid(nel1::NTuple{2,Int}, nel2::NTuple{2,Int},
     _LL = Vec{2,T}((LL[1], MR[2] + offsetstep))
     _LR = Vec{2,T}((UR[1], MR[2] + offsetstep))
     _UL = Vec{2,T}((LL[1], UR[2]))
-    JuAFEM._generate_2d_nodes!(nodes, n_nodes_x3, n_nodes_y3, _LL, _LR, UR, _UL)
+    Ferrite._generate_2d_nodes!(nodes, n_nodes_x3, n_nodes_y3, _LL, _LR, UR, _UL)
 
     # Generate cells
     node_array3 = reshape(collect(indexoffset+1:indexoffset+n_nodes3), (n_nodes_x3, n_nodes_y3))
@@ -377,7 +377,7 @@ function _QuadraticLGrid(nel1::NTuple{2,Int}, nel2::NTuple{2,Int},
         end
     end
     
-    boundary_matrix = JuAFEM.boundaries_to_sparse(boundary)
+    boundary_matrix = Ferrite.boundaries_to_sparse(boundary)
 
     return Grid(cells, nodes, facesets=facesets, nodesets=nodesets, 
         boundary_matrix=boundary_matrix)
@@ -410,7 +410,7 @@ function _LinearTieBeamGrid(::Type{T}=Float64, refine=1) where {T}
     LR = Vec{2,T}((T(nel_x1 / refine), T(0)))
     UR = Vec{2,T}((T(nel_x1 / refine), T(nel_y1 / refine)))
     UL = Vec{2,T}((T(0), T(nel_y1 / refine)))
-    JuAFEM._generate_2d_nodes!(nodes, n_nodes_x1, n_nodes_y1, LL, LR, UR, UL)
+    Ferrite._generate_2d_nodes!(nodes, n_nodes_x1, n_nodes_y1, LL, LR, UR, UL)
 
     node_array1 = reshape(collect(1:n_nodes1), (n_nodes_x1, n_nodes_y1))
     for j in 1:nel_y1, i in 1:nel_x1
@@ -448,7 +448,7 @@ function _LinearTieBeamGrid(::Type{T}=Float64, refine=1) where {T}
     UR = Vec{2,T}((T(31), nel_y1 / refine + T(4)))
     UL = Vec{2,T}((T(30), nel_y1 / refine + T(4)))
     
-    JuAFEM._generate_2d_nodes!(nodes, n_nodes_x2, n_nodes_y2, LL, LR, UR, UL)
+    Ferrite._generate_2d_nodes!(nodes, n_nodes_x2, n_nodes_y2, LL, LR, UR, UL)
     node_array2 = reshape(collect(indexoffset+1:indexoffset+n_nodes2), (n_nodes_x2, n_nodes_y2))
 
     t = 30
@@ -485,7 +485,7 @@ function _LinearTieBeamGrid(::Type{T}=Float64, refine=1) where {T}
         end
     end
 
-    boundary_matrix = JuAFEM.boundaries_to_sparse(boundary)
+    boundary_matrix = Ferrite.boundaries_to_sparse(boundary)
     return Grid(cells, nodes, facesets=facesets, 
         boundary_matrix=boundary_matrix)
 end
@@ -509,7 +509,7 @@ function _QuadraticTieBeamGrid(::Type{T}=Float64, refine = 1) where {T}
     LR = Vec{2,T}((T(nel_x1/refine), T(0)))
     UR = Vec{2,T}((T(nel_x1/refine), T(nel_y1/refine)))
     UL = Vec{2,T}((T(0), T(nel_y1/refine)))
-    JuAFEM._generate_2d_nodes!(nodes, n_nodes_x1, n_nodes_y1, LL, LR, UR, UL)
+    Ferrite._generate_2d_nodes!(nodes, n_nodes_x1, n_nodes_y1, LL, LR, UR, UL)
 
     node_array1 = reshape(collect(1:n_nodes1), (n_nodes_x1, n_nodes_y1))
     for j in 1:nel_y1, i in 1:nel_x1
@@ -550,7 +550,7 @@ function _QuadraticTieBeamGrid(::Type{T}=Float64, refine = 1) where {T}
     UR = Vec{2,T}((T(31), nel_y1/refine + T(4)))
     UL = Vec{2,T}((T(30), nel_y1/refine + T(4)))
     
-    JuAFEM._generate_2d_nodes!(nodes, n_nodes_x2, n_nodes_y2, LL, LR, UR, UL)
+    Ferrite._generate_2d_nodes!(nodes, n_nodes_x2, n_nodes_y2, LL, LR, UR, UL)
     node_array2 = reshape(collect(indexoffset+1:indexoffset+n_nodes2), (n_nodes_x2, n_nodes_y2))
 
     t = 30
@@ -596,7 +596,7 @@ function _QuadraticTieBeamGrid(::Type{T}=Float64, refine = 1) where {T}
         end
     end
 
-    boundary_matrix = JuAFEM.boundaries_to_sparse(boundary)
+    boundary_matrix = Ferrite.boundaries_to_sparse(boundary)
     return Grid(cells, nodes, facesets=facesets, 
         boundary_matrix=boundary_matrix)
 end

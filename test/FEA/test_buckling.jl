@@ -1,6 +1,6 @@
 using Test
 using TopOpt
-import JuAFEM
+import Ferrite
 import GeometryBasics
 import Makie
 
@@ -30,7 +30,7 @@ solver = FEASolver(Displacement, Direct, problem)
 solver()
 u = solver.u
 
-# ncells = JuAFEM.getncells(problem)
+# ncells = Ferrite.getncells(problem)
 # result_mesh = GeometryBasics.Mesh(problem, ones(ncells));
 # GLMakie.mesh(result_mesh);
 
@@ -44,8 +44,8 @@ if get(ENV, "CI", nothing) != "true"
 end
 
 # using GeometryBasics, Makie
-# using JuAFEM
-# full_topology = ones(Float64, JuAFEM.getncells(problem))
+# using Ferrite
+# full_topology = ones(Float64, Ferrite.getncells(problem))
 # result_mesh = GeometryBasics.Mesh(problem, full_topology);
 # mesh(result_mesh);
 

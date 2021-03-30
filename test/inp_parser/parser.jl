@@ -1,5 +1,5 @@
 using TopOpt.TopOptProblems.InputOutput.INP
-using JuAFEM
+using Ferrite
 
 using Test
 
@@ -8,12 +8,12 @@ dh = cube.dh
 grid = dh.grid
 cells = grid.cells
 nodes = grid.nodes
-getdim(::JuAFEM.Cell{N}) where {N} = N
+getdim(::Ferrite.Cell{N}) where {N} = N
 
 @test dh.field_dims == [3]
 @test getdim(cells[1]) == 3 # 3D cells
-@test JuAFEM.nfaces(cells[1]) == 4 # Tetrahedron
-@test JuAFEM.nnodes(cells[1]) == 10 # Quadratic tetrahedron
+@test Ferrite.nfaces(cells[1]) == 4 # Tetrahedron
+@test Ferrite.nnodes(cells[1]) == 10 # Quadratic tetrahedron
 @test length(grid.boundary_matrix.nzval) == 16
 
 raw_inp = INP.Parser.extract_inp(joinpath(@__DIR__, "testcube.inp"))

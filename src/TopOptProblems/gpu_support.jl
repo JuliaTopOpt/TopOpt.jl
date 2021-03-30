@@ -49,13 +49,13 @@ end
 whichdevice(p::StiffnessTopOptProblem) = whichdevice(p.ch)
 whichdevice(ch::ConstraintHandler) = whichdevice(ch.dh)
 whichdevice(dh::DofHandler) = whichdevice(dh.grid)
-whichdevice(g::JuAFEM.Grid) = whichdevice(g.cells)
+whichdevice(g::Ferrite.Grid) = whichdevice(g.cells)
 
 @define_cu(ElementFEAInfo, :Kes, :fes, :fixedload, :cellvolumes, :metadata, :black, :white, :varind, :cells)
 @define_cu(TopOptProblems.Metadata, :cell_dofs, :dof_cells, :node_cells, :node_dofs)
-@define_cu(JuAFEM.ConstraintHandler, :values, :prescribed_dofs, :dh)
-@define_cu(JuAFEM.DofHandler, :grid)
-@define_cu(JuAFEM.Grid, :cells)
+@define_cu(Ferrite.ConstraintHandler, :values, :prescribed_dofs, :dh)
+@define_cu(Ferrite.DofHandler, :grid)
+@define_cu(Ferrite.Grid, :cells)
 for T in (PointLoadCantilever, HalfMBB, LBeam, TieBeam, InpStiffness)
     @eval @define_cu($T, :ch, :black, :white, :varind)
 end

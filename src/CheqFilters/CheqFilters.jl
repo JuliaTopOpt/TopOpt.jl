@@ -1,6 +1,6 @@
 module CheqFilters
 
-using ..Utilities, JuAFEM, Requires
+using ..Utilities, Ferrite, Requires
 using ..FEA, Statistics
 using ..TopOpt: CPU, TopOpt, ElementFEAInfo
 import ..TopOpt: whichdevice, PENALTY_BEFORE_INTERPOLATION

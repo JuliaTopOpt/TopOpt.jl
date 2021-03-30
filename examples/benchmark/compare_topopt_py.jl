@@ -9,7 +9,7 @@ using TimerOutputs
     # https://github.com/KristofferC/TimerOutputs.jl
     to = TimerOutput()
     reset_timer!(to)
-    Nonconvex.show_residuals[] = false
+    Nonconvex.show_residuals[] = true
 
     # Define the problem
     E = 1.0 # Young’s modulus
@@ -36,13 +36,13 @@ using TimerOutputs
         # Define compliance objective
         comp = Compliance(problem, solver)
         filter = DensityFilter(solver, rmin = rmin)
-        obj = Objective(x -> comp(filter(x)))
+        obj = x -> comp(filter(x))
     end
 
     # Define volume constraint
     @timeit to "constraint def" begin
         volfrac = TopOpt.Volume(problem, solver)
-        constr = IneqConstraint(x -> volfrac(filter(x)), V)
+        constr = x -> volfrac(filter(x)) - V
     end
 
     # Define subproblem optimizer

@@ -1,5 +1,5 @@
 import AbstractPlotting
-import Makie
+import .Makie
 using LinearAlgebra: norm
 using AbstractPlotting: lift, cam3d!, Point3f0, Vec3f0, Figure, Auto
 using AbstractPlotting.MakieLayout: DataAspect, Axis, labelslidergrid!, set_close_to!,
@@ -12,11 +12,11 @@ using ..TopOptProblems: getcloaddict
 
 # https://github.com/JuliaPlots/AbstractPlotting.jl/blob/f16321dee2c77ac9c753fed9b1074a2df7b10db8/src/utilities/utilities.jl#L188
 # https://github.com/JuliaPlots/AbstractPlotting.jl/blob/444813136a506eba8b5b03e2125c7a5f24e825cb/src/conversions.jl#L522
-function AbstractPlotting.to_vertices(nodes::Vector{<:JuAFEM.Node})
+function AbstractPlotting.to_vertices(nodes::Vector{<:Ferrite.Node})
     return Point3f0.([n.x for n in nodes])
 end
 
-function AbstractPlotting.to_triangles(cells::AbstractVector{<: JuAFEM.Cell})
+function AbstractPlotting.to_triangles(cells::AbstractVector{<: Ferrite.Cell})
     tris = GLTriangleFace[]
     for cell in cells
         to_triangle(tris, cell)
@@ -25,7 +25,7 @@ function AbstractPlotting.to_triangles(cells::AbstractVector{<: JuAFEM.Cell})
 end
 
 # https://github.com/JuliaPlots/AbstractPlotting.jl/blob/444813136a506eba8b5b03e2125c7a5f24e825cb/src/conversions.jl#L505
-function to_triangle(tris, cell::Union{JuAFEM.Hexahedron, JuAFEM.QuadraticHexahedron})
+function to_triangle(tris, cell::Union{Ferrite.Hexahedron, Ferrite.QuadraticHexahedron})
     nodes = cell.nodes
     push!(tris, GLTriangleFace(nodes[1], nodes[2], nodes[5]))
     push!(tris, GLTriangleFace(nodes[5], nodes[2], nodes[6]))
@@ -43,7 +43,7 @@ function to_triangle(tris, cell::Union{JuAFEM.Hexahedron, JuAFEM.QuadraticHexahe
     push!(tris, GLTriangleFace(nodes[3], nodes[1], nodes[4]))
 end
 
-function to_triangle(tris, cell::Union{JuAFEM.Tetrahedron, JuAFEM.QuadraticTetrahedron})
+function to_triangle(tris, cell::Union{Ferrite.Tetrahedron, Ferrite.QuadraticTetrahedron})
     nodes = cell.nodes
     push!(tris, GLTriangleFace(nodes[1], nodes[3], nodes[2]))
     push!(tris, GLTriangleFace(nodes[3], nodes[4], nodes[2]))
@@ -51,24 +51,24 @@ function to_triangle(tris, cell::Union{JuAFEM.Tetrahedron, JuAFEM.QuadraticTetra
     push!(tris, GLTriangleFace(nodes[4], nodes[1], nodes[2]))
 end
 
-function to_triangle(tris, cell::Union{JuAFEM.Quadrilateral, JuAFEM.QuadraticQuadrilateral})
+function to_triangle(tris, cell::Union{Ferrite.Quadrilateral, Ferrite.QuadraticQuadrilateral})
     nodes = cell.nodes
     push!(tris, GLTriangleFace(nodes[1], nodes[2], nodes[3]))
     push!(tris, GLTriangleFace(nodes[3], nodes[4], nodes[1]))
 end
 
-function to_triangle(tris, cell::Union{JuAFEM.Triangle, JuAFEM.QuadraticTriangle})
+function to_triangle(tris, cell::Union{Ferrite.Triangle, Ferrite.QuadraticTriangle})
     nodes = cell.nodes
     push!(tris, GLTriangleFace(nodes[1], nodes[2], nodes[3]))
 end
 
-function AbstractPlotting.convert_arguments(P, x::AbstractVector{<:JuAFEM.Node{N, T}}) where {N, T}
+function AbstractPlotting.convert_arguments(P, x::AbstractVector{<:Ferrite.Node{N, T}}) where {N, T}
     convert_arguments(P, reinterpret(Point{N, T}, x))
 end
 
 ################################
 
-function visualize(mesh::JuAFEM.Grid{dim, <:JuAFEM.AbstractCell, TT}, u; 
+function visualize(mesh::Ferrite.Grid{dim, <:Ferrite.AbstractCell, TT}, u; 
         topology=undef, cloaddict=undef,
         undeformed_mesh_color=(:gray, 0.4),
         deformed_mesh_color=(:cyan, 0.4),
@@ -90,9 +90,9 @@ function visualize(mesh::JuAFEM.Grid{dim, <:JuAFEM.AbstractCell, TT}, u;
 
     #TODO make this work without creating a Node
     if dim == 2
-        nodes = Vector{JuAFEM.Node}(undef, nnodes)
+        nodes = Vector{Ferrite.Node}(undef, nnodes)
         for (i, node) in enumerate(mesh.nodes)
-            nodes[i] = JuAFEM.Node((node.x[1], node.x[2], zero(T)))
+            nodes[i] = Ferrite.Node((node.x[1], node.x[2], zero(T)))
         end
         u = [u; zeros(T, 1, nnodes)]
 
@@ -130,9 +130,9 @@ function visualize(mesh::JuAFEM.Grid{dim, <:JuAFEM.AbstractCell, TT}, u;
     # * deformed mesh
     if norm(u) > eps()
         exagg_deformed_nodes = lift(s -> 
-            [JuAFEM.Node(Tuple([node.x[j] + s * u[j, i] for j=1:3])) for (i, node) in enumerate(nodes)], 
+            [Ferrite.Node(Tuple([node.x[j] + s * u[j, i] for j=1:3])) for (i, node) in enumerate(nodes)], 
             lsgrid.sliders[1].value)
-        new_nodes = Vector{JuAFEM.Node}(undef, length(nodes))
+        new_nodes = Vector{Ferrite.Node}(undef, length(nodes))
         Makie.mesh!(ax1, exagg_deformed_nodes, mesh_cells, color = deformed_mesh_color)
     end
 
@@ -197,7 +197,7 @@ function visualize(problem::StiffnessTopOptProblem{dim, T}, u::AbstractVector;
         kwargs...) where {dim, T}
     mesh = problem.ch.dh.grid
     node_dofs = problem.metadata.node_dofs
-    nnodes = JuAFEM.getnnodes(mesh)
+    nnodes = Ferrite.getnnodes(mesh)
     if u === undef
         node_displacements = zeros(T, dim, nnodes)
     else
@@ -209,7 +209,7 @@ end
 
 function visualize(problem::StiffnessTopOptProblem{dim, T}; kwargs...) where {dim, T}
     mesh = problem.ch.dh.grid
-    nnodes = JuAFEM.getnnodes(mesh)
+    nnodes = Ferrite.getnnodes(mesh)
     node_displacements = zeros(T, dim, nnodes)
     cloaddict = getcloaddict(problem)
     visualize(mesh, node_displacements; cloaddict=cloaddict, kwargs...)

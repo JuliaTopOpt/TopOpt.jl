@@ -1,10 +1,9 @@
 using TopOpt
-# import Makie
-# using TopOpt.TopOptProblems.Visualization: visualize
-try
-    include("./new_problems.jl")
-catch
-end
+import Makie
+using TopOpt.TopOptProblems.Visualization: visualize
+
+using FromFile
+@from "new_problems.jl" import NewPointLoadCantilever
 
 using TimerOutputs
 
@@ -13,7 +12,7 @@ using TimerOutputs
     # https://github.com/KristofferC/TimerOutputs.jl
     to = TimerOutput()
     reset_timer!(to)
-    Nonconvex.show_residuals[] = false
+    Nonconvex.show_residuals[] = true
 
     # Define the problem
     E = 1.0 # Young’s modulus
@@ -40,24 +39,24 @@ using TimerOutputs
         # Define compliance objective
         comp = Compliance(problem, solver)
         filter = DensityFilter(solver, rmin = rmin)
-        obj = Objective(x -> comp(filter(x)))
+        obj = x -> comp(filter(x))
     end
 
     # Define volume constraint
     @timeit to "constraint def" begin
         volfrac = TopOpt.Volume(problem, solver)
-        constr = IneqConstraint(x -> volfrac(filter(x)), V)
+        constr = x -> volfrac(filter(x)) - V
     end
 
     # Define subproblem optimizer
     # TODO MMA02 converge to weird results under this criteria
     mma_options = options = Nonconvex.MMAOptions(
         maxiter = 400, 
-        tol = Nonconvex.Tolerance(x = 1e-3, f = 1e-9),
+        tol = Nonconvex.Tolerance(x = 1e-3, f = 1e-6),
         )
     ipopt_options = Nonconvex.IpoptOptions(
-        maxiter = 400, 
-        tol = Nonconvex.Tolerance(x = 1e-3, f = 1e-6),
+        # maxiter = 100, 
+        # tol = Nonconvex.Tolerance(x = 1e-3, f = 1e-6),
     )
 
     convcriteria = Nonconvex.GenericCriteria()
@@ -86,7 +85,11 @@ using TimerOutputs
 
     @show result.convstate
     @show result.objval
-    @show optimizer.workspace.iter
+    try
+        @show optimizer.workspace.iter
+    catch
+        # IpoptWorkspace has no field iter
+    end
 
     # # Visualize the result using Makie.jl
     fig = visualize(problem; topology=result.topology, 

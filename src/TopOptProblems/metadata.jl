@@ -125,7 +125,7 @@ function get_node_dofs(dh::DofHandler)
     for field in 1:nfields
         field_dim = dh.field_dims[field]
         node_offset = node_field_offset(dh, field)
-        offset = JuAFEM.field_offset(dh, dh.field_names[field])
+        offset = Ferrite.field_offset(dh, dh.field_names[field])
         for (cellidx, cell) in enumerate(dh.grid.cells)
             celldofs!(_celldofs, dh, cellidx) # update the dofs for this cell
             for idx in 1:min(interpol_points, length(cell.nodes))

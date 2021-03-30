@@ -1,10 +1,10 @@
-using JuAFEM: Cell
+using Ferrite: Cell
 
 """
     abstract type StiffnessTopOptProblem{dim, T} <: AbstractTopOptProblem end
 
 An abstract stiffness topology optimization problem. All subtypes must have the following fields:
-- `ch`: a `JuAFEM.ConstraintHandler` struct
+- `ch`: a `Ferrite.ConstraintHandler` struct
 - `metadata`: Metadata having various cell-node-dof relationships
 - `black`: a `BitVector` of length equal to the number of elements where `black[e]` is 1 iff the `e`^th element must be part of the final design
 - `white`:  a `BitVector` of length equal to the number of elements where `white[e]` is 1 iff the `e`^th element must not be part of the final design
@@ -24,7 +24,7 @@ getdh(p::StiffnessTopOptProblem) = p.ch.dh
 getcloaddict(p::StiffnessTopOptProblem{dim, T}) where {dim, T} = Dict{String, Vector{T}}()
 getpressuredict(p::StiffnessTopOptProblem{dim, T}) where {dim, T} = Dict{String, T}()
 getfacesets(p::StiffnessTopOptProblem{dim, T}) where {dim, T} = Dict{String, Tuple{Int, T}}()
-JuAFEM.getncells(problem::StiffnessTopOptProblem) = JuAFEM.getncells(getdh(problem).grid)
+Ferrite.getncells(problem::StiffnessTopOptProblem) = Ferrite.getncells(getdh(problem).grid)
 
 
 """
@@ -59,7 +59,7 @@ end
 - `ν`: Poisson's ration
 - `force`: force at the center right of the cantilever beam (positive is downward)
 - `force_dof`: dof number at which the force is applied
-- `ch`: a `JuAFEM.ConstraintHandler` struct
+- `ch`: a `Ferrite.ConstraintHandler` struct
 - `metadata`: Metadata having various cell-node-dof relationships
 - `black`: a `BitVector` of length equal to the number of elements where `black[e]` is 1 iff the `e`^th element must be part of the final design
 - `white`:  a `BitVector` of length equal to the number of elements where `white[e]` is 1 iff the `e`^th element must not be part of the final design
@@ -202,7 +202,7 @@ end
 - `ν`: Poisson's ration
 - `force`: force at the top left of half the MBB (positive is downward)
 - `force_dof`: dof number at which the force is applied
-- `ch`: a `JuAFEM.ConstraintHandler` struct
+- `ch`: a `Ferrite.ConstraintHandler` struct
 - `metadata`: Metadata having various cell-node-dof relationships
 - `black`: a `BitVector` of length equal to the number of elements where `black[e]` is 1 iff the `e`^th element must be part of the final design
 - `white`:  a `BitVector` of length equal to the number of elements where `white[e]` is 1 iff the `e`^th element must not be part of the final design
@@ -357,7 +357,7 @@ end
 - `ν`: Poisson's ration
 - `force`: force at the center right of the cantilever beam (positive is downward)
 - `force_dof`: dof number at which the force is applied
-- `ch`: a `JuAFEM.ConstraintHandler` struct
+- `ch`: a `Ferrite.ConstraintHandler` struct
 - `metadata`: Metadata having various cell-node-dof relationships
 - `black`: a `BitVector` of length equal to the number of elements where `black[e]` is 1 iff the `e`^th element must be part of the final design
 - `white`:  a `BitVector` of length equal to the number of elements where `white[e]` is 1 iff the `e`^th element must not be part of the final design
@@ -437,7 +437,7 @@ function LBeam(::Type{Val{CellType}}, ::Type{T}=Float64; length = 100, height = 
     return LBeam(E, ν, ch, force, force_dof, black, white, varind, metadata)
 end
 
-function boundingbox(grid::JuAFEM.Grid{dim}) where dim
+function boundingbox(grid::Ferrite.Grid{dim}) where dim
     xmin1 = minimum(n->n.x[1], grid.nodes)
     xmax1 = maximum(n->n.x[1], grid.nodes)
     xmin2 = minimum(n->n.x[2], grid.nodes)
@@ -515,7 +515,7 @@ end
 - `E`: Young's modulus
 - `ν`: Poisson's ration
 - `force`: force at the center right of the cantilever beam (positive is downward)
-- `ch`: a `JuAFEM.ConstraintHandler` struct
+- `ch`: a `Ferrite.ConstraintHandler` struct
 - `metadata`: Metadata having various cell-node-dof relationships
 - `black`: a `BitVector` of length equal to the number of elements where `black[e]` is 1 iff the `e`^th element must be part of the final design
 - `white`:  a `BitVector` of length equal to the number of elements where `white[e]` is 1 iff the `e`^th element must not be part of the final design
