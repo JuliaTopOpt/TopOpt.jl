@@ -14,7 +14,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        julia-version: ['^1.6.0-0',]
+        julia-version: ['1.6',]
         os: ['ubuntu-latest',]
     steps:
       - name: Checkout
@@ -25,9 +25,9 @@ jobs:
       - uses: julia-actions/julia-buildpkg@v1
       - uses: julia-actions/julia-runtest@v1
       - uses: julia-actions/julia-processcoverage@v1
-        if: ${{ matrix.julia-version == '^1.6.0-0' && matrix.os == 'ubuntu-latest' }}
+        if: ${{ matrix.julia-version == '1.6' && matrix.os == 'ubuntu-latest' }}
       - uses: codecov/codecov-action@v1
-        if: ${{ matrix.julia-version == '^1.6.0-0' && matrix.os == 'ubuntu-latest' }}
+        if: ${{ matrix.julia-version == '1.6' && matrix.os == 'ubuntu-latest' }}
         with:
           file: lcov.info          
   # example for Makie-involving docs build
@@ -39,7 +39,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        julia-version: ['^1.6.0-0',]
+        julia-version: ['1.6',]
         os: ['ubuntu-latest',]
     steps:
       - uses: actions/checkout@v2
