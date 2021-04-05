@@ -1263,11 +1263,9 @@ version = "0.4.1"
 
 [[VTKDataTypes]]
 deps = ["Colors", "GeometryTypes", "IterTools", "ResumableFunctions", "StaticArrays", "WriteVTK"]
-git-tree-sha1 = "f672ed93a1c6092e6b9c28d73bb55ff98bc27739"
-repo-rev = "master"
-repo-url = "https://github.com/mohamed82008/VTKDataTypes.jl"
+git-tree-sha1 = "72c9c70f2f390e8037ff78209a480bd78fae2b48"
 uuid = "10d27dd1-1d0f-5a4c-b178-bd2d0045a217"
-version = "0.0.0"
+version = "0.1.0"
 
 [[VersionParsing]]
 git-tree-sha1 = "80229be1f670524750d905f8fc8148e5a8c4537f"
