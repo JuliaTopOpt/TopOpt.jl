@@ -7,7 +7,7 @@ using Parameters: @unpack
 using TimerOutputs, Ferrite, StaticArrays
 using StatsFuns, MappedArrays, LazyArrays
 using ..TopOptProblems: getdh
-using SparseArrays, Tracker, Statistics, ChainRulesCore, Zygote
+using SparseArrays, Statistics, ChainRulesCore, Zygote
 using Nonconvex: Nonconvex
 
 export  Volume,
