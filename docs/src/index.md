@@ -12,14 +12,14 @@
 
 ## Installation
 
-In Julia v1.0+ you can install packages using Julia's package manager as follows:
+To install `TopOpt.jl`, run:
 
 ```julia
 using Pkg
-pkg"add https://github.com/mohamed82008/TopOpt.jl#master"
+pkg"add TopOpt"
 ```
 
-which will track the `master` branch of the package. To additionally load the visualization submodule of `TopOpt`, you will need to install `Makie.jl` using:
+To additionally load the visualization submodule of `TopOpt`, you will need to install `Makie.jl` using:
 
 ```julia
 pkg"add Makie"
