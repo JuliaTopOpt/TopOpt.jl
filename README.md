@@ -10,19 +10,14 @@
 
 ## Installation
 
-To install `TopOpt.jl`, you can either (1) add it to an existing Julia environment or (2) [clone and use its shipped environment](https://pkgdocs.julialang.org/v1/environments/#Using-someone-else's-project).
-The second option is recommended for new users who simply wants to try this package out.
-
-### Adding `TopOpt` to an existing Julia environment
-
-In Julia v1.0+ you can install packages using Julia's package manager as follows:
+To install `TopOpt.jl`, run:
 
 ```julia
 using Pkg
-pkg"add https://github.com/mohamed82008/TopOpt.jl#master"
+pkg"add TopOpt"
 ```
 
-which will track the `master` branch of the package. To additionally load the visualization submodule of `TopOpt`, you will need to install `Makie.jl` using:
+To additionally load the visualization submodule of `TopOpt`, you will need to install `Makie.jl` using:
 
 ```julia
 pkg"add Makie"
