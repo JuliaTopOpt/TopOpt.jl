@@ -1,6 +1,7 @@
 # using Revise
-using TopOpt, LinearAlgebra, Makie
-using TopOpt.TopOptProblems.Visualization: visualize
+using TopOpt, LinearAlgebra
+# using Makie
+# using TopOpt.TopOptProblems.Visualization: visualize
 
 E = 1.0 # Young’s modulus
 v = 0.3 # Poisson’s ratio
@@ -69,8 +70,8 @@ for i in 1:length(problems)
         global result = simp(x0)
         x0 = result.topology
     end
-    visualize(
-        problem; topology = penalty.(filter(result.topology)), default_exagg_scale = 0.07,
-        scale_range = 10.0, vector_linewidth = 3, vector_arrowsize = 0.5,
-    )
+    #visualize(
+    #    problem; topology = penalty.(filter(result.topology)), default_exagg_scale = 0.07,
+    #    scale_range = 10.0, vector_linewidth = 3, vector_arrowsize = 0.5,
+    #)
 end

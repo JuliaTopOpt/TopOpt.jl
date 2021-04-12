@@ -1,6 +1,5 @@
 # using Revise
-using TopOpt, LinearAlgebra, Makie, StatsFuns
-using TopOpt.TopOptProblems.Visualization: visualize
+using TopOpt, LinearAlgebra, StatsFuns
 
 E = 1.0 # Young’s modulus
 v = 0.3 # Poisson’s ratio
@@ -58,6 +57,7 @@ maximum(stress(filter(x0))) # 10.01
 # ### (Optional) Visualize the result using Makie.jl
 # Need to run `using Pkg; Pkg.add(Makie)` first
 # ```julia
+# using Makie
 # using TopOpt.TopOptProblems.Visualization: visualize
 # fig = visualize(
 #    problem; topology = penalty.(filter(result.topology)), default_exagg_scale = 0.07,
