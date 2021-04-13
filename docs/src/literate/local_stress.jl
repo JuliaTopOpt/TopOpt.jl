@@ -16,9 +16,9 @@ steps = 40 # maximum number of penalty steps, delta_p0 = 0.1
 
 # ### Continuation SIMP
 x0 = fill(1.0, 160*40) # initial design
-maximum(stress(filter(x0))) # 0.51
+x = copy(x0)
 for p in [1.0, 2.0, 3.0]
-    global penalty, stress, filter, result, stress, x0
+    global penalty, stress, filter, result, stress, x
     penalty = TopOpt.PowerPenalty(p)
     # Define a finite element solver
     solver = FEASolver(
@@ -42,17 +42,18 @@ for p in [1.0, 2.0, 3.0]
     alg = Nonconvex.PercivalAlg()
     options = Nonconvex.PercivalOptions()
     optimizer = Optimizer(
-        obj, constr, x0, alg,
-        options = options, convcriteria = convcriteria,
+        obj, constr, x, alg,
+        options = options,
     )
     # Define continuation SIMP optimizer
     simp = SIMP(optimizer, solver, p)
     # Solve
-    result = simp(x0)
-    x0 = result.topology
+    result = simp(x)
+    x = result.topology
 end
 
-maximum(stress(filter(x0))) # 10.01
+maximum(stress(filter(x0))) # 0.51
+maximum(stress(filter(x))) # 10.01
 
 # ### (Optional) Visualize the result using Makie.jl
 # Need to run `using Pkg; Pkg.add(Makie)` first

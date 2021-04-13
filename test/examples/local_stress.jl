@@ -11,14 +11,12 @@ rmin = 3.0
 problems = Any[
     PointLoadCantilever(Val{:Linear}, (160, 40), (1.0, 1.0), E, v, f), 
     HalfMBB(Val{:Linear}, (60, 20), (1.0, 1.0), E, v, f), 
-    LBeam(Val{:Linear}, Float64), 
-    TieBeam(Val{:Quadratic}, Float64),
+    LBeam(Val{:Linear}, Float64),
 ]
 problem_names = [
     "Cantilever beam",
     "Half MBB beam",
     "L-beam",
-    "Tie-beam",
 ]
 
 for i in 1:length(problems)
@@ -40,13 +38,8 @@ for i in 1:length(problems)
         )
         # Define compliance objective
         global stress = TopOpt.MicroVonMisesStress(solver)
-        global filter = if problem isa TopOptProblems.TieBeam
-            identity
-        else
-            DensityFilter(solver, rmin = rmin)
-        end
+        global filter = DensityFilter(solver, rmin = rmin)
         global volfrac = Volume(problem, solver)
-        global comp = Compliance(problem, solver)
 
         obj = x -> volfrac(filter(x)) - V
         constr = x -> begin
@@ -61,7 +54,7 @@ for i in 1:length(problems)
         options = Nonconvex.PercivalOptions()
         optimizer = Optimizer(
             obj, constr, x0, alg,
-            options = options, convcriteria = convcriteria,
+            options = options,
         )
         # Define continuation SIMP optimizer
         simp = SIMP(optimizer, solver, p)
