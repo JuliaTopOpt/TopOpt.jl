@@ -1,5 +1,5 @@
 # using Revise
-using TopOpt, LinearAlgebra
+using TopOpt, LinearAlgebra, StatsFuns
 # using Makie
 # using TopOpt.TopOptProblems.Visualization: visualize
 
@@ -55,7 +55,6 @@ for i in 1:length(problems)
             vcat(
                 (s .- thr) / 100,
                 logsumexp(s) - log(length(s)) - thr,
-                #comp(filter(x)) - 2000.0,
             )
         end
         alg = Nonconvex.PercivalAlg()
