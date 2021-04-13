@@ -20,11 +20,9 @@ x = copy(x0)
 for p in [1.0, 2.0, 3.0]
     global penalty, stress, filter, result, stress, x
     penalty = TopOpt.PowerPenalty(p)
-    # Define a finite element solver
     solver = FEASolver(
         Displacement, Direct, problem, xmin = xmin, penalty = penalty,
     )
-    # Define compliance objective
     stress = TopOpt.MicroVonMisesStress(solver)
     filter = DensityFilter(solver, rmin = rmin)
     volfrac = TopOpt.Volume(problem, solver)
@@ -33,7 +31,6 @@ for p in [1.0, 2.0, 3.0]
     thr = 10 # stress threshold
     constr = x -> begin
         s = stress(filter(x))
-        # Reusing the stress to compute a lower bound aggregation
         vcat(
             (s .- thr) / 100,
             logsumexp(s) - log(length(s)) - thr,
@@ -45,9 +42,7 @@ for p in [1.0, 2.0, 3.0]
         obj, constr, x, alg,
         options = options,
     )
-    # Define continuation SIMP optimizer
     simp = SIMP(optimizer, solver, p)
-    # Solve
     result = simp(x)
     x = result.topology
 end
