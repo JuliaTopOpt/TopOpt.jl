@@ -41,8 +41,8 @@ ins_dir = joinpath(@__DIR__, "instances", "fea_examples");
     # call solver to trigger assemble!
     solver()
     @show solver.u
-    scene, layout = draw_truss_problem(problem; u=solver.u, 
-        default_load_scale=0.2, default_support_scale=0.2, default_arrow_size=0.03)
+    scene, layout = draw_truss_problem(problem, solver.u;
+        default_load_scale=0.2, default_support_scale=0.2, vector_arrowsize=0.03)
 
     try
         global K, Kσ = buckling(problem, solver.globalinfo, solver.elementinfo)

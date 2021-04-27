@@ -9,9 +9,10 @@ function get_Kσs(problem::TrussProblem{xdim, TT}, u_dofs, cellvalues) where {xd
     dh = problem.ch.dh
 
     # usually ndof_pc = xdim * n_basefuncs
-    # ? number of nodes per cell == n_basefuncs per cell
     ndof_pc = ndofs_per_cell(dh)
     n_basefuncs = getnbasefunctions(cellvalues)
+    @assert ndof_pc == xdim*n_basefuncs "$ndof_pc, $n_basefuncs"
+
     global_dofs = zeros(Int, ndof_pc)
     Kσs = [zeros(TT, ndof_pc, ndof_pc) for i in 1:getncells(dh.grid)]
     Kσ_e = zeros(TT, ndof_pc, ndof_pc)
@@ -44,9 +45,9 @@ function get_Kσs(problem::TrussProblem{xdim, TT}, u_dofs, cellvalues) where {xd
                 @einsum u_p[i,j] = _u[i]*∇ϕ[j]
                 # effect of the quadratic term in the strain formula have on the stress field is ignored
                 @einsum ϵ[i,j] = 1/2*(u_p[i,j] + u_p[j,i])
+                # ! truss element special treatment here
                 # isotropic solid
                 # @einsum σ[i,j] = E*ν/(1-ν^2)*δ[i,j]*ϵ[k,k] + E*ν*(1+ν)*ϵ[i,j]
-                # ! truss element special treatment here
                 σ = E .* ϵ
                 
                 for d in 1:xdim
@@ -72,8 +73,6 @@ function buckling(problem::TrussProblem{xdim, T}, ginfo, einfo; u=undef) where {
     Kσs = get_Kσs(problem, u, einfo.cellvalues)
     Kσ = deepcopy(ginfo.K)
 
-    # @show Kσs
-
     if Kσ isa Symmetric
         Kσ.data.nzval .= 0
         assembler = Ferrite.AssemblerSparsityPattern(Kσ.data, T[], Int[], Int[])
@@ -97,8 +96,10 @@ function buckling(problem::TrussProblem{xdim, T}, ginfo, einfo; u=undef) where {
         end
     end
 
-    # f = copy(ginfo.f)
-    # apply!(Kσ, f, problem.ch)
+    #* apply boundary condition
+    apply!(Kσ, ginfo.f, problem.ch)
 
     return ginfo.K, Kσ
 end
+
+##########################################

@@ -45,7 +45,7 @@ function TrussProblem(::Type{Val{CellType}}, node_points::Dict{iT, SVector{xdim,
         @assert length(mats) == ncells
         mats = convert(Vector{TrussFEAMaterial{T}}, mats)
     elseif mats isa TrussFEAMaterial
-        mats = [TrussFEAMaterial{T}(mats) for i=1:ncells]
+        mats = [convert(TrussFEAMaterial{T}, mats) for i=1:ncells]
     else
         error("Invalid mats: $(mats)")
     end
