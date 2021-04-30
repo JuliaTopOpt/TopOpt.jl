@@ -92,7 +92,7 @@ function TrussProblem(::Type{Val{CellType}}, node_points::Dict{iT, SVector{xdim,
 
     ch = ConstraintHandler(dh)
     for i=1:xdim
-        dbc = Dirichlet(:u, getnodeset(truss_grid.grid, get_fixities_node_set_name(i)), (x,t)->T[0], [i])
+        dbc = Dirichlet(:u, getnodeset(truss_grid.grid, get_fixities_node_set_name(i)), (x,t)->zeros(T,1), [i])
         add!(ch, dbc)
     end
     close!(ch)

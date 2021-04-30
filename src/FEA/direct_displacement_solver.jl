@@ -37,7 +37,7 @@ function (s::DirectDisplacementSolver{T})(
     ::Type{Val{safe}} = Val{false},
     ::Type{newT} = T;
     assemble_f = true,
-    reuse_chol=false,
+    reuse_chol = false,
     rhs = assemble_f ? s.globalinfo.f : s.rhs,
     lhs = assemble_f ? s.u : s.lhs,
     kwargs...,
