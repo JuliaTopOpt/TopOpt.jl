@@ -1,6 +1,7 @@
 using Test
 using TopOpt
 using TopOpt.TopOptProblems: getE
+using TopOpt.TrussTopOptProblems: load_truss_json
 using Base.Iterators
 # if get(ENV, "CI", nothing) != "true"
 #     import Makie
@@ -9,14 +10,14 @@ using Base.Iterators
 
 ins_dir = joinpath(@__DIR__, "instances", "ground_meshes");
 
-@testset "Tim problem to solve" for (problem_dim, lc_ind) in product(["2d", "3d"], [0, 1])
-    # problem_dim = "2d"
+# @testset "Tim problem to solve" for (problem_dim, lc_ind) in product(["2d", "3d"], [0, 1])
+    problem_dim = "2d"
     # file_name = "tim_2d.json"
-    # lc_ind = 1
+    lc_ind = 1
     file_name = "tim_$(problem_dim).json"
     problem_file = joinpath(ins_dir, file_name)
 
-    node_points, elements, mats, crosssecs, fixities, load_cases = parse_truss_json(problem_file);
+    node_points, elements, mats, crosssecs, fixities, load_cases = load_truss_json(problem_file);
     loads = load_cases[string(lc_ind)]
 
     problem = TrussProblem(Val{:Linear}, node_points, elements, loads, fixities, mats, crosssecs);
@@ -58,21 +59,35 @@ ins_dir = joinpath(@__DIR__, "instances", "ground_meshes");
     )
     convcriteria = Nonconvex.KKTCriteria()
     x0 = fill(V, length(solver.vars))
-    optimizer = Optimizer(
-        obj, constr, x0, Nonconvex.MMA87(),
-        options = mma_options, convcriteria = convcriteria,
-    )
-    simp = SIMP(optimizer, solver, penalty.p)
+    nelem = length(x0)
 
-    # ? 1.0 might induce an infeasible solution, which gives the optimizer a hard time to escape 
-    # from infeasible regions and return a result
-    result = simp(x0);
+    m = Model(obj)
+    addvar!(m, zeros(nelem), ones(nelem))
+    # add_ineq_constraint!(m, x -> g(x, 2, 0))
+    # add_ineq_constraint!(m, x -> g(x, -1, 1))
+    add_ineq_constraint!(m, constr)
 
-    println("="^10)
-    println("tim-$(problem_dim) - LC $(lc_ind) - #elements $(ncells), #dof: $(ncells*ndim): opt iter $(simp.optimizer.workspace.iter)")
-    println("$(result.convstate)")
+    alg = JuniperIpoptAlg()
+    options = Nonconvex.JuniperIpoptOptions()
+    r = Nonconvex.optimize(m, alg, x0, options = options, integers = trues(nelem))
+    r.minimum
+    r.minimizer # [0.3327, 1]
 
-    solver()
+    # optimizer = Optimizer(
+    #     obj, constr, x0, Nonconvex.MMA87(),
+    #     options = mma_options, convcriteria = convcriteria,
+    # )
+    # simp = SIMP(optimizer, solver, penalty.p)
+
+    # # ? 1.0 might induce an infeasible solution, which gives the optimizer a hard time to escape 
+    # # from infeasible regions and return a result
+    # result = simp(x0);
+
+    # println("="^10)
+    # println("tim-$(problem_dim) - LC $(lc_ind) - #elements $(ncells), #dof: $(ncells*ndim): opt iter $(simp.optimizer.workspace.iter)")
+    # println("$(result.convstate)")
+
+    # solver()
 
     # if get(ENV, "CI", nothing) != "true"
     #     fig = visualize(
@@ -82,4 +97,4 @@ ins_dir = joinpath(@__DIR__, "instances", "ground_meshes");
     #     )
     #     Makie.display(fig)
     # end
-end # end testset
+# end # end testset

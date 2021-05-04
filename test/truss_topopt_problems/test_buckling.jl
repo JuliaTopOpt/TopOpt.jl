@@ -20,7 +20,7 @@ ins_dir = joinpath(@__DIR__, "instances", "fea_examples");
     file_name = problem_json[i]
     problem_file = joinpath(ins_dir, file_name)
 
-    node_points, elements, mats, crosssecs, fixities, load_cases = parse_truss_json(problem_file);
+    node_points, elements, mats, crosssecs, fixities, load_cases = load_truss_json(problem_file);
     ndim, nnodes, ncells = length(node_points[1]), length(node_points), length(elements)
     loads = load_cases["0"]
 
