@@ -75,14 +75,10 @@ function reset!(w::Nonconvex.MMAWorkspace, x0 = nothing)
 end
 
 function reset!(w::Nonconvex.AugLagWorkspace, x0 = nothing)
-    @unpack solution = w
-    outer_iter, iter, fcalls = 0, 0, 0, 0
-    @pack! w = fcalls, iter, outer_iter
+    w.counter[] = 0
     if x0 !== nothing
-        solution.prevx .= solution.x
-        solution.x .= x0
+        w.x0 .= x0
     end
-    #Nonconvex.assess_convergence!(w)
     return w
 end
 
