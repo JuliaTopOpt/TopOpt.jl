@@ -6,7 +6,7 @@
 [![codecov](https://codecov.io/gh/juliatopopt/TopOpt.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/juliatopopt/TopOpt.jl)
 [![Documentation](https://img.shields.io/badge/doc-latest-blue.svg)](https://juliatopopt.github.io/TopOpt.jl/dev)
 
-`TopOpt` is a topology optimization package written in [Julia](https://github.com/JuliaLang/julia).
+`TopOpt` is a topology optimization package written in [Julia](https://github.com/JuliaLang/julia). To learn more and see some examples, visit the [documentation](https://juliatopopt.github.io/TopOpt.jl/stable).
 
 ## Installation
 
@@ -34,3 +34,15 @@ and to optionally load the visualization sub-module as part of `TopOpt`, use:
 ```julia
 using TopOpt, Makie
 ```
+
+## Contribute
+
+We always welcome new contributors! Feel free to open an issue or reach out to us via email if you want to collaborate. There are plenty of things to do including beginner friendly tasks and research-oriented tasks. You can help us create the best topology optimization ecosystem in the world! Some beginner-friendly ideas you could be working on include:
+1. Multi-material design parameterisation
+2. Level set design parameterization
+3. Lattice design parameterization
+4. Neural network based design parameterization
+5. Local volume constraints
+6. Supporting rectilinear grids
+7. Wrapping OpenLSTO_jll which is the precompiled binary for M2DOLab/OpenLSTO
+8. Wrapping TopOpt_in_PETSc_jll which is the precompiled binary for topopt/TopOpt_in_PETSc
