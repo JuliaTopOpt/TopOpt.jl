@@ -46,3 +46,6 @@ We always welcome new contributors! Feel free to open an issue or reach out to u
 6. Supporting rectilinear grids
 7. Wrapping OpenLSTO_jll which is the precompiled binary for M2DOLab/OpenLSTO
 8. Wrapping TopOpt_in_PETSc_jll which is the precompiled binary for topopt/TopOpt_in_PETSc
+9. Reliability-based design optimization
+10. Robust optimization
+11. Stochastic optimization
