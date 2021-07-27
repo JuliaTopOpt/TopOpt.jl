@@ -69,3 +69,8 @@ We always welcome new contributors! Feel free to open an issue or reach out to u
 9. Reliability-based design optimization
 10. Robust optimization
 11. Stochastic optimization
+
+
+## Questions?
+
+If you have any questions, join us on on the #topopt channel in the [Julia slack](https://julialang.org/slack/), open an issue or shoot us an email.
