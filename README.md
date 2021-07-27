@@ -48,6 +48,7 @@ All the following features are available in TopOpt.jl but the documentation is c
 - SIMP, RAMP, continuation SIMP/RAMP and BESO
 - Compliance, volume and stress functions
 - End-to-end topology optimization from INP file to VTK file
+- Interactive visualization of designs and deformation
 - Automatic differentiation of arbitrary Julia functions
 - Method of moving asymptotes, NLopt, Ipopt and augmented Lagrangian algorithm for optimization
 - Density and sensitivity filters
