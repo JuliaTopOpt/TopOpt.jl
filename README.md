@@ -35,6 +35,25 @@ and to optionally load the visualization sub-module as part of `TopOpt`, use:
 using TopOpt, Makie
 ```
 
+## Features available
+
+All the following features are available in TopOpt.jl but the documentation is currently lacking! Feel free to open an issue to ask about how to use specific features.
+
+- 2D and 3D truss topology optimization
+- 2D and 3D continuum topology optimization
+- Unstructured ground mesh
+- Linear and quadratic triangle, quadrilateral, tetrahedron and hexahedron elements in ground mesh
+- Fixed and non-design domain support
+- Concentrated and distributed loads
+- SIMP, RAMP, continuation SIMP/RAMP and BESO
+- Compliance, volume and stress functions
+- End-to-end topology optimization from INP file to VTK file
+- Automatic differentiation of arbitrary Julia functions
+- Method of moving asymptotes, NLopt, Ipopt and augmented Lagrangian algorithm for optimization
+- Density and sensitivity filters
+- Heaviside projection
+- Handling load uncertainty in compliance-based topology optimization
+
 ## Contribute
 
 We always welcome new contributors! Feel free to open an issue or reach out to us via email if you want to collaborate. There are plenty of things to do including beginner friendly tasks and research-oriented tasks. You can help us create the best topology optimization ecosystem in the world! Some beginner-friendly ideas you could be working on include:
