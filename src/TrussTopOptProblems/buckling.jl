@@ -52,8 +52,11 @@ end
 """
     get_truss_Kσs(problem::TrussProblem{xdim, TT}, u, cellvalues) where {xdim, TT}
 
-Compute the geometric stiffness matrix for truss elements. Matrix formulation defined in eq (3) and (4) in
+Compute the geometric stiffness matrix for **truss elements** (axial bar element, no bending or torsion). Matrix formulation defined in eq (3) and (4) in
 https://people.duke.edu/~hpgavin/cee421/truss-finite-def.pdf
+
+This matrix formulation is equivalent to the one used in 
+    M. Kočvara, “On the modelling and solving of the truss design problem with global stability constraints,” Struct Multidisc Optim, vol. 23, no. 3, pp. 189–203, Apr. 2002, doi: 10/br35mf.
 
 # Arguments
 `problem` = truss topopt problem struct
