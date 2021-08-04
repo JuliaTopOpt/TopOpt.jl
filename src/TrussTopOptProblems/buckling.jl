@@ -2,6 +2,18 @@
 using Einsum: @einsum
 using LinearAlgebra: I, norm
 
+"""
+    compute_local_axes(end_vert_u, end_vert_v)
+
+# Arguments
+`end_vert_u, end_vert_v` = vectors for nodal coordinate
+
+# Outputs
+`R` = (ndim x ndim) global_from_local transformation matrix
+    Note that this matrix has its columns as axes
+    So should be used as R*K*R' instead of R'*K*R as indicated in
+    https://people.duke.edu/~hpgavin/cee421/truss-finite-def.pdf
+"""
 function compute_local_axes(end_vert_u, end_vert_v)
     @assert length(end_vert_u) == length(end_vert_v)
     @assert length(end_vert_u) == 2 || length(end_vert_u) == 3
@@ -31,12 +43,26 @@ function compute_local_axes(end_vert_u, end_vert_v)
             R[:, 3] = new_z
         end
     elseif 2 == xdim
-        R[:,1] = [c_x, c_y]
-        R[:,2] = [-c_y, c_x]
+        R = [c_x  -c_y;
+             c_y  c_x]
     end
     return R
 end
 
+"""
+    get_truss_Kσs(problem::TrussProblem{xdim, TT}, u, cellvalues) where {xdim, TT}
+
+Compute the geometric stiffness matrix for truss elements. Matrix formulation defined in eq (3) and (4) in
+https://people.duke.edu/~hpgavin/cee421/truss-finite-def.pdf
+
+# Arguments
+`problem` = truss topopt problem struct
+`u` = deformation vector (solved from first-order linear elasticity)
+`cellvalues` = Ferrite cellvalues of the truss system
+
+# Outputs
+`Kσs` = a list of 2*ndim x 2*ndim element geometric stiffness matrix (in global cooridnate)
+"""
 function get_truss_Kσs(problem::TrussProblem{xdim, TT}, u, cellvalues) where {xdim, TT}
     Es = getE(problem)
     As = getA(problem)
@@ -61,21 +87,41 @@ function get_truss_Kσs(problem::TrussProblem{xdim, TT}, u, cellvalues) where {x
         A = As[cellidx]
         L = norm(cell.coords[1] - cell.coords[2])
         R = compute_local_axes(cell.coords[1], cell.coords[2])
-        γ = vcat(R[:,1], -R[:,1])
-        # compute axial force
+        # local axial projection operator (local axis transformation)
+        γ = vcat(-R[:,1], R[:,1])
         u_cell = @view u[global_dofs]
-        q_cell = E*A*(γ'*u_cell/L)
+        # compute axial force: first-order approx of bar force
+        # better approx would be: EA/L * (u3-u1 + 1/(2*L0)*(u4-u2)^2) = EA/L * (γ'*u + 1/2*(δ'*u)^2)
+        # see: https://people.duke.edu/~hpgavin/cee421/truss-finite-def.pdf
+        q_cell = E*A/L*(γ'*u_cell)
         for i=2:size(R,2)
-            δ = vcat(R[:,i], -R[:,i])
-            @assert δ' * γ ≈ 0
-            Kσ_e .+= q_cell / L^2 .* δ * δ'
+            δ = vcat(-R[:,i], R[:,i])
+            # @assert δ' * γ ≈ 0
+            Kσ_e .+= δ * δ'
         end
-        # ? why do we need the negative sign here?
-        Kσs[cellidx] .= -Kσ_e
+        Kσ_e .*= q_cell / L
+        Kσs[cellidx] .= Kσ_e
     end
     return Kσs
 end
 
+"""
+    buckling(problem::TrussProblem{xdim, T}, ginfo, einfo, vars=ones(T, getncells(getdh(problem).grid)), xmin = T(0.0); u=undef) where {xdim, T}
+
+Assembly global geometric stiffness matrix of the given truss problem.
+
+# Arguments
+`problem` = truss topopt problem
+`ginfo` = solver.globalinfo 
+`einfo` = solver.elementinfo 
+`vars` = (Optional) design variable values, default to all ones
+`xmin` = (Optional) min x value, default to 0.0
+`u` = (Optional) given displacement vector, if specified as undef, a linear solve will be performed on the first-order K to get u
+
+# Outputs
+`K` = global first-order stiffness matrix (same as ginfo.K)
+`Kσ` = global geometric stiffness matrix
+"""
 function buckling(problem::TrussProblem{xdim, T}, ginfo, einfo, vars=ones(T, getncells(getdh(problem).grid)), xmin = T(0.0); u=undef) where {xdim, T}
     dh = problem.ch.dh
     black = problem.black
@@ -131,72 +177,5 @@ function buckling(problem::TrussProblem{xdim, T}, ginfo, einfo, vars=ones(T, get
     apply!(Kσ, ginfo.f, problem.ch)
 
     return ginfo.K, Kσ
-end
-
-##########################################
-# TODO haven't figured out why this doesn't work
-# sometimes Kσ_e = 0 
-function get_Kσs(problem::TrussProblem{xdim, TT}, u, cellvalues) where {xdim, TT}
-    Es = getE(problem)
-    νs = getν(problem)
-    As = getA(problem)
-    dh = problem.ch.dh
-
-    # usually ndof_pc = xdim * n_basefuncs
-    ndof_pc = ndofs_per_cell(dh)
-    n_basefuncs = getnbasefunctions(cellvalues)
-    @assert ndof_pc == xdim*n_basefuncs "$ndof_pc, $n_basefuncs"
-
-    global_dofs = zeros(Int, ndof_pc)
-    Kσs = [zeros(TT, ndof_pc, ndof_pc) for i in 1:getncells(dh.grid)]
-    Kσ_e = zeros(TT, ndof_pc, ndof_pc)
-    # block-diagonal - block σ_e = σ_ij, i,j in xdim
-    ψ_e = zeros(TT, xdim*xdim, xdim*xdim)
-    G = zeros(TT, xdim*xdim, xdim*n_basefuncs)
-    δ = Matrix(TT(1.0)I, xdim, xdim)
-    ϵ = zeros(TT, xdim, xdim)
-    σ = zeros(TT, xdim, xdim)
-    # u_i,j: partial derivative
-    u_p = zeros(TT, xdim, xdim)
-
-    for (cellidx, cell) in enumerate(CellIterator(dh))
-        Kσ_e .= 0
-        truss_reinit!(cellvalues, cell, As[cellidx])
-        # get cell's dof's global dof indices, i.e. CC_a^e
-        celldofs!(global_dofs, dh, cellidx)
-        E = Es[cellidx]
-        ν = νs[cellidx]
-        for q_point in 1:getnquadpoints(cellvalues)
-            dΩ = getdetJdV(cellvalues, q_point)
-            for d in 1:xdim
-                ψ_e[(d-1)*xdim+1:d*xdim, (d-1)*xdim+1:d*xdim] .= 0
-            end
-            for a in 1:n_basefuncs
-                ∇ϕ = shape_gradient(cellvalues, q_point, a)
-                # given displacement values of the cell nodes
-                u_cell = @view u[(@view global_dofs[xdim*(a-1) .+ (1:xdim)])]
-                # u_i,j, i for spatial xdim, j for partial derivative
-                @einsum u_p[i,j] = u_cell[i]*∇ϕ[j]
-                # linear strain: effect of the quadratic term in the strain formula have on the stress field is ignored
-                @einsum ϵ[i,j] = 1/2*(u_p[i,j] + u_p[j,i])
-                # ! truss element special treatment here
-                # isotropic solid
-                # @einsum σ[i,j] = E*ν/(1-ν^2)*δ[i,j]*ϵ[k,k] + E*ν*(1+ν)*ϵ[i,j]
-                # σ = E .* ϵ
-                σ = E .* ones(size(ϵ))/2
-                
-                for d in 1:xdim
-                    ψ_e[(d-1)*xdim+1:d*xdim, (d-1)*xdim+1:d*xdim] .+= σ
-                    G[(xdim*(d-1)+1):(xdim*d), (a-1)*xdim+d] .= ∇ϕ
-                end
-            end
-            @show G
-            @show ψ_e
-            Kσ_e .+= G'*ψ_e*G*dΩ
-        end
-        @show Kσ_e
-        Kσs[cellidx] .= Kσ_e
-    end
-    return Kσs
 end
 
