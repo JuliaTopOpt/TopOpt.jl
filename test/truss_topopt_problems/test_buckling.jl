@@ -31,6 +31,10 @@ gm_ins_dir = joinpath(@__DIR__, "instances", "ground_meshes");
     K, G = buckling(problem, solver.globalinfo, solver.elementinfo; u=solver.u);
     @test isfinite(logdet(cholesky(K+G)))
 
+    eigenvalues, buckmodes =eigen(Array(K),Array(-G));
+    smallest_pos_eigval = minimum(eigenvalues[findall(eigenvalues.>0)]);
+    @test smallest_pos_eigval >= 1.0
+
     # * Run optimization, the optimized result should be unstable
     xmin = 0.0001 # minimum density
     x0 = fill(1.0, ncells) # initial design
