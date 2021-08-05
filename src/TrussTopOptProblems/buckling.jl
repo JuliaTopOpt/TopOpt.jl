@@ -1,7 +1,3 @@
-# modified from https://github.com/mohamed82008/LinearElasticity.jl
-using Einsum: @einsum
-using LinearAlgebra: I, norm
-
 """
     compute_local_axes(end_vert_u, end_vert_v)
 

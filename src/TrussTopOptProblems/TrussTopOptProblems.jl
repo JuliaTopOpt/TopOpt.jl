@@ -5,8 +5,8 @@ using SparseArrays
 using ..TopOpt
 using ..TopOpt.Utilities
 using Setfield
-# using ..TopOpt: PENALTY_BEFORE_INTERPOLATION
-# using ..Utilities: @forward_property
+import Ferrite: assemble!
+using LinearAlgebra: I, norm
 
 abstract type AbstractFEAMaterial end
 struct TrussFEAMaterial{T} <: AbstractFEAMaterial
@@ -19,10 +19,6 @@ struct TrussFEACrossSec{T} <: AbstractFEACrossSec
     A::T # cross section area
 end
 
-import Ferrite: assemble!
-
-# TODO apply @params to all the problem struct
-
 include("grids.jl")
 include("problem_types.jl")
 include("matrices_and_vectors.jl")
@@ -34,5 +30,6 @@ include(joinpath("TrussVisualization", "TrussVisualization.jl"))
 using .TrussVisualization
 
 export TrussGrid, TrussProblem, TrussFEACrossSec, TrussFEAMaterial
+export load_truss_geo, load_truss_json
 
 end # module
