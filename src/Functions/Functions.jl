@@ -1,12 +1,13 @@
 module Functions
 
 using ..TopOpt: dim, whichdevice, CPU, GPU, TopOpt, PENALTY_BEFORE_INTERPOLATION
-using ..TopOptProblems, ..FEA, ..CheqFilters
+using TopOptProblems
+using ..FEA, ..CheqFilters
 using ..Utilities, ForwardDiff, LinearAlgebra, Requires
 using Parameters: @unpack
 using TimerOutputs, Ferrite, StaticArrays
 using StatsFuns, MappedArrays, LazyArrays
-using ..TopOptProblems: getdh
+using TopOptProblems: getdh
 using SparseArrays, Statistics, ChainRulesCore, Zygote
 using Nonconvex: Nonconvex
 

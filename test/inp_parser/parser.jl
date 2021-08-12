@@ -1,4 +1,5 @@
-using TopOpt.TopOptProblems.InputOutput.INP
+using TopOpt
+using .TopOptProblems.InputOutput.INP
 using Ferrite
 
 using Test

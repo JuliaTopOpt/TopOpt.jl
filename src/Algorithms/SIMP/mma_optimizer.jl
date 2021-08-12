@@ -74,7 +74,7 @@ function reset!(w::Nonconvex.MMAWorkspace, x0 = nothing)
     return w
 end
 
-function reset!(w::Nonconvex.AugLagWorkspace, x0 = nothing)
+function reset!(w::Nonconvex.PercivalWorkspace, x0 = nothing)
     w.counter[] = 0
     if x0 !== nothing
         w.x0 .= x0

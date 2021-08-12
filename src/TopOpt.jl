@@ -2,6 +2,8 @@ module TopOpt
 
 const PENALTY_BEFORE_INTERPOLATION = true
 using Requires, Reexport
+@reexport using TopOptProblems
+ 
 
 macro cuda_only(mod, code)
     quote
@@ -25,12 +27,9 @@ module GPUUtils end
 include(joinpath("Utilities", "Utilities.jl"))
 using .Utilities
 
-# Topopology optimization problem definitions
-include(joinpath("TopOptProblems", "TopOptProblems.jl"))
-
 using LinearAlgebra, Statistics
-using Reexport, Parameters, Setfield
-@reexport using .TopOptProblems, Optim, LineSearches
+using Parameters, Setfield
+@reexport using Optim, LineSearches
 
 # Truss Topopology optimization problem definitions
 include(joinpath("TrussTopOptProblems", "TrussTopOptProblems.jl"))
@@ -76,7 +75,6 @@ end
 
 @cuda_only GPUUtils include("GPUUtils/GPUUtils.jl")
 @cuda_only Utilities include("Utilities/gpu_utilities.jl")
-@cuda_only TopOptProblems include("TopOptProblems/gpu_support.jl")
 @cuda_only FEA include("FEA/gpu_solvers.jl")
 @cuda_only CheqFilters include("CheqFilters/gpu_cheqfilter.jl")
 @cuda_only Functions include("Functions/gpu_support.jl")
@@ -84,7 +82,8 @@ end
 
 export  TopOpt,
         simulate, 
-        TopOptTrace, 
+        TopOptTrace,
+        TopOptProblems, 
         DirectDisplacementSolver,
         PCGDisplacementSolver,
         StaticMatrixFreeDisplacementSolver,

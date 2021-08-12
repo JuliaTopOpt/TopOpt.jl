@@ -1,4 +1,5 @@
 using TimerOutputs
+using TopOptProblems
 
 @params struct LinearElasticityResult
     comp

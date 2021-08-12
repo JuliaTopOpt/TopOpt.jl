@@ -3,10 +3,6 @@ using Test, SafeTestsets
 @safetestset "InpParser Tests" begin
     include("inp_parser/parser.jl")
 end
-@safetestset "TopOptProblems Tests" begin
-    include("topopt_problems/problems.jl")
-    include("topopt_problems/metadata.jl")
-end
 @safetestset "Functions" begin
     include("functions.jl")
 end
