@@ -10,6 +10,7 @@ import Distributions
 using VTKDataTypes
 
 import Ferrite: assemble!
+const QuadraticHexahedron = Ferrite.Cell{3,20,6}
 
 abstract type AbstractTopOptProblem end
 

@@ -173,8 +173,20 @@ function buckling(problem::TrussProblem{xdim, T}, ginfo, einfo, vars=ones(T, get
     end
 
     #* apply boundary condition
-    apply!(Kσ, ginfo.f, problem.ch)
+    Kσ = _apply!(Kσ, problem.ch)
 
     return ginfo.K, Kσ
 end
 
+using ChainRulesCore
+
+function _apply!(Kσ, ch)
+    apply!(Kσ, eltype(Kσ)[], ch, true)
+    return Kσ
+end
+function ChainRulesCore.rrule(::typeof(_apply!), Kσ, ch)
+    project_to = ChainRulesCore.ProjectTo(Kσ)
+    return _apply!(Kσ, ch), Δ -> begin
+        NoTangent(), _apply!(project_to(Δ), ch) , NoTangent()
+    end
+end

@@ -2,6 +2,7 @@ using Base: @propagate_inbounds
 using ..TopOpt.TopOptProblems: getdh, getE, getν, getdensity, gettypes
 using LinearAlgebra: norm
 using Ferrite: getdim, getrefshape, value, getlowerdim
+using ChainRulesCore
 
 """
 Generate element stiffness matrices
@@ -113,8 +114,15 @@ getn_scalarbasefunctions(cv::GenericCellScalarValues) = size(cv.N, 1)
 
 Compute the pseudo-inverse of a Vector tensor.
 """
-function LinearAlgebra.pinv(t::Vec{dim, T}) where {dim, T}
+function pinv(t::Vec{dim, T}) where {dim, T}
     LinearAlgebra.Transpose{T, Vec{dim, T}}(t / sum(t.^2))
+end
+function ChainRulesCore.rrule(::typeof(pinv), t::Vec{dim, T}) where {dim, T}
+    s = sum(t.^2)
+    TT = LinearAlgebra.Transpose{T, Vec{dim, T}}
+    TT(t / s), Δ -> begin
+        nothing, TT(Δ)
+    end
 end
 
 ############################

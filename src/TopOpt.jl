@@ -19,6 +19,7 @@ whichdevice(::Any) = CPU()
 # GPU utilities
 module GPUUtils end
 
+using Percival
 @reexport using Nonconvex
 
 # Utilities

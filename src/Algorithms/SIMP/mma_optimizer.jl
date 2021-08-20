@@ -1,3 +1,5 @@
+using Percival, Nonconvex
+
 abstract type AbstractOptimizer end
 
 @params mutable struct Optimizer{Tdev} <: AbstractOptimizer
@@ -51,35 +53,6 @@ end
 function setoptions!(workspace::Nonconvex.Workspace, options)
     workspace.options = options
     return workspace
-end
-
-function reset!(w::Nonconvex.Workspace, x0 = nothing)
-    if x0 !== nothing
-        w.x0 .= x0
-    end
-    return w
-end
-function reset!(w::Nonconvex.MMAWorkspace, x0 = nothing)
-    @unpack solution = w
-    outer_iter, iter, fcalls = 0, 0, 0, 0
-    @pack! w = fcalls, iter, outer_iter
-    if x0 !== nothing
-        w.x0 .= x0
-        w.tempx .= solution.prevx
-        solution.prevx .= solution.x
-        solution.x .= x0
-        Nonconvex.updateapprox!(w.dualmodel, x0)
-    end
-    Nonconvex.assess_convergence!(w)
-    return w
-end
-
-function reset!(w::Nonconvex.AugLagWorkspace, x0 = nothing)
-    w.counter[] = 0
-    if x0 !== nothing
-        w.x0 .= x0
-    end
-    return w
 end
 
 # For adaptive SIMP

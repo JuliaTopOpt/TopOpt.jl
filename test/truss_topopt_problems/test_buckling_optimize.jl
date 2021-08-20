@@ -48,7 +48,7 @@ gm_ins_dir = joinpath(@__DIR__, "instances", "ground_meshes");
             solver()
             K, G = buckling(problem, solver.globalinfo, solver.elementinfo);
             # minimize compliance
-            return comp(x) - c*logdet(cholesky(K+G))
+            return comp(x) - c*logdet(cholesky(Array(K+G)))
         end
         function constr(x)
             # volume fraction constraint

@@ -25,7 +25,7 @@ function AbstractPlotting.to_triangles(cells::AbstractVector{<: Ferrite.Cell})
 end
 
 # https://github.com/JuliaPlots/AbstractPlotting.jl/blob/444813136a506eba8b5b03e2125c7a5f24e825cb/src/conversions.jl#L505
-function to_triangle(tris, cell::Union{Ferrite.Hexahedron, Ferrite.QuadraticHexahedron})
+function to_triangle(tris, cell::Union{Ferrite.Hexahedron, QuadraticHexahedron})
     nodes = cell.nodes
     push!(tris, GLTriangleFace(nodes[1], nodes[2], nodes[5]))
     push!(tris, GLTriangleFace(nodes[5], nodes[2], nodes[6]))
