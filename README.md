@@ -55,6 +55,32 @@ All the following features are available in TopOpt.jl but the documentation is c
 - Heaviside projection
 - Handling load uncertainty in compliance-based topology optimization
 
+## Citation
+
+To cite this package, you can cite the following 2 conference publications.
+
+- TopOpt.jl: An efficient and high-performance package for topology optimization of continuum structures in the Julia programming language
+
+```bibtex
+    @inproceedings{mohamed2019topoptjl,
+      title={TopOpt.jl: An efficient and high-performance package for topology optimization of continuum structures in the Julia programming language},
+      author={Tarek, Mohamed},
+      booktitle={Proceedings of the 13th World Congress of Structural and Multidisciplinary Optimization},
+      year={2019}
+    }
+```
+
+- [TopOpt.jl: Truss and Continuum Topology Optimization, Interactive Visualization, Automatic Differentiation and More](https://web.mit.edu/yijiangh/www/papers/topopt_jl_WCSMO2021.pdf)
+
+```bibtex
+    @inproceedings{huang2021topoptjl,
+      title={TopOpt.jl: Truss and Continuum Topology Optimization, Interactive Visualization, Automatic Differentiation and More},
+      author={Huang, Yijiang and Tarek, Mohamed},
+      booktitle={Proceedings of the 14th World Congress of Structural and Multidisciplinary Optimization},
+      year={2021}
+    }
+```
+
 ## Contribute
 
 We always welcome new contributors! Feel free to open an issue or reach out to us via email if you want to collaborate. There are plenty of things to do including beginner friendly tasks and research-oriented tasks. You can help us create the best topology optimization ecosystem in the world! Some beginner-friendly ideas you could be working on include:
