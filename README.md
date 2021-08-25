@@ -62,7 +62,7 @@ To cite this package, you can cite the following 2 conference publications.
 - TopOpt.jl: An efficient and high-performance package for topology optimization of continuum structures in the Julia programming language
 
 ```bibtex
-    @inproceedings{mohamed2019topoptjl,
+    @inproceedings{tarek2019topoptjl,
       title={TopOpt.jl: An efficient and high-performance package for topology optimization of continuum structures in the Julia programming language},
       author={Tarek, Mohamed},
       booktitle={Proceedings of the 13th World Congress of Structural and Multidisciplinary Optimization},
