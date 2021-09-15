@@ -42,7 +42,8 @@ function project(f::Volume, V, x)
     return x
 end
 
-function Volume(problem::StiffnessTopOptProblem{dim, T}, solver::AbstractFEASolver, ::Type{TI} = Int; fraction = true, tracing = true, maxfevals = 10^8) where {dim, T, TI}
+function Volume(problem::StiffnessTopOptProblem{dim, T}, solver::AbstractFEASolver, ::Type{TI} = Int; 
+        fraction = true, tracing = true, maxfevals = 10^8) where {dim, T, TI}
     dh = problem.ch.dh
     varind = problem.varind
     black = problem.black

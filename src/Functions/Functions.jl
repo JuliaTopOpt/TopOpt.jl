@@ -12,6 +12,7 @@ using Nonconvex: Nonconvex
 
 export  Volume,
         Compliance,
+        Displacement,
         MeanCompliance,
         BlockCompliance,
         AbstractFunction,
@@ -29,7 +30,9 @@ const to = TimerOutput()
 
 abstract type AbstractFunction{T} <: Nonconvex.AbstractFunction end
 
+include("function_utils.jl")
 include("compliance.jl")
+include("displacement.jl")
 include("volume.jl")
 include("stress.jl")
 include("trace.jl")

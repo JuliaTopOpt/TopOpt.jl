@@ -21,6 +21,25 @@ Random.seed!(1)
     end
 end
 
+@testset "Displacement" begin
+    nels = (10, 10)
+    problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
+    for p in (1.0, 2.0, 3.0)
+        solver = FEASolver(Displacement, Direct, problem, xmin = 0.01, penalty = TopOpt.PowerPenalty(p))
+        dp = Displacement(problem, solver)
+        # TODO
+        # for i in 1:3
+        #     x = clamp.(rand(prod(nels)), 0.1, 1.0)
+        #     val1, grad1 = Nonconvex.value_gradient(comp, x)
+        #     val2, grad2 = comp(x), Zygote.gradient(comp, x)[1]
+        #     grad3 = FDM.grad(central_fdm(5, 1), comp, x)[1]
+        #     @test val1 == val2
+        #     @test norm(grad1 - grad2) == 0
+        #     @test norm(grad2 - grad3) <= 1e-5
+        # end
+    end
+end
+
 @testset "Volume" begin
     nels = (10, 10)
     problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
