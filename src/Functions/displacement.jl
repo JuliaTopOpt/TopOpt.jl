@@ -58,8 +58,10 @@ function ChainRulesCore.rrule(dp::Displacement, x)
     @unpack penalty, problem, u, xmin = solver
     dh = getdh(problem)
     @unpack Kes = solver.elementinfo
+    # Forward-pass
+    # Cholesky factorisation
     u = dp(x)
-    return u, Δ -> begin
+    return u, Δ -> begin # v
         solver.rhs .= Δ
         solver(reuse_chol = true, assemble_f = false)
         dudx_tmp .= 0
@@ -69,6 +71,6 @@ function ChainRulesCore.rrule(dp::Displacement, x)
             Keu = bcmatrix(Kes[e]) * u[global_dofs]
             dudx_tmp[e] = -dρe * dot(Keu, solver.lhs[global_dofs])
         end
-        return nothing, dudx_tmp
+        return nothing, dudx_tmp # J1' * v, J2' * v
     end
 end

@@ -1,6 +1,5 @@
 using TopOpt, Nonconvex, Zygote, FiniteDifferences, LinearAlgebra, Test, Random, SparseArrays
 const FDM = FiniteDifferences
-using ChainRulesTestUtils
 
 Random.seed!(1)
 
@@ -29,7 +28,7 @@ end
         solver = FEASolver(Direct, problem, xmin = 0.01, penalty = TopOpt.PowerPenalty(p))
         dp = Displacement(solver)
         u = dp(solver.vars)
-        for i in 1:3
+        for _ in 1:3
              x = clamp.(rand(prod(nels)), 0.1, 1.0)
              v = rand(length(u))
              f = x -> dot(dp(x), v)
@@ -38,7 +37,7 @@ end
              grad3 = FDM.grad(central_fdm(5, 1), f, x)[1]
              @test val1 == val2
              @test norm(grad1 - grad2) == 0
-             @test norm(grad2 - grad3) <= 1e-5
+             @test norm(grad2 - grad3) <= 1e-4
         end
     end
 end
