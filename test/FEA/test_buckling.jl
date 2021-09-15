@@ -26,7 +26,7 @@ problem = PointLoadCantilever(Val{:Linear}, nels, sizes, E, ν, force);
 # u = ginfo.K \ ginfo.f
 # @show u
 
-solver = FEASolver(Displacement, Direct, problem)
+solver = FEASolver(Direct, problem)
 solver()
 u = solver.u
 

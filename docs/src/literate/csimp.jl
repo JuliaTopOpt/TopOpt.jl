@@ -65,7 +65,7 @@ csimp_options = TopOpt.CSIMPOptions(
 )
 
 # ### Define a finite element solver
-solver = FEASolver(Displacement, Direct, problem, xmin = xmin, penalty = penalty)
+solver = FEASolver(Direct, problem, xmin = xmin, penalty = penalty)
 
 # ### Define compliance objective
 comp = Compliance(problem, solver)

@@ -24,7 +24,7 @@ gm_ins_dir = joinpath(@__DIR__, "instances", "ground_meshes");
     problem = TrussProblem(Val{:Linear}, node_points, elements, loads, fixities, mats, crossecs);
 
     # * Before optimization, check ground mesh stability
-    solver = FEASolver(Displacement, Direct, problem);
+    solver = FEASolver(Direct, problem);
     solver()
     K, G = buckling(problem, solver.globalinfo, solver.elementinfo; u=solver.u);
     @test isfinite(logdet(cholesky(K+G)))
@@ -70,7 +70,7 @@ gm_ins_dir = joinpath(@__DIR__, "instances", "ground_meshes");
         x0, options = options,
     );
 
-    solver = FEASolver(Displacement, Direct, problem; xmin=xmin);
+    solver = FEASolver(Direct, problem; xmin=xmin);
     solver.vars = r.minimizer;
     solver()
     K, G = buckling(problem, solver.globalinfo, solver.elementinfo; u=solver.u);

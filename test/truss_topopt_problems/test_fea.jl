@@ -62,7 +62,7 @@ ins_dir = joinpath(@__DIR__, "instances", "fea_examples");
         @test Ke_m ≈ Ke
     end
 
-    solver = FEASolver(Displacement, Direct, problem)
+    solver = FEASolver(Direct, problem)
     solver()
 
     # if get(ENV, "CI", nothing) != "true"

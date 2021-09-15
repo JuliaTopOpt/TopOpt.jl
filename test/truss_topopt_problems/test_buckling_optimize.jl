@@ -27,7 +27,7 @@ gm_ins_dir = joinpath(@__DIR__, "instances", "ground_meshes");
     V = 0.5 # maximum volume fraction
     x0 = fill(1.0, ncells) # initial design
 
-    solver = FEASolver(Displacement, Direct, problem);
+    solver = FEASolver(Direct, problem);
 
     # * Before optimization, check initial design stability
     solver.vars = x0
@@ -70,7 +70,7 @@ gm_ins_dir = joinpath(@__DIR__, "instances", "ground_meshes");
     end
 
     # check result stability
-    solver = FEASolver(Displacement, Direct, problem; xmin=xmin);
+    solver = FEASolver(Direct, problem; xmin=xmin);
     solver.vars = r.minimizer;
     solver()
     K, G = buckling(problem, solver.globalinfo, solver.elementinfo; u=solver.u);

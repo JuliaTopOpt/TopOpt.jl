@@ -1,4 +1,5 @@
 [deps]
+ChainRulesTestUtils = "cdddcdb0-9152-4a09-a978-84456f9df70a"
 Ferrite = "c061ca5d-56c9-439f-9c0e-210fe06d3992"
 FiniteDifferences = "26cc04aa-876d-5657-8c51-4c34ba976000"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"

@@ -33,7 +33,7 @@ for i in 1:length(problems)
     penalty = TopOpt.PowerPenalty(1.0)
     # Define a finite element solver
     solver = FEASolver(
-        Displacement, Direct, problem, xmin = xmin, penalty = penalty,
+        Direct, problem, xmin = xmin, penalty = penalty,
     )
     # Define compliance objective
     stress = TopOpt.MicroVonMisesStress(solver)

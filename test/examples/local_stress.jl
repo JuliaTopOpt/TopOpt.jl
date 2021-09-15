@@ -27,14 +27,14 @@ for i in 1:length(problems)
     xmin = 0.0001 # minimum density
     steps = 40 # maximum number of penalty steps, delta_p0 = 0.1
     convcriteria = Nonconvex.KKTCriteria()
-    solver = FEASolver(Displacement, Direct, problem, xmin = xmin)
+    solver = FEASolver(Direct, problem, xmin = xmin)
     x0 = fill(1.0, length(solver.vars))
     for p in [1.0, 2.0, 3.0]
         #penalty = TopOpt.PowerPenalty(1.0)
         global penalty = TopOpt.PowerPenalty(p)
         # Define a finite element solver
         solver = FEASolver(
-            Displacement, Direct, problem, xmin = xmin, penalty = penalty,
+            Direct, problem, xmin = xmin, penalty = penalty,
         )
         # Define compliance objective
         global stress = TopOpt.MicroVonMisesStress(solver)

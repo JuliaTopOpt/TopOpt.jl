@@ -1,6 +1,28 @@
 ### Experimental ###
 #################################
 
+@params struct StressTemp{T}
+    VTu::AbstractVector{T}
+    Tu::AbstractVector{T}
+    Te::AbstractMatrix{T}
+    global_dofs::AbstractVector{Int}
+end
+function StressTemp(solver)
+    @unpack u, problem = solver
+    @unpack dh = problem.ch
+    T = eltype(u)
+    dim = TopOptProblems.getdim(problem)
+    k = dim == 2 ? 3 : 6
+    VTu = zero(MVector{k, T})
+    Tu = similar(VTu)
+    n_basefuncs = getnbasefunctions(solver.elementinfo.cellvalues)
+    Te = zero(MMatrix{k, dim*n_basefuncs, T})
+    global_dofs = zeros(Int, ndofs_per_cell(dh))
+
+    return StressTemp(VTu, Tu, Te, global_dofs)
+end
+Zygote.@nograd StressTemp
+
 @params mutable struct MacroVonMisesStress{T} <: AbstractFunction{T}
     utMu::AbstractVector{T}
     Mu::AbstractArray
@@ -246,28 +268,6 @@ end
     end
     return T
 end
-
-@params struct StressTemp{T}
-    VTu::AbstractVector{T}
-    Tu::AbstractVector{T}
-    Te::AbstractMatrix{T}
-    global_dofs::AbstractVector{Int}
-end
-function StressTemp(solver)
-    @unpack u, problem = solver
-    @unpack dh = problem.ch
-    T = eltype(u)
-    dim = TopOptProblems.getdim(problem)
-    k = dim == 2 ? 3 : 6
-    VTu = zero(MVector{k, T})
-    Tu = similar(VTu)
-    n_basefuncs = getnbasefunctions(solver.elementinfo.cellvalues)
-    Te = zero(MMatrix{k, dim*n_basefuncs, T})
-    global_dofs = zeros(Int, ndofs_per_cell(dh))
-
-    return StressTemp(VTu, Tu, Te, global_dofs)
-end
-Zygote.@nograd StressTemp
 
 function fill_Mu_utMu!(Mu, utMu, solver, stress_temp::StressTemp)
     @unpack problem, elementinfo, u = solver

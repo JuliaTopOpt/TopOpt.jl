@@ -2,8 +2,6 @@ abstract type SolverResult end
 abstract type SolverType end
 abstract type SolverSubtype end
 
-struct Displacement <: SolverResult end
-
 struct Direct <: SolverType end
 struct CG  <: SolverType end
 
@@ -24,19 +22,19 @@ function Utilities.setpenalty!(solver::AbstractFEASolver, p)
 end
 Utilities.getprevpenalty(solver::AbstractFEASolver) = solver.prev_penalty
 
-function FEASolver(::Type{Displacement}, ::Type{Direct}, problem; kwargs...)
+function FEASolver(::Type{Direct}, problem; kwargs...)
     DirectDisplacementSolver(problem; kwargs...)
 end
 
-function FEASolver(::Type{Displacement}, ::Type{CG}, problem; kwargs...)
-    FEASolver(Displacement, CG, MatrixFree, problem; kwargs...)
+function FEASolver(::Type{CG}, problem; kwargs...)
+    FEASolver(CG, MatrixFree, problem; kwargs...)
 end
 
-function FEASolver(::Type{Displacement}, ::Type{CG}, ::Type{MatrixFree}, problem; kwargs...)
+function FEASolver(::Type{CG}, ::Type{MatrixFree}, problem; kwargs...)
     StaticMatrixFreeDisplacementSolver(problem; kwargs...)
 end
 
-function FEASolver(::Type{Displacement}, ::Type{CG}, ::Type{Assembly}, problem; kwargs...)
+function FEASolver(::Type{CG}, ::Type{Assembly}, problem; kwargs...)
     PCGDisplacementSolver(problem; kwargs...)
 end
 

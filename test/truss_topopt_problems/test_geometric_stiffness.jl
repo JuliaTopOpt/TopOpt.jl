@@ -55,7 +55,7 @@ problem_json = ["ground_meshes\\tim_2d.json"]
             # assemble K based on the conf (orig + u1)
             updated_nodes = Dict(nid => pt + u1[2*nid-1:2*nid] for (nid, pt) in node_points)
             problem = TrussProblem(Val{:Linear}, updated_nodes, elements, P, fixities, mats, crosssecs);
-            solver = FEASolver(Displacement, Direct, problem)
+            solver = FEASolver(Direct, problem)
             # trigger assembly
             solver()
 
