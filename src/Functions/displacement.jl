@@ -50,6 +50,8 @@ d(u)/d(x_e) = - K^-1 * d(K)/d(x_e) * u
             = - K^-1 * (Σ_ei d(ρ_ei)/d(x_e) * K_ei) * u
             = - K^-1 * [d(ρ_e)/d(x_e) * K_e * u]
 d(u)/d(x_e)' * Δ = -d(ρ_e)/d(x_e) * u' * K_e * (K^-1 * Δ)
+
+where d(u)/d(x) ∈ (nDof x nCell); d(u)/d(x)^T * Δ = (nCell x nDof) * (nDof x 1) -> nCell x 1
 """
 function ChainRulesCore.rrule(dp::Displacement, x)
     @unpack dudx_tmp, solver, global_dofs = dp

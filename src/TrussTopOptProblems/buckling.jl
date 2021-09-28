@@ -133,7 +133,14 @@ end
 
 using ChainRulesCore
 
+"""
+    _apply!(Kσ, ch)
+
+Apply boundary condition to the stress stiffness matrix. More info about this can be found at: 
+https://github.com/JuliaTopOpt/TopOpt.jl/wiki/Applying-boundary-conditions-to-the-stress-stiffness-matrix
+"""
 function _apply!(Kσ, ch)
+    # dummy f, applyzero=true
     apply!(Kσ, eltype(Kσ)[], ch, true)
     return Kσ
 end
