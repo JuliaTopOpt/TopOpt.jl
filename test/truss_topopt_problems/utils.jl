@@ -1,6 +1,7 @@
 using LinearAlgebra
 using SparseArrays
 
+# TODO replace this with TrussTopOptProblems.compute_local_axes
 function global2local_transf_matrix(end_vert_u, end_vert_v)
     @assert length(end_vert_u) == length(end_vert_v)
     @assert length(end_vert_u) == 2 || length(end_vert_u) == 3

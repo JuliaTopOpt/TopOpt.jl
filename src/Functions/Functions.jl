@@ -1,7 +1,9 @@
 module Functions
 
 using ..TopOpt: dim, whichdevice, CPU, GPU, TopOpt, PENALTY_BEFORE_INTERPOLATION
-using ..TopOptProblems, ..FEA, ..CheqFilters
+using ..TopOptProblems, ..TrussTopOptProblems
+using ..TrussTopOptProblems: getA, compute_local_axes
+using ..FEA, ..CheqFilters
 using ..Utilities, ForwardDiff, LinearAlgebra, Requires
 using Parameters: @unpack
 using TimerOutputs, Ferrite, StaticArrays
@@ -21,6 +23,7 @@ export  Volume,
         maxedfevals,
         MicroVonMisesStress,
         MacroVonMisesStress,
+        TrussStress,
         project,
         generate_scenarios,
         hutch_rand!,
@@ -35,6 +38,7 @@ include("compliance.jl")
 include("displacement.jl")
 include("volume.jl")
 include("stress.jl")
+include("truss_stress.jl")
 include("trace.jl")
 include("mean_compliance.jl")
 include("block_compliance.jl")

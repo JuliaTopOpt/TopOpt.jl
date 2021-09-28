@@ -1,4 +1,3 @@
-# TODO @params 
 @params mutable struct Displacement{T} <: AbstractFunction{T}
     u::AbstractVector{T} # displacement vector
     dudx_tmp::AbstractVector # directional derivative
@@ -21,7 +20,6 @@ function Displacement(solver::AbstractFEASolver; maxfevals = 10^8)
     k = ndofs_per_cell(dh)
     N = getncells(dh.grid)
     global_dofs = zeros(Int, k)
-    # TODO
     u = zeros(T, N)
     dudx_tmp = zeros(T, N)
     return Displacement(u, dudx_tmp, solver, global_dofs, 0, maxfevals)
