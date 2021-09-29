@@ -2,13 +2,14 @@ module Functions
 
 using ..TopOpt: dim, whichdevice, CPU, GPU, TopOpt, PENALTY_BEFORE_INTERPOLATION
 using ..TopOptProblems, ..TrussTopOptProblems
-using ..TrussTopOptProblems: getA, compute_local_axes
+using ..TopOptProblems: initialize_K, getdh
 using ..FEA, ..CheqFilters
 using ..Utilities, ForwardDiff, LinearAlgebra, Requires
+using ..TrussTopOptProblems: getA, compute_local_axes
+
 using Parameters: @unpack
 using TimerOutputs, Ferrite, StaticArrays
 using StatsFuns, MappedArrays, LazyArrays
-using ..TopOptProblems: getdh
 using SparseArrays, Statistics, ChainRulesCore, Zygote
 using Nonconvex: Nonconvex
 
@@ -23,11 +24,14 @@ export  Volume,
         maxedfevals,
         MicroVonMisesStress,
         MacroVonMisesStress,
-        TrussStress,
         project,
         generate_scenarios,
         hutch_rand!,
-        hadamard!
+        hadamard!,
+        TrussStress,
+        AssembleK,
+        _apply!,
+        ElementKσ
 
 const to = TimerOutput()
 
@@ -38,9 +42,16 @@ include("compliance.jl")
 include("displacement.jl")
 include("volume.jl")
 include("stress.jl")
-include("truss_stress.jl")
 include("trace.jl")
 include("mean_compliance.jl")
 include("block_compliance.jl")
+
+# buckling
+include("apply_boundary.jl")
+include("assemble_K.jl")
+include("ksigma_e.jl")
+
+# TODO no rrules yet
+include("truss_stress.jl")
 
 end
