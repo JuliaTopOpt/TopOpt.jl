@@ -76,7 +76,7 @@ function ChainRulesCore.rrule(ak::AssembleK{T}, Kes) where {T}
             ΔKes[ci] = Δ[global_dofs, global_dofs] * x[ci]
             Δx[ci] = dot(Δ[global_dofs, global_dofs], Kes[ci])
         end
-        return (problem = nothing, K = Δ, x = Δx, global_dofs = nothing), ΔKes
+        return Tangent{typeof(ak)}(problem = NoTangent(), K = Δ, x = Δx, global_dofs = NoTangent()), ΔKes
     end
     return K, assembleK_pullback
 end
