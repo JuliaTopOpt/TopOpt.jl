@@ -32,17 +32,15 @@ function (ak::AssembleK{T})(Kes::AbstractVector{<:AbstractMatrix{T}}) where {T}
     for (i,cell) in enumerate(CellIterator(dh))
         celldofs!(global_dofs, dh, i)
         Ke = TK isa Symmetric ? Kes[i].data : Kes[i]
-        if black[i]
-            Ferrite.assemble!(assembler, global_dofs, Ke)
-        elseif white[i]
-            px = xmin
-            Ke = px * Ke
-            Ferrite.assemble!(assembler, global_dofs, Ke)
-        else
-            px = x[varind[i]]
-            Ke = px * Ke
-            Ferrite.assemble!(assembler, global_dofs, Ke)
-        end
+        Ferrite.assemble!(assembler, global_dofs, Ke)
+
+        # ? do we need to do black and white here?
+        # if black[i]
+        #     Ferrite.assemble!(assembler, global_dofs, Ke)
+        # elseif white[i]
+        #     px = xmin
+        #     Ke = px * Ke
+        #     Ferrite.assemble!(assembler, global_dofs, Ke)
     end
 
     return copy(K)

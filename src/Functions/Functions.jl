@@ -30,8 +30,9 @@ export  Volume,
         hadamard!,
         TrussStress,
         AssembleK,
-        _apply!,
-        ElementKσ
+        apply_zero!,
+        TrussElementKσ,
+        ElementK
 
 const to = TimerOutput()
 
@@ -49,7 +50,8 @@ include("block_compliance.jl")
 # buckling
 include("apply_boundary.jl")
 include("assemble_K.jl")
-include("ksigma_e.jl")
+include("element_ksigma.jl")
+include("element_k.jl")
 
 # TODO no rrules yet
 include("truss_stress.jl")

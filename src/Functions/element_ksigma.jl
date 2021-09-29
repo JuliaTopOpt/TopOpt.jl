@@ -1,5 +1,5 @@
-@params mutable struct ElementKσ{T} <: AbstractFunction{T}
-    problem::StiffnessTopOptProblem
+@params mutable struct TrussElementKσ{T} <: AbstractFunction{T}
+    problem::TrussProblem
     Kσ_e::AbstractMatrix{T}
     cellidx
     cellvalues::CellValues
@@ -7,7 +7,7 @@
     δmat::AbstractMatrix
 end
 
-function ElementKσ(problem::TrussProblem{xdim, T}, cellidx, cellvalues) where {xdim, T}
+function TrussElementKσ(problem::TrussProblem{xdim, T}, cellidx, cellvalues) where {xdim, T}
     Es = getE(problem)
     As = getA(problem)
     dh = problem.ch.dh
@@ -44,25 +44,31 @@ function ElementKσ(problem::TrussProblem{xdim, T}, cellidx, cellvalues) where {
         end
         break
     end
-    return ElementKσ(problem, Kσ_e, cellidx, cellvalues, EALγ, δmat)
+    return TrussElementKσ(problem, Kσ_e, cellidx, cellvalues, EALγ, δmat)
 end
 
-function (eksig::ElementKσ{T})(ux_vec) where {T}
+function (eksig::TrussElementKσ{T})(ux_vec) where {T}
     # compute axial force: first-order approx of bar force
     # better approx would be: EA/L * (u3-u1 + 1/(2*L0)*(u4-u2)^2) = EA/L * (γ'*u + 1/2*(δ'*u)^2)
     # see: https://people.duke.edu/~hpgavin/cee421/truss-finite-def.pdf
+    @unpack Kσ_e, EALγ, δmat = eksig
     u_e = ux_vec[1:end-1]
     x_e = ux_vec[end]
     Kσ_e .= 0.0
     Kσ_e .+= δmat
-    q_cell = EALγ'*u_e
-    # ! multiply by x here?
+    # ? do we need to do black, white here?
+    # x_e scales the cross section
+    q_cell = x_e*EALγ'*u_e
     Kσ_e .*= q_cell / L
     return vec(Kσ_e)
 end
 
-function ChainRulesCore.rrule(eksig::ElementKσ, ux_vec)
+function ChainRulesCore.rrule(eksig::TrussElementKσ, ux_vec)
     val = eksig(ux_vec)
-    jac = ForwardDiff.jacobian(f, ux_vec)
+    jac = ForwardDiff.jacobian(eksig, ux_vec)
     val, Δ -> (NoTangent(), jac' * Δ)
 end
+
+#####################################
+
+# TODO ElementKσ for volumetic cells

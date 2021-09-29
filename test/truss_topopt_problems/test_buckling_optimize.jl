@@ -121,16 +121,18 @@ end
     comp = TopOpt.Compliance(problem, solver)
     dp = TopOpt.Displacement(solver)
     assemble_k = TopOpt.AssembleK(problem)
-    element_Kσ_fns = []
     cellvalues = solver.elementinfo.cellvalues
     ndof_pc = ndofs_per_cell(dh)
+    element_K_fns = []
+    element_Kσ_fns = []
     for cellidx = 1:ncells
-        push!(element_Kσ_fns, ElementKσ(problem, cellidx, cellvalues))
+        push!(element_K_fns, ElementKσ(solver, cellidx))
+        push!(element_Kσ_fns, TrussElementKσ(problem, cellidx, cellvalues))
     end
     global_dofs = copy(element_Kσ_fns[1].global_dofs)
 
     # element stiffness matrices
-    # Kes = solver.elementinfo.Kes
+    Ke0s = solver.elementinfo.Kes
 
     # * comliance minimization objective
     obj = comp
@@ -139,21 +141,26 @@ end
     function buckling_matrix_constr(x)
         u = dp(x)
 
-        # TODO x -> Kes
-        # do Ke = Ke_0 * ρ_e(x_e) here
-        Kes = undef
-        K = assemble_k(x_Kes)
+        # * x -> Kes
+        Kes = []
+        for e in 1:length(x)
+            K_e_vec = element_K_fns[e](x[e])
+            push!(Kes, reshape(Ksig_e_vec, (ndof_pc, ndof_pc)))
+        end
+        # * Kes -> K
+        K = assemble_k(Kes)
         apply!(K, ch)
 
-        # TODO u_e, x_e -> Ksigma_e
+        # * u_e, x_e -> Ksigma_e
         Kσs = []
-        for e in 1:length(x0)
+        for e in 1:length(x)
             celldofs!(global_dofs, dh, e)
             Ksig_e_vec = element_Kσ_fns[e]([u[global_dofs]; x[e]])
-            push!(x_Kσs, reshape(Ksig_e_vec, (ndof_pc, ndof_pc)))
+            push!(Kσs, reshape(Ksig_e_vec, (ndof_pc, ndof_pc)))
         end
+        # * Kσs -> Kσ
         Kσ = assemble_k(Kσs)
-        _apply!(Kσ, ch)
+        apply_zero!(Kσ, ch)
 
         return Array(K + c*Kσ)
     end
