@@ -18,7 +18,6 @@ function (ak::AssembleK{T})(Kes::AbstractVector{<:AbstractMatrix{T}}) where {T}
     @unpack problem, K, x, global_dofs = ak
     @unpack black, white, varind = problem
     dh = problem.ch.dh
-
     if K isa Symmetric
         K.data.nzval .= 0
         assembler = Ferrite.AssemblerSparsityPattern(K.data, T[], Int[], Int[])
@@ -26,10 +25,9 @@ function (ak::AssembleK{T})(Kes::AbstractVector{<:AbstractMatrix{T}}) where {T}
         K.nzval .= 0
         assembler = Ferrite.AssemblerSparsityPattern(K, T[], Int[], Int[])
     end
-
     Ke = zeros(T, size(Kes[1]))
     TK = eltype(Kes)
-    for (i,cell) in enumerate(CellIterator(dh))
+    for (i, _) in enumerate(CellIterator(dh))
         celldofs!(global_dofs, dh, i)
         Ke = TK isa Symmetric ? Kes[i].data : Kes[i]
         Ferrite.assemble!(assembler, global_dofs, Ke)
@@ -63,29 +61,22 @@ function ChainRulesCore.rrule(ak::AssembleK{T}, Kes) where {T}
     @unpack dof_cells = metadata
     dh = problem.ch.dh
     K = ak(Kes)
-
     n_dofs = length(global_dofs)
-    tmp_Kes = [zeros(T, n_dofs, n_dofs) for i in 1:getncells(dh.grid)]
     function assembleK_pullback(Δ)
+        ΔKes = [zeros(T, n_dofs, n_dofs) for _ in 1:getncells(dh.grid)]
+        Δx = similar(x)
         # I, J, V = findnz(Δ)
         # for (i,j,v) in zip(I,J,V)
         #     i_dof_cells = dof_cells[i] # all the cells that share dof i
         #     j_dof_cells = dof_cells[j] # all the cells that share dof j
         #     # take intersection of i_cells and j_cells
         # end
-        for (ci,cell) in enumerate(CellIterator(dh))
-            tmp_Kes[ci] .= 0.0
-            celldofs!(global_dofs, dh, i)
-            for i in 1:n_dofs
-                for j in 1:n_dofs
-                    # ! should we do an average over all the element matrices that share the dof?
-                    # ! also, it should has something to do with x?
-                    tmp_Kes[ci][i,j] = Δ[global_dofs[i], global_dofs[j]]
-                end
-            end
+        for (ci, _) in enumerate(CellIterator(dh))
+            celldofs!(global_dofs, dh, ci)
+            ΔKes[ci] = Δ[global_dofs, global_dofs] * x[ci]
+            Δx[ci] = dot(Δ[global_dofs, global_dofs], Kes[ci])
         end
-        return nothing, tmp_Kes
+        return (problem = nothing, K = Δ, x = Δx, global_dofs = nothing), ΔKes
     end
-
     return K, assembleK_pullback
 end
