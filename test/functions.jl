@@ -166,3 +166,10 @@ end
         end
     end
 end
+
+@testset "AssembleK" begin
+    nels = (10, 10, 3)
+    problem = PointLoadCantilever(Val{:Quadratic}, nels, (1.0, 1.0, 1.0), 1.0, 0.3, 1.0)
+    ak = AssembleK(problem)
+    
+end
