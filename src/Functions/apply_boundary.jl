@@ -25,3 +25,5 @@ function ChainRulesCore.rrule(::typeof(apply!), K, ch)
         NoTangent(), apply!(project_to(Δ), ch) , NoTangent()
     end
 end
+
+# TODO apply!(K, f, ch)

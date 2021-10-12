@@ -125,8 +125,11 @@ end
     ndof_pc = ndofs_per_cell(dh)
     element_K_fns = []
     element_Kσ_fns = []
+    # constructing two functions for each element
     for cellidx = 1:ncells
-        push!(element_K_fns, ElementKσ(solver, cellidx))
+        # element K (linear) constructor function: x_e -> K_e
+        push!(element_K_fns, ElementK(solver, cellidx))
+        # element Kσ constructor function: x_e -> Kσ_e
         push!(element_Kσ_fns, TrussElementKσ(problem, cellidx, cellvalues))
     end
     global_dofs = copy(element_Kσ_fns[1].global_dofs)
@@ -139,31 +142,43 @@ end
     c = 1.0 # buckling load multiplier
 
     function buckling_matrix_constr(x)
+        # * solve for the displacement
+        # n_dof of the entire system
         u = dp(x)
 
-        # * x -> Kes
+        # * x -> Kes, construct all the element stiffness matrices
+        # a list of small matrices for each element (cell)
         Kes = []
         for e in 1:length(x)
             K_e_vec = element_K_fns[e](x[e])
             push!(Kes, reshape(Ksig_e_vec, (ndof_pc, ndof_pc)))
         end
-        # * Kes -> K
+
+        # dp(K)
+        # u = K(x) \ f
+
+        # * Kes -> K (global linear stiffness matrix)
         K = assemble_k(Kes)
+        # * apply boundary condition
         apply!(K, ch)
 
         # * u_e, x_e -> Ksigma_e
         Kσs = []
         for e in 1:length(x)
             celldofs!(global_dofs, dh, e)
-            Ksig_e_vec = element_Kσ_fns[e]([u[global_dofs]; x[e]])
+            Ksig_e_vec = element_Kσ_fns[e](u[global_dofs], x[e])
             push!(Kσs, reshape(Ksig_e_vec, (ndof_pc, ndof_pc)))
         end
         # * Kσs -> Kσ
         Kσ = assemble_k(Kσs)
+        # * apply boundary condition
         apply_zero!(Kσ, ch)
 
         return Array(K + c*Kσ)
     end
+
+    # Array(K + c*Kσ) >= 0, PSD
+
     function vol_constr(x)
         # volume fraction constraint
         return sum(x) / length(x) - V
@@ -174,6 +189,7 @@ end
     Nonconvex.add_ineq_constraint!(m, vol_constr)
     Nonconvex.add_sd_constraint!(m, buckling_matrix_constr)
 
+    # TODO use SDPAlg
     options = MMAOptions(
         maxiter=1000, tol = Tolerance(kkt = 1e-4, f = 1e-4),
     )
@@ -197,8 +213,6 @@ end
     # using TopOpt.TrussTopOptProblems.TrussVisualization: visualize
     # fig = visualize(problem; topology=r.minimizer)
 end
-
-
 
 #  - where to plug in the gradient of the barrier function?
     # function (v::Volume{T})(x, grad = nothing) where {T}

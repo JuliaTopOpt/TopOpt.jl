@@ -47,26 +47,32 @@ function TrussElementKσ(problem::TrussProblem{xdim, T}, cellidx, cellvalues) wh
     return TrussElementKσ(problem, Kσ_e, cellidx, cellvalues, EALγ, δmat)
 end
 
-function (eksig::TrussElementKσ{T})(ux_vec) where {T}
+function (eksig::TrussElementKσ{T})(u_e, x_e) where {T}
     # compute axial force: first-order approx of bar force
     # better approx would be: EA/L * (u3-u1 + 1/(2*L0)*(u4-u2)^2) = EA/L * (γ'*u + 1/2*(δ'*u)^2)
     # see: https://people.duke.edu/~hpgavin/cee421/truss-finite-def.pdf
     @unpack Kσ_e, EALγ, δmat = eksig
-    u_e = ux_vec[1:end-1]
-    x_e = ux_vec[end]
     Kσ_e .= 0.0
     Kσ_e .+= δmat
     # ? do we need to do black, white here?
     # x_e scales the cross section
     q_cell = x_e*EALγ'*u_e
     Kσ_e .*= q_cell / L
-    return vec(Kσ_e)
+    return Kσ_e
 end
 
-function ChainRulesCore.rrule(eksig::TrussElementKσ, ux_vec)
-    val = eksig(ux_vec)
-    jac = ForwardDiff.jacobian(eksig, ux_vec)
-    val, Δ -> (NoTangent(), jac' * Δ)
+function ChainRulesCore.rrule(eksig::TrussElementKσ, u_e, x_e)
+    val = eksig([u_e; x_e])
+    function vec_eksig(ux_vec)
+        u_e = ux_vec[1:end-1]
+        x_e = ux_vec[end]
+        return vec(eksig([u_e; x_e]))
+    end
+    jac = ForwardDiff.jacobian(vec_eksig, [u_e; x_e])
+    val, Δ -> begin 
+        jtv = jac' * Δ
+        return (NoTangent(), jtv[1:end-1], jtv[end])
+    end
 end
 
 #####################################

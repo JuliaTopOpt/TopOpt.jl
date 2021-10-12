@@ -24,6 +24,7 @@ function ElementK(solver::AbstractDisplacementSolver, cellidx)
     return ElementK(problem, K_e, K_e0, cellidx, penalty, xmin)
 end
 
+# x_e is scalar variable
 function (ek::ElementK{T})(x_e) where {T}
     @unpack xmin, K_e0, K_e = ek
     # ? black, white
@@ -33,11 +34,12 @@ function (ek::ElementK{T})(x_e) where {T}
         px = penalty(density(x_e), xmin)
     end
     K_e = px * K_e0
-    return vec(K_e)
+    return K_e
 end
 
 function ChainRulesCore.rrule(ek::ElementK, x_e)
     val = ek(x_e)
+    # TODO vec and de-vec
     jac = ForwardDiff.jacobian(ek, x_e)
     val, Δ -> (NoTangent(), jac' * Δ)
 end
