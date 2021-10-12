@@ -1,12 +1,12 @@
 @params mutable struct AssembleK{T} <: AbstractFunction{T}
 	problem::StiffnessTopOptProblem
-    K
+    K::AbstractMatrix{T}
     global_dofs::AbstractVector{<:Integer} # preallocated dof vector for a cell
 end
 
 Base.show(::IO, ::MIME{Symbol("text/plain")}, ::AssembleK) = println("TopOpt global linear stiffness matrix assembly function")
 
-function AssembleK(problem::StiffnessTopOptProblem{ndim, T}) where {ndim, T}
+function AssembleK(problem::StiffnessTopOptProblem)
     dh = problem.ch.dh
     k = ndofs_per_cell(dh)
     global_dofs = zeros(Int, k)
@@ -20,7 +20,6 @@ Forward-pass function call.
 """
 function (ak::AssembleK{T})(Kes::AbstractVector{<:AbstractMatrix{T}}) where {T}
     @unpack problem, K, global_dofs = ak
-    @unpack black, white, varind = problem
     dh = problem.ch.dh
     if K isa Symmetric
         K.data.nzval .= 0
@@ -35,16 +34,7 @@ function (ak::AssembleK{T})(Kes::AbstractVector{<:AbstractMatrix{T}}) where {T}
         celldofs!(global_dofs, dh, i)
         Ke = TK isa Symmetric ? Kes[i].data : Kes[i]
         Ferrite.assemble!(assembler, global_dofs, Ke)
-
-        # ? do we need to do black and white here?
-        # if black[i]
-        #     Ferrite.assemble!(assembler, global_dofs, Ke)
-        # elseif white[i]
-        #     px = xmin
-        #     Ke = px * Ke
-        #     Ferrite.assemble!(assembler, global_dofs, Ke)
     end
-
     return copy(K)
 end
 
@@ -75,11 +65,8 @@ which can be shortened as:
 
     dg/dK_e = Delta[global_dofs, global_dofs]
 """
-function ChainRulesCore.rrule(ak::AssembleK{T}, Kes) where {T}
-    @unpack problem, global_dofs = ak
-    @unpack metadata = problem
-    # * dof_cells[dofidx] = [(cellidx, cell's local dof idx), ...]
-    @unpack dof_cells = metadata
+function ChainRulesCore.rrule(ak::AssembleK{T}, Kes::AbstractVector{<:AbstractMatrix{T}}) where {T}
+    @unpack problem, K, global_dofs = ak
     dh = problem.ch.dh
     # * forward-pass
     K = ak(Kes)

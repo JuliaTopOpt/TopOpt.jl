@@ -168,8 +168,22 @@ end
 end
 
 @testset "AssembleK" begin
-    nels = (10, 10, 3)
-    problem = PointLoadCantilever(Val{:Quadratic}, nels, (1.0, 1.0, 1.0), 1.0, 0.3, 1.0)
+    nels = (2, 2)
+    problem = PointLoadCantilever(Val{:Quadratic}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
     ak = AssembleK(problem)
-    
+    dh = problem.ch.dh
+    total_ndof = ndofs(dh)
+    T = eltype(problem.E)
+
+    for _ in 1:3
+        v = rand(T, total_ndof)
+        f = Kx -> sum(ak(Kx)*v)
+        Kes = [rand(T,k,k) for _ in 1:N]
+        val1, grad1 = Nonconvex.value_gradient(f, Kes);
+        val2, grad2 = f(Kes), Zygote.gradient(f, Kes)[1];
+        grad3 = FDM.grad(central_fdm(5, 1), f, Kes)[1];
+        @test val1 == val2
+        @test norm(grad1 - grad2) == 0
+        @test norm(grad2 - grad3) <= 1e-4
+    end
 end
