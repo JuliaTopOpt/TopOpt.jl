@@ -8,7 +8,7 @@ end
     include("topopt_problems/metadata.jl")
 end
 @safetestset "Functions" begin
-    include("functions.jl")
+    include("test_functions.jl")
 end
 # @safetestset "Solver" begin
 #     include("fea/solvers.jl")
