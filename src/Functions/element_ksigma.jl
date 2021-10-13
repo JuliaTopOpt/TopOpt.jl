@@ -70,7 +70,7 @@ function ChainRulesCore.rrule(eksig::TrussElementKσ, u_e, x_e)
     end
     jac = ForwardDiff.jacobian(vec_eksig, [u_e; x_e])
     val, Δ -> begin 
-        jtv = jac' * Δ
+        jtv = jac' * vec(Δ)
         return (NoTangent(), jtv[1:end-1], jtv[end])
     end
 end

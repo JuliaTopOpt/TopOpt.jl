@@ -154,9 +154,6 @@ end
             push!(Kes, reshape(Ksig_e_vec, (ndof_pc, ndof_pc)))
         end
 
-        # dp(K)
-        # u = K(x) \ f
-
         # * Kes -> K (global linear stiffness matrix)
         K = assemble_k(Kes)
         # * apply boundary condition
