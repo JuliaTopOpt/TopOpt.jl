@@ -1,5 +1,6 @@
 using TopOpt, Nonconvex, Zygote, FiniteDifferences, LinearAlgebra, Test, Random, SparseArrays
 const FDM = FiniteDifferences
+using TopOpt: ndofs
 
 Random.seed!(1)
 
@@ -174,16 +175,24 @@ end
     dh = problem.ch.dh
     total_ndof = ndofs(dh)
     T = eltype(problem.E)
-
+    einfo = ElementFEAInfo(problem)
+    k = size(einfo.Kes[1], 1)
+    N = length(einfo.Kes)
     for _ in 1:3
         v = rand(T, total_ndof)
         f = Kx -> sum(ak(Kx)*v)
         Kes = [rand(T,k,k) for _ in 1:N]
+        Kes .= transpose.(Kes) .+ Kes
         val1, grad1 = Nonconvex.value_gradient(f, Kes);
         val2, grad2 = f(Kes), Zygote.gradient(f, Kes)[1];
         grad3 = FDM.grad(central_fdm(5, 1), f, Kes)[1];
         @test val1 == val2
         @test norm(grad1 - grad2) == 0
-        @test norm(grad2 - grad3) <= 1e-4
+        map(1:length(grad2)) do i
+            g1 = grad2[i]
+            _g2 = grad3[i]
+            g2 = (_g2' + _g2) / 2
+            @test norm(g1 - g2) <= 1e-4
+        end
     end
 end
