@@ -7,6 +7,8 @@
     δmat::AbstractMatrix
 end
 
+Base.show(::IO, ::MIME{Symbol("text/plain")}, ::TrussElementKσ) = println("TopOpt element stress stiffness matrix (Kσ_e) construction function")
+
 function TrussElementKσ(problem::TrussProblem{xdim, T}, cellidx, cellvalues) where {xdim, T}
     Es = getE(problem)
     As = getA(problem)
