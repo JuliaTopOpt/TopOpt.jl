@@ -54,8 +54,8 @@ end
 """
 g(F(K)), F: K1 -> K2
 
-dg/dK1_ij = dg/dK2_i'j' * dK2_i'j'/dK1_ij
-          = Delta[i',j'] * dK2_i'j'/dK1_ij
+dg/dK1_ij = sum_i'j' dg/dK2_i'j' * dK2_i'j'/dK1_ij
+          = sum_i'j' Delta[i',j'] * dK2_i'j'/dK1_ij
 
 dK2_i'j'/dK1_ij = 0, if i' or j' in ch.prescribed_dofs and i' != j'
                 = d(meandiag(K1))/dK1_ij, if i' or j' in ch.prescribed_dofs and i' == j'
@@ -63,9 +63,11 @@ dK2_i'j'/dK1_ij = 0, if i' or j' in ch.prescribed_dofs and i' != j'
 
 We have to compute d(meandiag(K1))/dK1_ii, i in ch.prescribed_dofs.
 
-dg/dK1_ij = 0, if i or j in ch.prescribed_dofs and i' != j'
-          = Delta[i,j] * d(meandiag(K1))/dK1_ij, if i or j in ch.prescribed_dofs and i' == j'
-          = Delta[i,j], otherwise
+dg/dK1_ij   = 0,                                   if i or j in ch.prescribed_dofs and i != j
+(dg/dK1_ii) = sum_{i' in prescribed_dofs} Delta[i',i'] * dK2_i'i'/dK1_ii, if i=j, i in prescribed_dofs
+             = (sum_{i' in prescribed_dofs} Delta[i',i']) * (d(meandiag(K1))/dK1_ii)
+            = Delta[i,j],                          otherwise
+
 """
 function ChainRulesCore.rrule(::typeof(apply_boundary_with_meandiag!), K, ch)
     project_to = ChainRulesCore.ProjectTo(K)
@@ -74,10 +76,15 @@ function ChainRulesCore.rrule(::typeof(apply_boundary_with_meandiag!), K, ch)
         apply_boundary_with_meandiag!(ΔK, ch)
         # d(meandiag(K1))/dK1_ii
         meandiag_vec_fn = x -> sum(abs.(x))/length(x)
-        jac_meandiag = ForwardDiff.derivative(meandiag_vec_fn, diag(K))
+        jac_meandiag = ForwardDiff.gradient(meandiag_vec_fn, diag(K))
+        Δ_ch_diagsum = eltype(K)(0)
         for i in 1:length(ch.values)
             d = ch.prescribed_dofs[i]
-            ΔK[d, d] = Δ[d,d] * jac_meandiag[d]
+            Δ_ch_diagsum += Δ[d,d]
+        end
+        for i in 1:length(ch.values)
+            d = ch.prescribed_dofs[i]
+            ΔK[d, d] = Δ_ch_diagsum * jac_meandiag[d]
         end
         return NoTangent(), ΔK, NoTangent()
     end
