@@ -30,9 +30,10 @@ export  Volume,
         hadamard!,
         TrussStress,
         AssembleK,
-        apply_zero!,
         TrussElementKσ,
-        ElementK
+        ElementK,
+        apply_boundary_with_zerodiag!,
+        apply_boundary_with_meandiag!
 
 const to = TimerOutput()
 

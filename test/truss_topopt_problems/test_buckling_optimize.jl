@@ -121,60 +121,35 @@ end
     comp = TopOpt.Compliance(problem, solver)
     dp = TopOpt.Displacement(solver)
     assemble_k = TopOpt.AssembleK(problem)
-    cellvalues = solver.elementinfo.cellvalues
-    ndof_pc = ndofs_per_cell(dh)
-    element_K_fns = []
-    element_Kσ_fns = []
-    # constructing two functions for each element
-    for cellidx = 1:ncells
-        # element K (linear) constructor function: x_e -> K_e
-        push!(element_K_fns, ElementK(solver, cellidx))
-        # element Kσ constructor function: x_e -> Kσ_e
-        push!(element_Kσ_fns, TrussElementKσ(problem, cellidx, cellvalues))
-    end
-    global_dofs = copy(element_Kσ_fns[1].global_dofs)
-
-    # element stiffness matrices
-    Ke0s = solver.elementinfo.Kes
+    element_k = ElementK(solver)
+    truss_element_kσ = TrussElementKσ(solver)
 
     # * comliance minimization objective
     obj = comp
     c = 1.0 # buckling load multiplier
 
     function buckling_matrix_constr(x)
+        # * Array(K + c*Kσ) ⋟ 0, PSD
         # * solve for the displacement
-        # n_dof of the entire system
         u = dp(x)
 
         # * x -> Kes, construct all the element stiffness matrices
         # a list of small matrices for each element (cell)
-        Kes = []
-        for e in 1:length(x)
-            K_e_vec = element_K_fns[e](x[e])
-            push!(Kes, reshape(Ksig_e_vec, (ndof_pc, ndof_pc)))
-        end
+        Kes = element_k(x)
 
         # * Kes -> K (global linear stiffness matrix)
         K = assemble_k(Kes)
-        # * apply boundary condition
-        apply!(K, ch)
+        apply_boundary_with_meandiag!(K, ch)
 
         # * u_e, x_e -> Ksigma_e
-        Kσs = []
-        for e in 1:length(x)
-            celldofs!(global_dofs, dh, e)
-            Ksig_e_vec = element_Kσ_fns[e](u[global_dofs], x[e])
-            push!(Kσs, reshape(Ksig_e_vec, (ndof_pc, ndof_pc)))
-        end
+        Kσs = truss_element_kσ(x, u)
+
         # * Kσs -> Kσ
         Kσ = assemble_k(Kσs)
-        # * apply boundary condition
-        apply_zero!(Kσ, ch)
+        apply_boundary_with_zerodiag!(Kσ, ch)
 
         return Array(K + c*Kσ)
     end
-
-    # Array(K + c*Kσ) >= 0, PSD
 
     function vol_constr(x)
         # volume fraction constraint
