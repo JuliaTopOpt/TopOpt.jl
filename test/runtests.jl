@@ -8,8 +8,8 @@ using Test, SafeTestsets
 #     include("topopt_problems/metadata.jl")
 # end
 @safetestset "Functions" begin
-    # include("Functions/test_common_fns.jl")
-    include("Functions/test_buckling_fns.jl")
+    # include("functions/test_common_fns.jl")
+    include("functions/test_buckling_fns.jl")
 end
 # @safetestset "Solver" begin
 #     include("fea/solvers.jl")

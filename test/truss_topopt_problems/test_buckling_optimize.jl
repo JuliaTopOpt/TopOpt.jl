@@ -122,7 +122,7 @@ end
     dp = TopOpt.Displacement(solver)
     assemble_k = TopOpt.AssembleK(problem)
     element_k = ElementK(solver)
-    truss_element_kσ = TrussElementKσ(solver)
+    truss_element_kσ = TrussElementKσ(problem, solver)
 
     # * comliance minimization objective
     obj = comp
