@@ -17,7 +17,16 @@ function apply_boundary_with_zerodiag!(Kσ, ch)
     return Kσ
 end
 
+function ChainRulesCore.rrule(::typeof(apply_boundary_with_zerodiag!), Kσ, ch)
+    project_to = ChainRulesCore.ProjectTo(Kσ)
+    function pullback_fn(Δ)
+        return NoTangent(), apply_boundary_with_zerodiag!(project_to(Δ), ch) , NoTangent()
+    end
+    return apply_boundary_with_zerodiag!(Kσ, ch), pullback_fn
+end
 """
+Derivations for `rrule` of `apply_boundary_with_zerodiag!`
+
 g(F(K)), F: K1 -> K2
 
 dg/dK1_ij = dg/dK2_i'j' * dK2_i'j'/dK1_ij
@@ -29,13 +38,6 @@ dK2_i'j'/dK1_ij = 0, if i' or j' in ch.prescribed_dofs
 dg/dK1_ij = 0, if i or j in ch.prescribed_dofs
           = Delta[i,j], otherwise
 """
-function ChainRulesCore.rrule(::typeof(apply_boundary_with_zerodiag!), Kσ, ch)
-    project_to = ChainRulesCore.ProjectTo(Kσ)
-    function pullback_fn(Δ)
-        return NoTangent(), apply_boundary_with_zerodiag!(project_to(Δ), ch) , NoTangent()
-    end
-    return apply_boundary_with_zerodiag!(Kσ, ch), pullback_fn
-end
 
 ########################################
 
@@ -51,7 +53,27 @@ function apply_boundary_with_meandiag!(K::Union{SparseMatrixCSC,Symmetric}, ch::
     return K
 end
 
+function ChainRulesCore.rrule(::typeof(apply_boundary_with_meandiag!), K, ch)
+    project_to = ChainRulesCore.ProjectTo(K)
+    diagK = diag(K)
+    jac_meandiag = sign.(diagK) / length(diagK)
+    function pullback_fn(Δ)
+        Δ_ch_diagsum = zero(eltype(K))
+        for i in 1:length(ch.values)
+            d = ch.prescribed_dofs[i]
+            Δ_ch_diagsum += Δ[d, d]
+        end
+        ΔK = project_to(Δ)
+        apply_boundary_with_zerodiag!(ΔK, ch)
+        for i in 1:size(K, 1)
+            ΔK[i, i] += Δ_ch_diagsum * jac_meandiag[i]
+        end
+        return NoTangent(), ΔK, NoTangent()
+    end
+    return apply_boundary_with_meandiag!(K, ch), pullback_fn
+end
 """
+Derivations for `rrule` of `apply_boundary_with_meandiag!`
 g(F(K)), F: K1 -> K2
 
 dg/dK1_ij = sum_i'j' dg/dK2_i'j' * dK2_i'j'/dK1_ij
@@ -65,7 +87,7 @@ If i' != j' and !(i' or j' in ch.prescribed_dofs)
     If i' != i or j' != j
         dK2_i'j'/dK1_ij = 0
 If i' == j' and !(i' or j' in ch.prescribed_dofs)
-    If i' == i and j' == j # and i == j
+    If i' == i and j' == j (# and i == j)
         # includes the case i == j and !(i in ch.prescribed_dofs)
         dK2_i'j'/dK1_ij = 1
     If i' != i or j' != j
@@ -91,25 +113,6 @@ If i == j and !(i in prescribed_dofs)
     dg/dK1_ii = Delta[i, i] + 
         sum_{i' in prescribed_dofs} Delta[i',i'] * d(meandiag(K1))/dK1_ii
 """
-function ChainRulesCore.rrule(::typeof(apply_boundary_with_meandiag!), K, ch)
-    project_to = ChainRulesCore.ProjectTo(K)
-    diagK = diag(K)
-    jac_meandiag = sign.(diagK) / length(diagK)
-    function pullback_fn(Δ)
-        Δ_ch_diagsum = zero(eltype(K))
-        for i in 1:length(ch.values)
-            d = ch.prescribed_dofs[i]
-            Δ_ch_diagsum += Δ[d, d]
-        end
-        ΔK = project_to(Δ)
-        apply_boundary_with_zerodiag!(ΔK, ch)
-        for i in 1:size(K, 1)
-            ΔK[i, i] += Δ_ch_diagsum * jac_meandiag[i]
-        end
-        return NoTangent(), ΔK, NoTangent()
-    end
-    return apply_boundary_with_meandiag!(K, ch), pullback_fn
-end
 
 ########################################
 

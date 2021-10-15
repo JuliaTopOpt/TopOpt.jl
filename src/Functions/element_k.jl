@@ -52,18 +52,19 @@ function (ek::ElementK{T})(x::AbstractVector{T}) where {T}
     return copy(Kes)
 end
 
-"""
-g(F(x)), where F = ElementK
-
-Want: dg/dK_e_ij -> dg/dx_e
-
-dg/dx_e = sum_i'j' dg/dK_e_i'j' * dK_e_i'j'/dx_e
-        = Delta[e][i,j] * dK_e_i'j'/dx_e
-"""
 function ChainRulesCore.rrule(ek::ElementK, x)
     @unpack solver, Kes = ek
     @assert getncells(solver.problem.ch.dh.grid) == length(x)
     Kes = ek(x)
+
+    """
+    g(F(x)), where F = ElementK
+
+    Want: dg/dK_e_ij -> dg/dx_e
+
+    dg/dx_e = sum_i'j' dg/dK_e_i'j' * dK_e_i'j'/dx_e
+            = Delta[e][i,j] * dK_e_i'j'/dx_e
+    """
     function pullback_fn(Δ)
         Δx = similar(x)
         for ci in 1:length(x)
