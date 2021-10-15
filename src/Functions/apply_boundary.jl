@@ -57,34 +57,54 @@ g(F(K)), F: K1 -> K2
 dg/dK1_ij = sum_i'j' dg/dK2_i'j' * dK2_i'j'/dK1_ij
           = sum_i'j' Delta[i',j'] * dK2_i'j'/dK1_ij
 
-dK2_i'j'/dK1_ij = 0, if i' or j' in ch.prescribed_dofs and i' != j'
-                = d(meandiag(K1))/dK1_ij, if i' or j' in ch.prescribed_dofs and i' == j'
-                = 1, otherwise
+If i' != j' and (i' or j' in ch.prescribed_dofs)
+    dK2_i'j'/dK1_ij = 0
+If i' != j' and !(i' or j' in ch.prescribed_dofs)
+    If i' == i and j' == j
+        dK2_i'j'/dK1_ij = 1
+    If i' != i or j' != j
+        dK2_i'j'/dK1_ij = 0
+If i' == j' and !(i' or j' in ch.prescribed_dofs)
+    If i' == i and j' == j # and i == j
+        # includes the case i == j and !(i in ch.prescribed_dofs)
+        dK2_i'j'/dK1_ij = 1
+    If i' != i or j' != j
+        dK2_i'j'/dK1_ij = 0
+If i' == j' and (i' or j' in ch.prescribed_dofs)
+    If i == j
+        # includes the case i == j and !(i in ch.prescribed_dofs)
+        dK2_i'j'/dK1_ij = d(meandiag(K1))/dK1_ii
+    If i != j
+        dK2_i'j'/dK1_ij = 0
 
 We have to compute d(meandiag(K1))/dK1_ii, i in ch.prescribed_dofs.
+    d(meandiag(K1))/dK1_ii = sign(K1_ii) / size(K1, 1)
 
-dg/dK1_ij   = 0,                                   if i or j in ch.prescribed_dofs and i != j
-(dg/dK1_ii) = sum_{i' in prescribed_dofs} Delta[i',i'] * dK2_i'i'/dK1_ii, if i=j, i in prescribed_dofs
-             = (sum_{i' in prescribed_dofs} Delta[i',i']) * (d(meandiag(K1))/dK1_ii)
-            = Delta[i,j],                          otherwise
-
+If i != j and i or j in ch.prescribed_dofs
+    dg/dK1_ij = 0
+If i != j and !(i or j in ch.prescribed_dofs)
+    dg/dK1_ij = Delta[i, j]
+If i == j and i in prescribed_dofs
+    dg/dK1_ii = 
+        sum_{i' in prescribed_dofs} Delta[i',i'] * d(meandiag(K1))/dK1_ii
+If i == j and !(i in prescribed_dofs)
+    dg/dK1_ii = Delta[i, i] + 
+        sum_{i' in prescribed_dofs} Delta[i',i'] * d(meandiag(K1))/dK1_ii
 """
 function ChainRulesCore.rrule(::typeof(apply_boundary_with_meandiag!), K, ch)
     project_to = ChainRulesCore.ProjectTo(K)
+    diagK = diag(K)
+    jac_meandiag = sign.(diagK) / length(diagK)
     function pullback_fn(Δ)
-        ΔK = project_to(Δ)
-        apply_boundary_with_meandiag!(ΔK, ch)
-        # d(meandiag(K1))/dK1_ii
-        meandiag_vec_fn = x -> sum(abs.(x))/length(x)
-        jac_meandiag = ForwardDiff.gradient(meandiag_vec_fn, diag(K))
-        Δ_ch_diagsum = eltype(K)(0)
+        Δ_ch_diagsum = zero(eltype(K))
         for i in 1:length(ch.values)
             d = ch.prescribed_dofs[i]
-            Δ_ch_diagsum += Δ[d,d]
+            Δ_ch_diagsum += Δ[d, d]
         end
-        for i in 1:length(ch.values)
-            d = ch.prescribed_dofs[i]
-            ΔK[d, d] = Δ_ch_diagsum * jac_meandiag[d]
+        ΔK = project_to(Δ)
+        apply_boundary_with_zerodiag!(ΔK, ch)
+        for i in 1:size(K, 1)
+            ΔK[i, i] += Δ_ch_diagsum * jac_meandiag[i]
         end
         return NoTangent(), ΔK, NoTangent()
     end
