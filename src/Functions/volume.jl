@@ -12,7 +12,7 @@
     maxfevals::Int
 end
 Base.show(::IO, ::MIME{Symbol("text/plain")}, ::Volume) = println("TopOpt volume (fraction) function")
-Nonconvex.getdim(::Volume) = 1
+Nonconvex.NonconvexCore.getdim(::Volume) = 1
 @inline function Base.getproperty(vf::Volume, f::Symbol)
     f === :reuse && return false
     return getfield(vf, f)

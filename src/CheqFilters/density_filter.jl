@@ -5,7 +5,7 @@
     jacobian::AbstractMatrix{T}
 end
 Base.show(::IO, ::MIME{Symbol("text/plain")}, ::DensityFilter) = println("TopOpt density filter")
-Nonconvex.getdim(f::DensityFilter) = size(f.jacobian, 1)
+Nonconvex.NonconvexCore.getdim(f::DensityFilter) = size(f.jacobian, 1)
 DensityFilter{true}(args...) = DensityFilter(Val(true), args...)
 DensityFilter{false}(args...) = DensityFilter(Val(false), args...)
 
@@ -122,7 +122,7 @@ end
     preproj
     postproj
 end
-Nonconvex.getdim(f::ProjectedDensityFilter) = Nonconvex.getdim(f.filter)
+Nonconvex.NonconvexCore.getdim(f::ProjectedDensityFilter) = Nonconvex.NonconvexCore.getdim(f.filter)
 function (cf::ProjectedDensityFilter)(x)
     if cf.preproj isa Nothing
         fx = x

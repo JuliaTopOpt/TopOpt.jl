@@ -199,4 +199,4 @@ function generate_scenarios(dof::Int, size::Tuple{Int, Int}, f, perturb = ()->(r
     J = 1:nscenarios
     return sparse(I, J, V, ndofs, nscenarios)
 end
-Nonconvex.getdim(f::MeanCompliance) = 1
+Nonconvex.NonconvexCore.getdim(f::MeanCompliance) = 1

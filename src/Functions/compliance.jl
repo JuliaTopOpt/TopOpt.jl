@@ -13,7 +13,7 @@
 end
 Utilities.getpenalty(c::Compliance) = c |> getsolver |> getpenalty
 Utilities.setpenalty!(c::Compliance, p) = setpenalty!(getsolver(c), p)
-Nonconvex.getdim(::Compliance) = 1
+Nonconvex.NonconvexCore.getdim(::Compliance) = 1
 
 function Compliance(problem, solver::AbstractDisplacementSolver, args...; kwargs...)
     Compliance(whichdevice(solver), problem, solver, args...; kwargs...)

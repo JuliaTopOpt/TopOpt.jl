@@ -1,7 +1,7 @@
 module Algorithms
 
 using Nonconvex, ..Functions, Optim, Parameters, Requires
-using Nonconvex: AbstractModel
+using Nonconvex.NonconvexCore: AbstractModel
 using ..TopOpt: whichdevice, AbstractDevice, CPU, GPU, PENALTY_BEFORE_INTERPOLATION
 using TimerOutputs, Setfield, StaticArrays
 using Parameters: @unpack, @pack!

@@ -18,7 +18,7 @@ using Ferrite: ndofs_per_cell, getncells
         f = Kx -> sum(ak(Kx)*v)
         Kes = [rand(T,k,k) for _ in 1:N]
         Kes .= transpose.(Kes) .+ Kes
-        val1, grad1 = Nonconvex.value_gradient(f, Kes);
+        val1, grad1 = NonconvexCore.value_gradient(f, Kes);
         val2, grad2 = f(Kes), Zygote.gradient(f, Kes)[1];
         grad3 = FDM.grad(central_fdm(5, 1), f, Kes)[1];
         @test val1 == val2
@@ -51,7 +51,7 @@ end
         end
         x = clamp.(rand(prod(nels)), 0.1, 1.0)
 
-        val1, grad1 = Nonconvex.value_gradient(f, x);
+        val1, grad1 = NonconvexCore.value_gradient(f, x);
         val2, grad2 = f(x), Zygote.gradient(f, x)[1];
         grad3 = FDM.grad(central_fdm(5, 1), f, x)[1];
         @test val1 == val2
@@ -89,7 +89,7 @@ end
         end
 
         x = clamp.(rand(nels), 0.1, 1.0)
-        val1, grad1 = Nonconvex.value_gradient(f, x);
+        val1, grad1 = NonconvexCore.value_gradient(f, x);
         val2, grad2 = f(x), Zygote.gradient(f, x)[1];
         grad3 = FDM.grad(central_fdm(5, 1), f, x)[1];
         @test val1 == val2
@@ -125,7 +125,7 @@ end
 
         x = rand(total_ndof)
         for f in [f2] #f1, 
-            val1, grad1 = Nonconvex.value_gradient(f, x);
+            val1, grad1 = NonconvexCore.value_gradient(f, x);
             val2, grad2 = f(x), Zygote.gradient(f, x)[1];
             grad3 = FDM.grad(central_fdm(5, 1), f, x)[1];
             # @test val1 == val2

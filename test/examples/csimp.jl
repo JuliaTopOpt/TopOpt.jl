@@ -35,7 +35,7 @@ for i in 1:length(problems)
     penalty = TopOpt.PowerPenalty(1.0)
     pcont = Continuation(penalty, steps = steps, xmin = xmin, pmax = 5.0)
 
-    mma_options = options = Nonconvex.MMAOptions(maxiter=1000)
+    mma_options = options = MMAOptions(maxiter=1000)
     maxtol = 0.01 # maximum tolerance
     mintol = 0.001 # minimum tolerance
     b = log(mintol / maxtol) / steps
@@ -70,7 +70,7 @@ for i in 1:length(problems)
     # Define subproblem optimizer
     x0 = fill(V, length(solver.vars))
     optimizer = Optimizer(
-        obj, constr, x0, Nonconvex.MMA87(),
+        obj, constr, x0, MMA87(),
         options = mma_options, convcriteria = convcriteria,
     )
     # Define continuation SIMP optimizer

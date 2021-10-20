@@ -1,4 +1,4 @@
-using Percival, Nonconvex
+using NonconvexMMA
 
 abstract type AbstractOptimizer end
 
@@ -20,10 +20,10 @@ function Optimizer(
     obj,
     constr,
     vars,
-    opt = Nonconvex.MMA87(),
+    opt = MMA87(),
     device::Tdev = CPU();
-    options = Nonconvex.MMAOptions(),
-    convcriteria = Nonconvex.KKTCriteria(),
+    options = MMAOptions(),
+    convcriteria = KKTCriteria(),
 ) where {Tdev <: AbstractDevice}
 
     T = eltype(vars)
@@ -32,7 +32,8 @@ function Optimizer(
     model = Nonconvex.Model(obj)
     addvar!(model, zeros(T, nvars), ones(T, nvars))
     add_ineq_constraint!(model, Nonconvex.FunctionWrapper(constr, length(constr(x0))))
-    workspace = Nonconvex.Workspace(model, opt, x0; options = options, convcriteria = convcriteria)
+    @show typeof(model)
+    workspace = NonconvexMMA.Workspace(model, opt, x0; options = options, convcriteria = convcriteria)
     return Optimizer(model, opt, workspace, device)
 end
 

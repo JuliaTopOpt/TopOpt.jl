@@ -37,7 +37,7 @@ export  Volume,
 
 const to = TimerOutput()
 
-abstract type AbstractFunction{T} <: Nonconvex.AbstractFunction end
+abstract type AbstractFunction{T} <: Nonconvex.NonconvexCore.AbstractFunction end
 
 include("function_utils.jl")
 include("compliance.jl")

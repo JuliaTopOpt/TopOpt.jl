@@ -13,7 +13,7 @@ Random.seed!(1)
         comp = Compliance(problem, solver)
         for i in 1:3
             x = clamp.(rand(prod(nels)), 0.1, 1.0)
-            val1, grad1 = Nonconvex.value_gradient(comp, x)
+            val1, grad1 = NonconvexCore.value_gradient(comp, x)
             val2, grad2 = comp(x), Zygote.gradient(comp, x)[1]
             grad3 = FDM.grad(central_fdm(5, 1), comp, x)[1]
             @test val1 == val2
@@ -34,7 +34,7 @@ end
              x = clamp.(rand(prod(nels)), 0.1, 1.0)
              v = rand(length(u))
              f = x -> dot(dp(x), v)
-             val1, grad1 = Nonconvex.value_gradient(f, x)
+             val1, grad1 = NonconvexCore.value_gradient(f, x)
              val2, grad2 = f(x), Zygote.gradient(f, x)[1]
              grad3 = FDM.grad(central_fdm(5, 1), f, x)[1]
              @test val1 == val2
@@ -53,7 +53,7 @@ end
         constr = x -> vol(x) - 0.3
         for i in 1:3
             x = rand(prod(nels))
-            val1, grad1 = Nonconvex.value_gradient(constr, x)
+            val1, grad1 = NonconvexCore.value_gradient(constr, x)
             val2, grad2 = constr(x), Zygote.gradient(constr, x)[1]
             grad3 = FDM.grad(central_fdm(5, 1), constr, x)[1]
             @test val1 == val2
@@ -73,7 +73,7 @@ end
             x = rand(prod(nels))
             v = rand(prod(nels))
             f = FunctionWrapper(x -> dot(filter(x), v), 1)
-            val1, grad1 = Nonconvex.value_gradient(f, x)
+            val1, grad1 = NonconvexCore.value_gradient(f, x)
             val2, grad2 = f(x), Zygote.gradient(f, x)[1]
             grad3 = FDM.grad(central_fdm(5, 1), f, x)[1]
             @test val1 == val2
@@ -117,7 +117,7 @@ end
             x = clamp.(rand(prod(nels)), 0.1, 1.0)
             v = rand(nloads)
             f = FunctionWrapper(x -> dot(constr(x), v), 1)
-            val1, grad1 = Nonconvex.value_gradient(f, x)
+            val1, grad1 = NonconvexCore.value_gradient(f, x)
             val2, grad2 = f(x), Zygote.gradient(f, x)[1]
             grad3 = FDM.grad(central_fdm(5, 1), f, x)[1]
             @test val1 == val2
@@ -138,7 +138,7 @@ end
                 x = clamp.(rand(prod(nels)), 0.1, 1.0)
                 v = rand(prod(nels))
                 f = FunctionWrapper(x -> dot(stress(x), v), 1)
-                val1, grad1 = Nonconvex.value_gradient(f, x)
+                val1, grad1 = NonconvexCore.value_gradient(f, x)
                 val2, grad2 = f(x), Zygote.gradient(f, x)[1]
                 grad3 = FDM.grad(central_fdm(5, 1), f, x)[1]
                 @test val1 == val2
@@ -158,7 +158,7 @@ end
                 x = clamp.(rand(prod(nels)), 0.1, 1.0)
                 v = rand(prod(nels))
                 f = FunctionWrapper(x -> dot(stress(x), v), 1)
-                val1, grad1 = Nonconvex.value_gradient(f, x)
+                val1, grad1 = NonconvexCore.value_gradient(f, x)
                 val2, grad2 = f(x), Zygote.gradient(f, x)[1]
                 grad3 = FDM.grad(central_fdm(5, 1), f, x)[1]
                 @test val1 == val2

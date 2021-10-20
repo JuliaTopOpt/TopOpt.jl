@@ -62,7 +62,7 @@ end
 
 function ChainRulesCore.rrule(bc::BlockCompliance, x)
     return bc(x), Δ -> begin
-        @assert Nonconvex.getdim(bc) == length(Δ)
+        @assert Nonconvex.NonconvexCore.getdim(bc) == length(Δ)
         newΔ = similar(Δ, length(x))
         newΔ .= 0
         @unpack compliance = bc
@@ -78,7 +78,7 @@ function ChainRulesCore.rrule(bc::BlockCompliance, x)
     end
 end
 
-Nonconvex.getdim(f::BlockCompliance) = length(f.val)
+Nonconvex.NonconvexCore.getdim(f::BlockCompliance) = length(f.val)
 Utilities.getpenalty(c::BlockCompliance) = c.compliance |> getsolver |> getpenalty
 
 function compute_block_compliance(ec::BlockCompliance, m::ExactDiagonal)

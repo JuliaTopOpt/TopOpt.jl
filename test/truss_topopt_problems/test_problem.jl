@@ -30,9 +30,10 @@ ins_dir = joinpath(@__DIR__, "instances", "ground_meshes");
 end
 
 @testset "Tim problem to solve" for (problem_dim, lc_ind) in product(["2d", "3d"], [0, 1])
-    # problem_dim = "2d"
-    # file_name = "tim_2d.json"
-    # lc_ind = 1
+    problem_dim = "2d"
+    file_name = "tim_2d.json"
+    lc_ind = 1
+
     file_name = "tim_$(problem_dim).json"
     problem_file = joinpath(ins_dir, file_name)
 
@@ -60,7 +61,7 @@ end
     volfrac = TopOpt.Volume(problem, solver)
     constr = x -> volfrac(x) - V
 
-    mma_options = options = Nonconvex.MMAOptions(
+    options = MMAOptions(
         maxiter = 3000, tol = Nonconvex.Tolerance(kkt = 0.001),
     )
     convcriteria = Nonconvex.KKTCriteria()
@@ -78,23 +79,15 @@ end
     # r.minimum
     # r.minimizer
 
-    optimizer = Optimizer(
-        obj, constr, x0, Nonconvex.MMA87(),
-        options = mma_options, convcriteria = convcriteria,
-    )
-    simp = SIMP(optimizer, solver, penalty.p)
-
-    # ? 1.0 might induce an infeasible solution, which gives the optimizer a hard time to escape 
-    # from infeasible regions and return a result
-    result = simp(x0);
+    TopOpt.setpenalty!(solver, penalty.p)
+    result = Nonconvex.optimize(m, MMA87(), x0, options = options);
 
     println("="^10)
-    println("tim-$(problem_dim) - LC $(lc_ind) - #elements $(ncells), #dof: $(ncells*ndim): opt iter $(simp.optimizer.workspace.iter)")
+    println("tim-$(problem_dim) - LC $(lc_ind) - #elements $(ncells), #dof: $(ncells*ndim): opt iter $(result.iter)")
     println("$(result.convstate)")
 
-    solver()
-
     # if get(ENV, "CI", nothing) != "true"
+    #     solver()
     #     fig = visualize(
     #         problem, solver.u; topology = result.topology, vector_arrowsize = 0.1,
     #         vector_linewidth=0.8, default_exagg_scale=ndim == 3 ? 1.0 : 0.01,
