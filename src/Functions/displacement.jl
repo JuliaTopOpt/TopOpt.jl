@@ -21,7 +21,7 @@ function Displacement(solver::AbstractFEASolver; maxfevals = 10^8)
     global_dofs = zeros(Int, k)
     total_ndof = ndofs(dh)
     u = zeros(T, total_ndof)
-    dudx_tmp = zeros(T, total_ndof)
+    dudx_tmp = zeros(T, length(solver.vars))
     return Displacement(u, dudx_tmp, solver, global_dofs, 0, maxfevals)
 end
 

@@ -6,7 +6,7 @@ using Ferrite: ndofs_per_cell, getncells
 Random.seed!(1)
 
 @testset "Compliance" begin
-    nels = (10, 10)
+    nels = (2, 2)
     problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
     for p in (1.0, 2.0, 3.0)
         solver = FEASolver(Direct, problem, xmin = 0.01, penalty = TopOpt.PowerPenalty(p))
@@ -24,7 +24,7 @@ Random.seed!(1)
 end
 
 @testset "Displacement" begin
-    nels = (10, 10)
+    nels = (2, 2)
     problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
     for p in (1.0, 2.0, 3.0)
         solver = FEASolver(Direct, problem, xmin = 0.01, penalty = TopOpt.PowerPenalty(p))
@@ -45,7 +45,7 @@ end
 end
 
 @testset "Volume" begin
-    nels = (10, 10)
+    nels = (2, 2)
     problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
     for p in (1.0, 2.0, 3.0)
         solver = FEASolver(Direct, problem, xmin = 0.01, penalty = TopOpt.PowerPenalty(p))
@@ -64,7 +64,7 @@ end
 end
 
 @testset "DensityFilter" begin
-    nels = (10, 10)
+    nels = (2, 2)
     problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
     for p in (1.0, 2.0, 3.0)
         solver = FEASolver(Direct, problem, xmin = 0.01, penalty = TopOpt.PowerPenalty(p))
@@ -84,7 +84,7 @@ end
 end
 
 @testset "SensFilter" begin
-    nels = (10, 10)
+    nels = (2, 2)
     problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0))
     solver = FEASolver(
         Direct, problem, xmin = 1e-3, penalty = PowerPenalty(3.0),
@@ -98,7 +98,7 @@ end
 end
 
 @testset "Block compliance" begin
-    nels = (10, 10)
+    nels = (2, 2)
     nloads = 10
     base_problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
     dense_load_inds = vec(TopOpt.TopOptProblems.get_surface_dofs(base_problem))
@@ -128,7 +128,7 @@ end
 end
 
 @testset "Local stress" begin
-    nels = (10, 10)
+    nels = (2, 2)
     problem = PointLoadCantilever(Val{:Quadratic}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
     for F in (MacroVonMisesStress, MicroVonMisesStress)
         for p in (1.0, 2.0, 3.0)
@@ -148,7 +148,7 @@ end
         end
     end
 
-    nels = (10, 10, 2)
+    nels = (2, 2, 2)
     problem = PointLoadCantilever(Val{:Quadratic}, nels, (1.0, 1.0, 1.0), 1.0, 0.3, 1.0)
     for F in (MacroVonMisesStress, MicroVonMisesStress)
         for p in (1.0, 2.0, 3.0)
