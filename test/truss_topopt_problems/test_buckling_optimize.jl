@@ -146,10 +146,11 @@ gm_ins_dir = joinpath(@__DIR__, "instances", "ground_meshes");
     end
 
     # * Before optimization, check initial design stability
-    # solver.vars = x0
-    # solver()
-    # K, G = buckling(problem, solver.globalinfo, solver.elementinfo; u=solver.u);
+    solver.vars = x0
+    solver()
+    K, G = buckling(problem, solver.globalinfo, solver.elementinfo; u=solver.u);
     @test isfinite(logdet(cholesky(buckling_matrix_constr(x0))))
+    @test K+G ≈ buckling_matrix_constr(x0)
     # sparse_eigvals, buckmodes = eigs(-G,K, nev=1, which=:LR)
     # smallest_pos_eigval = 1/sparse_eigvals[1]
     # @show smallest_pos_eigval
