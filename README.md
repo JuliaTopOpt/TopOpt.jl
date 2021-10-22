@@ -55,6 +55,11 @@ All the following features are available in TopOpt.jl but the documentation is c
 - Heaviside projection
 - Handling load uncertainty in compliance-based topology optimization
 
+![gif1](https://user-images.githubusercontent.com/19524993/138464511-2685f3fe-e7c5-482e-8b06-43ab0fb82990.gif)
+![gif2](https://user-images.githubusercontent.com/19524993/138464828-88f0ffcb-01f7-43b7-8d17-f5d201e95aa3.gif)
+![gif3](https://user-images.githubusercontent.com/19524993/138464845-d0b289b7-0fe9-4408-be57-fe697b5d671e.gif)
+
+
 ## Citation
 
 To cite this package, you can cite the following 2 conference publications.
