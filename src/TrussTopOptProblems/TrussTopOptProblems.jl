@@ -4,6 +4,7 @@ using Ferrite, StaticArrays, LinearAlgebra
 using SparseArrays
 using ..TopOpt
 using ..TopOpt.Utilities
+using ..TopOpt.Functions: apply_boundary_with_zerodiag!, AssembleK
 using Setfield
 import Ferrite: assemble!
 using LinearAlgebra: I, norm

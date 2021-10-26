@@ -84,6 +84,10 @@ function buckling(problem::TrussProblem{xdim, T}, ginfo, einfo, vars=ones(T, get
         u = ginfo.K \ ginfo.f
     end
     Kσs = get_truss_Kσs(problem, u, einfo.cellvalues)
+    # TODO replace
+    # assemble_k = TopOpt.AssembleK(problem)
+    # Kσ = assemble_k(Kσs)
+
     Kσ = deepcopy(ginfo.K)
 
     if Kσ isa Symmetric
@@ -126,27 +130,7 @@ function buckling(problem::TrussProblem{xdim, T}, ginfo, einfo, vars=ones(T, get
     end
 
     #* apply boundary condition
-    Kσ = _apply!(Kσ, problem.ch)
+    Kσ = apply_boundary_with_zerodiag!(Kσ, problem.ch)
 
     return ginfo.K, Kσ
-end
-
-using ChainRulesCore
-
-"""
-    _apply!(Kσ, ch)
-
-Apply boundary condition to the stress stiffness matrix. More info about this can be found at: 
-https://github.com/JuliaTopOpt/TopOpt.jl/wiki/Applying-boundary-conditions-to-the-stress-stiffness-matrix
-"""
-function _apply!(Kσ, ch)
-    # dummy f, applyzero=true
-    apply!(Kσ, eltype(Kσ)[], ch, true)
-    return Kσ
-end
-function ChainRulesCore.rrule(::typeof(_apply!), Kσ, ch)
-    project_to = ChainRulesCore.ProjectTo(Kσ)
-    return _apply!(Kσ, ch), Δ -> begin
-        NoTangent(), _apply!(project_to(Δ), ch) , NoTangent()
-    end
 end

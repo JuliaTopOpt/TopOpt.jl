@@ -183,14 +183,14 @@ gm_ins_dir = joinpath(@__DIR__, "..", "truss_topopt_problems", "instances", "gro
 
         # * Kes -> K (global linear stiffness matrix)
         K = assemble_k(Kes)
-        apply_boundary_with_meandiag!(K, ch)
+        K = apply_boundary_with_meandiag!(K, ch)
 
         # * u_e, x_e -> Ksigma_e
         Kσs = truss_element_kσ(u, x)
 
         # * Kσs -> Kσ
         Kσ = assemble_k(Kσs)
-        apply_boundary_with_zerodiag!(Kσ, ch)
+        Kσ = apply_boundary_with_zerodiag!(Kσ, ch)
 
         return Array(K + c*Kσ)
     end
