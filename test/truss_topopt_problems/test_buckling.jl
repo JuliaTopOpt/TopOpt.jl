@@ -4,10 +4,12 @@ using StaticArrays
 using Ferrite
 
 using TopOpt
-using TopOpt.TrussTopOptProblems.TrussTopOptProblems: buckling, get_truss_Kσs, compute_local_axes
+using TopOpt.TrussTopOptProblems.TrussTopOptProblems: compute_local_axes
 using TopOpt.TopOptProblems: getE, getdh
 using TopOpt.TrussTopOptProblems: getA
 using Arpack
+
+include("utils.jl")
 
 fea_ins_dir = joinpath(@__DIR__, "instances", "fea_examples");
 gm_ins_dir = joinpath(@__DIR__, "instances", "ground_meshes");

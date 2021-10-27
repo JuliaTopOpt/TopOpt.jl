@@ -4,7 +4,6 @@ using Ferrite
 using NonconvexIpopt
 
 using TopOpt
-using TopOpt.TrussTopOptProblems: buckling
 using Arpack
 
 fea_ins_dir = joinpath(@__DIR__, "instances", "fea_examples");
@@ -42,6 +41,7 @@ gm_ins_dir = joinpath(@__DIR__, "instances", "ground_meshes");
 #     Nonconvex.NonconvexCore.show_residuals[] = true
 
 #     comp = TopOpt.Compliance(problem, solver)
+#     # TODO "manual" interior point loop, adjusting the c value every iter
 #     for c in [0.1] # 10:-0.1:0.1
 #         function obj(x)
 #             solver.vars = x
@@ -101,7 +101,7 @@ gm_ins_dir = joinpath(@__DIR__, "instances", "ground_meshes");
     xmin = 0.0001 # minimum density
     p = 4.0 # penalty
     V = 0.5 # maximum volume fraction
-    x0 = fill(1.0, ncells) # initial design
+    x0 = fill(V, ncells) # initial design
 
     solver = FEASolver(Direct, problem);
     ch = problem.ch
@@ -128,14 +128,14 @@ gm_ins_dir = joinpath(@__DIR__, "instances", "ground_meshes");
 
         # * Kes -> K (global linear stiffness matrix)
         K = assemble_k(Kes)
-        apply_boundary_with_meandiag!(K, ch)
+        K = apply_boundary_with_meandiag!(K, ch)
 
         # * u_e, x_e -> Ksigma_e
         Kσs = truss_element_kσ(u, x)
 
         # * Kσs -> Kσ
         Kσ = assemble_k(Kσs)
-        apply_boundary_with_zerodiag!(Kσ, ch)
+        Kσ = apply_boundary_with_zerodiag!(Kσ, ch)
 
         return Array(K + c*Kσ)
     end
@@ -146,15 +146,7 @@ gm_ins_dir = joinpath(@__DIR__, "instances", "ground_meshes");
     end
 
     # * Before optimization, check initial design stability
-    solver.vars = x0
-    solver()
-    K, G = buckling(problem, solver.globalinfo, solver.elementinfo; u=solver.u);
     @test isfinite(logdet(cholesky(buckling_matrix_constr(x0))))
-    @test K+G ≈ buckling_matrix_constr(x0)
-    # sparse_eigvals, buckmodes = eigs(-G,K, nev=1, which=:LR)
-    # smallest_pos_eigval = 1/sparse_eigvals[1]
-    # @show smallest_pos_eigval
-    # @test smallest_pos_eigval >= 1.0
 
     m = Model(obj)
     addvar!(m, zeros(length(x0)), ones(length(x0)))
@@ -163,40 +155,14 @@ gm_ins_dir = joinpath(@__DIR__, "instances", "ground_meshes");
 
     Nonconvex.NonconvexCore.show_residuals[] = true
     alg = SDPBarrierAlg(sub_alg=IpoptAlg())
-    options = SDPBarrierOptions(sub_options=IpoptOptions(max_iter=100))
+    options = SDPBarrierOptions(sub_options=IpoptOptions(max_iter=200))
     r = Nonconvex.optimize(m, alg, x0, options = options)
     # println("$(r.convstate)")
 
-    # # * check result stability
+    # * check result stability
     @test isfinite(logdet(cholesky(buckling_matrix_constr(r.minimizer))))
-    # solver = FEASolver(Direct, problem; xmin=xmin);
-    # solver.vars = r.minimizer;
-    # solver()
-    # K, G = buckling(problem, solver.globalinfo, solver.elementinfo, r.minimizer, xmin; u=solver.u);
-    # @test isfinite(logdet(cholesky(K+G)))
-    # sparse_eigvals, buckmodes = eigs(-G,K, nev=1, which=:LR)
-    # smallest_pos_eigval = 1/sparse_eigvals[1]
-    # @show smallest_pos_eigval
-    # @test smallest_pos_eigval >= 1.0
 
     # using Makie
     # using TopOpt.TrussTopOptProblems.TrussVisualization: visualize
     # fig = visualize(problem; topology=r.minimizer)
 end
-
-#  - where to plug in the gradient of the barrier function?
-    # function (v::Volume{T})(x, grad = nothing) where {T}
-#  - how to compute ∂K/∂x_e and ∂f/∂x_e?
-        # d = ForwardDiff.Dual{T}(x[varind[i]], one(T))
-        # if PENALTY_BEFORE_INTERPOLATION
-        #     p = density(penalty(d), xmin)
-        # else
-        #     p = penalty(density(d, xmin))
-        # end
-        # grad[varind[i]] = -p.partials[1] * cell_comp[i] # Ke
-#  adjoint method: ∂u/∂x_e = K^{-1} * (∂f/∂x_e - ∂K/∂x_e * u)
-# ∂Kσ/∂x_e for all e
-
-# TODO finite difference to verify the gradient
-# TODO verify the gradient for some analytical problems
-# TODO "manual" interior point loop, adjusting the c value every iter
