@@ -155,85 +155,82 @@ using Arpack
 
 gm_ins_dir = joinpath(@__DIR__, "..", "truss_topopt_problems", "instances", "ground_meshes");
 
-# @testset "Buckling SDP constraint $problem_dim" for problem_dim in ["2d"] # , "3d"
-#     file_name = "tim_$(problem_dim).json"
-#     problem_file = joinpath(gm_ins_dir, file_name)
+@testset "Buckling SDP constraint $problem_dim" for problem_dim in ["2d"] # , "3d"
+    file_name = "tim_$(problem_dim).json"
+    problem_file = joinpath(gm_ins_dir, file_name)
 
-#     mats = TrussFEAMaterial(1.0, 0.3);
-#     crossecs = TrussFEACrossSec(800.0);
+    mats = TrussFEAMaterial(1.0, 0.3);
+    crossecs = TrussFEACrossSec(800.0);
 
-#     node_points, elements, _, _ , fixities, load_cases = load_truss_json(problem_file)
-#     ndim, nnodes, ncells = length(node_points[1]), length(node_points), length(elements)
-#     loads = load_cases["0"]
+    node_points, elements, _, _ , fixities, load_cases = load_truss_json(problem_file)
+    ndim, nnodes, ncells = length(node_points[1]), length(node_points), length(elements)
+    loads = load_cases["0"]
 
-#     problem = TrussProblem(Val{:Linear}, node_points, elements, loads, fixities, mats, crossecs);
+    problem = TrussProblem(Val{:Linear}, node_points, elements, loads, fixities, mats, crossecs);
 
-#     xmin = 0.0001 # minimum density
-#     p = 4.0 # penalty
-#     V = 0.5 # maximum volume fraction
-#     x0 = fill(1.0, ncells) # initial design
+    xmin = 0.0001 # minimum density
+    p = 4.0 # penalty
+    V = 0.5 # maximum volume fraction
+    x0 = fill(1.0, ncells) # initial design
 
-#     solver = FEASolver(Direct, problem);
-#     ch = problem.ch
-#     dh = problem.ch.dh
-#     total_ndof = ndofs(dh)
+    solver = FEASolver(Direct, problem);
+    ch = problem.ch
+    dh = problem.ch.dh
+    total_ndof = ndofs(dh)
 
-#     comp = TopOpt.Compliance(problem, solver)
-#     dp = TopOpt.Displacement(solver)
-#     assemble_k = TopOpt.AssembleK(problem)
-#     element_k = ElementK(solver)
-#     truss_element_kσ = TrussElementKσ(problem, solver)
+    comp = TopOpt.Compliance(problem, solver)
+    dp = TopOpt.Displacement(solver)
+    assemble_k = TopOpt.AssembleK(problem)
+    element_k = ElementK(solver)
+    truss_element_kσ = TrussElementKσ(problem, solver)
 
-#     # * comliance minimization objective
-#     obj = comp
-#     c = 1.0 # buckling load multiplier
+    # * comliance minimization objective
+    obj = comp
+    c = 1.0 # buckling load multiplier
 
-#     function buckling_matrix_constr(x)
-#         # * Array(K + c*Kσ) ⋟ 0, PSD
-#         # * solve for the displacement
-#         u = dp(x)
+    function buckling_matrix_constr(x)
+        # * Array(K + c*Kσ) ⋟ 0, PSD
+        # * solve for the displacement
+        u = dp(x)
 
-#         # * x -> Kes, construct all the element stiffness matrices
-#         # a list of small matrices for each element (cell)
-#         Kes = element_k(x)
+        # * x -> Kes, construct all the element stiffness matrices
+        # a list of small matrices for each element (cell)
+        Kes = element_k(x)
 
-#         # * Kes -> K (global linear stiffness matrix)
-#         K = assemble_k(Kes)
-#         K = apply_boundary_with_meandiag!(K, ch)
+        # * Kes -> K (global linear stiffness matrix)
+        K = assemble_k(Kes)
+        K = apply_boundary_with_meandiag!(K, ch)
 
-#         # * u_e, x_e -> Ksigma_e
-#         Kσs = truss_element_kσ(u, x)
+        # * u_e, x_e -> Ksigma_e
+        Kσs = truss_element_kσ(u, x)
 
-#         # * Kσs -> Kσ
-#         Kσ = assemble_k(Kσs)
-#         Kσ = apply_boundary_with_zerodiag!(Kσ, ch)
+        # * Kσs -> Kσ
+        Kσ = assemble_k(Kσs)
+        Kσ = apply_boundary_with_zerodiag!(Kσ, ch)
 
-#         return Array(K + c*Kσ)
-#     end
+        return Array(K + c*Kσ)
+    end
 
-#     # * check initial design stability
-#     solver.vars = x0
-#     solver()
-#     K, G = buckling(problem, solver.globalinfo, solver.elementinfo; u=solver.u);
-#     @test isfinite(logdet(cholesky(buckling_matrix_constr(x0))))
-#     # TODO this should pass too
-#     # @test K+G ≈ buckling_matrix_constr(x0)
-#     # sparse_eigvals, buckmodes = eigs(-G,K, nev=1, which=:LR)
-#     # smallest_pos_eigval = 1/sparse_eigvals[1]
-#     # @show smallest_pos_eigval
-#     # @test smallest_pos_eigval >= 1.0
+    # * check initial design stability
+    @test isfinite(logdet(cholesky(buckling_matrix_constr(x0))))
 
-#     for _ in 1:3
-#         v = rand(eltype(x0), total_ndof)
-#         f = x -> sum(buckling_matrix_constr(x)*v)
+    for _ in 1:3
+        v = rand(eltype(x0), total_ndof)
+        f = x -> sum(buckling_matrix_constr(x)*v)
 
-#         x = clamp.(rand(ncells), 0.1, 1.0)
-#         val1, grad1 = NonconvexCore.value_gradient(f, x);
-#         val2, grad2 = f(x), Zygote.gradient(f, x)[1];
-#         grad3 = FDM.grad(central_fdm(5, 1), f, x)[1];
+        x = clamp.(rand(ncells), 0.1, 1.0)
 
-#         @test val1 == val2
-#         @test norm(grad1 - grad2) == 0
-#         @test norm(grad1 - grad3) <= 1e-5
-#     end
-# end
+        solver.vars = x
+        solver()
+        K, G = buckling(problem, solver.globalinfo, solver.elementinfo, x; u=solver.u);
+        @test K+G ≈ buckling_matrix_constr(x)
+
+        val1, grad1 = NonconvexCore.value_gradient(f, x);
+        val2, grad2 = f(x), Zygote.gradient(f, x)[1];
+        grad3 = FDM.grad(central_fdm(5, 1), f, x)[1];
+
+        @test val1 == val2
+        @test norm(grad1 - grad2) == 0
+        @test norm(grad1 - grad3) <= 1e-5
+    end
+end
