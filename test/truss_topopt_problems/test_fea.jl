@@ -5,7 +5,7 @@ using Ferrite: cellid, getcoordinates, CellIterator
 
 using TopOpt
 using TopOpt.TopOptProblems: boundingbox, nnodespercell, getgeomorder, getmetadata, getdh, getE, getdim
-using TopOpt.TrussTopOptProblems: getA, default_quad_order
+using TopOpt.TrussTopOptProblems: getA, default_quad_order, compute_local_axes
 # if get(ENV, "CI", nothing) != "true"
 #     import Makie
 #     using TopOpt.TrussTopOptProblems.TrussVisualization: visualize
@@ -56,7 +56,11 @@ ins_dir = joinpath(@__DIR__, "instances", "fea_examples");
         E = Es[cellidx]
         @test elementinfo.cellvolumes[cellidx] ≈ L * A
 
-        Γ = global2local_transf_matrix(coords...)
+        Γ = zeros(2,ndim*2)
+        R = compute_local_axes(coords[1], coords[2])
+        Γ[1,1:ndim] = R[:,1]
+        Γ[2,ndim+1:2*ndim] = R[:,1]
+
         Ke_m = (A*E/L)*Γ'*[1 -1; -1 1]*Γ
         Ke = elementinfo.Kes[cellidx]
         @test Ke_m ≈ Ke
