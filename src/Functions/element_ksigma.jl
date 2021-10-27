@@ -42,13 +42,13 @@ function TrussElementKσ(problem::TrussProblem{xdim, T}, solver::AbstractFEASolv
         γ = vcat(-R[:,1], R[:,1])
         push!(EALγ_s, (E*A/L)*γ)
 
-        δmat .= 0.0
+        fill!(δmat, 0.0)
         for i=2:size(R,2)
             δ = vcat(-R[:,i], R[:,i])
             # @assert δ' * γ ≈ 0
             δmat .+= δ * δ'
         end
-        push!(δmat_s, δmat)
+        push!(δmat_s, copy(δmat))
         push!(L_s, T(L))
 
         push!(Kσes, zeros(T, ndof_pc, ndof_pc))

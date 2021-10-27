@@ -7,20 +7,20 @@ using Test, SafeTestsets
 #     include("topopt_problems/problems.jl")
 #     include("topopt_problems/metadata.jl")
 # end
-# @safetestset "Functions" begin
+@safetestset "Functions" begin
     # include("functions/test_common_fns.jl")
-    # include("functions/test_buckling_fns.jl")
-# end
+    include("functions/test_buckling_fns.jl")
+end
 # @safetestset "Solver" begin
 #     include("fea/solvers.jl")
 # end
-@safetestset "Truss Problem Tests" begin
+# @safetestset "Truss Problem Tests" begin
     # include("truss_topopt_problems/test_problem.jl")
     # include("truss_topopt_problems/test_fea.jl")
     # include("truss_topopt_problems/test_geometric_stiffness.jl")
-    include("truss_topopt_problems/test_buckling.jl")
+    # include("truss_topopt_problems/test_buckling.jl")
     # include("truss_topopt_problems/test_buckling_optimize.jl")
-end
+# end
 # @safetestset "Examples" begin
 #     @safetestset "CSIMP" begin
 #         include("examples/csimp.jl")
