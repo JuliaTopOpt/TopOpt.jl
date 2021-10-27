@@ -1,7 +1,7 @@
-using AbstractPlotting: lift, cam3d!, Point3f0, Vec3f0, Figure, Auto, linesegments!, Point2f0
-using AbstractPlotting.MakieLayout: DataAspect, Axis, labelslidergrid!, set_close_to!,
-    labelslider!, LScene
 import .Makie
+using .Makie: lift, cam3d!, Point3f0, Vec3f0, Figure, Auto, linesegments!, Point2f0
+using .Makie: DataAspect, Axis, labelslidergrid!, set_close_to!,
+    labelslider!, LScene
 
 using ...TopOpt.TopOptProblems: getdim
 using ..TrussTopOptProblems: TrussProblem, get_fixities_node_set_name
@@ -31,7 +31,7 @@ function visualize(problem::TrussProblem, u;
     ncells = Ferrite.getncells(problem)
     nnodes = Ferrite.getnnodes(problem)
 
-    fig = Figure(resolution = (1200, 800))
+    fig = Figure() #resolution = (1200, 800)
 
     if topology !== nothing
         @assert(ncells == length(topology))
@@ -91,11 +91,11 @@ function visualize(problem::TrussProblem, u;
 
     # * undeformed truss elements
     element_linewidth = lift(s -> a.*s, lsgrid.sliders[4].value)
-    linesegments!(ax1, edges_pts, 
+    linesegments!(edges_pts, 
                   linewidth = element_linewidth,
                   color = undeformed_mesh_color)
 
-    # * deformed truss elements
+    # # * deformed truss elements
     if norm(u) > eps()
         node_dofs = problem.metadata.node_dofs
         @assert length(u) == ndim * nnodes
@@ -103,7 +103,7 @@ function visualize(problem::TrussProblem, u;
             [PtT(nodes[cell.nodes[1]].x) + PtT(u[node_dofs[:,cell.nodes[1]]]*s) => 
              PtT(nodes[cell.nodes[2]].x) + PtT(u[node_dofs[:,cell.nodes[2]]]*s) for cell in problem.truss_grid.grid.cells], 
             lsgrid.sliders[1].value)
-        linesegments!(ax1, exagg_edge_pts, 
+        linesegments!(exagg_edge_pts, 
                       linewidth = element_linewidth,
                       color = deformed_mesh_color)
     end
@@ -118,7 +118,6 @@ function visualize(problem::TrussProblem, u;
             lsgrid.sliders[2].value)
         scaled_fix_dirs = lift(s->fill(PtT(dir*s), length(fixed_node_ids)), lsgrid.sliders[2].value)
         Makie.arrows!(
-            ax1,
             scaled_base_pts,
             scaled_fix_dirs,
             arrowcolor=:orange,
@@ -131,7 +130,6 @@ function visualize(problem::TrussProblem, u;
     scaled_load_dirs = lift(s->[PtT(force/norm(force)*s) for force in values(problem.force)], 
         lsgrid.sliders[3].value)
     Makie.arrows!(
-        ax1,
         [PtT(nodes[node_id].x) for node_id in keys(problem.force)],
         scaled_load_dirs,
         arrowcolor=:purple,

@@ -89,7 +89,7 @@ gm_ins_dir = joinpath(@__DIR__, "instances", "ground_meshes");
     file_name = "tim_$(problem_dim).json"
     problem_file = joinpath(gm_ins_dir, file_name)
 
-    mats = TrussFEAMaterial(1.0, 0.3);
+    mats = TrussFEAMaterial(10.0, 0.3);
     crossecs = TrussFEACrossSec(800.0);
 
     node_points, elements, _, _ , fixities, load_cases = load_truss_json(problem_file)
@@ -147,13 +147,14 @@ gm_ins_dir = joinpath(@__DIR__, "instances", "ground_meshes");
 
     # * Before optimization, check initial design stability
     @test isfinite(logdet(cholesky(buckling_matrix_constr(x0))))
+    @test vol_constr(x0) <= 0
 
     m = Model(obj)
     addvar!(m, zeros(length(x0)), ones(length(x0)))
     Nonconvex.add_ineq_constraint!(m, vol_constr)
     Nonconvex.add_sd_constraint!(m, buckling_matrix_constr)
 
-    Nonconvex.NonconvexCore.show_residuals[] = true
+    Nonconvex.NonconvexCore.show_residuals[] = false
     alg = SDPBarrierAlg(sub_alg=IpoptAlg())
     options = SDPBarrierOptions(sub_options=IpoptOptions(max_iter=200))
     r = Nonconvex.optimize(m, alg, x0, options = options)
@@ -163,6 +164,8 @@ gm_ins_dir = joinpath(@__DIR__, "instances", "ground_meshes");
     @test isfinite(logdet(cholesky(buckling_matrix_constr(r.minimizer))))
 
     # using Makie
+    # import GLMakie
     # using TopOpt.TrussTopOptProblems.TrussVisualization: visualize
     # fig = visualize(problem; topology=r.minimizer)
+    # Makie.display(fig)
 end
