@@ -53,7 +53,7 @@ for i in 1:length(problems)
     )
     #options = Nonconvex.PercivalOptions()
     optimizer = Optimizer(
-        obj, constr, x0, MMA87(), #Nonconvex.PercivalAlg(),
+        obj, constr, x0, MMA87(), #PercivalAlg(),
         options = options, convcriteria = convcriteria,
     )
 

@@ -36,7 +36,7 @@ for p in [1.0, 2.0, 3.0]
             logsumexp(s) - log(length(s)) - thr,
         )
     end
-    alg = Nonconvex.PercivalAlg()
+    alg = PercivalAlg()
     options = Nonconvex.PercivalOptions()
     optimizer = Optimizer(
         obj, constr, x, alg,
