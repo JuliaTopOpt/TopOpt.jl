@@ -20,7 +20,7 @@ Base.show(::IO, ::MIME{Symbol("text/plain")}, ::CSIMPOptions) = println("TopOpt 
 function CSIMPOptions(::Type{T} = Float64; 
                         steps = 40, 
                         p_gen = nothing,
-                        initial_options = Nonconvex.MMAOptions(), 
+                        initial_options = MMAOptions(), 
                         pstart = T(1), 
                         pfinish = T(5), 
                         reuse = false,
@@ -72,7 +72,7 @@ end
 
 function MMAOptionsGen(;
     steps::Int = 40, 
-    initial_options = Nonconvex.MMAOptions(), 
+    initial_options = MMAOptions(), 
     ftol_gen = nothing, 
     xtol_gen = nothing,
     grtol_gen = nothing,
@@ -195,7 +195,7 @@ function (c_simp::ContinuationSIMP)(
 
     update!(c_simp, 1)
     # Does the first function evaluation
-    reset!(workspace, x0)
+    Nonconvex.NonconvexCore.reset!(workspace, x0)
     c_simp.callback(0)
     r = c_simp.simp(workspace)
 
@@ -206,7 +206,7 @@ function (c_simp::ContinuationSIMP)(
     for i in 1:c_simp.options.steps
         c_simp.callback(i)
         update!(c_simp, i+1)
-        reset!(workspace)
+        Nonconvex.NonconvexCore.reset!(workspace)
 
         maxiter = 1
         workspace.options.maxiter = maxiter

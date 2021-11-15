@@ -1,4 +1,4 @@
-using TopOpt, Nonconvex, Zygote, FiniteDifferences, LinearAlgebra, Test, Random, SparseArrays
+using TopOpt, Zygote, FiniteDifferences, LinearAlgebra, Test, Random, SparseArrays
 const FDM = FiniteDifferences
 using TopOpt: ndofs
 using Ferrite: ndofs_per_cell, getncells
