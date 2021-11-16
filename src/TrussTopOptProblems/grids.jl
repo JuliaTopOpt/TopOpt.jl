@@ -27,7 +27,7 @@ function TrussGrid(node_points::Dict{iT, SVector{xdim, T}}, elements::Dict{iT, T
         @assert length(crosssecs) == ncells
         crosssecs = convert(Vector{TrussFEACrossSec{T}}, crosssecs)
     elseif crosssecs isa TrussFEACrossSec
-        crosssecs = [TrussFEACrossSec{T}(crosssecs) for i=1:ncells]
+        crosssecs = [convert(TrussFEACrossSec{T}, crosssecs) for i=1:ncells]
     else
         error("Invalid crossecs: $(crossecs)")
     end

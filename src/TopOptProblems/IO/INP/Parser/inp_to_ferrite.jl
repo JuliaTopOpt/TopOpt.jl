@@ -13,7 +13,7 @@ function inpcelltype(::Type{CT}) where CT
         return "CPS8"
     elseif CT === Hexahedron
         return "C3D8"
-    elseif CT === QuadraticHexahedron
+    elseif CT === Ferrite.QuadraticHexahedron
         return "C3D20"
     else
         return ""

@@ -7,7 +7,7 @@ end
 Base.show(::IO, ::MIME{Symbol("text/plain")}, ::SIMPResult) = println("TopOpt SIMP result")
 
 function NewSIMPResult(::Type{T}, optimizer, ncells) where {T}
-    return SIMPResult(fill(T(NaN), ncells), T(NaN), Nonconvex.ConvergenceState(), 0)
+    return SIMPResult(fill(T(NaN), ncells), T(NaN), NonconvexCore.ConvergenceState(), 0)
 end
 
 """

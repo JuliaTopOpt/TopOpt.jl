@@ -19,7 +19,7 @@ whichdevice(::Any) = CPU()
 # GPU utilities
 module GPUUtils end
 
-@reexport using Nonconvex
+@reexport using Nonconvex, NonconvexMMA, NonconvexSemidefinite, NonconvexPercival
 
 # Utilities
 include(joinpath("Utilities", "Utilities.jl"))
@@ -91,6 +91,7 @@ export  TopOpt,
         SensFilter,
         DensityFilter,
         Displacement,
+        Compliance,
         CG,
         Direct,
         Assembly,

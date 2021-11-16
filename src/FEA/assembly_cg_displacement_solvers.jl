@@ -10,7 +10,7 @@
     prev_penalty::TP
     xmin::T
     cg_max_iter::Integer
-    tol::T
+    abstol::T
     cg_statevars::CGStateVariables{T, <:AbstractVector{T}}
     preconditioner
     preconditioner_initialized::Ref{Bool}
@@ -21,7 +21,7 @@ function PCGDisplacementSolver(sp::StiffnessTopOptProblem{dim, T};
     conv = DefaultCriteria(),
     xmin = T(1)/1000,
     cg_max_iter = 700,
-    tol = xmin,
+    abstol = zero(real(T)),
     penalty = PowerPenalty{T}(1),
     prev_penalty = deepcopy(penalty),
     preconditioner = identity,
@@ -38,7 +38,7 @@ function PCGDisplacementSolver(sp::StiffnessTopOptProblem{dim, T};
     us = similar(u) .= 0
     cg_statevars = CGStateVariables{eltype(u), typeof(u)}(us, similar(u), similar(u))
 
-    return PCGDisplacementSolver(sp, globalinfo, elementinfo, u, lhs, rhs, vars, penalty, prev_penalty, xmin, cg_max_iter, tol, cg_statevars, preconditioner, Ref(false), conv)
+    return PCGDisplacementSolver(sp, globalinfo, elementinfo, u, lhs, rhs, vars, penalty, prev_penalty, xmin, cg_max_iter, abstol, cg_statevars, preconditioner, Ref(false), conv)
 end
 
 function (s::PCGDisplacementSolver{T})(
@@ -61,7 +61,7 @@ function (s::PCGDisplacementSolver{T})(
         end
     end
 
-    @unpack cg_max_iter, tol, cg_statevars = s
+    @unpack cg_max_iter, abstol, cg_statevars = s
     @unpack preconditioner, preconditioner_initialized = s
 
     _K = K isa Symmetric ? K.data : K
@@ -73,8 +73,8 @@ function (s::PCGDisplacementSolver{T})(
     end
     op = MatrixOperator(_K, f, s.conv)
     if preconditioner === identity
-        return cg!(lhs, op, f, tol=tol, maxiter=cg_max_iter, log=false, statevars=cg_statevars, initially_zero=false)
+        return cg!(lhs, op, f, abstol=abstol, maxiter=cg_max_iter, log=false, statevars=cg_statevars, initially_zero=false)
     else
-        return cg!(lhs, op, f, tol=tol, maxiter=cg_max_iter, log=false, statevars=cg_statevars, initially_zero=false, Pl = preconditioner)
+        return cg!(lhs, op, f, abstol=abstol, maxiter=cg_max_iter, log=false, statevars=cg_statevars, initially_zero=false, Pl = preconditioner)
     end
 end

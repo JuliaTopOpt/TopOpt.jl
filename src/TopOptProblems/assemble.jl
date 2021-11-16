@@ -26,6 +26,7 @@ function assemble!(globalinfo::GlobalFEAInfo{T}, problem::StiffnessTopOptProblem
 
     celliterator = CellIterator(dh)
     for (i,cell) in enumerate(celliterator)
+        # get global_dofs for cell#i
         celldofs!(global_dofs, dh, i)
         fe = fes[i]
         _Ke = rawmatrix(Kes[i])
@@ -65,6 +66,7 @@ function assemble!(globalinfo::GlobalFEAInfo{T}, problem::StiffnessTopOptProblem
         end
     end
 
+    #* apply boundary condition
     _K = TK <: Symmetric ? K.data : K        
     apply!(_K, f, ch)
 

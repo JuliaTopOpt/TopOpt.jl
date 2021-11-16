@@ -1,6 +1,6 @@
 module Visualization
 
-using ..TopOptProblems: AbstractTopOptProblem, StiffnessTopOptProblem
+using ..TopOptProblems: AbstractTopOptProblem, StiffnessTopOptProblem, QuadraticHexahedron
 using Ferrite, VTKDataTypes, Requires
 
 include("mesh_types.jl")

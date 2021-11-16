@@ -55,6 +55,37 @@ All the following features are available in TopOpt.jl but the documentation is c
 - Heaviside projection
 - Handling load uncertainty in compliance-based topology optimization
 
+![gif1](https://user-images.githubusercontent.com/19524993/138464511-2685f3fe-e7c5-482e-8b06-43ab0fb82990.gif)
+![gif2](https://user-images.githubusercontent.com/19524993/138464828-88f0ffcb-01f7-43b7-8d17-f5d201e95aa3.gif)
+![gif3](https://user-images.githubusercontent.com/19524993/138464845-d0b289b7-0fe9-4408-be57-fe697b5d671e.gif)
+
+
+## Citation
+
+To cite this package, you can cite the following 2 conference publications.
+
+- TopOpt.jl: An efficient and high-performance package for topology optimization of continuum structures in the Julia programming language
+
+```bibtex
+    @inproceedings{tarek2019topoptjl,
+      title={TopOpt.jl: An efficient and high-performance package for topology optimization of continuum structures in the Julia programming language},
+      author={Tarek, Mohamed},
+      booktitle={Proceedings of the 13th World Congress of Structural and Multidisciplinary Optimization},
+      year={2019}
+    }
+```
+
+- [TopOpt.jl: Truss and Continuum Topology Optimization, Interactive Visualization, Automatic Differentiation and More](https://web.mit.edu/yijiangh/www/papers/topopt_jl_WCSMO2021.pdf)
+
+```bibtex
+    @inproceedings{huang2021topoptjl,
+      title={TopOpt.jl: Truss and Continuum Topology Optimization, Interactive Visualization, Automatic Differentiation and More},
+      author={Huang, Yijiang and Tarek, Mohamed},
+      booktitle={Proceedings of the 14th World Congress of Structural and Multidisciplinary Optimization},
+      year={2021}
+    }
+```
+
 ## Contribute
 
 We always welcome new contributors! Feel free to open an issue or reach out to us via email if you want to collaborate. There are plenty of things to do including beginner friendly tasks and research-oriented tasks. You can help us create the best topology optimization ecosystem in the world! Some beginner-friendly ideas you could be working on include:

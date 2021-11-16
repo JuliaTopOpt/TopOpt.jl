@@ -1,7 +1,15 @@
 import JSON
 
-function parse_truss_json(file_path::String)
-    data = JSON.parsefile(file_path)
+# add_format(format"JSON", "JSON", [".json"])
+
+function load_truss_json(filepath::AbstractString)
+    open(filepath) do io
+        load_truss_json(io)
+    end
+end
+
+function load_truss_json(io::IO) #io::Stream{format"JSON"})
+    data = JSON.parse(io)
     ndim = data["dimension"]
     n = data["node_num"]
     m = data["element_num"]
