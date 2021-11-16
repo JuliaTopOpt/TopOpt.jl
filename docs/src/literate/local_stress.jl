@@ -37,7 +37,7 @@ for p in [1.0, 2.0, 3.0]
         )
     end
     alg = PercivalAlg()
-    options = Nonconvex.PercivalOptions()
+    options = PercivalOptions()
     optimizer = Optimizer(
         obj, constr, x, alg,
         options = options,

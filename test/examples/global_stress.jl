@@ -51,7 +51,7 @@ for i in 1:length(problems)
     options = MMAOptions(
         maxiter=2000, tol = Nonconvex.Tolerance(kkt = 1e-4),
     )
-    #options = Nonconvex.PercivalOptions()
+    #options = PercivalOptions()
     optimizer = Optimizer(
         obj, constr, x0, MMA87(), #PercivalAlg(),
         options = options, convcriteria = convcriteria,
