@@ -30,7 +30,7 @@ include(joinpath("TopOptProblems", "TopOptProblems.jl"))
 
 using LinearAlgebra, Statistics
 using Reexport, Parameters, Setfield
-@reexport using .TopOptProblems, Optim, LineSearches
+@reexport using .TopOptProblems
 
 # Truss Topopology optimization problem definitions
 include(joinpath("TrussTopOptProblems", "TrussTopOptProblems.jl"))

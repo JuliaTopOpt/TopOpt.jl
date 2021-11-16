@@ -8,8 +8,7 @@ using ..Utilities, ForwardDiff, LinearAlgebra, Requires
 using ..TrussTopOptProblems: getA, compute_local_axes
 
 using Parameters: @unpack
-using TimerOutputs, Ferrite, StaticArrays
-using StatsFuns, MappedArrays, LazyArrays
+using TimerOutputs, Ferrite, StaticArrays, StatsFuns
 using SparseArrays, Statistics, ChainRulesCore, Zygote
 using Nonconvex: Nonconvex
 
