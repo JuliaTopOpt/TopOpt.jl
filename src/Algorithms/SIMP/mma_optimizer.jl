@@ -1,3 +1,5 @@
+using NonconvexMMA
+
 abstract type AbstractOptimizer end
 
 @params mutable struct Optimizer{Tdev} <: AbstractOptimizer
@@ -18,10 +20,10 @@ function Optimizer(
     obj,
     constr,
     vars,
-    opt = Nonconvex.MMA87(),
+    opt = MMA87(),
     device::Tdev = CPU();
-    options = Nonconvex.MMAOptions(),
-    convcriteria = Nonconvex.KKTCriteria(),
+    options = MMAOptions(),
+    convcriteria = KKTCriteria(),
 ) where {Tdev <: AbstractDevice}
 
     T = eltype(vars)
@@ -30,7 +32,7 @@ function Optimizer(
     model = Nonconvex.Model(obj)
     addvar!(model, zeros(T, nvars), ones(T, nvars))
     add_ineq_constraint!(model, Nonconvex.FunctionWrapper(constr, length(constr(x0))))
-    workspace = Nonconvex.Workspace(model, opt, x0; options = options, convcriteria = convcriteria)
+    workspace = NonconvexMMA.Workspace(NonconvexCore.tovecmodel(model)[1], opt, x0; options = options, convcriteria = convcriteria)
     return Optimizer(model, opt, workspace, device)
 end
 
@@ -43,9 +45,9 @@ end
 function (o::Optimizer)(x0::AbstractVector)
     @unpack workspace = o
     @unpack options, model = workspace
-    reset!(workspace, x0)
+    Nonconvex.NonconvexCore.reset!(workspace, x0)
     setoptions!(workspace, options)
-    mma_results = Nonconvex.optimize!(workspace)
+    mma_results = Nonconvex.NonconvexCore.optimize!(workspace)
     return mma_results
 end
 function setoptions!(workspace::Nonconvex.Workspace, options)
@@ -53,38 +55,9 @@ function setoptions!(workspace::Nonconvex.Workspace, options)
     return workspace
 end
 
-function reset!(w::Nonconvex.Workspace, x0 = nothing)
-    if x0 !== nothing
-        w.x0 .= x0
-    end
-    return w
-end
-function reset!(w::Nonconvex.MMAWorkspace, x0 = nothing)
-    @unpack solution = w
-    outer_iter, iter, fcalls = 0, 0, 0, 0
-    @pack! w = fcalls, iter, outer_iter
-    if x0 !== nothing
-        w.x0 .= x0
-        w.tempx .= solution.prevx
-        solution.prevx .= solution.x
-        solution.x .= x0
-        Nonconvex.updateapprox!(w.dualmodel, x0)
-    end
-    Nonconvex.assess_convergence!(w)
-    return w
-end
-
-function reset!(w::Nonconvex.AugLagWorkspace, x0 = nothing)
-    w.counter[] = 0
-    if x0 !== nothing
-        w.x0 .= x0
-    end
-    return w
-end
-
 # For adaptive SIMP
 function (o::Optimizer)(workspace::Nonconvex.Workspace)
-    mma_results = Nonconvex.optimize!(workspace)
+    mma_results = Nonconvex.NonconvexCore.optimize!(workspace)
     return mma_results
 end
 
@@ -102,7 +75,7 @@ end
 end
 Base.show(::IO, ::MIME{Symbol("text/plain")}, ::MMAOptionsGen) = println("TopOpt MMA options generator")
 function (g::MMAOptionsGen)(i)
-    Nonconvex.MMAOptions(
+    MMAOptions(
         maxiter = g.maxiter(i),
         outer_maxiter = g.outer_maxiter(i),
         tol = g.tol(i),
@@ -117,7 +90,7 @@ function (g::MMAOptionsGen)(i)
 end
 
 function (g::MMAOptionsGen)(options, i)
-    Nonconvex.MMAOptions(
+    MMAOptions(
         maxiter = optionalcall(g, :maxiter, options, i),
         outer_maxiter = optionalcall(g, :outer_maxiter, options, i),
         tol = optionalcall(g, :tol, options, i),

@@ -9,7 +9,7 @@
 # What follows is a program spliced with comments.
 #md # The full program, without comments, can be found in the next [section](@ref simp-plain-program).
 
-using TopOpt 
+using TopOpt
 
 # ### Define the problem
 E = 1.0 # Young’s modulus
@@ -32,7 +32,7 @@ rmin = 2.0; # density filter radius
 # ### Define a finite element solver
 penalty = TopOpt.PowerPenalty(3.0)
 solver = FEASolver(
-    Displacement, Direct, problem, xmin = xmin, penalty = penalty,
+    Direct, problem, xmin = xmin, penalty = penalty,
 )
 
 # ### Define compliance objective
@@ -47,13 +47,13 @@ constr = x -> volfrac(filter(x)) - V
 # You can enable the iteration printouts with `Nonconvex.show_residuals[] = true`
 
 # ### Define subproblem optimizer
-mma_options = options = Nonconvex.MMAOptions(
+mma_options = options = MMAOptions(
     maxiter = 3000, tol = Nonconvex.Tolerance(x = 1e-3, f = 1e-3, kkt = 0.001),
 )
 convcriteria = Nonconvex.KKTCriteria()
 x0 = fill(V, length(solver.vars))
 optimizer = Optimizer(
-    obj, constr, x0, Nonconvex.MMA87(),
+    obj, constr, x0, MMA87(),
     options = mma_options, convcriteria = convcriteria,
 )
 

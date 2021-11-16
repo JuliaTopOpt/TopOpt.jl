@@ -45,7 +45,7 @@ function TrussProblem(::Type{Val{CellType}}, node_points::Dict{iT, SVector{xdim,
         @assert length(mats) == ncells
         mats = convert(Vector{TrussFEAMaterial{T}}, mats)
     elseif mats isa TrussFEAMaterial
-        mats = [TrussFEAMaterial{T}(mats) for i=1:ncells]
+        mats = [convert(TrussFEAMaterial{T}, mats) for i=1:ncells]
     else
         error("Invalid mats: $(mats)")
     end
@@ -92,7 +92,7 @@ function TrussProblem(::Type{Val{CellType}}, node_points::Dict{iT, SVector{xdim,
 
     ch = ConstraintHandler(dh)
     for i=1:xdim
-        dbc = Dirichlet(:u, getnodeset(truss_grid.grid, get_fixities_node_set_name(i)), (x,t)->T[0], [i])
+        dbc = Dirichlet(:u, getnodeset(truss_grid.grid, get_fixities_node_set_name(i)), (x,t)->zeros(T,1), [i])
         add!(ch, dbc)
     end
     close!(ch)
@@ -138,23 +138,3 @@ end
 function default_quad_order(::TrussProblem)
     return 1
 end
-
-#######################################
-# * extra Cell types for Line elements
-# https://github.com/lijas/Ferrite.jl/blob/line2/src/Grid/grid.jl
-
-# const Line2d = Cell{2,2,2}
-# const Line3d = Cell{3,2,2}
-# const QuadraticLine = Cell{1,3,2}
-
-# # 1D: vertices, Line is defined in Ferrite
-# Ferrite.faces(c::Union{QuadraticLine}) = (c.nodes[1], c.nodes[2])
-# Ferrite.vertices(c::Union{Line2d,Line3d,QuadraticLine}) = (c.nodes[1], c.nodes[2])
-
-# # 2D: vertices, faces
-# Ferrite.faces(c::Line2d) = ((c.nodes[1],c.nodes[2]),) 
-
-# # 3D: vertices, edges, faces
-# Ferrite.edges(c::Line3d) = ((c.nodes[1],c.nodes[2]),) 
-
-# Ferrite.default_interpolation(::Union{Type{Line},Type{Line2d},Type{Line3d}}) = Lagrange{1,RefCube,1}()

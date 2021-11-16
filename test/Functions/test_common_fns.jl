@@ -1,17 +1,19 @@
-using TopOpt, Nonconvex, Zygote, FiniteDifferences, LinearAlgebra, Test, Random, SparseArrays
+using TopOpt, Zygote, FiniteDifferences, LinearAlgebra, Test, Random, SparseArrays
 const FDM = FiniteDifferences
+using TopOpt: ndofs
+using Ferrite: ndofs_per_cell, getncells
 
 Random.seed!(1)
 
 @testset "Compliance" begin
-    nels = (10, 10)
+    nels = (2, 2)
     problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
     for p in (1.0, 2.0, 3.0)
-        solver = FEASolver(Displacement, Direct, problem, xmin = 0.01, penalty = TopOpt.PowerPenalty(p))
+        solver = FEASolver(Direct, problem, xmin = 0.01, penalty = TopOpt.PowerPenalty(p))
         comp = Compliance(problem, solver)
         for i in 1:3
             x = clamp.(rand(prod(nels)), 0.1, 1.0)
-            val1, grad1 = Nonconvex.value_gradient(comp, x)
+            val1, grad1 = NonconvexCore.value_gradient(comp, x)
             val2, grad2 = comp(x), Zygote.gradient(comp, x)[1]
             grad3 = FDM.grad(central_fdm(5, 1), comp, x)[1]
             @test val1 == val2
@@ -21,16 +23,37 @@ Random.seed!(1)
     end
 end
 
-@testset "Volume" begin
-    nels = (10, 10)
+@testset "Displacement" begin
+    nels = (2, 2)
     problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
     for p in (1.0, 2.0, 3.0)
-        solver = FEASolver(Displacement, Direct, problem, xmin = 0.01, penalty = TopOpt.PowerPenalty(p))
+        solver = FEASolver(Direct, problem, xmin = 0.01, penalty = TopOpt.PowerPenalty(p))
+        dp = Displacement(solver)
+        u = dp(solver.vars)
+        for _ in 1:3
+             x = clamp.(rand(prod(nels)), 0.1, 1.0)
+             v = rand(length(u))
+             f = x -> dot(dp(x), v)
+             val1, grad1 = NonconvexCore.value_gradient(f, x)
+             val2, grad2 = f(x), Zygote.gradient(f, x)[1]
+             grad3 = FDM.grad(central_fdm(5, 1), f, x)[1]
+             @test val1 == val2
+             @test norm(grad1 - grad2) == 0
+             @test norm(grad2 - grad3) <= 1e-4
+        end
+    end
+end
+
+@testset "Volume" begin
+    nels = (2, 2)
+    problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
+    for p in (1.0, 2.0, 3.0)
+        solver = FEASolver(Direct, problem, xmin = 0.01, penalty = TopOpt.PowerPenalty(p))
         vol = Volume(problem, solver)
         constr = x -> vol(x) - 0.3
         for i in 1:3
             x = rand(prod(nels))
-            val1, grad1 = Nonconvex.value_gradient(constr, x)
+            val1, grad1 = NonconvexCore.value_gradient(constr, x)
             val2, grad2 = constr(x), Zygote.gradient(constr, x)[1]
             grad3 = FDM.grad(central_fdm(5, 1), constr, x)[1]
             @test val1 == val2
@@ -41,16 +64,16 @@ end
 end
 
 @testset "DensityFilter" begin
-    nels = (10, 10)
+    nels = (2, 2)
     problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
     for p in (1.0, 2.0, 3.0)
-        solver = FEASolver(Displacement, Direct, problem, xmin = 0.01, penalty = TopOpt.PowerPenalty(p))
+        solver = FEASolver(Direct, problem, xmin = 0.01, penalty = TopOpt.PowerPenalty(p))
         filter = TopOpt.DensityFilter(solver, rmin = 4.0)
         for i in 1:3
             x = rand(prod(nels))
             v = rand(prod(nels))
             f = FunctionWrapper(x -> dot(filter(x), v), 1)
-            val1, grad1 = Nonconvex.value_gradient(f, x)
+            val1, grad1 = NonconvexCore.value_gradient(f, x)
             val2, grad2 = f(x), Zygote.gradient(f, x)[1]
             grad3 = FDM.grad(central_fdm(5, 1), f, x)[1]
             @test val1 == val2
@@ -61,10 +84,10 @@ end
 end
 
 @testset "SensFilter" begin
-    nels = (10, 10)
+    nels = (2, 2)
     problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0))
     solver = FEASolver(
-        Displacement, Direct, problem, xmin = 1e-3, penalty = PowerPenalty(3.0),
+        Direct, problem, xmin = 1e-3, penalty = PowerPenalty(3.0),
     )
     sensfilter = SensFilter(solver, rmin = 4.0)
     x = rand(length(solver.vars))
@@ -75,7 +98,7 @@ end
 end
 
 @testset "Block compliance" begin
-    nels = (10, 10)
+    nels = (2, 2)
     nloads = 10
     base_problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
     dense_load_inds = vec(TopOpt.TopOptProblems.get_surface_dofs(base_problem))
@@ -87,14 +110,14 @@ end
     end
     problem = MultiLoad(base_problem, F)
     for p in (1.0, 2.0, 3.0)
-        solver = FEASolver(Displacement, Direct, problem, xmin = 0.01, penalty = TopOpt.PowerPenalty(p))
+        solver = FEASolver(Direct, problem, xmin = 0.01, penalty = TopOpt.PowerPenalty(p))
         exact_svd_block = BlockCompliance(problem, solver, method = :exact)
         constr = Nonconvex.FunctionWrapper(x -> exact_svd_block(x) .- 1000.0, length(exact_svd_block(solver.vars)))
         for i in 1:3
             x = clamp.(rand(prod(nels)), 0.1, 1.0)
             v = rand(nloads)
             f = FunctionWrapper(x -> dot(constr(x), v), 1)
-            val1, grad1 = Nonconvex.value_gradient(f, x)
+            val1, grad1 = NonconvexCore.value_gradient(f, x)
             val2, grad2 = f(x), Zygote.gradient(f, x)[1]
             grad3 = FDM.grad(central_fdm(5, 1), f, x)[1]
             @test val1 == val2
@@ -105,17 +128,17 @@ end
 end
 
 @testset "Local stress" begin
-    nels = (10, 10)
+    nels = (2, 2)
     problem = PointLoadCantilever(Val{:Quadratic}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
     for F in (MacroVonMisesStress, MicroVonMisesStress)
         for p in (1.0, 2.0, 3.0)
-            solver = FEASolver(Displacement, Direct, problem, xmin = 0.001, penalty = TopOpt.PowerPenalty(p))
+            solver = FEASolver(Direct, problem, xmin = 0.001, penalty = TopOpt.PowerPenalty(p))
             stress = F(solver)
             for i in 1:3
                 x = clamp.(rand(prod(nels)), 0.1, 1.0)
                 v = rand(prod(nels))
                 f = FunctionWrapper(x -> dot(stress(x), v), 1)
-                val1, grad1 = Nonconvex.value_gradient(f, x)
+                val1, grad1 = NonconvexCore.value_gradient(f, x)
                 val2, grad2 = f(x), Zygote.gradient(f, x)[1]
                 grad3 = FDM.grad(central_fdm(5, 1), f, x)[1]
                 @test val1 == val2
@@ -125,17 +148,17 @@ end
         end
     end
 
-    nels = (10, 10, 2)
+    nels = (2, 2, 2)
     problem = PointLoadCantilever(Val{:Quadratic}, nels, (1.0, 1.0, 1.0), 1.0, 0.3, 1.0)
     for F in (MacroVonMisesStress, MicroVonMisesStress)
         for p in (1.0, 2.0, 3.0)
-            solver = FEASolver(Displacement, Direct, problem, xmin = 0.001, penalty = TopOpt.PowerPenalty(p))
+            solver = FEASolver(Direct, problem, xmin = 0.001, penalty = TopOpt.PowerPenalty(p))
             stress = F(solver)
             for i in 1:3
                 x = clamp.(rand(prod(nels)), 0.1, 1.0)
                 v = rand(prod(nels))
                 f = FunctionWrapper(x -> dot(stress(x), v), 1)
-                val1, grad1 = Nonconvex.value_gradient(f, x)
+                val1, grad1 = NonconvexCore.value_gradient(f, x)
                 val2, grad2 = f(x), Zygote.gradient(f, x)[1]
                 grad3 = FDM.grad(central_fdm(5, 1), f, x)[1]
                 @test val1 == val2

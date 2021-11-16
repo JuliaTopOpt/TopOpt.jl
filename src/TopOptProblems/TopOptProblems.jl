@@ -10,10 +10,10 @@ import Distributions
 using VTKDataTypes
 
 import Ferrite: assemble!
+const QuadraticHexahedron = Ferrite.Cell{3,20,6}
 
 abstract type AbstractTopOptProblem end
 
-include("utils.jl")
 include("grids.jl")
 include("metadata.jl")
 include("problem_types.jl")

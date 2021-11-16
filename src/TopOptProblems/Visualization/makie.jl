@@ -1,8 +1,7 @@
-import AbstractPlotting
 import .Makie
 using LinearAlgebra: norm
-using AbstractPlotting: lift, cam3d!, Point3f0, Vec3f0, Figure, Auto
-using AbstractPlotting.MakieLayout: DataAspect, Axis, labelslidergrid!, set_close_to!,
+using .Makie: lift, cam3d!, Point3f0, Vec3f0, Figure, Auto
+using .Makie: DataAspect, Axis, labelslidergrid!, set_close_to!,
     labelslider!, LScene
 using GeometryBasics: GLTriangleFace
 using ..TopOptProblems: getcloaddict
@@ -12,11 +11,11 @@ using ..TopOptProblems: getcloaddict
 
 # https://github.com/JuliaPlots/AbstractPlotting.jl/blob/f16321dee2c77ac9c753fed9b1074a2df7b10db8/src/utilities/utilities.jl#L188
 # https://github.com/JuliaPlots/AbstractPlotting.jl/blob/444813136a506eba8b5b03e2125c7a5f24e825cb/src/conversions.jl#L522
-function AbstractPlotting.to_vertices(nodes::Vector{<:Ferrite.Node})
+function Makie.to_vertices(nodes::Vector{<:Ferrite.Node})
     return Point3f0.([n.x for n in nodes])
 end
 
-function AbstractPlotting.to_triangles(cells::AbstractVector{<: Ferrite.Cell})
+function Makie.to_triangles(cells::AbstractVector{<: Ferrite.Cell})
     tris = GLTriangleFace[]
     for cell in cells
         to_triangle(tris, cell)
@@ -25,7 +24,7 @@ function AbstractPlotting.to_triangles(cells::AbstractVector{<: Ferrite.Cell})
 end
 
 # https://github.com/JuliaPlots/AbstractPlotting.jl/blob/444813136a506eba8b5b03e2125c7a5f24e825cb/src/conversions.jl#L505
-function to_triangle(tris, cell::Union{Ferrite.Hexahedron, Ferrite.QuadraticHexahedron})
+function to_triangle(tris, cell::Union{Ferrite.Hexahedron, QuadraticHexahedron})
     nodes = cell.nodes
     push!(tris, GLTriangleFace(nodes[1], nodes[2], nodes[5]))
     push!(tris, GLTriangleFace(nodes[5], nodes[2], nodes[6]))
@@ -62,7 +61,7 @@ function to_triangle(tris, cell::Union{Ferrite.Triangle, Ferrite.QuadraticTriang
     push!(tris, GLTriangleFace(nodes[1], nodes[2], nodes[3]))
 end
 
-function AbstractPlotting.convert_arguments(P, x::AbstractVector{<:Ferrite.Node{N, T}}) where {N, T}
+function Makie.convert_arguments(P, x::AbstractVector{<:Ferrite.Node{N, T}}) where {N, T}
     convert_arguments(P, reinterpret(Point{N, T}, x))
 end
 

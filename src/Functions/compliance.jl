@@ -13,7 +13,7 @@
 end
 Utilities.getpenalty(c::Compliance) = c |> getsolver |> getpenalty
 Utilities.setpenalty!(c::Compliance, p) = setpenalty!(getsolver(c), p)
-Nonconvex.getdim(::Compliance) = 1
+Nonconvex.NonconvexCore.getdim(::Compliance) = 1
 
 function Compliance(problem, solver::AbstractDisplacementSolver, args...; kwargs...)
     Compliance(whichdevice(solver), problem, solver, args...; kwargs...)
@@ -98,6 +98,13 @@ function ChainRulesCore.rrule(comp::Compliance, x)
     return out, Δ -> (nothing, out_grad * Δ)
 end
 
+"""
+cell_compliance = f_e^T * u_e = u_e^T * (ρ_e * Ke) * u_e.
+d(cell compliance)/d(x_e) = f_e^T * d(u_e)/d(x_e) = f_e^T * (- K_e^-1 * d(K_e)/d(x_e) * u_e)
+                          = - (K_e^(-1) * f_e)^T * d(K_e)/d(x_e) * u_e
+                          = - u_e^T * d(ρ_e)/d(x_e) * K_e * u_e
+                          = - d(ρ_e)/d(x_e) * cell_compliance
+"""
 function compute_compliance(cell_comp::Vector{T}, grad, cell_dofs, Kes, u, 
                             black, white, varind, x, penalty, xmin) where {T}
     obj = zero(T)
@@ -120,14 +127,9 @@ function compute_compliance(cell_comp::Vector{T}, grad, cell_dofs, Kes, u,
                 p = penalty(xmin) * cell_comp[i]
             end
         else
-            d = ForwardDiff.Dual{T}(x[varind[i]], one(T))
-            if PENALTY_BEFORE_INTERPOLATION
-                p = density(penalty(d), xmin)
-            else
-                p = penalty(density(d, xmin))
-            end
-            grad[varind[i]] = -p.partials[1] * cell_comp[i]
-            obj += p.value * cell_comp[i]
+            ρe, dρe = get_ρ_dρ(x[varind[i]], penalty, xmin)
+            grad[varind[i]] = - dρe * cell_comp[i]
+            obj += ρe * cell_comp[i]
         end
     end
 
@@ -155,13 +157,8 @@ function compute_inner(inner::AbstractVector{T}, u1, u2, cell_dofs, Kes,
                     cell_comp += u1[cell_dofs[v,i]]*Ke[v,w]*u2[cell_dofs[w,i]]
                 end
             end
-            d = ForwardDiff.Dual{T}(x[varind[i]], one(T))
-            if PENALTY_BEFORE_INTERPOLATION
-                p = density(penalty(d), xmin)
-            else
-                p = penalty(density(d, xmin))
-            end
-            inner[varind[i]] = -p.partials[1] * cell_comp
+            ρe, dρe = get_ρ_dρ(x[varind[i]], penalty, xmin)
+            inner[varind[i]] = - dρe * cell_comp
         end
     end
 

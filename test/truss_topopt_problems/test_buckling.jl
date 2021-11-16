@@ -1,142 +1,140 @@
 using Test
 using LinearAlgebra
+using StaticArrays
 using Ferrite
-using Ferrite: cellid, getcoordinates, CellIterator
 
 using TopOpt
-using TopOpt.TopOptProblems: boundingbox, nnodespercell, getgeomorder, getmetadata, getdh, getE, getdim
-using TrussTopOpt.TrussTopOptProblems
-using TrussTopOpt.TrussTopOptProblems: buckling
-using TrussTopOpt.TrussTopOptProblems: getA, default_quad_order
-using IterativeSolvers
+using TopOpt.TrussTopOptProblems.TrussTopOptProblems: compute_local_axes
+using TopOpt.TopOptProblems: getE, getdh
+using TopOpt.TrussTopOptProblems: getA
 using Arpack
-using Crayons.Box
 
-problem_json = ["buckling_2d_nodal_instab.json", "buckling_2d_global_instab.json", "buckling_2d_debug.json"]
-ins_dir = joinpath(@__DIR__, "instances", "fea_examples");
+include("utils.jl")
 
-# @testset "Buckling problem solve - $(problem_json[i])" for i in 1:length(problem_json)
-    i = 3
-    file_name = problem_json[i]
-    problem_file = joinpath(ins_dir, file_name)
+fea_ins_dir = joinpath(@__DIR__, "instances", "fea_examples");
+gm_ins_dir = joinpath(@__DIR__, "instances", "ground_meshes");
 
-    node_points, elements, mats, crosssecs, fixities, load_cases = parse_truss_json(problem_file);
-    ndim, nnodes, ncells = length(node_points[1]), length(node_points), length(elements)
-    loads = load_cases["0"]
+# @testset "large displacement simulation MGZ-ex 9.1" begin
+#     problem_file = joinpath(fea_ins_dir, "mgz_geom_stiff_ex9.1.json")
 
-    problem = TrussProblem(Val{:Linear}, node_points, elements, loads, fixities, mats, crosssecs);
+#     node_points, elements, mats, crosssecs, fixities, load_cases = load_truss_json(problem_file);
 
-    # @test getdim(problem) == ndim
-    # @test Ferrite.getncells(problem) == ncells
-    # @test getE(problem) == [m.E for m in mats]
-    # @test problem.black == problem.white == falses(ncells)
-    # @test problem.force == loads
-    # @test problem.varind == 1:ncells
-    # grid = problem.ch.dh.grid
-    # @test length(grid.cells) == ncells
-    # @test getgeomorder(problem) == 1
-    # @test nnodespercell(problem) == 2
+#     P_val = 400 # kN
+#     P = Dict(2 => SVector{2}(P_val * [0.05, -1.0]))
+#     # P = load_cases["0"]
 
-    solver = FEASolver(Displacement, Direct, problem)
-    # call solver to trigger assemble!
-    solver()
-    @show solver.u
-    scene, layout = draw_truss_problem(problem; u=solver.u, 
-        default_load_scale=0.2, default_support_scale=0.2, default_arrow_size=0.03)
+#     maxit = 100
+#     utol = 1e-5
+#     x0 = fill(1.0, length(elements)) # initial design
 
-    try
-        global K, Kσ = buckling(problem, solver.globalinfo, solver.elementinfo)
-    catch err
-        println(RED_BG("ERROR: "))
-        println(err)
-        if isa(err, SingularException)
-            println(RED_FG("Linear elasticity solve failed due to mechanism."))
-            K_l = solver.globalinfo.K
-            # TODO: use sparse eigen
-            # λ, ϕ = eigs(K.data, nev = 2, which=:SM);
-            # @show λ
-            # @show ϕ
+#     # * initialize displacements as zero
+#     nnode = length(node_points)
+#     u0 = zeros(nnode*2)
 
-            # ? is this ordered by eigen values' magnitude?
-            local F = eigen(Array(K_l))
-            @show F
-            @assert abs(F.values[1] - 0.0) < eps()
+#     # * additional fields
+#     u1 = deepcopy(u0)
+#     rhs = deepcopy(u0)
 
-            # * draw eigen mode
-            scene, layout = draw_truss_problem(problem; u=F.vectors[:,1])
-        end
-        throw(err)
-    end
-    # the linear elastic model must be solved successfully to proceed on buckling calculation
-    println(GREEN_FG("Linear elasticity solved."))
+#     step = 0
+#     load_parameters = 0.0:0.05:0.5;
+#     # tracking iteration history for plotting
+#     tip_displacement = fill(0.0, length(load_parameters), 2);
 
-    ch = problem.ch
-    C = zeros(size(K, 1), length(ch.prescribed_dofs))
-    setindex!.(Ref(C), 1, ch.prescribed_dofs, 1:length(ch.prescribed_dofs))
-    # C = hcat(C, solver.u)
+#     # TODO Newton-Raphson Iterations
+#     # https://people.duke.edu/~hpgavin/cee421/truss-finite-def.pdf
+#     # https://kristofferc.github.io/JuAFEM.jl/dev/examples/hyperelasticity/
+#     for load_parameter in load_parameters
+#         # guess
+#         u1[:] = u0[:]
+#         P = Dict(2 => SVector{2}(load_parameter * P_val * [0.05, -1.0]))
 
-    # Find the maximum eigenvalue of system Kσ x = 1/λ K x
-    # The reason we do it this way is because K is guaranteed to be positive definite while Kσ is not and the LOBPCG algorithm to find generalised eigenvalues requires the matrix on the RHS to be positive definite.
-    # https://julialinearalgebra.github.io/IterativeSolvers.jl/stable/eigenproblems/lobpcg/
-    c = norm(K)
-    # r = lobpcg(Kσ.data, K.data, true, 1; C=C)
-    r = lobpcg(Kσ.data, K.data, true, 1)
-    @show r
+#         println("Load: $load_parameter")
+#         iter = 1;
+#         while true
+#             # internal force based on previous configuration
+#             # assemble K based on the conf (orig + u1)
+#             updated_nodes = Dict(nid => pt + u1[2*nid-1:2*nid] for (nid, pt) in node_points)
+#             problem = TrussProblem(Val{:Linear}, updated_nodes, elements, P, fixities, mats, crosssecs);
+#             solver = FEASolver(Direct, problem)
+#             # trigger assembly
+#             solver()
 
-    # # Minimum eigenvalue of the system K x + λ Kσ x = 0
-    @show λ = -1/r.λ[1]
-    @show v = r.X
+#             assemble_k = TopOpt.AssembleK(problem)
+#             element_k = ElementK(solver)
+#             truss_element_kσ = TrussElementKσ(problem, solver)
 
-    scene, layout = draw_truss_problem(problem; u=v, default_exagg=1.0, exagg_range=10.0,
-        default_load_scale=0.2, default_support_scale=0.2, default_arrow_size=0.03)
+#             # reaction force in global coordinate
+#             Fr = solver.globalinfo.K * u1
+#             # external force
+#             F = solver.globalinfo.f
+#             @. rhs = F - Fr;
 
-    # F = eigen(Array(Kσ), Array(K))
-    # F = eigen(Array(K), Array(Kσ))
-    # @show - 1 ./ F.values
+#             # # ! check geometric stiffness matirx
+#             # * u_e, x_e -> Ksigma_e
+#             Kσs_1 = truss_element_kσ(u1, x0)
+#             Kσs_2 = get_truss_Kσs(problem, u1, solver.elementinfo.cellvalues)
 
-    if 0 < λ && λ < 1
-        # 0 < λ_min < 1 means that the equilibrium equation with load 
-        # λ*f is not solvable for some 0 < λ < 1 and the structure under load
-        # f is not stable
+#             As = getA(problem)
+#             Es = getE(problem)
+#             for cell in CellIterator(getdh(problem))
+#                 cellidx = cellid(cell)
+#                 global_dofs = celldofs(cell)
 
-        # s = 1.0
-        Ks = K .+ λ .* Kσ
+#                 coords = getcoordinates(cell)
+#                 L = norm(coords[1] - coords[2])
+#                 A = As[cellidx]
+#                 E = Es[cellidx]
 
-        eigen_vals, eigen_vecs = eigs(Ks, nev = 2, which=:SM);
-        @show eigen_vals
-        @show eigen_vecs
-        local F = eigen(Array(Ks))
-        @show F
+#                 R2 = compute_local_axes(cell.coords[1], cell.coords[2])
+#                 R4 = zeros(4,4)
+#                 R4[1:2,1:2] = R2
+#                 R4[3:4,3:4] = R2
 
-        # cholKs = cholesky(Symmetric(Ks))
-        # u_b = cholKs \ solver.globalinfo.f
-        # println(GREEN_FG("Buckling problem solved."))
+#                 γ = vcat(-R2[:,1], R2[:,1])
+#                 u_cell = @view u1[global_dofs]
+#                 q_cell = E*A*(γ'*u_cell/L)
 
-        ## TODO plot analysis result with
-        # scene, layout = draw_truss_problem(problem; u=u_b)
-        # println("End")
-    end
+#                 # ? why MGZ formula different?
+#                 # Kg_m = R4'*(q_cell[2]/L)*[1 0 -1 0; 
+#                 #                            0 1 0 -1; 
+#                 #                            -1 0 1 0; 
+#                 #                            0 -1 0 1]*R4
+#                 Kg_m = R4*(q_cell/L)* [0 0 0 0; 
+#                                         0 1 0 -1; 
+#                                         0 0 0 0; 
+#                                         0 -1 0 1]*R4'
+#                 @test Kg_m ≈ Kσs_1[cellidx]
+#                 @test Kg_m ≈ Kσs_2[cellidx] 
+#             end
 
-    # TODO eigenmode to show global instability mode
-    # Find a test case for verifying the geometric stiffness matrix
-    # ? what does MMA need? Inner opt uses MMA or SIMP?
-    #  - where to plug in the gradient of the barrier function?
-        # function (v::Volume{T})(x, grad = nothing) where {T}
-    #  - how to compute ∂K/∂x_e and ∂f/∂x_e?
-            # d = ForwardDiff.Dual{T}(x[varind[i]], one(T))
-            # if PENALTY_BEFORE_INTERPOLATION
-            #     p = density(penalty(d), xmin)
-            # else
-            #     p = penalty(density(d, xmin))
-            # end
-            # grad[varind[i]] = -p.partials[1] * cell_comp[i] # Ke
-    #  adjoint method: ∂u/∂x_e = K^{-1} * (∂f/∂x_e - ∂K/∂x_e * u)
-    # ∂Kσ/∂x_e for all e
+#             # solve for the new deformation
+#             Ke, Kg = buckling(problem, solver.globalinfo, solver.elementinfo; u=u1)
+#             K = Ke + Kg
+#             dchi = K\rhs
+#             u1[:] += dchi[:]
 
-    # TODO finite difference to verify the gradient
-    # TODO verify the gradient for some analytical problems
-    # TODO "manual" interior point loop, adjusting the c value every iter
+#             print("$iter: ||du||=$(maximum(abs.(dchi[:])))\n")
+#             if maximum(abs.(dchi[:])) < utol # convergence check
+#                 break;
+#             end
+#             if (iter > maxit)# bailout for failed convergence
+#                 error("Possible failed convergence");
+#             end
+#             iter += 1;
+#         end
+#         u0[:] = u1[:];       # update the displacement
+        
+#         step = step + 1
+#         # save displacement record for plotting
+#         tip_displacement[step, :] .= u1[2*2-1:2*2]
+#     end
 
+#     # using Makie
+#     # fig, ax, p = scatter(tip_displacement[:,1], load_parameters.*P_val,
+#     #     axis = (xlabel = "u_b (m)", ylabel = "P (kN)"))
+#     # lines!(tip_displacement[:,1], load_parameters.*P_val, color = :blue, linewidth = 3)
+#     # fig
+
+#     # using TopOpt.TrussTopOptProblems.TrussVisualization: visualize
+#     # fig = visualize(problem, u1)
 # end # end test set
-
-# =#

@@ -8,15 +8,19 @@ end
     include("topopt_problems/metadata.jl")
 end
 @safetestset "Functions" begin
-    include("functions.jl")
+    include("Functions/test_common_fns.jl")
+    include("Functions/test_buckling_fns.jl")
 end
-# @safetestset "Solver" begin
-#     include("fea/solvers.jl")
-# end
+@safetestset "Solver" begin
+    include("fea/solvers.jl")
+end
 @safetestset "Truss Problem Tests" begin
     include("truss_topopt_problems/test_problem.jl")
     include("truss_topopt_problems/test_fea.jl")
+    include("truss_topopt_problems/test_buckling.jl")
+    include("truss_topopt_problems/test_buckling_optimize.jl")
 end
+
 @safetestset "Examples" begin
     @safetestset "CSIMP" begin
         include("examples/csimp.jl")
@@ -31,5 +35,3 @@ end
         include("examples/test_examples.jl")
     end
 end
-
-# @safetestset "CSIMP Tests" begin include("csimp.jl") end

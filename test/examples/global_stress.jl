@@ -33,7 +33,7 @@ for i in 1:length(problems)
     penalty = TopOpt.PowerPenalty(1.0)
     # Define a finite element solver
     solver = FEASolver(
-        Displacement, Direct, problem, xmin = xmin, penalty = penalty,
+        Direct, problem, xmin = xmin, penalty = penalty,
     )
     # Define compliance objective
     stress = TopOpt.MicroVonMisesStress(solver)
@@ -48,12 +48,12 @@ for i in 1:length(problems)
     constr = x -> norm(stress(filter(x)), 5) - 1.0
     # Define subproblem optimizer
     x0 = fill(1.0, length(solver.vars))
-    options = Nonconvex.MMAOptions(
+    options = MMAOptions(
         maxiter=2000, tol = Nonconvex.Tolerance(kkt = 1e-4),
     )
-    #options = Nonconvex.PercivalOptions()
+    #options = PercivalOptions()
     optimizer = Optimizer(
-        obj, constr, x0, Nonconvex.MMA87(), #Nonconvex.PercivalAlg(),
+        obj, constr, x0, MMA87(), #PercivalAlg(),
         options = options, convcriteria = convcriteria,
     )
 
