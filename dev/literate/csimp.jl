@@ -47,7 +47,7 @@ penalty = TopOpt.PowerPenalty(1.0)
 pcont = Continuation(penalty, steps = steps, xmin = xmin, pmax = 5.0)
 
 # NOTE: non-convexity + computational error lead to different solutions that satisfy the KKT tolerance
-mma_options = options = Nonconvex.MMAOptions(maxiter=1000)
+mma_options = options = MMAOptions(maxiter=1000)
 maxtol = 0.01 # maximum tolerance
 mintol = 0.0001 # minimum tolerance
 b = log(mintol / maxtol) / steps
@@ -65,7 +65,7 @@ csimp_options = TopOpt.CSIMPOptions(
 )
 
 # ### Define a finite element solver
-solver = FEASolver(Displacement, Direct, problem, xmin = xmin, penalty = penalty)
+solver = FEASolver(Direct, problem, xmin = xmin, penalty = penalty)
 
 # ### Define compliance objective
 comp = Compliance(problem, solver)
@@ -83,7 +83,7 @@ constr = x -> volfrac(filter(x)) - V
 # ### Define subproblem optimizer
 x0 = fill(V, length(solver.vars))
 optimizer = Optimizer(
-    obj, constr, x0, Nonconvex.MMA87(),
+    obj, constr, x0, MMA87(),
     options = mma_options, convcriteria = convcriteria,
 )
 
