@@ -8,17 +8,17 @@ using Parameters: @unpack, @pack!
 using ..Utilities, Ferrite
 using LinearAlgebra, Zygote
 
-export  Optimizer,
-        SIMP,
-        ExponentialContinuation,
-        ContinuationSIMP,
-        AdaptiveSIMP,
-        MMAOptionsGen,
-        CSIMPOptions,
-        BESO,
-        GESO,
-        Continuation,
-        PowerContinuation
+export Optimizer,
+    SIMP,
+    ExponentialContinuation,
+    ContinuationSIMP,
+    AdaptiveSIMP,
+    MMAOptionsGen,
+    CSIMPOptions,
+    BESO,
+    GESO,
+    Continuation,
+    PowerContinuation
 
 const to = TimerOutput()
 

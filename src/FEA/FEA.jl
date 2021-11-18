@@ -7,20 +7,20 @@ using IterativeSolvers, StaticArrays, SparseArrays
 using LinearAlgebra
 using Parameters: @unpack
 
-export  AbstractFEASolver,
-        AbstractDisplacementSolver,
-        DirectDisplacementSolver,
-        PCGDisplacementSolver,
-        StaticMatrixFreeDisplacementSolver,
-        Displacement,
-        Direct,
-        CG,
-        MatrixFree,
-        FEASolver,
-        Assembly,
-        DefaultCriteria,
-        EnergyCriteria,
-        simulate
+export AbstractFEASolver,
+    AbstractDisplacementSolver,
+    DirectDisplacementSolver,
+    PCGDisplacementSolver,
+    StaticMatrixFreeDisplacementSolver,
+    Displacement,
+    Direct,
+    CG,
+    MatrixFree,
+    FEASolver,
+    Assembly,
+    DefaultCriteria,
+    EnergyCriteria,
+    simulate
 
 const to = TimerOutput()
 
@@ -40,4 +40,3 @@ include("solvers_api.jl")
 getcompliance(solver) = solver.u' * solver.globalinfo.K * solver.u
 
 end
-

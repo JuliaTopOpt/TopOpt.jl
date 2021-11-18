@@ -7,30 +7,22 @@ using DocumenterCitations
 # Generate examples
 include("generate.jl")
 
-GENERATED_EXAMPLES = [joinpath("examples", f) for f in (
-    "simp.md",
-    "beso.md",
-    "geso.md",
-    "csimp.md",
-    "global_stress.md",
-    )]
+GENERATED_EXAMPLES = [
+    joinpath("examples", f) for
+    f in ("simp.md", "beso.md", "geso.md", "csimp.md", "global_stress.md")
+]
 
 bib = CitationBibliography(joinpath(@__DIR__, "biblio", "ref.bib"))
 makedocs(
     bib,
     sitename = "TopOpt.jl",
-    format = Documenter.HTML(
-        prettyurls = get(ENV, "CI", nothing) == "true"
-    ),
+    format = Documenter.HTML(prettyurls = get(ENV, "CI", nothing) == "true"),
     # doctest = false,
     pages = [
         "Home" => "index.md",
         "Examples" => GENERATED_EXAMPLES,
-        "API Reference" => [
-            "reference/TopOptProblems.md",
-            "reference/Algorithms.md",
-        ],
-        "Bibliography" => "bibliography.md"
+        "API Reference" => ["reference/TopOptProblems.md", "reference/Algorithms.md"],
+        "Bibliography" => "bibliography.md",
     ],
 )
 
@@ -40,8 +32,5 @@ makedocs(
 # end
 
 if get(ENV, "CI", nothing) == "true"
-    deploydocs(
-        repo = "github.com/JuliaTopOpt/TopOpt.jl.git",
-        push_preview=true,
-    )
+    deploydocs(repo = "github.com/JuliaTopOpt/TopOpt.jl.git", push_preview = true)
 end

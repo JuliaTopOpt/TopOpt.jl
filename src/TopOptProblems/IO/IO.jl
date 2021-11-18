@@ -1,7 +1,6 @@
 module InputOutput
 
-export  InpStiffness,
-        save_mesh
+export InpStiffness, save_mesh
 
 include(joinpath("INP", "INP.jl"))
 using .INP

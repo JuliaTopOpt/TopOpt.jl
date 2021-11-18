@@ -1,4 +1,4 @@
-function extract_cells(file, ::Type{TI}=Int) where TI
+function extract_cells(file, ::Type{TI} = Int) where {TI}
     line = readline(file)
 
     cell_idx_pattern = r"^(\d+)\s*,"
@@ -14,10 +14,14 @@ function extract_cells(file, ::Type{TI}=Int) where TI
     cells = [Tuple(nodes)]
 
     nextline = _extract_cells!(cells, file, first_cell_idx)
-    return cells, first_cell_idx-TI(1), nextline
+    return cells, first_cell_idx - TI(1), nextline
 end
 
-function _extract_cells!(cells::AbstractVector{NTuple{nnodes, TI}}, file, prev_cell_idx::TI) where {nnodes, TI}
+function _extract_cells!(
+    cells::AbstractVector{NTuple{nnodes,TI}},
+    file,
+    prev_cell_idx::TI,
+) where {nnodes,TI}
     cell_idx_pattern = r"^(\d+)\s*,"
     node_idx_pattern = r",\s*(\d+)"
     nodes = zeros(TI, nnodes)
@@ -34,7 +38,8 @@ function _extract_cells!(cells::AbstractVector{NTuple{nnodes, TI}}, file, prev_c
             for (i, m) in enumerate(eachmatch(node_idx_pattern, line))
                 nodes[i] = parse(TI, m[1])
             end
-            all(nodes .!= zero(TI)) || throw("Cell $cell_idx has fewer nodes than it should.")
+            all(nodes .!= zero(TI)) ||
+                throw("Cell $cell_idx has fewer nodes than it should.")
             push!(cells, Tuple(nodes))
 
             prev_cell_idx = cell_idx

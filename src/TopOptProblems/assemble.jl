@@ -1,10 +1,24 @@
-function assemble(problem::StiffnessTopOptProblem{dim,T}, elementinfo::ElementFEAInfo{dim, T}, vars = ones(T, getncells(getdh(problem).grid)), penalty = PowerPenalty(T(1)), xmin = T(0.001)) where {dim,T}
+function assemble(
+    problem::StiffnessTopOptProblem{dim,T},
+    elementinfo::ElementFEAInfo{dim,T},
+    vars = ones(T, getncells(getdh(problem).grid)),
+    penalty = PowerPenalty(T(1)),
+    xmin = T(0.001),
+) where {dim,T}
     globalinfo = GlobalFEAInfo(problem)
     assemble!(globalinfo, problem, elementinfo, vars, penalty, xmin)
     return globalinfo
 end
 
-function assemble!(globalinfo::GlobalFEAInfo{T}, problem::StiffnessTopOptProblem{dim,T}, elementinfo::ElementFEAInfo{dim, T, TK}, vars = ones(T, getncells(getdh(problem).grid)), penalty = PowerPenalty(T(1)), xmin = T(0.001); assemble_f = true) where {dim, T, TK}
+function assemble!(
+    globalinfo::GlobalFEAInfo{T},
+    problem::StiffnessTopOptProblem{dim,T},
+    elementinfo::ElementFEAInfo{dim,T,TK},
+    vars = ones(T, getncells(getdh(problem).grid)),
+    penalty = PowerPenalty(T(1)),
+    xmin = T(0.001);
+    assemble_f = true,
+) where {dim,T,TK}
     ch = problem.ch
     dh = ch.dh
     K, f = globalinfo.K, globalinfo.f
@@ -25,7 +39,7 @@ function assemble!(globalinfo::GlobalFEAInfo{T}, problem::StiffnessTopOptProblem
     Ke = zeros(T, size(rawmatrix(Kes[1])))
 
     celliterator = CellIterator(dh)
-    for (i,cell) in enumerate(celliterator)
+    for (i, cell) in enumerate(celliterator)
         # get global_dofs for cell#i
         celldofs!(global_dofs, dh, i)
         fe = fes[i]
@@ -67,21 +81,33 @@ function assemble!(globalinfo::GlobalFEAInfo{T}, problem::StiffnessTopOptProblem
     end
 
     #* apply boundary condition
-    _K = TK <: Symmetric ? K.data : K        
+    _K = TK <: Symmetric ? K.data : K
     apply!(_K, f, ch)
 
-    return 
+    return
 end
 
-function assemble_f(problem::StiffnessTopOptProblem{dim,T}, elementinfo::ElementFEAInfo{dim, T}, vars::AbstractVector{T}, penalty, xmin = T(1)/1000) where {dim, T}
+function assemble_f(
+    problem::StiffnessTopOptProblem{dim,T},
+    elementinfo::ElementFEAInfo{dim,T},
+    vars::AbstractVector{T},
+    penalty,
+    xmin = T(1) / 1000,
+) where {dim,T}
     f = get_f(problem, vars)
     assemble_f!(f, problem, elementinfo, vars, penalty, xmin)
     return f
 end
 get_f(problem, vars::Array) = zeros(T, ndofs(problem.ch.dh))
 
-function assemble_f!(f::AbstractVector, problem::StiffnessTopOptProblem, 
-        elementinfo::ElementFEAInfo, vars::AbstractVector, penalty, xmin)
+function assemble_f!(
+    f::AbstractVector,
+    problem::StiffnessTopOptProblem,
+    elementinfo::ElementFEAInfo,
+    vars::AbstractVector,
+    penalty,
+    xmin,
+)
     black = elementinfo.black
     white = elementinfo.white
     varind = elementinfo.varind
@@ -89,17 +115,37 @@ function assemble_f!(f::AbstractVector, problem::StiffnessTopOptProblem,
 
     dof_cells = elementinfo.metadata.dof_cells
 
-    update_f!(f, fes, elementinfo.fixedload, dof_cells, black, 
-        white, penalty, vars, varind, xmin)
+    update_f!(
+        f,
+        fes,
+        elementinfo.fixedload,
+        dof_cells,
+        black,
+        white,
+        penalty,
+        vars,
+        varind,
+        xmin,
+    )
     return f
 end
 
-function update_f!(f::Vector, fes, fixedload, dof_cells, black, 
-    white, penalty, vars, varind, xmin)
+function update_f!(
+    f::Vector,
+    fes,
+    fixedload,
+    dof_cells,
+    black,
+    white,
+    penalty,
+    vars,
+    varind,
+    xmin,
+)
 
-    @inbounds for dofidx in 1:length(f)
+    @inbounds for dofidx = 1:length(f)
         f[dofidx] = fixedload[dofidx]
-        r = dof_cells.offsets[dofidx] : dof_cells.offsets[dofidx+1]-1
+        r = dof_cells.offsets[dofidx]:dof_cells.offsets[dofidx+1]-1
         for i in r
             cellidx, localidx = dof_cells.values[i]
             if black[cellidx]
@@ -110,14 +156,14 @@ function update_f!(f::Vector, fes, fixedload, dof_cells, black,
                 else
                     px = penalty(xmin)
                 end
-                f[dofidx] += px * fes[cellidx][localidx]                
+                f[dofidx] += px * fes[cellidx][localidx]
             else
                 if PENALTY_BEFORE_INTERPOLATION
                     px = density(penalty(vars[varind[cellidx]]), xmin)
                 else
                     px = penalty(density(vars[varind[cellidx]], xmin))
                 end
-                f[dofidx] += px * fes[cellidx][localidx]                
+                f[dofidx] += px * fes[cellidx][localidx]
             end
         end
     end
@@ -133,8 +179,8 @@ function assemble_f!(f::AbstractVector, problem, dloads)
 end
 
 function update_f!(f::Vector, dof_cells, dloads)
-    for dofidx in 1:length(f)
-        r = dof_cells.offsets[dofidx] : dof_cells.offsets[dofidx+1]-1
+    for dofidx = 1:length(f)
+        r = dof_cells.offsets[dofidx]:dof_cells.offsets[dofidx+1]-1
         for i in r
             cellidx, localidx = dof_cells.values[i]
             f[dofidx] += dloads[cellidx][localidx]
