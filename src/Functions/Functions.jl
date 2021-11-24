@@ -12,27 +12,27 @@ using TimerOutputs, Ferrite, StaticArrays, StatsFuns
 using SparseArrays, Statistics, ChainRulesCore, Zygote
 using Nonconvex: Nonconvex
 
-export  Volume,
-        Compliance,
-        Displacement,
-        MeanCompliance,
-        BlockCompliance,
-        AbstractFunction,
-        getfevals,
-        getmaxfevals,
-        maxedfevals,
-        MicroVonMisesStress,
-        MacroVonMisesStress,
-        project,
-        generate_scenarios,
-        hutch_rand!,
-        hadamard!,
-        TrussStress,
-        AssembleK,
-        TrussElementKσ,
-        ElementK,
-        apply_boundary_with_zerodiag!,
-        apply_boundary_with_meandiag!
+export Volume,
+    Compliance,
+    Displacement,
+    MeanCompliance,
+    BlockCompliance,
+    AbstractFunction,
+    getfevals,
+    getmaxfevals,
+    maxedfevals,
+    MicroVonMisesStress,
+    MacroVonMisesStress,
+    project,
+    generate_scenarios,
+    hutch_rand!,
+    hadamard!,
+    TrussStress,
+    AssembleK,
+    TrussElementKσ,
+    ElementK,
+    apply_boundary_with_zerodiag!,
+    apply_boundary_with_meandiag!
 
 const to = TimerOutput()
 

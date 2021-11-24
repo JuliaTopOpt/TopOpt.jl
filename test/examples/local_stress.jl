@@ -9,17 +9,13 @@ f = 1.0 # downward force
 rmin = 3.0
 
 problems = Any[
-    PointLoadCantilever(Val{:Linear}, (160, 40), (1.0, 1.0), E, v, f), 
-    HalfMBB(Val{:Linear}, (60, 20), (1.0, 1.0), E, v, f), 
+    PointLoadCantilever(Val{:Linear}, (160, 40), (1.0, 1.0), E, v, f),
+    HalfMBB(Val{:Linear}, (60, 20), (1.0, 1.0), E, v, f),
     LBeam(Val{:Linear}, Float64),
 ]
-problem_names = [
-    "Cantilever beam",
-    "Half MBB beam",
-    "L-beam",
-]
+problem_names = ["Cantilever beam", "Half MBB beam", "L-beam"]
 
-for i in 1:length(problems)
+for i = 1:length(problems)
     println(problem_names[i])
     problem = problems[i]
     # Parameter settings
@@ -33,9 +29,7 @@ for i in 1:length(problems)
         #penalty = TopOpt.PowerPenalty(1.0)
         global penalty = TopOpt.PowerPenalty(p)
         # Define a finite element solver
-        solver = FEASolver(
-            Direct, problem, xmin = xmin, penalty = penalty,
-        )
+        solver = FEASolver(Direct, problem, xmin = xmin, penalty = penalty)
         # Define compliance objective
         global stress = TopOpt.MicroVonMisesStress(solver)
         global filter = DensityFilter(solver, rmin = rmin)
@@ -45,17 +39,11 @@ for i in 1:length(problems)
         constr = x -> begin
             s = stress(filter(x))
             thr = 10
-            vcat(
-                (s .- thr) / 100,
-                logsumexp(s) - log(length(s)) - thr,
-            )
+            vcat((s .- thr) / 100, logsumexp(s) - log(length(s)) - thr)
         end
         alg = PercivalAlg()
         options = PercivalOptions()
-        optimizer = Optimizer(
-            obj, constr, x0, alg,
-            options = options,
-        )
+        optimizer = Optimizer(obj, constr, x0, alg, options = options)
         # Define continuation SIMP optimizer
         simp = SIMP(optimizer, solver, p)
         # Solve

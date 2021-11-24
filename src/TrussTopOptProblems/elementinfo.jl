@@ -11,11 +11,19 @@ Constructs an instance of `ElementFEAInfo` from a stiffness **truss** problem `s
 
 The static matrices and vectors are more performant and GPU-compatible therefore they are used by default.
 """
-function ElementFEAInfo(sp::TrussProblem, quad_order = 1, ::Type{Val{mat_type}} = Val{:Static},) where {mat_type} 
+function ElementFEAInfo(
+    sp::TrussProblem,
+    quad_order = 1,
+    ::Type{Val{mat_type}} = Val{:Static},
+) where {mat_type}
     # weights: self-weight element load vectors, all zeros now
     Kes, weights, cellvalues, facevalues = make_Kes_and_fes(sp, quad_order, Val{mat_type})
-    element_Kes = convert(Vector{<:ElementMatrix}, Kes;
-        bc_dofs = sp.ch.prescribed_dofs, dof_cells = sp.metadata.dof_cells)
+    element_Kes = convert(
+        Vector{<:ElementMatrix},
+        Kes;
+        bc_dofs = sp.ch.prescribed_dofs,
+        dof_cells = sp.metadata.dof_cells,
+    )
 
     # * concentrated load
     # ? why convert a sparse vector back to a Vector?
@@ -25,20 +33,33 @@ function ElementFEAInfo(sp::TrussProblem, quad_order = 1, ::Type{Val{mat_type}} 
 
     cellvolumes = get_cell_volumes(sp, cellvalues)
     cells = sp.ch.dh.grid.cells
-    ElementFEAInfo(element_Kes, weights, fixedload, cellvolumes,
-        cellvalues, facevalues,
-        sp.metadata, sp.black, sp.white, sp.varind, cells)
+    ElementFEAInfo(
+        element_Kes,
+        weights,
+        fixedload,
+        cellvolumes,
+        cellvalues,
+        facevalues,
+        sp.metadata,
+        sp.black,
+        sp.white,
+        sp.varind,
+        cells,
+    )
 end
 
 ####################################
 
-function get_cell_volumes(sp::TrussProblem{xdim, T}, cellvalues) where {xdim, T}
+function get_cell_volumes(sp::TrussProblem{xdim,T}, cellvalues) where {xdim,T}
     dh = sp.ch.dh
     As = getA(sp)
     cellvolumes = zeros(T, getncells(dh.grid))
     for (i, cell) in enumerate(CellIterator(dh))
         truss_reinit!(cellvalues, cell, As[i])
-        cellvolumes[i] = sum(Ferrite.getdetJdV(cellvalues, q_point) for q_point in 1:Ferrite.getnquadpoints(cellvalues))
+        cellvolumes[i] = sum(
+            Ferrite.getdetJdV(cellvalues, q_point) for
+            q_point = 1:Ferrite.getnquadpoints(cellvalues)
+        )
     end
     return cellvolumes
 end
@@ -62,13 +83,13 @@ function compute_local_axes(end_vert_u, end_vert_v)
     @assert length(end_vert_u) == length(end_vert_v)
     @assert length(end_vert_u) == 2 || length(end_vert_u) == 3
     xdim = length(end_vert_u)
-    L = norm(end_vert_u-end_vert_v)
+    L = norm(end_vert_u - end_vert_v)
     @assert L > eps()
     # by convention, the new x axis is along the element's direction
     # directional cosine of the new x axis in the global world frame
-    c_x = (end_vert_v[1] - end_vert_u[1])/L
-    c_y = (end_vert_v[2] - end_vert_u[2])/L
-    R = zeros(xdim,xdim)
+    c_x = (end_vert_v[1] - end_vert_u[1]) / L
+    c_y = (end_vert_v[2] - end_vert_u[2]) / L
+    R = zeros(xdim, xdim)
     if 3 == xdim
         c_z = (end_vert_v[3] - end_vert_u[3]) / L
         if abs(abs(c_z) - 1.0) < eps()
@@ -79,7 +100,7 @@ function compute_local_axes(end_vert_u, end_vert_v)
             # local x_axis = element's vector
             new_x = [c_x, c_y, c_z]
             # local y axis = cross product with global z axis
-            new_y = -cross(new_x, [0,0,1.0])
+            new_y = -cross(new_x, [0, 0, 1.0])
             new_y /= norm(new_y)
             new_z = cross(new_x, new_y)
             R[:, 1] = new_x
@@ -87,11 +108,10 @@ function compute_local_axes(end_vert_u, end_vert_v)
             R[:, 3] = new_z
         end
     elseif 2 == xdim
-        R = [c_x  -c_y;
-             c_y  c_x]
+        R = [
+            c_x -c_y
+            c_y c_x
+        ]
     end
     return R
 end
-
-
-

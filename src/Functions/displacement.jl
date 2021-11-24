@@ -7,7 +7,8 @@
     maxfevals::Int
 end
 
-Base.show(::IO, ::MIME{Symbol("text/plain")}, ::Displacement) = println("TopOpt displacement function")
+Base.show(::IO, ::MIME{Symbol("text/plain")}, ::Displacement) =
+    println("TopOpt displacement function")
 
 """
     Displacement()
@@ -75,7 +76,7 @@ function ChainRulesCore.rrule(dp::Displacement, x::AbstractVector)
         solver.rhs .= Δ
         solver(reuse_chol = true, assemble_f = false)
         dudx_tmp .= 0
-        for e in 1:length(x)
+        for e = 1:length(x)
             _, dρe = get_ρ_dρ(x[e], penalty, xmin)
             celldofs!(global_dofs, dh, e)
             Keu = bcmatrix(Kes[e]) * u[global_dofs]

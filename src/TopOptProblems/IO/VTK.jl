@@ -3,7 +3,7 @@ module VTK
 using ...TopOptProblems: TopOptProblems, StiffnessTopOptProblem, Ferrite
 using WriteVTK
 
-export  save_mesh
+export save_mesh
 
 function save_mesh(filename, problem::StiffnessTopOptProblem)
     topology = ones(getncells(TopOptProblems.getdh(problem).grid))
@@ -22,7 +22,11 @@ function save_mesh(filename, problem, vars::AbstractVector)
     vtkfile = WriteVTK.vtk_grid(filename, problem, vars)
     outfiles = WriteVTK.vtk_save(vtkfile)
 end
-function WriteVTK.vtk_grid(filename::AbstractString, problem::StiffnessTopOptProblem{dim, T}, vars::AbstractVector{T}) where {dim, T}
+function WriteVTK.vtk_grid(
+    filename::AbstractString,
+    problem::StiffnessTopOptProblem{dim,T},
+    vars::AbstractVector{T},
+) where {dim,T}
     varind = problem.varind
     black = problem.black
     white = problem.white

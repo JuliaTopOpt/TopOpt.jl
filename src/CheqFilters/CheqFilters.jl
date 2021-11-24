@@ -10,34 +10,38 @@ using ForwardDiff
 using Nonconvex: Nonconvex
 using ChainRulesCore
 
-export  AbstractCheqFilter,
-        SensFilter,
-        DensityFilter,
-        ProjectedDensityFilter,
-        AbstractSensFilter,
-        AbstractDensityFilter
+export AbstractCheqFilter,
+    SensFilter,
+    DensityFilter,
+    ProjectedDensityFilter,
+    AbstractSensFilter,
+    AbstractDensityFilter
 
 abstract type AbstractCheqFilter end
 abstract type AbstractSensFilter <: AbstractCheqFilter end
 abstract type AbstractDensityFilter <: AbstractCheqFilter end
 
 @params struct FilterMetadata
-    cell_neighbouring_nodes
-    cell_node_weights
+    cell_neighbouring_nodes::Any
+    cell_node_weights::Any
 end
-Base.show(::IO, ::MIME{Symbol("text/plain")}, ::FilterMetadata) = println("TopOpt filter metadata")
+Base.show(::IO, ::MIME{Symbol("text/plain")}, ::FilterMetadata) =
+    println("TopOpt filter metadata")
 
-function FilterMetadata(::Type{T}, ::Type{TI}) where {T, TI}
+function FilterMetadata(::Type{T}, ::Type{TI}) where {T,TI}
     cell_neighbouring_nodes = Vector{TI}[]
     cell_node_weights = Vector{T}[]
 
     return FilterMetadata(cell_neighbouring_nodes, cell_node_weights)
 end
 
-function FilterMetadata(solver, rmin::T, ::Type{TI}) where {T, TI}
+function FilterMetadata(solver, rmin::T, ::Type{TI}) where {T,TI}
     problem = solver.problem
     cell_neighbouring_nodes, cell_node_weights = get_neighbour_info(problem, rmin)
-    return FilterMetadata(RaggedArray(cell_neighbouring_nodes), RaggedArray(cell_node_weights))
+    return FilterMetadata(
+        RaggedArray(cell_neighbouring_nodes),
+        RaggedArray(cell_node_weights),
+    )
 end
 
 function get_neighbour_info(problem, rmin::T) where {T}
@@ -78,7 +82,7 @@ function get_neighbour_info(problem, rmin::T) where {T}
                 dist = norm(node.x - center.x)
                 if dist < rmin
                     push!(neighbouring_nodes, n)
-                    push!(node_weights, max(rmin-dist, zero(T)))
+                    push!(node_weights, max(rmin - dist, zero(T)))
                     n_cells = node_cells[n]
                     for c in n_cells
                         next_cell_id = c[1]

@@ -15,14 +15,12 @@ xmin = 0.0001 # minimum density
 steps = 40 # maximum number of penalty steps, delta_p0 = 0.1
 
 # ### Continuation SIMP
-x0 = fill(1.0, 160*40) # initial design
+x0 = fill(1.0, 160 * 40) # initial design
 x = copy(x0)
 for p in [1.0, 2.0, 3.0]
     global penalty, stress, filter, result, stress, x
     penalty = TopOpt.PowerPenalty(p)
-    solver = FEASolver(
-        Direct, problem, xmin = xmin, penalty = penalty,
-    )
+    solver = FEASolver(Direct, problem, xmin = xmin, penalty = penalty)
     stress = TopOpt.MicroVonMisesStress(solver)
     filter = DensityFilter(solver, rmin = rmin)
     volfrac = TopOpt.Volume(problem, solver)
@@ -31,17 +29,11 @@ for p in [1.0, 2.0, 3.0]
     thr = 10 # stress threshold
     constr = x -> begin
         s = stress(filter(x))
-        vcat(
-            (s .- thr) / 100,
-            logsumexp(s) - log(length(s)) - thr,
-        )
+        vcat((s .- thr) / 100, logsumexp(s) - log(length(s)) - thr)
     end
     alg = PercivalAlg()
     options = PercivalOptions()
-    optimizer = Optimizer(
-        obj, constr, x, alg,
-        options = options,
-    )
+    optimizer = Optimizer(obj, constr, x, alg, options = options)
     simp = SIMP(optimizer, solver, p)
     result = simp(x)
     x = result.topology

@@ -31,7 +31,7 @@ end
     @safetestset "Local Stress" begin
         include("examples/local_stress.jl")
     end
-    @safetestset "More examples" begin 
+    @safetestset "More examples" begin
         include("examples/test_examples.jl")
     end
 end
