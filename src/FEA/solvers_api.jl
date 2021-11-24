@@ -3,7 +3,7 @@ abstract type SolverType end
 abstract type SolverSubtype end
 
 struct Direct <: SolverType end
-struct CG  <: SolverType end
+struct CG <: SolverType end
 
 struct MatrixFree <: SolverSubtype end
 struct Assembly <: SolverSubtype end
@@ -14,7 +14,7 @@ function Utilities.setpenalty!(solver::AbstractFEASolver, p)
     if p isa AbstractPenalty
         solver.penalty = p
     elseif p isa Number
-        setpenalty!(solver.penalty, p)    
+        setpenalty!(solver.penalty, p)
     else
         throw("Unsupported penalty value $p.")
     end
@@ -39,7 +39,10 @@ function FEASolver(::Type{CG}, ::Type{Assembly}, problem; kwargs...)
 end
 
 function default_quad_order(problem)
-    if TopOptProblems.getdim(problem) == 2 && TopOptProblems.nnodespercell(problem) in (3, 6) || TopOptProblems.getdim(problem) == 3 && TopOptProblems.nnodespercell(problem) in (4, 10)
+    if TopOptProblems.getdim(problem) == 2 &&
+       TopOptProblems.nnodespercell(problem) in (3, 6) ||
+       TopOptProblems.getdim(problem) == 3 &&
+       TopOptProblems.nnodespercell(problem) in (4, 10)
         return 3
     end
     if TopOptProblems.getgeomorder(problem) == 2

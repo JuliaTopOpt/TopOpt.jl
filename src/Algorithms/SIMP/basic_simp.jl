@@ -1,7 +1,7 @@
 @params mutable struct SIMPResult{T}
     topology::AbstractVector{T}
     objval::T
-    convstate
+    convstate::Any
     nsubproblems::Int
 end
 Base.show(::IO, ::MIME{Symbol("text/plain")}, ::SIMPResult) = println("TopOpt SIMP result")
@@ -14,16 +14,16 @@ end
 The vanilla SIMP algorithm, see [Bendsoe1989](@cite).
 """
 @params mutable struct SIMP{T} <: AbstractSIMP
-    optimizer
-    penalty
-    prev_penalty
-    solver
+    optimizer::Any
+    penalty::Any
+    prev_penalty::Any
+    solver::Any
     result::SIMPResult{T}
     tracing::Bool
 end
 Base.show(::IO, ::MIME{Symbol("text/plain")}, ::SIMP) = println("TopOpt SIMP algorithm")
 
-function SIMP(optimizer, solver, p::T; tracing=true) where T
+function SIMP(optimizer, solver, p::T; tracing = true) where {T}
     penalty = getpenalty(solver)
     prev_penalty = deepcopy(penalty)
     setpenalty!(penalty, p)
@@ -41,14 +41,14 @@ function Utilities.setpenalty!(s::AbstractSIMP, p::Number)
     return s
 end
 
-function (s::SIMP{T, TO})(x0 = s.solver.vars) where {T, TO <: Optimizer}
+function (s::SIMP{T,TO})(x0 = s.solver.vars) where {T,TO<:Optimizer}
     setpenalty!(s.solver, s.penalty.p)
     mma_results = s.optimizer(x0)
     update_result!(s, mma_results)
     return s.result
 end
 
-function (s::SIMP{T, TO})(workspace::Nonconvex.Workspace) where {T, TO <: Optimizer}
+function (s::SIMP{T,TO})(workspace::Nonconvex.Workspace) where {T,TO<:Optimizer}
     mma_results = s.optimizer(workspace)
     update_result!(s, mma_results)
     return s.result
@@ -60,14 +60,14 @@ function get_topologies(problem, trace::TopOptTrace)
     nel = length(black)
     topologies = Vector{Float64}[]
     topology = zeros(T, nel)
-    for i in 1:length(x_hist)
+    for i = 1:length(x_hist)
         update_topology!(topology, black, white, x_hist[i], varind)
         push!(topologies, copy(topology))
     end
     return topologies
 end
 
-function update_result!(s::SIMP{T}, mma_results) where T
+function update_result!(s::SIMP{T}, mma_results) where {T}
     # Postprocessing
     @unpack result, optimizer = s
     @unpack problem = s.solver
@@ -83,7 +83,7 @@ function update_result!(s::SIMP{T}, mma_results) where T
 end
 
 function update_topology!(topology, black, white, x, varind)
-    for i in 1:length(black)
+    for i = 1:length(black)
         if black[i]
             topology[i] = 1
         elseif white[i]

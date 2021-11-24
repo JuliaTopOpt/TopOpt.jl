@@ -1,4 +1,8 @@
-function extract_cload!(cloads::Dict{TI, Vector{TF}}, file, ::Type{Val{dim}}) where {TI, TF, dim}
+function extract_cload!(
+    cloads::Dict{TI,Vector{TF}},
+    file,
+    ::Type{Val{dim}},
+) where {TI,TF,dim}
     pattern = r"(\d+)\s*,\s*(\d)\s*,\s*(\-?\d+\.\d*E[\+\-]\d{2})"
     line = readline(file)
     m = match(stopping_pattern, line)

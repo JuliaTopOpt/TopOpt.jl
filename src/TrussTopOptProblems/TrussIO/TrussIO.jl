@@ -20,4 +20,3 @@ include("parse_geo.jl")
 export load_truss_json, load_truss_geo
 
 end
-
