@@ -4,8 +4,8 @@ abstract type AbstractOptimizer end
 
 @params mutable struct Optimizer{Tdev} <: AbstractOptimizer
     model::AbstractModel
-    alg
-    workspace
+    alg::Any
+    workspace::Any
     dev::Tdev
 end
 Base.show(::IO, ::MIME{Symbol("text/plain")}, ::Optimizer) = println("TopOpt optimizer")
@@ -24,7 +24,7 @@ function Optimizer(
     device::Tdev = CPU();
     options = MMAOptions(),
     convcriteria = KKTCriteria(),
-) where {Tdev <: AbstractDevice}
+) where {Tdev<:AbstractDevice}
 
     T = eltype(vars)
     nvars = length(vars)
@@ -32,7 +32,13 @@ function Optimizer(
     model = Nonconvex.Model(obj)
     addvar!(model, zeros(T, nvars), ones(T, nvars))
     add_ineq_constraint!(model, Nonconvex.FunctionWrapper(constr, length(constr(x0))))
-    workspace = NonconvexMMA.Workspace(NonconvexCore.tovecmodel(model)[1], opt, x0; options = options, convcriteria = convcriteria)
+    workspace = NonconvexMMA.Workspace(
+        NonconvexCore.tovecmodel(model)[1],
+        opt,
+        x0;
+        options = options,
+        convcriteria = convcriteria,
+    )
     return Optimizer(model, opt, workspace, device)
 end
 
@@ -62,18 +68,19 @@ function (o::Optimizer)(workspace::Nonconvex.Workspace)
 end
 
 @params struct MMAOptionsGen
-    maxiter
-    outer_maxiter
-    tol
-    s_init
-    s_incr
-    s_decr
-    store_trace
-    show_trace
-    auto_scale
-    dual_options
+    maxiter::Any
+    outer_maxiter::Any
+    tol::Any
+    s_init::Any
+    s_incr::Any
+    s_decr::Any
+    store_trace::Any
+    show_trace::Any
+    auto_scale::Any
+    dual_options::Any
 end
-Base.show(::IO, ::MIME{Symbol("text/plain")}, ::MMAOptionsGen) = println("TopOpt MMA options generator")
+Base.show(::IO, ::MIME{Symbol("text/plain")}, ::MMAOptionsGen) =
+    println("TopOpt MMA options generator")
 function (g::MMAOptionsGen)(i)
     MMAOptions(
         maxiter = g.maxiter(i),
@@ -85,7 +92,7 @@ function (g::MMAOptionsGen)(i)
         store_trace = g.store_trace(i),
         show_trace = g.show_trace(i),
         auto_scale = g.auto_scale(i),
-        dual_options = g.dual_options(i)
+        dual_options = g.dual_options(i),
     )
 end
 
@@ -100,7 +107,7 @@ function (g::MMAOptionsGen)(options, i)
         store_trace = optionalcall(g, :store_trace, options, i),
         show_trace = optionalcall(g, :show_trace, options, i),
         auto_scale = optionalcall(g, :auto_scale, options, i),
-        dual_options = optionalcall(g, :dual_options, options, i)
+        dual_options = optionalcall(g, :dual_options, options, i),
     )
 end
 function optionalcall(g, s, options, i)

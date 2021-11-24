@@ -32,7 +32,7 @@ macro params(struct_expr)
     header = struct_expr.args[2]
     fields = @view struct_expr.args[3].args[2:2:end]
     params = []
-    for i in 1:length(fields)
+    for i = 1:length(fields)
         x = fields[i]
         T = gensym()
         if x isa Symbol
@@ -64,14 +64,14 @@ macro params(struct_expr)
     esc(struct_expr)
 end
 
-struct RaggedArray{TO, TV}
+struct RaggedArray{TO,TV}
     offsets::TO
     values::TV
 end
 
-function RaggedArray(vv::Vector{Vector{T}}) where T
+function RaggedArray(vv::Vector{Vector{T}}) where {T}
     offsets = [1; 1 .+ accumulate(+, collect(length(v) for v in vv))]
-    values = Vector{T}(undef, offsets[end]-1)
+    values = Vector{T}(undef, offsets[end] - 1)
     for (i, v) in enumerate(vv)
         r = offsets[i]:offsets[i+1]-1
         values[r] .= v
@@ -98,12 +98,12 @@ function Base.setindex!(ra::RaggedArray, v, i, j)
     ra.values[r[i]] = v
 end
 
-function find_varind(black, white, ::Type{TI}=Int) where TI
+function find_varind(black, white, ::Type{TI} = Int) where {TI}
     nel = length(black)
     nel == length(white) || throw("Black and white vectors should be of the same length")
     varind = zeros(TI, nel)
     k = 1
-    for i in 1:nel
+    for i = 1:nel
         if !black[i] && !white[i]
             varind[i] = k
             k += 1
@@ -125,7 +125,7 @@ function find_black_and_white(dh)
             white[c] = true
         end
     end
-    
+
     return black, white
 end
 
@@ -134,9 +134,9 @@ PoissonRatio(p) = getν(p)
 
 function compliance(Ke, u, dofs)
     comp = zero(eltype(u))
-    for i in 1:length(dofs)
-        for j in 1:length(dofs)
-            comp += u[dofs[i]]*Ke[i,j]*u[dofs[j]]
+    for i = 1:length(dofs)
+        for j = 1:length(dofs)
+            comp += u[dofs[i]] * Ke[i, j] * u[dofs[j]]
         end
     end
     comp
@@ -144,13 +144,13 @@ end
 
 function meandiag(K::AbstractMatrix)
     z = zero(eltype(K))
-    for i in 1:size(K, 1)
+    for i = 1:size(K, 1)
         z += abs(K[i, i])
     end
     return z / size(K, 1)
 end
 
-density(var, xmin) = var*(1-xmin) + xmin
+density(var, xmin) = var * (1 - xmin) + xmin
 
 macro debug(expr)
     return quote
@@ -160,17 +160,19 @@ macro debug(expr)
     end
 end
 
-@generated function _getproperty(c::T, ::Val{fallback}, ::Val{f}) where {T, fallback, f}
+@generated function _getproperty(c::T, ::Val{fallback}, ::Val{f}) where {T,fallback,f}
     f ∈ fieldnames(T) && return :(getfield(c, $(QuoteNode(f))))
     return :(getproperty(getfield(c, $(QuoteNode(fallback))), $(QuoteNode(f))))
 end
-@generated function _setproperty!(c::T, ::Val{fallback}, ::Val{f}, val) where {T, fallback, f}
+@generated function _setproperty!(c::T, ::Val{fallback}, ::Val{f}, val) where {T,fallback,f}
     f ∈ fieldnames(T) && return :(setfield!(c, $(QuoteNode(f)), val))
     return :(setproperty!(getfield(c, $(QuoteNode(fallback))), $(QuoteNode(f)), val))
 end
 macro forward_property(T, field)
     quote
-        Base.getproperty(c::$(esc(T)), f::Symbol) = _getproperty(c, Val($(QuoteNode(field))), Val(f))
-        Base.setproperty!(c::$(esc(T)), f::Symbol, val) = _setproperty!(c, Val($(QuoteNode(field))), Val(f), val)
+        Base.getproperty(c::$(esc(T)), f::Symbol) =
+            _getproperty(c, Val($(QuoteNode(field))), Val(f))
+        Base.setproperty!(c::$(esc(T)), f::Symbol, val) =
+            _setproperty!(c, Val($(QuoteNode(field))), Val(f), val)
     end
 end

@@ -10,11 +10,11 @@ end
 """
 The BESO algorithm, see [HuangXie2010](@cite).
 """
-@params struct BESO{T} <: TopOptAlgorithm 
+@params struct BESO{T} <: TopOptAlgorithm
     comp::Compliance
     vol::Volume
-    vol_limit
-    filter
+    vol_limit::Any
+    filter::Any
     vars::Vector{T}
     topology::Vector{T}
     er::T
@@ -22,14 +22,25 @@ The BESO algorithm, see [HuangXie2010](@cite).
     p::T
     sens::AbstractVector{T}
     old_sens::AbstractVector{T}
-    obj_trace::MVector{<:Any, T}
+    obj_trace::MVector{<:Any,T}
     tol::T
     sens_tol::T
     result::BESOResult{T}
 end
 Base.show(::IO, ::MIME{Symbol("text/plain")}, ::BESO) = println("TopOpt BESO algorithm")
 
-function BESO(comp::Compliance, vol::Volume, vol_limit, filter; maxiter = 200, tol = 0.0001, p = 3.0, er = 0.02, sens_tol = tol/100, k = 10)
+function BESO(
+    comp::Compliance,
+    vol::Volume,
+    vol_limit,
+    filter;
+    maxiter = 200,
+    tol = 0.0001,
+    p = 3.0,
+    er = 0.02,
+    sens_tol = tol / 100,
+    k = 10,
+)
     solver = comp.solver
     T = eltype(solver.vars)
     solver = comp.solver
@@ -41,9 +52,25 @@ function BESO(comp::Compliance, vol::Volume, vol_limit, filter; maxiter = 200, t
     vars = zeros(T, nvars)
     sens = zeros(T, nvars)
     old_sens = zeros(T, nvars)
-    obj_trace = zeros(MVector{k, T})
+    obj_trace = zeros(MVector{k,T})
 
-    return BESO(comp, vol, vol_limit, filter, vars, topology, er, maxiter, p, sens, old_sens, obj_trace, tol, sens_tol, result)
+    return BESO(
+        comp,
+        vol,
+        vol_limit,
+        filter,
+        vars,
+        topology,
+        er,
+        maxiter,
+        p,
+        sens,
+        old_sens,
+        obj_trace,
+        tol,
+        sens_tol,
+        result,
+    )
 end
 
 update_penalty!(b::BESO, p::Number) = (b.p = p)
@@ -59,7 +86,7 @@ function (b::BESO)(x0 = copy(b.obj.solver.vars))
     k = length(obj_trace)
 
     # Initialize the topology
-    for i in 1:length(topology)
+    for i = 1:length(topology)
         if black[i]
             topology[i] = 1
         elseif white[i]
@@ -81,8 +108,8 @@ function (b::BESO)(x0 = copy(b.obj.solver.vars))
         if iter > 1
             old_sens .= sens
         end
-        vol = max(vol*(1-er), V)
-        for j in max(2, k-iter+2):k
+        vol = max(vol * (1 - er), V)
+        for j = max(2, k - iter + 2):k
             obj_trace[j-1] = obj_trace[j]
         end
         obj_trace[k], pb = Zygote.pullback(x -> b.comp(b.filter(x)), vars)
@@ -94,7 +121,7 @@ function (b::BESO)(x0 = copy(b.obj.solver.vars))
         l1, l2 = minimum(sens), maximum(sens)
         while (l2 - l1) / l2 > sens_tol
             th = (l1 + l2) / 2
-            for i in 1:length(topology)
+            for i = 1:length(topology)
                 if !black[i] && !white[i]
                     topology[i] = T(sign(sens[varind[i]] - th) > 0)
                     vars[varind[i]] = topology[i]
@@ -110,7 +137,7 @@ function (b::BESO)(x0 = copy(b.obj.solver.vars))
         if iter >= k
             l = sum(@view obj_trace[1:k÷2])
             h = sum(@view obj_trace[k÷2+1:k])
-            change = abs(l-h)/h
+            change = abs(l - h) / h
         end
     end
 

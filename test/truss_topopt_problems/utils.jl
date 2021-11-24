@@ -20,7 +20,7 @@ This matrix formulation is equivalent to the one used in
 # Outputs
 `Kσs` = a list of 2*ndim x 2*ndim element geometric stiffness matrix (in global cooridnate)
 """
-function get_truss_Kσs(problem::TrussProblem{xdim, TT}, u, cellvalues) where {xdim, TT}
+function get_truss_Kσs(problem::TrussProblem{xdim,TT}, u, cellvalues) where {xdim,TT}
     Es = getE(problem)
     As = getA(problem)
     dh = problem.ch.dh
@@ -28,11 +28,11 @@ function get_truss_Kσs(problem::TrussProblem{xdim, TT}, u, cellvalues) where {x
     # usually ndof_pc = xdim * n_basefuncs
     ndof_pc = ndofs_per_cell(dh)
     n_basefuncs = getnbasefunctions(cellvalues)
-    @assert ndof_pc == xdim*n_basefuncs "$ndof_pc, $n_basefuncs"
+    @assert ndof_pc == xdim * n_basefuncs "$ndof_pc, $n_basefuncs"
     @assert n_basefuncs == 2
 
     global_dofs = zeros(Int, ndof_pc)
-    Kσs = [zeros(TT, ndof_pc, ndof_pc) for i in 1:getncells(dh.grid)]
+    Kσs = [zeros(TT, ndof_pc, ndof_pc) for i = 1:getncells(dh.grid)]
     Kσ_e = zeros(TT, ndof_pc, ndof_pc)
 
     for (cellidx, cell) in enumerate(CellIterator(dh))
@@ -44,15 +44,15 @@ function get_truss_Kσs(problem::TrussProblem{xdim, TT}, u, cellvalues) where {x
         L = norm(cell.coords[1] - cell.coords[2])
         R = compute_local_axes(cell.coords[1], cell.coords[2])
         # local axial projection operator (local axis transformation)
-        γ = vcat(-R[:,1], R[:,1])
+        γ = vcat(-R[:, 1], R[:, 1])
         u_cell = @view u[global_dofs]
         # compute axial force: first-order approx of bar force
         # better approx would be: EA/L * (u3-u1 + 1/(2*L0)*(u4-u2)^2) = EA/L * (γ'*u + 1/2*(δ'*u)^2)
         # see: https://people.duke.edu/~hpgavin/cee421/truss-finite-def.pdf
-        q_cell = E*A/L*(γ'*u_cell)
+        q_cell = E * A / L * (γ' * u_cell)
         Kσ_e .= 0
-        for i=2:size(R,2)
-            δ = vcat(-R[:,i], R[:,i])
+        for i = 2:size(R, 2)
+            δ = vcat(-R[:, i], R[:, i])
             # @assert δ' * γ ≈ 0
             Kσ_e .+= δ * δ'
         end
@@ -79,7 +79,14 @@ Assembly global geometric stiffness matrix of the given truss problem.
 `K` = global first-order stiffness matrix (same as ginfo.K)
 `Kσ` = global geometric stiffness matrix
 """
-function buckling(problem::TrussProblem{xdim, T}, ginfo, einfo, vars=ones(T, getncells(getdh(problem).grid)), xmin = T(0.0); u=undef) where {xdim, T}
+function buckling(
+    problem::TrussProblem{xdim,T},
+    ginfo,
+    einfo,
+    vars = ones(T, getncells(getdh(problem).grid)),
+    xmin = T(0.0);
+    u = undef,
+) where {xdim,T}
     dh = problem.ch.dh
     black = problem.black
     white = problem.white
@@ -109,7 +116,7 @@ function buckling(problem::TrussProblem{xdim, T}, ginfo, einfo, vars=ones(T, get
     celliteratortype = CellIterator{typeof(dh).parameters...}
     celliterator::celliteratortype = CellIterator(dh)
     TK = eltype(Kσs)
-    for (i,cell) in enumerate(celliterator)
+    for (i, cell) in enumerate(celliterator)
         celldofs!(global_dofs, dh, i)
         Kσ_e = TK isa Symmetric ? Kσs[i].data : Kσs[i]
         if black[i]
@@ -127,7 +134,7 @@ function buckling(problem::TrussProblem{xdim, T}, ginfo, einfo, vars=ones(T, get
             # if PENALTY_BEFORE_INTERPOLATION
             # px = density(penalty(vars[varind[i]]), xmin)
             # else
-                # px = penalty(density(vars[varind[i]], xmin))
+            # px = penalty(density(vars[varind[i]], xmin))
             # end
             Kσ_e = px * Kσ_e
             Ferrite.assemble!(assembler, global_dofs, Kσ_e)

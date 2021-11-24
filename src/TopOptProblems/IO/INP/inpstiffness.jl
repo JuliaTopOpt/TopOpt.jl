@@ -21,8 +21,18 @@ end
 - `white`:  a `BitVector` of length equal to the number of elements where `white[e]` is 1 iff the `e`^th element must not be part of the final design
 - `varind`: an `AbstractVector{Int}` of length equal to the number of elements where `varind[e]` gives the index of the decision variable corresponding to element `e`. Because some elements can be fixed to be black or white, not every element has a decision variable associated.
 """
-struct InpStiffness{dim, N, TF, TI, TBool, Tch <: ConstraintHandler, GO, TInds <: AbstractVector{TI}, TMeta<:Metadata} <: StiffnessTopOptProblem{dim, TF}
-    inp_content::InpContent{dim, TF, N, TI}
+struct InpStiffness{
+    dim,
+    N,
+    TF,
+    TI,
+    TBool,
+    Tch<:ConstraintHandler,
+    GO,
+    TInds<:AbstractVector{TI},
+    TMeta<:Metadata,
+} <: StiffnessTopOptProblem{dim,TF}
+    inp_content::InpContent{dim,TF,N,TI}
     geom_order::Type{Val{GO}}
     ch::Tch
     black::TBool
@@ -58,8 +68,8 @@ end
 
 getE(p::InpStiffness) = p.inp_content.E
 getν(p::InpStiffness) = p.inp_content.ν
-nnodespercell(::InpStiffness{dim, N}) where {dim, N} = N
-getgeomorder(p::InpStiffness{<:Any, <:Any, <:Any, <:Any, <:Any, <:Any, GO}) where {GO} = GO
+nnodespercell(::InpStiffness{dim,N}) where {dim,N} = N
+getgeomorder(p::InpStiffness{<:Any,<:Any,<:Any,<:Any,<:Any,<:Any,GO}) where {GO} = GO
 getdensity(p::InpStiffness) = p.inp_content.density
 getpressuredict(p::InpStiffness) = p.inp_content.dloads
 getcloaddict(p::InpStiffness) = p.inp_content.cloads

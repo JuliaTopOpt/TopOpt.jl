@@ -89,21 +89,22 @@ gm_ins_dir = joinpath(@__DIR__, "instances", "ground_meshes");
     file_name = "tim_$(problem_dim).json"
     problem_file = joinpath(gm_ins_dir, file_name)
 
-    mats = TrussFEAMaterial(10.0, 0.3);
-    crossecs = TrussFEACrossSec(800.0);
+    mats = TrussFEAMaterial(10.0, 0.3)
+    crossecs = TrussFEACrossSec(800.0)
 
-    node_points, elements, _, _ , fixities, load_cases = load_truss_json(problem_file)
+    node_points, elements, _, _, fixities, load_cases = load_truss_json(problem_file)
     ndim, nnodes, ncells = length(node_points[1]), length(node_points), length(elements)
     loads = load_cases["0"]
 
-    problem = TrussProblem(Val{:Linear}, node_points, elements, loads, fixities, mats, crossecs);
+    problem =
+        TrussProblem(Val{:Linear}, node_points, elements, loads, fixities, mats, crossecs)
 
     xmin = 0.0001 # minimum density
     p = 4.0 # penalty
     V = 0.5 # maximum volume fraction
     x0 = fill(V, ncells) # initial design
 
-    solver = FEASolver(Direct, problem);
+    solver = FEASolver(Direct, problem)
     ch = problem.ch
     dh = problem.ch.dh
 
@@ -137,7 +138,7 @@ gm_ins_dir = joinpath(@__DIR__, "instances", "ground_meshes");
         Kσ = assemble_k(Kσs)
         Kσ = apply_boundary_with_zerodiag!(Kσ, ch)
 
-        return Array(K + c*Kσ)
+        return Array(K + c * Kσ)
     end
 
     function vol_constr(x)
@@ -155,8 +156,8 @@ gm_ins_dir = joinpath(@__DIR__, "instances", "ground_meshes");
     Nonconvex.add_sd_constraint!(m, buckling_matrix_constr)
 
     Nonconvex.NonconvexCore.show_residuals[] = false
-    alg = SDPBarrierAlg(sub_alg=IpoptAlg())
-    options = SDPBarrierOptions(sub_options=IpoptOptions(max_iter=200))
+    alg = SDPBarrierAlg(sub_alg = IpoptAlg())
+    options = SDPBarrierOptions(sub_options = IpoptOptions(max_iter = 200))
     r = Nonconvex.optimize(m, alg, x0, options = options)
     # println("$(r.convstate)")
 
