@@ -11,6 +11,7 @@ using Parameters: @unpack
 using TimerOutputs, Ferrite, StaticArrays, StatsFuns
 using SparseArrays, Statistics, ChainRulesCore, Zygote
 using Nonconvex: Nonconvex
+using Flux
 
 export  Volume,
         Compliance,
@@ -32,7 +33,10 @@ export  Volume,
         TrussElementKσ,
         ElementK,
         apply_boundary_with_zerodiag!,
-        apply_boundary_with_meandiag!
+        apply_boundary_with_meandiag!,
+        NeuralNetwork,
+        PredictFunction,
+        TrainFunction
 
 const to = TimerOutput()
 
@@ -55,5 +59,7 @@ include("element_k.jl")
 
 # TODO no rrules yet
 include("truss_stress.jl")
+
+include("neural.jl")
 
 end

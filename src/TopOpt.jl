@@ -52,6 +52,7 @@ include(joinpath("CheqFilters", "CheqFilters.jl"))
 using .CheqFilters
 
 # Objective and constraint functions
+@reexport using Flux
 include(joinpath("Functions", "Functions.jl"))
 @reexport using .Functions
 
