@@ -4,19 +4,14 @@ v = 0.3 # Poisson’s ratio
 f = 1.0 # downward force
 
 problems = Any[
-            PointLoadCantilever(Val{:Linear}, (60, 20, 20), (1.0, 1.0, 1.0), E, v, f),
-            PointLoadCantilever(Val{:Linear}, (160, 40), (1.0, 1.0), E, v, f),
-            HalfMBB(Val{:Linear}, (60, 20), (1.0, 1.0), E, v, f),
-            LBeam(Val{:Linear}, Float64, force = f),
-            TieBeam(Val{:Quadratic}, Float64)
-            ]
-problem_names = [
-    &quot;3d cantilever beam&quot;,
-    &quot;cantilever beam&quot;,
-    &quot;half MBB beam&quot;,
-    &quot;L-beam&quot;,
-    &quot;tie-beam&quot;,
-    ]
+    PointLoadCantilever(Val{:Linear}, (60, 20, 20), (1.0, 1.0, 1.0), E, v, f),
+    PointLoadCantilever(Val{:Linear}, (160, 40), (1.0, 1.0), E, v, f),
+    HalfMBB(Val{:Linear}, (60, 20), (1.0, 1.0), E, v, f),
+    LBeam(Val{:Linear}, Float64, force = f),
+    TieBeam(Val{:Quadratic}, Float64),
+]
+problem_names =
+    [&quot;3d cantilever beam&quot;, &quot;cantilever beam&quot;, &quot;half MBB beam&quot;, &quot;L-beam&quot;, &quot;tie-beam&quot;]
 
 i = 2
 println(problem_names[i])
@@ -28,7 +23,7 @@ reuse = true # adaptive penalty flag
 
 convcriteria = Nonconvex.GenericCriteria()
 penalty = TopOpt.PowerPenalty(1.0)
-pcont = Continuation(penalty, steps = steps, xmin = xmin, pmax = 5.0)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">(::PowerContinuation{Float64}) (generic function with 1 method)</code></pre><p>NOTE: non-convexity + computational error lead to different solutions that satisfy the KKT tolerance</p><pre><code class="language-julia hljs">mma_options = options = MMAOptions(maxiter=1000)
+pcont = Continuation(penalty, steps = steps, xmin = xmin, pmax = 5.0)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">(::PowerContinuation{Float64}) (generic function with 1 method)</code></pre><p>NOTE: non-convexity + computational error lead to different solutions that satisfy the KKT tolerance</p><pre><code class="language-julia hljs">mma_options = options = MMAOptions(maxiter = 1000)
 maxtol = 0.01 # maximum tolerance
 mintol = 0.0001 # minimum tolerance
 b = log(mintol / maxtol) / steps
@@ -51,10 +46,8 @@ else
 end
 obj = x -&gt; comp(filter(x))</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">#1 (generic function with 1 method)</code></pre><h3 id="Define-volume-constraint"><a class="docs-heading-anchor" href="#Define-volume-constraint">Define volume constraint</a><a id="Define-volume-constraint-1"></a><a class="docs-heading-anchor-permalink" href="#Define-volume-constraint" title="Permalink"></a></h3><pre><code class="language-julia hljs">volfrac = TopOpt.Volume(problem, solver)
 constr = x -&gt; volfrac(filter(x)) - V</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">#3 (generic function with 1 method)</code></pre><h3 id="Define-subproblem-optimizer"><a class="docs-heading-anchor" href="#Define-subproblem-optimizer">Define subproblem optimizer</a><a id="Define-subproblem-optimizer-1"></a><a class="docs-heading-anchor-permalink" href="#Define-subproblem-optimizer" title="Permalink"></a></h3><pre><code class="language-julia hljs">x0 = fill(V, length(solver.vars))
-optimizer = Optimizer(
-    obj, constr, x0, MMA87(),
-    options = mma_options, convcriteria = convcriteria,
-)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi"></code></pre><h3 id="Define-continuation-SIMP-optimizer"><a class="docs-heading-anchor" href="#Define-continuation-SIMP-optimizer">Define continuation SIMP optimizer</a><a id="Define-continuation-SIMP-optimizer-1"></a><a class="docs-heading-anchor-permalink" href="#Define-continuation-SIMP-optimizer" title="Permalink"></a></h3><pre><code class="language-julia hljs">simp = SIMP(optimizer, solver, penalty.p)
+optimizer =
+    Optimizer(obj, constr, x0, MMA87(), options = mma_options, convcriteria = convcriteria)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi"></code></pre><h3 id="Define-continuation-SIMP-optimizer"><a class="docs-heading-anchor" href="#Define-continuation-SIMP-optimizer">Define continuation SIMP optimizer</a><a id="Define-continuation-SIMP-optimizer-1"></a><a class="docs-heading-anchor-permalink" href="#Define-continuation-SIMP-optimizer" title="Permalink"></a></h3><pre><code class="language-julia hljs">simp = SIMP(optimizer, solver, penalty.p)
 cont_simp = ContinuationSIMP(simp, steps, csimp_options)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi"></code></pre><h3 id="Solve"><a class="docs-heading-anchor" href="#Solve">Solve</a><a id="Solve-1"></a><a class="docs-heading-anchor-permalink" href="#Solve" title="Permalink"></a></h3><pre><code class="language-julia hljs">result = cont_simp(x0)
 
 @show result.convstate
@@ -71,19 +64,14 @@ v = 0.3 # Poisson’s ratio
 f = 1.0 # downward force
 
 problems = Any[
-            PointLoadCantilever(Val{:Linear}, (60, 20, 20), (1.0, 1.0, 1.0), E, v, f),
-            PointLoadCantilever(Val{:Linear}, (160, 40), (1.0, 1.0), E, v, f),
-            HalfMBB(Val{:Linear}, (60, 20), (1.0, 1.0), E, v, f),
-            LBeam(Val{:Linear}, Float64, force = f),
-            TieBeam(Val{:Quadratic}, Float64)
-            ]
-problem_names = [
-    &quot;3d cantilever beam&quot;,
-    &quot;cantilever beam&quot;,
-    &quot;half MBB beam&quot;,
-    &quot;L-beam&quot;,
-    &quot;tie-beam&quot;,
-    ]
+    PointLoadCantilever(Val{:Linear}, (60, 20, 20), (1.0, 1.0, 1.0), E, v, f),
+    PointLoadCantilever(Val{:Linear}, (160, 40), (1.0, 1.0), E, v, f),
+    HalfMBB(Val{:Linear}, (60, 20), (1.0, 1.0), E, v, f),
+    LBeam(Val{:Linear}, Float64, force = f),
+    TieBeam(Val{:Quadratic}, Float64),
+]
+problem_names =
+    [&quot;3d cantilever beam&quot;, &quot;cantilever beam&quot;, &quot;half MBB beam&quot;, &quot;L-beam&quot;, &quot;tie-beam&quot;]
 
 i = 2
 println(problem_names[i])
@@ -99,7 +87,7 @@ convcriteria = Nonconvex.GenericCriteria()
 penalty = TopOpt.PowerPenalty(1.0)
 pcont = Continuation(penalty, steps = steps, xmin = xmin, pmax = 5.0)
 
-mma_options = options = MMAOptions(maxiter=1000)
+mma_options = options = MMAOptions(maxiter = 1000)
 maxtol = 0.01 # maximum tolerance
 mintol = 0.0001 # minimum tolerance
 b = log(mintol / maxtol) / steps
@@ -130,10 +118,8 @@ volfrac = TopOpt.Volume(problem, solver)
 constr = x -&gt; volfrac(filter(x)) - V
 
 x0 = fill(V, length(solver.vars))
-optimizer = Optimizer(
-    obj, constr, x0, MMA87(),
-    options = mma_options, convcriteria = convcriteria,
-)
+optimizer =
+    Optimizer(obj, constr, x0, MMA87(), options = mma_options, convcriteria = convcriteria)
 
 simp = SIMP(optimizer, solver, penalty.p)
 cont_simp = ContinuationSIMP(simp, steps, csimp_options)
@@ -144,4 +130,4 @@ result = cont_simp(x0)
 @show optimizer.workspace.iter
 @show result.objval
 
-# This file was generated using Literate.jl, https://github.com/fredrikekre/Literate.jl</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../geso/">« GESO example: HalfMBB Beam</a><a class="docs-footer-nextpage" href="../global_stress/">Global stress objective example »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.10 on <span class="colophon-date" title="Thursday 18 November 2021 02:43">Thursday 18 November 2021</span>. Using Julia version 1.6.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+# This file was generated using Literate.jl, https://github.com/fredrikekre/Literate.jl</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../geso/">« GESO example: HalfMBB Beam</a><a class="docs-footer-nextpage" href="../global_stress/">Global stress objective example »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.10 on <span class="colophon-date" title="Wednesday 24 November 2021 15:22">Wednesday 24 November 2021</span>. Using Julia version 1.6.4.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>

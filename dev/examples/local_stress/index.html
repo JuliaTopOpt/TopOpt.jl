@@ -6,14 +6,12 @@ v = 0.3 # Poisson’s ratio
 f = 1.0 # downward force
 rmin = 3.0</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">3.0</code></pre><h3 id="Define-the-problem"><a class="docs-heading-anchor" href="#Define-the-problem">Define the problem</a><a id="Define-the-problem-1"></a><a class="docs-heading-anchor-permalink" href="#Define-the-problem" title="Permalink"></a></h3><pre><code class="language-julia hljs">problem = PointLoadCantilever(Val{:Linear}, (160, 40), (1.0, 1.0), E, v, f)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi"></code></pre><h3 id="Parameter-settings"><a class="docs-heading-anchor" href="#Parameter-settings">Parameter settings</a><a id="Parameter-settings-1"></a><a class="docs-heading-anchor-permalink" href="#Parameter-settings" title="Permalink"></a></h3><pre><code class="language-julia hljs">V = 0.5 # volume fraction
 xmin = 0.0001 # minimum density
-steps = 40 # maximum number of penalty steps, delta_p0 = 0.1</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">40</code></pre><h3 id="Continuation-SIMP"><a class="docs-heading-anchor" href="#Continuation-SIMP">Continuation SIMP</a><a id="Continuation-SIMP-1"></a><a class="docs-heading-anchor-permalink" href="#Continuation-SIMP" title="Permalink"></a></h3><pre><code class="language-julia hljs">x0 = fill(1.0, 160*40) # initial design
+steps = 40 # maximum number of penalty steps, delta_p0 = 0.1</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">40</code></pre><h3 id="Continuation-SIMP"><a class="docs-heading-anchor" href="#Continuation-SIMP">Continuation SIMP</a><a id="Continuation-SIMP-1"></a><a class="docs-heading-anchor-permalink" href="#Continuation-SIMP" title="Permalink"></a></h3><pre><code class="language-julia hljs">x0 = fill(1.0, 160 * 40) # initial design
 x = copy(x0)
 for p in [1.0, 2.0, 3.0]
     global penalty, stress, filter, result, stress, x
     penalty = TopOpt.PowerPenalty(p)
-    solver = FEASolver(
-        Direct, problem, xmin = xmin, penalty = penalty,
-    )
+    solver = FEASolver(Direct, problem, xmin = xmin, penalty = penalty)
     stress = TopOpt.MicroVonMisesStress(solver)
     filter = DensityFilter(solver, rmin = rmin)
     volfrac = TopOpt.Volume(problem, solver)
@@ -22,17 +20,11 @@ for p in [1.0, 2.0, 3.0]
     thr = 10 # stress threshold
     constr = x -&gt; begin
         s = stress(filter(x))
-        vcat(
-            (s .- thr) / 100,
-            logsumexp(s) - log(length(s)) - thr,
-        )
+        vcat((s .- thr) / 100, logsumexp(s) - log(length(s)) - thr)
     end
     alg = PercivalAlg()
     options = PercivalOptions()
-    optimizer = Optimizer(
-        obj, constr, x, alg,
-        options = options,
-    )
+    optimizer = Optimizer(obj, constr, x, alg, options = options)
     simp = SIMP(optimizer, solver, p)
     result = simp(x)
     x = result.topology
@@ -58,14 +50,12 @@ V = 0.5 # volume fraction
 xmin = 0.0001 # minimum density
 steps = 40 # maximum number of penalty steps, delta_p0 = 0.1
 
-x0 = fill(1.0, 160*40) # initial design
+x0 = fill(1.0, 160 * 40) # initial design
 x = copy(x0)
 for p in [1.0, 2.0, 3.0]
     global penalty, stress, filter, result, stress, x
     penalty = TopOpt.PowerPenalty(p)
-    solver = FEASolver(
-        Direct, problem, xmin = xmin, penalty = penalty,
-    )
+    solver = FEASolver(Direct, problem, xmin = xmin, penalty = penalty)
     stress = TopOpt.MicroVonMisesStress(solver)
     filter = DensityFilter(solver, rmin = rmin)
     volfrac = TopOpt.Volume(problem, solver)
@@ -74,17 +64,11 @@ for p in [1.0, 2.0, 3.0]
     thr = 10 # stress threshold
     constr = x -&gt; begin
         s = stress(filter(x))
-        vcat(
-            (s .- thr) / 100,
-            logsumexp(s) - log(length(s)) - thr,
-        )
+        vcat((s .- thr) / 100, logsumexp(s) - log(length(s)) - thr)
     end
     alg = PercivalAlg()
     options = PercivalOptions()
-    optimizer = Optimizer(
-        obj, constr, x, alg,
-        options = options,
-    )
+    optimizer = Optimizer(obj, constr, x, alg, options = options)
     simp = SIMP(optimizer, solver, p)
     result = simp(x)
     x = result.topology
@@ -93,4 +77,4 @@ end
 maximum(stress(filter(x0))) # 0.51
 maximum(stress(filter(x))) # 10.01
 
-# This file was generated using Literate.jl, https://github.com/fredrikekre/Literate.jl</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.10 on <span class="colophon-date" title="Thursday 18 November 2021 02:43">Thursday 18 November 2021</span>. Using Julia version 1.6.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+# This file was generated using Literate.jl, https://github.com/fredrikekre/Literate.jl</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.10 on <span class="colophon-date" title="Wednesday 24 November 2021 15:22">Wednesday 24 November 2021</span>. Using Julia version 1.6.4.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>

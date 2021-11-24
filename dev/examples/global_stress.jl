@@ -9,12 +9,7 @@ problems = Any[
     PointLoadCantilever(Val{:Linear}, (60, 20), (1.0, 1.0), E, v, f),
     HalfMBB(Val{:Linear}, (60, 20), (1.0, 1.0), E, v, f),
 ]
-problem_names = [
-    "Cantilever beam",
-    "Half MBB beam",
-    "L-beam",
-    "Tie-beam",
-]
+problem_names = ["Cantilever beam", "Half MBB beam", "L-beam", "Tie-beam"]
 
 i = 1
 println(problem_names[i])
@@ -26,9 +21,7 @@ steps = 40 # maximum number of penalty steps, delta_p0 = 0.1
 convcriteria = Nonconvex.KKTCriteria()
 penalty = TopOpt.PowerPenalty(1.0)
 
-solver = FEASolver(
-    Direct, problem, xmin = xmin, penalty = penalty,
-)
+solver = FEASolver(Direct, problem, xmin = xmin, penalty = penalty)
 
 stress = TopOpt.MicroVonMisesStress(solver)
 filter = if problem isa TopOptProblems.TieBeam
@@ -40,15 +33,11 @@ volfrac = TopOpt.Volume(problem, solver)
 
 obj = x -> volfrac(filter(x))
 constr = x -> norm(stress(filter(x)), 5) - 1.0
-options = MMAOptions(
-    maxiter=2000, tol = Nonconvex.Tolerance(kkt = 1e-4),
-)
+options = MMAOptions(maxiter = 2000, tol = Nonconvex.Tolerance(kkt = 1e-4))
 
 x0 = fill(1.0, length(solver.vars))
-optimizer = Optimizer(
-    obj, constr, x0, MMA87(),
-    options = options, convcriteria = convcriteria,
-)
+optimizer =
+    Optimizer(obj, constr, x0, MMA87(), options = options, convcriteria = convcriteria)
 
 simp = SIMP(optimizer, solver, 3.0)
 
