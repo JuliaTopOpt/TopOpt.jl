@@ -32,7 +32,17 @@ end
 # Returns
 displacement vector `u`
 """
-function (dp::Displacement{T})(x) where {T}
+function (dp::Displacement{T})(x::AbstractVector) where {T}
+    @unpack solver, global_dofs = dp
+    @unpack penalty, problem, xmin = solver
+    dp.fevals += 1
+    @assert length(global_dofs) == ndofs_per_cell(solver.problem.ch.dh)
+    solver.vars .= x
+    solver()
+    return copy(solver.u)
+end
+
+function (dp::Displacement{T})(K::SparseMatrixCSC) where {T}
     @unpack solver, global_dofs = dp
     @unpack penalty, problem, xmin = solver
     dp.fevals += 1
@@ -53,7 +63,7 @@ d(u)/d(x_e)' * Δ = -d(ρ_e)/d(x_e) * u' * K_e * (K^-1 * Δ)
 
 where d(u)/d(x) ∈ (nDof x nCell); d(u)/d(x)^T * Δ = (nCell x nDof) * (nDof x 1) -> nCell x 1
 """
-function ChainRulesCore.rrule(dp::Displacement, x)
+function ChainRulesCore.rrule(dp::Displacement, x::AbstractVector)
     @unpack dudx_tmp, solver, global_dofs = dp
     @unpack penalty, problem, u, xmin = solver
     dh = getdh(problem)
@@ -72,5 +82,13 @@ function ChainRulesCore.rrule(dp::Displacement, x)
             dudx_tmp[e] = -dρe * dot(Keu, solver.lhs[global_dofs])
         end
         return nothing, dudx_tmp # J1' * v, J2' * v
+    end
+end
+
+function ChainRulesCore.rrule(dp::Displacement, K::SparseMatrixCSC)
+    val, pb = Zygote.gradient(\, K, dp.f)
+    return val, Δ -> begin
+        temp  = pb(Δ)
+        return (NoTangent(), temp[2])
     end
 end
