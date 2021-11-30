@@ -20,10 +20,15 @@ function NeuralNetwork(nn_model, input_coords::AbstractVector)
     f = x -> nn_model(x)[1]
     @assert all(0 .<= f.(input_coords) .<= 1)
     p, re = Flux.destructure(nn_model)
-    return NeuralNetwork(nn_model, p, p -> getindex.(re(p).(input_coords), 1), nn_model)
+    return NeuralNetwork(nn_model, Float64.(p), p -> getindex.(re(p).(input_coords), 1), nn_model)
 end
 function NeuralNetwork(nn_model, problem::AbstractTopOptProblem)
-    return NeuralNetwork(nn_model, getcentroids(problem))
+    centroids = getcentroids(problem)
+    m, s = mean(centroids), std(centroids)
+    scentroids = map(centroids) do c
+        (c .- m) ./ s
+    end
+    return NeuralNetwork(nn_model, scentroids)
 end
 
 @params struct PredictFunction <: Function
