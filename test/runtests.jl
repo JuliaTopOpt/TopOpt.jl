@@ -34,4 +34,7 @@ end
     @safetestset "More examples" begin
         include("examples/test_examples.jl")
     end
+    @safetestset "Neural networks" begin
+        include("examples/neural.jl")
+    end
 end
