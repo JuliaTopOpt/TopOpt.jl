@@ -1,4 +1,5 @@
-using TopOpt, Makie, CairoMakie, Zygote
+using TopOpt, Zygote
+# using Makie
 Nonconvex.@load Ipopt
 
 E = 1.0 # Young’s modulus
@@ -123,8 +124,10 @@ Zygote.gradient(constr, p0)
 
 tf(res2.minimizer)
 
+#=
 using Makie, CairoMakie
 
 topology = filter(tf(res2.minimizer))
 using TopOpt.TopOptProblems.Visualization: visualize
 visualize(problem; topology)
+=#
