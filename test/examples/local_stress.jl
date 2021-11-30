@@ -1,5 +1,6 @@
 # using Revise
 using TopOpt, LinearAlgebra, StatsFuns
+using StatsFuns: logsumexp
 # using Makie
 # using TopOpt.TopOptProblems.Visualization: visualize
 
