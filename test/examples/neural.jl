@@ -103,7 +103,7 @@ end
 
 μ = 1.0
 res2 = res1
-for _ in 1:10
+for _ = 1:10
     global μ *= 2
     global res2
     model2 = Model()
