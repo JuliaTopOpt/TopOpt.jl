@@ -38,3 +38,26 @@ end
         include("examples/neural.jl")
     end
 end
+
+@safetestset "WCSMO 14" begin
+    @safetestset "Continuum demos" begin
+        include("wcsmo14/demos/continuum/cont_compliance1.jl")
+        include("wcsmo14/demos/continuum/cont_compliance2.jl")
+        include("wcsmo14/demos/continuum/cont_stress.jl")
+    end
+    @safetestset "Truss 2d demos" begin
+        include("wcsmo14/demos/truss/truss_compliance_2d1.jl")
+        include("wcsmo14/demos/truss/truss_compliance_2d2.jl")
+    end
+    @safetestset "Truss 3d demos" begin
+        include("wcsmo14/demos/truss/truss_compliance_3d1.jl")
+        include("wcsmo14/demos/truss/truss_compliance_3d2.jl")
+    end
+    @safetestset "Benchmarks" begin
+        include("wcsmo14/jl_benchmarks/compare_neo99_2D.jl")
+        include("wcsmo14/jl_benchmarks/compare_polytop.jl")
+        include("wcsmo14/jl_benchmarks/compare_top3d.jl")
+        include("wcsmo14/jl_benchmarks/compare_top3d125.jl")
+        include("wcsmo14/jl_benchmarks/new_problems.jl")
+    end
+end
