@@ -1,0 +1,9 @@
+[deps]
+Ferrite = "c061ca5d-56c9-439f-9c0e-210fe06d3992"
+GLFW = "f7f18e0c-5ee9-5ccd-a5bf-e8befd85ed98"
+IJulia = "7073ff75-c697-5162-941a-fcdaad2a7d2a"
+Makie = "ee78f7c6-11fb-53f2-987a-cfe4a2b5a57a"
+Nonconvex = "01bcebdf-4d21-426d-b5c4-6132c1619978"
+Revise = "295af30f-e4ad-537b-8983-00126c2a3abe"
+StatsFuns = "4c63d2b9-4356-54db-8cca-17b64c39e42c"
+TopOpt = "53a1e1a5-51bb-58a9-8a02-02056cc81109"
