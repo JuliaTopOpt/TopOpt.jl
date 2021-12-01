@@ -1,7 +1,8 @@
 module ContComplianceDemo1
 
-using Makie, TopOpt, LinearAlgebra, StatsFuns
-using TopOpt.TopOptProblems.Visualization: visualize
+using TopOpt, LinearAlgebra, StatsFuns
+# using Makie
+# using TopOpt.TopOptProblems.Visualization: visualize
 
 E = 1.0 # Young’s modulus
 v = 0.3 # Poisson’s ratio
@@ -15,7 +16,7 @@ x0 = fill(V, prod(problem_size)) # initial design
 
 problem = HalfMBB(Val{:Linear}, problem_size, (1.0, 1.0), E, v, f)
 
-solver = FEASolver(Displacement, Direct, problem, xmin = xmin)
+solver = FEASolver(Direct, problem, xmin = xmin)
 cheqfilter = DensityFilter(solver, rmin = rmin)
 comp = TopOpt.Compliance(problem, solver)
 
@@ -42,8 +43,8 @@ TopOpt.setpenalty!(solver, p)
 @show obj(r.minimizer)
 @show constr(r.minimizer)
 topology = cheqfilter(r.minimizer);
-fig = visualize(problem, solver.u; 
-    topology = topology, default_exagg_scale=0.0, scale_range=10.0)
-Makie.display(fig)
+# fig = visualize(problem, solver.u; 
+#     topology = topology, default_exagg_scale=0.0, scale_range=10.0)
+# Makie.display(fig)
 
 end

@@ -1,6 +1,6 @@
 using TopOpt
-import Makie
-using TopOpt.TopOptProblems.Visualization: visualize
+# import Makie
+# using TopOpt.TopOptProblems.Visualization: visualize
 
 using TimerOutputs
 
@@ -9,7 +9,7 @@ using TimerOutputs
     # https://github.com/KristofferC/TimerOutputs.jl
     to = TimerOutput()
     reset_timer!(to)
-    Nonconvex.show_residuals[] = true
+    Nonconvex.NonconvexCore.show_residuals[] = true
 
     # Define the problem
     E = 1.0 # Young’s modulus
@@ -28,7 +28,7 @@ using TimerOutputs
 
     # Define a finite element solver
     @timeit to "penalty def" penalty = TopOpt.PowerPenalty(3.0)
-    @timeit to "solver def" solver = FEASolver(Displacement, Direct, problem, xmin = xmin,
+    @timeit to "solver def" solver = FEASolver(Direct, problem, xmin = xmin,
         penalty = penalty);
 
     # Define compliance objective
@@ -47,14 +47,14 @@ using TimerOutputs
 
     # Define subproblem optimizer
     # ! seems to be absolute diff
-    mma_options = options = Nonconvex.MMAOptions(maxiter = 1000, 
-        tol = Nonconvex.Tolerance(x = 1e-3, fabs = 1e-3, frel = 0.0, kkt = 1e-3),
+    mma_options = options = MMAOptions(maxiter = 1000, 
+        tol = Tolerance(x = 1e-3, fabs = 1e-3, frel = 0.0, kkt = 1e-3),
         )
-    convcriteria = Nonconvex.GenericCriteria()
-    # convcriteria = Nonconvex.KKTCriteria()
+    convcriteria = GenericCriteria()
+    # convcriteria = KKTCriteria()
 
     x0 = fill(V, length(solver.vars))
-    @timeit to "optimizer def" optimizer = Optimizer(obj, constr, x0, Nonconvex.MMA87(),
+    @timeit to "optimizer def" optimizer = Optimizer(obj, constr, x0, MMA87(),
         options = mma_options,
         convcriteria = convcriteria);
 
@@ -77,11 +77,11 @@ using TimerOutputs
         # IpoptWorkspace has no field iter
     end
 
-    # # Visualize the result using Makie.jl
-    fig = visualize(problem; topology=result.topology, 
-        default_exagg_scale=0.07, scale_range=10.0, vector_linewidth=3, vector_arrowsize=0.005, 
-        default_support_scale=0.01, default_load_scale=0.01)
-    Makie.display(fig)
+    # # # Visualize the result using Makie.jl
+    # fig = visualize(problem; topology=result.topology, 
+    #     default_exagg_scale=0.07, scale_range=10.0, vector_linewidth=3, vector_arrowsize=0.005, 
+    #     default_support_scale=0.01, default_load_scale=0.01)
+    # Makie.display(fig)
 
     # return problem, result
 # end

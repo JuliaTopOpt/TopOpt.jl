@@ -1,7 +1,8 @@
 module ContComplianceDemo2
 
-using Makie, TopOpt, LinearAlgebra, StatsFuns
-using TopOpt.TopOptProblems.Visualization: visualize
+using TopOpt, LinearAlgebra, StatsFuns
+# using Makie
+# using TopOpt.TopOptProblems.Visualization: visualize
 
 E = 1.0 # Young’s modulus
 v = 0.3 # Poisson’s ratio
@@ -16,7 +17,7 @@ compliance_threshold = 800 # maximum compliance
 problem = PointLoadCantilever(Val{:Linear}, problem_size, (1.0, 1.0), E, v, f)
 #problem = HalfMBB(Val{:Linear}, problem_size, (1.0, 1.0), E, v, f)
 
-solver = FEASolver(Displacement, Direct, problem, xmin = xmin)
+solver = FEASolver(Direct, problem, xmin = xmin)
 
 cheqfilter = DensityFilter(solver, rmin = rmin)
 stress = TopOpt.MicroVonMisesStress(solver)
@@ -48,8 +49,8 @@ TopOpt.setpenalty!(solver, p)
 @show constr(r.minimizer)
 @show maximum(stress(cheqfilter(r.minimizer)))
 topology = cheqfilter(r.minimizer);
-fig = visualize(problem, solver.u; 
-    topology = topology, default_exagg_scale=0.0, scale_range=10.0)
-Makie.display(fig)
+# fig = visualize(problem, solver.u; 
+#     topology = topology, default_exagg_scale=0.0, scale_range=10.0)
+# Makie.display(fig)
 
 end

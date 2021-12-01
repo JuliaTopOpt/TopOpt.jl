@@ -37,9 +37,14 @@ end
     @safetestset "Neural networks" begin
         include("examples/neural.jl")
     end
+    @safetestset "Integer nonlinear programming for truss optimization" begin
+        include("examples/mixed_integer_truss/truss_compliance_2d1.jl")
+    end
 end
 
+
 @safetestset "WCSMO 14" begin
+    # This was originlly part of https://github.com/JuliaTopOpt/TopOpt.jl_WCSMO21
     @safetestset "Continuum demos" begin
         include("wcsmo14/demos/continuum/cont_compliance1.jl")
         include("wcsmo14/demos/continuum/cont_compliance2.jl")

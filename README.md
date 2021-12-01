@@ -47,6 +47,7 @@ All the following features are available in TopOpt.jl but the documentation is c
 - Concentrated and distributed loads
 - SIMP, RAMP, continuation SIMP/RAMP and BESO
 - Compliance, volume and stress functions
+- Buckling constrained truss optimization
 - End-to-end topology optimization from INP file to VTK file
 - Interactive visualization of designs and deformation
 - Automatic differentiation of arbitrary Julia functions
@@ -54,6 +55,8 @@ All the following features are available in TopOpt.jl but the documentation is c
 - Density and sensitivity filters
 - Heaviside projection
 - Handling load uncertainty in compliance-based topology optimization
+- Neural network representation of designs
+- Integer nonlinear topology optimization for truss and continuum problems (design variables guaranteed to be integer)
 
 ![gif1](https://user-images.githubusercontent.com/19524993/138464511-2685f3fe-e7c5-482e-8b06-43ab0fb82990.gif)
 ![gif2](https://user-images.githubusercontent.com/19524993/138464828-88f0ffcb-01f7-43b7-8d17-f5d201e95aa3.gif)
@@ -67,23 +70,23 @@ To cite this package, you can cite the following 2 conference publications.
 - TopOpt.jl: An efficient and high-performance package for topology optimization of continuum structures in the Julia programming language
 
 ```bibtex
-    @inproceedings{tarek2019topoptjl,
-      title={TopOpt.jl: An efficient and high-performance package for topology optimization of continuum structures in the Julia programming language},
-      author={Tarek, Mohamed},
-      booktitle={Proceedings of the 13th World Congress of Structural and Multidisciplinary Optimization},
-      year={2019}
-    }
+@inproceedings{tarek2019topoptjl,
+  title={TopOpt.jl: An efficient and high-performance package for topology optimization of continuum structures in the Julia programming language},
+  author={Tarek, Mohamed},
+  booktitle={Proceedings of the 13th World Congress of Structural and Multidisciplinary Optimization},
+  year={2019}
+}
 ```
 
 - [TopOpt.jl: Truss and Continuum Topology Optimization, Interactive Visualization, Automatic Differentiation and More](https://web.mit.edu/yijiangh/www/papers/topopt_jl_WCSMO2021.pdf)
 
 ```bibtex
-    @inproceedings{huang2021topoptjl,
-      title={TopOpt.jl: Truss and Continuum Topology Optimization, Interactive Visualization, Automatic Differentiation and More},
-      author={Huang, Yijiang and Tarek, Mohamed},
-      booktitle={Proceedings of the 14th World Congress of Structural and Multidisciplinary Optimization},
-      year={2021}
-    }
+@inproceedings{huang2021topoptjl,
+  title={TopOpt.jl: Truss and Continuum Topology Optimization, Interactive Visualization, Automatic Differentiation and More},
+  author={Huang, Yijiang and Tarek, Mohamed},
+  booktitle={Proceedings of the 14th World Congress of Structural and Multidisciplinary Optimization},
+  year={2021}
+}
 ```
 
 ## Contribute

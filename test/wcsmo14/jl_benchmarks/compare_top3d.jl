@@ -1,6 +1,7 @@
 using TopOpt
-import Makie
-using TopOpt.TopOptProblems.Visualization: visualize
+Nonconvex.@load Ipopt
+# import Makie
+# using TopOpt.TopOptProblems.Visualization: visualize
 
 using Suppressor
 
@@ -14,7 +15,7 @@ using TimerOutputs
     # https://github.com/KristofferC/TimerOutputs.jl
     to = TimerOutput()
     reset_timer!(to)
-    Nonconvex.show_residuals[] = true
+    Nonconvex.NonconvexCore.show_residuals[] = true
 
     # Define the problem
     E = 1.0 # Young’s modulus
@@ -27,13 +28,13 @@ using TimerOutputs
     xmin = 1e-6 # minimum density
     rmin = 2.0; # density filter radius
 
-    nels = (96, 48, 48) 
+    nels = (96, 48, 48)
     sizes = (1.0, 1.0, 1.0)
     @timeit to "problem def" problem = NewPointLoadCantilever(Val{:Linear}, nels, sizes, E, v, f);
 
     # Define a finite element solver
     @timeit to "penalty def" penalty = TopOpt.PowerPenalty(3.0)
-    @timeit to "solver def" solver = FEASolver(Displacement, Direct, problem, xmin = xmin,
+    @timeit to "solver def" solver = FEASolver(Direct, problem, xmin = xmin,
         penalty = penalty);
 
     # Define compliance objective
@@ -52,27 +53,27 @@ using TimerOutputs
 
     # Define subproblem optimizer
     # TODO MMA02 converge to weird results under this criteria
-    mma_options = options = Nonconvex.MMAOptions(
+    mma_options = options = MMAOptions(
         maxiter = 300, 
-        tol = Nonconvex.Tolerance(x = 1e-3, fabs = 1e-3, frel = 0.0),
+        tol = Tolerance(x = 1e-3, fabs = 1e-3, frel = 0.0),
         )
-    ipopt_options = Nonconvex.IpoptOptions(
+    ipopt_options = IpoptOptions(
         # maxiter = 100, 
-        # tol = Nonconvex.Tolerance(x = 1e-3, f = 1e-6),
+        # tol = Tolerance(x = 1e-3, f = 1e-6),
     )
 
-    convcriteria = Nonconvex.GenericCriteria()
-    # convcriteria = Nonconvex.KKTCriteria()
+    convcriteria = GenericCriteria()
+    # convcriteria = KKTCriteria()
 
     x0 = fill(V, length(solver.vars))
     @timeit to "optimizer def" optimizer = Optimizer(obj, constr, x0, 
-        Nonconvex.MMA87(),
+        MMA87(),
         options = mma_options,
-        # Nonconvex.IpoptAlg(),
+        # IpoptAlg(),
         # options = ipopt_options,
         convcriteria = convcriteria
         );
-    # Nonconvex.MMA02(),
+    # MMA02(),
 
     # Define SIMP optimizer
     @timeit to "simp def" simp = SIMP(optimizer, solver, penalty.p);
@@ -108,12 +109,12 @@ using TimerOutputs
         write(io, output)
     end
 
-    # # Visualize the result using Makie.jl
-    fig = visualize(problem; topology=result.topology, 
-        default_exagg_scale=0.07, scale_range=10.0, vector_linewidth=3, vector_arrowsize=0.5)
-    Makie.display(fig)
+    # # # Visualize the result using Makie.jl
+    # fig = visualize(problem; topology=result.topology, 
+    #     default_exagg_scale=0.07, scale_range=10.0, vector_linewidth=3, vector_arrowsize=0.5)
+    # Makie.display(fig)
 
-    Makie.save("jl-top3d.matlab__$(nels).png", fig)
+    # Makie.save("jl-top3d.matlab__$(nels).png", fig)
 
     # return problem, result
 # end
