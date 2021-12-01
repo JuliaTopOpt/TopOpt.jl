@@ -42,7 +42,7 @@ obj = x -> comp(filter(x))
 volfrac = TopOpt.Volume(problem, solver)
 constr = x -> volfrac(filter(x)) - V
 
-# You can enable the iteration printouts with `Nonconvex.show_residuals[] = true`
+# You can enable the iteration printouts with `Nonconvex.NonconvexCore.show_residuals[] = true`
 
 # ### Define subproblem optimizer
 mma_options =
