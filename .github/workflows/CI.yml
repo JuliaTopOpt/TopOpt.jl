@@ -9,25 +9,47 @@ on:
     tags: '*'
 jobs:
   test:
-    name: Test julia ${{ matrix.julia-version }} - ${{ matrix.os }}
+    name: Test julia ${{ matrix.version }} - ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        julia-version: ['1.6',]
-        os: ['ubuntu-latest',]
+        version:
+          - '1.7'
+        os:
+          - ubuntu-latest
+        arch:
+          - x64
+        group:
+          - Tests
+          - Examples
+          - WCSMO14
     steps:
-      - name: Checkout
-        uses: actions/checkout@v2
+      - uses: actions/checkout@v2
       - uses: julia-actions/setup-julia@v1
         with:
-          version: ${{ matrix.julia-version }}
-      - uses: julia-actions/julia-buildpkg@v1
-      - uses: julia-actions/julia-runtest@v1
+          version: ${{ matrix.version }}
+          arch: ${{ matrix.arch }}
+      - uses: actions/cache@v1
+        env:
+          cache-name: cache-artifacts
+        with:
+          path: ~/.julia/artifacts
+          key: ${{ runner.os }}-test-${{ env.cache-name }}-${{ hashFiles('**/Project.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-test-${{ env.cache-name }}-
+            ${{ runner.os }}-test-
+            ${{ runner.os }}-
+      - uses: julia-actions/julia-buildpkg@latest
+      - uses: julia-actions/julia-runtest@latest
+        with:
+          coverage: false
+        env:
+          GROUP: ${{ matrix.group }}
       - uses: julia-actions/julia-processcoverage@v1
-        if: ${{ matrix.julia-version == '1.6' && matrix.os == 'ubuntu-latest' }}
+        if: ${{ matrix.version == '1.7' && matrix.os == 'ubuntu-latest' }}
       - uses: codecov/codecov-action@v1
-        if: ${{ matrix.julia-version == '1.6' && matrix.os == 'ubuntu-latest' }}
+        if: ${{ matrix.version == '1.7' && matrix.os == 'ubuntu-latest' }}
         with:
           file: lcov.info          
   # example for Makie-involving docs build
@@ -39,13 +61,13 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        julia-version: ['1.6',]
+        version: ['1.7',]
         os: ['ubuntu-latest',]
     steps:
       - uses: actions/checkout@v2
       - uses: julia-actions/setup-julia@v1
         with:
-          version: ${{ matrix.julia-version }}
+          version: ${{ matrix.version }}
       # - uses: actions/cache@v1
       #   env:
       #     cache-name: cache-artifacts
