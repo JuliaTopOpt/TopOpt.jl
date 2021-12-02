@@ -92,17 +92,16 @@ To cite this package, you can cite the following 2 conference publications.
 ## Contribute
 
 We always welcome new contributors! Feel free to open an issue or reach out to us via email if you want to collaborate. There are plenty of things to do including beginner friendly tasks and research-oriented tasks. You can help us create the best topology optimization ecosystem in the world! Some beginner-friendly ideas you could be working on include:
-1. Multi-material design parameterisation
-2. Level set design parameterization
-3. Lattice design parameterization
-4. Neural network based design parameterization
-5. Local volume constraints
-6. Supporting rectilinear grids
-7. Wrapping OpenLSTO_jll which is the precompiled binary for M2DOLab/OpenLSTO
-8. Wrapping TopOpt_in_PETSc_jll which is the precompiled binary for topopt/TopOpt_in_PETSc
-9. Reliability-based design optimization
-10. Robust optimization
-11. Stochastic optimization
+- Multi-material design parameterisation
+- Level set design parameterization
+- Lattice design parameterization
+- Local volume constraints
+- Supporting rectilinear grids
+- Wrapping OpenLSTO_jll which is the precompiled binary for M2DOLab/OpenLSTO
+- Wrapping TopOpt_in_PETSc_jll which is the precompiled binary for topopt/TopOpt_in_PETSc
+- Reliability-based design optimization
+- Robust optimization
+- Stochastic optimization
 
 
 ## Questions?
