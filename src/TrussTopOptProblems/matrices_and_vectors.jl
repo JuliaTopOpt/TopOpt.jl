@@ -114,10 +114,10 @@ function GenericCellScalarValues(
     dMdξ = fill(zero(Vec{ξdim,T}) * T(NaN), n_geom_basefuncs, n_qpoints)
     for (qp, ξ) in enumerate(quad_rule.points)
         for i = 1:n_func_basefuncs
-            dNdξ[i, qp], N[i, qp] = gradient(ξ -> value(func_interpol, i, ξ), ξ, :all)
+            dNdξ[i, qp], N[i, qp] = Ferrite.gradient(ξ -> value(func_interpol, i, ξ), ξ, :all)
         end
         for i = 1:n_geom_basefuncs
-            dMdξ[i, qp], M[i, qp] = gradient(ξ -> value(geom_interpol, i, ξ), ξ, :all)
+            dMdξ[i, qp], M[i, qp] = Ferrite.gradient(ξ -> value(geom_interpol, i, ξ), ξ, :all)
         end
     end
     detJdV = fill(T(NaN), n_qpoints)
