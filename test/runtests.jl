@@ -63,7 +63,7 @@ if GROUP == "All" || GROUP == "WCSMO14"
     end
     @safetestset "WCSMO Benchmarks" begin
         include("wcsmo14/jl_benchmarks/compare_neo99_2D.jl")
-        include("wcsmo14/jl_benchmarks/compare_polytop.jl")
+        #include("wcsmo14/jl_benchmarks/compare_polytop.jl")
         #include("wcsmo14/jl_benchmarks/compare_top3d.jl")
         #include("wcsmo14/jl_benchmarks/compare_top3d125.jl")
         #include("wcsmo14/jl_benchmarks/new_problems.jl")
