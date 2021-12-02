@@ -34,7 +34,7 @@ Zygote.@nograd StressTemp
     reuse::Bool
     maxfevals::Int
 end
-function MacroVonMisesStress(solver; reuse = false, maxfevals = 10^8)
+function MacroVonMisesStress(solver; reuse=false, maxfevals=10^8)
     T = eltype(solver.u)
     dh = solver.problem.ch.dh
     k = ndofs_per_cell(dh)
@@ -46,15 +46,7 @@ function MacroVonMisesStress(solver; reuse = false, maxfevals = 10^8)
     sigma_vm = similar(utMu)
 
     return MacroVonMisesStress(
-        utMu,
-        Mu,
-        sigma_vm,
-        solver,
-        global_dofs,
-        stress_temp,
-        0,
-        reuse,
-        maxfevals,
+        utMu, Mu, sigma_vm, solver, global_dofs, stress_temp, 0, reuse, maxfevals
     )
 end
 function (ls::MacroVonMisesStress{T})(x) where {T}
@@ -87,7 +79,7 @@ function ChainRulesCore.rrule(vonmises::MacroVonMisesStress, x)
     Δ -> (
         nothing,
         begin
-            for e = 1:length(Mu)
+            for e in 1:length(Mu)
                 ρe = get_ρ(x[e], penalty, xmin)
                 Mu[e] *= Δ[e] * ρe^2 / sigma_vm[e]
             end
@@ -110,8 +102,9 @@ end
 @params struct MicroVonMisesStress{T} <: AbstractFunction{T}
     vonmises::MacroVonMisesStress{T}
 end
-MicroVonMisesStress(args...; kwargs...) =
-    MicroVonMisesStress(MacroVonMisesStress(args...; kwargs...))
+function MicroVonMisesStress(args...; kwargs...)
+    return MicroVonMisesStress(MacroVonMisesStress(args...; kwargs...))
+end
 function (f::MicroVonMisesStress)(x)
     @unpack vonmises = f
     @unpack sigma_vm, Mu, utMu, stress_temp = vonmises
@@ -143,7 +136,7 @@ function ChainRulesCore.rrule(f::MicroVonMisesStress, x)
     Δ -> (
         nothing,
         begin
-            for e = 1:length(Mu)
+            for e in 1:length(Mu)
                 ρe = get_ρ(x[e], penalty, xmin)
                 Mu[e] *= Δ[e] * ρe / sigma_vm[e]
             end
@@ -163,11 +156,11 @@ end
 function backsolve!(solver, Mu, global_dofs)
     dh = getdh(solver.problem)
     solver.rhs .= 0
-    for i = 1:length(Mu)
+    for i in 1:length(Mu)
         celldofs!(global_dofs, dh, i)
         solver.rhs[global_dofs] .+= Mu[i]
     end
-    solver(assemble_f = false)
+    solver(; assemble_f=false)
     return solver.lhs
 end
 
@@ -183,9 +176,9 @@ end
     q_point = 1
     n_basefuncs = getnbasefunctions(cellvalues)
     dim = 2
-    for a = 1:n_basefuncs
+    for a in 1:n_basefuncs
         ∇ϕ = shape_gradient(cellvalues, q_point, a)
-        _u = @view u[(@view global_dofs[dim*(a-1)+1:a*dim])]
+        _u = @view u[(@view global_dofs[(dim * (a - 1) + 1):(a * dim)])]
         ϵ_11 = get_ϵ(_u, ∇ϕ, 1, 1)
         ϵ_22 = get_ϵ(_u, ∇ϕ, 2, 2)
         ϵ_12 = get_ϵ(_u, ∇ϕ, 1, 2)
@@ -207,9 +200,9 @@ end
     q_point = 1
     n_basefuncs = getnbasefunctions(cellvalues)
     dim = 3
-    for a = 1:n_basefuncs
+    for a in 1:n_basefuncs
         ∇ϕ = shape_gradient(cellvalues, q_point, a)
-        _u = @view u[(@view global_dofs[dim*(a-1)+1:a*dim])]
+        _u = @view u[(@view global_dofs[(dim * (a - 1) + 1):(a * dim)])]
         ϵ_11 = get_ϵ(_u, ∇ϕ, 1, 1)
         ϵ_22 = get_ϵ(_u, ∇ϕ, 2, 2)
         ϵ_33 = get_ϵ(_u, ∇ϕ, 3, 3)
@@ -240,9 +233,9 @@ end
     q_point = 1
     n_basefuncs = size(T, 2) ÷ dim
     @assert size(T, 1) == 6
-    for a = 1:n_basefuncs
+    for a in 1:n_basefuncs
         ∇ϕ = shape_gradient(cellvalues, q_point, a)
-        cols = dim*(a-1)+1:dim*a
+        cols = (dim * (a - 1) + 1):(dim * a)
         T[1, cols[1]] = (temp1 + temp2) * ∇ϕ[1]
         T[2, cols[1]] = temp1 * ∇ϕ[1]
         T[3, cols[1]] = temp1 * ∇ϕ[1]
@@ -275,9 +268,9 @@ end
     q_point = 1
     n_basefuncs = size(T, 2) ÷ dim
     @assert size(T, 1) == 3
-    for a = 1:n_basefuncs
+    for a in 1:n_basefuncs
         ∇ϕ = shape_gradient(cellvalues, q_point, a)
-        cols = dim*(a-1)+1:dim*a
+        cols = (dim * (a - 1) + 1):(dim * a)
         T[1, cols[1]] = (temp1 + temp2) * ∇ϕ[1]
         T[2, cols[1]] = temp1 * ∇ϕ[1]
         T[3, cols[1]] = temp2 * ∇ϕ[2] / 2
@@ -307,10 +300,10 @@ end
     u,
     E0,
     ν,
-    global_dofs = zeros(Int, ndofs_per_cell(dh)),
-    Tu = zeros(T, 6),
-    VTu = zeros(T, 6),
-    Te = zeros(T, 6, ndofs_per_cell(dh)),
+    global_dofs=zeros(Int, ndofs_per_cell(dh)),
+    Tu=zeros(T, 6),
+    VTu=zeros(T, 6),
+    Te=zeros(T, 6, ndofs_per_cell(dh)),
 ) where {T}
     dim = 3
     @unpack cellvalues = elementinfo
@@ -344,10 +337,10 @@ end
     u,
     E0,
     ν,
-    global_dofs = zeros(Int, ndofs_per_cell(dh)),
-    Tu = zeros(T, 3),
-    VTu = zeros(T, 3),
-    Te = zeros(T, 3, ndofs_per_cell(dh)),
+    global_dofs=zeros(Int, ndofs_per_cell(dh)),
+    Tu=zeros(T, 3),
+    VTu=zeros(T, 3),
+    Te=zeros(T, 3, ndofs_per_cell(dh)),
 ) where {T}
     dim = 2
     @unpack cellvalues = elementinfo

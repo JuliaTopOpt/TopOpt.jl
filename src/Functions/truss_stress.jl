@@ -6,15 +6,16 @@
     maxfevals::Int
 end
 
-Base.show(::IO, ::MIME{Symbol("text/plain")}, ::TrussStress) =
-    println("TopOpt truss stress function")
+function Base.show(::IO, ::MIME{Symbol("text/plain")}, ::TrussStress)
+    return println("TopOpt truss stress function")
+end
 
 """
     TrussStress(solver; maxfevals=10^8)
 
 Construct the TrussStress function struct.
 """
-function TrussStress(solver::AbstractFEASolver; maxfevals = 10^8)
+function TrussStress(solver::AbstractFEASolver; maxfevals=10^8)
     T = eltype(solver.u)
     dim = getdim(problem)
     dh = solver.problem.ch.dh
@@ -29,7 +30,7 @@ function TrussStress(solver::AbstractFEASolver; maxfevals = 10^8)
         R_coord = compute_local_axes(u, v)
         fill!(R, 0.0)
         R[1, 1:dim] = R_coord[:, 1]
-        R[2, dim+1:2*dim] = R_coord[:, 2]
+        R[2, (dim + 1):(2 * dim)] = R_coord[:, 2]
         push!(transf_matrices, R)
     end
     return TrussStress(σ, u_fn, transf_matrices, 0, maxfevals)
@@ -51,11 +52,11 @@ function (ts::TrussStress{T})(x) where {T}
     u = u_fn(x)
     As = getA(problem)
     @unpack Kes = solver.elementinfo
-    for e = 1:length(x)
+    for e in 1:length(x)
         # Ke = R' * K_local * R
         # F = R * (R' * K_local * R) * u
         celldofs!(global_dofs, dh, e)
-        σ[e] = -(transf_matrices[e]*Kes[e]*u[global_dofs])[1] / As[e]
+        σ[e] = -(transf_matrices[e] * Kes[e] * u[global_dofs])[1] / As[e]
     end
     return copy(σ)
 end

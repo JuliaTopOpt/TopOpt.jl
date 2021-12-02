@@ -12,12 +12,12 @@ function extract_nodedbcs!(node_dbcs::Dict{String,Vector{Tuple{TI,TF}}}, file) w
             dof2 = parse(TI, m[3])
             val = parse(TF, m[4])
             if haskey(node_dbcs, nodesetname)
-                for dof = dof1:dof2
+                for dof in dof1:dof2
                     push!(node_dbcs[nodesetname], (dof, val))
                 end
             else
                 node_dbcs[nodesetname] = [(dof1, val)]
-                for dof = dof1+1:dof2
+                for dof in (dof1 + 1):dof2
                     push!(node_dbcs[nodesetname], (dof, val))
                 end
             end
@@ -31,12 +31,12 @@ function extract_nodedbcs!(node_dbcs::Dict{String,Vector{Tuple{TI,TF}}}, file) w
             dof1 = parse(TI, m[2])
             dof2 = parse(TI, m[3])
             if haskey(node_dbcs, nodesetname)
-                for dof = dof1:dof2
+                for dof in dof1:dof2
                     push!(node_dbcs[nodesetname], (dof, zero(TF)))
                 end
             else
                 node_dbcs[nodesetname] = [(dof1, zero(TF))]
-                for dof = dof1+1:dof2
+                for dof in (dof1 + 1):dof2
                     push!(node_dbcs[nodesetname], (dof, zero(TF)))
                 end
             end

@@ -17,20 +17,20 @@
     preconditioner_initialized::Ref{Bool}
     conv::Any
 end
-Base.show(::IO, ::MIME{Symbol("text/plain")}, x::PCGDisplacementSolver) =
-    println("TopOpt preconditioned conjugate gradient iterative solver")
+function Base.show(::IO, ::MIME{Symbol("text/plain")}, x::PCGDisplacementSolver)
+    return println("TopOpt preconditioned conjugate gradient iterative solver")
+end
 function PCGDisplacementSolver(
     sp::StiffnessTopOptProblem{dim,T};
-    conv = DefaultCriteria(),
-    xmin = T(1) / 1000,
-    cg_max_iter = 700,
-    abstol = zero(real(T)),
-    penalty = PowerPenalty{T}(1),
-    prev_penalty = deepcopy(penalty),
-    preconditioner = identity,
-    quad_order = default_quad_order(sp),
+    conv=DefaultCriteria(),
+    xmin=T(1) / 1000,
+    cg_max_iter=700,
+    abstol=zero(real(T)),
+    penalty=PowerPenalty{T}(1),
+    prev_penalty=deepcopy(penalty),
+    preconditioner=identity,
+    quad_order=default_quad_order(sp),
 ) where {dim,T}
-
     elementinfo = ElementFEAInfo(sp, quad_order, Val{:Static})
     globalinfo = GlobalFEAInfo(sp)
     u = zeros(T, ndofs(sp.ch.dh))
@@ -62,10 +62,10 @@ function PCGDisplacementSolver(
 end
 
 function (s::PCGDisplacementSolver{T})(
-    ::Type{Val{safe}} = Val{false};
-    assemble_f = true,
-    rhs = assemble_f ? s.globalinfo.f : s.rhs,
-    lhs = assemble_f ? s.u : s.lhs,
+    ::Type{Val{safe}}=Val{false};
+    assemble_f=true,
+    rhs=assemble_f ? s.globalinfo.f : s.rhs,
+    lhs=assemble_f ? s.u : s.lhs,
     kwargs...,
 ) where {T,safe}
     globalinfo = s.globalinfo
@@ -75,14 +75,14 @@ function (s::PCGDisplacementSolver{T})(
         s.elementinfo,
         s.vars,
         s.penalty,
-        s.xmin,
-        assemble_f = assemble_f,
+        s.xmin;
+        assemble_f=assemble_f,
     )
     Tconv = typeof(s.conv)
     K, f = globalinfo.K, globalinfo.f
     if safe
         m = meandiag(K)
-        for i = 1:size(K, 1)
+        for i in 1:size(K, 1)
             if K[i, i] ≈ zero(T)
                 K[i, i] = m
             end
@@ -104,24 +104,24 @@ function (s::PCGDisplacementSolver{T})(
         return cg!(
             lhs,
             op,
-            f,
-            abstol = abstol,
-            maxiter = cg_max_iter,
-            log = false,
-            statevars = cg_statevars,
-            initially_zero = false,
+            f;
+            abstol=abstol,
+            maxiter=cg_max_iter,
+            log=false,
+            statevars=cg_statevars,
+            initially_zero=false,
         )
     else
         return cg!(
             lhs,
             op,
-            f,
-            abstol = abstol,
-            maxiter = cg_max_iter,
-            log = false,
-            statevars = cg_statevars,
-            initially_zero = false,
-            Pl = preconditioner,
+            f;
+            abstol=abstol,
+            maxiter=cg_max_iter,
+            log=false,
+            statevars=cg_statevars,
+            initially_zero=false,
+            Pl=preconditioner,
         )
     end
 end

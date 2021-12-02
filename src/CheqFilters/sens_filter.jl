@@ -7,8 +7,9 @@
     last_grad::TV
     cell_weights::TV
 end
-Base.show(::IO, ::MIME{Symbol("text/plain")}, ::SensFilter) =
-    println("TopOpt sensitivity filter")
+function Base.show(::IO, ::MIME{Symbol("text/plain")}, ::SensFilter)
+    return println("TopOpt sensitivity filter")
+end
 
 SensFilter{true}(args...) = SensFilter(Val(true), args...)
 SensFilter{false}(args...) = SensFilter(Val(false), args...)
@@ -20,11 +21,7 @@ function SensFilter(::Val{filtering}, solver::AbstractFEASolver, args...) where 
     return SensFilter(Val(filtering), whichdevice(solver), solver, args...)
 end
 function SensFilter(
-    ::Val{true},
-    ::CPU,
-    solver::TS,
-    rmin::T,
-    ::Type{TI} = Int,
+    ::Val{true}, ::CPU, solver::TS, rmin::T, ::Type{TI}=Int
 ) where {T,TI<:Integer,TS<:AbstractFEASolver}
     metadata = FilterMetadata(solver, rmin, TI)
     TM = typeof(metadata)
@@ -44,22 +41,12 @@ function SensFilter(
     cell_weights = zeros(T, nnodes)
 
     return SensFilter(
-        Val(true),
-        elementinfo,
-        metadata,
-        rmin,
-        nodal_grad,
-        last_grad,
-        cell_weights,
+        Val(true), elementinfo, metadata, rmin, nodal_grad, last_grad, cell_weights
     )
 end
 
 function SensFilter(
-    ::Val{false},
-    ::CPU,
-    solver::TS,
-    rmin::T,
-    ::Type{TI} = Int,
+    ::Val{false}, ::CPU, solver::TS, rmin::T, ::Type{TI}=Int
 ) where {T,TS<:AbstractFEASolver,TI<:Integer}
     elementinfo = solver.elementinfo
     metadata = FilterMetadata(T, TI)
@@ -67,19 +54,13 @@ function SensFilter(
     last_grad = T[]
     cell_weights = T[]
     return SensFilter(
-        Val(false),
-        elementinfo,
-        metadata,
-        rmin,
-        nodal_grad,
-        last_grad,
-        cell_weights,
+        Val(false), elementinfo, metadata, rmin, nodal_grad, last_grad, cell_weights
     )
 end
 
 (cf::SensFilter)(x) = x
 function ChainRulesCore.rrule(cf::SensFilter{true}, x)
-    x,
+    return x,
     Δ -> begin
         cf.rmin <= 0 && return (nothing, Δ)
         newΔ = copy(Δ)
@@ -124,10 +105,10 @@ function update_nodal_grad!(
     grad,
 )
     T = eltype(nodal_grad)
-    for n = 1:length(nodal_grad)
+    for n in 1:length(nodal_grad)
         nodal_grad[n] = zero(T)
         cell_weights[n] = zero(T)
-        r = node_cells.offsets[n]:node_cells.offsets[n+1]-1
+        r = node_cells.offsets[n]:(node_cells.offsets[n + 1] - 1)
         for i in r
             c = node_cells.values[i][1]
             if black[c] || white[c]
@@ -143,7 +124,7 @@ function update_nodal_grad!(
 end
 
 function normalize_grad!(nodal_grad::AbstractVector, cell_weights)
-    for n = 1:length(nodal_grad)
+    for n in 1:length(nodal_grad)
         if cell_weights[n] > 0
             nodal_grad[n] /= cell_weights[n]
         end
@@ -159,7 +140,7 @@ function update_grad!(
     cell_node_weights,
     nodal_grad,
 )
-    @inbounds for i = 1:length(black)
+    @inbounds for i in 1:length(black)
         if black[i] || white[i]
             continue
         end
@@ -172,5 +153,5 @@ function update_grad!(
         grad[ind] = dot(view(nodal_grad, nodes), weights) / sum(weights)
     end
 
-    return
+    return nothing
 end

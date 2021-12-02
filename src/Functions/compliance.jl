@@ -11,21 +11,21 @@
     logarithm::Bool
     maxfevals::Int
 end
-Utilities.getpenalty(c::Compliance) = c |> getsolver |> getpenalty
+Utilities.getpenalty(c::Compliance) = getpenalty(getsolver(c))
 Utilities.setpenalty!(c::Compliance, p) = setpenalty!(getsolver(c), p)
 Nonconvex.NonconvexCore.getdim(::Compliance) = 1
 
 function Compliance(problem, solver::AbstractDisplacementSolver, args...; kwargs...)
-    Compliance(whichdevice(solver), problem, solver, args...; kwargs...)
+    return Compliance(whichdevice(solver), problem, solver, args...; kwargs...)
 end
 function Compliance(
     ::CPU,
     problem::StiffnessTopOptProblem{dim,T},
     solver::AbstractDisplacementSolver,
-    ::Type{TI} = Int;
-    tracing = false,
-    logarithm = false,
-    maxfevals = 10^8,
+    ::Type{TI}=Int;
+    tracing=false,
+    logarithm=false,
+    maxfevals=10^8,
 ) where {dim,T,TI}
     comp = T(0)
     cell_comp = zeros(T, getncells(problem.ch.dh.grid))
@@ -48,7 +48,7 @@ function Compliance(
     )
 end
 
-function (o::Compliance{T})(x, grad = o.grad) where {T}
+function (o::Compliance{T})(x, grad=o.grad) where {T}
     @unpack cell_comp, solver, tracing, topopt_trace = o
     @unpack elementinfo, u, xmin = solver
     @unpack metadata, Kes, black, white, varind = elementinfo
@@ -108,11 +108,11 @@ function (o::Compliance{T})(x, grad = o.grad) where {T}
                 else
                     push!(
                         topopt_trace.add_hist,
-                        sum(topopt_trace.x_hist[end] .> topopt_trace.x_hist[end-1]),
+                        sum(topopt_trace.x_hist[end] .> topopt_trace.x_hist[end - 1]),
                     )
                     push!(
                         topopt_trace.rem_hist,
-                        sum(topopt_trace.x_hist[end] .< topopt_trace.x_hist[end-1]),
+                        sum(topopt_trace.x_hist[end] .< topopt_trace.x_hist[end - 1]),
                     )
                 end
             end
@@ -135,25 +135,15 @@ d(cell compliance)/d(x_e) = f_e^T * d(u_e)/d(x_e) = f_e^T * (- K_e^-1 * d(K_e)/d
                           = - d(ρ_e)/d(x_e) * cell_compliance
 """
 function compute_compliance(
-    cell_comp::Vector{T},
-    grad,
-    cell_dofs,
-    Kes,
-    u,
-    black,
-    white,
-    varind,
-    x,
-    penalty,
-    xmin,
+    cell_comp::Vector{T}, grad, cell_dofs, Kes, u, black, white, varind, x, penalty, xmin
 ) where {T}
     obj = zero(T)
     grad .= 0
-    @inbounds for i = 1:size(cell_dofs, 2)
+    @inbounds for i in 1:size(cell_dofs, 2)
         cell_comp[i] = zero(T)
         Ke = rawmatrix(Kes[i])
-        for w = 1:size(Ke, 2)
-            for v = 1:size(Ke, 1)
+        for w in 1:size(Ke, 2)
+            for v in 1:size(Ke, 1)
                 cell_comp[i] += u[cell_dofs[v, i]] * Ke[v, w] * u[cell_dofs[w, i]]
             end
         end
@@ -182,40 +172,20 @@ function compute_inner(inner, u1, u2, solver)
     @unpack cell_dofs = metadata
     penalty = getpenalty(solver)
     return compute_inner(
-        inner,
-        u1,
-        u2,
-        cell_dofs,
-        Kes,
-        black,
-        white,
-        varind,
-        solver.vars,
-        penalty,
-        xmin,
+        inner, u1, u2, cell_dofs, Kes, black, white, varind, solver.vars, penalty, xmin
     )
 end
 function compute_inner(
-    inner::AbstractVector{T},
-    u1,
-    u2,
-    cell_dofs,
-    Kes,
-    black,
-    white,
-    varind,
-    x,
-    penalty,
-    xmin,
+    inner::AbstractVector{T}, u1, u2, cell_dofs, Kes, black, white, varind, x, penalty, xmin
 ) where {T}
     obj = zero(T)
-    @inbounds for i = 1:size(cell_dofs, 2)
+    @inbounds for i in 1:size(cell_dofs, 2)
         inner[i] = zero(T)
         cell_comp = zero(T)
         Ke = rawmatrix(Kes[i])
         if !black[i] && !white[i]
-            for w = 1:size(Ke, 2)
-                for v = 1:size(Ke, 1)
+            for w in 1:size(Ke, 2)
+                for v in 1:size(Ke, 1)
                     cell_comp += u1[cell_dofs[v, i]] * Ke[v, w] * u2[cell_dofs[w, i]]
                 end
             end
