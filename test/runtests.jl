@@ -66,6 +66,6 @@ if GROUP == "All" || GROUP == "WCSMO14"
         include("wcsmo14/jl_benchmarks/compare_polytop.jl")
         #include("wcsmo14/jl_benchmarks/compare_top3d.jl")
         #include("wcsmo14/jl_benchmarks/compare_top3d125.jl")
-        include("wcsmo14/jl_benchmarks/new_problems.jl")
+        #include("wcsmo14/jl_benchmarks/new_problems.jl")
     end
 end
