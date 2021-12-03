@@ -5,7 +5,7 @@ using SparseArrays, Setfield, Requires
 using ..TopOpt.Utilities
 using ..TopOpt: PENALTY_BEFORE_INTERPOLATION
 using ..Utilities: @forward_property
-import Distributions
+using Distributions: Distributions
 
 using VTKDataTypes
 

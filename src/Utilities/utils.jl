@@ -32,7 +32,7 @@ macro params(struct_expr)
     header = struct_expr.args[2]
     fields = @view struct_expr.args[3].args[2:2:end]
     params = []
-    for i = 1:length(fields)
+    for i in 1:length(fields)
         x = fields[i]
         T = gensym()
         if x isa Symbol
@@ -61,7 +61,7 @@ macro params(struct_expr)
     else
         error("Unidentified type definition.")
     end
-    esc(struct_expr)
+    return esc(struct_expr)
 end
 
 struct RaggedArray{TO,TV}
@@ -73,37 +73,37 @@ function RaggedArray(vv::Vector{Vector{T}}) where {T}
     offsets = [1; 1 .+ accumulate(+, collect(length(v) for v in vv))]
     values = Vector{T}(undef, offsets[end] - 1)
     for (i, v) in enumerate(vv)
-        r = offsets[i]:offsets[i+1]-1
+        r = offsets[i]:(offsets[i + 1] - 1)
         values[r] .= v
     end
-    RaggedArray(offsets, values)
+    return RaggedArray(offsets, values)
 end
 
 function Base.getindex(ra::RaggedArray, i)
     @assert 1 <= i < length(ra.offsets)
-    r = ra.offsets[i]:ra.offsets[i+1]-1
+    r = ra.offsets[i]:(ra.offsets[i + 1] - 1)
     @assert 1 <= r.start && r.stop <= length(ra.values)
     return @view ra.values[r]
 end
 function Base.getindex(ra::RaggedArray, i, j)
     @assert 1 <= j < length(ra.offsets)
-    r = ra.offsets[j]:ra.offsets[j+1]-1
+    r = ra.offsets[j]:(ra.offsets[j + 1] - 1)
     @assert 1 <= i <= length(r)
     return ra.values[r[i]]
 end
 function Base.setindex!(ra::RaggedArray, v, i, j)
     @assert 1 <= j < length(ra.offsets)
-    r = ra.offsets[j]:ra.offsets[j+1]-1
+    r = ra.offsets[j]:(ra.offsets[j + 1] - 1)
     @assert 1 <= i <= length(r)
-    ra.values[r[i]] = v
+    return ra.values[r[i]] = v
 end
 
-function find_varind(black, white, ::Type{TI} = Int) where {TI}
+function find_varind(black, white, ::Type{TI}=Int) where {TI}
     nel = length(black)
     nel == length(white) || throw("Black and white vectors should be of the same length")
     varind = zeros(TI, nel)
     k = 1
-    for i = 1:nel
+    for i in 1:nel
         if !black[i] && !white[i]
             varind[i] = k
             k += 1
@@ -134,17 +134,17 @@ PoissonRatio(p) = getν(p)
 
 function compliance(Ke, u, dofs)
     comp = zero(eltype(u))
-    for i = 1:length(dofs)
-        for j = 1:length(dofs)
+    for i in 1:length(dofs)
+        for j in 1:length(dofs)
             comp += u[dofs[i]] * Ke[i, j] * u[dofs[j]]
         end
     end
-    comp
+    return comp
 end
 
 function meandiag(K::AbstractMatrix)
     z = zero(eltype(K))
-    for i = 1:size(K, 1)
+    for i in 1:size(K, 1)
         z += abs(K[i, i])
     end
     return z / size(K, 1)
@@ -170,9 +170,11 @@ end
 end
 macro forward_property(T, field)
     quote
-        Base.getproperty(c::$(esc(T)), f::Symbol) =
-            _getproperty(c, Val($(QuoteNode(field))), Val(f))
-        Base.setproperty!(c::$(esc(T)), f::Symbol, val) =
-            _setproperty!(c, Val($(QuoteNode(field))), Val(f), val)
+        function Base.getproperty(c::$(esc(T)), f::Symbol)
+            return _getproperty(c, Val($(QuoteNode(field))), Val(f))
+        end
+        function Base.setproperty!(c::$(esc(T)), f::Symbol, val)
+            return _setproperty!(c, Val($(QuoteNode(field))), Val(f), val)
+        end
     end
 end

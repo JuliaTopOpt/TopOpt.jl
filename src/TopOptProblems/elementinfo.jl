@@ -39,7 +39,7 @@ An instance of the `ElementFEAInfo` type stores element information such as:
 end
 
 function Base.show(io::Base.IO, ::MIME"text/plain", efeainfo::ElementFEAInfo)
-    print(
+    return print(
         io,
         "ElementFEAInfo: Kes |$(length(efeainfo.Kes))|, fes |$(length(efeainfo.fes))|, fixedload |$(length(efeainfo.fixedload))|, cells |$(length(efeainfo.cells))|",
     )
@@ -56,23 +56,22 @@ Constructs an instance of `ElementFEAInfo` from a stiffness problem `sp` using a
 The static matrices and vectors are more performant and GPU-compatible therefore they are used by default.
 """
 function ElementFEAInfo(
-    sp,
-    quad_order = 2,
-    ::Type{Val{mat_type}} = Val{:Static},
+    sp, quad_order=2, ::Type{Val{mat_type}}=Val{:Static}
 ) where {mat_type}
-    Kes, weights, dloads, cellvalues, facevalues =
-        make_Kes_and_fes(sp, quad_order, Val{mat_type})
+    Kes, weights, dloads, cellvalues, facevalues = make_Kes_and_fes(
+        sp, quad_order, Val{mat_type}
+    )
     element_Kes = convert(
         Vector{<:ElementMatrix},
         Kes;
-        bc_dofs = sp.ch.prescribed_dofs,
-        dof_cells = sp.metadata.dof_cells,
+        bc_dofs=sp.ch.prescribed_dofs,
+        dof_cells=sp.metadata.dof_cells,
     )
     fixedload = Vector(make_cload(sp))
     assemble_f!(fixedload, sp, dloads)
     cellvolumes = get_cell_volumes(sp, cellvalues)
     cells = sp.ch.dh.grid.cells
-    ElementFEAInfo(
+    return ElementFEAInfo(
         element_Kes,
         weights,
         fixedload,
@@ -102,15 +101,16 @@ An instance of `GlobalFEAInfo` hosts the global stiffness matrix `K`, the load v
     cholK::Any
     qrK::Any
 end
-Base.show(::IO, ::MIME{Symbol("text/plain")}, ::GlobalFEAInfo) =
-    println("TopOpt global FEA information")
+function Base.show(::IO, ::MIME{Symbol("text/plain")}, ::GlobalFEAInfo)
+    return println("TopOpt global FEA information")
+end
 
 """
     GlobalFEAInfo(::Type{T}=Float64) where {T}
 
 Constructs an empty instance of `GlobalFEAInfo` where the field `K` is an empty sparse matrix of element type `T` and the field `f` is an empty dense vector of element type `T`.
 """
-GlobalFEAInfo(::Type{T} = Float64) where {T} = GlobalFEAInfo{T}()
+GlobalFEAInfo(::Type{T}=Float64) where {T} = GlobalFEAInfo{T}()
 function GlobalFEAInfo{T}() where {T}
     return GlobalFEAInfo(sparse(zeros(T, 0, 0)), zeros(T, 0), cholesky(one(T)), qr(one(T)))
 end
@@ -126,16 +126,12 @@ function GlobalFEAInfo(sp::StiffnessTopOptProblem)
     return GlobalFEAInfo(K, f)
 end
 function GlobalFEAInfo(
-    K::Union{AbstractSparseMatrix,Symmetric{<:Any,<:AbstractSparseMatrix}},
-    f,
+    K::Union{AbstractSparseMatrix,Symmetric{<:Any,<:AbstractSparseMatrix}}, f
 )
     chol = cholesky(spdiagm(0 => ones(size(K, 1))))
     qrfact = qr(spdiagm(0 => ones(size(K, 1))))
     return GlobalFEAInfo{eltype(K),typeof(K),typeof(f),typeof(chol),typeof(qrfact)}(
-        K,
-        f,
-        chol,
-        qrfact,
+        K, f, chol, qrfact
     )
 end
 
@@ -162,7 +158,7 @@ function get_cell_volumes(sp::StiffnessTopOptProblem{dim,T}, cellvalues) where {
         reinit!(cellvalues, cell)
         cellvolumes[i] = sum(
             Ferrite.getdetJdV(cellvalues, q_point) for
-            q_point = 1:Ferrite.getnquadpoints(cellvalues)
+            q_point in 1:Ferrite.getnquadpoints(cellvalues)
         )
     end
     return cellvolumes

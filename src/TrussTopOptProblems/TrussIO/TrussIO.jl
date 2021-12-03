@@ -1,6 +1,6 @@
 module TrussIO
 
-import FileIO
+using FileIO: FileIO
 import FileIO: skipmagic, add_format
 
 using ..TrussTopOptProblems: TrussFEACrossSec, TrussFEAMaterial

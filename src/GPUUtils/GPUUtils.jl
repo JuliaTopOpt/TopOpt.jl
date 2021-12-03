@@ -21,7 +21,7 @@ function getfieldnames end
 function cufieldnames end
 
 macro define_cu(T, fields...)
-    _define_cu(T, fields...)
+    return _define_cu(T, fields...)
 end
 
 function _define_cu(T, fields...)
@@ -34,20 +34,22 @@ function _define_cu(T, fields...)
     else
         throw("Unsupported fields.")
     end
-    esc(quote
-        $all_fields = Tuple(fieldnames($T))
-        @eval @inline GPUUtils.getfieldnames(::Type{<:$T}) = $(Expr(:$, all_fields))
-        @inline GPUUtils.cufieldnames(::Type{<:$T}) = $field_syms
-        $args = Expr[]
-        for fn in $all_fields
-            push!($args, :(GPUUtils._cu(s, s.$fn, $(Val(fn)))))
-        end
-        @eval begin
-            function CuArrays.cu(s::$T)
-                $T($(Expr(:$, Expr(:..., args))))
+    return esc(
+        quote
+            $all_fields = Tuple(fieldnames($T))
+            @eval @inline GPUUtils.getfieldnames(::Type{<:$T}) = $(Expr(:$, all_fields))
+            @inline GPUUtils.cufieldnames(::Type{<:$T}) = $field_syms
+            $args = Expr[]
+            for fn in $all_fields
+                push!($args, :(GPUUtils._cu(s, s.$fn, $(Val(fn)))))
             end
-        end
-    end)
+            @eval begin
+                function CuArrays.cu(s::$T)
+                    return $T($(Expr(:$, Expr(:..., args))))
+                end
+            end
+        end,
+    )
 end
 
 function _cu(s::T, f::F, ::Val{fn}) where {T,F,fn}
@@ -63,7 +65,7 @@ function _cu(s::T, f::F, ::Val{fn}) where {T,F,fn}
 end
 
 macro thread_local_index()
-    :(
+    return :(
         (threadIdx().z - 1) * blockDim().y * blockDim().x +
         (threadIdx().y - 1) * blockDim().x +
         threadIdx().x
@@ -71,11 +73,11 @@ macro thread_local_index()
 end
 
 macro total_threads_per_block()
-    :(blockDim().z * blockDim().y * blockDim().x)
+    return :(blockDim().z * blockDim().y * blockDim().x)
 end
 
 macro block_index()
-    :(
+    return :(
         blockIdx().x +
         (blockIdx().y - 1) * gridDim().x +
         (blockIdx().z - 1) * gridDim().x * gridDim().y
@@ -83,29 +85,29 @@ macro block_index()
 end
 
 macro total_blocks()
-    :(gridDim().z * gridDim().x * gridDim().y)
+    return :(gridDim().z * gridDim().x * gridDim().y)
 end
 
 macro thread_global_index()
-    :(
+    return :(
         (@block_index() - 1) * (blockDim().x * blockDim().y * blockDim().z) +
         @thread_local_index()
     )
 end
 
 macro total_threads()
-    :(@total_blocks() * @total_threads_per_block())
+    return :(@total_blocks() * @total_threads_per_block())
 end
 
 macro mapreduce_block(indvar, limit, op, T, LMEM, result, mapexpr)
-    _mapreduce_block(indvar, limit, op, T, LMEM, result, mapexpr)
+    return _mapreduce_block(indvar, limit, op, T, LMEM, result, mapexpr)
 end
 function _mapreduce_block(indvar, limit, op, T, LMEM, result, mapexpr)
     offset = gensym()
     out = gensym()
     tmp_local = gensym()
     local_index = gensym()
-    esc(
+    return esc(
         quote
             $indvar = @thread_global_index()
             $offset = @total_threads()
@@ -125,8 +127,9 @@ function _mapreduce_block(indvar, limit, op, T, LMEM, result, mapexpr)
             $offset = @total_threads_per_block() ÷ 2
             while $offset > 0
                 if ($local_index <= $offset)
-                    $tmp_local[$local_index] =
-                        $op($tmp_local[$local_index], $tmp_local[$local_index+$offset])
+                    $tmp_local[$local_index] = $op(
+                        $tmp_local[$local_index], $tmp_local[$local_index + $offset]
+                    )
                 end
                 sync_threads()
                 $offset = $offset ÷ 2
@@ -143,7 +146,7 @@ function callkernel(dev, kernel, args)
     #@show blocks, threads
     @cuda blocks = blocks threads = threads kernel(args...)
 
-    return
+    return nothing
 end
 
 # From CuArrays.jl
@@ -162,9 +165,9 @@ function getvalidconfig(dev, kernel, parallel_args)
         kernel_threads = CUDAnative.maxthreads(parallel_kernel)
         ## by the device
         block_threads = (
-            x = CUDAdrv.attribute(dev, CUDAdrv.MAX_BLOCK_DIM_X),
-            y = CUDAdrv.attribute(dev, CUDAdrv.MAX_BLOCK_DIM_Y),
-            total = CUDAdrv.attribute(dev, CUDAdrv.MAX_THREADS_PER_BLOCK),
+            x=CUDAdrv.attribute(dev, CUDAdrv.MAX_BLOCK_DIM_X),
+            y=CUDAdrv.attribute(dev, CUDAdrv.MAX_BLOCK_DIM_Y),
+            total=CUDAdrv.attribute(dev, CUDAdrv.MAX_THREADS_PER_BLOCK),
         )
 
         # figure out a legal launch configuration

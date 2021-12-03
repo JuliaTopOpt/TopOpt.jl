@@ -7,18 +7,8 @@ import ..TopOpt: whichdevice
 get_f(problem, vars::CuArray) = f = zeros(typeof(vars), ndofs(problem.ch.dh))
 
 function update_f!(
-    f::CuVector{T},
-    fes,
-    fixedload,
-    dof_cells,
-    black,
-    white,
-    penalty,
-    vars,
-    varind,
-    xmin,
+    f::CuVector{T}, fes, fixedload, dof_cells, black, white, penalty, vars, varind, xmin
 ) where {T}
-
     args = (
         f,
         fes,
@@ -34,7 +24,7 @@ function update_f!(
         length(f),
     )
     callkernel(dev, assemble_kernel1, args)
-    CUDAdrv.synchronize(ctx)
+    return CUDAdrv.synchronize(ctx)
 end
 
 function assemble_kernel1(
@@ -51,13 +41,12 @@ function assemble_kernel1(
     xmin,
     ndofs,
 )
-
     dofidx = @thread_global_index()
     offset = @total_threads()
 
     while dofidx <= ndofs
         f[dofidx] = fixedload[dofidx]
-        r = dof_cells_offsets[dofidx]:dof_cells_offsets[dofidx+1]-1
+        r = dof_cells_offsets[dofidx]:(dof_cells_offsets[dofidx + 1] - 1)
         for i in r
             cellidx, localidx = dof_cells_values[i]
             if black[cellidx]
@@ -77,7 +66,7 @@ function assemble_kernel1(
         dofidx += offset
     end
 
-    return
+    return nothing
 end
 
 whichdevice(p::StiffnessTopOptProblem) = whichdevice(p.ch)

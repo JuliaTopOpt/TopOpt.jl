@@ -46,7 +46,7 @@ function update_f!(
     )
     callkernel(dev, bc_kernel, args)
     CUDAdrv.synchronize(ctx)
-    return
+    return nothing
 end
 
 function bc_kernel(
@@ -66,7 +66,6 @@ function bc_kernel(
     varind,
     M,
 ) where {T}
-
     ind = @thread_global_index()
     offset = @total_threads()
     while ind <= length(values)
@@ -74,7 +73,7 @@ function bc_kernel(
         v = values[ind]
         m = size(Kes[ind], 1)
 
-        r = dof_cells_offsets[d]:dof_cells_offsets[d+1]-1
+        r = dof_cells_offsets[d]:(dof_cells_offsets[d + 1] - 1)
         if !applyzero && v != 0
             for idx in r
                 (i, j) = dof_cells_values[idx]
@@ -96,7 +95,7 @@ function bc_kernel(
                 else
                     Ke = Kes[i]
                 end
-                for row = 1:m
+                for row in 1:m
                     f[cell_dofs[row, i]] -= px * v * Ke[row, j]
                 end
             end
@@ -104,7 +103,7 @@ function bc_kernel(
         f[d] = M * v
         ind += offset
     end
-    return
+    return nothing
 end
 
 @define_cu(
@@ -140,8 +139,9 @@ function mul!(y::TV, A::MatrixFreeOperator, x::TV) where {TV<:CuArrays.CuVector}
     callkernel(dev, mul_kernel1, args1)
     CUDAdrv.synchronize(ctx)
 
-    args2 =
-        (y, x, dof_cells.offsets, dof_cells.values, xes, fixed_dofs, free_dofs, meandiag)
+    args2 = (
+        y, x, dof_cells.offsets, dof_cells.values, xes, fixed_dofs, free_dofs, meandiag
+    )
     callkernel(dev, mul_kernel2, args2)
     CUDAdrv.synchronize(ctx)
 
@@ -179,7 +179,7 @@ function mul_kernel1(
             )
         end
         xe = xes[i]
-        for j = 1:N
+        for j in 1:N
             xe = @set xe[j] = x[cell_dofs[j, i]]
         end
         if eltype(Kes) <: Symmetric
@@ -192,18 +192,11 @@ function mul_kernel1(
         i += offset
     end
 
-    return
+    return nothing
 end
 
 function mul_kernel2(
-    y,
-    x,
-    dof_cells_offsets,
-    dof_cells_values,
-    xes,
-    fixed_dofs,
-    free_dofs,
-    meandiag,
+    y, x, dof_cells_offsets, dof_cells_values, xes, fixed_dofs, free_dofs, meandiag
 )
     T = eltype(y)
     offset = @total_threads()
@@ -219,9 +212,9 @@ function mul_kernel2(
 
     i = @thread_global_index()
     while n_fixeddofs < i <= ndofs
-        dof = free_dofs[i-n_fixeddofs]
+        dof = free_dofs[i - n_fixeddofs]
         yi = zero(T)
-        r = dof_cells_offsets[dof]:dof_cells_offsets[dof+1]-1
+        r = dof_cells_offsets[dof]:(dof_cells_offsets[dof + 1] - 1)
         for ind in r
             k, m = dof_cells_values[ind]
             yi += xes[k][m]
@@ -229,7 +222,7 @@ function mul_kernel2(
         y[dof] = yi
         i += offset
     end
-    return
+    return nothing
 end
 
 whichdevice(r::LinearElasticityResult) = whichdevice(r.u)

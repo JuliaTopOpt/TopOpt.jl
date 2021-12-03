@@ -32,7 +32,7 @@ function get_truss_Kσs(problem::TrussProblem{xdim,TT}, u, cellvalues) where {xd
     @assert n_basefuncs == 2
 
     global_dofs = zeros(Int, ndof_pc)
-    Kσs = [zeros(TT, ndof_pc, ndof_pc) for i = 1:getncells(dh.grid)]
+    Kσs = [zeros(TT, ndof_pc, ndof_pc) for i in 1:getncells(dh.grid)]
     Kσ_e = zeros(TT, ndof_pc, ndof_pc)
 
     for (cellidx, cell) in enumerate(CellIterator(dh))
@@ -51,7 +51,7 @@ function get_truss_Kσs(problem::TrussProblem{xdim,TT}, u, cellvalues) where {xd
         # see: https://people.duke.edu/~hpgavin/cee421/truss-finite-def.pdf
         q_cell = E * A / L * (γ' * u_cell)
         Kσ_e .= 0
-        for i = 2:size(R, 2)
+        for i in 2:size(R, 2)
             δ = vcat(-R[:, i], R[:, i])
             # @assert δ' * γ ≈ 0
             Kσ_e .+= δ * δ'
@@ -83,9 +83,9 @@ function buckling(
     problem::TrussProblem{xdim,T},
     ginfo,
     einfo,
-    vars = ones(T, getncells(getdh(problem).grid)),
-    xmin = T(0.0);
-    u = undef,
+    vars=ones(T, getncells(getdh(problem).grid)),
+    xmin=T(0.0);
+    u=undef,
 ) where {xdim,T}
     dh = problem.ch.dh
     black = problem.black

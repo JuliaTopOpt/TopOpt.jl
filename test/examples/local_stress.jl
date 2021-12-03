@@ -16,7 +16,7 @@ problems = Any[
 ]
 problem_names = ["Cantilever beam", "Half MBB beam", "L-beam"]
 
-for i = 1:length(problems)
+for i in 1:length(problems)
     println(problem_names[i])
     problem = problems[i]
     # Parameter settings
@@ -24,16 +24,16 @@ for i = 1:length(problems)
     xmin = 0.0001 # minimum density
     steps = 40 # maximum number of penalty steps, delta_p0 = 0.1
     convcriteria = KKTCriteria()
-    solver = FEASolver(Direct, problem, xmin = xmin)
+    solver = FEASolver(Direct, problem; xmin=xmin)
     x0 = fill(1.0, length(solver.vars))
     for p in [1.0, 2.0, 3.0]
         #penalty = TopOpt.PowerPenalty(1.0)
         global penalty = TopOpt.PowerPenalty(p)
         # Define a finite element solver
-        solver = FEASolver(Direct, problem, xmin = xmin, penalty = penalty)
+        solver = FEASolver(Direct, problem; xmin=xmin, penalty=penalty)
         # Define compliance objective
         global stress = TopOpt.MicroVonMisesStress(solver)
-        global filter = DensityFilter(solver, rmin = rmin)
+        global filter = DensityFilter(solver; rmin=rmin)
         global volfrac = Volume(problem, solver)
 
         obj = x -> volfrac(filter(x)) - V
@@ -44,7 +44,7 @@ for i = 1:length(problems)
         end
         alg = PercivalAlg()
         options = PercivalOptions()
-        optimizer = Optimizer(obj, constr, x0, alg, options = options)
+        optimizer = Optimizer(obj, constr, x0, alg; options=options)
         # Define continuation SIMP optimizer
         simp = SIMP(optimizer, solver, p)
         # Solve

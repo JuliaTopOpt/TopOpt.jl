@@ -7,8 +7,11 @@ import Base: length, append!, sizehint!
     add_hist::AbstractVector{TI}
     rem_hist::AbstractVector{TI}
 end
-TopOptTrace{T,TI}() where {T,TI<:Integer} =
-    TopOptTrace(Vector{T}(), Vector{T}(), Vector{Vector{T}}(), Vector{TI}(), Vector{TI}())
+function TopOptTrace{T,TI}() where {T,TI<:Integer}
+    return TopOptTrace(
+        Vector{T}(), Vector{T}(), Vector{Vector{T}}(), Vector{TI}(), Vector{TI}()
+    )
+end
 length(t::TopOptTrace) = length(t.v_hist)
 
 topopt_trace_fields = fieldnames(TopOptTrace)
@@ -27,20 +30,17 @@ end
 
 macro sizehint!_fields_t()
     return esc(
-        Expr(
-            :block,
-            [Expr(:call, :sizehint!, :(t.$f), :n) for f in topopt_trace_fields]...,
-        ),
+        Expr(:block, [Expr(:call, :sizehint!, :(t.$f), :n) for f in topopt_trace_fields]...)
     )
 end
 function sizehint!(t::TopOptTrace, n)
     @sizehint!_fields_t()
-    return
+    return nothing
 end
 
 function append!(ts::Vector{<:TopOptTrace})
     sizehint!(ts[1], sum(length.(ts)))
-    for i = 2:length(ts)
+    for i in 2:length(ts)
         append!(ts[1], ts[i])
     end
     return ts[1]

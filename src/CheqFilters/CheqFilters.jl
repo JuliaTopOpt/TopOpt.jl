@@ -25,8 +25,9 @@ abstract type AbstractDensityFilter <: AbstractCheqFilter end
     cell_neighbouring_nodes::Any
     cell_node_weights::Any
 end
-Base.show(::IO, ::MIME{Symbol("text/plain")}, ::FilterMetadata) =
-    println("TopOpt filter metadata")
+function Base.show(::IO, ::MIME{Symbol("text/plain")}, ::FilterMetadata)
+    return println("TopOpt filter metadata")
+end
 
 function FilterMetadata(::Type{T}, ::Type{TI}) where {T,TI}
     cell_neighbouring_nodes = Vector{TI}[]
@@ -39,8 +40,7 @@ function FilterMetadata(solver, rmin::T, ::Type{TI}) where {T,TI}
     problem = solver.problem
     cell_neighbouring_nodes, cell_node_weights = get_neighbour_info(problem, rmin)
     return FilterMetadata(
-        RaggedArray(cell_neighbouring_nodes),
-        RaggedArray(cell_node_weights),
+        RaggedArray(cell_neighbouring_nodes), RaggedArray(cell_node_weights)
     )
 end
 

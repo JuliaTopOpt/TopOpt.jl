@@ -22,8 +22,9 @@ ins_dir = joinpath(@__DIR__, "instances", "ground_meshes");
         node_points, elements, _, _, fixities, load_cases = load_truss_json(problem_file)
         loads = load_cases["0"]
     end
-    problem =
-        TrussProblem(Val{:Linear}, node_points, elements, loads, fixities, mat, crossec)
+    problem = TrussProblem(
+        Val{:Linear}, node_points, elements, loads, fixities, mat, crossec
+    )
 
     solver = FEASolver(Direct, problem)
     solver()
@@ -38,12 +39,14 @@ end
     file_name = "tim_$(problem_dim).json"
     problem_file = joinpath(ins_dir, file_name)
 
-    node_points, elements, mats, crosssecs, fixities, load_cases =
-        load_truss_json(problem_file)
+    node_points, elements, mats, crosssecs, fixities, load_cases = load_truss_json(
+        problem_file
+    )
     loads = load_cases[string(lc_ind)]
 
-    problem =
-        TrussProblem(Val{:Linear}, node_points, elements, loads, fixities, mats, crosssecs)
+    problem = TrussProblem(
+        Val{:Linear}, node_points, elements, loads, fixities, mats, crosssecs
+    )
 
     ndim, nnodes, ncells = length(node_points[1]), length(node_points), length(elements)
     @test getE(problem) == [m.E for m in mats]
@@ -53,7 +56,7 @@ end
     rmin = 4.0 # density filter radius
 
     penalty = TopOpt.PowerPenalty(1.0) # 1
-    solver = FEASolver(Direct, problem, xmin = xmin, penalty = penalty)
+    solver = FEASolver(Direct, problem; xmin=xmin, penalty=penalty)
     ## call solver to trigger assemble!
     solver()
 
@@ -63,7 +66,7 @@ end
     volfrac = TopOpt.Volume(problem, solver)
     constr = x -> volfrac(x) - V
 
-    options = MMAOptions(maxiter = 3000, tol = Nonconvex.Tolerance(kkt = 0.001))
+    options = MMAOptions(; maxiter=3000, tol=Nonconvex.Tolerance(; kkt=0.001))
     convcriteria = Nonconvex.KKTCriteria()
     x0 = fill(V, length(solver.vars))
     nelem = length(x0)
@@ -80,7 +83,7 @@ end
     # r.minimizer
 
     TopOpt.setpenalty!(solver, penalty.p)
-    result = Nonconvex.optimize(m, MMA87(), x0, options = options)
+    result = Nonconvex.optimize(m, MMA87(), x0; options=options)
 
     println("="^10)
     println(

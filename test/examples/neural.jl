@@ -39,7 +39,7 @@ options = MMAOptions()
 
 ##
 alg = IpoptAlg()
-options = IpoptOptions(max_iter = 200)
+options = IpoptOptions(; max_iter=200)
 model1 = Model()
 nparams = length(p0)
 addvar!(model1, fill(-100.0, nparams), fill(100.0, nparams))
@@ -104,7 +104,7 @@ end
 μ = 1.0
 res2 = res1
 # Increase the number of iterations to get a good design
-for _ = 1:3
+for _ in 1:3
     global μ *= 2
     global res2
     model2 = Model()
@@ -113,7 +113,7 @@ for _ = 1:3
     # set_objective!(model2, obj)
     set_objective!(model2, p -> μ * obj(p) - log(max(0, -constr(p))))
     # Increase the following number e.g. to 100 for a better design
-    options = IpoptOptions(max_iter = 20)
+    options = IpoptOptions(; max_iter=20)
     res2 = optimize(model2, alg, res2.minimizer; options)
     @show extrema(tf(res2.minimizer))
     @show obj(res2.minimizer)

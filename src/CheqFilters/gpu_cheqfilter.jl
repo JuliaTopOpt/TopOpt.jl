@@ -1,6 +1,6 @@
 using ..TopOpt: GPU, @init_cuda
 import ..TopOpt: whichdevice
-import ..CUDASupport
+using ..CUDASupport: CUDASupport
 using ..GPUUtils
 
 @init_cuda
@@ -16,7 +16,7 @@ function update_nodal_grad!(nodal_grad::CuVector, node_cells, args...)
     allargs = (nodal_grad, node_cells.offsets, node_cells.values, args...)
     callkernel(dev, cheq_kernel1, allargs)
     CUDAdrv.synchronize(ctx)
-    return
+    return nothing
 end
 
 function cheq_kernel1(
@@ -37,7 +37,7 @@ function cheq_kernel1(
     while n <= length(nodal_grad)
         nodal_grad[n] = zero(T)
         cell_weights[n] = zero(T)
-        r = node_cells_offsets[n]:node_cells_offsets[n+1]-1
+        r = node_cells_offsets[n]:(node_cells_offsets[n + 1] - 1)
         for i in r
             c = node_cells_values[i][1]
             if black[c] || white[c]
@@ -57,7 +57,7 @@ function normalize_grad!(nodal_grad::CuVector, cell_weights)
     args = (nodal_grad, cell_weights)
     callkernel(dev, cheq_kernel2, args)
     CUDAdrv.synchronize(ctx)
-    return
+    return nothing
 end
 function cheq_kernel2(nodal_grad, cell_weights)
     T = eltype(nodal_grad)
@@ -69,7 +69,7 @@ function cheq_kernel2(nodal_grad, cell_weights)
         nodal_grad[n] /= w
         n += offset
     end
-    return
+    return nothing
 end
 
 function update_grad!(
@@ -94,7 +94,7 @@ function update_grad!(
     )
     callkernel(dev, cheq_kernel3, allargs)
     CUDAdrv.synchronize(ctx)
-    return
+    return nothing
 end
 function cheq_kernel3(
     grad,
@@ -114,7 +114,8 @@ function cheq_kernel3(
             continue
         end
         ind = varind[i]
-        r = cell_neighbouring_nodes_offsets[ind]:cell_neighbouring_nodes_offsets[ind+1]-1
+        r =
+            cell_neighbouring_nodes_offsets[ind]:(cell_neighbouring_nodes_offsets[ind + 1] - 1)
         length(r) == 0 && continue
         grad[ind] = zero(T)
         sum_weights = zero(T)
@@ -128,5 +129,5 @@ function cheq_kernel3(
         i += offset
     end
 
-    return
+    return nothing
 end

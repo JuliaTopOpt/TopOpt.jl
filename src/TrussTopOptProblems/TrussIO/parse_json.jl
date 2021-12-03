@@ -1,4 +1,4 @@
-import JSON
+using JSON: JSON
 
 # add_format(format"JSON", "JSON", [".json"])
 

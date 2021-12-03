@@ -7,15 +7,16 @@
     maxfevals::Int
 end
 
-Base.show(::IO, ::MIME{Symbol("text/plain")}, ::Displacement) =
-    println("TopOpt displacement function")
+function Base.show(::IO, ::MIME{Symbol("text/plain")}, ::Displacement)
+    return println("TopOpt displacement function")
+end
 
 """
     Displacement()
 
 Construct the Displacement function struct.
 """
-function Displacement(solver::AbstractFEASolver; maxfevals = 10^8)
+function Displacement(solver::AbstractFEASolver; maxfevals=10^8)
     T = eltype(solver.u)
     dh = solver.problem.ch.dh
     k = ndofs_per_cell(dh)
@@ -64,9 +65,9 @@ function ChainRulesCore.rrule(dp::Displacement, x)
     u = dp(x)
     return u, Δ -> begin # v
         solver.rhs .= Δ
-        solver(reuse_chol = true, assemble_f = false)
+        solver(; reuse_chol=true, assemble_f=false)
         dudx_tmp .= 0
-        for e = 1:length(x)
+        for e in 1:length(x)
             _, dρe = get_ρ_dρ(x[e], penalty, xmin)
             celldofs!(global_dofs, dh, e)
             Keu = bcmatrix(Kes[e]) * u[global_dofs]

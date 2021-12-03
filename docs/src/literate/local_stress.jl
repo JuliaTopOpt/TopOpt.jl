@@ -21,9 +21,9 @@ x = copy(x0)
 for p in [1.0, 2.0, 3.0]
     global penalty, stress, filter, result, stress, x
     penalty = TopOpt.PowerPenalty(p)
-    solver = FEASolver(Direct, problem, xmin = xmin, penalty = penalty)
+    solver = FEASolver(Direct, problem; xmin=xmin, penalty=penalty)
     stress = TopOpt.MicroVonMisesStress(solver)
-    filter = DensityFilter(solver, rmin = rmin)
+    filter = DensityFilter(solver; rmin=rmin)
     volfrac = TopOpt.Volume(problem, solver)
 
     obj = x -> volfrac(filter(x)) - V
@@ -34,7 +34,7 @@ for p in [1.0, 2.0, 3.0]
     end
     alg = PercivalAlg()
     options = PercivalOptions()
-    optimizer = Optimizer(obj, constr, x, alg, options = options)
+    optimizer = Optimizer(obj, constr, x, alg; options=options)
     simp = SIMP(optimizer, solver, p)
     result = simp(x)
     x = result.topology

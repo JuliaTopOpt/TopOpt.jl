@@ -24,8 +24,8 @@ function ExactSVDMean(F::SparseMatrixCSC)
     I = Int[]
     J = Int[]
     V = eltype(F)[]
-    for j = 1:length(inds)
-        for i = 1:length(rows)
+    for j in 1:length(inds)
+        for i in 1:length(rows)
             push!(I, rows[i])
             push!(J, inds[j])
             push!(V, US_dense[i, j])
@@ -42,10 +42,7 @@ struct TraceEstimationMean{TF,TV,TM} <: AbstractTraceEstimationMeanMethod
     sample_method::TM
 end
 function TraceEstimationMean(
-    F::SparseMatrixCSC,
-    nv::Int,
-    sample_once::Bool = true,
-    sample_method = hutch_rand!,
+    F::SparseMatrixCSC, nv::Int, sample_once::Bool=true, sample_method=hutch_rand!
 )
     V = zeros(eltype(F), size(F, 2), nv)
     sample_method(V)
@@ -59,10 +56,7 @@ struct TraceEstimationSVDMean{TUS,TV,TM} <: AbstractTraceEstimationMeanMethod
     sample_method::TM
 end
 function TraceEstimationSVDMean(
-    F::SparseMatrixCSC,
-    nv::Int,
-    sample_once::Bool = true,
-    sample_method = hutch_rand!,
+    F::SparseMatrixCSC, nv::Int, sample_once::Bool=true, sample_method=hutch_rand!
 )
     US = ExactSVDMean(F).US
     V = zeros(eltype(F), size(US, 2), nv)
@@ -71,10 +65,7 @@ function TraceEstimationSVDMean(
     return TraceEstimationSVDMean(US, size(F, 2), V, sample_once, sample_method)
 end
 function TraceEstimationSVDMean(
-    F::SparseMatrixCSC,
-    V::AbstractMatrix,
-    sample_once::Bool = true,
-    sample_method = hutch_rand!,
+    F::SparseMatrixCSC, V::AbstractMatrix, sample_once::Bool=true, sample_method=hutch_rand!
 )
     US = ExactSVDMean(F).US
     sample_once = sample_method === hadamard! || sample_once
@@ -115,8 +106,8 @@ function ExactSVDDiagonal(F::SparseMatrixCSC, nE::Int)
     I = Int[]
     J = Int[]
     vals = eltype(F)[]
-    for j = 1:length(inds)
-        for i = 1:length(rows)
+    for j in 1:length(inds)
+        for i in 1:length(rows)
             push!(I, rows[i])
             push!(J, inds[j])
             push!(vals, US_dense[i, j])
@@ -139,11 +130,7 @@ struct DiagonalEstimation{TF,TY,TQ,TV,Ttemp,TM} <: AbstractDiagonalEstimationMet
     sample_method::TM
 end
 function DiagonalEstimation(
-    F::SparseMatrixCSC,
-    nv::Int,
-    nE::Int,
-    sample_once::Bool = true,
-    sample_method = hadamard!,
+    F::SparseMatrixCSC, nv::Int, nE::Int, sample_once::Bool=true, sample_method=hadamard!
 )
     V = zeros(eltype(F), size(F, 2), nv)
     sample_method(V)
@@ -157,8 +144,8 @@ function DiagonalEstimation(
     F::SparseMatrixCSC,
     V::AbstractMatrix,
     nE::Int,
-    sample_once::Bool = true,
-    sample_method = hadamard!,
+    sample_once::Bool=true,
+    sample_method=hadamard!,
 )
     nv = size(V, 2)
     Y = zeros(eltype(F), size(F, 1), nv)

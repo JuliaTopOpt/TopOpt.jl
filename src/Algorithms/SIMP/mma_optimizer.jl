@@ -13,19 +13,18 @@ Base.show(::IO, ::MIME{Symbol("text/plain")}, ::Optimizer) = println("TopOpt opt
 multol!(o::Optimizer, m::Real) = o.options.tol *= m
 function setbounds!(o::Optimizer, x, w)
     o.model.box_min .= max.(0, x .- w)
-    o.model.box_max .= min.(1, x .+ w)
+    return o.model.box_max .= min.(1, x .+ w)
 end
 
 function Optimizer(
     obj,
     constr,
     vars,
-    opt = MMA87(),
-    device::Tdev = CPU();
-    options = MMAOptions(),
-    convcriteria = KKTCriteria(),
+    opt=MMA87(),
+    device::Tdev=CPU();
+    options=MMAOptions(),
+    convcriteria=KKTCriteria(),
 ) where {Tdev<:AbstractDevice}
-
     T = eltype(vars)
     nvars = length(vars)
     x0 = copy(vars)
@@ -36,8 +35,8 @@ function Optimizer(
         NonconvexCore.tovecmodel(model)[1],
         opt,
         x0;
-        options = options,
-        convcriteria = convcriteria,
+        options=options,
+        convcriteria=convcriteria,
     )
     return Optimizer(model, opt, workspace, device)
 end
@@ -79,35 +78,36 @@ end
     auto_scale::Any
     dual_options::Any
 end
-Base.show(::IO, ::MIME{Symbol("text/plain")}, ::MMAOptionsGen) =
-    println("TopOpt MMA options generator")
+function Base.show(::IO, ::MIME{Symbol("text/plain")}, ::MMAOptionsGen)
+    return println("TopOpt MMA options generator")
+end
 function (g::MMAOptionsGen)(i)
-    MMAOptions(
-        maxiter = g.maxiter(i),
-        outer_maxiter = g.outer_maxiter(i),
-        tol = g.tol(i),
-        s_init = g.s_init(i),
-        s_incr = g.s_incr(i),
-        s_decr = g.s_decr(i),
-        store_trace = g.store_trace(i),
-        show_trace = g.show_trace(i),
-        auto_scale = g.auto_scale(i),
-        dual_options = g.dual_options(i),
+    return MMAOptions(;
+        maxiter=g.maxiter(i),
+        outer_maxiter=g.outer_maxiter(i),
+        tol=g.tol(i),
+        s_init=g.s_init(i),
+        s_incr=g.s_incr(i),
+        s_decr=g.s_decr(i),
+        store_trace=g.store_trace(i),
+        show_trace=g.show_trace(i),
+        auto_scale=g.auto_scale(i),
+        dual_options=g.dual_options(i),
     )
 end
 
 function (g::MMAOptionsGen)(options, i)
-    MMAOptions(
-        maxiter = optionalcall(g, :maxiter, options, i),
-        outer_maxiter = optionalcall(g, :outer_maxiter, options, i),
-        tol = optionalcall(g, :tol, options, i),
-        s_init = optionalcall(g, :s_init, options, i),
-        s_incr = optionalcall(g, :s_incr, options, i),
-        s_decr = optionalcall(g, :s_decr, options, i),
-        store_trace = optionalcall(g, :store_trace, options, i),
-        show_trace = optionalcall(g, :show_trace, options, i),
-        auto_scale = optionalcall(g, :auto_scale, options, i),
-        dual_options = optionalcall(g, :dual_options, options, i),
+    return MMAOptions(;
+        maxiter=optionalcall(g, :maxiter, options, i),
+        outer_maxiter=optionalcall(g, :outer_maxiter, options, i),
+        tol=optionalcall(g, :tol, options, i),
+        s_init=optionalcall(g, :s_init, options, i),
+        s_incr=optionalcall(g, :s_incr, options, i),
+        s_decr=optionalcall(g, :s_decr, options, i),
+        store_trace=optionalcall(g, :store_trace, options, i),
+        show_trace=optionalcall(g, :show_trace, options, i),
+        auto_scale=optionalcall(g, :auto_scale, options, i),
+        dual_options=optionalcall(g, :dual_options, options, i),
     )
 end
 function optionalcall(g, s, options, i)

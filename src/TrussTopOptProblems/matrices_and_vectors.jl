@@ -7,18 +7,16 @@ using ChainRulesCore
 """
 Generate element stiffness matrices
 """
-function make_Kes_and_fes(problem::TrussProblem, quad_order = 1)
-    make_Kes_and_fes(problem, quad_order, Val{:Static})
+function make_Kes_and_fes(problem::TrussProblem, quad_order=1)
+    return make_Kes_and_fes(problem, quad_order, Val{:Static})
 end
 
 function make_Kes_and_fes(problem::TrussProblem, ::Type{Val{mat_type}}) where {mat_type}
-    make_Kes_and_fes(problem, 1, Val{mat_type})
+    return make_Kes_and_fes(problem, 1, Val{mat_type})
 end
 
 function make_Kes_and_fes(
-    problem::TrussProblem{xdim,T},
-    quad_order,
-    ::Type{Val{mat_type}},
+    problem::TrussProblem{xdim,T}, quad_order, ::Type{Val{mat_type}}
 ) where {xdim,T,mat_type}
     dh = getdh(problem)
     Es = getE(problem)
@@ -27,19 +25,20 @@ function make_Kes_and_fes(
     As = getA(problem)
 
     # * Shape functions and quadrature rule
-    interpolation_space =
-        Ferrite.default_interpolation(getcelltype(problem.truss_grid.grid))
+    interpolation_space = Ferrite.default_interpolation(
+        getcelltype(problem.truss_grid.grid)
+    )
     # Lagrange{ξdim, refshape, geom_order}()
     ξdim = getdim(interpolation_space)
     refshape = getrefshape(dh.field_interpolations[1])
     quadrature_rule = QuadratureRule{ξdim,refshape}(quad_order)
-    cellvalues =
-        GenericCellScalarValues(T, quadrature_rule, interpolation_space; xdim = xdim)
+    cellvalues = GenericCellScalarValues(T, quadrature_rule, interpolation_space; xdim=xdim)
 
     # * A Line element's faces are not meaningful in truss problems
     # placeholder to make type right
-    facevalues =
-        FaceScalarValues(QuadratureRule{ξdim - 1,refshape}(quad_order), interpolation_space)
+    facevalues = FaceScalarValues(
+        QuadratureRule{ξdim - 1,refshape}(quad_order), interpolation_space
+    )
 
     # * Calculate element stiffness matrices
     n_basefuncs = getnbasefunctions(cellvalues)
@@ -88,17 +87,17 @@ end
 function GenericCellScalarValues(
     quad_rule::QuadratureRule,
     func_interpol::Interpolation,
-    geom_interpol::Interpolation = func_interpol,
+    geom_interpol::Interpolation=func_interpol,
 )
-    TrussCellScalarValues(Float64, quad_rule, func_interpol, geom_interpol)
+    return TrussCellScalarValues(Float64, quad_rule, func_interpol, geom_interpol)
 end
 
 function GenericCellScalarValues(
     ::Type{T},
     quad_rule::QuadratureRule{ξdim,shape},
     func_interpol::Interpolation,
-    geom_interpol::Interpolation = func_interpol;
-    xdim = ξdim,
+    geom_interpol::Interpolation=func_interpol;
+    xdim=ξdim,
 ) where {ξdim,T,shape<:Ferrite.AbstractRefShape}
     @assert getdim(func_interpol) == getdim(geom_interpol)
     @assert getrefshape(func_interpol) == getrefshape(geom_interpol) == shape
@@ -113,35 +112,34 @@ function GenericCellScalarValues(
     M = fill(zero(T) * T(NaN), n_geom_basefuncs, n_qpoints)
     dMdξ = fill(zero(Vec{ξdim,T}) * T(NaN), n_geom_basefuncs, n_qpoints)
     for (qp, ξ) in enumerate(quad_rule.points)
-        for i = 1:n_func_basefuncs
-            dNdξ[i, qp], N[i, qp] = Ferrite.gradient(ξ -> value(func_interpol, i, ξ), ξ, :all)
+        for i in 1:n_func_basefuncs
+            dNdξ[i, qp], N[i, qp] = Ferrite.gradient(
+                ξ -> value(func_interpol, i, ξ), ξ, :all
+            )
         end
-        for i = 1:n_geom_basefuncs
-            dMdξ[i, qp], M[i, qp] = Ferrite.gradient(ξ -> value(geom_interpol, i, ξ), ξ, :all)
+        for i in 1:n_geom_basefuncs
+            dMdξ[i, qp], M[i, qp] = Ferrite.gradient(
+                ξ -> value(geom_interpol, i, ξ), ξ, :all
+            )
         end
     end
     detJdV = fill(T(NaN), n_qpoints)
-    GenericCellScalarValues{ξdim,xdim,T,shape}(
-        N,
-        dNdx,
-        dNdξ,
-        detJdV,
-        M,
-        dMdξ,
-        quad_rule.weights,
+    return GenericCellScalarValues{ξdim,xdim,T,shape}(
+        N, dNdx, dNdξ, detJdV, M, dMdξ, quad_rule.weights
     )
 end
 
 # common values
 using Ferrite: getnbasefunctions, getngeobasefunctions, getnquadpoints
 getn_scalarbasefunctions(cv::GenericCellScalarValues) = size(cv.N, 1)
-@propagate_inbounds shape_gradient(
-    cv::GenericCellScalarValues,
-    q_point::Int,
-    base_func::Int,
-) = cv.dNdx[base_func, q_point]
-@propagate_inbounds getdetJdV(cv::GenericCellScalarValues, q_point::Int) =
-    cv.detJdV[q_point]
+@propagate_inbounds function shape_gradient(
+    cv::GenericCellScalarValues, q_point::Int, base_func::Int
+)
+    return cv.dNdx[base_func, q_point]
+end
+@propagate_inbounds function getdetJdV(cv::GenericCellScalarValues, q_point::Int)
+    return cv.detJdV[q_point]
+end
 
 ############################
 
@@ -151,12 +149,12 @@ getn_scalarbasefunctions(cv::GenericCellScalarValues) = size(cv.N, 1)
 Compute the pseudo-inverse of a Vector tensor.
 """
 function pinv(t::Vec{dim,T}) where {dim,T}
-    LinearAlgebra.Transpose{T,Vec{dim,T}}(t / sum(t .^ 2))
+    return LinearAlgebra.Transpose{T,Vec{dim,T}}(t / sum(t .^ 2))
 end
 function ChainRulesCore.rrule(::typeof(pinv), t::Vec{dim,T}) where {dim,T}
     s = sum(t .^ 2)
     TT = LinearAlgebra.Transpose{T,Vec{dim,T}}
-    TT(t / s), Δ -> begin
+    return TT(t / s), Δ -> begin
         nothing, TT(Δ)
     end
 end
@@ -182,7 +180,7 @@ function _make_Kes_and_weights(
     Kes = Symmetric{T,MatrixType}[]
     sizehint!(Kes, nel)
     # body_force = ρ .* g # Force per unit volume
-    weights = [zeros(VectorType) for i = 1:nel]
+    weights = [zeros(VectorType) for i in 1:nel]
     Ke_e = zeros(T, xdim, xdim)
     fe = zeros(T, Kesize)
     Ke_0 = Matrix{T}(undef, Kesize, Kesize)
@@ -192,21 +190,21 @@ function _make_Kes_and_weights(
         Ke_0 .= 0
         truss_reinit!(cellvalues, cell, As[k])
         # fe = weights[k]
-        for q_point = 1:getnquadpoints(cellvalues)
+        for q_point in 1:getnquadpoints(cellvalues)
             dΩ = getdetJdV(cellvalues, q_point)
-            for b = 1:n_basefuncs
+            for b in 1:n_basefuncs
                 ∇ϕb = shape_gradient(cellvalues, q_point, b)
                 # ϕb = shape_value(cellvalues, q_point, b)
-                for d2 = 1:xdim
+                for d2 in 1:xdim
                     # self weight force calculation
                     # fe = @set fe[(b-1)*dim + d2] += ϕb * body_force[d2] * dΩ
-                    for a = 1:n_basefuncs
+                    for a in 1:n_basefuncs
                         ∇ϕa = shape_gradient(cellvalues, q_point, a)
                         # TODO specialized KroneckerDelta struct to make dotdot more efficient
                         Ke_e .= Es[k] * ∇ϕa ⊗ ∇ϕb * dΩ
-                        for d1 = 1:xdim
+                        for d1 in 1:xdim
                             #if dim*(b-1) + d2 >= dim*(a-1) + d1
-                            Ke_0[xdim*(a-1)+d1, xdim*(b-1)+d2] += Ke_e[d1, d2]
+                            Ke_0[xdim * (a - 1) + d1, xdim * (b - 1) + d2] += Ke_e[d1, d2]
                             #end
                         end
                     end
@@ -224,31 +222,27 @@ function _make_Kes_and_weights(
 end
 
 @inline function truss_reinit!(
-    cv::GenericCellScalarValues{ξdim,xdim,T},
-    ci::CellIterator{xdim,N,T},
-    crossec::T,
+    cv::GenericCellScalarValues{ξdim,xdim,T}, ci::CellIterator{xdim,N,T}, crossec::T
 ) where {ξdim,xdim,N,T}
     Ferrite.check_compatible_geointerpolation(cv, ci)
-    truss_reinit!(cv, ci.coords, crossec)
+    return truss_reinit!(cv, ci.coords, crossec)
 end
 
 """
 Reinit a cell for a truss element, using the nodal coordinates `x`, cross section `crossec`
 """
 function truss_reinit!(
-    cv::GenericCellScalarValues{ξdim,xdim,T},
-    x::AbstractVector{Vec{xdim,T}},
-    crossec::T,
+    cv::GenericCellScalarValues{ξdim,xdim,T}, x::AbstractVector{Vec{xdim,T}}, crossec::T
 ) where {ξdim,xdim,T}
     n_geom_basefuncs = getngeobasefunctions(cv)
     n_func_basefuncs = getn_scalarbasefunctions(cv)
     @assert length(x) == n_geom_basefuncs
     isa(cv, CellVectorValues) && (n_func_basefuncs *= xdim)
 
-    @inbounds for i = 1:length(cv.qr_weights)
+    @inbounds for i in 1:length(cv.qr_weights)
         w = cv.qr_weights[i]
         dxdξ = zero(Tensor{1,xdim})
-        for j = 1:n_geom_basefuncs
+        for j in 1:n_geom_basefuncs
             # in a truss element, x_j ∈ R, dMdξ_j ∈ R, ξ ∈ R
             # cv.dMdξ[j, i] is a 1-1 tensor here
             dxdξ += x[j] * cv.dMdξ[j, i][1]
@@ -258,7 +252,7 @@ function truss_reinit!(
         detJ > 0.0 || throw(ArgumentError("det(J) is not positive: det(J) = $(detJ)"))
         cv.detJdV[i] = detJ * w * crossec
         Jinv = pinv(dxdξ)
-        for j = 1:n_func_basefuncs
+        for j in 1:n_func_basefuncs
             # cv.dNdξ[j, i] is a 1-1 tensor here
             cv.dNdx[j, i] = cv.dNdξ[j, i][1] * Jinv'
         end
