@@ -31,11 +31,11 @@ rmin = 2.0; # density filter radius
 
 # ### Define a finite element solver
 penalty = TopOpt.PowerPenalty(3.0)
-solver = FEASolver(Direct, problem, xmin = xmin, penalty = penalty)
+solver = FEASolver(Direct, problem; xmin=xmin, penalty=penalty)
 
 # ### Define compliance objective
 comp = TopOpt.Compliance(problem, solver)
-filter = DensityFilter(solver, rmin = rmin)
+filter = DensityFilter(solver; rmin=rmin)
 obj = x -> comp(filter(x))
 
 # ### Define volume constraint
@@ -46,14 +46,14 @@ constr = x -> volfrac(filter(x)) - V
 
 # ### Define subproblem optimizer
 mma_options =
-    options = MMAOptions(
-        maxiter = 3000,
-        tol = Nonconvex.Tolerance(x = 1e-3, f = 1e-3, kkt = 0.001),
+    options = MMAOptions(;
+        maxiter=3000, tol=Nonconvex.Tolerance(; x=1e-3, f=1e-3, kkt=0.001)
     )
 convcriteria = Nonconvex.KKTCriteria()
 x0 = fill(V, length(solver.vars))
-optimizer =
-    Optimizer(obj, constr, x0, MMA87(), options = mma_options, convcriteria = convcriteria)
+optimizer = Optimizer(
+    obj, constr, x0, MMA87(); options=mma_options, convcriteria=convcriteria
+)
 
 # ### Define SIMP optimizer
 simp = SIMP(optimizer, solver, penalty.p);
