@@ -2,7 +2,7 @@ const dev = CUDAdrv.device()
 const ctx = CUDAdrv.CuContext(dev)
 
 macro thread_local_index()
-    :(
+    return :(
         (threadIdx().z - 1) * blockDim().y * blockDim().x +
         (threadIdx().y - 1) * blockDim().x +
         threadIdx().x
@@ -10,11 +10,11 @@ macro thread_local_index()
 end
 
 macro total_threads_per_block()
-    :(blockDim().z * blockDim().y * blockDim().x)
+    return :(blockDim().z * blockDim().y * blockDim().x)
 end
 
 macro block_index()
-    :(
+    return :(
         blockIdx().x +
         (blockIdx().y - 1) * gridDim().x +
         (blockIdx().z - 1) * gridDim().x * gridDim().y
@@ -22,25 +22,25 @@ macro block_index()
 end
 
 macro total_blocks()
-    :(gridDim().z * gridDim().x * gridDim().y)
+    return :(gridDim().z * gridDim().x * gridDim().y)
 end
 
 macro thread_global_index()
-    :(
+    return :(
         (@block_index() - 1) * (blockDim().x * blockDim().y * blockDim().z) +
         @thread_local_index()
     )
 end
 
 macro total_threads()
-    :(@total_blocks() * @total_threads_per_block())
+    return :(@total_blocks() * @total_threads_per_block())
 end
 
 function callkernel(dev, kernel, args)
     blocks, threads = getvalidconfig(dev, kernel, args)
     @cuda blocks = blocks threads = threads kernel(args...)
 
-    return
+    return nothing
 end
 
 function getvalidconfig(dev, kernel, parallel_args)
@@ -58,9 +58,9 @@ function getvalidconfig(dev, kernel, parallel_args)
         kernel_threads = CUDAnative.maxthreads(parallel_kernel)
         ## by the device
         block_threads = (
-            x = CUDAdrv.attribute(dev, CUDAdrv.MAX_BLOCK_DIM_X),
-            y = CUDAdrv.attribute(dev, CUDAdrv.MAX_BLOCK_DIM_Y),
-            total = CUDAdrv.attribute(dev, CUDAdrv.MAX_THREADS_PER_BLOCK),
+            x=CUDAdrv.attribute(dev, CUDAdrv.MAX_BLOCK_DIM_X),
+            y=CUDAdrv.attribute(dev, CUDAdrv.MAX_BLOCK_DIM_Y),
+            total=CUDAdrv.attribute(dev, CUDAdrv.MAX_THREADS_PER_BLOCK),
         )
 
         # figure out a legal launch configuration

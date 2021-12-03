@@ -8,19 +8,19 @@ export save_mesh
 function save_mesh(filename, problem::StiffnessTopOptProblem)
     topology = ones(getncells(TopOptProblems.getdh(problem).grid))
     vtkfile = WriteVTK.vtk_grid(filename, problem, topology)
-    outfiles = WriteVTK.vtk_save(vtkfile)
+    return outfiles = WriteVTK.vtk_save(vtkfile)
 end
 function save_mesh(filename, problem, solver)
-    save_mesh(filename, problem, solver.vars)
+    return save_mesh(filename, problem, solver.vars)
 end
 function save_mesh(filename, alg)
     problem = alg.obj.problem
     vars = alg.optimizer.obj.solver.vars
-    save_mesh(filename, problem, vars)
+    return save_mesh(filename, problem, vars)
 end
 function save_mesh(filename, problem, vars::AbstractVector)
     vtkfile = WriteVTK.vtk_grid(filename, problem, vars)
-    outfiles = WriteVTK.vtk_save(vtkfile)
+    return outfiles = WriteVTK.vtk_save(vtkfile)
 end
 function WriteVTK.vtk_grid(
     filename::AbstractString,

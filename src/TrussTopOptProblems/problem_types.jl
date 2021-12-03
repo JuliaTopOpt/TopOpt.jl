@@ -28,8 +28,8 @@ function TrussProblem(
     elements::Dict{iT,Tuple{iT,iT}},
     loads::Dict{iT,SVector{xdim,T}},
     supports::Dict{iT,SVector{xdim,fT}},
-    mats = TrussFEAMaterial{T}(1.0, 0.3),
-    crosssecs = TrussFEACrossSec{T}(1.0),
+    mats=TrussFEAMaterial{T}(1.0, 0.3),
+    crosssecs=TrussFEACrossSec{T}(1.0),
 ) where {xdim,T,iT,fT,CellType}
     # unify number type
     # _T = promote_type(eltype(sizes), typeof(mats), typeof(ν), typeof(force))
@@ -52,7 +52,7 @@ function TrussProblem(
         @assert length(mats) == ncells
         mats = convert(Vector{TrussFEAMaterial{T}}, mats)
     elseif mats isa TrussFEAMaterial
-        mats = [convert(TrussFEAMaterial{T}, mats) for i = 1:ncells]
+        mats = [convert(TrussFEAMaterial{T}, mats) for i in 1:ncells]
     else
         error("Invalid mats: $(mats)")
     end
@@ -69,7 +69,7 @@ function TrussProblem(
     addnodeset!(truss_grid.grid, "load", load_nodesets)
 
     # * support nodeset
-    for i = 1:xdim
+    for i in 1:xdim
         if haskey(truss_grid.grid.nodesets, get_fixities_node_set_name(i))
             pop!(truss_grid.grid.nodesets, get_fixities_node_set_name(i))
         end
@@ -98,7 +98,7 @@ function TrussProblem(
     close!(dh)
 
     ch = ConstraintHandler(dh)
-    for i = 1:xdim
+    for i in 1:xdim
         dbc = Dirichlet(
             :u,
             getnodeset(truss_grid.grid, get_fixities_node_set_name(i)),
@@ -131,7 +131,7 @@ function Base.show(io::Base.IO, mime::MIME"text/plain", sp::TrussProblem)
     Base.show(io, mime, sp.truss_grid)
     println(io, "    E: $(sp.E)")
     println(io, "    point loads: $(length(sp.force))")
-    println(io, "    active vars: $(sum(sp.varind .!= 0))")
+    return println(io, "    active vars: $(sum(sp.varind .!= 0))")
 end
 
 #########################################

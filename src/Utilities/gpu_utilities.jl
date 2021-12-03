@@ -9,11 +9,11 @@ abstract type AbstractGPUPenalty{T} <: AbstractPenalty{T} end
 whichdevice(::AbstractCPUPenalty) = CPU()
 whichdevice(::AbstractGPUPenalty) = GPU()
 
-CUDAnative.pow(d::TD, p::AbstractFloat) where {T,TV,TD<:ForwardDiff.Dual{T,TV,1}} =
-    ForwardDiff.Dual{T}(
-        CUDAnative.pow(d.value, p),
-        p * d.partials[1] * CUDAnative.pow(d.value, p - 1),
+function CUDAnative.pow(d::TD, p::AbstractFloat) where {T,TV,TD<:ForwardDiff.Dual{T,TV,1}}
+    return ForwardDiff.Dual{T}(
+        CUDAnative.pow(d.value, p), p * d.partials[1] * CUDAnative.pow(d.value, p - 1)
     )
+end
 
 struct GPUPowerPenalty{T} <: AbstractGPUPenalty{T}
     p::T

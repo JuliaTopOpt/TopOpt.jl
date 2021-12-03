@@ -17,7 +17,7 @@ problem_names = ["Cantilever beam", "Half MBB beam", "L-beam", "Tie-beam"]
 println("Global Stress")
 println("-"^10)
 
-for i = 1:length(problems)
+for i in 1:length(problems)
     println(problem_names[i])
     problem = problems[i]
     # Parameter settings
@@ -27,13 +27,13 @@ for i = 1:length(problems)
     convcriteria = Nonconvex.KKTCriteria()
     penalty = TopOpt.PowerPenalty(1.0)
     # Define a finite element solver
-    solver = FEASolver(Direct, problem, xmin = xmin, penalty = penalty)
+    solver = FEASolver(Direct, problem; xmin=xmin, penalty=penalty)
     # Define compliance objective
     stress = TopOpt.MicroVonMisesStress(solver)
     filter = if problem isa TopOptProblems.TieBeam
         identity
     else
-        DensityFilter(solver, rmin = rmin)
+        DensityFilter(solver; rmin=rmin)
     end
     volfrac = Volume(problem, solver)
 
@@ -41,15 +41,15 @@ for i = 1:length(problems)
     constr = x -> norm(stress(filter(x)), 5) - 1.0
     # Define subproblem optimizer
     x0 = fill(1.0, length(solver.vars))
-    options = MMAOptions(maxiter = 2000, tol = Nonconvex.Tolerance(kkt = 1e-4))
+    options = MMAOptions(; maxiter=2000, tol=Nonconvex.Tolerance(; kkt=1e-4))
     #options = PercivalOptions()
     optimizer = Optimizer(
         obj,
         constr,
         x0,
-        MMA87(), #PercivalAlg(),
-        options = options,
-        convcriteria = convcriteria,
+        MMA87(); #PercivalAlg(),
+        options=options,
+        convcriteria=convcriteria,
     )
 
     # Define continuation SIMP optimizer

@@ -10,7 +10,7 @@ https://github.com/JuliaTopOpt/TopOpt.jl/wiki/Applying-boundary-conditions-to-th
 function apply_boundary_with_zerodiag!(Kσ, ch)
     T = eltype(Kσ)
     Ferrite.apply!(Kσ, T[], ch, true)
-    for i = 1:length(ch.values)
+    for i in 1:length(ch.values)
         d = ch.prescribed_dofs[i]
         Kσ[d, d] = zero(T)
     end
@@ -49,8 +49,7 @@ i, j ∈ ch.prescribed_dofs, then fill in K[i,i] for i ∈ ch.prescribed_dofs wi
 mean diagonal of the original matrix.
 """
 function apply_boundary_with_meandiag!(
-    K::Union{SparseMatrixCSC,Symmetric},
-    ch::ConstraintHandler,
+    K::Union{SparseMatrixCSC,Symmetric}, ch::ConstraintHandler
 )
     Ferrite.apply!(K, eltype(K)[], ch, false)
     return K
@@ -62,13 +61,13 @@ function ChainRulesCore.rrule(::typeof(apply_boundary_with_meandiag!), K, ch)
     jac_meandiag = sign.(diagK) / length(diagK)
     function pullback_fn(Δ)
         Δ_ch_diagsum = zero(eltype(K))
-        for i = 1:length(ch.values)
+        for i in 1:length(ch.values)
             d = ch.prescribed_dofs[i]
             Δ_ch_diagsum += Δ[d, d]
         end
         ΔK = project_to(Δ)
         apply_boundary_with_zerodiag!(ΔK, ch)
-        for i = 1:size(K, 1)
+        for i in 1:size(K, 1)
             ΔK[i, i] += Δ_ch_diagsum * jac_meandiag[i]
         end
         return NoTangent(), ΔK, NoTangent()

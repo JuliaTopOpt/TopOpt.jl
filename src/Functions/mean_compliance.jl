@@ -8,11 +8,11 @@ function MeanCompliance(
     problem::MultiLoad,
     solver::AbstractDisplacementSolver,
     args...;
-    method = :exact_svd,
-    sample_once = true,
-    nv = nothing,
-    V = nothing,
-    sample_method = :hutch,
+    method=:exact_svd,
+    sample_once=true,
+    nv=nothing,
+    V=nothing,
+    sample_method=:hutch,
     kwargs...,
 )
     if method == :exact
@@ -28,8 +28,9 @@ function MeanCompliance(
             method = TraceEstimationMean(problem.F, nv, sample_once, sample_method)
         else
             nv = nv === nothing ? size(V, 2) : nv
-            method =
-                TraceEstimationMean(problem.F, view(V, :, 1:nv), sample_once, sample_method)
+            method = TraceEstimationMean(
+                problem.F, view(V, :, 1:nv), sample_once, sample_method
+            )
         end
     else
         if sample_method isa Symbol
@@ -41,10 +42,7 @@ function MeanCompliance(
         else
             nv = nv === nothing ? size(V, 2) : nv
             method = TraceEstimationSVDMean(
-                problem.F,
-                view(V, :, 1:nv),
-                sample_once,
-                sample_method,
+                problem.F, view(V, :, 1:nv), sample_once, sample_method
             )
         end
     end
@@ -52,7 +50,7 @@ function MeanCompliance(
     return MeanCompliance(comp, method, problem.F, similar(comp.grad))
 end
 
-function (ec::MeanCompliance{T})(x, grad = ec.grad) where {T}
+function (ec::MeanCompliance{T})(x, grad=ec.grad) where {T}
     @unpack compliance, F, method = ec
     @unpack cell_comp, solver, tracing, topopt_trace = compliance
     @unpack elementinfo, u, xmin = solver
@@ -93,11 +91,11 @@ function (ec::MeanCompliance{T})(x, grad = ec.grad) where {T}
                 else
                     push!(
                         topopt_trace.add_hist,
-                        sum(topopt_trace.x_hist[end] .> topopt_trace.x_hist[end-1]),
+                        sum(topopt_trace.x_hist[end] .> topopt_trace.x_hist[end - 1]),
                     )
                     push!(
                         topopt_trace.rem_hist,
-                        sum(topopt_trace.x_hist[end] .< topopt_trace.x_hist[end-1]),
+                        sum(topopt_trace.x_hist[end] .< topopt_trace.x_hist[end - 1]),
                     )
                 end
             end
@@ -107,7 +105,7 @@ function (ec::MeanCompliance{T})(x, grad = ec.grad) where {T}
 end
 
 function compute_mean_compliance(ec::MeanCompliance, ::ExactMean, x, grad)
-    compute_exact_ec(ec, x, grad, ec.F, size(ec.F, 2))
+    return compute_exact_ec(ec, x, grad, ec.F, size(ec.F, 2))
 end
 function compute_exact_ec(ec, x, grad, F, n)
     @unpack compliance, grad_temp = ec
@@ -119,22 +117,12 @@ function compute_exact_ec(ec, x, grad, F, n)
     T = eltype(grad)
     obj = zero(T)
     grad .= 0
-    for i = 1:size(F, 2)
+    for i in 1:size(F, 2)
         @views solver.rhs .= F[:, i]
-        solver(assemble_f = false, reuse_chol = (i > 1))
+        solver(; assemble_f=false, reuse_chol=(i > 1))
         u = solver.lhs
         obj += compute_compliance(
-            cell_comp,
-            grad_temp,
-            cell_dofs,
-            Kes,
-            u,
-            black,
-            white,
-            varind,
-            x,
-            penalty,
-            xmin,
+            cell_comp, grad_temp, cell_dofs, Kes, u, black, white, varind, x, penalty, xmin
         )
         grad .+= grad_temp
     end
@@ -144,7 +132,7 @@ function compute_exact_ec(ec, x, grad, F, n)
 end
 
 function compute_mean_compliance(ec::MeanCompliance, ap::TraceEstimationMean, x, grad)
-    compute_approx_ec(ec, x, grad, ap.F, ap.V, size(ap.F, 2))
+    return compute_approx_ec(ec, x, grad, ap.F, ap.V, size(ap.F, 2))
 end
 function compute_approx_ec(ec, x, grad, F, V, n)
     nv = size(ec.method.V, 2)
@@ -158,9 +146,9 @@ function compute_approx_ec(ec, x, grad, F, V, n)
     obj = zero(T)
     grad .= 0
     ec.method.sample_once || ec.method.sample_method(V)
-    for i = 1:nv
+    for i in 1:nv
         @views mul!(solver.rhs, F, V[:, i])
-        solver(assemble_f = false, reuse_chol = (i > 1))
+        solver(; assemble_f=false, reuse_chol=(i > 1))
         invKFv = solver.lhs
         obj += compute_compliance(
             cell_comp,
@@ -183,14 +171,14 @@ function compute_approx_ec(ec, x, grad, F, V, n)
 end
 
 function compute_mean_compliance(ec::MeanCompliance, ex::ExactSVDMean, x, grad)
-    compute_exact_ec(ec, x, grad, ex.US, ex.n)
+    return compute_exact_ec(ec, x, grad, ex.US, ex.n)
 end
 
 function compute_mean_compliance(ec::MeanCompliance, ax::TraceEstimationSVDMean, x, grad)
-    compute_approx_ec(ec, x, grad, ax.US, ax.V, ax.n)
+    return compute_approx_ec(ec, x, grad, ax.US, ax.V, ax.n)
 end
 
-Utilities.getpenalty(c::MeanCompliance) = c.compliance |> getsolver |> getpenalty
+Utilities.getpenalty(c::MeanCompliance) = getpenalty(getsolver(c.compliance))
 @forward_property MeanCompliance compliance
 
 hutch_rand!(x::Array) = x .= rand.(Ref(-1.0:2.0:1.0))
@@ -204,7 +192,7 @@ function hadamard3!(V)
     while size(H, 1) < n
         n1 = nv ÷ 2
         H1 = H[:, 1:n1]
-        H2 = H[:, (n1+1):nv]
+        H2 = H[:, (n1 + 1):nv]
         H = [H1 H2; H1 -H2]
     end
     V .= H[1:n, :]
@@ -235,18 +223,13 @@ function hadamard!(V)
     return V
 end
 
-function generate_scenarios(
-    dof::Int,
-    size::Tuple{Int,Int},
-    f,
-    perturb = () -> (rand() - 0.5),
-)
+function generate_scenarios(dof::Int, size::Tuple{Int,Int}, f, perturb=() -> (rand() - 0.5))
     ndofs, nscenarios = size
     I = Int[]
     J = Int[]
     V = Float64[]
-    V = [f * (1 + perturb()) for s = 1:nscenarios]
-    I = [dof for s = 1:nscenarios]
+    V = [f * (1 + perturb()) for s in 1:nscenarios]
+    I = [dof for s in 1:nscenarios]
     J = 1:nscenarios
     return sparse(I, J, V, ndofs, nscenarios)
 end

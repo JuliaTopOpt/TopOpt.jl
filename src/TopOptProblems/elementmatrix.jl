@@ -13,8 +13,9 @@ An element stiffness matrix. `matrix` is the unconstrained element stiffness mat
     meandiag::T
 end
 ElementMatrix(matrix, mask) = ElementMatrix(matrix, mask, sumdiag(matrix) / size(matrix, 1))
-Base.show(::IO, ::MIME{Symbol("text/plain")}, ::ElementMatrix) =
-    println("TopOpt element matrix")
+function Base.show(::IO, ::MIME{Symbol("text/plain")}, ::ElementMatrix)
+    return println("TopOpt element matrix")
+end
 
 """
     rawmatrix(m::ElementMatrix)
@@ -30,19 +31,19 @@ rawmatrix(m::Symmetric{T,<:ElementMatrix{T}}) where {T} = Symmetric(m.data.matri
 Returns the constrained element stiffness matrix where the elements in the rows and columns corresponding to any local degree of freedom with a Dirichlet boundary condition are replaced by 0.
 """
 @generated function bcmatrix(
-    m::ElementMatrix{T,TM},
+    m::ElementMatrix{T,TM}
 ) where {dim,T,TM<:StaticMatrix{dim,dim,T}}
     expr = Expr(:tuple)
-    for j = 1:dim, i = 1:dim
+    for j in 1:dim, i in 1:dim
         push!(expr.args, :(ifelse(m.mask[$i] && m.mask[$j], m.matrix[$i, $j], zero(T))))
     end
     return :($(Expr(:meta, :inline)); $TM($expr))
 end
 @generated function bcmatrix(
-    m::Symmetric{T,<:ElementMatrix{T,TM}},
+    m::Symmetric{T,<:ElementMatrix{T,TM}}
 ) where {dim,T,TM<:StaticMatrix{dim,dim,T}}
     expr = Expr(:tuple)
-    for j = 1:dim, i = 1:dim
+    for j in 1:dim, i in 1:dim
         push!(
             expr.args,
             :(ifelse(m.data.mask[$i] && m.data.mask[$j], m.data.matrix[$i, $j], zero(T))),
@@ -60,10 +61,7 @@ Base.getindex(m::ElementMatrix, i...) = m.matrix[i...]
 Converts the element stiffness matrices `Kes` from an abstract vector of matrices to a vector of instances of the type `ElementMatrix`.
 """
 function Base.convert(
-    ::Type{Vector{<:ElementMatrix}},
-    Kes::Vector{TM};
-    bc_dofs,
-    dof_cells,
+    ::Type{Vector{<:ElementMatrix}}, Kes::Vector{TM}; bc_dofs, dof_cells
 ) where {N,T,TM<:StaticMatrix{N,N,T}}
     fill_matrix = zero(TM)
     fill_mask = ones(SVector{N,Bool})
@@ -77,7 +75,7 @@ function Base.convert(
             element_Kes[cellid] = Symmetric(new_Ke)
         end
     end
-    for e = 1:length(element_Kes)
+    for e in 1:length(element_Kes)
         Ke = element_Kes[e]
         matrix = Kes[e]
         Ke = @set Ke.matrix = matrix
@@ -86,10 +84,7 @@ function Base.convert(
     return element_Kes
 end
 function Base.convert(
-    ::Type{Vector{<:ElementMatrix}},
-    Kes::Vector{Symmetric{T,TM}};
-    bc_dofs,
-    dof_cells,
+    ::Type{Vector{<:ElementMatrix}}, Kes::Vector{Symmetric{T,TM}}; bc_dofs, dof_cells
 ) where {N,T,TM<:StaticMatrix{N,N,T}}
     fill_matrix = zero(TM)
     fill_mask = ones(SVector{N,Bool})
@@ -103,7 +98,7 @@ function Base.convert(
             element_Kes[cellid] = Symmetric(new_Ke)
         end
     end
-    for e = 1:length(element_Kes)
+    for e in 1:length(element_Kes)
         Ke = element_Kes[e].data
         matrix = Kes[e].data
         Ke = @set Ke.matrix = matrix
@@ -112,15 +107,12 @@ function Base.convert(
     return element_Kes
 end
 function Base.convert(
-    ::Type{Vector{<:ElementMatrix}},
-    Kes::Vector{TM};
-    bc_dofs,
-    dof_cells,
+    ::Type{Vector{<:ElementMatrix}}, Kes::Vector{TM}; bc_dofs, dof_cells
 ) where {T,TM<:AbstractMatrix{T}}
     N = size(Kes[1], 1)
     fill_matrix = zero(TM)
     fill_mask = ones(Bool, N)
-    element_Kes = [deepcopy(ElementMatrix(fill_matrix, fill_mask)) for i = 1:length(Kes)]
+    element_Kes = [deepcopy(ElementMatrix(fill_matrix, fill_mask)) for i in 1:length(Kes)]
     for i in bc_dofs
         d_cells = dof_cells[i]
         for c in d_cells
@@ -132,16 +124,14 @@ function Base.convert(
     return element_Kes
 end
 function Base.convert(
-    ::Type{Vector{<:ElementMatrix}},
-    Kes::Vector{Symmetric{T,TM}};
-    bc_dofs,
-    dof_cells,
+    ::Type{Vector{<:ElementMatrix}}, Kes::Vector{Symmetric{T,TM}}; bc_dofs, dof_cells
 ) where {T,TM<:AbstractMatrix{T}}
     N = size(Kes[1], 1)
     fill_matrix = zero(TM)
     fill_mask = ones(Bool, N)
-    element_Kes =
-        [Symmetric(deepcopy(ElementMatrix(fill_matrix, fill_mask))) for i = 1:length(Kes)]
+    element_Kes = [
+        Symmetric(deepcopy(ElementMatrix(fill_matrix, fill_mask))) for i in 1:length(Kes)
+    ]
     for i in bc_dofs
         d_cells = dof_cells[i]
         for c in d_cells
@@ -156,7 +146,7 @@ end
 for TM in (:(StaticMatrix{m,m,T}), :(Symmetric{T,<:StaticMatrix{m,m,T}}))
     @eval begin
         @generated function sumdiag(K::$TM) where {m,T}
-            return reduce((ex1, ex2) -> :($ex1 + $ex2), [:(K[$j, $j]) for j = 1:m])
+            return reduce((ex1, ex2) -> :($ex1 + $ex2), [:(K[$j, $j]) for j in 1:m])
         end
     end
 end

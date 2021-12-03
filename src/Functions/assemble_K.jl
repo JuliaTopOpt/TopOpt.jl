@@ -4,8 +4,9 @@
     global_dofs::AbstractVector{<:Integer} # preallocated dof vector for a cell
 end
 
-Base.show(::IO, ::MIME{Symbol("text/plain")}, ::AssembleK) =
-    println("TopOpt global linear stiffness matrix assembly function")
+function Base.show(::IO, ::MIME{Symbol("text/plain")}, ::AssembleK)
+    return println("TopOpt global linear stiffness matrix assembly function")
+end
 
 function AssembleK(problem::StiffnessTopOptProblem)
     dh = problem.ch.dh
@@ -67,8 +68,7 @@ which can be shortened as:
     dg/dK_e = Delta[global_dofs, global_dofs]
 """
 function ChainRulesCore.rrule(
-    ak::AssembleK{T},
-    Kes::AbstractVector{<:AbstractMatrix{T}},
+    ak::AssembleK{T}, Kes::AbstractVector{<:AbstractMatrix{T}}
 ) where {T}
     @unpack problem, K, global_dofs = ak
     dh = problem.ch.dh
@@ -76,12 +76,12 @@ function ChainRulesCore.rrule(
     K = ak(Kes)
     n_dofs = length(global_dofs)
     function assembleK_pullback(Δ)
-        ΔKes = [zeros(T, n_dofs, n_dofs) for _ = 1:getncells(dh.grid)]
+        ΔKes = [zeros(T, n_dofs, n_dofs) for _ in 1:getncells(dh.grid)]
         for (ci, _) in enumerate(CellIterator(dh))
             celldofs!(global_dofs, dh, ci)
             ΔKes[ci] = Δ[global_dofs, global_dofs]
         end
-        return Tangent{typeof(ak)}(problem = NoTangent(), K = Δ, global_dofs = NoTangent()),
+        return Tangent{typeof(ak)}(; problem=NoTangent(), K=Δ, global_dofs=NoTangent()),
         ΔKes
     end
     return K, assembleK_pullback

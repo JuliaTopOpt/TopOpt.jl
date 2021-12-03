@@ -7,7 +7,7 @@ f = 1.0 # downward force
 problems = Any[#PointLoadCantilever(Val{:Linear}, (60, 20, 20), (1.0, 1.0, 1.0), E, v, f), 
     PointLoadCantilever(Val{:Linear}, (160, 40), (1.0, 1.0), E, v, f),
     HalfMBB(Val{:Linear}, (60, 20), (1.0, 1.0), E, v, f),
-    LBeam(Val{:Linear}, Float64, force = f),
+    LBeam(Val{:Linear}, Float64; force=f),
     TieBeam(Val{:Quadratic}, Float64),
 ]
 problem_names = [
@@ -22,7 +22,7 @@ problem_names = [
 println("Continuation SIMP")
 println("-"^10)
 
-for i = 1:length(problems)
+for i in 1:length(problems)
     println(problem_names[i])
     # Define the problem
     problem = problems[i]
@@ -34,33 +34,30 @@ for i = 1:length(problems)
     reuse = true # adaptive penalty flag
     convcriteria = Nonconvex.KKTCriteria()
     penalty = TopOpt.PowerPenalty(1.0)
-    pcont = Continuation(penalty, steps = steps, xmin = xmin, pmax = 5.0)
+    pcont = Continuation(penalty; steps=steps, xmin=xmin, pmax=5.0)
 
-    mma_options = options = MMAOptions(maxiter = 1000)
+    mma_options = options = MMAOptions(; maxiter=1000)
     maxtol = 0.01 # maximum tolerance
     mintol = 0.001 # minimum tolerance
     b = log(mintol / maxtol) / steps
     a = maxtol / exp(b)
-    mma_options_gen = TopOpt.MMAOptionsGen(
-        steps = steps,
-        initial_options = mma_options,
-        kkttol_gen = ExponentialContinuation(a, b, 0.0, steps + 1, mintol),
+    mma_options_gen = TopOpt.MMAOptionsGen(;
+        steps=steps,
+        initial_options=mma_options,
+        kkttol_gen=ExponentialContinuation(a, b, 0.0, steps + 1, mintol),
     )
-    csimp_options = TopOpt.CSIMPOptions(
-        steps = steps,
-        options_gen = mma_options_gen,
-        p_gen = pcont,
-        reuse = reuse,
+    csimp_options = TopOpt.CSIMPOptions(;
+        steps=steps, options_gen=mma_options_gen, p_gen=pcont, reuse=reuse
     )
 
     # Define a finite element solver
-    solver = FEASolver(Direct, problem, xmin = xmin, penalty = penalty)
+    solver = FEASolver(Direct, problem; xmin=xmin, penalty=penalty)
     # Define compliance objective
     comp = Compliance(problem, solver)
     filter = if problem isa TopOptProblems.TieBeam
         identity
     else
-        DensityFilter(solver, rmin = rmin)
+        DensityFilter(solver; rmin=rmin)
     end
     obj = x -> comp(filter(x))
 
@@ -71,12 +68,7 @@ for i = 1:length(problems)
     # Define subproblem optimizer
     x0 = fill(V, length(solver.vars))
     optimizer = Optimizer(
-        obj,
-        constr,
-        x0,
-        MMA87(),
-        options = mma_options,
-        convcriteria = convcriteria,
+        obj, constr, x0, MMA87(); options=mma_options, convcriteria=convcriteria
     )
     # Define continuation SIMP optimizer
     simp = SIMP(optimizer, solver, penalty.p)

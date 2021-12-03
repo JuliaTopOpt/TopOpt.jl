@@ -6,8 +6,9 @@
     xmin::T
 end
 
-Base.show(::IO, ::MIME{Symbol("text/plain")}, ::ElementK) =
-    println("TopOpt element stiffness matrix construction function")
+function Base.show(::IO, ::MIME{Symbol("text/plain")}, ::ElementK)
+    return println("TopOpt element stiffness matrix construction function")
+end
 
 function ElementK(solver::AbstractDisplacementSolver)
     @unpack elementinfo = solver
@@ -47,7 +48,7 @@ end
 function (ek::ElementK{T})(x::AbstractVector{T}) where {T}
     @unpack solver, Kes = ek
     @assert getncells(solver.problem.ch.dh.grid) == length(x)
-    for ci = 1:length(x)
+    for ci in 1:length(x)
         Kes[ci] = ek(x[ci], ci)
     end
     return copy(Kes)
@@ -68,17 +69,17 @@ function ChainRulesCore.rrule(ek::ElementK, x)
     """
     function pullback_fn(Δ)
         Δx = similar(x)
-        for ci = 1:length(x)
+        for ci in 1:length(x)
             ek_cell_fn = xe -> vec(ek(xe, ci))
             jac_cell = ForwardDiff.derivative(ek_cell_fn, x[ci])
             Δx[ci] = jac_cell' * vec(Δ[ci])
         end
-        return Tangent{typeof(ek)}(
-            solver = NoTangent(),
-            Kes = Δ,
-            Kes_0 = NoTangent(),
-            penalty = NoTangent(),
-            xmin = NoTangent(),
+        return Tangent{typeof(ek)}(;
+            solver=NoTangent(),
+            Kes=Δ,
+            Kes_0=NoTangent(),
+            penalty=NoTangent(),
+            xmin=NoTangent(),
         ),
         Δx
     end

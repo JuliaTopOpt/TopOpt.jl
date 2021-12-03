@@ -24,7 +24,7 @@ function TrussGrid(
     node_points::Dict{iT,SVector{xdim,T}},
     elements::Dict{iT,Tuple{iT,iT}},
     boundary::Dict{iT,SVector{xdim,fT}};
-    crosssecs = TrussFEACrossSec{T}(1.0),
+    crosssecs=TrussFEACrossSec{T}(1.0),
 ) where {xdim,T,iT,fT}
     grid = _LinearTrussGrid(node_points, elements, boundary)
     ncells = getncells(grid)
@@ -32,7 +32,7 @@ function TrussGrid(
         @assert length(crosssecs) == ncells
         crosssecs = convert(Vector{TrussFEACrossSec{T}}, crosssecs)
     elseif crosssecs isa TrussFEACrossSec
-        crosssecs = [convert(TrussFEACrossSec{T}, crosssecs) for i = 1:ncells]
+        crosssecs = [convert(TrussFEACrossSec{T}, crosssecs) for i in 1:ncells]
     else
         error("Invalid crossecs: $(crossecs)")
     end
@@ -69,7 +69,7 @@ function Base.show(io::Base.IO, mime::MIME"text/plain", tg::TrussGrid)
     Base.show(io, mime, tg.grid)
     println(io, "")
     print(io, "\t-")
-    println(
+    return println(
         io,
         "white cells:T|$(sum(tg.white_cells))|, black cells:T|$(sum(tg.black_cells))|, const cells:T|$(sum(tg.constant_cells))|",
     )

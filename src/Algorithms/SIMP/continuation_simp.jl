@@ -7,8 +7,9 @@ Continuous SIMP algorithm, see [TarekRay2020](@cite).
     options::Any
     callback::Any
 end
-Base.show(::IO, ::MIME{Symbol("text/plain")}, ::ContinuationSIMP) =
-    println("TopOpt continuation SIMP algorithm")
+function Base.show(::IO, ::MIME{Symbol("text/plain")}, ::ContinuationSIMP)
+    return println("TopOpt continuation SIMP algorithm")
+end
 
 @params struct CSIMPOptions
     p_cont::Any
@@ -16,26 +17,23 @@ Base.show(::IO, ::MIME{Symbol("text/plain")}, ::ContinuationSIMP) =
     reuse::Bool
     steps::Integer
 end
-Base.show(::IO, ::MIME{Symbol("text/plain")}, ::CSIMPOptions) =
-    println("TopOpt continuation SIMP options")
+function Base.show(::IO, ::MIME{Symbol("text/plain")}, ::CSIMPOptions)
+    return println("TopOpt continuation SIMP options")
+end
 
 function CSIMPOptions(
-    ::Type{T} = Float64;
-    steps = 40,
-    p_gen = nothing,
-    initial_options = MMAOptions(),
-    pstart = T(1),
-    pfinish = T(5),
-    reuse = false,
-    options_gen = nothing,
+    ::Type{T}=Float64;
+    steps=40,
+    p_gen=nothing,
+    initial_options=MMAOptions(),
+    pstart=T(1),
+    pfinish=T(5),
+    reuse=false,
+    options_gen=nothing,
 ) where {T}
-
     if p_gen == nothing
         p_cont = PowerContinuation{T}(;
-            b = T(1),
-            start = pstart,
-            steps = steps + 1,
-            finish = pfinish,
+            b=T(1), start=pstart, steps=steps + 1, finish=pfinish
         )
     else
         @assert steps == p_gen.length - 1
@@ -43,7 +41,7 @@ function CSIMPOptions(
     end
 
     if options_gen == nothing
-        options_cont = MMAOptionsGen(steps = steps, initial_options = initial_options)
+        options_cont = MMAOptionsGen(; steps=steps, initial_options=initial_options)
     else
         options_cont = options_gen
     end
@@ -53,13 +51,11 @@ end
 
 function ContinuationSIMP(
     simp::SIMP{T},
-    steps::Int = 40,
-    options::CSIMPOptions = CSIMPOptions(
-        T,
-        steps = steps,
-        initial_options = deepcopy(simp.optimizer.options),
+    steps::Int=40,
+    options::CSIMPOptions=CSIMPOptions(
+        T; steps=steps, initial_options=deepcopy(simp.optimizer.options)
     ),
-    callback = (i) -> (),
+    callback=(i) -> (),
 ) where {T}
     @assert steps == options.steps
     ncells = getncells(simp.solver.problem)
@@ -75,21 +71,21 @@ function default_grtol(solver)
 end
 
 function MMAOptionsGen(;
-    steps::Int = 40,
-    initial_options = MMAOptions(),
-    ftol_gen = nothing,
-    xtol_gen = nothing,
-    grtol_gen = nothing,
-    kkttol_gen = nothing,
-    maxiter_gen = nothing,
-    outer_maxiter_gen = nothing,
-    s_init_gen = nothing,
-    s_incr_gen = nothing,
-    s_decr_gen = nothing,
-    store_trace_gen = nothing,
-    show_trace_gen = nothing,
-    auto_scale_gen = nothing,
-    dual_options_gen = nothing,
+    steps::Int=40,
+    initial_options=MMAOptions(),
+    ftol_gen=nothing,
+    xtol_gen=nothing,
+    grtol_gen=nothing,
+    kkttol_gen=nothing,
+    maxiter_gen=nothing,
+    outer_maxiter_gen=nothing,
+    s_init_gen=nothing,
+    s_incr_gen=nothing,
+    s_decr_gen=nothing,
+    store_trace_gen=nothing,
+    show_trace_gen=nothing,
+    auto_scale_gen=nothing,
+    dual_options_gen=nothing,
 )
     if maxiter_gen == nothing
         maxiter_cont = FixedContinuation(initial_options.maxiter, steps + 1)
@@ -126,7 +122,7 @@ function MMAOptionsGen(;
         kkttol_cont = kkttol_gen
     end
 
-    tol_cont = Nonconvex.Tolerance(x = xtol_cont, f = ftol_cont, kkt = kkttol_cont)
+    tol_cont = Nonconvex.Tolerance(; x=xtol_cont, f=ftol_cont, kkt=kkttol_cont)
 
     if s_init_gen == nothing
         s_init_cont = FixedContinuation(initial_options.s_init, steps + 1)
@@ -190,7 +186,7 @@ function MMAOptionsGen(;
     )
 end
 
-function (c_simp::ContinuationSIMP)(x0 = copy(c_simp.simp.solver.vars))
+function (c_simp::ContinuationSIMP)(x0=copy(c_simp.simp.solver.vars))
     @unpack optimizer = c_simp.simp
     @unpack workspace = optimizer
     @unpack options = workspace
@@ -205,7 +201,7 @@ function (c_simp::ContinuationSIMP)(x0 = copy(c_simp.simp.solver.vars))
     g_previous = copy(c_simp.simp.optimizer.workspace.solution.g)
 
     original_maxiter = options.maxiter
-    for i = 1:c_simp.options.steps
+    for i in 1:(c_simp.options.steps)
         c_simp.callback(i)
         update!(c_simp, i + 1)
         Nonconvex.NonconvexCore.reset!(workspace)
@@ -226,7 +222,7 @@ function (c_simp::ContinuationSIMP)(x0 = copy(c_simp.simp.solver.vars))
 
         workspace.options.maxiter = original_maxiter
     end
-    c_simp.result = c_simp.simp.result
+    return c_simp.result = c_simp.simp.result
 end
 
 function update!(c_simp::ContinuationSIMP, i)
