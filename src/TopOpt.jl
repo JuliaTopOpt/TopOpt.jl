@@ -4,11 +4,13 @@ const PENALTY_BEFORE_INTERPOLATION = true
 using Requires, Reexport
 
 macro cuda_only(mod, code)
-    return esc(quote
-        @init @require CUDASupport = "97986420-7ec3-11e9-24cd-4f0e301eb539" @eval $mod begin
-            $code
-        end
-    end)
+    return esc(
+        quote
+            @init @require CUDASupport = "97986420-7ec3-11e9-24cd-4f0e301eb539" @eval $mod begin
+                $code
+            end
+        end,
+    )
 end
 
 abstract type AbstractDevice end
@@ -61,17 +63,19 @@ include(joinpath("Algorithms", "Algorithms.jl"))
 using .Algorithms
 
 macro init_cuda()
-    return esc(quote
-        const CuArrays = CUDASupport.CuArrays
-        const CUDAdrv = CUDASupport.CUDAdrv
-        const CUDAnative = CUDASupport.CUDAnative
-        const GPUArrays = CUDASupport.GPUArrays
-        CuArrays.allowscalar(false)
-        const dev = CUDAdrv.device()
-        const ctx = CUDAdrv.CuContext(dev)
-        using .CuArrays, .CUDAnative
-        using .GPUArrays: GPUVector, GPUArray
-    end)
+    return esc(
+        quote
+            const CuArrays = CUDASupport.CuArrays
+            const CUDAdrv = CUDASupport.CUDAdrv
+            const CUDAnative = CUDASupport.CUDAnative
+            const GPUArrays = CUDASupport.GPUArrays
+            CuArrays.allowscalar(false)
+            const dev = CUDAdrv.device()
+            const ctx = CUDAdrv.CuContext(dev)
+            using .CuArrays, .CUDAnative
+            using .GPUArrays: GPUVector, GPUArray
+        end,
+    )
 end
 
 @cuda_only GPUUtils include("GPUUtils/GPUUtils.jl")
