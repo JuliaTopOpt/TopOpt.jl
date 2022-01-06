@@ -1,4 +1,5 @@
-using ..TopOpt.TopOptProblems: StiffnessTopOptProblem, Metadata
+using ..TopOpt.TopOptProblems: StiffnessTopOptProblem, Metadata, RectilinearGrid, 
+    left, right, middley, middlez
 
 get_fixities_node_set_name(i) = "fixed_u$(i)"
 
@@ -32,7 +33,7 @@ function TrussProblem(::Type{Val{CellType}}, node_points::Dict{iT, SVector{xdim,
     #     T = _T
     # end
     if CellType === :Linear
-        truss_grid = TrussGrid(node_points, elements, supports; crosssecs)
+        truss_grid = TrussGrid(node_points, elements; crosssecs)
         geom_order = 1
     else
         @assert false "Other cell type not implemented"
@@ -117,7 +118,6 @@ function Base.show(io::Base.IO, mime::MIME"text/plain", sp::TrussProblem)
     println(io, "TrussProblem:")
     print(io, "    ")
     Base.show(io, mime, sp.truss_grid)
-    println(io, "    E: $(sp.E)")
     println(io, "    point loads: $(length(sp.force))")
     println(io, "    active vars: $(sum(sp.varind .!= 0))")
 end
@@ -137,4 +137,72 @@ end
 
 function default_quad_order(::TrussProblem)
     return 1
+end
+
+#########################################
+
+function PointLoadCantileverTruss(nels::NTuple{dim,Int}, sizes::NTuple{dim}, E = 1.0, ν = 0.3, force = 1.0, k_connect=8) where {dim, CellType}
+    iseven(nels[2]) && (length(nels) < 3 || iseven(nels[3])) || throw("Grid does not have an even number of elements along the y and/or z axes.")
+    _T = promote_type(eltype(sizes), typeof(E), typeof(ν), typeof(force))
+    if _T <: Integer
+        T = Float64
+    else
+        T = _T
+    end
+
+    # only for the convience of getting all the node points
+    rect_grid = RectilinearGrid(Val{:Linear}, nels, T.(sizes))
+    node_mat = hcat(map(x -> Vector(x.x), rect_grid.grid.nodes)...)
+    kdtree = KDTree(node_mat)
+    idxs, _ = knn(kdtree, node_mat, k_connect, true)
+    connect_mat = zeros(Int, 2, k_connect*length(idxs))
+    for (i, v) in enumerate(idxs)
+        connect_mat[1, (i-1)*k_connect+1:i*k_connect] = ones(Int, k_connect)*i
+        connect_mat[2, (i-1)*k_connect+1:i*k_connect] = v
+    end
+    truss_grid = TrussGrid(node_mat, connect_mat)
+
+    # reference domain dimension for a line element
+    ξdim = 1
+    ncells = getncells(truss_grid)
+    mats = [TrussFEAMaterial{T}(E, ν) for i=1:ncells]
+
+    # * support nodeset
+    addnodeset!(rect_grid.grid, "fixed_all", x -> left(rect_grid, x));
+
+    # * load nodeset
+    if dim == 2
+        addnodeset!(rect_grid.grid, "down_force", x -> right(rect_grid, x) && middley(rect_grid, x));
+    else
+        addnodeset!(rect_grid.grid, "down_force", x -> right(rect_grid, x) && middley(rect_grid, x)
+            && middlez(rect_grid, x));
+    end
+
+    # Create displacement field u
+    geom_order = 1
+    dh = DofHandler(truss_grid.grid)
+    ip = Lagrange{ξdim, RefCube, geom_order}()
+    push!(dh, :u, dim, ip)
+    close!(dh)
+
+    ch = ConstraintHandler(dh)
+    dbc = Dirichlet(:u, getnodeset(rect_grid.grid, "fixed_all"), (x,t) -> zeros(T, dim), collect(1:dim))
+    add!(ch, dbc)
+    close!(ch)
+    # update the DBC to current time
+    t = T(0)
+    update!(ch, t)
+
+    metadata = Metadata(dh)
+
+    loadset = getnodeset(rect_grid.grid, "down_force")
+    ploads = Dict{Int, SVector{dim, T}}()
+    for node_id in loadset
+        ploads[node_id] = SVector{dim,T}(dim == 2 ? [0.0, force] : [0.0, 0.0, force])
+    end
+
+    black, white = find_black_and_white(dh)
+    varind = find_varind(black, white)
+
+    return TrussProblem(truss_grid, mats, ch, ploads, black, white, varind, metadata)
 end

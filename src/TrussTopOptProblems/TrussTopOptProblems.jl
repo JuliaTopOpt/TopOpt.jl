@@ -7,6 +7,7 @@ using ..TopOpt.Utilities
 using Setfield
 import Ferrite: assemble!
 using LinearAlgebra: I, norm
+using NearestNeighbors
 
 abstract type AbstractFEAMaterial end
 struct TrussFEAMaterial{T} <: AbstractFEAMaterial

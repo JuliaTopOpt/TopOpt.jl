@@ -19,9 +19,8 @@ nnodes(cell::Type{Ferrite.Cell{xdim,N,M}}) where {xdim, N, M} = N
 nnodes(cell::Ferrite.Cell) = nnodes(typeof(cell))
 Ferrite.getncells(tg::TrussGrid) = Ferrite.getncells(tg.grid)
 
-function TrussGrid(node_points::Dict{iT, SVector{xdim, T}}, elements::Dict{iT, Tuple{iT, iT}}, 
-        boundary::Dict{iT, SVector{xdim, fT}}; crosssecs=TrussFEACrossSec{T}(1.0)) where {xdim, T, iT, fT}
-    grid = _LinearTrussGrid(node_points, elements, boundary)
+function TrussGrid(node_points::Matrix{T}, elements::Matrix{iT}; crosssecs=TrussFEACrossSec{T}(1.0)) where {xdim, T, iT, fT}
+    grid = _LinearTrussGrid(node_points, elements)
     ncells = getncells(grid)
     if crosssecs isa Vector
         @assert length(crosssecs) == ncells
@@ -34,8 +33,43 @@ function TrussGrid(node_points::Dict{iT, SVector{xdim, T}}, elements::Dict{iT, T
     return TrussGrid(grid, falses(ncells), falses(ncells), falses(ncells), crosssecs)
 end
 
-function _LinearTrussGrid(node_points::Dict{iT, SVector{xdim, T}}, elements::Dict{iT, Tuple{iT, iT}}, 
-        boundary::Dict{iT, SVector{xdim, fT}}) where {xdim, T, iT, fT}
+function TrussGrid(node_points::Dict{iT, SVector{xdim, T}}, elements::Dict{iT, Tuple{iT, iT}}; crosssecs=TrussFEACrossSec{T}(1.0)) where {xdim, T, iT, fT}
+    grid = _LinearTrussGrid(node_points, elements)
+    ncells = getncells(grid)
+    if crosssecs isa Vector
+        @assert length(crosssecs) == ncells
+        crosssecs = convert(Vector{TrussFEACrossSec{T}}, crosssecs)
+    elseif crosssecs isa TrussFEACrossSec
+        crosssecs = [convert(TrussFEACrossSec{T}, crosssecs) for i=1:ncells]
+    else
+        error("Invalid crossecs: $(crossecs)")
+    end
+    return TrussGrid(grid, falses(ncells), falses(ncells), falses(ncells), crosssecs)
+end
+
+function _LinearTrussGrid(node_points::Matrix{T}, elements::Matrix{iT}) where {T, iT}
+    xdim, n_nodes = size(node_points)
+    nconnect, n_elems = size(elements)
+
+    # * Generate cells, Line2d or Line3d
+    @assert xdim ∈ [2,3]
+    @assert nconnect == 2
+    CellType = xdim == 2 ? Line2D : Line3D
+    cells = Vector{CellType}(undef, n_elems)
+    for e_ind in 1:n_elems
+        cells[e_ind] = CellType((elements[:,e_ind]...,))
+    end
+
+    # * Generate nodes
+    nodes = Vector{Node{xdim,T}}(undef, n_nodes)
+    for n_id=1:n_nodes
+        nodes[n_id] = Node((node_points[:,n_id]...,))
+    end
+
+    return Grid(cells, nodes)
+end
+
+function _LinearTrussGrid(node_points::Dict{iT, SVector{xdim, T}}, elements::Dict{iT, Tuple{iT, iT}}) where {xdim, T, iT, fT}
     n_nodes = length(node_points)
 
     # * Generate cells, Line2d or Line3d
@@ -55,20 +89,16 @@ function _LinearTrussGrid(node_points::Dict{iT, SVector{xdim, T}}, elements::Dic
     return Grid(cells, nodes)
 end
 
+################################
+
 function Base.show(io::Base.IO, mime::MIME"text/plain", tg::TrussGrid)
     println(io, "TrussGrid:")
     print(io, "\t-")
-    Base.show(io, mime, tg.grid)
+    print(io, " $(typeof(tg.grid)) with $(getncells(tg.grid)) $(extra_celltypes[eltype(tg.grid.cells)]) cells and $(getnnodes(tg.grid)) nodes")
     println(io,"")
     print(io, "\t-")
-    println(io, "white cells:T|$(sum(tg.white_cells))|, black cells:T|$(sum(tg.black_cells))|, const cells:T|$(sum(tg.constant_cells))|")
+    println(io, " white cells:T|$(sum(tg.white_cells))|, black cells:T|$(sum(tg.black_cells))|, const cells:T|$(sum(tg.constant_cells))|")
 end
 
-################################
-
-# function Base.show(io::Base.IO, ::MIME"text/plain", grid::Ferrite.Grid{xdim, Union{Line2D, Line3D}}) where {xdim}
-#     print(io, "$(typeof(grid)) with $(getncells(grid)) $(extra_celltypes[eltype(grid.cells)]) cells and $(getnnodes(grid)) nodes")
-# end
-
-# const extra_celltypes = Dict{DataType, String}(Line2D  => "Line2D", 
-#                                                Line3D  => "Line3D")
+const extra_celltypes = Dict{DataType, String}(Line2D  => "Line2D", 
+                                               Line3D  => "Line3D")
