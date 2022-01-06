@@ -40,11 +40,10 @@ end
 
 function TrussGrid(
     node_points::Dict{iT,SVector{xdim,T}},
-    elements::Dict{iT,Tuple{iT,iT}},
-    boundary::Dict{iT,SVector{xdim,fT}};
+    elements::Dict{iT,Tuple{iT,iT}};
     crosssecs=TrussFEACrossSec{T}(1.0),
 ) where {xdim,T,iT,fT}
-    grid = _LinearTrussGrid(node_points, elements, boundary)
+    grid = _LinearTrussGrid(node_points, elements)
     ncells = getncells(grid)
     if crosssecs isa Vector
         @assert length(crosssecs) == ncells
@@ -57,7 +56,11 @@ function TrussGrid(
     return TrussGrid(grid, falses(ncells), falses(ncells), falses(ncells), crosssecs)
 end
 
-function TrussGrid(node_points::Dict{iT, SVector{xdim, T}}, elements::Dict{iT, Tuple{iT, iT}}; crosssecs=TrussFEACrossSec{T}(1.0)) where {xdim, T, iT, fT}
+function TrussGrid(
+    node_points::Dict{iT, SVector{xdim, T}}, 
+    elements::Dict{iT, Tuple{iT, iT}}; 
+    crosssecs=TrussFEACrossSec{T}(1.0)
+) where {xdim, T, iT, fT}
     grid = _LinearTrussGrid(node_points, elements)
     ncells = getncells(grid)
     if crosssecs isa Vector
@@ -71,7 +74,10 @@ function TrussGrid(node_points::Dict{iT, SVector{xdim, T}}, elements::Dict{iT, T
     return TrussGrid(grid, falses(ncells), falses(ncells), falses(ncells), crosssecs)
 end
 
-function _LinearTrussGrid(node_points::Matrix{T}, elements::Matrix{iT}) where {T, iT}
+function _LinearTrussGrid(
+    node_points::Matrix{T}, 
+    elements::Matrix{iT}
+) where {T, iT}
     xdim, n_nodes = size(node_points)
     nconnect, n_elems = size(elements)
 
@@ -95,8 +101,7 @@ end
 
 function _LinearTrussGrid(
     node_points::Dict{iT,SVector{xdim,T}},
-    elements::Dict{iT,Tuple{iT,iT}},
-    boundary::Dict{iT,SVector{xdim,fT}},
+    elements::Dict{iT,Tuple{iT,iT}}
 ) where {xdim,T,iT,fT}
     n_nodes = length(node_points)
 
