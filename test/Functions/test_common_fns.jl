@@ -1,4 +1,4 @@
-using TopOpt, Nonconvex, Zygote, FiniteDifferences, LinearAlgebra, Test, Random, SparseArrays
+using TopOpt, Zygote, FiniteDifferences, LinearAlgebra, Test, Random, SparseArrays
 const FDM = FiniteDifferences
 using TopOpt: ndofs
 using Ferrite: ndofs_per_cell, getncells
@@ -9,7 +9,7 @@ Random.seed!(1)
     nels = (2, 2)
     problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
     for p in (1.0, 2.0, 3.0)
-        solver = FEASolver(Direct, problem, xmin = 0.01, penalty = TopOpt.PowerPenalty(p))
+        solver = FEASolver(Direct, problem; xmin=0.01, penalty=TopOpt.PowerPenalty(p))
         comp = Compliance(problem, solver)
         for i in 1:3
             x = clamp.(rand(prod(nels)), 0.1, 1.0)
@@ -27,19 +27,19 @@ end
     nels = (2, 2)
     problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
     for p in (1.0, 2.0, 3.0)
-        solver = FEASolver(Direct, problem, xmin = 0.01, penalty = TopOpt.PowerPenalty(p))
+        solver = FEASolver(Direct, problem; xmin=0.01, penalty=TopOpt.PowerPenalty(p))
         dp = Displacement(solver)
         u = dp(solver.vars)
         for _ in 1:3
-             x = clamp.(rand(prod(nels)), 0.1, 1.0)
-             v = rand(length(u))
-             f = x -> dot(dp(x), v)
-             val1, grad1 = NonconvexCore.value_gradient(f, x)
-             val2, grad2 = f(x), Zygote.gradient(f, x)[1]
-             grad3 = FDM.grad(central_fdm(5, 1), f, x)[1]
-             @test val1 == val2
-             @test norm(grad1 - grad2) == 0
-             @test norm(grad2 - grad3) <= 1e-4
+            x = clamp.(rand(prod(nels)), 0.1, 1.0)
+            v = rand(length(u))
+            f = x -> dot(dp(x), v)
+            val1, grad1 = NonconvexCore.value_gradient(f, x)
+            val2, grad2 = f(x), Zygote.gradient(f, x)[1]
+            grad3 = FDM.grad(central_fdm(5, 1), f, x)[1]
+            @test val1 == val2
+            @test norm(grad1 - grad2) == 0
+            @test norm(grad2 - grad3) <= 1e-4
         end
     end
 end
@@ -48,7 +48,7 @@ end
     nels = (2, 2)
     problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
     for p in (1.0, 2.0, 3.0)
-        solver = FEASolver(Direct, problem, xmin = 0.01, penalty = TopOpt.PowerPenalty(p))
+        solver = FEASolver(Direct, problem; xmin=0.01, penalty=TopOpt.PowerPenalty(p))
         vol = Volume(problem, solver)
         constr = x -> vol(x) - 0.3
         for i in 1:3
@@ -67,8 +67,8 @@ end
     nels = (2, 2)
     problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
     for p in (1.0, 2.0, 3.0)
-        solver = FEASolver(Direct, problem, xmin = 0.01, penalty = TopOpt.PowerPenalty(p))
-        filter = TopOpt.DensityFilter(solver, rmin = 4.0)
+        solver = FEASolver(Direct, problem; xmin=0.01, penalty=TopOpt.PowerPenalty(p))
+        filter = TopOpt.DensityFilter(solver; rmin=4.0)
         for i in 1:3
             x = rand(prod(nels))
             v = rand(prod(nels))
@@ -86,10 +86,8 @@ end
 @testset "SensFilter" begin
     nels = (2, 2)
     problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0))
-    solver = FEASolver(
-        Direct, problem, xmin = 1e-3, penalty = PowerPenalty(3.0),
-    )
-    sensfilter = SensFilter(solver, rmin = 4.0)
+    solver = FEASolver(Direct, problem; xmin=1e-3, penalty=PowerPenalty(3.0))
+    sensfilter = SensFilter(solver; rmin=4.0)
     x = rand(length(solver.vars))
     y = rand(length(x))
     @test sensfilter(x) == x
@@ -106,13 +104,18 @@ end
     F = spzeros(TopOpt.Ferrite.ndofs(base_problem.ch.dh), nloads)
     Fsize = size(F)
     for i in 1:dense_rank
-        F += sparsevec(dense_load_inds, randn(length(dense_load_inds)) / dense_rank, Fsize[1]) * randn(Fsize[2])'
+        F +=
+            sparsevec(
+                dense_load_inds, randn(length(dense_load_inds)) / dense_rank, Fsize[1]
+            ) * randn(Fsize[2])'
     end
     problem = MultiLoad(base_problem, F)
     for p in (1.0, 2.0, 3.0)
-        solver = FEASolver(Direct, problem, xmin = 0.01, penalty = TopOpt.PowerPenalty(p))
-        exact_svd_block = BlockCompliance(problem, solver, method = :exact)
-        constr = Nonconvex.FunctionWrapper(x -> exact_svd_block(x) .- 1000.0, length(exact_svd_block(solver.vars)))
+        solver = FEASolver(Direct, problem; xmin=0.01, penalty=TopOpt.PowerPenalty(p))
+        exact_svd_block = BlockCompliance(problem, solver; method=:exact)
+        constr = Nonconvex.FunctionWrapper(
+            x -> exact_svd_block(x) .- 1000.0, length(exact_svd_block(solver.vars))
+        )
         for i in 1:3
             x = clamp.(rand(prod(nels)), 0.1, 1.0)
             v = rand(nloads)
@@ -132,7 +135,7 @@ end
     problem = PointLoadCantilever(Val{:Quadratic}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
     for F in (MacroVonMisesStress, MicroVonMisesStress)
         for p in (1.0, 2.0, 3.0)
-            solver = FEASolver(Direct, problem, xmin = 0.001, penalty = TopOpt.PowerPenalty(p))
+            solver = FEASolver(Direct, problem; xmin=0.001, penalty=TopOpt.PowerPenalty(p))
             stress = F(solver)
             for i in 1:3
                 x = clamp.(rand(prod(nels)), 0.1, 1.0)
@@ -152,7 +155,7 @@ end
     problem = PointLoadCantilever(Val{:Quadratic}, nels, (1.0, 1.0, 1.0), 1.0, 0.3, 1.0)
     for F in (MacroVonMisesStress, MicroVonMisesStress)
         for p in (1.0, 2.0, 3.0)
-            solver = FEASolver(Direct, problem, xmin = 0.001, penalty = TopOpt.PowerPenalty(p))
+            solver = FEASolver(Direct, problem; xmin=0.001, penalty=TopOpt.PowerPenalty(p))
             stress = F(solver)
             for i in 1:3
                 x = clamp.(rand(prod(nels)), 0.1, 1.0)

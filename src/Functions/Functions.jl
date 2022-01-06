@@ -8,32 +8,35 @@ using ..Utilities, ForwardDiff, LinearAlgebra, Requires
 using ..TrussTopOptProblems: getA, compute_local_axes
 
 using Parameters: @unpack
-using TimerOutputs, Ferrite, StaticArrays
-using StatsFuns, MappedArrays, LazyArrays
+using TimerOutputs, Ferrite, StaticArrays, StatsFuns
 using SparseArrays, Statistics, ChainRulesCore, Zygote
 using Nonconvex: Nonconvex
+using Flux
 
-export  Volume,
-        Compliance,
-        Displacement,
-        MeanCompliance,
-        BlockCompliance,
-        AbstractFunction,
-        getfevals,
-        getmaxfevals,
-        maxedfevals,
-        MicroVonMisesStress,
-        MacroVonMisesStress,
-        project,
-        generate_scenarios,
-        hutch_rand!,
-        hadamard!,
-        TrussStress,
-        AssembleK,
-        TrussElementKσ,
-        ElementK,
-        apply_boundary_with_zerodiag!,
-        apply_boundary_with_meandiag!
+export Volume,
+    Compliance,
+    Displacement,
+    MeanCompliance,
+    BlockCompliance,
+    AbstractFunction,
+    getfevals,
+    getmaxfevals,
+    maxedfevals,
+    MicroVonMisesStress,
+    MacroVonMisesStress,
+    project,
+    generate_scenarios,
+    hutch_rand!,
+    hadamard!,
+    TrussStress,
+    AssembleK,
+    TrussElementKσ,
+    ElementK,
+    apply_boundary_with_zerodiag!,
+    apply_boundary_with_meandiag!,
+    NeuralNetwork,
+    PredictFunction,
+    TrainFunction
 
 const to = TimerOutput()
 
@@ -56,5 +59,7 @@ include("element_k.jl")
 
 # TODO no rrules yet
 include("truss_stress.jl")
+
+include("neural.jl")
 
 end

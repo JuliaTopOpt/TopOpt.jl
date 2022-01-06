@@ -1,6 +1,6 @@
 module Algorithms
 
-using Nonconvex, ..Functions, Optim, Parameters, Requires
+using Nonconvex, ..Functions, Parameters, Requires
 using Nonconvex.NonconvexCore: AbstractModel
 using ..TopOpt: whichdevice, AbstractDevice, CPU, GPU, PENALTY_BEFORE_INTERPOLATION
 using TimerOutputs, Setfield, StaticArrays
@@ -8,17 +8,17 @@ using Parameters: @unpack, @pack!
 using ..Utilities, Ferrite
 using LinearAlgebra, Zygote
 
-export  Optimizer,
-        SIMP,
-        ExponentialContinuation,
-        ContinuationSIMP,
-        AdaptiveSIMP,
-        MMAOptionsGen,
-        CSIMPOptions,
-        BESO,
-        GESO,
-        Continuation,
-        PowerContinuation
+export Optimizer,
+    SIMP,
+    ExponentialContinuation,
+    ContinuationSIMP,
+    AdaptiveSIMP,
+    MMAOptionsGen,
+    CSIMPOptions,
+    BESO,
+    GESO,
+    Continuation,
+    PowerContinuation
 
 const to = TimerOutput()
 

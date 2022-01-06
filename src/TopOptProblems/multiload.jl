@@ -11,12 +11,14 @@ f3 = RandomMagnitude(normalize([-1, -1]), Uniform(0.5, 1.5))
 base_problem = PointLoadCantilever(Val{:Linear}, (160, 40), (1.0, 1.0), 1.0, 0.3, 1.0)
 problem = MultiLoad(base_problem, [(160, 20) => f1, (80, 40) => f2, (120, 0) => f3], 10000)
 """
-struct MultiLoad{dim, T, TP <: StiffnessTopOptProblem{dim, T}, TF} <: StiffnessTopOptProblem{dim, T}
+struct MultiLoad{dim,T,TP<:StiffnessTopOptProblem{dim,T},TF} <:
+       StiffnessTopOptProblem{dim,T}
     problem::TP
     F::TF
 end
 @forward_property MultiLoad problem
-for F in (:getE, :getν, :nnodespercell, :getcloaddict, :getdim, :getpressuredict, :getfacesets)
+for F in
+    (:getE, :getν, :nnodespercell, :getcloaddict, :getdim, :getpressuredict, :getfacesets)
     @eval $F(p::MultiLoad) = $F(p.problem)
 end
 function MultiLoad(problem::StiffnessTopOptProblem, N::Int, load_rules::Vector{<:Pair})
@@ -36,9 +38,7 @@ function MultiLoad(problem::StiffnessTopOptProblem, N::Int, load_rules::Vector{<
     return MultiLoad(problem, F)
 end
 function MultiLoad(
-    problem::StiffnessTopOptProblem,
-    N::Int,
-    dist::Distributions.Distribution = Uniform(-2, 2),
+    problem::StiffnessTopOptProblem, N::Int, dist::Distributions.Distribution=Uniform(-2, 2)
 )
     F = generate_random_loads(problem, N, dist, random_direction)
     return MultiLoad(problem, F)
@@ -50,7 +50,7 @@ function find_nearest_dofs(problem, p)
     closest = 0
     for (i, n) in enumerate(grid.nodes)
         dist = norm(n.x .- p)
-        if dist < shortest 
+        if dist < shortest
             shortest = dist
             closest = i
         end
@@ -59,7 +59,7 @@ function find_nearest_dofs(problem, p)
     return problem.metadata.node_dofs[:, closest]
 end
 
-struct RandomMagnitude{Tf, Tdist} <: Function
+struct RandomMagnitude{Tf,Tdist} <: Function
     f::Tf
     dist::Tdist
 end
@@ -71,19 +71,19 @@ function random_direction()
 end
 
 function get_surface_dofs(problem::StiffnessTopOptProblem)
-	dh = problem.ch.dh
-	boundary_matrix = dh.grid.boundary_matrix
-	interpolation = dh.field_interpolations[1]
-	celliterator = Ferrite.CellIterator(dh)
-	node_dofs = problem.metadata.node_dofs
+    dh = problem.ch.dh
+    boundary_matrix = dh.grid.boundary_matrix
+    interpolation = dh.field_interpolations[1]
+    celliterator = Ferrite.CellIterator(dh)
+    node_dofs = problem.metadata.node_dofs
 
-	faces, cells, _ = findnz(boundary_matrix)
+    faces, cells, _ = findnz(boundary_matrix)
     surface_node_inds = Int[]
     for i in 1:length(cells)
-	    cellind = cells[i]
-	    faceind = faces[i]
-	    face = [Ferrite.faces(interpolation)[faceind]...]
-	    Ferrite.reinit!(celliterator, cellind)
+        cellind = cells[i]
+        faceind = faces[i]
+        face = [Ferrite.faces(interpolation)[faceind]...]
+        Ferrite.reinit!(celliterator, cellind)
         nodeinds = celliterator.nodes[face]
         append!(surface_node_inds, nodeinds)
     end
@@ -94,22 +94,22 @@ end
 function generate_random_loads(
     problem::StiffnessTopOptProblem,
     N::Int,
-    scalar::Distributions.Distribution = Distributions.Uniform(-2, 2),
-    direction::Function = random_direction,
+    scalar::Distributions.Distribution=Distributions.Uniform(-2, 2),
+    direction::Function=random_direction,
 )
     loadrule = () -> direction() .* rand(scalar)
     surface_dofs = get_surface_dofs(problem)
 
     FI = Int[]
-	FJ = Int[]
-	FV = Float64[]
+    FJ = Int[]
+    FV = Float64[]
     nodeinds = rand(1:size(surface_dofs, 2), N)
-	for i in 1:N
+    for i in 1:N
         load = loadrule()
         dofs = surface_dofs[:, nodeinds[i]]
-	    append!(FI, dofs)
-	    push!(FJ, i, i)
-	    append!(FV, load)
-	end
-	return sparse(FI, FJ, FV)
+        append!(FI, dofs)
+        push!(FJ, i, i)
+        append!(FV, load)
+    end
+    return sparse(FI, FJ, FV)
 end

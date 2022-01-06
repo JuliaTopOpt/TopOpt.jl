@@ -11,20 +11,22 @@ using Base.Iterators
 ins_dir = joinpath(@__DIR__, "instances", "ground_meshes");
 
 @testset "Test parsing $file_format" for file_format in [".geo", ".json"]
-    file_name = "tim_2d"*file_format
+    file_name = "tim_2d" * file_format
     problem_file = joinpath(ins_dir, file_name)
-    mat = TrussFEAMaterial(1.0, 0.3);
-    crossec = TrussFEACrossSec(800.0);
+    mat = TrussFEAMaterial(1.0, 0.3)
+    crossec = TrussFEACrossSec(800.0)
     if file_format == ".geo"
         node_points, elements, fixities, load_cases = load_truss_geo(problem_file)
         loads = load_cases[1]
     else
-        node_points, elements, _, _, fixities, load_cases = load_truss_json(problem_file);
+        node_points, elements, _, _, fixities, load_cases = load_truss_json(problem_file)
         loads = load_cases["0"]
     end
-    problem = TrussProblem(Val{:Linear}, node_points, elements, loads, fixities, mat, crossec);
+    problem = TrussProblem(
+        Val{:Linear}, node_points, elements, loads, fixities, mat, crossec
+    )
 
-    solver = FEASolver(Direct, problem);
+    solver = FEASolver(Direct, problem)
     solver()
     @test !all(@. isnan(solver.u))
 end
@@ -37,21 +39,24 @@ end
     file_name = "tim_$(problem_dim).json"
     problem_file = joinpath(ins_dir, file_name)
 
-    node_points, elements, mats, crosssecs, fixities, load_cases = load_truss_json(problem_file);
+    node_points, elements, mats, crosssecs, fixities, load_cases = load_truss_json(
+        problem_file
+    )
     loads = load_cases[string(lc_ind)]
 
-    problem = TrussProblem(Val{:Linear}, node_points, elements, loads, fixities, mats, crosssecs);
+    problem = TrussProblem(
+        Val{:Linear}, node_points, elements, loads, fixities, mats, crosssecs
+    )
 
     ndim, nnodes, ncells = length(node_points[1]), length(node_points), length(elements)
     @test getE(problem) == [m.E for m in mats]
 
     V = 0.3 # volume fraction
     xmin = 0.001 # minimum density
-    rmin = 4.0; # density filter radius
+    rmin = 4.0 # density filter radius
 
     penalty = TopOpt.PowerPenalty(1.0) # 1
-    solver = FEASolver(Direct, problem, xmin = xmin,
-        penalty = penalty);
+    solver = FEASolver(Direct, problem; xmin=xmin, penalty=penalty)
     ## call solver to trigger assemble!
     solver()
 
@@ -61,9 +66,7 @@ end
     volfrac = TopOpt.Volume(problem, solver)
     constr = x -> volfrac(x) - V
 
-    options = MMAOptions(
-        maxiter = 3000, tol = Nonconvex.Tolerance(kkt = 0.001),
-    )
+    options = MMAOptions(; maxiter=3000, tol=Nonconvex.Tolerance(; kkt=0.001))
     convcriteria = Nonconvex.KKTCriteria()
     x0 = fill(V, length(solver.vars))
     nelem = length(x0)
@@ -80,10 +83,12 @@ end
     # r.minimizer
 
     TopOpt.setpenalty!(solver, penalty.p)
-    result = Nonconvex.optimize(m, MMA87(), x0, options = options);
+    result = Nonconvex.optimize(m, MMA87(), x0; options=options)
 
     println("="^10)
-    println("tim-$(problem_dim) - LC $(lc_ind) - #elements $(ncells), #dof: $(ncells*ndim): opt iter $(result.iter)")
+    println(
+        "tim-$(problem_dim) - LC $(lc_ind) - #elements $(ncells), #dof: $(ncells*ndim): opt iter $(result.iter)",
+    )
     println("$(result.convstate)")
 
     # if get(ENV, "CI", nothing) != "true"

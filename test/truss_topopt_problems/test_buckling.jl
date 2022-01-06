@@ -123,7 +123,7 @@ gm_ins_dir = joinpath(@__DIR__, "instances", "ground_meshes");
 #             iter += 1;
 #         end
 #         u0[:] = u1[:];       # update the displacement
-        
+
 #         step = step + 1
 #         # save displacement record for plotting
 #         tip_displacement[step, :] .= u1[2*2-1:2*2]

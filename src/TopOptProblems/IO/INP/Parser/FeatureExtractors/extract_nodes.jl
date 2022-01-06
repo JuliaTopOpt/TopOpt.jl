@@ -1,9 +1,9 @@
-function extract_nodes(file, ::Type{TF}=Float64, ::Type{TI}=Int) where {TF, TI}
+function extract_nodes(file, ::Type{TF}=Float64, ::Type{TI}=Int) where {TF,TI}
     line = readline(file)
 
     pattern = r"(\d+)\s*,\s*(-?\d+\.?\d*(e[-\+]?\d*)?)\s*,\s*(-?\d+\.?\d*(e[-\+]?\d*)?)\s*(,\s*(-?\d+\.?\d*(e[-\+]?\d*)?))?"
     m = match(pattern, line)
-    
+
     first_node_idx = parse(TI, m[1])
     first_node_idx == TI(1) || throw("First node index is not 1.")
 
@@ -17,7 +17,9 @@ function extract_nodes(file, ::Type{TF}=Float64, ::Type{TI}=Int) where {TF, TI}
     return node_coords, nextline
 end
 
-function _extract_nodes!(node_coords::AbstractVector{NTuple{dim, TF}}, file, prev_node_idx::TI) where {dim, TF, TI}
+function _extract_nodes!(
+    node_coords::AbstractVector{NTuple{dim,TF}}, file, prev_node_idx::TI
+) where {dim,TF,TI}
     if dim === 2
         pattern = r"(\d+)\s*,\s*(-?\d+\.?\d*(e[-\+]?\d*)?)\s*,\s*(-?\d+\.?\d*(e[-\+]?\d*)?)"
     elseif dim === 3

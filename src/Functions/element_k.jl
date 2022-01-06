@@ -6,7 +6,9 @@
     xmin::T
 end
 
-Base.show(::IO, ::MIME{Symbol("text/plain")}, ::ElementK) = println("TopOpt element stiffness matrix construction function")
+function Base.show(::IO, ::MIME{Symbol("text/plain")}, ::ElementK)
+    return println("TopOpt element stiffness matrix construction function")
+end
 
 function ElementK(solver::AbstractDisplacementSolver)
     @unpack elementinfo = solver
@@ -72,8 +74,14 @@ function ChainRulesCore.rrule(ek::ElementK, x)
             jac_cell = ForwardDiff.derivative(ek_cell_fn, x[ci])
             Δx[ci] = jac_cell' * vec(Δ[ci])
         end
-        return Tangent{typeof(ek)}(solver=NoTangent(), Kes=Δ, Kes_0=NoTangent(), penalty=NoTangent(), xmin=NoTangent()), Δx
+        return Tangent{typeof(ek)}(;
+            solver=NoTangent(),
+            Kes=Δ,
+            Kes_0=NoTangent(),
+            penalty=NoTangent(),
+            xmin=NoTangent(),
+        ),
+        Δx
     end
     return Kes, pullback_fn
 end
-

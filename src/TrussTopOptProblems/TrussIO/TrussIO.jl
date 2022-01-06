@@ -1,6 +1,6 @@
 module TrussIO
 
-import FileIO
+using FileIO: FileIO
 import FileIO: skipmagic, add_format
 
 using ..TrussTopOptProblems: TrussFEACrossSec, TrussFEAMaterial
@@ -20,4 +20,3 @@ include("parse_geo.jl")
 export load_truss_json, load_truss_geo
 
 end
-

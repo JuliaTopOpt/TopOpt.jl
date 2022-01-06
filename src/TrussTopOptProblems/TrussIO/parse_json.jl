@@ -1,4 +1,4 @@
-import JSON
+using JSON: JSON
 
 # add_format(format"JSON", "JSON", [".json"])
 
@@ -16,7 +16,7 @@ function load_truss_json(io::IO) #io::Stream{format"JSON"})
     iT = Int
     T = Float64
 
-    node_points = Dict{iT, SVector{ndim, T}}()
+    node_points = Dict{iT,SVector{ndim,T}}()
     for (i, ndata) in enumerate(data["nodes"])
         node_points[i] = convert(SVector{ndim,T}, ndata["point"])
         if "node_ind" in keys(ndata)
@@ -25,12 +25,12 @@ function load_truss_json(io::IO) #io::Stream{format"JSON"})
     end
     @assert length(node_points) == n
 
-    elements = Dict{iT, Tuple{iT,iT}}()
+    elements = Dict{iT,Tuple{iT,iT}}()
     element_inds_from_tag = Dict()
     for (i, edata) in enumerate(data["elements"])
         elements[i] = (edata["end_node_inds"]...,) .+ 1
         if "elem_ind" in keys(edata)
-            @assert 1+edata["elem_ind"] == i
+            @assert 1 + edata["elem_ind"] == i
         end
         elem_tag = edata["elem_tag"]
         if elem_tag ∉ keys(element_inds_from_tag)
@@ -99,9 +99,9 @@ function load_truss_json(io::IO) #io::Stream{format"JSON"})
 
     # TODO only translation dof for now
     @assert(length(data["supports"]) > 0)
-    fixities = Dict{iT, SVector{ndim, Bool}}()
+    fixities = Dict{iT,SVector{ndim,Bool}}()
     for sdata in data["supports"]
-        supp_v = iT(sdata["node_ind"])+1
+        supp_v = iT(sdata["node_ind"]) + 1
         fixities[supp_v] = sdata["condition"][1:ndim]
     end
 
@@ -109,9 +109,9 @@ function load_truss_json(io::IO) #io::Stream{format"JSON"})
     for (lc_ind, lc_data) in data["loadcases"]
         nploads = length(lc_data["ploads"])
         @assert nploads > 0
-        ploads = Dict{iT, SVector{ndim, T}}()
+        ploads = Dict{iT,SVector{ndim,T}}()
         for pl in lc_data["ploads"]
-            load_v = pl["node_ind"]+1
+            load_v = pl["node_ind"] + 1
             ploads[load_v] = convert(SVector{ndim,T}, pl["force"])
         end
         load_cases[lc_ind] = ploads

@@ -5,8 +5,10 @@ mutable struct EnergyCriteria{T} <: ConvergenceCriteria
 end
 EnergyCriteria() = EnergyCriteria{Float64}(0.0)
 
-const Iterable{Tmat} = Union{CGIterable{Tmat}, PCGIterable{<:Any, Tmat}}
-function IterativeSolvers.isconverged(it::Iterable{<:AbstractMatrixOperator{<:EnergyCriteria}})
+const Iterable{Tmat} = Union{CGIterable{Tmat},PCGIterable{<:Any,Tmat}}
+function IterativeSolvers.isconverged(
+    it::Iterable{<:AbstractMatrixOperator{<:EnergyCriteria}}
+)
     conv = it.A.conv
     T = eltype(it.x)
     xtr = dot(it.x, it.r)

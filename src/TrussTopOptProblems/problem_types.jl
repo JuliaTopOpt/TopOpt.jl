@@ -7,7 +7,7 @@ get_fixities_node_set_name(i) = "fixed_u$(i)"
     truss_grid::TrussGrid{xdim,T,N,M} # ground truss mesh
     materials::Vector{TrussFEAMaterial{T}}
     ch::ConstraintHandler{<:DofHandler{xdim,<:Ferrite.Cell{xdim,N,M},T},T}
-    force::Dict{Int, SVector{xdim, T}}
+    force::Dict{Int,SVector{xdim,T}}
     black::AbstractVector
     white::AbstractVector
     varind::AbstractVector{Int} # variable dof => free dof, based on black & white
@@ -23,8 +23,15 @@ TopOpt.TopOptProblems.getν(sp::TrussProblem) = [m.ν for m in sp.materials]
 getA(sp::TrussProblem) = [cs.A for cs in sp.truss_grid.crosssecs]
 Ferrite.getnnodes(problem::StiffnessTopOptProblem) = Ferrite.getnnodes(getdh(problem).grid)
 
-function TrussProblem(::Type{Val{CellType}}, node_points::Dict{iT, SVector{xdim, T}}, elements::Dict{iT, Tuple{iT, iT}}, 
-    loads::Dict{iT, SVector{xdim, T}}, supports::Dict{iT, SVector{xdim, fT}}, mats=TrussFEAMaterial{T}(1.0, 0.3), crosssecs=TrussFEACrossSec{T}(1.0)) where {xdim, T, iT, fT, CellType}
+function TrussProblem(
+    ::Type{Val{CellType}},
+    node_points::Dict{iT,SVector{xdim,T}},
+    elements::Dict{iT,Tuple{iT,iT}},
+    loads::Dict{iT,SVector{xdim,T}},
+    supports::Dict{iT,SVector{xdim,fT}},
+    mats=TrussFEAMaterial{T}(1.0, 0.3),
+    crosssecs=TrussFEACrossSec{T}(1.0),
+) where {xdim,T,iT,fT,CellType}
     # unify number type
     # _T = promote_type(eltype(sizes), typeof(mats), typeof(ν), typeof(force))
     # if _T <: Integer
@@ -46,7 +53,7 @@ function TrussProblem(::Type{Val{CellType}}, node_points::Dict{iT, SVector{xdim,
         @assert length(mats) == ncells
         mats = convert(Vector{TrussFEAMaterial{T}}, mats)
     elseif mats isa TrussFEAMaterial
-        mats = [convert(TrussFEAMaterial{T}, mats) for i=1:ncells]
+        mats = [convert(TrussFEAMaterial{T}, mats) for i in 1:ncells]
     else
         error("Invalid mats: $(mats)")
     end
@@ -57,13 +64,13 @@ function TrussProblem(::Type{Val{CellType}}, node_points::Dict{iT, SVector{xdim,
         pop!(truss_grid.grid.nodesets, "load")
     end
     load_nodesets = Set{Int}()
-    for (k,_) in loads
+    for (k, _) in loads
         push!(load_nodesets, k)
     end
     addnodeset!(truss_grid.grid, "load", load_nodesets)
 
     # * support nodeset
-    for i=1:xdim
+    for i in 1:xdim
         if haskey(truss_grid.grid.nodesets, get_fixities_node_set_name(i))
             pop!(truss_grid.grid.nodesets, get_fixities_node_set_name(i))
         end
@@ -81,7 +88,7 @@ function TrussProblem(::Type{Val{CellType}}, node_points::Dict{iT, SVector{xdim,
     if CellType === :Linear
         # truss linear
         # interpolation_space
-        ip = Lagrange{ξdim, RefCube, geom_order}()
+        ip = Lagrange{ξdim,RefCube,geom_order}()
         push!(dh, :u, xdim, ip)
     else
         # TODO truss 2-order
@@ -92,8 +99,13 @@ function TrussProblem(::Type{Val{CellType}}, node_points::Dict{iT, SVector{xdim,
     close!(dh)
 
     ch = ConstraintHandler(dh)
-    for i=1:xdim
-        dbc = Dirichlet(:u, getnodeset(truss_grid.grid, get_fixities_node_set_name(i)), (x,t)->zeros(T,1), [i])
+    for i in 1:xdim
+        dbc = Dirichlet(
+            :u,
+            getnodeset(truss_grid.grid, get_fixities_node_set_name(i)),
+            (x, t) -> zeros(T, 1),
+            [i],
+        )
         add!(ch, dbc)
     end
     close!(ch)
@@ -119,7 +131,7 @@ function Base.show(io::Base.IO, mime::MIME"text/plain", sp::TrussProblem)
     print(io, "    ")
     Base.show(io, mime, sp.truss_grid)
     println(io, "    point loads: $(length(sp.force))")
-    println(io, "    active vars: $(sum(sp.varind .!= 0))")
+    return println(io, "    active vars: $(sum(sp.varind .!= 0))")
 end
 
 #########################################
@@ -131,7 +143,7 @@ TopOpt.TopOptProblems.nnodespercell(p::TrussProblem) = nnodespercell(p.truss_gri
 
 Get a dict (node_idx => force vector) for concentrated loads
 """
-function TopOpt.TopOptProblems.getcloaddict(p::TrussProblem{xdim,T}) where {xdim, T}
+function TopOpt.TopOptProblems.getcloaddict(p::TrussProblem{xdim,T}) where {xdim,T}
     return p.force
 end
 

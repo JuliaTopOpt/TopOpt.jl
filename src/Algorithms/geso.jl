@@ -9,18 +9,18 @@ end
 """
 The GESO algorithm, see [LiuYiLiShen2008](@cite).
 """
-struct GESO <: TopOptAlgorithm 
+struct GESO <: TopOptAlgorithm
     comp::Compliance
     vol::Volume
-    vol_limit
-    filter
+    vol_limit::Any
+    filter::Any
     vars::AbstractVector
     topology::AbstractVector
-    Pcmin
-    Pcmax
-    Pmmin
-    Pmmax
-    Pen
+    Pcmin::Any
+    Pcmax::Any
+    Pmmin::Any
+    Pmmax::Any
+    Pen::Any
     string_length::Int
     var_volumes::AbstractVector
     cum_var_volumes::AbstractVector
@@ -29,17 +29,33 @@ struct GESO <: TopOptAlgorithm
     children::BitArray{2}
     var_black::BitVector
     maxiter::Int
-    penalty
+    penalty::Any
     sens::AbstractVector
     old_sens::AbstractVector
     obj_trace::MVector{10}
-    tol
-    sens_tol
+    tol::Any
+    sens_tol::Any
     result::GESOResult
 end
 Base.show(::IO, ::MIME{Symbol("text/plain")}, ::GESO) = println("TopOpt GESO algorithm")
 
-function GESO(comp::Compliance, vol::Volume, vol_limit, filter; maxiter = 1000, tol = 0.001, p = 3., Pcmin = 0.6, Pcmax = 1., Pmmin = 0.5, Pmmax = 1., Pen = 3., sens_tol = tol/100, string_length = 4, k = 10)
+function GESO(
+    comp::Compliance,
+    vol::Volume,
+    vol_limit,
+    filter;
+    maxiter=1000,
+    tol=0.001,
+    p=3.0,
+    Pcmin=0.6,
+    Pcmax=1.0,
+    Pmmin=0.5,
+    Pmmax=1.0,
+    Pen=3.0,
+    sens_tol=tol / 100,
+    string_length=4,
+    k=10,
+)
     penalty = comp.solver.penalty
     setpenalty!(penalty, p)
     solver = comp.solver
@@ -53,7 +69,7 @@ function GESO(comp::Compliance, vol::Volume, vol_limit, filter; maxiter = 1000, 
     result = GESOResult(topology, T(NaN), T(NaN), false, 0)
     sens = zeros(T, nvars)
     old_sens = zeros(T, nvars)
-    obj_trace = zeros(MVector{k, T})
+    obj_trace = zeros(MVector{k,T})
     var_volumes = vol.cellvolumes[.!black .& .!white]
     cum_var_volumes = zeros(T, nvars)
     order = zeros(Int, nvars)
@@ -61,7 +77,34 @@ function GESO(comp::Compliance, vol::Volume, vol_limit, filter; maxiter = 1000, 
     children = trues(string_length, nvars)
     var_black = trues(nvars)
 
-    return GESO(comp, vol, vol_limit, filter, vars, topology, Pcmin, Pcmax, Pmmin, Pmmax, Pen, string_length, var_volumes, cum_var_volumes, order, genotypes, children, var_black, maxiter, penalty, sens, old_sens, obj_trace, tol, sens_tol, result)
+    return GESO(
+        comp,
+        vol,
+        vol_limit,
+        filter,
+        vars,
+        topology,
+        Pcmin,
+        Pcmax,
+        Pmmin,
+        Pmmax,
+        Pen,
+        string_length,
+        var_volumes,
+        cum_var_volumes,
+        order,
+        genotypes,
+        children,
+        var_black,
+        maxiter,
+        penalty,
+        sens,
+        old_sens,
+        obj_trace,
+        tol,
+        sens_tol,
+        result,
+    )
 end
 
 function Utilities.setpenalty!(b::GESO, p::Number)
@@ -69,20 +112,33 @@ function Utilities.setpenalty!(b::GESO, p::Number)
     return b
 end
 
-get_progress(current_volume, total_volume, design_volume) = clamp(min((total_volume - current_volume) / (total_volume - design_volume), current_volume / design_volume), 0, 1)
+function get_progress(current_volume, total_volume, design_volume)
+    return clamp(
+        min(
+            (total_volume - current_volume) / (total_volume - design_volume),
+            current_volume / design_volume,
+        ),
+        0,
+        1,
+    )
+end
 
-get_probs(b::GESO, Prg) = (b.Pcmin + (b.Pcmax - b.Pcmin)*Prg^b.Pen, b.Pmmin + (b.Pmmax - b.Pmmin)*Prg^b.Pen)
+function get_probs(b::GESO, Prg)
+    return (
+        b.Pcmin + (b.Pcmax - b.Pcmin) * Prg^b.Pen, b.Pmmin + (b.Pmmax - b.Pmmin) * Prg^b.Pen
+    )
+end
 
 function crossover!(children, genotypes, i, j)
     for k in 1:size(genotypes, 1)
         r = rand()
         if r < 0.5
-            children[k,i] = genotypes[k,i]
+            children[k, i] = genotypes[k, i]
         else
-            children[k,i] = genotypes[k,j]
+            children[k, i] = genotypes[k, j]
         end
     end
-    return
+    return nothing
 end
 
 function update!(var_black, children, genotypes, Pc, Pm, high_class, mid_class, low_class)
@@ -96,7 +152,7 @@ function update!(var_black, children, genotypes, Pc, Pm, high_class, mid_class, 
                     while i == j
                         j = rand(high_class)
                     end
-                elseif r < 0.5 + 0.5*Pc
+                elseif r < 0.5 + 0.5 * Pc
                     j = rand(mid_class)
                 else
                     j = rand(low_class)
@@ -114,17 +170,17 @@ function update!(var_black, children, genotypes, Pc, Pm, high_class, mid_class, 
             r = rand()
             j = i
             if length(mid_class) > 1
-                if r < Pc 
+                if r < Pc
                     while i == j
                         j = rand(mid_class)
                     end
-                elseif r < 0.5 + 0.5*Pc
+                elseif r < 0.5 + 0.5 * Pc
                     j = rand(high_class)
                 else
                     j = rand(low_class)
                 end
             else
-                if r < 0.5 + 0.5*Pc
+                if r < 0.5 + 0.5 * Pc
                     j = rand(high_class)
                 else
                     j = rand(low_class)
@@ -140,7 +196,7 @@ function update!(var_black, children, genotypes, Pc, Pm, high_class, mid_class, 
                     while i == j
                         j = rand(low_class)
                     end
-                elseif r < 0.5 + 0.5*Pc
+                elseif r < 0.5 + 0.5 * Pc
                     j = rand(mid_class)
                 else
                     j = rand(high_class)
@@ -159,11 +215,11 @@ function update!(var_black, children, genotypes, Pc, Pm, high_class, mid_class, 
         for i in high_class
             for j in 1:size(genotypes, 1)
                 r = rand()
-                if r < Pm && !genotypes[j,i]
-                    genotypes[j,i] = !genotypes[j,i]
+                if r < Pm && !genotypes[j, i]
+                    genotypes[j, i] = !genotypes[j, i]
                 end
             end
-            if any(@view genotypes[:,i]) != var_black[i]
+            if any(@view genotypes[:, i]) != var_black[i]
                 var_black[i] = !var_black[i]
                 topology_changed = true
             end
@@ -171,11 +227,11 @@ function update!(var_black, children, genotypes, Pc, Pm, high_class, mid_class, 
         for i in mid_class
             for j in 1:size(genotypes, 1)
                 r = rand()
-                if r < Pm && genotypes[j,i]
-                    genotypes[j,i] = !genotypes[j,i]
+                if r < Pm && genotypes[j, i]
+                    genotypes[j, i] = !genotypes[j, i]
                 end
             end
-            if any(@view genotypes[:,i]) != var_black[i]
+            if any(@view genotypes[:, i]) != var_black[i]
                 var_black[i] = !var_black[i]
                 topology_changed = true
             end
@@ -183,11 +239,11 @@ function update!(var_black, children, genotypes, Pc, Pm, high_class, mid_class, 
         for i in low_class
             for j in 1:size(genotypes, 1)
                 r = rand()
-                if r < Pm && genotypes[j,i]
-                    genotypes[j,i] = !genotypes[j,i]
+                if r < Pm && genotypes[j, i]
+                    genotypes[j, i] = !genotypes[j, i]
                 end
             end
-            if any(@view genotypes[:,i]) != var_black[i]
+            if any(@view genotypes[:, i]) != var_black[i]
                 var_black[i] = !var_black[i]
                 topology_changed = true
             end
@@ -197,7 +253,7 @@ function update!(var_black, children, genotypes, Pc, Pm, high_class, mid_class, 
     return var_black
 end
 
-function (b::GESO)(x0 = copy(b.comp.solver.vars); seed=NaN)
+function (b::GESO)(x0=copy(b.comp.solver.vars); seed=NaN)
     @unpack sens, old_sens, tol, maxiter = b
     @unpack obj_trace, topology, sens_tol, vars = b
     @unpack Pcmin, Pcmax, Pmmin, Pmmax, Pen = b
@@ -230,7 +286,7 @@ function (b::GESO)(x0 = copy(b.comp.solver.vars); seed=NaN)
     check(x) = x > design_volume - fixed_volume
     #rrmax = clamp(1 - design_volume/current_volume, 0, 1)
     current_volume = dot(vars, var_volumes) + fixed_volume
-    vol = current_volume/total_volume
+    vol = current_volume / total_volume
     # Main loop
     change = T(1)
     iter = 0
@@ -239,8 +295,8 @@ function (b::GESO)(x0 = copy(b.comp.solver.vars); seed=NaN)
         if iter > 1
             old_sens .= sens
         end
-        for j in max(2, 10-iter+2):10
-            obj_trace[j-1] = obj_trace[j]
+        for j in max(2, 10 - iter + 2):10
+            obj_trace[j - 1] = obj_trace[j]
         end
         obj_trace[10], pb = Zygote.pullback(x -> b.comp(b.filter(x)), vars)
         sens = pb(1.0)[1]
@@ -248,30 +304,32 @@ function (b::GESO)(x0 = copy(b.comp.solver.vars); seed=NaN)
         if iter > 1
             @. sens = (sens + old_sens) / 2
         end
-        
+
         # Classify the cells by their sensitivities
-        sortperm!(order, sens, rev=true)
+        sortperm!(order, sens; rev=true)
         accumulate!(+, cum_var_volumes, view(var_volumes, order))
         N1 = findfirst(check, cum_var_volumes) - 1
         N2 = (nel - N1) ÷ 2
         N3 = nvars - N1 - N2
         high_class = @view order[1:N1]
-        mid_class = @view order[N1+1:N1+N2]
-        low_class = @view order[N1+N2+1:end]
+        mid_class = @view order[(N1 + 1):(N1 + N2)]
+        low_class = @view order[(N1 + N2 + 1):end]
 
         # Crossover and mutation
         Prg = get_progress(current_volume, total_volume, design_volume)
-        Pc, Pm = get_probs(b, Prg)        
-        vars .= update!(var_black, children, genotypes, Pc, Pm, high_class, mid_class, low_class)
+        Pc, Pm = get_probs(b, Prg)
+        vars .= update!(
+            var_black, children, genotypes, Pc, Pm, high_class, mid_class, low_class
+        )
 
         # Update crossover and mutation probabilities
         current_volume = dot(vars, var_volumes) + fixed_volume
-        vol = current_volume/total_volume
+        vol = current_volume / total_volume
 
         if iter >= 10
             l = sum(@view obj_trace[1:5])
             h = sum(@view obj_trace[6:10])
-            change = abs(l-h)/h
+            change = abs(l - h) / h
         end
     end
 
@@ -281,7 +339,7 @@ function (b::GESO)(x0 = copy(b.comp.solver.vars); seed=NaN)
         elseif white[i]
             topology[i] = 0
         else
-            topology[i] = vars[varind[i]]            
+            topology[i] = vars[varind[i]]
         end
     end
 

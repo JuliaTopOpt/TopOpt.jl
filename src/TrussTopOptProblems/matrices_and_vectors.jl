@@ -8,14 +8,16 @@ using ChainRulesCore
 Generate element stiffness matrices
 """
 function make_Kes_and_fes(problem::TrussProblem, quad_order=1)
-    make_Kes_and_fes(problem, quad_order, Val{:Static})
+    return make_Kes_and_fes(problem, quad_order, Val{:Static})
 end
 
-function make_Kes_and_fes(problem::TrussProblem, ::Type{Val{mat_type}}) where mat_type
-    make_Kes_and_fes(problem, 1, Val{mat_type})
+function make_Kes_and_fes(problem::TrussProblem, ::Type{Val{mat_type}}) where {mat_type}
+    return make_Kes_and_fes(problem, 1, Val{mat_type})
 end
 
-function make_Kes_and_fes(problem::TrussProblem{xdim, T}, quad_order, ::Type{Val{mat_type}}) where {xdim, T, mat_type}
+function make_Kes_and_fes(
+    problem::TrussProblem{xdim,T}, quad_order, ::Type{Val{mat_type}}
+) where {xdim,T,mat_type}
     dh = getdh(problem)
     Es = getE(problem)
     # ν = getν(problem)
@@ -23,23 +25,35 @@ function make_Kes_and_fes(problem::TrussProblem{xdim, T}, quad_order, ::Type{Val
     As = getA(problem)
 
     # * Shape functions and quadrature rule
-    interpolation_space = Ferrite.default_interpolation(getcelltype(problem.truss_grid.grid))
+    interpolation_space = Ferrite.default_interpolation(
+        getcelltype(problem.truss_grid.grid)
+    )
     # Lagrange{ξdim, refshape, geom_order}()
     ξdim = getdim(interpolation_space)
     refshape = getrefshape(dh.field_interpolations[1])
-    quadrature_rule = QuadratureRule{ξdim, refshape}(quad_order)
+    quadrature_rule = QuadratureRule{ξdim,refshape}(quad_order)
     cellvalues = GenericCellScalarValues(T, quadrature_rule, interpolation_space; xdim=xdim)
 
     # * A Line element's faces are not meaningful in truss problems
     # placeholder to make type right
-    facevalues = FaceScalarValues(QuadratureRule{ξdim-1, refshape}(quad_order), interpolation_space)
+    facevalues = FaceScalarValues(
+        QuadratureRule{ξdim - 1,refshape}(quad_order), interpolation_space
+    )
 
     # * Calculate element stiffness matrices
     n_basefuncs = getnbasefunctions(cellvalues)
-    Kesize = xdim*n_basefuncs
+    Kesize = xdim * n_basefuncs
     MatrixType, VectorType = gettypes(T, Val{mat_type}, Val{Kesize})
-    Kes, weights = _make_Kes_and_weights(dh, Tuple{MatrixType, VectorType}, Val{n_basefuncs}, Val{xdim*n_basefuncs}, 
-        Es, As, quadrature_rule, cellvalues)
+    Kes, weights = _make_Kes_and_weights(
+        dh,
+        Tuple{MatrixType,VectorType},
+        Val{n_basefuncs},
+        Val{xdim * n_basefuncs},
+        Es,
+        As,
+        quadrature_rule,
+        cellvalues,
+    )
 
     # ! distributed load, not used in a truss problem
     # dloads = _make_dloads(weights, problem, facevalues)
@@ -70,42 +84,62 @@ struct GenericCellScalarValues{ξdim,xdim,T,refshape} <: CellValues{xdim,T,refsh
     qr_weights::Vector{T}
 end
 
-function GenericCellScalarValues(quad_rule::QuadratureRule, func_interpol::Interpolation,
-        geom_interpol::Interpolation=func_interpol)
-    TrussCellScalarValues(Float64, quad_rule, func_interpol, geom_interpol)
+function GenericCellScalarValues(
+    quad_rule::QuadratureRule,
+    func_interpol::Interpolation,
+    geom_interpol::Interpolation=func_interpol,
+)
+    return TrussCellScalarValues(Float64, quad_rule, func_interpol, geom_interpol)
 end
 
-function GenericCellScalarValues(::Type{T}, quad_rule::QuadratureRule{ξdim,shape}, func_interpol::Interpolation,
-        geom_interpol::Interpolation=func_interpol; xdim=ξdim) where {ξdim,T,shape<:Ferrite.AbstractRefShape}
+function GenericCellScalarValues(
+    ::Type{T},
+    quad_rule::QuadratureRule{ξdim,shape},
+    func_interpol::Interpolation,
+    geom_interpol::Interpolation=func_interpol;
+    xdim=ξdim,
+) where {ξdim,T,shape<:Ferrite.AbstractRefShape}
     @assert getdim(func_interpol) == getdim(geom_interpol)
     @assert getrefshape(func_interpol) == getrefshape(geom_interpol) == shape
     n_qpoints = length(getweights(quad_rule))
     # * Function interpolation
     n_func_basefuncs = getnbasefunctions(func_interpol)
-    N    = fill(zero(T)           * T(NaN), n_func_basefuncs, n_qpoints)
+    N = fill(zero(T) * T(NaN), n_func_basefuncs, n_qpoints)
     dNdx = fill(zero(Vec{xdim,T}) * T(NaN), n_func_basefuncs, n_qpoints)
     dNdξ = fill(zero(Vec{ξdim,T}) * T(NaN), n_func_basefuncs, n_qpoints)
     # * Geometry interpolation
     n_geom_basefuncs = getnbasefunctions(geom_interpol)
-    M    = fill(zero(T)           * T(NaN), n_geom_basefuncs, n_qpoints)
+    M = fill(zero(T) * T(NaN), n_geom_basefuncs, n_qpoints)
     dMdξ = fill(zero(Vec{ξdim,T}) * T(NaN), n_geom_basefuncs, n_qpoints)
     for (qp, ξ) in enumerate(quad_rule.points)
         for i in 1:n_func_basefuncs
-            dNdξ[i, qp], N[i, qp] = gradient(ξ -> value(func_interpol, i, ξ), ξ, :all)
+            dNdξ[i, qp], N[i, qp] = Ferrite.gradient(
+                ξ -> value(func_interpol, i, ξ), ξ, :all
+            )
         end
         for i in 1:n_geom_basefuncs
-            dMdξ[i, qp], M[i, qp] = gradient(ξ -> value(geom_interpol, i, ξ), ξ, :all)
+            dMdξ[i, qp], M[i, qp] = Ferrite.gradient(
+                ξ -> value(geom_interpol, i, ξ), ξ, :all
+            )
         end
     end
     detJdV = fill(T(NaN), n_qpoints)
-    GenericCellScalarValues{ξdim,xdim,T,shape}(N, dNdx, dNdξ, detJdV, M, dMdξ, quad_rule.weights)
+    return GenericCellScalarValues{ξdim,xdim,T,shape}(
+        N, dNdx, dNdξ, detJdV, M, dMdξ, quad_rule.weights
+    )
 end
 
 # common values
 using Ferrite: getnbasefunctions, getngeobasefunctions, getnquadpoints
 getn_scalarbasefunctions(cv::GenericCellScalarValues) = size(cv.N, 1)
-@propagate_inbounds shape_gradient(cv::GenericCellScalarValues, q_point::Int, base_func::Int) = cv.dNdx[base_func, q_point]
-@propagate_inbounds getdetJdV(cv::GenericCellScalarValues, q_point::Int) = cv.detJdV[q_point]
+@propagate_inbounds function shape_gradient(
+    cv::GenericCellScalarValues, q_point::Int, base_func::Int
+)
+    return cv.dNdx[base_func, q_point]
+end
+@propagate_inbounds function getdetJdV(cv::GenericCellScalarValues, q_point::Int)
+    return cv.detJdV[q_point]
+end
 
 ############################
 
@@ -114,13 +148,13 @@ getn_scalarbasefunctions(cv::GenericCellScalarValues) = size(cv.N, 1)
 
 Compute the pseudo-inverse of a Vector tensor.
 """
-function pinv(t::Vec{dim, T}) where {dim, T}
-    LinearAlgebra.Transpose{T, Vec{dim, T}}(t / sum(t.^2))
+function pinv(t::Vec{dim,T}) where {dim,T}
+    return LinearAlgebra.Transpose{T,Vec{dim,T}}(t / sum(t .^ 2))
 end
-function ChainRulesCore.rrule(::typeof(pinv), t::Vec{dim, T}) where {dim, T}
-    s = sum(t.^2)
-    TT = LinearAlgebra.Transpose{T, Vec{dim, T}}
-    TT(t / s), Δ -> begin
+function ChainRulesCore.rrule(::typeof(pinv), t::Vec{dim,T}) where {dim,T}
+    s = sum(t .^ 2)
+    TT = LinearAlgebra.Transpose{T,Vec{dim,T}}
+    return TT(t / s), Δ -> begin
         nothing, TT(Δ)
     end
 end
@@ -133,14 +167,17 @@ end
 `weights` : a vector of `xdim*n_basefuncs` vectors, element_id => self-weight load vector, in truss elements, they are all zeros.
 """
 function _make_Kes_and_weights(
-    dh::DofHandler{xdim, N, T},
-    ::Type{Tuple{MatrixType, VectorType}},
+    dh::DofHandler{xdim,N,T},
+    ::Type{Tuple{MatrixType,VectorType}},
     ::Type{Val{n_basefuncs}},
     ::Type{Val{Kesize}},
-    Es::Vector{T}, As::Vector{T}, 
-    quadrature_rule, cellvalues::GenericCellScalarValues) where {xdim, N, T, MatrixType <: StaticArray, VectorType, n_basefuncs, Kesize}
+    Es::Vector{T},
+    As::Vector{T},
+    quadrature_rule,
+    cellvalues::GenericCellScalarValues,
+) where {xdim,N,T,MatrixType<:StaticArray,VectorType,n_basefuncs,Kesize}
     nel = getncells(dh.grid)
-    Kes = Symmetric{T, MatrixType}[]
+    Kes = Symmetric{T,MatrixType}[]
     sizehint!(Kes, nel)
     # body_force = ρ .* g # Force per unit volume
     weights = [zeros(VectorType) for i in 1:nel]
@@ -167,7 +204,7 @@ function _make_Kes_and_weights(
                         Ke_e .= Es[k] * ∇ϕa ⊗ ∇ϕb * dΩ
                         for d1 in 1:xdim
                             #if dim*(b-1) + d2 >= dim*(a-1) + d1
-                            Ke_0[xdim*(a-1) + d1, xdim*(b-1) + d2] += Ke_e[d1,d2]
+                            Ke_0[xdim * (a - 1) + d1, xdim * (b - 1) + d2] += Ke_e[d1, d2]
                             #end
                         end
                     end
@@ -184,15 +221,19 @@ function _make_Kes_and_weights(
     return Kes, weights
 end
 
-@inline function truss_reinit!(cv::GenericCellScalarValues{ξdim,xdim,T}, ci::CellIterator{xdim,N,T}, crossec::T) where {ξdim,xdim,N,T}
+@inline function truss_reinit!(
+    cv::GenericCellScalarValues{ξdim,xdim,T}, ci::CellIterator{xdim,N,T}, crossec::T
+) where {ξdim,xdim,N,T}
     Ferrite.check_compatible_geointerpolation(cv, ci)
-    truss_reinit!(cv, ci.coords, crossec)
+    return truss_reinit!(cv, ci.coords, crossec)
 end
 
 """
 Reinit a cell for a truss element, using the nodal coordinates `x`, cross section `crossec`
 """
-function truss_reinit!(cv::GenericCellScalarValues{ξdim,xdim,T}, x::AbstractVector{Vec{xdim,T}}, crossec::T) where {ξdim,xdim,T}
+function truss_reinit!(
+    cv::GenericCellScalarValues{ξdim,xdim,T}, x::AbstractVector{Vec{xdim,T}}, crossec::T
+) where {ξdim,xdim,T}
     n_geom_basefuncs = getngeobasefunctions(cv)
     n_func_basefuncs = getn_scalarbasefunctions(cv)
     @assert length(x) == n_geom_basefuncs

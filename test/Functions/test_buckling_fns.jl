@@ -1,4 +1,4 @@
-using TopOpt, Nonconvex, Zygote, FiniteDifferences, LinearAlgebra, Test, Random, SparseArrays
+using TopOpt, Zygote, FiniteDifferences, LinearAlgebra, Test, Random, SparseArrays
 const FDM = FiniteDifferences
 using Ferrite: ndofs_per_cell, getncells
 using TopOpt: ndofs
@@ -19,12 +19,12 @@ gm_ins_dir = joinpath(@__DIR__, "..", "truss_topopt_problems", "instances", "gro
     N = length(einfo.Kes)
     for _ in 1:3
         v = rand(T, total_ndof)
-        f = Kx -> sum(ak(Kx)*v)
-        Kes = [rand(T,k,k) for _ in 1:N]
+        f = Kx -> sum(ak(Kx) * v)
+        Kes = [rand(T, k, k) for _ in 1:N]
         Kes .= transpose.(Kes) .+ Kes
-        val1, grad1 = NonconvexCore.value_gradient(f, Kes);
-        val2, grad2 = f(Kes), Zygote.gradient(f, Kes)[1];
-        grad3 = FDM.grad(central_fdm(5, 1), f, Kes)[1];
+        val1, grad1 = NonconvexCore.value_gradient(f, Kes)
+        val2, grad2 = f(Kes), Zygote.gradient(f, Kes)[1]
+        grad3 = FDM.grad(central_fdm(5, 1), f, Kes)[1]
         @test val1 == val2
         @test norm(grad1 - grad2) == 0
         map(1:length(grad2)) do i
@@ -39,7 +39,7 @@ end
 @testset "ElementK" begin
     nels = (2, 2)
     problem = PointLoadCantilever(Val{:Quadratic}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
-    solver = FEASolver(Direct, problem, xmin = 0.01, penalty = TopOpt.PowerPenalty(1.0))
+    solver = FEASolver(Direct, problem; xmin=0.01, penalty=TopOpt.PowerPenalty(1.0))
 
     ek = ElementK(solver)
     dh = problem.ch.dh
@@ -54,17 +54,17 @@ end
     end
 
     for _ in 1:3
-        vs = [rand(T,k,k) for i in 1:N]
-        f = x -> begin 
+        vs = [rand(T, k, k) for i in 1:N]
+        f = x -> begin
             Kes = ek(x)
-            sum([sum(Kes[i]*vs[i]) for i in 1:length(x)])
+            sum([sum(Kes[i] * vs[i]) for i in 1:length(x)])
         end
 
         x = clamp.(rand(prod(nels)), 0.1, 1.0)
 
-        val1, grad1 = NonconvexCore.value_gradient(f, x);
-        val2, grad2 = f(x), Zygote.gradient(f, x)[1];
-        grad3 = FDM.grad(central_fdm(5, 1), f, x)[1];
+        val1, grad1 = NonconvexCore.value_gradient(f, x)
+        val2, grad2 = f(x), Zygote.gradient(f, x)[1]
+        grad3 = FDM.grad(central_fdm(5, 1), f, x)[1]
         @test val1 == val2
         @test norm(grad1 - grad2) == 0
         @test norm(grad1 - grad3) <= 1e-5
@@ -75,15 +75,17 @@ end
     file_name = "tim_$(problem_dim).json"
     problem_file = joinpath(gm_ins_dir, file_name)
 
-    mats = TrussFEAMaterial(1.0, 0.3);
-    crossecs = TrussFEACrossSec(800.0);
+    mats = TrussFEAMaterial(1.0, 0.3)
+    crossecs = TrussFEACrossSec(800.0)
 
-    node_points, elements, _, _ , fixities, load_cases = load_truss_json(problem_file)
+    node_points, elements, _, _, fixities, load_cases = load_truss_json(problem_file)
     ndim, nnodes, ncells = length(node_points[1]), length(node_points), length(elements)
     loads = load_cases["0"]
 
-    problem = TrussProblem(Val{:Linear}, node_points, elements, loads, fixities, mats, crossecs);
-    solver = FEASolver(Direct, problem);
+    problem = TrussProblem(
+        Val{:Linear}, node_points, elements, loads, fixities, mats, crossecs
+    )
+    solver = FEASolver(Direct, problem)
     solver()
     u = solver.u
 
@@ -98,10 +100,10 @@ end
     Kσs_0 = get_truss_Kσs(problem, u, solver.elementinfo.cellvalues)
 
     for _ in 1:3
-        vs = [rand(T,k,k) for i in 1:N]
-        f = x -> begin 
+        vs = [rand(T, k, k) for i in 1:N]
+        f = x -> begin
             Keσs = esigk(u, x)
-            sum([sum(Keσs[i]*vs[i]) for i in 1:length(x)])
+            sum([sum(Keσs[i] * vs[i]) for i in 1:length(x)])
         end
 
         x = clamp.(rand(nels), 0.1, 1.0)
@@ -111,9 +113,9 @@ end
             @test k1 ≈ k0 * x[ci]
         end
 
-        val1, grad1 = NonconvexCore.value_gradient(f, x);
-        val2, grad2 = f(x), Zygote.gradient(f, x)[1];
-        grad3 = FDM.grad(central_fdm(5, 1), f, x)[1];
+        val1, grad1 = NonconvexCore.value_gradient(f, x)
+        val2, grad2 = f(x), Zygote.gradient(f, x)[1]
+        grad3 = FDM.grad(central_fdm(5, 1), f, x)[1]
         @test val1 == val2
         @test norm(grad1 - grad2) == 0
         @test norm(grad1 - grad3) <= 1e-5
@@ -136,20 +138,20 @@ end
         function f1(x)
             M = K * sum(x)
             M = apply_boundary_with_zerodiag!(M, ch)
-            return sum(M*v)
+            return sum(M * v)
         end
 
         function f2(x)
             M = K * sum(x)
             M = apply_boundary_with_meandiag!(M, ch)
-            return sum(M*v)
+            return sum(M * v)
         end
 
         x = rand(total_ndof)
         for f in [f2] #f1, 
-            val1, grad1 = NonconvexCore.value_gradient(f, x);
-            val2, grad2 = f(x), Zygote.gradient(f, x)[1];
-            grad3 = FDM.grad(central_fdm(5, 1), f, x)[1];
+            val1, grad1 = NonconvexCore.value_gradient(f, x)
+            val2, grad2 = f(x), Zygote.gradient(f, x)[1]
+            grad3 = FDM.grad(central_fdm(5, 1), f, x)[1]
             # @test val1 == val2
             # @test norm(grad1 - grad2) == 0
             @test norm(grad1 - grad3) <= 1e-5
@@ -161,21 +163,23 @@ end
     file_name = "tim_$(problem_dim).json"
     problem_file = joinpath(gm_ins_dir, file_name)
 
-    mats = TrussFEAMaterial(1.0, 0.3);
-    crossecs = TrussFEACrossSec(800.0);
+    mats = TrussFEAMaterial(1.0, 0.3)
+    crossecs = TrussFEACrossSec(800.0)
 
-    node_points, elements, _, _ , fixities, load_cases = load_truss_json(problem_file)
+    node_points, elements, _, _, fixities, load_cases = load_truss_json(problem_file)
     ndim, nnodes, ncells = length(node_points[1]), length(node_points), length(elements)
     loads = load_cases["0"]
 
-    problem = TrussProblem(Val{:Linear}, node_points, elements, loads, fixities, mats, crossecs);
+    problem = TrussProblem(
+        Val{:Linear}, node_points, elements, loads, fixities, mats, crossecs
+    )
 
     xmin = 0.0001 # minimum density
     p = 4.0 # penalty
     V = 0.5 # maximum volume fraction
     x0 = fill(1.0, ncells) # initial design
 
-    solver = FEASolver(Direct, problem);
+    solver = FEASolver(Direct, problem)
     ch = problem.ch
     dh = problem.ch.dh
     total_ndof = ndofs(dh)
@@ -210,7 +214,7 @@ end
         Kσ = assemble_k(Kσs)
         Kσ = apply_boundary_with_zerodiag!(Kσ, ch)
 
-        return Array(K + c*Kσ)
+        return Array(K + c * Kσ)
     end
 
     # * check initial design stability
@@ -218,18 +222,18 @@ end
 
     for _ in 1:3
         v = rand(eltype(x0), total_ndof)
-        f = x -> sum(buckling_matrix_constr(x)*v)
+        f = x -> sum(buckling_matrix_constr(x) * v)
 
         x = clamp.(rand(ncells), 0.1, 1.0)
 
         solver.vars = x
         solver()
-        K, G = buckling(problem, solver.globalinfo, solver.elementinfo, x; u=solver.u);
-        @test K+G ≈ buckling_matrix_constr(x)
+        K, G = buckling(problem, solver.globalinfo, solver.elementinfo, x; u=solver.u)
+        @test K + G ≈ buckling_matrix_constr(x)
 
-        val1, grad1 = NonconvexCore.value_gradient(f, x);
-        val2, grad2 = f(x), Zygote.gradient(f, x)[1];
-        grad3 = FDM.grad(central_fdm(5, 1), f, x)[1];
+        val1, grad1 = NonconvexCore.value_gradient(f, x)
+        val2, grad2 = f(x), Zygote.gradient(f, x)[1]
+        grad3 = FDM.grad(central_fdm(5, 1), f, x)[1]
 
         @test val1 == val2
         @test norm(grad1 - grad2) == 0

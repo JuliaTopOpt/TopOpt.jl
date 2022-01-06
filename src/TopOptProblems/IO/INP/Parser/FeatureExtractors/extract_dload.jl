@@ -1,4 +1,10 @@
-function extract_dload!(dloads::Dict{String, TF}, facesets::Dict{String, Vector{Tuple{TI,TI}}}, file, ::Type{Val{dim}}, offset::TI) where {TI, TF, dim}
+function extract_dload!(
+    dloads::Dict{String,TF},
+    facesets::Dict{String,Vector{Tuple{TI,TI}}},
+    file,
+    ::Type{Val{dim}},
+    offset::TI,
+) where {TI,TF,dim}
     pattern = r"(\d+)\s*,\s*P(\d+)\s*,\s*(\-?\d+\.\d*)"
     dload_heading_pattern = r"\*DLOAD"
 
@@ -8,7 +14,7 @@ function extract_dload!(dloads::Dict{String, TF}, facesets::Dict{String, Vector{
     first = true
     prevload = zero(TF)
     load = zero(TF)
-    
+
     line = readline(file)
     m = match(stopping_pattern, line)
     while m isa Nothing

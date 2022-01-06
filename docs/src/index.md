@@ -8,7 +8,7 @@
 
     `TopOpt` is still under development. If you find a bug, or have
     ideas for improvements, feel free to open an issue or make a
-    pull request on the [`TopOpt` GitHub page](https://github.com/mohamed82008/TopOpt.jl).
+    pull request on the [`TopOpt` GitHub page](https://github.com/JuliaTopOpt/TopOpt.jl).
 
 ## Installation
 

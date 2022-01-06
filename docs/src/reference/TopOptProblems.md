@@ -71,9 +71,6 @@ LGrid
 Currently, `TopOpt` uses [`Ferrite.jl`](https://github.com/KristofferC/Ferrite.jl) for FEA-related modeling. 
 This means that all the problems above are described in the language and types of `Ferrite`.
 
-We used to use a [forked version](https://github.com/mohamed82008/Ferrite.jl) of `Ferrite.jl`
-for GPU support but the main package should also work on the CPU. Currently, these features are disabled.
-
 ## Matrices and vectors
 
 ### `ElementFEAInfo`

@@ -1,4 +1,4 @@
-function inpcelltype(::Type{CT}) where CT
+function inpcelltype(::Type{CT}) where {CT}
     if CT === Triangle
         return "CPS3"
     elseif CT === QuadraticTriangle
@@ -50,7 +50,7 @@ function inp_to_ferrite(problem::InpContent)
         celltype = QuadraticTetrahedron
         geom_order = 2
         refshape = RefTetrahedron
-        dim = 3    
+        dim = 3
     elseif _celltype == "CPS4"
         # Linear quadrilateral
         celltype = Quadrilateral
@@ -75,9 +75,9 @@ function inp_to_ferrite(problem::InpContent)
         geom_order = 2
         refshape = RefCube
         dim = 3
-    #elseif _celltype == "C3D6"
+        #elseif _celltype == "C3D6"
         # Linear wedge
-    #elseif _celltype == "C3D15"
+        #elseif _celltype == "C3D15"
         # Quadratic wedge
     else
         throw("Unsupported cell type $_celltype.")
@@ -96,11 +96,11 @@ function inp_to_ferrite(problem::InpContent)
         grid.facesets[k] = Set(problem.facesets[k])
     end
     # Define boundary faces
-    grid.boundary_matrix = extract_boundary_matrix(grid);
+    grid.boundary_matrix = extract_boundary_matrix(grid)
 
     dh = DofHandler(grid)
     # Isoparametric
-    field_interpolation = Lagrange{dim, refshape, geom_order}()
+    field_interpolation = Lagrange{dim,refshape,geom_order}()
     push!(dh, :u, dim, field_interpolation)
     close!(dh)
 
@@ -118,12 +118,12 @@ function inp_to_ferrite(problem::InpContent)
     return ch
 end
 
-function extract_boundary_matrix(grid::Grid{dim}) where dim
+function extract_boundary_matrix(grid::Grid{dim}) where {dim}
     nfaces = length(Ferrite.faces(grid.cells[1]))
     ncells = length(grid.cells)
     countedbefore = Dict{NTuple{dim,Int},Bool}()
     boundary_matrix = ones(Bool, nfaces, ncells) # Assume all are boundary faces
-    for (ci, cell) in enumerate(getcells(grid))    
+    for (ci, cell) in enumerate(getcells(grid))
         for (fi, face) in enumerate(Ferrite.faces(cell))
             sface = Ferrite.sortface(face) # TODO: faces(cell) may as well just return the sorted list
             token = Base.ht_keyindex2!(countedbefore, sface)
@@ -134,5 +134,5 @@ function extract_boundary_matrix(grid::Grid{dim}) where dim
             end
         end
     end
-    sparse(boundary_matrix)
+    return sparse(boundary_matrix)
 end

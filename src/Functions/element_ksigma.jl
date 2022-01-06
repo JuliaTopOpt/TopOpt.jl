@@ -10,9 +10,13 @@ using TopOpt.TrussTopOptProblems: truss_reinit!
     global_dofs::AbstractVector{<:Integer}
 end
 
-Base.show(::IO, ::MIME{Symbol("text/plain")}, ::TrussElementKσ) = println("TopOpt element stress stiffness matrix (Kσ_e) construction function")
+function Base.show(::IO, ::MIME{Symbol("text/plain")}, ::TrussElementKσ)
+    return println("TopOpt element stress stiffness matrix (Kσ_e) construction function")
+end
 
-function TrussElementKσ(problem::TrussProblem{xdim, T}, solver::AbstractFEASolver) where {xdim, T}
+function TrussElementKσ(
+    problem::TrussProblem{xdim,T}, solver::AbstractFEASolver
+) where {xdim,T}
     Es = getE(problem)
     As = getA(problem)
     dh = problem.ch.dh
@@ -21,7 +25,7 @@ function TrussElementKσ(problem::TrussProblem{xdim, T}, solver::AbstractFEASolv
     cellvalues = solver.elementinfo.cellvalues
     ndof_pc = ndofs_per_cell(dh)
     n_basefuncs = getnbasefunctions(cellvalues)
-    @assert ndof_pc == xdim*n_basefuncs "$ndof_pc, $n_basefuncs"
+    @assert ndof_pc == xdim * n_basefuncs "$ndof_pc, $n_basefuncs"
     @assert n_basefuncs == 2
 
     global_dofs = zeros(Int, ndof_pc)
@@ -39,12 +43,12 @@ function TrussElementKσ(problem::TrussProblem{xdim, T}, solver::AbstractFEASolv
         L = norm(cell.coords[1] - cell.coords[2])
         R = compute_local_axes(cell.coords[1], cell.coords[2])
         # local axial projection operator (local axis transformation)
-        γ = vcat(-R[:,1], R[:,1])
-        push!(EALγ_s, (E*A/L)*γ)
+        γ = vcat(-R[:, 1], R[:, 1])
+        push!(EALγ_s, (E * A / L) * γ)
 
         fill!(δmat, 0.0)
-        for i=2:size(R,2)
-            δ = vcat(-R[:,i], R[:,i])
+        for i in 2:size(R, 2)
+            δ = vcat(-R[:, i], R[:, i])
             # @assert δ' * γ ≈ 0
             δmat .+= δ * δ'
         end
@@ -75,7 +79,7 @@ see: https://people.duke.edu/~hpgavin/cee421/truss-finite-def.pdf
 function (eksig::TrussElementKσ)(u_e::AbstractVector, x_e::Number, ci::Integer)
     @unpack EALγ_s, δmat_s, L_s = eksig
     # x_e scales the cross section
-    q_cell = x_e*EALγ_s[ci]'*u_e
+    q_cell = x_e * EALγ_s[ci]' * u_e
     return q_cell / L_s[ci] * δmat_s[ci]
 end
 
@@ -101,17 +105,25 @@ function ChainRulesCore.rrule(eksig::TrussElementKσ{T}, u, x) where {T}
         for ci in 1:length(x)
             celldofs!(global_dofs, dh, ci)
             function vec_eksig_fn(ux_vec)
-                u_e = ux_vec[1:end-1]
+                u_e = ux_vec[1:(end - 1)]
                 x_e = ux_vec[end]
                 return vec(eksig(u_e, x_e, ci))
             end
             jac_cell = ForwardDiff.jacobian(vec_eksig_fn, [u[global_dofs]; x[ci]])
             jtv = jac_cell' * vec(Δ[ci])
-            Δu[global_dofs] += jtv[1:end-1]
+            Δu[global_dofs] += jtv[1:(end - 1)]
             Δx[ci] = jtv[end]
         end
-        return Tangent{typeof(eksig)}(problem=NoTangent(), Kσes=Δ, EALγ_s=NoTangent(), δmat_s=NoTangent(), 
-            L_s=NoTangent(), global_dofs=NoTangent()), Δu, Δx
+        return Tangent{typeof(eksig)}(;
+            problem=NoTangent(),
+            Kσes=Δ,
+            EALγ_s=NoTangent(),
+            δmat_s=NoTangent(),
+            L_s=NoTangent(),
+            global_dofs=NoTangent(),
+        ),
+        Δu,
+        Δx
     end
     return Kσes, pullback_fn
 end

@@ -20,7 +20,7 @@ end
 function ChainRulesCore.rrule(::typeof(apply_boundary_with_zerodiag!), Kσ, ch)
     project_to = ChainRulesCore.ProjectTo(Kσ)
     function pullback_fn(Δ)
-        return NoTangent(), apply_boundary_with_zerodiag!(project_to(Δ), ch) , NoTangent()
+        return NoTangent(), apply_boundary_with_zerodiag!(project_to(Δ), ch), NoTangent()
     end
     return apply_boundary_with_zerodiag!(Kσ, ch), pullback_fn
 end
@@ -48,7 +48,9 @@ Apply boundary condition to a matrix. Zero-out the corresponding [i,:] and [:,j]
 i, j ∈ ch.prescribed_dofs, then fill in K[i,i] for i ∈ ch.prescribed_dofs with the
 mean diagonal of the original matrix.
 """
-function apply_boundary_with_meandiag!(K::Union{SparseMatrixCSC,Symmetric}, ch::ConstraintHandler)
+function apply_boundary_with_meandiag!(
+    K::Union{SparseMatrixCSC,Symmetric}, ch::ConstraintHandler
+)
     Ferrite.apply!(K, eltype(K)[], ch, false)
     return K
 end

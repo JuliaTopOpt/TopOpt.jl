@@ -61,44 +61,44 @@ macro params(struct_expr)
     else
         error("Unidentified type definition.")
     end
-    esc(struct_expr)
+    return esc(struct_expr)
 end
 
-struct RaggedArray{TO, TV}
+struct RaggedArray{TO,TV}
     offsets::TO
     values::TV
 end
 
-function RaggedArray(vv::Vector{Vector{T}}) where T
+function RaggedArray(vv::Vector{Vector{T}}) where {T}
     offsets = [1; 1 .+ accumulate(+, collect(length(v) for v in vv))]
-    values = Vector{T}(undef, offsets[end]-1)
+    values = Vector{T}(undef, offsets[end] - 1)
     for (i, v) in enumerate(vv)
-        r = offsets[i]:offsets[i+1]-1
+        r = offsets[i]:(offsets[i + 1] - 1)
         values[r] .= v
     end
-    RaggedArray(offsets, values)
+    return RaggedArray(offsets, values)
 end
 
 function Base.getindex(ra::RaggedArray, i)
     @assert 1 <= i < length(ra.offsets)
-    r = ra.offsets[i]:ra.offsets[i+1]-1
+    r = ra.offsets[i]:(ra.offsets[i + 1] - 1)
     @assert 1 <= r.start && r.stop <= length(ra.values)
     return @view ra.values[r]
 end
 function Base.getindex(ra::RaggedArray, i, j)
     @assert 1 <= j < length(ra.offsets)
-    r = ra.offsets[j]:ra.offsets[j+1]-1
+    r = ra.offsets[j]:(ra.offsets[j + 1] - 1)
     @assert 1 <= i <= length(r)
     return ra.values[r[i]]
 end
 function Base.setindex!(ra::RaggedArray, v, i, j)
     @assert 1 <= j < length(ra.offsets)
-    r = ra.offsets[j]:ra.offsets[j+1]-1
+    r = ra.offsets[j]:(ra.offsets[j + 1] - 1)
     @assert 1 <= i <= length(r)
-    ra.values[r[i]] = v
+    return ra.values[r[i]] = v
 end
 
-function find_varind(black, white, ::Type{TI}=Int) where TI
+function find_varind(black, white, ::Type{TI}=Int) where {TI}
     nel = length(black)
     nel == length(white) || throw("Black and white vectors should be of the same length")
     varind = zeros(TI, nel)
@@ -125,7 +125,7 @@ function find_black_and_white(dh)
             white[c] = true
         end
     end
-    
+
     return black, white
 end
 
@@ -136,10 +136,10 @@ function compliance(Ke, u, dofs)
     comp = zero(eltype(u))
     for i in 1:length(dofs)
         for j in 1:length(dofs)
-            comp += u[dofs[i]]*Ke[i,j]*u[dofs[j]]
+            comp += u[dofs[i]] * Ke[i, j] * u[dofs[j]]
         end
     end
-    comp
+    return comp
 end
 
 function meandiag(K::AbstractMatrix)
@@ -150,7 +150,7 @@ function meandiag(K::AbstractMatrix)
     return z / size(K, 1)
 end
 
-density(var, xmin) = var*(1-xmin) + xmin
+density(var, xmin) = var * (1 - xmin) + xmin
 
 macro debug(expr)
     return quote
@@ -160,17 +160,21 @@ macro debug(expr)
     end
 end
 
-@generated function _getproperty(c::T, ::Val{fallback}, ::Val{f}) where {T, fallback, f}
+@generated function _getproperty(c::T, ::Val{fallback}, ::Val{f}) where {T,fallback,f}
     f ∈ fieldnames(T) && return :(getfield(c, $(QuoteNode(f))))
     return :(getproperty(getfield(c, $(QuoteNode(fallback))), $(QuoteNode(f))))
 end
-@generated function _setproperty!(c::T, ::Val{fallback}, ::Val{f}, val) where {T, fallback, f}
+@generated function _setproperty!(c::T, ::Val{fallback}, ::Val{f}, val) where {T,fallback,f}
     f ∈ fieldnames(T) && return :(setfield!(c, $(QuoteNode(f)), val))
     return :(setproperty!(getfield(c, $(QuoteNode(fallback))), $(QuoteNode(f)), val))
 end
 macro forward_property(T, field)
     quote
-        Base.getproperty(c::$(esc(T)), f::Symbol) = _getproperty(c, Val($(QuoteNode(field))), Val(f))
-        Base.setproperty!(c::$(esc(T)), f::Symbol, val) = _setproperty!(c, Val($(QuoteNode(field))), Val(f), val)
+        function Base.getproperty(c::$(esc(T)), f::Symbol)
+            return _getproperty(c, Val($(QuoteNode(field))), Val(f))
+        end
+        function Base.setproperty!(c::$(esc(T)), f::Symbol, val)
+            return _setproperty!(c, Val($(QuoteNode(field))), Val(f), val)
+        end
     end
 end

@@ -1,6 +1,6 @@
 using Einsum
 
-function get_Kσs(sp::StiffnessTopOptProblem{xdim, TT}, u_dofs, cellvalues) where {xdim, TT}
+function get_Kσs(sp::StiffnessTopOptProblem{xdim,TT}, u_dofs, cellvalues) where {xdim,TT}
     E = getE(sp)
     ν = getν(sp)
     dh = sp.ch.dh
@@ -14,9 +14,9 @@ function get_Kσs(sp::StiffnessTopOptProblem{xdim, TT}, u_dofs, cellvalues) wher
     # block-diagonal - block σ_e = σ_ij, i,j in xdim
     # ! shouldn't this be xdim*xdim by xdim*xdim?
     # ? ψ_e = zeros(TT, xdim*ndof_pc, xdim*ndof_pc)
-    ψ_e = zeros(TT, xdim*xdim, xdim*xdim)
+    ψ_e = zeros(TT, xdim * xdim, xdim * xdim)
     # ? G = zeros(TT, xdim*ndof_pc, ndof_pc)
-    G = zeros(TT, xdim*xdim, xdim*n_basefuncs)
+    G = zeros(TT, xdim * xdim, xdim * n_basefuncs)
     δ = Matrix(TT(1.0)I, xdim, xdim)
     ϵ = zeros(TT, xdim, xdim)
     σ = zeros(TT, xdim, xdim)
@@ -30,24 +30,27 @@ function get_Kσs(sp::StiffnessTopOptProblem{xdim, TT}, u_dofs, cellvalues) wher
         for q_point in 1:getnquadpoints(cellvalues)
             dΩ = getdetJdV(cellvalues, q_point)
             for d in 1:xdim
-                ψ_e[(d-1)*xdim+1:d*xdim, (d-1)*xdim+1:d*xdim] .= 0
+                ψ_e[((d - 1) * xdim + 1):(d * xdim), ((d - 1) * xdim + 1):(d * xdim)] .= 0
             end
             for a in 1:n_basefuncs
                 ∇ϕ = shape_gradient(cellvalues, q_point, a)
-                _u = @view u_dofs[(@view global_dofs[xdim*(a-1) .+ (1:xdim)])]
+                _u = @view u_dofs[(@view global_dofs[xdim * (a - 1) .+ (1:xdim)])]
                 # u_i,j, i for spatial xdim, j for partial derivative
-                @einsum u_p[i,j] = _u[i]*∇ϕ[j]
+                @einsum u_p[i, j] = _u[i] * ∇ϕ[j]
                 # effect of the quadratic term in the strain formula have on the stress field is ignored
-                @einsum ϵ[i,j] = 1/2*(u_p[i,j] + u_p[j,i])
+                @einsum ϵ[i, j] = 1 / 2 * (u_p[i, j] + u_p[j, i])
                 # isotropic solid
-                @einsum σ[i,j] = E*ν/(1-ν^2)*δ[i,j]*ϵ[k,k] + E*ν*(1+ν)*ϵ[i,j]
+                @einsum σ[i, j] =
+                    E * ν / (1 - ν^2) * δ[i, j] * ϵ[k, k] + E * ν * (1 + ν) * ϵ[i, j]
                 for d in 1:xdim
                     # block diagonal
-                    ψ_e[(d-1)*xdim .+ 1:d*xdim, (d-1)*xdim .+ 1:d*xdim] .+= σ
-                    G[(xdim*(d-1)+1):(xdim*d), (a-1)*xdim+d] .= ∇ϕ
+                    ψ_e[
+                        ((d - 1) * xdim .+ 1):(d * xdim), ((d - 1) * xdim .+ 1):(d * xdim)
+                    ] .+= σ
+                    G[(xdim * (d - 1) + 1):(xdim * d), (a - 1) * xdim + d] .= ∇ϕ
                 end
             end
-            Kσ_e .+= G'*ψ_e*G*dΩ
+            Kσ_e .+= G' * ψ_e * G * dΩ
         end
         Kσs[cellidx] .= Kσ_e
     end
@@ -55,7 +58,7 @@ function get_Kσs(sp::StiffnessTopOptProblem{xdim, TT}, u_dofs, cellvalues) wher
     return Kσs
 end
 
-function buckling(problem::StiffnessTopOptProblem{xdim, T}, ginfo, einfo) where {xdim, T}
+function buckling(problem::StiffnessTopOptProblem{xdim,T}, ginfo, einfo) where {xdim,T}
     dh = problem.ch.dh
 
     u = ginfo.K \ ginfo.f
@@ -76,7 +79,7 @@ function buckling(problem::StiffnessTopOptProblem{xdim, T}, ginfo, einfo) where 
     celliteratortype = CellIterator{typeof(dh).parameters...}
     _celliterator::celliteratortype = CellIterator(dh)
     TK = eltype(Kσs)
-    for (i,cell) in enumerate(_celliterator)
+    for (i, cell) in enumerate(_celliterator)
         celldofs!(global_dofs, dh, i)
         if TK <: Symmetric
             Ferrite.assemble!(assembler, global_dofs, Kσs[i].data)
@@ -87,4 +90,3 @@ function buckling(problem::StiffnessTopOptProblem{xdim, T}, ginfo, einfo) where 
 
     return ginfo.K, Kσ
 end
-
