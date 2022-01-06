@@ -153,7 +153,32 @@ end
 
 #########################################
 
-function PointLoadCantileverTruss(nels::NTuple{dim,Int}, sizes::NTuple{dim}, E = 1.0, ν = 0.3, force = 1.0, k_connect=8) where {dim, CellType}
+"""
+    PointLoadCantileverTruss(nels::NTuple{dim,Int}, sizes::NTuple{dim}, E = 1.0, ν = 0.3, force = 1.0; k_connect=1) where {dim, CellType}
+
+# Inputs
+
+- `nels`: number of elements in each direction, a 2-tuple for 2D problems and a 3-tuple for 3D problems
+- `sizes`: the size of each element in each direction, a 2-tuple for 2D problems and a 3-tuple for 3D problems
+- `E`: Young's modulus
+- `ν`: Poisson's ration
+- `force`: force at the center right of the cantilever beam (positive is downward)
+- `k_connect`: k-ring of a node to connect to form the ground mesh. Defaults to 1. For example, for a 2D domain, a node will be connected to `8` neighboring nodes if `k_connect=1`, and `8+16=24` neighboring nodes if `k_connect=2`.
+
+# Returns
+- `TrussProblem`
+
+# Example
+```
+nels = (60,20);
+sizes = (1.0,1.0);
+E = 1.0;
+ν = 0.3;
+force = 1.0;
+problem = PointLoadCantileverTruss(nels, sizes, E, ν, force, k_connect=2)
+```
+"""
+function PointLoadCantileverTruss(nels::NTuple{dim,Int}, sizes::NTuple{dim}, E = 1.0, ν = 0.3, force = 1.0; k_connect=1) where {dim, CellType}
     iseven(nels[2]) && (length(nels) < 3 || iseven(nels[3])) || throw("Grid does not have an even number of elements along the y and/or z axes.")
     _T = promote_type(eltype(sizes), typeof(E), typeof(ν), typeof(force))
     if _T <: Integer
@@ -166,11 +191,17 @@ function PointLoadCantileverTruss(nels::NTuple{dim,Int}, sizes::NTuple{dim}, E =
     rect_grid = RectilinearGrid(Val{:Linear}, nels, T.(sizes))
     node_mat = hcat(map(x -> Vector(x.x), rect_grid.grid.nodes)...)
     kdtree = KDTree(node_mat)
-    idxs, _ = knn(kdtree, node_mat, k_connect, true)
-    connect_mat = zeros(Int, 2, k_connect*length(idxs))
+    if dim == 2
+        # 4+1*4 -> 4+3*4 -> 4+5*4
+        k_ = 4*k_connect + 4*sum(1:2:(2*k_connect-1))
+    else
+        k_ = 8*k_connect + 6*sum(1:9:(9*k_connect-1))
+    end
+    idxs, _ = knn(kdtree, node_mat, k_+1, true)
+    connect_mat = zeros(Int, 2, k_*length(idxs))
     for (i, v) in enumerate(idxs)
-        connect_mat[1, (i-1)*k_connect+1:i*k_connect] = ones(Int, k_connect)*i
-        connect_mat[2, (i-1)*k_connect+1:i*k_connect] = v
+        connect_mat[1, (i-1)*k_+1:i*k_] = ones(Int, k_)*i
+        connect_mat[2, (i-1)*k_+1:i*k_] = v[2:end] # skip the point itself
     end
     truss_grid = TrussGrid(node_mat, connect_mat)
 
@@ -180,17 +211,19 @@ function PointLoadCantileverTruss(nels::NTuple{dim,Int}, sizes::NTuple{dim}, E =
     mats = [TrussFEAMaterial{T}(E, ν) for i=1:ncells]
 
     # * support nodeset
-    addnodeset!(rect_grid.grid, "fixed_all", x -> left(rect_grid, x));
+    for i in 1:dim
+        addnodeset!(truss_grid.grid, get_fixities_node_set_name(i), x -> left(rect_grid, x));
+    end
 
     # * load nodeset
     if dim == 2
-        addnodeset!(rect_grid.grid, "down_force", x -> right(rect_grid, x) && middley(rect_grid, x));
+        addnodeset!(truss_grid.grid, "force", x -> right(rect_grid, x) && middley(rect_grid, x));
     else
-        addnodeset!(rect_grid.grid, "down_force", x -> right(rect_grid, x) && middley(rect_grid, x)
+        addnodeset!(truss_grid.grid, "force", x -> right(rect_grid, x) && middley(rect_grid, x)
             && middlez(rect_grid, x));
     end
 
-    # Create displacement field u
+    # * Create displacement field u
     geom_order = 1
     dh = DofHandler(truss_grid.grid)
     ip = Lagrange{ξdim, RefCube, geom_order}()
@@ -198,8 +231,15 @@ function PointLoadCantileverTruss(nels::NTuple{dim,Int}, sizes::NTuple{dim}, E =
     close!(dh)
 
     ch = ConstraintHandler(dh)
-    dbc = Dirichlet(:u, getnodeset(rect_grid.grid, "fixed_all"), (x,t) -> zeros(T, dim), collect(1:dim))
-    add!(ch, dbc)
+    for i in 1:dim
+        dbc = Dirichlet(
+            :u,
+            getnodeset(truss_grid.grid, get_fixities_node_set_name(i)),
+            (x, t) -> zeros(T, 1),
+            [i],
+        )
+        add!(ch, dbc)
+    end
     close!(ch)
     # update the DBC to current time
     t = T(0)
@@ -207,7 +247,7 @@ function PointLoadCantileverTruss(nels::NTuple{dim,Int}, sizes::NTuple{dim}, E =
 
     metadata = Metadata(dh)
 
-    loadset = getnodeset(rect_grid.grid, "down_force")
+    loadset = getnodeset(truss_grid.grid, "force")
     ploads = Dict{Int, SVector{dim, T}}()
     for node_id in loadset
         ploads[node_id] = SVector{dim,T}(dim == 2 ? [0.0, force] : [0.0, 0.0, force])

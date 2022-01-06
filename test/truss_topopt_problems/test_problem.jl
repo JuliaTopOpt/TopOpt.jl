@@ -75,13 +75,6 @@ end
     addvar!(m, zeros(nelem), ones(nelem))
     add_ineq_constraint!(m, constr)
 
-    # TODO try Mixed-Integer Algorithm
-    # alg = JuniperIpoptAlg()
-    # options = Nonconvex.JuniperIpoptOptions()
-    # r = Nonconvex.optimize(m, alg, x0, options = options, integers = trues(nelem))
-    # r.minimum
-    # r.minimizer
-
     TopOpt.setpenalty!(solver, penalty.p)
     result = Nonconvex.optimize(m, MMA87(), x0; options=options)
 
@@ -98,6 +91,46 @@ end
     #         vector_linewidth=0.8, default_exagg_scale=ndim == 3 ? 1.0 : 0.01,
     #         exagg_range = ndim == 3 ? 10.0 : 0.1,
     #     )
+    #     Makie.display(fig)
+    # end
+end # end testset
+
+@testset "PointLoadCantileverTruss" for dim in [2, 3]
+    nels = dim == 2 ? (10, 4) : (10, 4, 4)
+    cell_size = Tuple(ones(Float32, dim))
+
+    problem = PointLoadCantileverTruss(nels, cell_size, k_connect=1)
+
+    V = 0.1 # volume fraction
+    xmin = 0.001 # minimum density
+    rmin = 4.0 # density filter radius
+
+    penalty = TopOpt.PowerPenalty(1.0) # 1
+    solver = FEASolver(Direct, problem; xmin=xmin, penalty=penalty)
+    ## call solver to trigger assemble!
+    solver()
+
+    # * Compliance
+    comp = TopOpt.Compliance(problem, solver)
+    obj = comp
+    volfrac = TopOpt.Volume(problem, solver)
+    constr = x -> volfrac(x) - V
+
+    options = MMAOptions(; maxiter=3000, tol=Nonconvex.Tolerance(; kkt=0.001))
+    convcriteria = Nonconvex.KKTCriteria()
+    x0 = fill(V, length(solver.vars))
+    nelem = length(x0)
+
+    m = Model(obj)
+    addvar!(m, zeros(nelem), ones(nelem))
+    add_ineq_constraint!(m, constr)
+
+    TopOpt.setpenalty!(solver, penalty.p)
+    result = Nonconvex.optimize(m, MMA87(), x0; options=options)
+
+    # if get(ENV, "CI", nothing) != "true"
+    #     fig = visualize(
+    #         problem; topology = result.minimizer)
     #     Makie.display(fig)
     # end
 end # end testset

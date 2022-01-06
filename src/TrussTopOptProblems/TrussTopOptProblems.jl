@@ -30,6 +30,7 @@ include(joinpath("TrussVisualization", "TrussVisualization.jl"))
 using .TrussVisualization
 
 export TrussGrid, TrussProblem, TrussFEACrossSec, TrussFEAMaterial
+export PointLoadCantileverTruss
 export load_truss_geo, load_truss_json
 
 end # module
