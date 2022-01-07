@@ -1,5 +1,5 @@
-using ..TopOpt.TopOptProblems: StiffnessTopOptProblem, Metadata, RectilinearGrid, 
-    left, right, middley, middlez
+using ..TopOpt.TopOptProblems:
+    StiffnessTopOptProblem, Metadata, RectilinearGrid, left, right, middley, middlez
 
 get_fixities_node_set_name(i) = "fixed_u$(i)"
 
@@ -178,8 +178,11 @@ force = 1.0;
 problem = PointLoadCantileverTruss(nels, sizes, E, ν, force, k_connect=2)
 ```
 """
-function PointLoadCantileverTruss(nels::NTuple{dim,Int}, sizes::NTuple{dim}, E = 1.0, ν = 0.3, force = 1.0; k_connect=1) where {dim, CellType}
-    iseven(nels[2]) && (length(nels) < 3 || iseven(nels[3])) || throw("Grid does not have an even number of elements along the y and/or z axes.")
+function PointLoadCantileverTruss(
+    nels::NTuple{dim,Int}, sizes::NTuple{dim}, E=1.0, ν=0.3, force=1.0; k_connect=1
+) where {dim,CellType}
+    iseven(nels[2]) && (length(nels) < 3 || iseven(nels[3])) ||
+        throw("Grid does not have an even number of elements along the y and/or z axes.")
     _T = promote_type(eltype(sizes), typeof(E), typeof(ν), typeof(force))
     if _T <: Integer
         T = Float64
@@ -193,40 +196,45 @@ function PointLoadCantileverTruss(nels::NTuple{dim,Int}, sizes::NTuple{dim}, E =
     kdtree = KDTree(node_mat)
     if dim == 2
         # 4+1*4 -> 4+3*4 -> 4+5*4
-        k_ = 4*k_connect + 4*sum(1:2:(2*k_connect-1))
+        k_ = 4 * k_connect + 4 * sum(1:2:(2 * k_connect - 1))
     else
-        k_ = 8*k_connect + 6*sum(1:9:(9*k_connect-1))
+        k_ = 8 * k_connect + 6 * sum(1:9:(9 * k_connect - 1))
     end
-    idxs, _ = knn(kdtree, node_mat, k_+1, true)
-    connect_mat = zeros(Int, 2, k_*length(idxs))
+    idxs, _ = knn(kdtree, node_mat, k_ + 1, true)
+    connect_mat = zeros(Int, 2, k_ * length(idxs))
     for (i, v) in enumerate(idxs)
-        connect_mat[1, (i-1)*k_+1:i*k_] = ones(Int, k_)*i
-        connect_mat[2, (i-1)*k_+1:i*k_] = v[2:end] # skip the point itself
+        connect_mat[1, ((i - 1) * k_ + 1):(i * k_)] = ones(Int, k_) * i
+        connect_mat[2, ((i - 1) * k_ + 1):(i * k_)] = v[2:end] # skip the point itself
     end
     truss_grid = TrussGrid(node_mat, connect_mat)
 
     # reference domain dimension for a line element
     ξdim = 1
     ncells = getncells(truss_grid)
-    mats = [TrussFEAMaterial{T}(E, ν) for i=1:ncells]
+    mats = [TrussFEAMaterial{T}(E, ν) for i in 1:ncells]
 
     # * support nodeset
     for i in 1:dim
-        addnodeset!(truss_grid.grid, get_fixities_node_set_name(i), x -> left(rect_grid, x));
+        addnodeset!(truss_grid.grid, get_fixities_node_set_name(i), x -> left(rect_grid, x))
     end
 
     # * load nodeset
     if dim == 2
-        addnodeset!(truss_grid.grid, "force", x -> right(rect_grid, x) && middley(rect_grid, x));
+        addnodeset!(
+            truss_grid.grid, "force", x -> right(rect_grid, x) && middley(rect_grid, x)
+        )
     else
-        addnodeset!(truss_grid.grid, "force", x -> right(rect_grid, x) && middley(rect_grid, x)
-            && middlez(rect_grid, x));
+        addnodeset!(
+            truss_grid.grid,
+            "force",
+            x -> right(rect_grid, x) && middley(rect_grid, x) && middlez(rect_grid, x),
+        )
     end
 
     # * Create displacement field u
     geom_order = 1
     dh = DofHandler(truss_grid.grid)
-    ip = Lagrange{ξdim, RefCube, geom_order}()
+    ip = Lagrange{ξdim,RefCube,geom_order}()
     push!(dh, :u, dim, ip)
     close!(dh)
 
@@ -248,7 +256,7 @@ function PointLoadCantileverTruss(nels::NTuple{dim,Int}, sizes::NTuple{dim}, E =
     metadata = Metadata(dh)
 
     loadset = getnodeset(truss_grid.grid, "force")
-    ploads = Dict{Int, SVector{dim, T}}()
+    ploads = Dict{Int,SVector{dim,T}}()
     for node_id in loadset
         ploads[node_id] = SVector{dim,T}(dim == 2 ? [0.0, force] : [0.0, 0.0, force])
     end
