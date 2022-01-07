@@ -99,7 +99,7 @@ end # end testset
     nels = dim == 2 ? (10, 4) : (10, 4, 4)
     cell_size = Tuple(ones(Float32, dim))
 
-    problem = PointLoadCantileverTruss(nels, cell_size, k_connect=1)
+    problem = PointLoadCantileverTruss(nels, cell_size; k_connect=1)
 
     V = 0.1 # volume fraction
     xmin = 0.001 # minimum density
