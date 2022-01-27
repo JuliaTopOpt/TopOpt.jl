@@ -1,7 +1,7 @@
 name = "TopOpt"
 uuid = "53a1e1a5-51bb-58a9-8a02-02056cc81109"
-authors = ["mohamed82008 <mohamed82008@gmail.com>"]
-version = "0.5.1"
+authors = ["mohamed82008 <mohamed82008@gmail.com>", "yijiangh <yijiang94817@gmail.com>"]
+version = "0.5.2"
 
 [deps]
 ChainRulesCore = "d360d2e6-b24c-11e9-a2a3-2a2ae2dbcce4"
