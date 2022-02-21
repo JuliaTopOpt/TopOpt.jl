@@ -54,9 +54,7 @@ function TrussGrid(
     return TrussGrid(grid, falses(ncells), falses(ncells), falses(ncells), crosssecs)
 end
 
-function _LinearTrussGrid(
-    node_points::Matrix{T}, elements::Matrix{iT}
-) where {T,iT}
+function _LinearTrussGrid(node_points::Matrix{T}, elements::Matrix{iT}) where {T,iT}
     xdim, n_nodes = size(node_points)
     nconnect, n_elems = size(elements)
 
