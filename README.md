@@ -57,6 +57,7 @@ All the following features are available in TopOpt.jl but the documentation is c
 - Handling load uncertainty in compliance-based topology optimization
 - Neural network representation of designs
 - Integer nonlinear topology optimization for truss and continuum problems (design variables guaranteed to be integer)
+- Topology optimization of binary structures (TOBS) using integer linear Programming
 
 ![gif1](https://user-images.githubusercontent.com/19524993/138464511-2685f3fe-e7c5-482e-8b06-43ab0fb82990.gif)
 ![gif2](https://user-images.githubusercontent.com/19524993/138464828-88f0ffcb-01f7-43b7-8d17-f5d201e95aa3.gif)
