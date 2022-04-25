@@ -5,7 +5,7 @@
 docs/build/
 docs/site/
 docs/src/examples/
-docs/Project.toml
+docs/Manifest.toml
 
 .vscode
 .DS_Store
