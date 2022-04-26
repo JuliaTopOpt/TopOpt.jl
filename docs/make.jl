@@ -9,7 +9,7 @@ include("generate.jl")
 
 GENERATED_EXAMPLES = [
     joinpath("examples", f) for
-    f in ("problem.md", "simp.md", "beso.md", "geso.md", "csimp.md", "global_stress.md")
+    f in ("simp.md", "beso.md", "geso.md", "csimp.md", "global_stress.md")
 ]
 
 bib = CitationBibliography(joinpath(@__DIR__, "biblio", "ref.bib"))
@@ -20,6 +20,7 @@ makedocs(
     # doctest = false,
     pages=[
         "Home" => "index.md",
+        "Problem types" => "problem.md",
         "Examples" => GENERATED_EXAMPLES,
         "API Reference" => ["reference/TopOptProblems.md", "reference/Algorithms.md"],
         "Bibliography" => "bibliography.md",
