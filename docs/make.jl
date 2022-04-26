@@ -20,6 +20,7 @@ makedocs(
     # doctest = false,
     pages=[
         "Home" => "index.md",
+        "Problem types" => "examples/problem.md",
         "Examples" => GENERATED_EXAMPLES,
         "API Reference" => ["reference/TopOptProblems.md", "reference/Algorithms.md"],
         "Bibliography" => "bibliography.md",
