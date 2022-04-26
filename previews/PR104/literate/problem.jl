@@ -5,7 +5,7 @@
 # ## Continuum problems
 # ### 2D and 3D point load cantilever beam
 
-# <img src="https://user-images.githubusercontent.com/19524993/165186251-f26e9dbc-a224-4fa0-b0c6-d0210a00d426.jpg" alt="drawing" width="750"/>
+# <img src="https://user-images.githubusercontent.com/19524993/165186251-f26e9dbc-a224-4fa0-b0c6-d0210a00d426.jpg" width="750"/>
 
 # In this problem, the domain is divided into equally sized rectangular, quadrilateral elements. The number of elements (`nels`) and element sizes (`elsizes`) can be used to control the resolution of the problem's domain as well as its dimension. For instance, using `nels = (160, 40)` and `elsizes = (1.0, 1.0)` constructs a 2D problem domain of size 160 mm x 40 mm problem domain where each element is 1 mm x 1 mm. While `nels = (160, 40, 40)` and `elsizes = (1.0, 1.0, 2.0)` constructs a 3D problem domain of size 160 mm x 40 mm x 40 mm where each element is 1 mm x 1 mm x 2 mm.
 
@@ -23,7 +23,7 @@ problem = PointLoadCantilever(Val{order}, nels, elsizes, E, ν, f)
 
 # ### 2D and 3D half Messerschmitt–Bolkow–Blohm (MBB) beam problem
 
-# <img src="https://user-images.githubusercontent.com/19524993/165186211-3bfe26d8-82c9-4ae4-a37d-baa03d19b47c.jpg" alt="drawing" width="750"/>
+# <img src="https://user-images.githubusercontent.com/19524993/165186211-3bfe26d8-82c9-4ae4-a37d-baa03d19b47c.jpg" width="750"/>
 
 # A similar problem type exists for the well known half MBB problem shown above. The constructor and parameters are similar to that of the point load cantilever beam. Also 2D and 3D variants exist by changing the lengths of `nels` and `elsizes`.
 
@@ -37,7 +37,7 @@ problem = HalfMBB(Val{order}, nels, elsizes, E, ν, f)
 
 # ### 2D L-beam problem
 
-# <img src="https://user-images.githubusercontent.com/19524993/165194043-e2f1b4f2-940a-478d-ac94-4399e1524a81.jpg" alt="drawing" width="750"/>
+# <img src="https://user-images.githubusercontent.com/19524993/165194043-e2f1b4f2-940a-478d-ac94-4399e1524a81.jpg" width="750"/>
 
 # The L-beam is another well known testing problem in topology optimization available in `TopOpt.jl`. To construct an L-beam problem, you can use the following constructor. The L-beam problem is only a 2D problem.
 
@@ -77,7 +77,7 @@ problem = LBeam(
 
 # ### 2D tie-beam problem
 
-# <img width="750" alt="image" src="https://user-images.githubusercontent.com/19524993/165222174-927bfb06-ee6a-4eb0-b1df-4a32aa1474d5.png">
+# <img width="750" src="https://user-images.githubusercontent.com/19524993/165222174-927bfb06-ee6a-4eb0-b1df-4a32aa1474d5.png">
 
 # The tie-beam problem shown above is a well-known problem in topology optimization literature. A distributed load of 1 N/mm is applied on the elements specified in the figure. To construct an instance of the tie-beam problem for a certain order of shape functions, you can use:
 
@@ -95,7 +95,7 @@ problem = InpStiffness(filename);
 
 # For example, the following problem with fixed load, distributed loads and tetrahedral elements was defined usign FreeCAD and imported into TopOpt.jl to perform topology optimization.
 
-# <img width="750" alt="image" src="https://user-images.githubusercontent.com/19524993/165223774-2705347e-369f-463e-80f5-4e30093251c1.PNG"> 
+# <img width="750" src="https://user-images.githubusercontent.com/19524993/165223774-2705347e-369f-463e-80f5-4e30093251c1.PNG"> 
 
 # ## Truss problems
 # ### 2D and 3D truss problem from json file
@@ -126,7 +126,7 @@ print(JSON.json(f, 2));
 
 # ### 2D and 3D truss point load cantilever beam
 
-# <img width="750" alt="image" src="https://user-images.githubusercontent.com/19524993/165228327-def94c04-6505-4f13-afea-4f28a370380e.png">
+# <img width="750" src="https://user-images.githubusercontent.com/19524993/165228327-def94c04-6505-4f13-afea-4f28a370380e.png">
 
 # Much like the continuum 2D/3D point load cantilever beam, you can also create a 2D/3D truss-based cantilever beam with a point load as shown above using the following syntax.
 
