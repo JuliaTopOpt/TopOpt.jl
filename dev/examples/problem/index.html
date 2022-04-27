@@ -18,14 +18,7 @@ problem = HalfMBB(Val{order}, nels, elsizes, E, ν, f)</code></pre><pre class="d
 f = 1.0 # downward force in N - negative is upward
 order = :Quadratic # shape function order
 problem = LBeam(
-    Val{order};
-    length=100,
-    height=100,
-    upperslab=50,
-    lowerslab=50,
-    E=1.0,
-    ν=0.3,
-    force=1.0,
+    Val{order}; length=100, height=100, upperslab=50, lowerslab=50, E=1.0, ν=0.3, force=1.0
 )</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi"></code></pre><p>where <code>E</code>, <code>ν</code> and <code>force</code> are the Young&#39;s modulus, Poisson&#39;s ratio and downward force respectively. The definition of <code>length</code>, <code>height</code>, <code>upperslab</code> and <code>lowerslab</code> are shown below. Each element is assumed to be a 1 mm x 1 mm element. The load is always applied at the midpoint of the &quot;lowerslab&quot; side. A positive value for the force is downward and a negative value is upward.</p><pre><code class="nohighlight hljs">        upperslab
        ............
        .          .
@@ -45,15 +38,7 @@ mats = TrussFEAMaterial(10.0, 0.3) # Young’s modulus and Poisson’s ratio
 crossecs = TrussFEACrossSec(800.0) # Cross-sectional area
 node_points, elements, _, _, fixities, load_cases = load_truss_json(path_to_file)
 loads = load_cases[&quot;0&quot;]
-problem = TrussProblem(
-    Val{:Linear},
-    node_points,
-    elements,
-    loads,
-    fixities,
-    mats,
-    crossecs,
-);</code></pre><p>The structure of the JSON file can be displayed using the code below, where <code>f</code> is a Julia dictionary.</p><pre><code class="language-julia hljs">using JSON
+problem = TrussProblem(Val{:Linear}, node_points, elements, loads, fixities, mats, crossecs);</code></pre><p>The structure of the JSON file can be displayed using the code below, where <code>f</code> is a Julia dictionary.</p><pre><code class="language-julia hljs">using JSON
 
 f = JSON.parsefile(path_to_file)
 print(JSON.json(f, 2));</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">{
@@ -573,4 +558,4 @@ print(JSON.json(f, 2));</code></pre><pre class="documenter-example-output"><code
 nels = (60, 20) # number of boundary trusses
 elsizes = (1.0, 1.0) # the length of each boundary truss in mm
 force = 1.0 # upward force in N - negative is downward
-problem = PointLoadCantileverTruss(nels, elsizes, E, ν, force; k_connect = 1);</code></pre><p><code>nels</code>, <code>elsizes</code>, <code>E</code> and <code>ν</code> have an analagous intepretation to the continuum cantilever beam. <code>force</code> is the upward concentrated force in Newton (downward is negative). <code>k_connect</code> is the k-ring of each node defining the connectivity of the nodes in the graph, default is 1. For a 2D domain, a node will be connected to <code>8</code> neighboring nodes if <code>k_connect = 1</code>, and <code>8 + 16 = 24</code> neighboring nodes if <code>k_connect = 2</code>.</p><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../">« Home</a><a class="docs-footer-nextpage" href="../simp/">SIMP example: Point Load Cantilever »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.16 on <span class="colophon-date" title="Tuesday 26 April 2022 08:15">Tuesday 26 April 2022</span>. Using Julia version 1.7.2.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+problem = PointLoadCantileverTruss(nels, elsizes, E, ν, force; k_connect=1);</code></pre><p><code>nels</code>, <code>elsizes</code>, <code>E</code> and <code>ν</code> have an analagous intepretation to the continuum cantilever beam. <code>force</code> is the upward concentrated force in Newton (downward is negative). <code>k_connect</code> is the k-ring of each node defining the connectivity of the nodes in the graph, default is 1. For a 2D domain, a node will be connected to <code>8</code> neighboring nodes if <code>k_connect = 1</code>, and <code>8 + 16 = 24</code> neighboring nodes if <code>k_connect = 2</code>.</p><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../">« Home</a><a class="docs-footer-nextpage" href="../simp/">SIMP example: Point Load Cantilever »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.16 on <span class="colophon-date" title="Wednesday 27 April 2022 09:25">Wednesday 27 April 2022</span>. Using Julia version 1.7.2.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
