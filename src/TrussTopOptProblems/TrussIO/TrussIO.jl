@@ -1,12 +1,22 @@
 module TrussIO
 
+using FileIO: FileIO
+import FileIO: skipmagic, add_format
+
 using ..TrussTopOptProblems: TrussFEACrossSec, TrussFEAMaterial
 
 using StaticArrays
-export  parse_truss_json,
-        parse_support_load_json
 
 include("parse_json.jl")
+include("parse_geo.jl")
+
+# function load(fn::File{format}) where {format}
+#     open(fn) do s
+#         skipmagic(s)
+#         load(s)
+#     end
+# end
+
+export load_truss_json, load_truss_geo
 
 end
-

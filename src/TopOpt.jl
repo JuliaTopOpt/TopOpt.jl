@@ -4,11 +4,13 @@ const PENALTY_BEFORE_INTERPOLATION = true
 using Requires, Reexport
 
 macro cuda_only(mod, code)
-    quote
-        @init @require CUDASupport = "97986420-7ec3-11e9-24cd-4f0e301eb539" @eval $mod begin
-            $code
-        end
-    end |> esc
+    return esc(
+        quote
+            @init @require CUDASupport = "97986420-7ec3-11e9-24cd-4f0e301eb539" @eval $mod begin
+                $code
+            end
+        end,
+    )
 end
 
 abstract type AbstractDevice end
@@ -19,7 +21,7 @@ whichdevice(::Any) = CPU()
 # GPU utilities
 module GPUUtils end
 
-@reexport using Nonconvex
+@reexport using Nonconvex, NonconvexMMA, NonconvexSemidefinite, NonconvexPercival
 
 # Utilities
 include(joinpath("Utilities", "Utilities.jl"))
@@ -30,7 +32,7 @@ include(joinpath("TopOptProblems", "TopOptProblems.jl"))
 
 using LinearAlgebra, Statistics
 using Reexport, Parameters, Setfield
-@reexport using .TopOptProblems, Optim, LineSearches
+@reexport using .TopOptProblems
 
 # Truss Topopology optimization problem definitions
 include(joinpath("TrussTopOptProblems", "TrussTopOptProblems.jl"))
@@ -52,6 +54,7 @@ include(joinpath("CheqFilters", "CheqFilters.jl"))
 using .CheqFilters
 
 # Objective and constraint functions
+@reexport using Flux
 include(joinpath("Functions", "Functions.jl"))
 @reexport using .Functions
 
@@ -59,19 +62,20 @@ include(joinpath("Functions", "Functions.jl"))
 include(joinpath("Algorithms", "Algorithms.jl"))
 using .Algorithms
 
-
 macro init_cuda()
-    quote
-        const CuArrays = CUDASupport.CuArrays
-        const CUDAdrv = CUDASupport.CUDAdrv
-        const CUDAnative = CUDASupport.CUDAnative
-        const GPUArrays = CUDASupport.GPUArrays
-        CuArrays.allowscalar(false)
-        const dev = CUDAdrv.device()
-        const ctx = CUDAdrv.CuContext(dev)
-        using .CuArrays, .CUDAnative
-        using .GPUArrays: GPUVector, GPUArray
-    end |> esc
+    return esc(
+        quote
+            const CuArrays = CUDASupport.CuArrays
+            const CUDAdrv = CUDASupport.CUDAdrv
+            const CUDAnative = CUDASupport.CUDAnative
+            const GPUArrays = CUDASupport.GPUArrays
+            CuArrays.allowscalar(false)
+            const dev = CUDAdrv.device()
+            const ctx = CUDAdrv.CuContext(dev)
+            using .CuArrays, .CUDAnative
+            using .GPUArrays: GPUVector, GPUArray
+        end,
+    )
 end
 
 @cuda_only GPUUtils include("GPUUtils/GPUUtils.jl")
@@ -82,42 +86,43 @@ end
 @cuda_only Functions include("Functions/gpu_support.jl")
 @cuda_only Algorithms include("Algorithms/SIMP/gpu_simp.jl")
 
-export  TopOpt,
-        simulate, 
-        TopOptTrace, 
-        DirectDisplacementSolver,
-        PCGDisplacementSolver,
-        StaticMatrixFreeDisplacementSolver,
-        SensFilter,
-        DensityFilter,
-        Displacement,
-        CG,
-        Direct,
-        Assembly,
-        MatrixFree,
-        FEASolver,
-        Optimizer,
-        SIMP,
-        ContinuationSIMP,
-        BESO,
-        GESO,
-        PowerContinuation,
-        ExponentialContinuation,
-        LogarithmicContinuation,
-        CubicSplineContinuation,
-        SigmoidContinuation,
-        Continuation,
-        save_mesh,
-        CPU,
-        GPU,
-        DefaultCriteria,
-        EnergyCriteria,
-        PowerPenalty,
-        RationalPenalty,
-        SinhPenalty,
-        MMA87,
-        MMA02,
-        HeavisideProjection,
-        ProjectedPenalty,
-        PowerPenalty
+export TopOpt,
+    simulate,
+    TopOptTrace,
+    DirectDisplacementSolver,
+    PCGDisplacementSolver,
+    StaticMatrixFreeDisplacementSolver,
+    SensFilter,
+    DensityFilter,
+    Displacement,
+    Compliance,
+    CG,
+    Direct,
+    Assembly,
+    MatrixFree,
+    FEASolver,
+    Optimizer,
+    SIMP,
+    ContinuationSIMP,
+    BESO,
+    GESO,
+    PowerContinuation,
+    ExponentialContinuation,
+    LogarithmicContinuation,
+    CubicSplineContinuation,
+    SigmoidContinuation,
+    Continuation,
+    save_mesh,
+    CPU,
+    GPU,
+    DefaultCriteria,
+    EnergyCriteria,
+    PowerPenalty,
+    RationalPenalty,
+    SinhPenalty,
+    MMA87,
+    MMA02,
+    HeavisideProjection,
+    ProjectedPenalty,
+    PowerPenalty
 end

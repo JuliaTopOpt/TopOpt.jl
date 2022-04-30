@@ -1,42 +1,46 @@
 abstract type AbstractMatrixOperator{Tconv} end
 
 @params struct MatrixOperator{Tconv} <: AbstractMatrixOperator{Tconv}
-    K
-    f
+    K::Any
+    f::Any
     conv::Tconv
 end
-Base.show(::IO, ::MIME{Symbol("text/plain")}, ::MatrixOperator) = println("TopOpt matrix linear operator")
+function Base.show(::IO, ::MIME{Symbol("text/plain")}, ::MatrixOperator)
+    return println("TopOpt matrix linear operator")
+end
 LinearAlgebra.mul!(c, op::MatrixOperator, b) = mul!(c, op.K, b)
 Base.size(op::MatrixOperator, i...) = size(op.K, i...)
 Base.eltype(op::MatrixOperator) = eltype(op.K)
 LinearAlgebra.:*(op::MatrixOperator, b) = mul!(similar(b), op.K, b)
 
-@params struct MatrixFreeOperator{Tconv, T, dim} <: AbstractMatrixOperator{Tconv}
+@params struct MatrixFreeOperator{Tconv,T,dim} <: AbstractMatrixOperator{Tconv}
     f::AbstractVector{T}
-    elementinfo::ElementFEAInfo{dim, T}
+    elementinfo::ElementFEAInfo{dim,T}
     meandiag::T
     vars::AbstractVector{T}
-    xes
-    fixed_dofs
-    free_dofs
+    xes::Any
+    fixed_dofs::Any
+    free_dofs::Any
     xmin::T
-    penalty
+    penalty::Any
     conv::Tconv
 end
-Base.show(::IO, ::MIME{Symbol("text/plain")}, ::MatrixFreeOperator) = println("TopOpt matrix-free linear operator")
+function Base.show(::IO, ::MIME{Symbol("text/plain")}, ::MatrixFreeOperator)
+    return println("TopOpt matrix-free linear operator")
+end
 Base.size(op::MatrixFreeOperator) = (size(op, 1), size(op, 2))
 Base.size(op::MatrixFreeOperator, i) = 1 <= i <= 2 ? length(op.elementinfo.fixedload) : 1
-Base.eltype(op::MatrixFreeOperator{<:Any, T}) where {T} = T
+Base.eltype(op::MatrixFreeOperator{<:Any,T}) where {T} = T
 
 import LinearAlgebra: *, mul!
 
 function *(A::MatrixFreeOperator, x)
     y = similar(x)
     mul!(y, A::MatrixFreeOperator, x)
-    y
+    return y
 end
 
-function mul!(y::TV, A::MatrixFreeOperator, x::TV) where {TV <: AbstractVector}
+function mul!(y::TV, A::MatrixFreeOperator, x::TV) where {TV<:AbstractVector}
     T = eltype(y)
     nels = length(A.elementinfo.Kes)
     ndofs = length(A.elementinfo.fixedload)
@@ -46,24 +50,24 @@ function mul!(y::TV, A::MatrixFreeOperator, x::TV) where {TV <: AbstractVector}
     @unpack Kes, metadata, black, white, varind = A.elementinfo
     @unpack cell_dofs, dof_cells = metadata
     @unpack penalty, xmin, vars, fixed_dofs, free_dofs, xes = A
-    
+
     for i in 1:nels
         if PENALTY_BEFORE_INTERPOLATION
-            px = ifelse(black[i], one(T), 
-            ifelse(white[i], xmin, 
-                    density(penalty(vars[varind[i]]), xmin)
-                )
+            px = ifelse(
+                black[i],
+                one(T),
+                ifelse(white[i], xmin, density(penalty(vars[varind[i]]), xmin)),
             )
         else
-            px = ifelse(black[i], one(T), 
-            ifelse(white[i], xmin, 
-                    penalty(density(vars[varind[i]], xmin))
-                )
+            px = ifelse(
+                black[i],
+                one(T),
+                ifelse(white[i], xmin, penalty(density(vars[varind[i]], xmin))),
             )
         end
         xe = xes[i]
         for j in 1:dofspercell
-            xe = @set xe[j] = x[cell_dofs[j,i]]
+            xe = @set xe[j] = x[cell_dofs[j, i]]
         end
         if eltype(Kes) <: Symmetric
             xes[i] = px * (bcmatrix(Kes[i]).data * xe)
@@ -79,12 +83,12 @@ function mul!(y::TV, A::MatrixFreeOperator, x::TV) where {TV <: AbstractVector}
     for i in 1:length(free_dofs)
         dof = free_dofs[i]
         yi = zero(T)
-        r = dof_cells.offsets[dof] : dof_cells.offsets[dof+1]-1
+        r = dof_cells.offsets[dof]:(dof_cells.offsets[dof + 1] - 1)
         for ind in r
             k, m = dof_cells.values[ind]
             yi += xes[k][m]
         end
         y[dof] = yi
     end
-    y
+    return y
 end

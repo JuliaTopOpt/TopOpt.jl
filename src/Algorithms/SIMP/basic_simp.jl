@@ -1,29 +1,29 @@
 @params mutable struct SIMPResult{T}
     topology::AbstractVector{T}
     objval::T
-    convstate
+    convstate::Any
     nsubproblems::Int
 end
 Base.show(::IO, ::MIME{Symbol("text/plain")}, ::SIMPResult) = println("TopOpt SIMP result")
 
 function NewSIMPResult(::Type{T}, optimizer, ncells) where {T}
-    return SIMPResult(fill(T(NaN), ncells), T(NaN), Nonconvex.ConvergenceState(), 0)
+    return SIMPResult(fill(T(NaN), ncells), T(NaN), NonconvexCore.ConvergenceState(), 0)
 end
 
 """
 The vanilla SIMP algorithm, see [Bendsoe1989](@cite).
 """
 @params mutable struct SIMP{T} <: AbstractSIMP
-    optimizer
-    penalty
-    prev_penalty
-    solver
+    optimizer::Any
+    penalty::Any
+    prev_penalty::Any
+    solver::Any
     result::SIMPResult{T}
     tracing::Bool
 end
 Base.show(::IO, ::MIME{Symbol("text/plain")}, ::SIMP) = println("TopOpt SIMP algorithm")
 
-function SIMP(optimizer, solver, p::T; tracing=true) where T
+function SIMP(optimizer, solver, p::T; tracing=true) where {T}
     penalty = getpenalty(solver)
     prev_penalty = deepcopy(penalty)
     setpenalty!(penalty, p)
@@ -41,14 +41,14 @@ function Utilities.setpenalty!(s::AbstractSIMP, p::Number)
     return s
 end
 
-function (s::SIMP{T, TO})(x0 = s.solver.vars) where {T, TO <: Optimizer}
+function (s::SIMP{T,TO})(x0=s.solver.vars) where {T,TO<:Optimizer}
     setpenalty!(s.solver, s.penalty.p)
     mma_results = s.optimizer(x0)
     update_result!(s, mma_results)
     return s.result
 end
 
-function (s::SIMP{T, TO})(workspace::Nonconvex.Workspace) where {T, TO <: Optimizer}
+function (s::SIMP{T,TO})(workspace::Nonconvex.Workspace) where {T,TO<:Optimizer}
     mma_results = s.optimizer(workspace)
     update_result!(s, mma_results)
     return s.result
@@ -67,7 +67,7 @@ function get_topologies(problem, trace::TopOptTrace)
     return topologies
 end
 
-function update_result!(s::SIMP{T}, mma_results) where T
+function update_result!(s::SIMP{T}, mma_results) where {T}
     # Postprocessing
     @unpack result, optimizer = s
     @unpack problem = s.solver

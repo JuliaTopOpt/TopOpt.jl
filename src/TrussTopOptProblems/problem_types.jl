@@ -1,4 +1,5 @@
-using ..TopOpt.TopOptProblems: StiffnessTopOptProblem, Metadata
+using ..TopOpt.TopOptProblems:
+    StiffnessTopOptProblem, Metadata, RectilinearGrid, left, right, middley, middlez
 
 get_fixities_node_set_name(i) = "fixed_u$(i)"
 
@@ -6,7 +7,7 @@ get_fixities_node_set_name(i) = "fixed_u$(i)"
     truss_grid::TrussGrid{xdim,T,N,M} # ground truss mesh
     materials::Vector{TrussFEAMaterial{T}}
     ch::ConstraintHandler{<:DofHandler{xdim,<:Ferrite.Cell{xdim,N,M},T},T}
-    force::Dict{Int, SVector{xdim, T}}
+    force::Dict{Int,SVector{xdim,T}}
     black::AbstractVector
     white::AbstractVector
     varind::AbstractVector{Int} # variable dof => free dof, based on black & white
@@ -22,8 +23,15 @@ TopOpt.TopOptProblems.getν(sp::TrussProblem) = [m.ν for m in sp.materials]
 getA(sp::TrussProblem) = [cs.A for cs in sp.truss_grid.crosssecs]
 Ferrite.getnnodes(problem::StiffnessTopOptProblem) = Ferrite.getnnodes(getdh(problem).grid)
 
-function TrussProblem(::Type{Val{CellType}}, node_points::Dict{iT, SVector{xdim, T}}, elements::Dict{iT, Tuple{iT, iT}}, 
-    loads::Dict{iT, SVector{xdim, T}}, supports::Dict{iT, SVector{xdim, fT}}, mats=TrussFEAMaterial{T}(1.0, 0.3), crosssecs=TrussFEACrossSec{T}(1.0)) where {xdim, T, iT, fT, CellType}
+function TrussProblem(
+    ::Type{Val{CellType}},
+    node_points::Dict{iT,SVector{xdim,T}},
+    elements::Dict{iT,Tuple{iT,iT}},
+    loads::Dict{iT,SVector{xdim,T}},
+    supports::Dict{iT,SVector{xdim,fT}},
+    mats=TrussFEAMaterial{T}(1.0, 0.3),
+    crosssecs=TrussFEACrossSec{T}(1.0),
+) where {xdim,T,iT,fT,CellType}
     # unify number type
     # _T = promote_type(eltype(sizes), typeof(mats), typeof(ν), typeof(force))
     # if _T <: Integer
@@ -32,7 +40,7 @@ function TrussProblem(::Type{Val{CellType}}, node_points::Dict{iT, SVector{xdim,
     #     T = _T
     # end
     if CellType === :Linear
-        truss_grid = TrussGrid(node_points, elements, supports; crosssecs)
+        truss_grid = TrussGrid(node_points, elements; crosssecs)
         geom_order = 1
     else
         @assert false "Other cell type not implemented"
@@ -45,7 +53,7 @@ function TrussProblem(::Type{Val{CellType}}, node_points::Dict{iT, SVector{xdim,
         @assert length(mats) == ncells
         mats = convert(Vector{TrussFEAMaterial{T}}, mats)
     elseif mats isa TrussFEAMaterial
-        mats = [TrussFEAMaterial{T}(mats) for i=1:ncells]
+        mats = [convert(TrussFEAMaterial{T}, mats) for i in 1:ncells]
     else
         error("Invalid mats: $(mats)")
     end
@@ -56,13 +64,13 @@ function TrussProblem(::Type{Val{CellType}}, node_points::Dict{iT, SVector{xdim,
         pop!(truss_grid.grid.nodesets, "load")
     end
     load_nodesets = Set{Int}()
-    for (k,_) in loads
+    for (k, _) in loads
         push!(load_nodesets, k)
     end
     addnodeset!(truss_grid.grid, "load", load_nodesets)
 
     # * support nodeset
-    for i=1:xdim
+    for i in 1:xdim
         if haskey(truss_grid.grid.nodesets, get_fixities_node_set_name(i))
             pop!(truss_grid.grid.nodesets, get_fixities_node_set_name(i))
         end
@@ -80,7 +88,7 @@ function TrussProblem(::Type{Val{CellType}}, node_points::Dict{iT, SVector{xdim,
     if CellType === :Linear
         # truss linear
         # interpolation_space
-        ip = Lagrange{ξdim, RefCube, geom_order}()
+        ip = Lagrange{ξdim,RefCube,geom_order}()
         push!(dh, :u, xdim, ip)
     else
         # TODO truss 2-order
@@ -91,8 +99,13 @@ function TrussProblem(::Type{Val{CellType}}, node_points::Dict{iT, SVector{xdim,
     close!(dh)
 
     ch = ConstraintHandler(dh)
-    for i=1:xdim
-        dbc = Dirichlet(:u, getnodeset(truss_grid.grid, get_fixities_node_set_name(i)), (x,t)->T[0], [i])
+    for i in 1:xdim
+        dbc = Dirichlet(
+            :u,
+            getnodeset(truss_grid.grid, get_fixities_node_set_name(i)),
+            (x, t) -> zeros(T, 1),
+            [i],
+        )
         add!(ch, dbc)
     end
     close!(ch)
@@ -117,9 +130,8 @@ function Base.show(io::Base.IO, mime::MIME"text/plain", sp::TrussProblem)
     println(io, "TrussProblem:")
     print(io, "    ")
     Base.show(io, mime, sp.truss_grid)
-    println(io, "    E: $(sp.E)")
     println(io, "    point loads: $(length(sp.force))")
-    println(io, "    active vars: $(sum(sp.varind .!= 0))")
+    return println(io, "    active vars: $(sum(sp.varind .!= 0))")
 end
 
 #########################################
@@ -131,7 +143,7 @@ TopOpt.TopOptProblems.nnodespercell(p::TrussProblem) = nnodespercell(p.truss_gri
 
 Get a dict (node_idx => force vector) for concentrated loads
 """
-function TopOpt.TopOptProblems.getcloaddict(p::TrussProblem{xdim,T}) where {xdim, T}
+function TopOpt.TopOptProblems.getcloaddict(p::TrussProblem{xdim,T}) where {xdim,T}
     return p.force
 end
 
@@ -139,22 +151,118 @@ function default_quad_order(::TrussProblem)
     return 1
 end
 
-#######################################
-# * extra Cell types for Line elements
-# https://github.com/lijas/Ferrite.jl/blob/line2/src/Grid/grid.jl
+#########################################
 
-# const Line2d = Cell{2,2,2}
-# const Line3d = Cell{3,2,2}
-# const QuadraticLine = Cell{1,3,2}
+"""
+    PointLoadCantileverTruss(nels::NTuple{dim,Int}, sizes::NTuple{dim}, E = 1.0, ν = 0.3, force = 1.0; k_connect=1) where {dim, CellType}
 
-# # 1D: vertices, Line is defined in Ferrite
-# Ferrite.faces(c::Union{QuadraticLine}) = (c.nodes[1], c.nodes[2])
-# Ferrite.vertices(c::Union{Line2d,Line3d,QuadraticLine}) = (c.nodes[1], c.nodes[2])
+# Inputs
 
-# # 2D: vertices, faces
-# Ferrite.faces(c::Line2d) = ((c.nodes[1],c.nodes[2]),) 
+- `nels`: number of elements in each direction, a 2-tuple for 2D problems and a 3-tuple for 3D problems
+- `sizes`: the size of each element in each direction, a 2-tuple for 2D problems and a 3-tuple for 3D problems
+- `E`: Young's modulus
+- `ν`: Poisson's ration
+- `force`: force at the center right of the cantilever beam (positive is downward)
+- `k_connect`: k-ring of a node to connect to form the ground mesh. Defaults to 1. For example, for a 2D domain, a node will be connected to `8` neighboring nodes if `k_connect=1`, and `8+16=24` neighboring nodes if `k_connect=2`.
 
-# # 3D: vertices, edges, faces
-# Ferrite.edges(c::Line3d) = ((c.nodes[1],c.nodes[2]),) 
+# Returns
+- `TrussProblem`
 
-# Ferrite.default_interpolation(::Union{Type{Line},Type{Line2d},Type{Line3d}}) = Lagrange{1,RefCube,1}()
+# Example
+```
+nels = (60,20);
+sizes = (1.0,1.0);
+E = 1.0;
+ν = 0.3;
+force = 1.0;
+problem = PointLoadCantileverTruss(nels, sizes, E, ν, force, k_connect=2)
+```
+"""
+function PointLoadCantileverTruss(
+    nels::NTuple{dim,Int}, sizes::NTuple{dim}, E=1.0, ν=0.3, force=1.0; k_connect=1
+) where {dim,CellType}
+    iseven(nels[2]) && (length(nels) < 3 || iseven(nels[3])) ||
+        throw("Grid does not have an even number of elements along the y and/or z axes.")
+    _T = promote_type(eltype(sizes), typeof(E), typeof(ν), typeof(force))
+    if _T <: Integer
+        T = Float64
+    else
+        T = _T
+    end
+
+    # only for the convience of getting all the node points
+    rect_grid = RectilinearGrid(Val{:Linear}, nels, T.(sizes))
+    node_mat = hcat(map(x -> Vector(x.x), rect_grid.grid.nodes)...)
+    kdtree = KDTree(node_mat)
+    if dim == 2
+        # 4+1*4 -> 4+3*4 -> 4+5*4
+        k_ = 4 * k_connect + 4 * sum(1:2:(2 * k_connect - 1))
+    else
+        k_ = 8 * k_connect + 6 * sum(1:9:(9 * k_connect - 1))
+    end
+    idxs, _ = knn(kdtree, node_mat, k_ + 1, true)
+    connect_mat = zeros(Int, 2, k_ * length(idxs))
+    for (i, v) in enumerate(idxs)
+        connect_mat[1, ((i - 1) * k_ + 1):(i * k_)] = ones(Int, k_) * i
+        connect_mat[2, ((i - 1) * k_ + 1):(i * k_)] = v[2:end] # skip the point itself
+    end
+    truss_grid = TrussGrid(node_mat, connect_mat)
+
+    # reference domain dimension for a line element
+    ξdim = 1
+    ncells = getncells(truss_grid)
+    mats = [TrussFEAMaterial{T}(E, ν) for i in 1:ncells]
+
+    # * support nodeset
+    for i in 1:dim
+        addnodeset!(truss_grid.grid, get_fixities_node_set_name(i), x -> left(rect_grid, x))
+    end
+
+    # * load nodeset
+    if dim == 2
+        addnodeset!(
+            truss_grid.grid, "force", x -> right(rect_grid, x) && middley(rect_grid, x)
+        )
+    else
+        addnodeset!(
+            truss_grid.grid,
+            "force",
+            x -> right(rect_grid, x) && middley(rect_grid, x) && middlez(rect_grid, x),
+        )
+    end
+
+    # * Create displacement field u
+    geom_order = 1
+    dh = DofHandler(truss_grid.grid)
+    ip = Lagrange{ξdim,RefCube,geom_order}()
+    push!(dh, :u, dim, ip)
+    close!(dh)
+
+    ch = ConstraintHandler(dh)
+    for i in 1:dim
+        dbc = Dirichlet(
+            :u,
+            getnodeset(truss_grid.grid, get_fixities_node_set_name(i)),
+            (x, t) -> zeros(T, 1),
+            [i],
+        )
+        add!(ch, dbc)
+    end
+    close!(ch)
+    # update the DBC to current time
+    t = T(0)
+    update!(ch, t)
+
+    metadata = Metadata(dh)
+
+    loadset = getnodeset(truss_grid.grid, "force")
+    ploads = Dict{Int,SVector{dim,T}}()
+    for node_id in loadset
+        ploads[node_id] = SVector{dim,T}(dim == 2 ? [0.0, force] : [0.0, 0.0, force])
+    end
+
+    black, white = find_black_and_white(dh)
+    varind = find_varind(black, white)
+
+    return TrussProblem(truss_grid, mats, ch, ploads, black, white, varind, metadata)
+end

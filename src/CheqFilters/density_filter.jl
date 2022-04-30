@@ -1,19 +1,25 @@
-@params struct DensityFilter{_filtering, T} <: AbstractDensityFilter
+@params struct DensityFilter{_filtering,T} <: AbstractDensityFilter
     filtering::Val{_filtering}
     metadata::FilterMetadata
     rmin::T
     jacobian::AbstractMatrix{T}
 end
-Base.show(::IO, ::MIME{Symbol("text/plain")}, ::DensityFilter) = println("TopOpt density filter")
-Nonconvex.getdim(f::DensityFilter) = size(f.jacobian, 1)
+function Base.show(::IO, ::MIME{Symbol("text/plain")}, ::DensityFilter)
+    return println("TopOpt density filter")
+end
+Nonconvex.NonconvexCore.getdim(f::DensityFilter) = size(f.jacobian, 1)
 DensityFilter{true}(args...) = DensityFilter(Val(true), args...)
 DensityFilter{false}(args...) = DensityFilter(Val(false), args...)
 
 DensityFilter(solver; rmin) = DensityFilter(Val(true), solver, rmin)
-function DensityFilter(::Val{filtering}, solver::AbstractFEASolver, args...) where {filtering}
-    DensityFilter(Val(filtering), whichdevice(solver), solver, args...)
+function DensityFilter(
+    ::Val{filtering}, solver::AbstractFEASolver, args...
+) where {filtering}
+    return DensityFilter(Val(filtering), whichdevice(solver), solver, args...)
 end
-function DensityFilter(::Val{true}, ::CPU, solver::TS, rmin::T, ::Type{TI}=Int) where {T, TI<:Integer, TS<:AbstractFEASolver}
+function DensityFilter(
+    ::Val{true}, ::CPU, solver::TS, rmin::T, ::Type{TI}=Int
+) where {T,TI<:Integer,TS<:AbstractFEASolver}
     metadata = FilterMetadata(solver, rmin, TI)
     TM = typeof(metadata)
     problem = solver.problem
@@ -28,14 +34,16 @@ function DensityFilter(::Val{true}, ::CPU, solver::TS, rmin::T, ::Type{TI}=Int) 
     return DensityFilter(Val(true), metadata, rmin, jacobian)
 end
 
-function DensityFilter(::Val{false}, ::CPU, solver::TS, rmin::T, ::Type{TI}=Int) where {T, TS<:AbstractFEASolver, TI<:Integer}
+function DensityFilter(
+    ::Val{false}, ::CPU, solver::TS, rmin::T, ::Type{TI}=Int
+) where {T,TS<:AbstractFEASolver,TI<:Integer}
     metadata = FilterMetadata(T, TI)
     cell_weights = T[]
     jacobian = zeros(T, 0, 0)
     return DensityFilter(Val(false), metadata, rmin, jacobian)
 end
 
-function (cf::DensityFilter{true, T})(x) where {T}
+function (cf::DensityFilter{true,T})(x) where {T}
     cf.rmin <= 0 && return x
     @unpack jacobian = cf
     out = similar(x)
@@ -43,7 +51,7 @@ function (cf::DensityFilter{true, T})(x) where {T}
     return out
 end
 function ChainRulesCore.rrule(f::DensityFilter{true}, x)
-    f(x), Δ -> (nothing, f.jacobian' * Δ)
+    return f(x), Δ -> (nothing, f.jacobian' * Δ)
 end
 
 (cf::DensityFilter{false})(x) = x
@@ -61,7 +69,7 @@ function getJacobian(solver, metadata::FilterMetadata)
     J = Int[]
     V = T[]
     for n in 1:nnodes
-        r = node_cells.offsets[n]:node_cells.offsets[n+1]-1
+        r = node_cells.offsets[n]:(node_cells.offsets[n + 1] - 1)
         for i in r
             c = node_cells.values[i][1]
             if black[c] || white[c]
@@ -107,8 +115,8 @@ end
 function scalecols!(A::SparseMatrixCSC)
     @unpack colptr, nzval = A
     T = eltype(A)
-    for col in 1:length(colptr)-1
-        inds = colptr[col]:colptr[col+1]-1
+    for col in 1:(length(colptr) - 1)
+        inds = colptr[col]:(colptr[col + 1] - 1)
         s = sum(nzval[inds])
         if s != 0
             nzval[inds] .= nzval[inds] ./ s
@@ -119,10 +127,12 @@ end
 
 @params struct ProjectedDensityFilter <: AbstractDensityFilter
     filter::DensityFilter
-    preproj
-    postproj
+    preproj::Any
+    postproj::Any
 end
-Nonconvex.getdim(f::ProjectedDensityFilter) = Nonconvex.getdim(f.filter)
+function Nonconvex.NonconvexCore.getdim(f::ProjectedDensityFilter)
+    return Nonconvex.NonconvexCore.getdim(f.filter)
+end
 function (cf::ProjectedDensityFilter)(x)
     if cf.preproj isa Nothing
         fx = x

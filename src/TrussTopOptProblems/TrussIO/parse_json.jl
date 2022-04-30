@@ -1,14 +1,22 @@
-import JSON
+using JSON: JSON
 
-function parse_truss_json(file_path::String)
-    data = JSON.parsefile(file_path)
+# add_format(format"JSON", "JSON", [".json"])
+
+function load_truss_json(filepath::AbstractString)
+    open(filepath) do io
+        load_truss_json(io)
+    end
+end
+
+function load_truss_json(io::IO) #io::Stream{format"JSON"})
+    data = JSON.parse(io)
     ndim = data["dimension"]
     n = data["node_num"]
     m = data["element_num"]
     iT = Int
     T = Float64
 
-    node_points = Dict{iT, SVector{ndim, T}}()
+    node_points = Dict{iT,SVector{ndim,T}}()
     for (i, ndata) in enumerate(data["nodes"])
         node_points[i] = convert(SVector{ndim,T}, ndata["point"])
         if "node_ind" in keys(ndata)
@@ -17,12 +25,12 @@ function parse_truss_json(file_path::String)
     end
     @assert length(node_points) == n
 
-    elements = Dict{iT, Tuple{iT,iT}}()
+    elements = Dict{iT,Tuple{iT,iT}}()
     element_inds_from_tag = Dict()
     for (i, edata) in enumerate(data["elements"])
         elements[i] = (edata["end_node_inds"]...,) .+ 1
         if "elem_ind" in keys(edata)
-            @assert 1+edata["elem_ind"] == i
+            @assert 1 + edata["elem_ind"] == i
         end
         elem_tag = edata["elem_tag"]
         if elem_tag ∉ keys(element_inds_from_tag)
@@ -91,9 +99,9 @@ function parse_truss_json(file_path::String)
 
     # TODO only translation dof for now
     @assert(length(data["supports"]) > 0)
-    fixities = Dict{iT, SVector{ndim, Bool}}()
+    fixities = Dict{iT,SVector{ndim,Bool}}()
     for sdata in data["supports"]
-        supp_v = iT(sdata["node_ind"])+1
+        supp_v = iT(sdata["node_ind"]) + 1
         fixities[supp_v] = sdata["condition"][1:ndim]
     end
 
@@ -101,9 +109,9 @@ function parse_truss_json(file_path::String)
     for (lc_ind, lc_data) in data["loadcases"]
         nploads = length(lc_data["ploads"])
         @assert nploads > 0
-        ploads = Dict{iT, SVector{ndim, T}}()
+        ploads = Dict{iT,SVector{ndim,T}}()
         for pl in lc_data["ploads"]
-            load_v = pl["node_ind"]+1
+            load_v = pl["node_ind"] + 1
             ploads[load_v] = convert(SVector{ndim,T}, pl["force"])
         end
         load_cases[lc_ind] = ploads

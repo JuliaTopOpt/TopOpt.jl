@@ -36,7 +36,7 @@ end
 - `facesets`: a dictionary mapping a face set name to a vector of `Tuple{Int,Int}` tuples where each tuple is a face index. The first integer is the cell index where the face is and the second integer is the local face index in the cell according to the VTK convention.
 - `dloads`: a dictionary of distributed loads mapping face set names to a normal traction load value.
 """
-struct InpContent{dim, TF, N, TI}
+struct InpContent{dim,TF,N,TI}
     node_coords::Vector{NTuple{dim,TF}}
     celltype::String
     cells::Vector{NTuple{N,TI}}
@@ -45,10 +45,10 @@ struct InpContent{dim, TF, N, TI}
     E::TF
     ν::TF
     density::TF
-    nodedbcs::Dict{String, Vector{Tuple{TI,TF}}}
-    cloads::Dict{Int, Vector{TF}}
-    facesets::Dict{String, Vector{Tuple{TI,TI}}}
-    dloads::Dict{String, TF}
+    nodedbcs::Dict{String,Vector{Tuple{TI,TF}}}
+    cloads::Dict{Int,Vector{TF}}
+    facesets::Dict{String,Vector{Tuple{TI,TI}}}
+    dloads::Dict{String,TF}
 end
 
 const stopping_pattern = r"^\*[^\*]"
@@ -65,17 +65,17 @@ include(joinpath("inp_to_ferrite.jl"))
 
 function extract_inp(filepath_with_ext)
     file = open(filepath_with_ext, "r")
-    
+
     local node_coords
     local celltype, cells, offset
     nodesets = Dict{String,Vector{Int}}()
     cellsets = Dict{String,Vector{Int}}()
     local E, mu
-    nodedbcs = Dict{String, Vector{Tuple{Int,Float64}}}()
-    cloads = Dict{Int, Vector{Float64}}()
-    facesets = Dict{String, Vector{Tuple{Int,Int}}}()
-    dloads = Dict{String, Float64}()
-    density = 0. # Should extract from the file
+    nodedbcs = Dict{String,Vector{Tuple{Int,Float64}}}()
+    cloads = Dict{Int,Vector{Float64}}()
+    facesets = Dict{String,Vector{Tuple{Int,Int}}}()
+    dloads = Dict{String,Float64}()
+    density = 0.0 # Should extract from the file
 
     node_heading_pattern = r"\*Node\s*,\s*NSET\s*=\s*([^,]*)"
     cell_heading_pattern = r"\*Element\s*,\s*TYPE\s*=\s*([^,]*)\s*,\s*ELSET\s*=\s*([^,]*)"
@@ -98,7 +98,7 @@ function extract_inp(filepath_with_ext)
         m = match(cell_heading_pattern, line)
         if m != nothing
             celltype = String(m[1])
-            cellsetname = String(m[2]) 
+            cellsetname = String(m[2])
             cells, offset, line = extract_cells(file)
             cellsets[cellsetname] = collect(1:length(cells))
             continue
@@ -141,7 +141,20 @@ function extract_inp(filepath_with_ext)
 
     close(file)
 
-    return InpContent(node_coords, celltype, cells, nodesets, cellsets, E, mu, density, nodedbcs, cloads, facesets, dloads)
+    return InpContent(
+        node_coords,
+        celltype,
+        cells,
+        nodesets,
+        cellsets,
+        E,
+        mu,
+        density,
+        nodedbcs,
+        cloads,
+        facesets,
+        dloads,
+    )
 end
 
 end

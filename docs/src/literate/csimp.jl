@@ -17,19 +17,15 @@ v = 0.3 # Poisson’s ratio
 f = 1.0 # downward force
 
 problems = Any[
-            PointLoadCantilever(Val{:Linear}, (60, 20, 20), (1.0, 1.0, 1.0), E, v, f), 
-            PointLoadCantilever(Val{:Linear}, (160, 40), (1.0, 1.0), E, v, f),
-            HalfMBB(Val{:Linear}, (60, 20), (1.0, 1.0), E, v, f), 
-            LBeam(Val{:Linear}, Float64, force = f),
-            TieBeam(Val{:Quadratic}, Float64)
-            ]
+    PointLoadCantilever(Val{:Linear}, (60, 20, 20), (1.0, 1.0, 1.0), E, v, f),
+    PointLoadCantilever(Val{:Linear}, (160, 40), (1.0, 1.0), E, v, f),
+    HalfMBB(Val{:Linear}, (60, 20), (1.0, 1.0), E, v, f),
+    LBeam(Val{:Linear}, Float64; force=f),
+    TieBeam(Val{:Quadratic}, Float64),
+]
 problem_names = [
-    "3d cantilever beam",
-    "cantilever beam",
-    "half MBB beam",
-    "L-beam",
-    "tie-beam",
-    ]
+    "3d cantilever beam", "cantilever beam", "half MBB beam", "L-beam", "tie-beam"
+]
 
 i = 2
 println(problem_names[i])
@@ -44,35 +40,32 @@ reuse = true # adaptive penalty flag
 
 convcriteria = Nonconvex.GenericCriteria()
 penalty = TopOpt.PowerPenalty(1.0)
-pcont = Continuation(penalty, steps = steps, xmin = xmin, pmax = 5.0)
+pcont = Continuation(penalty; steps=steps, xmin=xmin, pmax=5.0)
 
 # NOTE: non-convexity + computational error lead to different solutions that satisfy the KKT tolerance
-mma_options = options = Nonconvex.MMAOptions(maxiter=1000)
+mma_options = options = MMAOptions(; maxiter=1000)
 maxtol = 0.01 # maximum tolerance
 mintol = 0.0001 # minimum tolerance
 b = log(mintol / maxtol) / steps
 a = maxtol / exp(b)
-mma_options_gen = TopOpt.MMAOptionsGen(
-    steps = steps,
-    initial_options = mma_options,
-    ftol_gen = ExponentialContinuation(a, b, 0.0, steps + 1, mintol),
+mma_options_gen = TopOpt.MMAOptionsGen(;
+    steps=steps,
+    initial_options=mma_options,
+    ftol_gen=ExponentialContinuation(a, b, 0.0, steps + 1, mintol),
 )
-csimp_options = TopOpt.CSIMPOptions(
-    steps = steps, 
-    options_gen = mma_options_gen, 
-    p_gen = pcont, 
-    reuse = reuse,
+csimp_options = TopOpt.CSIMPOptions(;
+    steps=steps, options_gen=mma_options_gen, p_gen=pcont, reuse=reuse
 )
 
 # ### Define a finite element solver
-solver = FEASolver(Displacement, Direct, problem, xmin = xmin, penalty = penalty)
+solver = FEASolver(Direct, problem; xmin=xmin, penalty=penalty)
 
 # ### Define compliance objective
 comp = Compliance(problem, solver)
 filter = if problem isa TopOptProblems.TieBeam
     identity
 else
-    DensityFilter(solver, rmin = rmin)
+    DensityFilter(solver; rmin=rmin)
 end
 obj = x -> comp(filter(x))
 
@@ -83,13 +76,12 @@ constr = x -> volfrac(filter(x)) - V
 # ### Define subproblem optimizer
 x0 = fill(V, length(solver.vars))
 optimizer = Optimizer(
-    obj, constr, x0, Nonconvex.MMA87(),
-    options = mma_options, convcriteria = convcriteria,
+    obj, constr, x0, MMA87(); options=mma_options, convcriteria=convcriteria
 )
 
 # ### Define continuation SIMP optimizer
 simp = SIMP(optimizer, solver, penalty.p)
-cont_simp = ContinuationSIMP(simp, steps, csimp_options) 
+cont_simp = ContinuationSIMP(simp, steps, csimp_options)
 
 # ### Solve
 result = cont_simp(x0)

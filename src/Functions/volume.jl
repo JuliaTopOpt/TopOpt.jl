@@ -1,18 +1,20 @@
-@params mutable struct Volume{T, dim} <: AbstractFunction{T}
-    problem::StiffnessTopOptProblem{dim, T}
+@params mutable struct Volume{T,dim} <: AbstractFunction{T}
+    problem::StiffnessTopOptProblem{dim,T}
     solver::AbstractFEASolver
     cellvolumes::AbstractVector{T}
     grad::AbstractVector{T}
     total_volume::T
     fixed_volume::T
     tracing::Bool
-	topopt_trace::TopOptTrace{T}
+    topopt_trace::TopOptTrace{T}
     fraction::Bool
     fevals::Int
     maxfevals::Int
 end
-Base.show(::IO, ::MIME{Symbol("text/plain")}, ::Volume) = println("TopOpt volume (fraction) function")
-Nonconvex.getdim(::Volume) = 1
+function Base.show(::IO, ::MIME{Symbol("text/plain")}, ::Volume)
+    return println("TopOpt volume (fraction) function")
+end
+Nonconvex.NonconvexCore.getdim(::Volume) = 1
 @inline function Base.getproperty(vf::Volume, f::Symbol)
     f === :reuse && return false
     return getfield(vf, f)
@@ -25,9 +27,9 @@ end
 function project(f::Volume, V, x)
     cellvolumes = f.cellvolumes
     if f.fraction
-        V = V * f.total_volume        
+        V = V * f.total_volume
     end
-    inds = sortperm(x, rev=true)
+    inds = sortperm(x; rev=true)
     total = zero(V)
     i = 0
     while i <= length(inds)
@@ -42,7 +44,14 @@ function project(f::Volume, V, x)
     return x
 end
 
-function Volume(problem::StiffnessTopOptProblem{dim, T}, solver::AbstractFEASolver, ::Type{TI} = Int; fraction = true, tracing = true, maxfevals = 10^8) where {dim, T, TI}
+function Volume(
+    problem::StiffnessTopOptProblem{dim,T},
+    solver::AbstractFEASolver,
+    ::Type{TI}=Int;
+    fraction=true,
+    tracing=true,
+    maxfevals=10^8,
+) where {dim,T,TI}
     dh = problem.ch.dh
     varind = problem.varind
     black = problem.black
@@ -60,9 +69,21 @@ function Volume(problem::StiffnessTopOptProblem{dim, T}, solver::AbstractFEASolv
     if fraction
         grad ./= total_volume
     end
-    return Volume(problem, solver, cellvolumes, grad, total_volume, fixed_volume, tracing, TopOptTrace{T, TI}(), fraction, 0, maxfevals)
+    return Volume(
+        problem,
+        solver,
+        cellvolumes,
+        grad,
+        total_volume,
+        fixed_volume,
+        tracing,
+        TopOptTrace{T,TI}(),
+        fraction,
+        0,
+        maxfevals,
+    )
 end
-function (v::Volume{T})(x, grad = nothing) where {T}
+function (v::Volume{T})(x, grad=nothing) where {T}
     varind = v.problem.varind
     black = v.problem.black
     white = v.problem.white
@@ -84,7 +105,7 @@ function (v::Volume{T})(x, grad = nothing) where {T}
         grad .= v.grad
     end
     if tracing
-        push!(topopt_trace.v_hist, vol/total_volume)
+        push!(topopt_trace.v_hist, vol / total_volume)
     end
 
     return constrval
@@ -99,7 +120,7 @@ function compute_volume(cellvolumes::Vector, x, fixed_volume, varind, black, whi
     for i in 1:length(cellvolumes)
         if !(black[i]) && !(white[i])
             #vol += density(x[varind[i]], xmin)*cellvolumes[i]
-            vol += x[varind[i]]*cellvolumes[i]
+            vol += x[varind[i]] * cellvolumes[i]
         end
     end
     return vol

@@ -5,15 +5,15 @@ using SparseArrays, Setfield, Requires
 using ..TopOpt.Utilities
 using ..TopOpt: PENALTY_BEFORE_INTERPOLATION
 using ..Utilities: @forward_property
-import Distributions
+using Distributions: Distributions
 
 using VTKDataTypes
 
 import Ferrite: assemble!
+const QuadraticHexahedron = Ferrite.Cell{3,20,6}
 
 abstract type AbstractTopOptProblem end
 
-include("utils.jl")
 include("grids.jl")
 include("metadata.jl")
 include("problem_types.jl")
@@ -30,6 +30,25 @@ using .InputOutput
 include("Visualization/Visualization.jl")
 using .Visualization
 
-export RayProblem, PointLoadCantilever, HalfMBB, LBeam, TieBeam, InpStiffness, StiffnessTopOptProblem, AbstractTopOptProblem, GlobalFEAInfo, ElementFEAInfo, YoungsModulus, assemble, assemble_f!, RaggedArray, ElementMatrix, rawmatrix, bcmatrix, save_mesh, RandomMagnitude, MultiLoad
+export RayProblem,
+    PointLoadCantilever,
+    HalfMBB,
+    LBeam,
+    TieBeam,
+    InpStiffness,
+    StiffnessTopOptProblem,
+    AbstractTopOptProblem,
+    GlobalFEAInfo,
+    ElementFEAInfo,
+    YoungsModulus,
+    assemble,
+    assemble_f!,
+    RaggedArray,
+    ElementMatrix,
+    rawmatrix,
+    bcmatrix,
+    save_mesh,
+    RandomMagnitude,
+    MultiLoad
 
 end # module

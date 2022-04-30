@@ -24,22 +24,25 @@ An instance of the `ElementFEAInfo` type stores element information such as:
 - `varind`: a vector such that `varind[i]` gives the decision variable index of element `i`.
 - `cells`: the cell connectivities.
 """
-@params struct ElementFEAInfo{dim, T}
+@params struct ElementFEAInfo{dim,T}
     Kes::AbstractVector{<:AbstractMatrix{T}}
     fes::AbstractVector{<:AbstractVector{T}}
     fixedload::AbstractVector{T}
     cellvolumes::AbstractVector{T}
-    cellvalues::CellValues{dim, T, <:Any}
-    facevalues::FaceValues{<:Any, T, <:Any}
+    cellvalues::CellValues{dim,T,<:Any}
+    facevalues::FaceValues{<:Any,T,<:Any}
     metadata::Metadata
     black::AbstractVector
     white::AbstractVector
     varind::AbstractVector{Int}
-    cells
+    cells::Any
 end
 
 function Base.show(io::Base.IO, ::MIME"text/plain", efeainfo::ElementFEAInfo)
-    print(io, "ElementFEAInfo: Kes |$(length(efeainfo.Kes))|, fes |$(length(efeainfo.fes))|, fixedload |$(length(efeainfo.fixedload))|, cells |$(length(efeainfo.cells))|")
+    return print(
+        io,
+        "ElementFEAInfo: Kes |$(length(efeainfo.Kes))|, fes |$(length(efeainfo.fes))|, fixedload |$(length(efeainfo.fixedload))|, cells |$(length(efeainfo.cells))|",
+    )
 end
 
 """
@@ -53,26 +56,22 @@ Constructs an instance of `ElementFEAInfo` from a stiffness problem `sp` using a
 The static matrices and vectors are more performant and GPU-compatible therefore they are used by default.
 """
 function ElementFEAInfo(
-    sp,
-    quad_order = 2,
-    ::Type{Val{mat_type}} = Val{:Static},
-) where {mat_type} 
+    sp, quad_order=2, ::Type{Val{mat_type}}=Val{:Static}
+) where {mat_type}
     Kes, weights, dloads, cellvalues, facevalues = make_Kes_and_fes(
-        sp,
-        quad_order,
-        Val{mat_type},
+        sp, quad_order, Val{mat_type}
     )
     element_Kes = convert(
         Vector{<:ElementMatrix},
         Kes;
-        bc_dofs = sp.ch.prescribed_dofs,
-        dof_cells = sp.metadata.dof_cells,
+        bc_dofs=sp.ch.prescribed_dofs,
+        dof_cells=sp.metadata.dof_cells,
     )
     fixedload = Vector(make_cload(sp))
     assemble_f!(fixedload, sp, dloads)
     cellvolumes = get_cell_volumes(sp, cellvalues)
     cells = sp.ch.dh.grid.cells
-    ElementFEAInfo(
+    return ElementFEAInfo(
         element_Kes,
         weights,
         fixedload,
@@ -99,10 +98,12 @@ An instance of `GlobalFEAInfo` hosts the global stiffness matrix `K`, the load v
 @params mutable struct GlobalFEAInfo{T}
     K::AbstractMatrix{T}
     f::AbstractVector{T}
-    cholK
-    qrK
+    cholK::Any
+    qrK::Any
 end
-Base.show(::IO, ::MIME{Symbol("text/plain")}, ::GlobalFEAInfo) = println("TopOpt global FEA information")
+function Base.show(::IO, ::MIME{Symbol("text/plain")}, ::GlobalFEAInfo)
+    return println("TopOpt global FEA information")
+end
 
 """
     GlobalFEAInfo(::Type{T}=Float64) where {T}
@@ -125,12 +126,13 @@ function GlobalFEAInfo(sp::StiffnessTopOptProblem)
     return GlobalFEAInfo(K, f)
 end
 function GlobalFEAInfo(
-    K::Union{AbstractSparseMatrix, Symmetric{<:Any, <:AbstractSparseMatrix}},
-    f,
+    K::Union{AbstractSparseMatrix,Symmetric{<:Any,<:AbstractSparseMatrix}}, f
 )
-    chol = cholesky(spdiagm(0=>ones(size(K, 1))))
-    qrfact = qr(spdiagm(0=>ones(size(K, 1))))
-    return GlobalFEAInfo{eltype(K), typeof(K), typeof(f), typeof(chol), typeof(qrfact)}(K, f, chol, qrfact)
+    chol = cholesky(spdiagm(0 => ones(size(K, 1))))
+    qrfact = qr(spdiagm(0 => ones(size(K, 1))))
+    return GlobalFEAInfo{eltype(K),typeof(K),typeof(f),typeof(chol),typeof(qrfact)}(
+        K, f, chol, qrfact
+    )
 end
 
 """
@@ -149,12 +151,15 @@ end
 
 Calculates an approximation of the element volumes by approximating the volume integral of 1 over each element using Gaussian quadrature. `cellvalues` is a `Ferrite` struct that facilitates the computation of the integral. To initialize `cellvalues` for an element with index `cell`, `Ferrite.reinit!(cellvalues, cell)` can be called. Calling `Ferrite.getdetJdV(cellvalues, q_point)` then computes the value of the determinant of the Jacobian of the geometric basis functions at the point `q_point` in the reference element. The sum of such values for all integration points is the volume approximation.
 """
-function get_cell_volumes(sp::StiffnessTopOptProblem{dim, T}, cellvalues) where {dim, T}
+function get_cell_volumes(sp::StiffnessTopOptProblem{dim,T}, cellvalues) where {dim,T}
     dh = sp.ch.dh
     cellvolumes = zeros(T, getncells(dh.grid))
     for (i, cell) in enumerate(CellIterator(dh))
         reinit!(cellvalues, cell)
-        cellvolumes[i] = sum(Ferrite.getdetJdV(cellvalues, q_point) for q_point in 1:Ferrite.getnquadpoints(cellvalues))
+        cellvolumes[i] = sum(
+            Ferrite.getdetJdV(cellvalues, q_point) for
+            q_point in 1:Ferrite.getnquadpoints(cellvalues)
+        )
     end
     return cellvolumes
 end

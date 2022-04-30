@@ -1,4 +1,4 @@
-function extract_material(file, ::Type{TF}=Float64) where TF
+function extract_material(file, ::Type{TF}=Float64) where {TF}
     elastic_heading_pattern = r"\*ELASTIC"
     Emu_pattern = r"(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)"
     line = readline(file)

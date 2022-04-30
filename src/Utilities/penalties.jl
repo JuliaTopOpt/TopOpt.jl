@@ -15,14 +15,14 @@ end
 mutable struct SinhPenalty{T} <: AbstractCPUPenalty{T}
     p::T
 end
-@inline (R::SinhPenalty)(x) = sinh(R.p*x)/sinh(R.p)
+@inline (R::SinhPenalty)(x) = sinh(R.p * x) / sinh(R.p)
 
-struct ProjectedPenalty{T, Tpen <: AbstractPenalty{T}, Tproj} <: AbstractCPUPenalty{T}
+struct ProjectedPenalty{T,Tpen<:AbstractPenalty{T},Tproj} <: AbstractCPUPenalty{T}
     penalty::Tpen
     proj::Tproj
 end
 function ProjectedPenalty(penalty::AbstractPenalty{T}) where {T}
-    return ProjectedPenalty(penalty, HeavisideProjection(10*one(T)))
+    return ProjectedPenalty(penalty, HeavisideProjection(10 * one(T)))
 end
 @inline (P::ProjectedPenalty)(x) = P.penalty(P.proj(x))
 @forward_property ProjectedPenalty penalty
@@ -30,7 +30,7 @@ end
 mutable struct HeavisideProjection{T} <: AbstractProjection
     β::T
 end
-@inline (P::HeavisideProjection)(x) = 1 - exp(-P.β*x) + x * exp(-P.β)
+@inline (P::HeavisideProjection)(x) = 1 - exp(-P.β * x) + x * exp(-P.β)
 mutable struct SigmoidProjection{T} <: AbstractProjection
     β::T
 end

@@ -50,40 +50,48 @@
     # 7   5  15  13
     # 8   6  16  14
 
-    problem = HalfMBB(Val{:Linear}, (2,2), (1.,1.), 1., 0.3, 1.);
+    problem = HalfMBB(Val{:Linear}, (2, 2), (1.0, 1.0), 1.0, 0.3, 1.0)
 
-    coords = [(0.0, 0.0),
-              (1.0, 0.0),
-              (2.0, 0.0),
-              (0.0, 1.0),
-              (1.0, 1.0),
-              (2.0, 1.0),
-              (0.0, 2.0),
-              (1.0, 2.0),
-              (2.0, 2.0)]
+    coords = [
+        (0.0, 0.0),
+        (1.0, 0.0),
+        (2.0, 0.0),
+        (0.0, 1.0),
+        (1.0, 1.0),
+        (2.0, 1.0),
+        (0.0, 2.0),
+        (1.0, 2.0),
+        (2.0, 2.0),
+    ]
 
     for (i, node) in enumerate(problem.ch.dh.grid.nodes)
         @test node.x.data == coords[i]
     end
 
-    cells = [Ferrite.Cell{2,4,4}((1, 2, 5, 4)),
+    cells = [
+        Ferrite.Cell{2,4,4}((1, 2, 5, 4)),
         Ferrite.Cell{2,4,4}((2, 3, 6, 5)),
         Ferrite.Cell{2,4,4}((4, 5, 8, 7)),
-        Ferrite.Cell{2,4,4}((5, 6, 9, 8))]
+        Ferrite.Cell{2,4,4}((5, 6, 9, 8)),
+    ]
     @test problem.ch.dh.grid.cells == cells
 
-    node_dofs = [1 3  9 7 5 11 15 13 17;
-                 2 4 10 8 6 12 16 14 18]
+    node_dofs = [
+        1 3 9 7 5 11 15 13 17
+        2 4 10 8 6 12 16 14 18
+    ]
     @test problem.metadata.node_dofs == node_dofs
 
-    cell_dofs = [1  3  7 5;
-                 2  4  8 6;
-                 3  9  5 11;
-                 4 10  6 12;
-                 5 11 13 17;
-                 6 12 14 18;
-                 7  5 15 13;
-                 8  6 16 14]
+    cell_dofs = [
+        1 3 7 5
+        2 4 8 6
+        3 9 5 11
+        4 10 6 12
+        5 11 13 17
+        6 12 14 18
+        7 5 15 13
+        8 6 16 14
+    ]
     @test problem.metadata.cell_dofs == cell_dofs
 
     dof_cells = problem.metadata.dof_cells
@@ -96,15 +104,9 @@
         end
     end
 
-    node_first_cells = [(1, 1),
-                        (1, 2),
-                        (2, 2),
-                        (1, 4),
-                        (1, 3),
-                        (2, 3),
-                        (3, 4),
-                        (3, 3),
-                        (4, 3)]
+    node_first_cells = [
+        (1, 1), (1, 2), (2, 2), (1, 4), (1, 3), (2, 3), (3, 4), (3, 3), (4, 3)
+    ]
     # First node is the first cell's first node.
     @test problem.metadata.node_cells[1] == [(1, 1)]
     # Second node is the first cell's second node,
