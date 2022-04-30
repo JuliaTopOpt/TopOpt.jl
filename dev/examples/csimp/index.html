@@ -51,7 +51,7 @@ cont_simp = ContinuationSIMP(simp, steps, csimp_options)</code></pre><pre class=
 
 @show result.convstate
 @show optimizer.workspace.iter
-@show result.objval</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">308.3351710022618</code></pre><h3 id="(Optional)-Visualize-the-result-using-Makie.jl"><a class="docs-heading-anchor" href="#(Optional)-Visualize-the-result-using-Makie.jl">(Optional) Visualize the result using Makie.jl</a><a id="(Optional)-Visualize-the-result-using-Makie.jl-1"></a><a class="docs-heading-anchor-permalink" href="#(Optional)-Visualize-the-result-using-Makie.jl" title="Permalink"></a></h3><p>Need to run <code>using Pkg; Pkg.add(Makie)</code> first</p><pre><code class="language-julia hljs">using TopOpt.TopOptProblems.Visualization: visualize
+@show result.objval</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">308.33517100103126</code></pre><h3 id="(Optional)-Visualize-the-result-using-Makie.jl"><a class="docs-heading-anchor" href="#(Optional)-Visualize-the-result-using-Makie.jl">(Optional) Visualize the result using Makie.jl</a><a id="(Optional)-Visualize-the-result-using-Makie.jl-1"></a><a class="docs-heading-anchor-permalink" href="#(Optional)-Visualize-the-result-using-Makie.jl" title="Permalink"></a></h3><p>Need to run <code>using Pkg; Pkg.add(Makie)</code> first</p><pre><code class="language-julia hljs">using TopOpt.TopOptProblems.Visualization: visualize
 fig = visualize(problem; topology = result.topology,
     problem; topology = result.topology, default_exagg_scale = 0.07,
     scale_range = 10.0, vector_linewidth = 3, vector_arrowsize = 0.5,

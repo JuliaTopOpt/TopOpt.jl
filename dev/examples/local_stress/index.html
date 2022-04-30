@@ -32,7 +32,7 @@ for p in [1.0, 2.0, 3.0]
 end
 
 maximum(stress(filter(x0))) # 0.51
-maximum(stress(filter(x))) # 10.01</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">10.001802110321766</code></pre><h3 id="(Optional)-Visualize-the-result-using-Makie.jl"><a class="docs-heading-anchor" href="#(Optional)-Visualize-the-result-using-Makie.jl">(Optional) Visualize the result using Makie.jl</a><a id="(Optional)-Visualize-the-result-using-Makie.jl-1"></a><a class="docs-heading-anchor-permalink" href="#(Optional)-Visualize-the-result-using-Makie.jl" title="Permalink"></a></h3><p>Need to run <code>using Pkg; Pkg.add(Makie)</code> first</p><pre><code class="language-julia hljs">using Makie
+maximum(stress(filter(x))) # 10.01</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">18.4858935299995</code></pre><h3 id="(Optional)-Visualize-the-result-using-Makie.jl"><a class="docs-heading-anchor" href="#(Optional)-Visualize-the-result-using-Makie.jl">(Optional) Visualize the result using Makie.jl</a><a id="(Optional)-Visualize-the-result-using-Makie.jl-1"></a><a class="docs-heading-anchor-permalink" href="#(Optional)-Visualize-the-result-using-Makie.jl" title="Permalink"></a></h3><p>Need to run <code>using Pkg; Pkg.add(Makie)</code> first</p><pre><code class="language-julia hljs">using Makie
 using TopOpt.TopOptProblems.Visualization: visualize
 fig = visualize(
    problem; topology = penalty.(filter(result.topology)), default_exagg_scale = 0.07,
