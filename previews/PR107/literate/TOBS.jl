@@ -2,7 +2,7 @@
 
 # ### Description
 
-# The method of topological optimization of binary structures ([TOBS](https://www.sciencedirect.com/science/article/abs/pii/S0168874X17305619?via%3Dihub)) #was originally developed in the context of optimal distribution of material in mechanical components. In its core, is a heuristic to solve binary #optimization problems by first linearizing the objective and constraints. Then, a binary nonlinear program is solved (default solver is ([Cbc](https://#github.com/jump-dev/Cbc.jl))) to determine which binary variables must be flipped in the current iteration.
+# The method of topological optimization of binary structures ([TOBS](https://www.sciencedirect.com/science/article/abs/pii/S0168874X17305619?via%3Dihub)) was originally developed in the context of optimal distribution of material in mechanical components. In its core, is a heuristic to solve binary optimization problems by first linearizing the objective and constraints. Then, a binary nonlinear program is solved (default solver is [Cbc](https://github.com/jump-dev/Cbc.jl)) to determine which binary variables must be flipped in the current iteration.
 
 # ### Packages and parameters
 
