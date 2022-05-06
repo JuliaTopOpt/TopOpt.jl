@@ -32,7 +32,6 @@ comp = TopOpt.Compliance(problem, solver); # compliance function
 obj(x) = comp(cheqfilter(x)); # compliance objective
 constr(x) = sum(cheqfilter(x)) / length(x) - V; # volume fraction constraint
 
-
 # ### Optimization setup
 
 # Finally, the optimization problem is defined and solved:
