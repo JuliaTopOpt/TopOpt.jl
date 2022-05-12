@@ -39,25 +39,63 @@ using TopOpt, Makie
 
 All the following features are available in TopOpt.jl but the documentation is currently lacking! Feel free to open an issue to ask about how to use specific features.
 
-- 2D and 3D truss topology optimization
-- 2D and 3D continuum topology optimization
+### Optimizaton domains
+
+- 2D and 3D truss domains
+- 2D and 3D continuum domains
 - Unstructured ground mesh
 - Linear and quadratic triangle, quadrilateral, tetrahedron and hexahedron elements in ground mesh
 - Fixed and non-design domain support
 - Concentrated and distributed loads
-- SIMP, RAMP, continuation SIMP/RAMP and BESO
-- Compliance, volume and stress functions
-- Buckling constrained truss optimization
+
+### High level algorithms and penalty types
+
+The following high level topology optimization algorithms and penalty types are available.
+
+- Solid isotropic material with penalization (SIMP)
+- Rational approximation material with penalization (RAMP)
+- Continuation SIMP/RAMP
+- Bi-directional evolutionary structural optimization (BESO) with soft-kill
+- Topology optimization of binary structures (TOBS)
+
+### Differentiable functions
+
+All the following functions are defined in a differentiable way and you can use them in the objectives or constraints in topology optimization formulation.
+
+- Arbitrary differentiable Julia functions (e.g. `LinearAlgebra.norm` or `StatsFuns.logsumexp` for constraint aggregation).
+- Density and sensitivity chequerboard filter: the input is unfiltered design and the output is the filtered design.
+- Heaviside projection: the input is unprojected design and the output is the projected design.
+- Compliance function: the input is the (filtered, projected) design and the output is the compliance.
+- Volume: the input is the (filtered, projected) design and the output is the volume or volume fraction.
+- Displacement: the input is the (filtered, projected) design and the output is the displacement vector.
+- Stress tensor: the input is the displacement vector and the output is a vector of matrices of the element-wise microscopic stress tensors.
+- Element-wise von Mises stress: the input is the (filtered, projected) design and the output is the vector of element-wise von Mises stress values.
+- Matrix assembly: the input is the element-wise matrices and the output is the assembled matrix.
+- Applying boundary conditions: the input is the assembled matrix without Dirichlet boundary conditions and the output is the matrix with Dirichlet boundary conditions applied.
+- Element stiffness matrices: the inputs is the (filtered, projected) design and the output is the element-wise stiffness matrices for use in nonlinear elastic problems and buckling-constrained optimization.
+- Element stress/geometric stiffness matrices: the inputs are the (filtered, projected) design and the displacement vector and the output is the element-wise stress/geometric stiffness matrices for use in buckling-constrained optimization.
+- Neural networks re-parameterization using Flux: the input is the vector of weights and biases for any Flux model and the output is the vector of element-wise design variables.
+
+### Optimization algorithms
+
+We use [Nonconvex.jl](https://github.com/JuliaNonconvex/Nonconvex.jl) for the optimization problem definition and solving. The following algorithms are all available using `Nonconvex.jl`.
+
+- Method of moving asymptotes
+- All the algorithms in NLopt
+- Ipopt
+- First order augmented Lagrangian algorithm
+- Nonlinear semidefinite programming for buckling constrained optimization
+- Basic surrogate assisted optimization and Bayesian optimization
+- Integer nonlinear programming (design variables guaranteed to be integer)
+- Sequential integer linear programming in the topology optimization for binary structures (TOBS) algorithm
+
+### Visualization and post-processing
+
 - End-to-end topology optimization from INP file to VTK file
 - Interactive visualization of designs and deformation
-- Automatic differentiation of arbitrary Julia functions
-- Method of moving asymptotes, NLopt, Ipopt and augmented Lagrangian algorithm for optimization
-- Density and sensitivity filters
-- Heaviside projection
+
+### Handling uncertainty
 - Handling load uncertainty in compliance-based topology optimization
-- Neural network representation of designs
-- Integer nonlinear topology optimization for truss and continuum problems (design variables guaranteed to be integer)
-- Topology optimization of binary structures (TOBS) using integer linear Programming
 
 ![gif1](https://user-images.githubusercontent.com/19524993/138464511-2685f3fe-e7c5-482e-8b06-43ab0fb82990.gif)
 ![gif2](https://user-images.githubusercontent.com/19524993/138464828-88f0ffcb-01f7-43b7-8d17-f5d201e95aa3.gif)
