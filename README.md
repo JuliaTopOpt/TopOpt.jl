@@ -60,7 +60,7 @@ The following high level topology optimization algorithms and penalty types are 
 
 ### Differentiable functions
 
-All the following functions are defined in a differentiable way and you can use them in the objectives or constraints in topology optimization formulation.
+All the following functions are defined in a differentiable way and you can use them in the objectives or constraints in topology optimization formulation. In TopOpt.jl, you can build arbitrarily complex objective and constraint functions using the following building blocks as lego pieces chaining them in any arbitrary way. The gradient and jacobian of the aggregate Julia function defined is then obtained using [automatic differentiation](https://www.youtube.com/watch?v=UqymrMG-Qi4).
 
 - Arbitrary differentiable Julia functions (e.g. `LinearAlgebra.norm` or `StatsFuns.logsumexp` for constraint aggregation).
 - Density and sensitivity chequerboard filter: the input is unfiltered design and the output is the filtered design.
