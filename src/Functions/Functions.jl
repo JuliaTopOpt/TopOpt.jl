@@ -11,7 +11,7 @@ using Parameters: @unpack
 using TimerOutputs, Ferrite, StaticArrays, StatsFuns
 using SparseArrays, Statistics, ChainRulesCore, Zygote
 using Nonconvex: Nonconvex
-using Flux
+using Flux, AbstractDifferentiation
 
 export Volume,
     Compliance,
@@ -36,7 +36,9 @@ export Volume,
     apply_boundary_with_meandiag!,
     NeuralNetwork,
     PredictFunction,
-    TrainFunction
+    TrainFunction,
+    StressTensor,
+    ElementStressTensor
 
 const to = TimerOutput()
 
@@ -50,6 +52,9 @@ include("stress.jl")
 include("trace.jl")
 include("mean_compliance.jl")
 include("block_compliance.jl")
+
+# stress
+include("stress_tensor.jl")
 
 # buckling
 include("apply_boundary.jl")
