@@ -173,28 +173,6 @@ end
 end
 
 @testset "Stress tensor" begin
-    nels = (4, 4)
-    problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
-    for p in (1.0, 2.0, 3.0)
-        solver = FEASolver(Direct, problem; xmin=0.01, penalty=TopOpt.PowerPenalty(p))
-        st = StressTensor(problem, solver)
-        dp = Displacement(solver)
-        for i in 1:3
-            x = clamp.(rand(prod(nels)), 0.1, 1.0)
-            u = dp(x)
-            s = st(u)
-            f = u -> reduce(vcat, vec.(st(u)))
-            f = u -> vec(st(u)[1])
-            val1, jac1 = st(u), Zygote.jacobian(f, u)[1]
-            grad2 = FDM.jacobian(central_fdm(5, 1), f, u)[1]
-            @test val1 == val2
-            @test norm(grad1 - grad2) == 0
-            @test norm(grad2 - grad3) <= 1e-5
-        end
-    end
-end
-
-@testset "Stress tensor" begin
     nels = (2, 2)
     problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
     for p in (1.0, 2.0, 3.0)
