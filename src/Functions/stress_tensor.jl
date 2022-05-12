@@ -1,26 +1,23 @@
 @params struct StressTensor{T} <: AbstractFunction{T}
     problem
     solver
-    ϵ::AbstractMatrix{T}
     global_dofs::Vector{Int}
     cellvalues
-    dh
     cells
+    _::T
 end
 function StressTensor(solver)
     problem = solver.problem
     dh = problem.ch.dh
     n = ndofs_per_cell(dh)
-    dim = TopOptProblems.getdim(problem)
     global_dofs = zeros(Int, n)
-    ϵ = zeros(Float64, dim, dim)
     cellvalues = solver.elementinfo.cellvalues
-    return StressTensor(problem, solver, ϵ, global_dofs, cellvalues, dh, collect(CellIterator(dh)))
+    return StressTensor(problem, solver, global_dofs, cellvalues, collect(CellIterator(dh)), 0.0)
 end
 
 function Ferrite.reinit!(s::StressTensor, cellidx)
     reinit!(s.cellvalues, s.cells[cellidx])
-    celldofs!(s.global_dofs, s.dh, cellidx)
+    celldofs!(s.global_dofs, s.problem.ch.dh, cellidx)
     return s
 end
 function ChainRulesCore.rrule(::typeof(reinit!), st::StressTensor, cellidx)
