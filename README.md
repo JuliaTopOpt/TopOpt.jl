@@ -91,7 +91,8 @@ We use [Nonconvex.jl](https://github.com/JuliaNonconvex/Nonconvex.jl) for the op
 ### Visualization and post-processing
 
 - End-to-end topology optimization from INP file to VTK file
-- Interactive visualization of designs and deformation
+- Interactive visualization of designs and deformation using [Makie.jl](https://makie.juliaplots.org/stable/)
+- Interactive visualization of designs using Dash apps and [DashVtk](https://github.com/JuliaTopOpt/DashVtk_Examples/tree/main/src/TopOptDemo)
 
 ### Handling uncertainty
 - Handling load uncertainty in compliance-based topology optimization
