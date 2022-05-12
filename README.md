@@ -75,6 +75,12 @@ All the following functions are defined in a differentiable way and you can use 
 - Element stress/geometric stiffness matrices: the inputs are the (filtered, projected) design and the displacement vector and the output is the element-wise stress/geometric stiffness matrices for use in buckling-constrained optimization.
 - Neural networks re-parameterization using [Flux.jl](https://github.com/FluxML/Flux.jl): the input is the vector of weights and biases for any `Flux.jl` model and the output is the vector of element-wise design variables.
 
+### Linear system solvers
+
+- Direct sparse Cholesky decomposition based linear system solver
+- Preconditioned conjugate gradient method with matrix assembly
+- Matrix-free preconditioned conjugate gradient method
+
 ### Optimization algorithms
 
 We use [Nonconvex.jl](https://github.com/JuliaNonconvex/Nonconvex.jl) for the optimization problem definition and solving. The following algorithms are all available using `Nonconvex.jl`.
