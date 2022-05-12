@@ -73,7 +73,7 @@ All the following functions are defined in a differentiable way and you can use 
 - Applying boundary conditions: the input is the assembled matrix without Dirichlet boundary conditions and the output is the matrix with Dirichlet boundary conditions applied.
 - Element stiffness matrices: the inputs is the (filtered, projected) design and the output is the element-wise stiffness matrices for use in nonlinear elastic problems and buckling-constrained optimization.
 - Element stress/geometric stiffness matrices: the inputs are the (filtered, projected) design and the displacement vector and the output is the element-wise stress/geometric stiffness matrices for use in buckling-constrained optimization.
-- Neural networks re-parameterization using Flux: the input is the vector of weights and biases for any Flux model and the output is the vector of element-wise design variables.
+- Neural networks re-parameterization using [Flux.jl](https://github.com/FluxML/Flux.jl): the input is the vector of weights and biases for any `Flux.jl` model and the output is the vector of element-wise design variables.
 
 ### Optimization algorithms
 
