@@ -1,4 +1,4 @@
-using TopOpt, Zygote, FiniteDifferences, LinearAlgebra, Test, Random, SparseArrays
+using TopOpt, Zygote, FiniteDifferences, LinearAlgebra, Test, Random, SparseArrays, ForwardDiff
 const FDM = FiniteDifferences
 using TopOpt: ndofs
 using Ferrite: ndofs_per_cell, getncells
@@ -168,6 +168,59 @@ end
                 @test norm(grad1 - grad2) == 0
                 @test norm(grad1 - grad3) <= 1e-5
             end
+        end
+    end
+end
+
+@testset "Stress tensor" begin
+    nels = (4, 4)
+    problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
+    for p in (1.0, 2.0, 3.0)
+        solver = FEASolver(Direct, problem; xmin=0.01, penalty=TopOpt.PowerPenalty(p))
+        st = StressTensor(problem, solver)
+        dp = Displacement(solver)
+        for i in 1:3
+            x = clamp.(rand(prod(nels)), 0.1, 1.0)
+            u = dp(x)
+            s = st(u)
+            f = u -> reduce(vcat, vec.(st(u)))
+            f = u -> vec(st(u)[1])
+            val1, jac1 = st(u), Zygote.jacobian(f, u)[1]
+            grad2 = FDM.jacobian(central_fdm(5, 1), f, u)[1]
+            @test val1 == val2
+            @test norm(grad1 - grad2) == 0
+            @test norm(grad2 - grad3) <= 1e-5
+        end
+    end
+end
+
+@testset "Stress tensor" begin
+    nels = (2, 2)
+    problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
+    for p in (1.0, 2.0, 3.0)
+        solver = FEASolver(Direct, problem; xmin=0.01, penalty=TopOpt.PowerPenalty(p))
+        st = StressTensor(solver)
+        # element stress tensor - element 1
+        est = st[1]
+        dp = Displacement(solver)
+        for i in 1:3
+            x = clamp.(rand(prod(nels)), 0.1, 1.0)
+            u = dp(x)
+            s = st(u)
+            est(u)
+            # test element stress tensors
+            map(1:4) do i
+                est = st[i]
+                f = u -> vec(est(u))
+                j1 = FDM.jacobian(central_fdm(5, 1), f, u)[1]
+                j2 = Zygote.jacobian(f, u)[1]
+                @test norm(j1 - j2) < 1e-7
+            end
+            # test all stress tensors
+            f = u -> reduce(vcat, vec.(st(u)))
+            j1 = FDM.jacobian(central_fdm(5, 1), f, u)[1]
+            j2 = Zygote.jacobian(f, u)[1]
+            @test norm(j1 - j2) < 1e-7
         end
     end
 end
