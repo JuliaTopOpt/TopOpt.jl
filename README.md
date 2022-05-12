@@ -52,7 +52,7 @@ All the following features are available in TopOpt.jl but the documentation is c
 The following high level topology optimization algorithms and penalty types are available.
 
 - Solid isotropic material with penalization (SIMP)
-- Rational approximation material with penalization (RAMP)
+- Rational approximation of material properties (RAMP)
 - Continuation SIMP/RAMP
 - Bi-directional evolutionary structural optimization (BESO) with soft-kill
 - Topology optimization of binary structures (TOBS)
