@@ -15,11 +15,7 @@ end
 
 abstract type AbstractDevice end
 struct CPU <: AbstractDevice end
-struct GPU <: AbstractDevice end
 whichdevice(::Any) = CPU()
-
-# GPU utilities
-module GPUUtils end
 
 @reexport using Nonconvex, NonconvexMMA, NonconvexSemidefinite, NonconvexPercival
 
@@ -62,30 +58,6 @@ include(joinpath("Functions", "Functions.jl"))
 include(joinpath("Algorithms", "Algorithms.jl"))
 using .Algorithms
 
-macro init_cuda()
-    return esc(
-        quote
-            const CuArrays = CUDASupport.CuArrays
-            const CUDAdrv = CUDASupport.CUDAdrv
-            const CUDAnative = CUDASupport.CUDAnative
-            const GPUArrays = CUDASupport.GPUArrays
-            CuArrays.allowscalar(false)
-            const dev = CUDAdrv.device()
-            const ctx = CUDAdrv.CuContext(dev)
-            using .CuArrays, .CUDAnative
-            using .GPUArrays: GPUVector, GPUArray
-        end,
-    )
-end
-
-@cuda_only GPUUtils include("GPUUtils/GPUUtils.jl")
-@cuda_only Utilities include("Utilities/gpu_utilities.jl")
-@cuda_only TopOptProblems include("TopOptProblems/gpu_support.jl")
-@cuda_only FEA include("FEA/gpu_solvers.jl")
-@cuda_only CheqFilters include("CheqFilters/gpu_cheqfilter.jl")
-@cuda_only Functions include("Functions/gpu_support.jl")
-@cuda_only Algorithms include("Algorithms/SIMP/gpu_simp.jl")
-
 export TopOpt,
     simulate,
     TopOptTrace,
@@ -114,7 +86,6 @@ export TopOpt,
     Continuation,
     save_mesh,
     CPU,
-    GPU,
     DefaultCriteria,
     EnergyCriteria,
     PowerPenalty,
