@@ -12,7 +12,9 @@ function StressTensor(solver)
     n = ndofs_per_cell(dh)
     global_dofs = zeros(Int, n)
     cellvalues = solver.elementinfo.cellvalues
-    return StressTensor(problem, solver, global_dofs, cellvalues, collect(CellIterator(dh)), 0.0)
+    return StressTensor(
+        problem, solver, global_dofs, cellvalues, collect(CellIterator(dh)), 0.0
+    )
 end
 
 function Ferrite.reinit!(s::StressTensor, cellidx)
@@ -49,7 +51,7 @@ function ChainRulesCore.rrule(::typeof(reinit!), st::ElementStressTensor, cellid
     return reinit!(st, cellidx), _ -> (NoTangent(), NoTangent(), NoTangent())
 end
 
-function (f::ElementStressTensor)(u; element_dofs = false)
+function (f::ElementStressTensor)(u; element_dofs=false)
     st = f.stress_tensor
     reinit!(f, f.cellidx)
     if element_dofs
@@ -62,10 +64,12 @@ function (f::ElementStressTensor)(u; element_dofs = false)
     dim = TopOptProblems.getdim(st.problem)
     problem = st.problem
     E, ν = problem.E, problem.ν
-    return sum(map(1:n_basefuncs, 1:n_quad) do a, q_point
-        _u = cellu[dim*(a-1) .+ (1:dim)]
-        return tensor_kernel(f, q_point, a)(_u)
-    end)
+    return sum(
+        map(1:n_basefuncs, 1:n_quad) do a, q_point
+            _u = cellu[dim * (a - 1) .+ (1:dim)]
+            return tensor_kernel(f, q_point, a)(_u)
+        end,
+    )
 end
 
 @params struct ElementStressTensorKernel{T} <: AbstractFunction{T}
@@ -85,15 +89,20 @@ function (f::ElementStressTensorKernel)(_u)
     c2 = E * ν * (1 + ν)
     return c1 * I + c2 * ϵ
 end
-function ChainRulesCore.rrule(
-    f::ElementStressTensorKernel, x::AbstractVector,
-)
+function ChainRulesCore.rrule(f::ElementStressTensorKernel, x::AbstractVector)
     v, (∇,) = AD.value_and_jacobian(AD.ForwardDiffBackend(), x -> vec(f(x)), x)
     return reshape(v, f.dim, f.dim), Δ -> (NoTangent(), ∇' * vec(Δ))
 end
 
 function tensor_kernel(f::StressTensor, quad, basef)
-    return ElementStressTensorKernel(f.problem.E, f.problem.ν, quad, basef, f.cellvalues, TopOptProblems.getdim(f.problem))
+    return ElementStressTensorKernel(
+        f.problem.E,
+        f.problem.ν,
+        quad,
+        basef,
+        f.cellvalues,
+        TopOptProblems.getdim(f.problem),
+    )
 end
 function tensor_kernel(f::ElementStressTensor, quad, basef)
     return tensor_kernel(f.stress_tensor, quad, basef)
