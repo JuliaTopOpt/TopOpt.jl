@@ -154,8 +154,6 @@ gm_ins_dir = joinpath(@__DIR__, "instances", "ground_meshes");
     m = Model(obj)
     addvar!(m, zeros(length(x0)), ones(length(x0)))
     Nonconvex.add_ineq_constraint!(m, vol_constr)
-    Nonconvex.add_sd_constraint!(m, buckling_matrix_constr)
-
     Nonconvex.NonconvexCore.show_residuals[] = false
     alg = IpoptAlg()
     options = IpoptOptions(; max_iter=200)
