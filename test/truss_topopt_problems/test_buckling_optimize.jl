@@ -193,6 +193,6 @@ gm_ins_dir = joinpath(@__DIR__, "instances", "ground_meshes");
     # fig = visualize(problem; topology=x0)
     # Makie.display(fig)
 
-    # fig = visualize(problem; topology=r.minimizer)
+    # fig = visualize(problem; topology=r2.minimizer)
     # Makie.display(fig)
 end
