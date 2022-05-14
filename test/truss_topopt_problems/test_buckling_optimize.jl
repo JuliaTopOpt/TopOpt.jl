@@ -89,7 +89,7 @@ gm_ins_dir = joinpath(@__DIR__, "instances", "ground_meshes");
     file_name = "tim_$(problem_dim).json"
     problem_file = joinpath(gm_ins_dir, file_name)
 
-    mats = TrussFEAMaterial(10.0, 0.3)
+    mats = TrussFEAMaterial(1.0, 0.3)
     crossecs = TrussFEACrossSec(800.0)
 
     node_points, elements, _, _, fixities, load_cases = load_truss_json(problem_file)
@@ -101,9 +101,9 @@ gm_ins_dir = joinpath(@__DIR__, "instances", "ground_meshes");
     )
 
     xmin = 0.0001 # minimum density
-    p = 4.0 # penalty
+    p = 1.0 # penalty
     V = 0.5 # maximum volume fraction
-    x0 = fill(V, ncells) # initial design
+    x0 = fill(1.0, ncells) # initial design
 
     solver = FEASolver(Direct, problem)
     ch = problem.ch
@@ -149,25 +149,48 @@ gm_ins_dir = joinpath(@__DIR__, "instances", "ground_meshes");
 
     # * Before optimization, check initial design stability
     @test isfinite(logdet(cholesky(buckling_matrix_constr(x0))))
-    @test vol_constr(x0) <= 0
+    @test vol_constr(x0) == 0.5
 
     m = Model(obj)
     addvar!(m, zeros(length(x0)), ones(length(x0)))
     Nonconvex.add_ineq_constraint!(m, vol_constr)
-    Nonconvex.add_sd_constraint!(m, buckling_matrix_constr)
-
     Nonconvex.NonconvexCore.show_residuals[] = false
+    alg = IpoptAlg()
+    options = IpoptOptions(; max_iter=200)
+    r1 = Nonconvex.optimize(m, alg, x0; options=options)
+    @test vol_constr(r1.minimizer) < 1e-7
+
+    Nonconvex.add_sd_constraint!(m, buckling_matrix_constr)
     alg = SDPBarrierAlg(; sub_alg=IpoptAlg())
-    options = SDPBarrierOptions(; sub_options=IpoptOptions(; max_iter=200))
-    r = Nonconvex.optimize(m, alg, x0; options=options)
-    # println("$(r.convstate)")
+    options = SDPBarrierOptions(; sub_options=IpoptOptions(; max_iter=200), keep_all = true)
+    r2 = Nonconvex.optimize(m, alg, x0; options=options)
+    @test vol_constr(r2.minimizer) < 1e-7
 
     # * check result stability
-    @test isfinite(logdet(cholesky(buckling_matrix_constr(r.minimizer))))
+    S0 = buckling_matrix_constr(x0)
+    S1 = buckling_matrix_constr(r1.minimizer)
+    S2 = buckling_matrix_constr(r2.minimizer)
+    ev0 = eigen(S0).values
+    ev1 = eigen(S1).values
+    ev2 = eigen(S2).values
+
+    @test isfinite(logdet(cholesky(S0)))
+    @test minimum(ev0) ≈ 0.34 rtol = 0.01
+    @test maximum(ev0) ≈ 4204 rtol = 0.01
+
+    @test_throws PosDefException cholesky(S1)
+
+    @test isfinite(logdet(cholesky(S2)))
+    @test minimum(ev2) ≈ 0.001 atol = 0.002
+    @test maximum(ev2) ≈ 3250 rtol = 0.001
 
     # using Makie
     # import GLMakie
     # using TopOpt.TrussTopOptProblems.TrussVisualization: visualize
-    # fig = visualize(problem; topology=r.minimizer)
+
+    # fig = visualize(problem; topology=x0)
+    # Makie.display(fig)
+
+    # fig = visualize(problem; topology=r2.minimizer)
     # Makie.display(fig)
 end

@@ -1,7 +1,7 @@
 name = "TopOpt"
 uuid = "53a1e1a5-51bb-58a9-8a02-02056cc81109"
 authors = ["mohamed82008 <mohamed82008@gmail.com>", "yijiangh <yijiang94817@gmail.com>"]
-version = "0.5.3"
+version = "0.5.4"
 
 [deps]
 AbstractDifferentiation = "c29ec348-61ec-40c8-8164-b8c60e9d9f3d"
@@ -62,7 +62,7 @@ NearestNeighbors = "0.4"
 Nonconvex = "1"
 NonconvexMMA = "0.1"
 NonconvexPercival = "0.1"
-NonconvexSemidefinite = "0.1"
+NonconvexSemidefinite = "0.1.7"
 Parameters = "0.12"
 Preconditioners = "0.3, 0.4, 0.5"
 Reexport = "1"
