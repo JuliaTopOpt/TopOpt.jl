@@ -21,9 +21,12 @@ jobs:
         arch:
           - x64
         group:
-          - Tests
-          - Examples
-          - WCSMO14
+          - Core_Tests
+          - Extended_Tests
+          - Examples_1
+          - Examples_2
+          - WCSMO14_1
+          - WCSMO14_2
     steps:
       - uses: actions/checkout@v2
       - uses: julia-actions/setup-julia@v1

@@ -2,7 +2,7 @@ using Test, SafeTestsets
 
 const GROUP = get(ENV, "GROUP", "All")
 
-if GROUP == "All" || GROUP == "Tests"
+if GROUP == "All" || GROUP == "Core_Tests"
     @safetestset "InpParser Tests" begin
         include("inp_parser/parser.jl")
     end
@@ -17,6 +17,9 @@ if GROUP == "All" || GROUP == "Tests"
     @safetestset "Solver" begin
         include("fea/solvers.jl")
     end
+end
+
+if GROUP == "All" || GROUP == "Extended_Tests"
     @safetestset "Truss Problem Tests" begin
         include("truss_topopt_problems/test_problem.jl")
         include("truss_topopt_problems/test_fea.jl")
@@ -25,7 +28,7 @@ if GROUP == "All" || GROUP == "Tests"
     end
 end
 
-if GROUP == "All" || GROUP == "Examples"
+if GROUP == "All" || GROUP == "Examples_1"
     @safetestset "CSIMP example" begin
         include("examples/csimp.jl")
     end
@@ -38,6 +41,9 @@ if GROUP == "All" || GROUP == "Examples"
     @safetestset "More examples" begin
         include("examples/test_examples.jl")
     end
+end
+
+if GROUP == "All" || GROUP == "Examples_2"
     @safetestset "Neural network example" begin
         include("examples/neural.jl")
     end
@@ -46,13 +52,17 @@ if GROUP == "All" || GROUP == "Examples"
     end
 end
 
-if GROUP == "All" || GROUP == "WCSMO14"
+if GROUP == "All" || GROUP == "WCSMO14_1"
     # This was originlly part of https://github.com/JuliaTopOpt/TopOpt.jl_WCSMO21
     @safetestset "Continuum demos" begin
         include("wcsmo14/demos/continuum/cont_compliance1.jl")
         include("wcsmo14/demos/continuum/cont_compliance2.jl")
         include("wcsmo14/demos/continuum/cont_stress.jl")
     end
+end
+
+if GROUP == "All" || GROUP == "WCSMO14_2"
+    # This was originlly part of https://github.com/JuliaTopOpt/TopOpt.jl_WCSMO21
     @safetestset "Truss 2d demos" begin
         include("wcsmo14/demos/truss/truss_compliance_2d1.jl")
         include("wcsmo14/demos/truss/truss_compliance_2d2.jl")
