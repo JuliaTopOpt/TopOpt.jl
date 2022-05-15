@@ -58,21 +58,7 @@ The following high level topology optimization algorithms and penalty types are 
 
 ### Differentiable functions
 
-All the following functions are defined in a differentiable way and you can use them in the objectives or constraints in topology optimization formulation. In TopOpt.jl, you can build arbitrarily complex objective and constraint functions using the following building blocks as lego pieces chaining them in any arbitrary way. The gradient and jacobian of the aggregate Julia function defined is then obtained using [automatic differentiation](https://www.youtube.com/watch?v=UqymrMG-Qi4).
-
-- Arbitrary differentiable Julia functions (e.g. `LinearAlgebra.norm` or `StatsFuns.logsumexp` for constraint aggregation).
-- Density and sensitivity chequerboard filter: the input is unfiltered design and the output is the filtered design.
-- Heaviside projection: the input is unprojected design and the output is the projected design.
-- Compliance function: the input is the (filtered, projected) design and the output is the compliance.
-- Volume: the input is the (filtered, projected) design and the output is the volume or volume fraction.
-- Displacement: the input is the (filtered, projected) design and the output is the displacement vector.
-- Stress tensor: the input is the displacement vector and the output is a vector of matrices of the element-wise microscopic stress tensors.
-- Element-wise von Mises stress: the input is the (filtered, projected) design and the output is the vector of element-wise von Mises stress values.
-- Matrix assembly: the input is the element-wise matrices and the output is the assembled matrix.
-- Applying boundary conditions: the input is the assembled matrix without Dirichlet boundary conditions and the output is the matrix with Dirichlet boundary conditions applied.
-- Element stiffness matrices: the inputs is the (filtered, projected) design and the output is the element-wise stiffness matrices for use in nonlinear elastic problems and buckling-constrained optimization.
-- Element stress/geometric stiffness matrices: the inputs are the (filtered, projected) design and the displacement vector and the output is the element-wise stress/geometric stiffness matrices for use in buckling-constrained optimization.
-- Neural networks re-parameterization using [Flux.jl](https://github.com/FluxML/Flux.jl): the input is the vector of weights and biases for any `Flux.jl` model and the output is the vector of element-wise design variables.
+There are numerous functions in `TopOpt.jl` that are defined in a differentiable way and you can use them in the objectives or constraints in topology optimization formulations. In `TopOpt.jl`, you can build arbitrarily complex objective and constraint functions using these differentiable functions as building blocks or lego pieces chaining them in any arbitrary way. The gradient and jacobian of the aggregate Julia function defined is then obtained using [automatic differentiation](https://www.youtube.com/watch?v=UqymrMG-Qi4). For a detailed account of the functions available, see the relevant section in the [documentation](https://juliatopopt.github.io/TopOpt.jl/dev/functions/).
 
 ### Linear system solvers
 
