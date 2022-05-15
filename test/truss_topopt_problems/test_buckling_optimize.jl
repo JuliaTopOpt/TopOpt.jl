@@ -162,7 +162,7 @@ gm_ins_dir = joinpath(@__DIR__, "instances", "ground_meshes");
 
     Nonconvex.add_sd_constraint!(m, buckling_matrix_constr)
     alg = SDPBarrierAlg(; sub_alg=IpoptAlg())
-    options = SDPBarrierOptions(; sub_options=IpoptOptions(; max_iter=200), keep_all = true)
+    options = SDPBarrierOptions(; sub_options=IpoptOptions(; max_iter=200), keep_all=true)
     r2 = Nonconvex.optimize(m, alg, x0; options=options)
     @test vol_constr(r2.minimizer) < 1e-7
 
