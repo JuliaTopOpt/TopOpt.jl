@@ -47,12 +47,15 @@ else
 end
 volfrac = TopOpt.Volume(problem, solver)
 
+x0 = ones(length(solver.vars))
+threshold = 2 * maximum(stress(filter(x0)))
+
 obj = x -> volfrac(filter(x))
-constr = x -> norm(stress(filter(x)), 5) - 1.0
+constr = x -> norm(stress(filter(x)), 5) - threshold
 options = MMAOptions(; maxiter=2000, tol=Nonconvex.Tolerance(; kkt=1e-4))
 
 # ### Define subproblem optimizer
-x0 = fill(1.0, length(solver.vars))
+x0 = fill(0.5, length(solver.vars))
 optimizer = Optimizer(obj, constr, x0, MMA87(); options=options, convcriteria=convcriteria)
 
 # ### Define continuation SIMP optimizer
