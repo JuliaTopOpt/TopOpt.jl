@@ -21,7 +21,7 @@ problem = PointLoadCantilever(Val{:Linear}, problem_size, (1.0, 1.0), E, v, f)
 solver = FEASolver(Direct, problem; xmin=xmin)
 
 cheqfilter = DensityFilter(solver; rmin=rmin)
-stress = TopOpt.MicroVonMisesStress(solver)
+stress = TopOpt.von_mises_stress_function(solver)
 comp = TopOpt.Compliance(problem, solver)
 
 function obj(x)

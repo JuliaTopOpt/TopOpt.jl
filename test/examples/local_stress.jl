@@ -32,7 +32,7 @@ for i in 1:length(problems)
         # Define a finite element solver
         solver = FEASolver(Direct, problem; xmin=xmin, penalty=penalty)
         # Define compliance objective
-        global stress = TopOpt.MicroVonMisesStress(solver)
+        global stress = TopOpt.von_mises_stress_function(solver)
         global filter = DensityFilter(solver; rmin=rmin)
         global volfrac = Volume(problem, solver)
 

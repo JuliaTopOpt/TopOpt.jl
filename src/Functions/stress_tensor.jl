@@ -107,3 +107,22 @@ end
 function tensor_kernel(f::ElementStressTensor, quad, basef)
     return tensor_kernel(f.stress_tensor, quad, basef)
 end
+
+function von_mises(σ::AbstractMatrix)
+    if size(σ, 1) == 2
+        t1 = σ[1, 1]^2 - σ[1, 1] * σ[2, 2] + σ[2, 2]^2
+        t2 = 3 * σ[1, 2]^2
+    elseif size(σ, 1) == 3
+        t1 = ((σ[1, 1] - σ[2, 2])^2 + (σ[2, 2] - σ[3, 3])^2 + (σ[3, 3] - σ[1, 1])^2) / 2
+        t2 = 3 * (σ[1, 2]^2 + σ[2, 3]^2 + σ[3, 1]^2)
+    else
+        throw(ArgumentError("Unsupported stress tensor type."))
+    end
+    return sqrt(t1 + t2)
+end
+
+function von_mises_stress_function(solver::AbstractFEASolver)
+    st = StressTensor(solver)
+    dp = Displacement(solver)
+    return x -> von_mises.(st(dp(x)))
+end

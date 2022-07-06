@@ -39,7 +39,7 @@ solver = FEASolver(Direct, problem; xmin=xmin, penalty=penalty)
 
 # ### Define **stress** objective
 # Notice that gradient is derived automatically by automatic differentiation (Zygote.jl)!
-stress = TopOpt.MicroVonMisesStress(solver)
+stress = TopOpt.von_mises_stress_function(solver)
 filter = if problem isa TopOptProblems.TieBeam
     identity
 else

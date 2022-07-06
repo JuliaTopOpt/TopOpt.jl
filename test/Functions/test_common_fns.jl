@@ -131,48 +131,6 @@ end
     end
 end
 
-@testset "Local stress" begin
-    nels = (2, 2)
-    problem = PointLoadCantilever(Val{:Quadratic}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
-    for F in (MacroVonMisesStress, MicroVonMisesStress)
-        for p in (1.0, 2.0, 3.0)
-            solver = FEASolver(Direct, problem; xmin=0.001, penalty=TopOpt.PowerPenalty(p))
-            stress = F(solver)
-            for i in 1:3
-                x = clamp.(rand(prod(nels)), 0.1, 1.0)
-                v = rand(prod(nels))
-                f = FunctionWrapper(x -> dot(stress(x), v), 1)
-                val1, grad1 = NonconvexCore.value_gradient(f, x)
-                val2, grad2 = f(x), Zygote.gradient(f, x)[1]
-                grad3 = FDM.grad(central_fdm(5, 1), f, x)[1]
-                @test val1 == val2
-                @test norm(grad1 - grad2) == 0
-                @test norm(grad1 - grad3) <= 1e-5
-            end
-        end
-    end
-
-    nels = (2, 2, 2)
-    problem = PointLoadCantilever(Val{:Quadratic}, nels, (1.0, 1.0, 1.0), 1.0, 0.3, 1.0)
-    for F in (MacroVonMisesStress, MicroVonMisesStress)
-        for p in (1.0, 2.0, 3.0)
-            solver = FEASolver(Direct, problem; xmin=0.001, penalty=TopOpt.PowerPenalty(p))
-            stress = F(solver)
-            for i in 1:3
-                x = clamp.(rand(prod(nels)), 0.1, 1.0)
-                v = rand(prod(nels))
-                f = FunctionWrapper(x -> dot(stress(x), v), 1)
-                val1, grad1 = NonconvexCore.value_gradient(f, x)
-                val2, grad2 = f(x), Zygote.gradient(f, x)[1]
-                grad3 = FDM.grad(central_fdm(5, 1), f, x)[1]
-                @test val1 == val2
-                @test norm(grad1 - grad2) == 0
-                @test norm(grad1 - grad3) <= 1e-5
-            end
-        end
-    end
-end
-
 @testset "Stress tensor" begin
     nels = (2, 2)
     problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)

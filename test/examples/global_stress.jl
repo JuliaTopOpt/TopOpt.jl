@@ -29,7 +29,7 @@ for i in 1:length(problems)
     # Define a finite element solver
     solver = FEASolver(Direct, problem; xmin=xmin, penalty=penalty)
     # Define compliance objective
-    stress = TopOpt.MicroVonMisesStress(solver)
+    stress = TopOpt.von_mises_stress_function(solver)
     filter = if problem isa TopOptProblems.TieBeam
         identity
     else

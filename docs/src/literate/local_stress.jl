@@ -22,7 +22,7 @@ for p in [1.0, 2.0, 3.0]
     global penalty, stress, filter, result, stress, x
     penalty = TopOpt.PowerPenalty(p)
     solver = FEASolver(Direct, problem; xmin=xmin, penalty=penalty)
-    stress = TopOpt.MicroVonMisesStress(solver)
+    stress = TopOpt.von_mises_stress_function(solver)
     filter = DensityFilter(solver; rmin=rmin)
     volfrac = TopOpt.Volume(problem, solver)
 

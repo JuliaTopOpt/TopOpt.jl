@@ -22,8 +22,7 @@ export Volume,
     getfevals,
     getmaxfevals,
     maxedfevals,
-    MicroVonMisesStress,
-    MacroVonMisesStress,
+    von_mises_stress_function,
     project,
     generate_scenarios,
     hutch_rand!,
@@ -48,7 +47,6 @@ include("function_utils.jl")
 include("compliance.jl")
 include("displacement.jl")
 include("volume.jl")
-include("stress.jl")
 include("trace.jl")
 include("mean_compliance.jl")
 include("block_compliance.jl")
