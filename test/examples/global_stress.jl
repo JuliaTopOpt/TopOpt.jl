@@ -1,5 +1,6 @@
 # using Revise
-using TopOpt, LinearAlgebra
+using TopOpt, LinearAlgebra, Nonconvex
+Nonconvex.@load NLopt
 
 E = 1.0 # Young’s modulus
 v = 0.3 # Poisson’s ratio
@@ -21,15 +22,13 @@ for i in 1:length(problems)
     println(problem_names[i])
     problem = problems[i]
     # Parameter settings
-    V = 0.5 # volume fraction
     xmin = 0.001 # minimum density
     steps = 40 # maximum number of penalty steps, delta_p0 = 0.1
     convcriteria = Nonconvex.KKTCriteria()
-    penalty = TopOpt.PowerPenalty(1.0)
+    penalty = TopOpt.PowerPenalty(3.0)
     # Define a finite element solver
     solver = FEASolver(Direct, problem; xmin=xmin, penalty=penalty)
-    # Define compliance objective
-    stress = TopOpt.MicroVonMisesStress(solver)
+    stress = TopOpt.von_mises_stress_function(solver)
     filter = if problem isa TopOptProblems.TieBeam
         identity
     else
@@ -38,22 +37,17 @@ for i in 1:length(problems)
     volfrac = Volume(problem, solver)
 
     obj = x -> volfrac(filter(x))
-    constr = x -> norm(stress(filter(x)), 5) - 1.0
-    # Define subproblem optimizer
-    x0 = fill(1.0, length(solver.vars))
-    options = MMAOptions(; maxiter=2000, tol=Nonconvex.Tolerance(; kkt=1e-4))
-    #options = PercivalOptions()
-    optimizer = Optimizer(
-        obj,
-        constr,
-        x0,
-        MMA87(); #PercivalAlg(),
-        options=options,
-        convcriteria=convcriteria,
-    )
+    nvars = length(solver.vars)
+    x0 = fill(1.0, nvars)
+    threshold = 2 * maximum(stress(filter(x0)))
+    constr = x -> begin
+        norm(stress(filter(x)), 10) - threshold
+    end
 
-    # Define continuation SIMP optimizer
-    simp = SIMP(optimizer, solver, 3.0)
-    # Solve
-    result = simp(x0)
+    alg = NLoptAlg(:LD_MMA)
+    options = NLoptOptions()
+    model = Nonconvex.Model(obj)
+    Nonconvex.addvar!(model, zeros(nvars), ones(nvars))
+    Nonconvex.add_ineq_constraint!(model, constr)
+    r = Nonconvex.optimize(model, alg, x0; options)
 end

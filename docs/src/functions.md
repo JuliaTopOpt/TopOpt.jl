@@ -59,11 +59,11 @@ All the following functions are defined in a differentiable way and you can use 
   - **Usage example**: `σ = σf(u)`
 
 ## Element-wise microscopic von Mises stress
-  - **Function name**: `MicroVonMisesStress`
+  - **Function name**: `von_mises_stress_function`
   - **Description**: A function which applies the penalty and interpolation, solves the finite element analysis and computes the microscopic von Mises stress value for each element. The microscopic von Mises stress uses the base Young's modulus to compute the stiffness tensor and calculate the stress tensor from the strain tensor.
   - **Input(s)**: Filtered and optionally projected design `x::Vector{<:Real`
   - **Output**: Element-wise von Mises stress values `σv::Vector{<:Real}`
-  - **Constructor example**: `σvf = MicroVonMisesStress(solver)`
+  - **Constructor example**: `σvf = von_mises_stress_function(solver)`
   - **Usage example**: `σv = σvf(x)`
 
 ## Element stiffness matrices

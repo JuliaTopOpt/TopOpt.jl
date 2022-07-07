@@ -62,8 +62,6 @@ function (f::ElementStressTensor)(u; element_dofs=false)
     n_basefuncs = getnbasefunctions(st.cellvalues)
     n_quad = getnquadpoints(st.cellvalues)
     dim = TopOptProblems.getdim(st.problem)
-    problem = st.problem
-    E, ν = problem.E, problem.ν
     return sum(
         map(1:n_basefuncs, 1:n_quad) do a, q_point
             _u = cellu[dim * (a - 1) .+ (1:dim)]
@@ -80,11 +78,10 @@ end
     cellvalues
     dim::Int
 end
-function (f::ElementStressTensorKernel)(_u)
+function (f::ElementStressTensorKernel)(u)
     @unpack E, ν, q_point, a, cellvalues = f
     ∇ϕ = Vector(shape_gradient(cellvalues, q_point, a))
-    u = _u .* ∇ϕ'
-    ϵ = (u .+ u') ./ 2
+    ϵ = (u .* ∇ϕ' .+ ∇ϕ .* u') ./ 2
     c1 = E * ν / (1 - ν^2) * sum(diag(ϵ))
     c2 = E * ν * (1 + ν)
     return c1 * I + c2 * ϵ
@@ -106,4 +103,23 @@ function tensor_kernel(f::StressTensor, quad, basef)
 end
 function tensor_kernel(f::ElementStressTensor, quad, basef)
     return tensor_kernel(f.stress_tensor, quad, basef)
+end
+
+function von_mises(σ::AbstractMatrix)
+    if size(σ, 1) == 2
+        t1 = σ[1, 1]^2 - σ[1, 1] * σ[2, 2] + σ[2, 2]^2
+        t2 = 3 * σ[1, 2]^2
+    elseif size(σ, 1) == 3
+        t1 = ((σ[1, 1] - σ[2, 2])^2 + (σ[2, 2] - σ[3, 3])^2 + (σ[3, 3] - σ[1, 1])^2) / 2
+        t2 = 3 * (σ[1, 2]^2 + σ[2, 3]^2 + σ[3, 1]^2)
+    else
+        throw(ArgumentError("Unsupported stress tensor type."))
+    end
+    return sqrt(t1 + t2)
+end
+
+function von_mises_stress_function(solver::AbstractFEASolver)
+    st = StressTensor(solver)
+    dp = Displacement(solver)
+    return x -> von_mises.(st(dp(x)))
 end
