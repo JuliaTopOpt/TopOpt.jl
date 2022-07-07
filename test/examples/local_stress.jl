@@ -61,7 +61,7 @@ for i in 1:length(problems)
     end
 
     s = stress(filter(x))
-    @test (maximum(s) - threshold) / threshold < 0.01
+    @test (maximum(s) - threshold) / threshold < 0.02
     #visualize(
     #    problem; topology = penalty.(filter(r.minimizer)), default_exagg_scale = 0.07,
     #    scale_range = 10.0, vector_linewidth = 3, vector_arrowsize = 0.5,
