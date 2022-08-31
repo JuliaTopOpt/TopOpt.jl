@@ -1,130 +1,42 @@
 @params mutable struct Compliance{T} <: AbstractFunction{T}
-    problem::StiffnessTopOptProblem
     solver::AbstractDisplacementSolver
-    comp::T
-    cell_comp::AbstractVector
-    grad::AbstractVector
-    tracing::Bool
-    topopt_trace::TopOptTrace{T}
-    reuse::Bool
-    fevals::Integer
-    logarithm::Bool
-    maxfevals::Int
+    cell_comp::AbstractVector{T}
+    grad::AbstractVector{T}
 end
 Utilities.getpenalty(c::Compliance) = getpenalty(getsolver(c))
 Utilities.setpenalty!(c::Compliance, p) = setpenalty!(getsolver(c), p)
 Nonconvex.NonconvexCore.getdim(::Compliance) = 1
 
-function Compliance(problem, solver::AbstractDisplacementSolver, args...; kwargs...)
-    return Compliance(whichdevice(solver), problem, solver, args...; kwargs...)
-end
-function Compliance(
-    ::CPU,
-    problem::StiffnessTopOptProblem{dim,T},
-    solver::AbstractDisplacementSolver,
-    ::Type{TI}=Int;
-    tracing=false,
-    logarithm=false,
-    maxfevals=10^8,
-) where {dim,T,TI}
-    comp = T(0)
-    cell_comp = zeros(T, getncells(problem.ch.dh.grid))
-    grad = fill(T(NaN), length(cell_comp) - sum(problem.black) - sum(problem.white))
-    topopt_trace = TopOptTrace{T,TI}()
-    reuse = false
-    fevals = TI(0)
-    return Compliance(
-        problem,
-        solver,
-        comp,
-        cell_comp,
-        grad,
-        tracing,
-        topopt_trace,
-        reuse,
-        fevals,
-        logarithm,
-        maxfevals,
-    )
+function Compliance(solver::AbstractDisplacementSolver)
+    T = eltype(solver.vars)
+    cell_comp = zeros(T, getncells(solver.problem.ch.dh.grid))
+    grad = copy(cell_comp)
+    return Compliance(solver, cell_comp, grad)
 end
 
-function (o::Compliance{T})(x, grad=o.grad) where {T}
-    @unpack cell_comp, solver, tracing, topopt_trace = o
+function (o::Compliance)(x::AbstractVector)
+    @warn "A vector input was passed in to the compliance function. It will be assumed to be the filtered, unpenalised and uninterpolated pseudo-densities. Please use the `PseudoDensities` constructor to wrap the input vector to avoid ambiguity."
+    return o(PseudoDensities(x))
+end
+function (o::Compliance{T})(x::PseudoDensities) where {T}
+    @unpack cell_comp, solver, grad = o
     @unpack elementinfo, u, xmin = solver
     @unpack metadata, Kes, black, white, varind = elementinfo
     @unpack cell_dofs = metadata
 
-    @timeit to "Eval obj and grad" begin
-        #if o.solver.vars ≈ x && getpenalty(o).p ≈ getprevpenalty(o).p
-        #    grad .= o.grad
-        #    return o.comp
-        #end
-        penalty = getpenalty(o)
-        if o.reuse
-            if !tracing
-                o.reuse = false
-            end
-        else
-            o.fevals += 1
-            setpenalty!(solver, penalty.p)
-            solver.vars .= x
-            solver()
-        end
-        obj = compute_compliance(
-            cell_comp,
-            grad,
-            cell_dofs,
-            Kes,
-            u,
-            black,
-            white,
-            varind,
-            solver.vars,
-            penalty,
-            xmin,
-        )
-
-        if o.logarithm
-            o.comp = log(obj)
-            grad ./= obj
-        else
-            o.comp = obj
-            #scale!(grad, 1/length(cell_comp))
-            #o.comp = obj
-        end
-        if o.grad !== grad
-            copyto!(o.grad, grad)
-        end
-
-        if o.tracing
-            if o.reuse
-                o.reuse = false
-            else
-                push!(topopt_trace.c_hist, obj)
-                push!(topopt_trace.x_hist, copy(x))
-                if length(topopt_trace.x_hist) == 1
-                    push!(topopt_trace.add_hist, 0)
-                    push!(topopt_trace.rem_hist, 0)
-                else
-                    push!(
-                        topopt_trace.add_hist,
-                        sum(topopt_trace.x_hist[end] .> topopt_trace.x_hist[end - 1]),
-                    )
-                    push!(
-                        topopt_trace.rem_hist,
-                        sum(topopt_trace.x_hist[end] .< topopt_trace.x_hist[end - 1]),
-                    )
-                end
-            end
-        end
-    end
-    return o.comp::T
+    penalty = getpenalty(o)
+    solver.vars .= x.x
+    solver()
+    return compute_compliance(
+        cell_comp, grad, cell_dofs, Kes, u, black,
+        white, varind, solver.vars, penalty, xmin,
+    )
 end
 
-function ChainRulesCore.rrule(comp::Compliance, x)
-    out = comp(x, comp.grad)
+function ChainRulesCore.rrule(comp::Compliance, x::PseudoDensities)
+    out = comp(x)
     out_grad = copy(comp.grad)
-    return out, Δ -> (nothing, out_grad * Δ)
+    return out, Δ -> (nothing, Tangent{typeof(x)}(x = out_grad * Δ))
 end
 
 """
@@ -154,7 +66,7 @@ function compute_compliance(
             if PENALTY_BEFORE_INTERPOLATION
                 obj += xmin * cell_comp[i]
             else
-                p = penalty(xmin) * cell_comp[i]
+                obj += penalty(xmin) * cell_comp[i]
             end
         else
             ρe, dρe = get_ρ_dρ(x[varind[i]], penalty, xmin)

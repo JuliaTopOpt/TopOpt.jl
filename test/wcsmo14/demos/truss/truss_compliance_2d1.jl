@@ -21,11 +21,11 @@ p = 4.0 # penalty
 V = 0.5 # maximum volume fraction
 
 solver = FEASolver(Direct, problem; xmin=xmin)
-comp = TopOpt.Compliance(problem, solver)
+comp = TopOpt.Compliance(solver)
 
 function obj(x)
     # minimize compliance
-    return comp(x)
+    return comp(PseudoDensities(x))
 end
 function constr(x)
     # volume fraction constraint

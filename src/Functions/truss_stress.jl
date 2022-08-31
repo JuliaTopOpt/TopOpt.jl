@@ -43,7 +43,7 @@ end
 # Returns
 displacement vector `σ`, compressive stress < 0, tensile stress > 0
 """
-function (ts::TrussStress{T})(x) where {T}
+function (ts::TrussStress{T})(x::PseudoDensities) where {T}
     @unpack σ, transf_matrices, u_fn = ts
     @unpack global_dofs, solver = u_fn
     @unpack penalty, problem, xmin = solver
@@ -56,7 +56,7 @@ function (ts::TrussStress{T})(x) where {T}
         # Ke = R' * K_local * R
         # F = R * (R' * K_local * R) * u
         celldofs!(global_dofs, dh, e)
-        σ[e] = -(transf_matrices[e] * Kes[e] * u[global_dofs])[1] / As[e]
+        σ[e] = -(transf_matrices[e] * Kes[e] * u.u[global_dofs])[1] / As[e]
     end
     return copy(σ)
 end

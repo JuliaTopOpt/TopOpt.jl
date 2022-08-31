@@ -31,7 +31,7 @@ All the following functions are defined in a differentiable way and you can use 
   - **Description**: Compliance function which applies the penalty and interpolation, solves the finite element analysis and calculates the compliance
   - **Input(s)**: Filtered and optionally projected design `x::Vector{<:Real}`
   - **Output**: Compliance value `comp::Real`
-  - **Constructor example**: `compf = Compliance(problem, solver)`
+  - **Constructor example**: `compf = Compliance(solver)`
   - **Usage example**: `comp = compf(x)`
 
 ## Volume
@@ -39,7 +39,7 @@ All the following functions are defined in a differentiable way and you can use 
   - **Description**: Volume or volume fraction function depending on the value of the parameter `fraction` (default is `true`)
   - **Input(s)**: Filtered and optionally projected design `x::Vector{<:Real}`
   - **Output**: Volume or volume fracton `vol::Real`
-  - **Constructor example**: `compf = Compliance(problem, solver)`
+  - **Constructor example**: `compf = Compliance(solver)`
   - **Usage example**: `comp = compf(x)`
 
 ## Nodal displacements

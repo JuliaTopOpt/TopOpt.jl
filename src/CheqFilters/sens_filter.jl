@@ -30,7 +30,6 @@ function SensFilter(
     grid = problem.ch.dh.grid
     nnodes = getnnodes(grid)
     nodal_grad = zeros(T, nnodes)
-    TV = typeof(nodal_grad)
 
     black = problem.black
     white = problem.white
@@ -58,12 +57,17 @@ function SensFilter(
     )
 end
 
-(cf::SensFilter)(x) = x
-function ChainRulesCore.rrule(cf::SensFilter{true}, x)
-    return x,
-    Δ -> begin
-        cf.rmin <= 0 && return (nothing, Δ)
-        newΔ = copy(Δ)
+function (cf::SensFilter)(x::PseudoDensities{I, P}) where {I, P}
+    return PseudoDensities{I, P, true}(x.x)
+end
+function ChainRulesCore.rrule(cf::SensFilter{true}, x::PseudoDensities)
+    return x, Δ -> begin
+        if hasproperty(Δ, :x)
+            newΔ = copy(Δ.x)
+        else
+            newΔ = copy(Δ)
+        end
+        cf.rmin <= 0 && return (NoTangent(), Tangent{typeof(x)}(x = newΔ))
         @unpack elementinfo, nodal_grad, cell_weights, metadata = cf
         @unpack black, white, varind, cellvolumes, cells = elementinfo
         @unpack cell_neighbouring_nodes, cell_node_weights = metadata
@@ -77,7 +81,7 @@ function ChainRulesCore.rrule(cf::SensFilter{true}, x)
             black,
             white,
             varind,
-            Δ,
+            newΔ,
         )
         normalize_grad!(nodal_grad, cell_weights)
         update_grad!(
@@ -89,7 +93,7 @@ function ChainRulesCore.rrule(cf::SensFilter{true}, x)
             cell_node_weights,
             nodal_grad,
         )
-        return (nothing, newΔ)
+        return (NoTangent(), Tangent{typeof(x)}(x = newΔ))
     end
 end
 

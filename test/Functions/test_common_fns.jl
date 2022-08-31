@@ -11,12 +11,13 @@ Random.seed!(1)
     problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
     for p in (1.0, 2.0, 3.0)
         solver = FEASolver(Direct, problem; xmin=0.01, penalty=TopOpt.PowerPenalty(p))
-        comp = Compliance(problem, solver)
+        comp = Compliance(solver)
+        f = x -> comp(PseudoDensities(x))
         for i in 1:3
             x = clamp.(rand(prod(nels)), 0.1, 1.0)
-            val1, grad1 = NonconvexCore.value_gradient(comp, x)
-            val2, grad2 = comp(x), Zygote.gradient(comp, x)[1]
-            grad3 = FDM.grad(central_fdm(5, 1), comp, x)[1]
+            val1, grad1 = NonconvexCore.value_gradient(f, x)
+            val2, grad2 = f(x), Zygote.gradient(f, x)[1]
+            grad3 = FDM.grad(central_fdm(5, 1), f, x)[1]
             @test val1 == val2
             @test norm(grad1 - grad2) == 0
             @test norm(grad2 - grad3) <= 1e-5
@@ -30,11 +31,11 @@ end
     for p in (1.0, 2.0, 3.0)
         solver = FEASolver(Direct, problem; xmin=0.01, penalty=TopOpt.PowerPenalty(p))
         dp = Displacement(solver)
-        u = dp(solver.vars)
+        u = dp(PseudoDensities(solver.vars))
         for _ in 1:3
             x = clamp.(rand(prod(nels)), 0.1, 1.0)
             v = rand(length(u))
-            f = x -> dot(dp(x), v)
+            f = x -> dot(dp(PseudoDensities(x)), v)
             val1, grad1 = NonconvexCore.value_gradient(f, x)
             val2, grad2 = f(x), Zygote.gradient(f, x)[1]
             grad3 = FDM.grad(central_fdm(5, 1), f, x)[1]
@@ -50,8 +51,8 @@ end
     problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
     for p in (1.0, 2.0, 3.0)
         solver = FEASolver(Direct, problem; xmin=0.01, penalty=TopOpt.PowerPenalty(p))
-        vol = Volume(problem, solver)
-        constr = x -> vol(x) - 0.3
+        vol = Volume(solver)
+        constr = x -> vol(PseudoDensities(x)) - 0.3
         for i in 1:3
             x = rand(prod(nels))
             val1, grad1 = NonconvexCore.value_gradient(constr, x)
@@ -73,7 +74,7 @@ end
         for i in 1:3
             x = rand(prod(nels))
             v = rand(prod(nels))
-            f = FunctionWrapper(x -> dot(filter(x), v), 1)
+            f = FunctionWrapper(x -> dot(filter(PseudoDensities(x)), v), 1)
             val1, grad1 = NonconvexCore.value_gradient(f, x)
             val2, grad2 = f(x), Zygote.gradient(f, x)[1]
             grad3 = FDM.grad(central_fdm(5, 1), f, x)[1]
@@ -89,10 +90,11 @@ end
     problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0))
     solver = FEASolver(Direct, problem; xmin=1e-3, penalty=PowerPenalty(3.0))
     sensfilter = SensFilter(solver; rmin=4.0)
+    f = x -> sensfilter(PseudoDensities(x))
     x = rand(length(solver.vars))
     y = rand(length(x))
-    @test sensfilter(x) == x
-    grad = Zygote.gradient(x -> dot(sensfilter(x), y), x)[1]
+    @test f(x) == x
+    grad = Zygote.gradient(x -> dot(f(x), y), x)[1]
     @test grad != y
 end
 
@@ -115,12 +117,12 @@ end
         solver = FEASolver(Direct, problem; xmin=0.01, penalty=TopOpt.PowerPenalty(p))
         exact_svd_block = BlockCompliance(problem, solver; method=:exact)
         constr = Nonconvex.FunctionWrapper(
-            x -> exact_svd_block(x) .- 1000.0, length(exact_svd_block(solver.vars))
+            x -> exact_svd_block(x) .- 1000.0, length(exact_svd_block(PseudoDensities(solver.vars)))
         )
         for i in 1:3
             x = clamp.(rand(prod(nels)), 0.1, 1.0)
             v = rand(nloads)
-            f = FunctionWrapper(x -> dot(constr(x), v), 1)
+            f = FunctionWrapper(x -> dot(constr(PseudoDensities(x)), v), 1)
             val1, grad1 = NonconvexCore.value_gradient(f, x)
             val2, grad2 = f(x), Zygote.gradient(f, x)[1]
             grad3 = FDM.grad(central_fdm(5, 1), f, x)[1]
@@ -142,21 +144,21 @@ end
         dp = Displacement(solver)
         for i in 1:3
             x = clamp.(rand(prod(nels)), 0.1, 1.0)
-            u = dp(x)
+            u = dp(PseudoDensities(x))
             s = st(u)
             est(u)
             # test element stress tensors
             map(1:4) do i
                 est = st[i]
-                f = u -> vec(est(u))
-                j1 = FDM.jacobian(central_fdm(5, 1), f, u)[1]
+                f = u -> vec(est(TopOpt.Functions.DisplacementResult(u)))
+                j1 = FDM.jacobian(central_fdm(5, 1), f, u.u)[1]
                 j2 = Zygote.jacobian(f, u)[1]
                 @test norm(j1 - j2) < 1e-7
             end
             # test all stress tensors
-            f = u -> reduce(vcat, vec.(st(u)))
-            j1 = FDM.jacobian(central_fdm(5, 1), f, u)[1]
-            j2 = Zygote.jacobian(f, u)[1]
+            f = u -> reduce(vcat, vec.(st(TopOpt.Functions.DisplacementResult(u))))
+            j1 = FDM.jacobian(central_fdm(5, 1), f, u.u)[1]
+            j2 = Zygote.jacobian(f, u.u)[1]
             @test norm(j1 - j2) < 1e-7
         end
     end

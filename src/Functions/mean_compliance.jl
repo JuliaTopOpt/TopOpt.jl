@@ -6,8 +6,7 @@
 end
 function MeanCompliance(
     problem::MultiLoad,
-    solver::AbstractDisplacementSolver,
-    args...;
+    solver::AbstractDisplacementSolver;
     method=:exact_svd,
     sample_once=true,
     nv=nothing,
@@ -46,62 +45,19 @@ function MeanCompliance(
             )
         end
     end
-    comp = Compliance(whichdevice(solver), problem.problem, solver, args...; kwargs...)
+    comp = Compliance(solver)
     return MeanCompliance(comp, method, problem.F, similar(comp.grad))
 end
 
-function (ec::MeanCompliance{T})(x, grad=ec.grad) where {T}
-    @unpack compliance, F, method = ec
-    @unpack cell_comp, solver, tracing, topopt_trace = compliance
-    @unpack elementinfo, u, xmin = solver
-    @unpack metadata, Kes, black, white, varind = elementinfo
-    @unpack cell_dofs = metadata
-
-    @timeit to "Eval obj and grad" begin
-        #if compliance.solver.vars ≈ x && getpenalty(ec).p ≈ getprevpenalty(ec).p
-        #    grad .= o.grad
-        #    return compliance.comp
-        #end
-
-        penalty = getpenalty(ec)
-        copyto!(solver.vars, x)
-        compliance.fevals += 1
-        setpenalty!(solver, penalty.p)
-        obj = compute_mean_compliance(ec, method, solver.vars, grad)
-
-        if compliance.logarithm
-            compliance.comp = log(obj)
-            grad ./= obj
-        else
-            compliance.comp = obj
-        end
-        if compliance.grad !== grad
-            copyto!(compliance.grad, grad)
-        end
-
-        if compliance.tracing
-            if ec.reuse
-                ec.reuse = false
-            else
-                push!(topopt_trace.c_hist, obj)
-                push!(topopt_trace.x_hist, copy(x))
-                if length(topopt_trace.x_hist) == 1
-                    push!(topopt_trace.add_hist, 0)
-                    push!(topopt_trace.rem_hist, 0)
-                else
-                    push!(
-                        topopt_trace.add_hist,
-                        sum(topopt_trace.x_hist[end] .> topopt_trace.x_hist[end - 1]),
-                    )
-                    push!(
-                        topopt_trace.rem_hist,
-                        sum(topopt_trace.x_hist[end] .< topopt_trace.x_hist[end - 1]),
-                    )
-                end
-            end
-        end
-    end
-    return compliance.comp::T
+function (ec::MeanCompliance{T})(x::PseudoDensities) where {T}
+    solver = ec.compliance.solver
+    penalty = getpenalty(ec)
+    copyto!(solver.vars, x.x)
+    setpenalty!(solver, penalty.p)
+    return compute_mean_compliance(ec, ec.method, solver.vars, ec.grad)
+end
+function ChainRulesCore.rrule(ec::MeanCompliance, x::PseudoDensities)
+    ec(x), Δ -> (nothing, Tangent{typeof(x)}(x = Δ * ec.grad))
 end
 
 function compute_mean_compliance(ec::MeanCompliance, ::ExactMean, x, grad)

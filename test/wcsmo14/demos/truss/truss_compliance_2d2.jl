@@ -21,7 +21,7 @@ p = 4.0 # penalty
 compliance_threshold = 5.0 # maximum compliance
 
 solver = FEASolver(Direct, problem; xmin=xmin)
-comp = TopOpt.Compliance(problem, solver)
+comp = TopOpt.Compliance(solver)
 
 function obj(x)
     # minimize volume
@@ -29,7 +29,7 @@ function obj(x)
 end
 function constr(x)
     # compliance upper-bound
-    return comp(x) - compliance_threshold
+    return comp(PseudoDensities(x)) - compliance_threshold
 end
 
 m = Model(obj)

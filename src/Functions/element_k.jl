@@ -1,3 +1,11 @@
+struct ElementStiffnessMatrix{T <: Real, M <: AbstractMatrix{T}} <: AbstractMatrix{T}
+    Ke::M
+end
+Base.length(x::ElementStiffnessMatrix) = length(x.x)
+Base.size(x::ElementStiffnessMatrix, i...) = size(x.x, i...)
+Base.getindex(x::ElementStiffnessMatrix, i...) = x.x[i...]
+Base.:*(x::ElementStiffnessMatrix, y) = ElementStiffnessMatrix(x.x * y)
+
 @params mutable struct ElementK{T} <: AbstractFunction{T}
     solver::AbstractDisplacementSolver
     Kes::AbstractVector{<:AbstractMatrix{T}}
@@ -45,18 +53,18 @@ function (ek::ElementK)(xe::Number, ci::Integer)
     return px * Kes_0[ci]
 end
 
-function (ek::ElementK{T})(x::AbstractVector{T}) where {T}
+function (ek::ElementK{T})(x::PseudoDensities) where {T}
     @unpack solver, Kes = ek
     @assert getncells(solver.problem.ch.dh.grid) == length(x)
     for ci in 1:length(x)
-        Kes[ci] = ek(x[ci], ci)
+        Kes[ci] = ek(x.x[ci], ci)
     end
     return copy(Kes)
 end
 
-function ChainRulesCore.rrule(ek::ElementK, x)
+function ChainRulesCore.rrule(ek::ElementK, x::PseudoDensities)
     @unpack solver, Kes = ek
-    @assert getncells(solver.problem.ch.dh.grid) == length(x)
+    @assert getncells(solver.problem.ch.dh.grid) == length(x.x)
     Kes = ek(x)
 
     """
@@ -68,10 +76,10 @@ function ChainRulesCore.rrule(ek::ElementK, x)
             = Delta[e][i,j] * dK_e_i'j'/dx_e
     """
     function pullback_fn(Δ)
-        Δx = similar(x)
-        for ci in 1:length(x)
+        Δx = similar(x.x)
+        for ci in 1:length(x.x)
             ek_cell_fn = xe -> vec(ek(xe, ci))
-            jac_cell = ForwardDiff.derivative(ek_cell_fn, x[ci])
+            jac_cell = ForwardDiff.derivative(ek_cell_fn, x.x[ci])
             Δx[ci] = jac_cell' * vec(Δ[ci])
         end
         return Tangent{typeof(ek)}(;
@@ -80,8 +88,7 @@ function ChainRulesCore.rrule(ek::ElementK, x)
             Kes_0=NoTangent(),
             penalty=NoTangent(),
             xmin=NoTangent(),
-        ),
-        Δx
+        ), Tangent{typeof(x)}(x = Δx)
     end
     return Kes, pullback_fn
 end

@@ -19,6 +19,24 @@ whichdevice(::Any) = CPU()
 
 @reexport using Nonconvex, NonconvexMMA, NonconvexSemidefinite, NonconvexPercival
 
+struct PseudoDensities{I, P, F, T, N, A <: AbstractArray{T, N}} <: AbstractArray{T, N}
+    x::A
+    function PseudoDensities(x::A) where {T, N, A <: AbstractArray{T, N}}
+        return new{false, false, false, T, N, A}(x)
+    end
+    function PseudoDensities{I, P, F}(x::A) where {I, P, F, T, N, A <: AbstractArray{T, N}}
+        return new{I, P, F, T, N, A}(x)
+    end
+end
+
+Base.length(x::PseudoDensities) = length(x.x)
+Base.size(x::PseudoDensities, i...) = size(x.x, i...)
+Base.getindex(x::PseudoDensities, i...) = x.x[i...]
+Base.sum(x::PseudoDensities) = sum(x.x)
+LinearAlgebra.dot(x::PseudoDensities, weights::AbstractArray) = dot(x.x, weights)
+
+export PseudoDensities
+
 # Utilities
 include(joinpath("Utilities", "Utilities.jl"))
 using .Utilities

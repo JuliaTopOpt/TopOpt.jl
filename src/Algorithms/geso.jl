@@ -60,7 +60,7 @@ function GESO(
     setpenalty!(penalty, p)
     solver = comp.solver
     T = eltype(solver.vars)
-    nel = getncells(solver.problem.ch.dh.grid)
+    nel = Ferrite.getncells(solver.problem.ch.dh.grid)
     @unpack white, black = solver.problem
     nvars = nel - sum(black) - sum(white)
     vars = zeros(T, nvars)
@@ -290,6 +290,7 @@ function (b::GESO)(x0=copy(b.comp.solver.vars); seed=NaN)
     # Main loop
     change = T(1)
     iter = 0
+    f = x -> b.comp(b.filter(PseudoDensities(x)))
     while (change > tol || vol > V) && iter < maxiter
         iter += 1
         if iter > 1
@@ -298,7 +299,7 @@ function (b::GESO)(x0=copy(b.comp.solver.vars); seed=NaN)
         for j in max(2, 10 - iter + 2):10
             obj_trace[j - 1] = obj_trace[j]
         end
-        obj_trace[10], pb = Zygote.pullback(x -> b.comp(b.filter(x)), vars)
+        obj_trace[10], pb = Zygote.pullback(f, vars)
         sens = pb(1.0)[1]
         rmul!(sens, -1)
         if iter > 1

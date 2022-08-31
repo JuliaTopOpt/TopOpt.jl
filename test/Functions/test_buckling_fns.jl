@@ -48,7 +48,7 @@ end
     k = ndofs_per_cell(dh)
 
     # * check stiffness matrix consistency
-    Kes_1 = ek(ones(T, prod(nels)))
+    Kes_1 = ek(PseudoDensities(ones(T, prod(nels))))
     for (ci, (k1, k0)) in enumerate(zip(Kes_1, solver.elementinfo.Kes))
         @test k1 ≈ k0
     end
@@ -56,7 +56,7 @@ end
     for _ in 1:3
         vs = [rand(T, k, k) for i in 1:N]
         f = x -> begin
-            Kes = ek(x)
+            Kes = ek(PseudoDensities(x))
             sum([sum(Kes[i] * vs[i]) for i in 1:length(x)])
         end
 
@@ -102,13 +102,13 @@ end
     for _ in 1:3
         vs = [rand(T, k, k) for i in 1:N]
         f = x -> begin
-            Keσs = esigk(u, x)
+            Keσs = esigk(TopOpt.Functions.DisplacementResult(u), PseudoDensities(x))
             sum([sum(Keσs[i] * vs[i]) for i in 1:length(x)])
         end
 
         x = clamp.(rand(nels), 0.1, 1.0)
 
-        Kσs_1 = esigk(u, x)
+        Kσs_1 = esigk(TopOpt.Functions.DisplacementResult(u), PseudoDensities(x))
         for (ci, (k1, k0)) in enumerate(zip(Kσs_1, Kσs_0))
             @test k1 ≈ k0 * x[ci]
         end
@@ -184,7 +184,7 @@ end
     dh = problem.ch.dh
     total_ndof = ndofs(dh)
 
-    comp = TopOpt.Compliance(problem, solver)
+    comp = TopOpt.Compliance(solver)
     dp = TopOpt.Displacement(solver)
     assemble_k = TopOpt.AssembleK(problem)
     element_k = ElementK(solver)
@@ -197,18 +197,19 @@ end
     function buckling_matrix_constr(x)
         # * Array(K + c*Kσ) ⋟ 0, PSD
         # * solve for the displacement
-        u = dp(x)
+        xd = PseudoDensities(x)
+        u = dp(xd)
 
         # * x -> Kes, construct all the element stiffness matrices
         # a list of small matrices for each element (cell)
-        Kes = element_k(x)
+        Kes = element_k(xd)
 
         # * Kes -> K (global linear stiffness matrix)
         K = assemble_k(Kes)
         K = apply_boundary_with_meandiag!(K, ch)
 
         # * u_e, x_e -> Ksigma_e
-        Kσs = truss_element_kσ(u, x)
+        Kσs = truss_element_kσ(u, xd)
 
         # * Kσs -> Kσ
         Kσ = assemble_k(Kσs)

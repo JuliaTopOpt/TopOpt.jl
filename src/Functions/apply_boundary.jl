@@ -24,7 +24,8 @@ function ChainRulesCore.rrule(::typeof(apply_boundary_with_zerodiag!), Kσ, ch)
     end
     return apply_boundary_with_zerodiag!(Kσ, ch), pullback_fn
 end
-"""
+
+#=
 Derivations for `rrule` of `apply_boundary_with_zerodiag!`
 
 g(F(K)), F: K1 -> K2
@@ -37,7 +38,7 @@ dK2_i'j'/dK1_ij = 0, if i' or j' in ch.prescribed_dofs
 
 dg/dK1_ij = 0, if i or j in ch.prescribed_dofs
           = Delta[i,j], otherwise
-"""
+=#
 
 ########################################
 
@@ -55,26 +56,7 @@ function apply_boundary_with_meandiag!(
     return K
 end
 
-function ChainRulesCore.rrule(::typeof(apply_boundary_with_meandiag!), K, ch)
-    project_to = ChainRulesCore.ProjectTo(K)
-    diagK = diag(K)
-    jac_meandiag = sign.(diagK) / length(diagK)
-    function pullback_fn(Δ)
-        Δ_ch_diagsum = zero(eltype(K))
-        for i in 1:length(ch.values)
-            d = ch.prescribed_dofs[i]
-            Δ_ch_diagsum += Δ[d, d]
-        end
-        ΔK = project_to(Δ)
-        apply_boundary_with_zerodiag!(ΔK, ch)
-        for i in 1:size(K, 1)
-            ΔK[i, i] += Δ_ch_diagsum * jac_meandiag[i]
-        end
-        return NoTangent(), ΔK, NoTangent()
-    end
-    return apply_boundary_with_meandiag!(K, ch), pullback_fn
-end
-"""
+#=
 Derivations for `rrule` of `apply_boundary_with_meandiag!`
 g(F(K)), F: K1 -> K2
 
@@ -114,7 +96,26 @@ If i == j and i in prescribed_dofs
 If i == j and !(i in prescribed_dofs)
     dg/dK1_ii = Delta[i, i] + 
         sum_{i' in prescribed_dofs} Delta[i',i'] * d(meandiag(K1))/dK1_ii
-"""
+=#
+function ChainRulesCore.rrule(::typeof(apply_boundary_with_meandiag!), K, ch)
+    project_to = ChainRulesCore.ProjectTo(K)
+    diagK = diag(K)
+    jac_meandiag = sign.(diagK) / length(diagK)
+    function pullback_fn(Δ)
+        Δ_ch_diagsum = zero(eltype(K))
+        for i in 1:length(ch.values)
+            d = ch.prescribed_dofs[i]
+            Δ_ch_diagsum += Δ[d, d]
+        end
+        ΔK = project_to(Δ)
+        apply_boundary_with_zerodiag!(ΔK, ch)
+        for i in 1:size(K, 1)
+            ΔK[i, i] += Δ_ch_diagsum * jac_meandiag[i]
+        end
+        return NoTangent(), ΔK, NoTangent()
+    end
+    return apply_boundary_with_meandiag!(K, ch), pullback_fn
+end
 
 ########################################
 

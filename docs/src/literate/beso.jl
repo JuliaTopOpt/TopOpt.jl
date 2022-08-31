@@ -23,8 +23,8 @@ problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), E, v, f)
 solver = FEASolver(Direct, problem; xmin=0.01, penalty=TopOpt.PowerPenalty(3.0))
 
 # ### Define the compliance objective function and volume fraction constraint
-comp = Compliance(problem, solver)
-volfrac = Volume(problem, solver)
+comp = Compliance(solver)
+volfrac = Volume(solver)
 sensfilter = SensFilter(solver; rmin=4.0)
 beso = BESO(comp, volfrac, 0.5, sensfilter)
 

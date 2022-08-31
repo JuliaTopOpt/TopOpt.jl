@@ -20,8 +20,8 @@ x0 = fill(V, nvars)
 penalty = TopOpt.PowerPenalty(p)
 solver = FEASolver(Direct, problem; xmin, penalty)
 filter = DensityFilter(solver; rmin)
-comp = Compliance(problem, solver)
-volfrac = Volume(problem, solver)
+comp = Compliance(solver)
+volfrac = Volume(solver)
 
 m = 20
 act = relu
