@@ -43,7 +43,7 @@ function BESO(
     solver = comp.solver
     T = eltype(solver.vars)
     solver = comp.solver
-    topology = zeros(T, getncells(solver.problem.ch.dh.grid))
+    topology = zeros(T, Ferrite.getncells(solver.problem.ch.dh.grid))
     result = BESOResult(topology, T(NaN), T(NaN), false, 0)
     black = solver.problem.black
     white = solver.problem.white
@@ -102,6 +102,7 @@ function (b::BESO)(x0=copy(b.obj.solver.vars))
     change = T(1)
     iter = 0
     setpenalty!(solver, b.p)
+    f = x -> b.comp(b.filter(PseudoDensities(x)))
     while (change > tol || true_vol > V) && iter < maxiter
         iter += 1
         if iter > 1
@@ -111,7 +112,7 @@ function (b::BESO)(x0=copy(b.obj.solver.vars))
         for j in max(2, k - iter + 2):k
             obj_trace[j - 1] = obj_trace[j]
         end
-        obj_trace[k], pb = Zygote.pullback(x -> b.comp(b.filter(x)), vars)
+        obj_trace[k], pb = Zygote.pullback(f, vars)
         sens = pb(1.0)[1]
         rmul!(sens, -1)
         if iter > 1

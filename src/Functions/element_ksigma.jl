@@ -83,33 +83,33 @@ function (eksig::TrussElementKσ)(u_e::AbstractVector, x_e::Number, ci::Integer)
     return q_cell / L_s[ci] * δmat_s[ci]
 end
 
-function (eksig::TrussElementKσ{T})(u::AbstractVector{T}, x::AbstractVector{T}) where {T}
+function (eksig::TrussElementKσ)(u::DisplacementResult, x::PseudoDensities)
     @unpack problem, Kσes, global_dofs = eksig
     dh = problem.ch.dh
-    @assert getncells(dh.grid) == length(x)
-    @assert ndofs(dh) == length(u)
-    for ci in 1:length(x)
+    @assert getncells(dh.grid) == length(x.x)
+    @assert ndofs(dh) == length(u.u)
+    for ci in 1:length(x.x)
         celldofs!(global_dofs, dh, ci)
-        Kσes[ci] = eksig(u[global_dofs], x[ci], ci)
+        Kσes[ci] = eksig(u.u[global_dofs], x.x[ci], ci)
     end
     return copy(Kσes)
 end
 
-function ChainRulesCore.rrule(eksig::TrussElementKσ{T}, u, x) where {T}
+function ChainRulesCore.rrule(eksig::TrussElementKσ{T}, u::DisplacementResult, x::PseudoDensities) where {T}
     @unpack problem, Kσes, global_dofs = eksig
     dh = problem.ch.dh
     Kσes = eksig(u, x)
     function pullback_fn(Δ)
-        Δu = zeros(T, size(u))
-        Δx = zeros(T, size(x))
-        for ci in 1:length(x)
+        Δu = zeros(T, size(u.u))
+        Δx = zeros(T, size(x.x))
+        for ci in 1:length(x.x)
             celldofs!(global_dofs, dh, ci)
             function vec_eksig_fn(ux_vec)
                 u_e = ux_vec[1:(end - 1)]
                 x_e = ux_vec[end]
                 return vec(eksig(u_e, x_e, ci))
             end
-            jac_cell = ForwardDiff.jacobian(vec_eksig_fn, [u[global_dofs]; x[ci]])
+            jac_cell = ForwardDiff.jacobian(vec_eksig_fn, [u.u[global_dofs]; x.x[ci]])
             jtv = jac_cell' * vec(Δ[ci])
             Δu[global_dofs] += jtv[1:(end - 1)]
             Δx[ci] = jtv[end]
@@ -122,8 +122,8 @@ function ChainRulesCore.rrule(eksig::TrussElementKσ{T}, u, x) where {T}
             L_s=NoTangent(),
             global_dofs=NoTangent(),
         ),
-        Δu,
-        Δx
+        Tangent{typeof(u)}(u = Δu),
+        Tangent{typeof(x)}(x = Δx)
     end
     return Kσes, pullback_fn
 end

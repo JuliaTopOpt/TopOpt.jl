@@ -109,31 +109,32 @@ gm_ins_dir = joinpath(@__DIR__, "instances", "ground_meshes");
     ch = problem.ch
     dh = problem.ch.dh
 
-    comp = TopOpt.Compliance(problem, solver)
+    comp = TopOpt.Compliance(solver)
     dp = TopOpt.Displacement(solver)
     assemble_k = TopOpt.AssembleK(problem)
     element_k = ElementK(solver)
     truss_element_kσ = TrussElementKσ(problem, solver)
 
     # * comliance minimization objective
-    obj = comp
+    obj = x -> comp(PseudoDensities(x))
     c = 1.0 # buckling load multiplier
 
     function buckling_matrix_constr(x)
         # * Array(K + c*Kσ) ⋟ 0, PSD
         # * solve for the displacement
-        u = dp(x)
+        xd = PseudoDensities(x)
+        u = dp(xd)
 
         # * x -> Kes, construct all the element stiffness matrices
         # a list of small matrices for each element (cell)
-        Kes = element_k(x)
+        Kes = element_k(xd)
 
         # * Kes -> K (global linear stiffness matrix)
         K = assemble_k(Kes)
         K = apply_boundary_with_meandiag!(K, ch)
 
         # * u_e, x_e -> Ksigma_e
-        Kσs = truss_element_kσ(u, x)
+        Kσs = truss_element_kσ(u, xd)
 
         # * Kσs -> Kσ
         Kσ = assemble_k(Kσs)

@@ -26,7 +26,7 @@ function ChainRulesCore.rrule(::typeof(reinit!), st::StressTensor, cellidx)
     return reinit!(st, cellidx), _ -> (NoTangent(), NoTangent(), NoTangent())
 end
 
-function (f::StressTensor)(dofs)
+function (f::StressTensor)(dofs::DisplacementResult)
     return map(1:length(f.cells)) do cellidx
         cf = f[cellidx]
         return cf(dofs)
@@ -51,13 +51,13 @@ function ChainRulesCore.rrule(::typeof(reinit!), st::ElementStressTensor, cellid
     return reinit!(st, cellidx), _ -> (NoTangent(), NoTangent(), NoTangent())
 end
 
-function (f::ElementStressTensor)(u; element_dofs=false)
+function (f::ElementStressTensor)(u::DisplacementResult; element_dofs=false)
     st = f.stress_tensor
     reinit!(f, f.cellidx)
     if element_dofs
-        cellu = u
+        cellu = u.u
     else
-        cellu = u[copy(st.global_dofs)]
+        cellu = u.u[copy(st.global_dofs)]
     end
     n_basefuncs = getnbasefunctions(st.cellvalues)
     n_quad = getnquadpoints(st.cellvalues)
@@ -65,7 +65,7 @@ function (f::ElementStressTensor)(u; element_dofs=false)
     return sum(
         map(1:n_basefuncs, 1:n_quad) do a, q_point
             _u = cellu[dim * (a - 1) .+ (1:dim)]
-            return tensor_kernel(f, q_point, a)(_u)
+            return tensor_kernel(f, q_point, a)(DisplacementResult(_u))
         end,
     )
 end
@@ -78,17 +78,17 @@ end
     cellvalues
     dim::Int
 end
-function (f::ElementStressTensorKernel)(u)
+function (f::ElementStressTensorKernel)(u::DisplacementResult)
     @unpack E, ν, q_point, a, cellvalues = f
     ∇ϕ = Vector(shape_gradient(cellvalues, q_point, a))
-    ϵ = (u .* ∇ϕ' .+ ∇ϕ .* u') ./ 2
+    ϵ = (u.u .* ∇ϕ' .+ ∇ϕ .* u.u') ./ 2
     c1 = E * ν / (1 - ν^2) * sum(diag(ϵ))
     c2 = E * ν * (1 + ν)
     return c1 * I + c2 * ϵ
 end
-function ChainRulesCore.rrule(f::ElementStressTensorKernel, x::AbstractVector)
-    v, (∇,) = AD.value_and_jacobian(AD.ForwardDiffBackend(), x -> vec(f(x)), x)
-    return reshape(v, f.dim, f.dim), Δ -> (NoTangent(), ∇' * vec(Δ))
+function ChainRulesCore.rrule(f::ElementStressTensorKernel, u::DisplacementResult)
+    v, (∇,) = AD.value_and_jacobian(AD.ForwardDiffBackend(), u -> vec(f(DisplacementResult(u))), u.u)
+    return reshape(v, f.dim, f.dim), Δ -> (NoTangent(), Tangent{typeof(u)}(u = ∇' * vec(Δ)))
 end
 
 function tensor_kernel(f::StressTensor, quad, basef)

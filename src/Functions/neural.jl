@@ -37,12 +37,12 @@ end
     model::AbstractMLModel
 end
 function (pf::PredictFunction)(in)
-    return pf.model.in_to_out(in)
+    return PseudoDensities(pf.model.in_to_out(in))
 end
 
 @params struct TrainFunction <: Function
     model::AbstractMLModel
 end
 function (tf::TrainFunction)(p)
-    return tf.model.params_to_out(p)
+    return PseudoDensities(tf.model.params_to_out(p))
 end

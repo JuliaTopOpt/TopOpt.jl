@@ -34,13 +34,13 @@ penalty = TopOpt.PowerPenalty(3.0)
 solver = FEASolver(Direct, problem; xmin=xmin, penalty=penalty)
 
 # ### Define compliance objective
-comp = TopOpt.Compliance(problem, solver)
+comp = TopOpt.Compliance(solver)
 filter = DensityFilter(solver; rmin=rmin)
-obj = x -> comp(filter(x))
+obj = x -> comp(filter(PseudoDensities(x)))
 
 # ### Define volume constraint
-volfrac = TopOpt.Volume(problem, solver)
-constr = x -> volfrac(filter(x)) - V
+volfrac = TopOpt.Volume(solver)
+constr = x -> volfrac(filter(PseudoDensities(x))) - V
 
 # You can enable the iteration printouts with `Nonconvex.NonconvexCore.show_residuals[] = true`
 

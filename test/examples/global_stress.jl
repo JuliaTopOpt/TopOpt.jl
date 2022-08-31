@@ -18,7 +18,8 @@ problem_names = ["Cantilever beam", "Half MBB beam", "L-beam", "Tie-beam"]
 println("Global Stress")
 println("-"^10)
 
-for i in 1:length(problems)
+i = 1
+# for i in 1:length(problems)
     println(problem_names[i])
     problem = problems[i]
     # Parameter settings
@@ -34,14 +35,14 @@ for i in 1:length(problems)
     else
         DensityFilter(solver; rmin=rmin)
     end
-    volfrac = Volume(problem, solver)
+    volfrac = Volume(solver)
 
-    obj = x -> volfrac(filter(x))
+    obj = x -> volfrac(filter(PseudoDensities(x)))
     nvars = length(solver.vars)
     x0 = fill(1.0, nvars)
-    threshold = 2 * maximum(stress(filter(x0)))
+    threshold = 3 * maximum(stress(filter(PseudoDensities(x0))))
     constr = x -> begin
-        norm(stress(filter(x)), 10) - threshold
+        norm(stress(filter(PseudoDensities(x))), 10) - threshold
     end
 
     alg = NLoptAlg(:LD_MMA)
@@ -50,4 +51,5 @@ for i in 1:length(problems)
     Nonconvex.addvar!(model, zeros(nvars), ones(nvars))
     Nonconvex.add_ineq_constraint!(model, constr)
     r = Nonconvex.optimize(model, alg, x0; options)
-end
+    @show obj(r.minimizer)
+# end

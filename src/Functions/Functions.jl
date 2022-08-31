@@ -1,6 +1,6 @@
 module Functions
 
-using ..TopOpt: dim, whichdevice, CPU, TopOpt, PENALTY_BEFORE_INTERPOLATION
+using ..TopOpt: dim, whichdevice, CPU, TopOpt, PENALTY_BEFORE_INTERPOLATION, PseudoDensities
 using ..TopOptProblems, ..TrussTopOptProblems
 using ..TopOptProblems: initialize_K, getdh
 using ..FEA, ..CheqFilters

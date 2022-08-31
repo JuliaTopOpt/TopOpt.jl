@@ -18,7 +18,7 @@ function BlockCompliance(
     decay=1.0,
     kwargs...,
 )
-    comp = Compliance(problem.problem, solver; kwargs...)
+    comp = Compliance(solver; kwargs...)
     if method == :exact
         method = ExactDiagonal(problem.F, length(comp.grad))
     elseif method == :exact_svd
@@ -46,25 +46,19 @@ function BlockCompliance(
 end
 @forward_property BlockCompliance compliance
 
-function (bc::BlockCompliance{T})(x) where {T}
+function (bc::BlockCompliance{T})(x::PseudoDensities) where {T}
     @unpack compliance, method, raw_val, val, decay = bc
     @unpack solver = compliance
-    solver.vars .= x
-    @timeit to "Eval obj and grad" begin
-        penalty = getpenalty(bc)
-        bc.fevals += 1
-        setpenalty!(solver, penalty.p)
-        compute_block_compliance(bc, method) # Modifies raw_val
-        if compliance.logarithm
-            val .= log(raw_val)
-        else
-            val .= raw_val
-        end
-    end
+    solver.vars .= x.x
+    penalty = getpenalty(bc)
+    bc.fevals += 1
+    setpenalty!(solver, penalty.p)
+    compute_block_compliance(bc, method) # Modifies raw_val
+    val .= raw_val
     return val
 end
 
-function ChainRulesCore.rrule(bc::BlockCompliance, x)
+function ChainRulesCore.rrule(bc::BlockCompliance, x::PseudoDensities)
     return bc(x), Δ -> begin
         @assert Nonconvex.NonconvexCore.getdim(bc) == length(Δ)
         newΔ = similar(Δ, length(x))
@@ -72,13 +66,9 @@ function ChainRulesCore.rrule(bc::BlockCompliance, x)
         @unpack compliance = bc
         @unpack solver = compliance
         @unpack elementinfo = solver
-        if compliance.logarithm
-            w = Δ ./ bc.raw_val
-        else
-            w = Δ
-        end
+        w = Δ
         compute_jtvp!_bc(newΔ, bc, bc.method, w)
-        return (nothing, newΔ)
+        return (nothing, Tangent{typeof(x)}(x = newΔ))
     end
 end
 

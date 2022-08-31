@@ -1,28 +1,15 @@
-@params mutable struct Volume{T,dim} <: AbstractFunction{T}
-    problem::StiffnessTopOptProblem{dim,T}
+@params mutable struct Volume{T} <: AbstractFunction{T}
     solver::AbstractFEASolver
     cellvolumes::AbstractVector{T}
     grad::AbstractVector{T}
     total_volume::T
     fixed_volume::T
-    tracing::Bool
-    topopt_trace::TopOptTrace{T}
     fraction::Bool
-    fevals::Int
-    maxfevals::Int
 end
 function Base.show(::IO, ::MIME{Symbol("text/plain")}, ::Volume)
     return println("TopOpt volume (fraction) function")
 end
 Nonconvex.NonconvexCore.getdim(::Volume) = 1
-@inline function Base.getproperty(vf::Volume, f::Symbol)
-    f === :reuse && return false
-    return getfield(vf, f)
-end
-@inline function Base.setproperty!(vf::Volume, f::Symbol, v)
-    f === :reuse && return false
-    return setfield!(vf, f, v)
-end
 
 function project(f::Volume, V, x)
     cellvolumes = f.cellvolumes
@@ -44,22 +31,17 @@ function project(f::Volume, V, x)
     return x
 end
 
-function Volume(
-    problem::StiffnessTopOptProblem{dim,T},
-    solver::AbstractFEASolver,
-    ::Type{TI}=Int;
-    fraction=true,
-    tracing=true,
-    maxfevals=10^8,
-) where {dim,T,TI}
+function Volume(solver::AbstractFEASolver; fraction=true)
+    problem = solver.problem
     dh = problem.ch.dh
     varind = problem.varind
     black = problem.black
     white = problem.white
     vars = solver.vars
     cellvolumes = solver.elementinfo.cellvolumes
+    T = eltype(solver.vars)
     grad = zeros(T, length(vars))
-    for (i, cell) in enumerate(CellIterator(dh))
+    for (i, _) in enumerate(CellIterator(dh))
         if !(black[i]) && !(white[i])
             grad[varind[i]] = cellvolumes[i]
         end
@@ -70,56 +52,30 @@ function Volume(
         grad ./= total_volume
     end
     return Volume(
-        problem,
-        solver,
-        cellvolumes,
-        grad,
-        total_volume,
-        fixed_volume,
-        tracing,
-        TopOptTrace{T,TI}(),
-        fraction,
-        0,
-        maxfevals,
+        solver, cellvolumes, grad, total_volume,
+        fixed_volume, fraction,
     )
 end
-function (v::Volume{T})(x, grad=nothing) where {T}
-    varind = v.problem.varind
-    black = v.problem.black
-    white = v.problem.white
+function (v::Volume{T})(x::PseudoDensities) where {T}
+    problem = v.solver.problem
+    varind = problem.varind
+    black = problem.black
+    white = problem.white
     cellvolumes = v.cellvolumes
     total_volume = v.total_volume
     fixed_volume = v.fixed_volume
     fraction = v.fraction
-    v.fevals += 1
-
-    tracing = v.tracing
-    topopt_trace = v.topopt_trace
-    dh = v.problem.ch.dh
-    xmin = v.solver.xmin
-
     vol = compute_volume(cellvolumes, x, fixed_volume, varind, black, white)
-
-    constrval = fraction ? vol / total_volume : vol
-    if grad !== nothing
-        grad .= v.grad
-    end
-    if tracing
-        push!(topopt_trace.v_hist, vol / total_volume)
-    end
-
-    return constrval
+    return fraction ? vol / total_volume : vol
 end
-function ChainRulesCore.rrule(vol::Volume, x)
-    grad = similar(vol.grad)
-    return vol(x, grad), Δ -> (nothing, Δ * grad)
+function ChainRulesCore.rrule(vol::Volume, x::PseudoDensities)
+    return vol(x), Δ -> (nothing, Tangent{typeof(x)}(x = Δ * vol.grad))
 end
 
 function compute_volume(cellvolumes::Vector, x, fixed_volume, varind, black, white)
     vol = fixed_volume
     for i in 1:length(cellvolumes)
         if !(black[i]) && !(white[i])
-            #vol += density(x[varind[i]], xmin)*cellvolumes[i]
             vol += x[varind[i]] * cellvolumes[i]
         end
     end

@@ -32,10 +32,6 @@ ins_dir = joinpath(@__DIR__, "instances", "ground_meshes");
 end
 
 @testset "Tim problem to solve" for (problem_dim, lc_ind) in product(["2d", "3d"], [0, 1])
-    problem_dim = "2d"
-    file_name = "tim_2d.json"
-    lc_ind = 1
-
     file_name = "tim_$(problem_dim).json"
     problem_file = joinpath(ins_dir, file_name)
 
@@ -61,10 +57,10 @@ end
     solver()
 
     # * Compliance
-    comp = TopOpt.Compliance(problem, solver)
-    obj = comp
-    volfrac = TopOpt.Volume(problem, solver)
-    constr = x -> volfrac(x) - V
+    comp = TopOpt.Compliance(solver)
+    obj = x -> comp(PseudoDensities(x))
+    volfrac = TopOpt.Volume(solver)
+    constr = x -> volfrac(PseudoDensities(x)) - V
 
     options = MMAOptions(; maxiter=3000, tol=Nonconvex.Tolerance(; kkt=0.001))
     convcriteria = Nonconvex.KKTCriteria()
@@ -111,10 +107,10 @@ end # end testset
     solver()
 
     # * Compliance
-    comp = TopOpt.Compliance(problem, solver)
-    obj = comp
-    volfrac = TopOpt.Volume(problem, solver)
-    constr = x -> volfrac(x) - V
+    comp = TopOpt.Compliance(solver)
+    obj = x -> comp(PseudoDensities(x))
+    volfrac = TopOpt.Volume(solver)
+    constr = x -> volfrac(PseudoDensities(x)) - V
 
     options = MMAOptions(; maxiter=3000, tol=Nonconvex.Tolerance(; kkt=0.001))
     convcriteria = Nonconvex.KKTCriteria()
