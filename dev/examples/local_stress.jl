@@ -20,12 +20,12 @@ for p in [1.0, 2.0, 3.0]
     solver = FEASolver(Direct, problem; xmin=xmin, penalty=penalty)
     stress = TopOpt.von_mises_stress_function(solver)
     filter = DensityFilter(solver; rmin=rmin)
-    volfrac = TopOpt.Volume(problem, solver)
+    volfrac = TopOpt.Volume(solver)
 
-    obj = x -> volfrac(filter(x)) - V
+    obj = x -> volfrac(filter(PseudoDensities(x))) - V
     thr = 150 # stress threshold
     constr = x -> begin
-        s = stress(filter(x))
+        s = stress(filter(PseudoDensities(x)))
         return (s .- thr) / length(s)
     end
     alg = PercivalAlg()
@@ -36,8 +36,8 @@ for p in [1.0, 2.0, 3.0]
     x = result.topology
 end
 
-maximum(stress(filter(x0)))
-maximum(stress(filter(x)))
+maximum(stress(filter(PseudoDensities(x0))))
+maximum(stress(filter(PseudoDensities(x))))
 
 # This file was generated using Literate.jl, https://github.com/fredrikekre/Literate.jl
 

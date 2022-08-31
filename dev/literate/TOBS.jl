@@ -25,12 +25,12 @@ problem = PointLoadCantilever(Val{:Linear}, problem_size, (1.0, 1.0), E, v, f);
 
 solver = FEASolver(Direct, problem; xmin=xmin);
 cheqfilter = DensityFilter(solver; rmin=rmin); # filter function
-comp = TopOpt.Compliance(problem, solver); # compliance function
+comp = TopOpt.Compliance(solver); # compliance function
 
 # The usual topology optimization problem adresses compliance minimization under volume restriction. Therefore, the objective and the constraint are:
 
-obj(x) = comp(cheqfilter(x)); # compliance objective
-constr(x) = sum(cheqfilter(x)) / length(x) - V; # volume fraction constraint
+obj(x) = comp(cheqfilter(PseudoDensities(x))); # compliance objective
+constr(x) = sum(cheqfilter(PseudoDensities(x))) / length(x) - V; # volume fraction constraint
 
 # ### Optimization setup
 

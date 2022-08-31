@@ -14,12 +14,12 @@ rmin = 2.0; # density filter radius
 penalty = TopOpt.PowerPenalty(3.0)
 solver = FEASolver(Direct, problem; xmin=xmin, penalty=penalty)
 
-comp = TopOpt.Compliance(problem, solver)
+comp = TopOpt.Compliance(solver)
 filter = DensityFilter(solver; rmin=rmin)
-obj = x -> comp(filter(x))
+obj = x -> comp(filter(PseudoDensities(x)))
 
-volfrac = TopOpt.Volume(problem, solver)
-constr = x -> volfrac(filter(x)) - V
+volfrac = TopOpt.Volume(solver)
+constr = x -> volfrac(filter(PseudoDensities(x))) - V
 
 mma_options =
     options = MMAOptions(;

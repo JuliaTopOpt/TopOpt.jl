@@ -29,13 +29,13 @@ filter = if problem isa TopOptProblems.TieBeam
 else
     DensityFilter(solver; rmin=rmin)
 end
-volfrac = TopOpt.Volume(problem, solver)
+volfrac = TopOpt.Volume(solver)
 
 x0 = ones(length(solver.vars))
-threshold = 2 * maximum(stress(filter(x0)))
+threshold = 3 * maximum(stress(filter(PseudoDensities(x0))))
 
-obj = x -> volfrac(filter(x))
-constr = x -> norm(stress(filter(x)), 5) - threshold
+obj = x -> volfrac(filter(PseudoDensities(x)))
+constr = x -> norm(stress(filter(PseudoDensities(x))), 5) - threshold
 options = MMAOptions(; maxiter=2000, tol=Nonconvex.Tolerance(; kkt=1e-4))
 
 x0 = fill(0.5, length(solver.vars))

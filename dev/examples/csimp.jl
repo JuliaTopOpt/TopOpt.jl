@@ -45,16 +45,16 @@ csimp_options = TopOpt.CSIMPOptions(;
 
 solver = FEASolver(Direct, problem; xmin=xmin, penalty=penalty)
 
-comp = Compliance(problem, solver)
+comp = Compliance(solver)
 filter = if problem isa TopOptProblems.TieBeam
     identity
 else
     DensityFilter(solver; rmin=rmin)
 end
-obj = x -> comp(filter(x))
+obj = x -> comp(filter(PseudoDensities(x)))
 
-volfrac = TopOpt.Volume(problem, solver)
-constr = x -> volfrac(filter(x)) - V
+volfrac = TopOpt.Volume(solver)
+constr = x -> volfrac(filter(PseudoDensities(x))) - V
 
 x0 = fill(V, length(solver.vars))
 optimizer = Optimizer(

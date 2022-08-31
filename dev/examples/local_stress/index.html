@@ -15,12 +15,12 @@ for p in [1.0, 2.0, 3.0]
     solver = FEASolver(Direct, problem; xmin=xmin, penalty=penalty)
     stress = TopOpt.von_mises_stress_function(solver)
     filter = DensityFilter(solver; rmin=rmin)
-    volfrac = TopOpt.Volume(problem, solver)
+    volfrac = TopOpt.Volume(solver)
 
-    obj = x -&gt; volfrac(filter(x)) - V
+    obj = x -&gt; volfrac(filter(PseudoDensities(x))) - V
     thr = 150 # stress threshold
     constr = x -&gt; begin
-        s = stress(filter(x))
+        s = stress(filter(PseudoDensities(x)))
         return (s .- thr) / length(s)
     end
     alg = PercivalAlg()
@@ -31,8 +31,8 @@ for p in [1.0, 2.0, 3.0]
     x = result.topology
 end
 
-maximum(stress(filter(x0)))
-maximum(stress(filter(x)))</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">154.18399852251116</code></pre><h3 id="(Optional)-Visualize-the-result-using-Makie.jl"><a class="docs-heading-anchor" href="#(Optional)-Visualize-the-result-using-Makie.jl">(Optional) Visualize the result using Makie.jl</a><a id="(Optional)-Visualize-the-result-using-Makie.jl-1"></a><a class="docs-heading-anchor-permalink" href="#(Optional)-Visualize-the-result-using-Makie.jl" title="Permalink"></a></h3><p>Need to run <code>using Pkg; Pkg.add(Makie)</code> first</p><pre><code class="language-julia hljs">using Makie
+maximum(stress(filter(PseudoDensities(x0))))
+maximum(stress(filter(PseudoDensities(x))))</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">154.18399852251116</code></pre><h3 id="(Optional)-Visualize-the-result-using-Makie.jl"><a class="docs-heading-anchor" href="#(Optional)-Visualize-the-result-using-Makie.jl">(Optional) Visualize the result using Makie.jl</a><a id="(Optional)-Visualize-the-result-using-Makie.jl-1"></a><a class="docs-heading-anchor-permalink" href="#(Optional)-Visualize-the-result-using-Makie.jl" title="Permalink"></a></h3><p>Need to run <code>using Pkg; Pkg.add(Makie)</code> first</p><pre><code class="language-julia hljs">using Makie
 using TopOpt.TopOptProblems.Visualization: visualize
 fig = visualize(
    problem; topology = penalty.(filter(result.topology)), default_exagg_scale = 0.07,
@@ -60,12 +60,12 @@ for p in [1.0, 2.0, 3.0]
     solver = FEASolver(Direct, problem; xmin=xmin, penalty=penalty)
     stress = TopOpt.von_mises_stress_function(solver)
     filter = DensityFilter(solver; rmin=rmin)
-    volfrac = TopOpt.Volume(problem, solver)
+    volfrac = TopOpt.Volume(solver)
 
-    obj = x -&gt; volfrac(filter(x)) - V
+    obj = x -&gt; volfrac(filter(PseudoDensities(x))) - V
     thr = 150 # stress threshold
     constr = x -&gt; begin
-        s = stress(filter(x))
+        s = stress(filter(PseudoDensities(x)))
         return (s .- thr) / length(s)
     end
     alg = PercivalAlg()
@@ -76,7 +76,7 @@ for p in [1.0, 2.0, 3.0]
     x = result.topology
 end
 
-maximum(stress(filter(x0)))
-maximum(stress(filter(x)))
+maximum(stress(filter(PseudoDensities(x0))))
+maximum(stress(filter(PseudoDensities(x))))
 
-# This file was generated using Literate.jl, https://github.com/fredrikekre/Literate.jl</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.22 on <span class="colophon-date" title="Sunday 24 July 2022 16:59">Sunday 24 July 2022</span>. Using Julia version 1.7.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+# This file was generated using Literate.jl, https://github.com/fredrikekre/Literate.jl</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.23 on <span class="colophon-date" title="Wednesday 31 August 2022 20:34">Wednesday 31 August 2022</span>. Using Julia version 1.7.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>

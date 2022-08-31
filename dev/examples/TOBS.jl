@@ -13,10 +13,10 @@ problem = PointLoadCantilever(Val{:Linear}, problem_size, (1.0, 1.0), E, v, f);
 
 solver = FEASolver(Direct, problem; xmin=xmin);
 cheqfilter = DensityFilter(solver; rmin=rmin); # filter function
-comp = TopOpt.Compliance(problem, solver); # compliance function
+comp = TopOpt.Compliance(solver); # compliance function
 
-obj(x) = comp(cheqfilter(x)); # compliance objective
-constr(x) = sum(cheqfilter(x)) / length(x) - V; # volume fraction constraint
+obj(x) = comp(cheqfilter(PseudoDensities(x))); # compliance objective
+constr(x) = sum(cheqfilter(PseudoDensities(x))) / length(x) - V; # volume fraction constraint
 
 m = Model(obj); # create optimization model
 addvar!(m, zeros(length(x0)), ones(length(x0))); # setup optimization variables
