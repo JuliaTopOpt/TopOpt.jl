@@ -40,6 +40,7 @@ i = 1
     x = copy(x0)
     x .= 1
     for p in 1.0:1.0:3.0
+        global x
         penalty = TopOpt.PowerPenalty(p)
         # Define a finite element solver
         solver = FEASolver(Direct, problem; xmin=xmin, penalty=penalty)

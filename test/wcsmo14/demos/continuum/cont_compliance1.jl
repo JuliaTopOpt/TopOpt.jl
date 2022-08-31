@@ -18,15 +18,15 @@ problem = HalfMBB(Val{:Linear}, problem_size, (1.0, 1.0), E, v, f)
 
 solver = FEASolver(Direct, problem; xmin=xmin)
 cheqfilter = DensityFilter(solver; rmin=rmin)
-comp = TopOpt.Compliance(problem, solver)
+comp = TopOpt.Compliance(solver)
 
 function obj(x)
     # minimize compliance
-    return comp(cheqfilter(x))
+    return comp(cheqfilter(PseudoDensities(x)))
 end
 function constr(x)
     # volume fraction constraint
-    return sum(cheqfilter(x)) / length(x) - V
+    return sum(cheqfilter(PseudoDensities(x))) / length(x) - V
 end
 
 m = Model(obj)
@@ -40,7 +40,7 @@ TopOpt.setpenalty!(solver, p)
 
 @show obj(r.minimizer)
 @show constr(r.minimizer)
-topology = cheqfilter(r.minimizer)
+topology = cheqfilter(PseudoDensities(r.minimizer)).x
 # fig = visualize(problem, solver.u; 
 #     topology = topology, default_exagg_scale=0.0, scale_range=10.0)
 # Makie.display(fig)

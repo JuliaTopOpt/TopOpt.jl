@@ -21,15 +21,15 @@ solver = FEASolver(Direct, problem; xmin=xmin)
 
 cheqfilter = DensityFilter(solver; rmin=rmin)
 stress = TopOpt.von_mises_stress_function(solver)
-comp = TopOpt.Compliance(problem, solver)
+comp = TopOpt.Compliance(solver)
 
 function obj(x)
     # minimize volume
-    return sum(cheqfilter(x)) / length(x)
+    return sum(cheqfilter(PseudoDensities(x))) / length(x)
 end
 function constr(x)
     # compliance upper-bound
-    return comp(cheqfilter(x)) - compliance_threshold
+    return comp(cheqfilter(PseudoDensities(x))) - compliance_threshold
 end
 
 m = Model(obj)
@@ -44,8 +44,8 @@ TopOpt.setpenalty!(solver, p)
 
 @show obj(r.minimizer)
 @show constr(r.minimizer)
-@show maximum(stress(cheqfilter(r.minimizer)))
-topology = cheqfilter(r.minimizer)
+@show maximum(stress(cheqfilter(PseudoDensities(r.minimizer))))
+topology = cheqfilter(PseudoDensities(r.minimizer)).x
 # fig = visualize(problem, solver.u; 
 #     topology = topology, default_exagg_scale=0.0, scale_range=10.0)
 # Makie.display(fig)
