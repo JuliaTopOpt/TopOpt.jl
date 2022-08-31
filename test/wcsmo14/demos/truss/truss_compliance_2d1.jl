@@ -29,7 +29,7 @@ function obj(x)
 end
 function constr(x)
     # volume fraction constraint
-    return sum(PseudoDensities(x)) / length(x) - V
+    return sum(x) / length(x) - V
 end
 
 m = Model(obj)
