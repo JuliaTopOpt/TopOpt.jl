@@ -40,7 +40,7 @@ gm_ins_dir = joinpath(@__DIR__, "instances", "ground_meshes");
 
 #     Nonconvex.NonconvexCore.show_residuals[] = true
 
-#     comp = TopOpt.Compliance(problem, solver)
+#     comp = TopOpt.Compliance(solver)
 #     # TODO "manual" interior point loop, adjusting the c value every iter
 #     for c in [0.1] # 10:-0.1:0.1
 #         function obj(x)

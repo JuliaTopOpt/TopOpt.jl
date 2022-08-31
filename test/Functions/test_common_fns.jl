@@ -115,7 +115,7 @@ end
     problem = MultiLoad(base_problem, F)
     for p in (1.0, 2.0, 3.0)
         solver = FEASolver(Direct, problem; xmin=0.01, penalty=TopOpt.PowerPenalty(p))
-        exact_svd_block = BlockCompliance(problem, solver; method=:exact)
+        exact_svd_block = BlockCompliance(solver; method=:exact)
         constr = Nonconvex.FunctionWrapper(
             x -> exact_svd_block(x) .- 1000.0, length(exact_svd_block(PseudoDensities(solver.vars)))
         )

@@ -33,15 +33,15 @@ sizes = (3.0 / nels[1], 1.0 / nels[2])
 # Define compliance objective
 @timeit to "objective def" begin
     # Define compliance objective
-    comp = Compliance(problem, solver)
+    comp = Compliance(solver)
     filter = DensityFilter(solver; rmin=rmin)
-    obj = x -> comp(filter(x))
+    obj = x -> comp(filter(PseudoDensities(x)))
 end
 
 # Define volume constraint
 @timeit to "constraint def" begin
-    volfrac = TopOpt.Volume(problem, solver)
-    constr = x -> volfrac(filter(x)) - V
+    volfrac = TopOpt.Volume(solver)
+    constr = x -> volfrac(filter(PseudoDensities(x))) - V
 end
 
 # Define subproblem optimizer
