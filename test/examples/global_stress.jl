@@ -20,36 +20,36 @@ println("-"^10)
 
 i = 1
 # for i in 1:length(problems)
-    println(problem_names[i])
-    problem = problems[i]
-    # Parameter settings
-    xmin = 0.001 # minimum density
-    steps = 40 # maximum number of penalty steps, delta_p0 = 0.1
-    convcriteria = Nonconvex.KKTCriteria()
-    penalty = TopOpt.PowerPenalty(3.0)
-    # Define a finite element solver
-    solver = FEASolver(Direct, problem; xmin=xmin, penalty=penalty)
-    stress = TopOpt.von_mises_stress_function(solver)
-    filter = if problem isa TopOptProblems.TieBeam
-        identity
-    else
-        DensityFilter(solver; rmin=rmin)
-    end
-    volfrac = Volume(solver)
+println(problem_names[i])
+problem = problems[i]
+# Parameter settings
+xmin = 0.001 # minimum density
+steps = 40 # maximum number of penalty steps, delta_p0 = 0.1
+convcriteria = Nonconvex.KKTCriteria()
+penalty = TopOpt.PowerPenalty(3.0)
+# Define a finite element solver
+solver = FEASolver(Direct, problem; xmin=xmin, penalty=penalty)
+stress = TopOpt.von_mises_stress_function(solver)
+filter = if problem isa TopOptProblems.TieBeam
+    identity
+else
+    DensityFilter(solver; rmin=rmin)
+end
+volfrac = Volume(solver)
 
-    obj = x -> volfrac(filter(PseudoDensities(x)))
-    nvars = length(solver.vars)
-    x0 = fill(1.0, nvars)
-    threshold = 3 * maximum(stress(filter(PseudoDensities(x0))))
-    constr = x -> begin
-        norm(stress(filter(PseudoDensities(x))), 10) - threshold
-    end
+obj = x -> volfrac(filter(PseudoDensities(x)))
+nvars = length(solver.vars)
+x0 = fill(1.0, nvars)
+threshold = 3 * maximum(stress(filter(PseudoDensities(x0))))
+constr = x -> begin
+    norm(stress(filter(PseudoDensities(x))), 10) - threshold
+end
 
-    alg = NLoptAlg(:LD_MMA)
-    options = NLoptOptions()
-    model = Nonconvex.Model(obj)
-    Nonconvex.addvar!(model, zeros(nvars), ones(nvars))
-    Nonconvex.add_ineq_constraint!(model, constr)
-    r = Nonconvex.optimize(model, alg, x0; options)
-    @show obj(r.minimizer)
+alg = NLoptAlg(:LD_MMA)
+options = NLoptOptions()
+model = Nonconvex.Model(obj)
+Nonconvex.addvar!(model, zeros(nvars), ones(nvars))
+Nonconvex.add_ineq_constraint!(model, constr)
+r = Nonconvex.optimize(model, alg, x0; options)
+@show obj(r.minimizer)
 # end

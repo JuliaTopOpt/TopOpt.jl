@@ -68,7 +68,7 @@ function ChainRulesCore.rrule(bc::BlockCompliance, x::PseudoDensities)
         @unpack elementinfo = solver
         w = Δ
         compute_jtvp!_bc(newΔ, bc, bc.method, w)
-        return (nothing, Tangent{typeof(x)}(x = newΔ))
+        return (nothing, Tangent{typeof(x)}(; x=newΔ))
     end
 end
 

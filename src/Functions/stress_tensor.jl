@@ -87,8 +87,10 @@ function (f::ElementStressTensorKernel)(u::DisplacementResult)
     return c1 * I + c2 * ϵ
 end
 function ChainRulesCore.rrule(f::ElementStressTensorKernel, u::DisplacementResult)
-    v, (∇,) = AD.value_and_jacobian(AD.ForwardDiffBackend(), u -> vec(f(DisplacementResult(u))), u.u)
-    return reshape(v, f.dim, f.dim), Δ -> (NoTangent(), Tangent{typeof(u)}(u = ∇' * vec(Δ)))
+    v, (∇,) = AD.value_and_jacobian(
+        AD.ForwardDiffBackend(), u -> vec(f(DisplacementResult(u))), u.u
+    )
+    return reshape(v, f.dim, f.dim), Δ -> (NoTangent(), Tangent{typeof(u)}(; u=∇' * vec(Δ)))
 end
 
 function tensor_kernel(f::StressTensor, quad, basef)

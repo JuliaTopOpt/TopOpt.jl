@@ -19,13 +19,13 @@ whichdevice(::Any) = CPU()
 
 @reexport using Nonconvex, NonconvexMMA, NonconvexSemidefinite, NonconvexPercival
 
-struct PseudoDensities{I, P, F, T, N, A <: AbstractArray{T, N}} <: AbstractArray{T, N}
+struct PseudoDensities{I,P,F,T,N,A<:AbstractArray{T,N}} <: AbstractArray{T,N}
     x::A
-    function PseudoDensities(x::A) where {T, N, A <: AbstractArray{T, N}}
-        return new{false, false, false, T, N, A}(x)
+    function PseudoDensities(x::A) where {T,N,A<:AbstractArray{T,N}}
+        return new{false,false,false,T,N,A}(x)
     end
-    function PseudoDensities{I, P, F}(x::A) where {I, P, F, T, N, A <: AbstractArray{T, N}}
-        return new{I, P, F, T, N, A}(x)
+    function PseudoDensities{I,P,F}(x::A) where {I,P,F,T,N,A<:AbstractArray{T,N}}
+        return new{I,P,F,T,N,A}(x)
     end
 end
 
