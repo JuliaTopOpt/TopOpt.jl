@@ -51,10 +51,7 @@ function Volume(solver::AbstractFEASolver; fraction=true)
     if fraction
         grad ./= total_volume
     end
-    return Volume(
-        solver, cellvolumes, grad, total_volume,
-        fixed_volume, fraction,
-    )
+    return Volume(solver, cellvolumes, grad, total_volume, fixed_volume, fraction)
 end
 function (v::Volume{T})(x::PseudoDensities) where {T}
     problem = v.solver.problem
@@ -69,7 +66,7 @@ function (v::Volume{T})(x::PseudoDensities) where {T}
     return fraction ? vol / total_volume : vol
 end
 function ChainRulesCore.rrule(vol::Volume, x::PseudoDensities)
-    return vol(x), Δ -> (nothing, Tangent{typeof(x)}(x = Δ * vol.grad))
+    return vol(x), Δ -> (nothing, Tangent{typeof(x)}(; x=Δ * vol.grad))
 end
 
 function compute_volume(cellvolumes::Vector, x, fixed_volume, varind, black, white)

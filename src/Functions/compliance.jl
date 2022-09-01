@@ -28,15 +28,14 @@ function (o::Compliance{T})(x::PseudoDensities) where {T}
     solver.vars .= x.x
     solver()
     return compute_compliance(
-        cell_comp, grad, cell_dofs, Kes, u, black,
-        white, varind, solver.vars, penalty, xmin,
+        cell_comp, grad, cell_dofs, Kes, u, black, white, varind, solver.vars, penalty, xmin
     )
 end
 
 function ChainRulesCore.rrule(comp::Compliance, x::PseudoDensities)
     out = comp(x)
     out_grad = copy(comp.grad)
-    return out, Δ -> (nothing, Tangent{typeof(x)}(x = out_grad * Δ))
+    return out, Δ -> (nothing, Tangent{typeof(x)}(; x=out_grad * Δ))
 end
 
 """

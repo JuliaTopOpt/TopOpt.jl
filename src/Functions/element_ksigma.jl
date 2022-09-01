@@ -95,7 +95,9 @@ function (eksig::TrussElementKσ)(u::DisplacementResult, x::PseudoDensities)
     return copy(Kσes)
 end
 
-function ChainRulesCore.rrule(eksig::TrussElementKσ{T}, u::DisplacementResult, x::PseudoDensities) where {T}
+function ChainRulesCore.rrule(
+    eksig::TrussElementKσ{T}, u::DisplacementResult, x::PseudoDensities
+) where {T}
     @unpack problem, Kσes, global_dofs = eksig
     dh = problem.ch.dh
     Kσes = eksig(u, x)
@@ -122,8 +124,8 @@ function ChainRulesCore.rrule(eksig::TrussElementKσ{T}, u::DisplacementResult, 
             L_s=NoTangent(),
             global_dofs=NoTangent(),
         ),
-        Tangent{typeof(u)}(u = Δu),
-        Tangent{typeof(x)}(x = Δx)
+        Tangent{typeof(u)}(; u=Δu),
+        Tangent{typeof(x)}(; x=Δx)
     end
     return Kσes, pullback_fn
 end

@@ -117,7 +117,8 @@ end
         solver = FEASolver(Direct, problem; xmin=0.01, penalty=TopOpt.PowerPenalty(p))
         exact_svd_block = BlockCompliance(problem, solver; method=:exact)
         constr = Nonconvex.FunctionWrapper(
-            x -> exact_svd_block(x) .- 1000.0, length(exact_svd_block(PseudoDensities(solver.vars)))
+            x -> exact_svd_block(x) .- 1000.0,
+            length(exact_svd_block(PseudoDensities(solver.vars))),
         )
         for i in 1:3
             x = clamp.(rand(prod(nels)), 0.1, 1.0)

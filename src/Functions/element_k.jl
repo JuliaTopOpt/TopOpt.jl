@@ -1,4 +1,4 @@
-struct ElementStiffnessMatrix{T <: Real, M <: AbstractMatrix{T}} <: AbstractMatrix{T}
+struct ElementStiffnessMatrix{T<:Real,M<:AbstractMatrix{T}} <: AbstractMatrix{T}
     Ke::M
 end
 Base.length(x::ElementStiffnessMatrix) = length(x.x)
@@ -88,7 +88,8 @@ function ChainRulesCore.rrule(ek::ElementK, x::PseudoDensities)
             Kes_0=NoTangent(),
             penalty=NoTangent(),
             xmin=NoTangent(),
-        ), Tangent{typeof(x)}(x = Δx)
+        ),
+        Tangent{typeof(x)}(; x=Δx)
     end
     return Kes, pullback_fn
 end

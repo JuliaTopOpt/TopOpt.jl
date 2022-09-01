@@ -57,17 +57,18 @@ function SensFilter(
     )
 end
 
-function (cf::SensFilter)(x::PseudoDensities{I, P}) where {I, P}
-    return PseudoDensities{I, P, true}(x.x)
+function (cf::SensFilter)(x::PseudoDensities{I,P}) where {I,P}
+    return PseudoDensities{I,P,true}(x.x)
 end
 function ChainRulesCore.rrule(cf::SensFilter{true}, x::PseudoDensities)
-    return x, Δ -> begin
+    return x,
+    Δ -> begin
         if hasproperty(Δ, :x)
             newΔ = copy(Δ.x)
         else
             newΔ = copy(Δ)
         end
-        cf.rmin <= 0 && return (NoTangent(), Tangent{typeof(x)}(x = newΔ))
+        cf.rmin <= 0 && return (NoTangent(), Tangent{typeof(x)}(; x=newΔ))
         @unpack elementinfo, nodal_grad, cell_weights, metadata = cf
         @unpack black, white, varind, cellvolumes, cells = elementinfo
         @unpack cell_neighbouring_nodes, cell_node_weights = metadata
@@ -93,7 +94,7 @@ function ChainRulesCore.rrule(cf::SensFilter{true}, x::PseudoDensities)
             cell_node_weights,
             nodal_grad,
         )
-        return (NoTangent(), Tangent{typeof(x)}(x = newΔ))
+        return (NoTangent(), Tangent{typeof(x)}(; x=newΔ))
     end
 end
 

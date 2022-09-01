@@ -11,7 +11,7 @@ function Base.show(::IO, ::MIME{Symbol("text/plain")}, ::Displacement)
     return println("TopOpt displacement function")
 end
 
-struct DisplacementResult{T, N, A <: AbstractArray{T, N}} <: AbstractArray{T, N}
+struct DisplacementResult{T,N,A<:AbstractArray{T,N}} <: AbstractArray{T,N}
     u::A
 end
 
@@ -87,6 +87,6 @@ function ChainRulesCore.rrule(dp::Displacement, x::PseudoDensities)
             Keu = bcmatrix(Kes[e]) * u.u[global_dofs]
             dudx_tmp[e] = -dρe * dot(Keu, solver.lhs[global_dofs])
         end
-        return nothing, Tangent{typeof(x)}(x = dudx_tmp) # J1' * v, J2' * v
+        return nothing, Tangent{typeof(x)}(; x=dudx_tmp) # J1' * v, J2' * v
     end
 end

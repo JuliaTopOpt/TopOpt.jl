@@ -101,10 +101,11 @@ end
 
     for _ in 1:3
         vs = [rand(T, k, k) for i in 1:N]
-        f = x -> begin
-            Keσs = esigk(TopOpt.Functions.DisplacementResult(u), PseudoDensities(x))
-            sum([sum(Keσs[i] * vs[i]) for i in 1:length(x)])
-        end
+        f =
+            x -> begin
+                Keσs = esigk(TopOpt.Functions.DisplacementResult(u), PseudoDensities(x))
+                sum([sum(Keσs[i] * vs[i]) for i in 1:length(x)])
+            end
 
         x = clamp.(rand(nels), 0.1, 1.0)
 

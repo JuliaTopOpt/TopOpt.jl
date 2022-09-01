@@ -42,17 +42,17 @@ function DensityFilter(
     return DensityFilter(Val(false), metadata, rmin, jacobian)
 end
 
-function (cf::DensityFilter{true,T})(x::PseudoDensities{I, P}) where {I, P, T}
+function (cf::DensityFilter{true,T})(x::PseudoDensities{I,P}) where {I,P,T}
     cf.rmin <= 0 && return x
     @unpack jacobian = cf
     out = similar(x.x)
     mul!(out, jacobian, x)
-    return PseudoDensities{I, P, true}(out)
+    return PseudoDensities{I,P,true}(out)
 end
 function ChainRulesCore.rrule(f::DensityFilter{true}, x::PseudoDensities)
     return f(x), Δ -> begin
         _Δ = hasproperty(Δ, :x) ? Δ.x : Δ
-        (nothing, Tangent{typeof(x)}(x = f.jacobian' * _Δ))
+        (nothing, Tangent{typeof(x)}(; x=f.jacobian' * _Δ))
     end
 end
 
@@ -135,7 +135,7 @@ end
 function Nonconvex.NonconvexCore.getdim(f::ProjectedDensityFilter)
     return Nonconvex.NonconvexCore.getdim(f.filter)
 end
-function (cf::ProjectedDensityFilter)(x::PseudoDensities{I, P}) where {I, P}
+function (cf::ProjectedDensityFilter)(x::PseudoDensities{I,P}) where {I,P}
     if cf.preproj isa Nothing
         fx = x.x
     else
@@ -147,5 +147,5 @@ function (cf::ProjectedDensityFilter)(x::PseudoDensities{I, P}) where {I, P}
     else
         out = cf.postproj.(fx)
     end
-    return PseudoDensities{I, P, true}(out)
+    return PseudoDensities{I,P,true}(out)
 end
