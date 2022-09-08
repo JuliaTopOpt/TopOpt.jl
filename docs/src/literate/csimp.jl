@@ -57,11 +57,12 @@ addvar!(model, zeros(length(x0)), ones(length(x0)))
 add_ineq_constraint!(model, constr)
 alg = MMA87()
 
+nsteps = 40
 ps = range(1.0, 5.0, length = nsteps + 1)
 # exponentially decaying tolerance from 10^-2 to 10^-4
 tols = exp10.(range(-2, -4, length = nsteps + 1))
 x = x0
-for j in 1:nsteps
+for j in 1:nsteps+1
     p = ps[j]
     tol = tols[j]
     TopOpt.setpenalty!(solver, p)
