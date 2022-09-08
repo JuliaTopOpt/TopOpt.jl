@@ -15,10 +15,10 @@ DensityFilter(solver; rmin) = DensityFilter(Val(true), solver, rmin)
 function DensityFilter(
     ::Val{filtering}, solver::AbstractFEASolver, args...
 ) where {filtering}
-    return DensityFilter(Val(filtering), whichdevice(solver), solver, args...)
+    return DensityFilter(Val(filtering), solver, args...)
 end
 function DensityFilter(
-    ::Val{true}, ::CPU, solver::TS, rmin::T, ::Type{TI}=Int
+    ::Val{true}, solver::TS, rmin::T, ::Type{TI}=Int
 ) where {T,TI<:Integer,TS<:AbstractFEASolver}
     metadata = FilterMetadata(solver, rmin, TI)
     TM = typeof(metadata)
@@ -35,7 +35,7 @@ function DensityFilter(
 end
 
 function DensityFilter(
-    ::Val{false}, ::CPU, solver::TS, rmin::T, ::Type{TI}=Int
+    ::Val{false}, solver::TS, rmin::T, ::Type{TI}=Int
 ) where {T,TS<:AbstractFEASolver,TI<:Integer}
     metadata = FilterMetadata(T, TI)
     jacobian = zeros(T, 0, 0)

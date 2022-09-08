@@ -9,7 +9,6 @@ export AbstractPenalty,
     SigmoidProjection,
     ProjectedPenalty,
     setpenalty,
-    TopOptTrace,
     RaggedArray,
     @debug,
     compliance,
@@ -33,9 +32,6 @@ getsolver(f) = f.solver
 
 # Utilities
 include("utils.jl")
-
-# Trace definition
-include("traces.jl")
 
 # Penalty definitions
 include("penalties.jl")

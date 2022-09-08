@@ -3,20 +3,6 @@ module TopOpt
 const PENALTY_BEFORE_INTERPOLATION = true
 using Requires, Reexport
 
-macro cuda_only(mod, code)
-    return esc(
-        quote
-            @init @require CUDASupport = "97986420-7ec3-11e9-24cd-4f0e301eb539" @eval $mod begin
-                $code
-            end
-        end,
-    )
-end
-
-abstract type AbstractDevice end
-struct CPU <: AbstractDevice end
-whichdevice(::Any) = CPU()
-
 @reexport using Nonconvex, NonconvexMMA, NonconvexSemidefinite, NonconvexPercival
 
 struct PseudoDensities{I,P,F,T,N,A<:AbstractArray{T,N}} <: AbstractArray{T,N}
@@ -103,7 +89,6 @@ export TopOpt,
     SigmoidContinuation,
     Continuation,
     save_mesh,
-    CPU,
     DefaultCriteria,
     EnergyCriteria,
     PowerPenalty,

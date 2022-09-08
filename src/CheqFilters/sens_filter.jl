@@ -18,10 +18,10 @@ function SensFilter(solver::AbstractFEASolver; rmin)
     return SensFilter(Val(true), solver, rmin)
 end
 function SensFilter(::Val{filtering}, solver::AbstractFEASolver, args...) where {filtering}
-    return SensFilter(Val(filtering), whichdevice(solver), solver, args...)
+    return SensFilter(Val(filtering), solver, args...)
 end
 function SensFilter(
-    ::Val{true}, ::CPU, solver::TS, rmin::T, ::Type{TI}=Int
+    ::Val{true}, solver::TS, rmin::T, ::Type{TI}=Int
 ) where {T,TI<:Integer,TS<:AbstractFEASolver}
     metadata = FilterMetadata(solver, rmin, TI)
     TM = typeof(metadata)
@@ -45,7 +45,7 @@ function SensFilter(
 end
 
 function SensFilter(
-    ::Val{false}, ::CPU, solver::TS, rmin::T, ::Type{TI}=Int
+    ::Val{false}, solver::TS, rmin::T, ::Type{TI}=Int
 ) where {T,TS<:AbstractFEASolver,TI<:Integer}
     elementinfo = solver.elementinfo
     metadata = FilterMetadata(T, TI)

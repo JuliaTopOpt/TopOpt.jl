@@ -30,50 +30,37 @@ for i in 1:length(problems)
     V = 0.5 # volume fraction
     xmin = 0.001 # minimum density
     rmin = 3.0
-    steps = 10 # maximum number of penalty steps, delta_p0 = 0.5
-    reuse = true # adaptive penalty flag
+    steps = 9 # number of penalty steps
     convcriteria = Nonconvex.KKTCriteria()
+
+    x0 = fill(V, TopOpt.getncells(problem))
     penalty = TopOpt.PowerPenalty(1.0)
-    pcont = Continuation(penalty; steps=steps, xmin=xmin, pmax=5.0)
-
-    mma_options = options = MMAOptions(; maxiter=1000)
-    maxtol = 0.01 # maximum tolerance
-    mintol = 0.001 # minimum tolerance
-    b = log(mintol / maxtol) / steps
-    a = maxtol / exp(b)
-    mma_options_gen = TopOpt.MMAOptionsGen(;
-        steps=steps,
-        initial_options=mma_options,
-        kkttol_gen=ExponentialContinuation(a, b, 0.0, steps + 1, mintol),
-    )
-    csimp_options = TopOpt.CSIMPOptions(;
-        steps=steps, options_gen=mma_options_gen, p_gen=pcont, reuse=reuse
-    )
-
-    # Define a finite element solver
     solver = FEASolver(Direct, problem; xmin=xmin, penalty=penalty)
-    # Define compliance objective
-    comp = Compliance(solver)
-    filter = if problem isa TopOptProblems.TieBeam
+    global comp = Compliance(solver)
+    global filter = if problem isa TopOptProblems.TieBeam
         identity
     else
         DensityFilter(solver; rmin=rmin)
     end
-    obj = x -> comp(filter(PseudoDensities(x)))
-
+    global obj = x -> comp(filter(PseudoDensities(x)))
     # Define volume constraint
-    volfrac = Volume(solver)
-    constr = x -> volfrac(filter(PseudoDensities(x))) - V
+    global volfrac = Volume(solver)
+    global constr = x -> volfrac(filter(PseudoDensities(x))) - V
+    model = Model(obj)
+    addvar!(model, zeros(length(x0)), ones(length(x0)))
+    add_ineq_constraint!(model, constr)
+    alg = MMA87()
 
-    # Define subproblem optimizer
-    x0 = fill(V, length(solver.vars))
-    optimizer = Optimizer(
-        obj, constr, x0, MMA87(); options=mma_options, convcriteria=convcriteria
-    )
-    # Define continuation SIMP optimizer
-    simp = SIMP(optimizer, solver, penalty.p)
-    cont_simp = ContinuationSIMP(simp, steps, csimp_options)
-
-    # Solve
-    result = cont_simp(x0)
+    nsteps = 8
+    ps = range(1.0, 5.0, length = nsteps + 1)
+    tols = exp10.(range(-1, -3, length = nsteps + 1))
+    global x = x0
+    for j in 1:nsteps + 1
+        p = ps[j]
+        tol = tols[j]
+        TopOpt.setpenalty!(solver, p)
+        options = MMAOptions(; tol = Tolerance(kkt = tol), maxiter=1000)
+        res = optimize(model, alg, x; options, convcriteria)
+        global x = res.minimizer
+    end
 end

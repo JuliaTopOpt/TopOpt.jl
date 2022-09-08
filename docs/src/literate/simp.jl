@@ -45,33 +45,27 @@ constr = x -> volfrac(filter(PseudoDensities(x))) - V
 # You can enable the iteration printouts with `Nonconvex.NonconvexCore.show_residuals[] = true`
 
 # ### Define subproblem optimizer
-mma_options =
-    options = MMAOptions(;
-        maxiter=3000, tol=Nonconvex.Tolerance(; x=1e-3, f=1e-3, kkt=0.001)
-    )
-convcriteria = Nonconvex.KKTCriteria()
 x0 = fill(V, length(solver.vars))
-optimizer = Optimizer(
-    obj, constr, x0, MMA87(); options=mma_options, convcriteria=convcriteria
+model = Model(obj)
+addvar!(model, zeros(length(x0)), ones(length(x0)))
+add_ineq_constraint!(model, constr)
+alg = MMA87()
+options = MMAOptions(;
+  maxiter=3000, tol=Nonconvex.Tolerance(; x=1e-3, f=1e-3, kkt=0.001)
 )
+convcriteria = Nonconvex.KKTCriteria()
+r = optimize(model, alg, x0; options, convcriteria)
 
-# ### Define SIMP optimizer
-simp = SIMP(optimizer, solver, penalty.p);
-
-# ### Solve
-result = simp(x0);
-
-@show result.convstate
-@show optimizer.workspace.iter
-@show result.objval
+@show obj(r.minimizer)
 
 # ### (Optional) Visualize the result using Makie.jl
 # Need to run `using Pkg; Pkg.add(Makie)` first
 # ```julia
 # using TopOpt.TopOptProblems.Visualization: visualize
-# fig = visualize(problem; topology = result.topology,
-#     problem; topology = result.topology, default_exagg_scale = 0.07,
-#     scale_range = 10.0, vector_linewidth = 3, vector_arrowsize = 0.5,
+# fig = visualize(
+#     problem; topology = r.minimizer,
+#     default_exagg_scale = 0.07, scale_range = 10.0,
+#     vector_linewidth = 3, vector_arrowsize = 0.5,
 # )
 # Makie.display(fig)
 # ```
@@ -80,7 +74,7 @@ result = simp(x0);
 # Need to run `using Pkg; Pkg.add(GeometryBasics)` first
 # ```julia
 # import Makie, GeometryBasics
-# result_mesh = GeometryBasics.Mesh(problem, result.topology);
+# result_mesh = GeometryBasics.Mesh(problem, r.minimizer);
 # Makie.mesh(result_mesh)
 # ```
 

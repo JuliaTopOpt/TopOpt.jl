@@ -72,10 +72,10 @@ if GROUP == "All" || GROUP == "WCSMO14_2"
         include("wcsmo14/demos/truss/truss_compliance_3d2.jl")
     end
     @safetestset "WCSMO Benchmarks" begin
-        include("wcsmo14/jl_benchmarks/compare_neo99_2D.jl")
-        #include("wcsmo14/jl_benchmarks/compare_polytop.jl")
-        #include("wcsmo14/jl_benchmarks/compare_top3d.jl")
-        #include("wcsmo14/jl_benchmarks/compare_top3d125.jl")
-        #include("wcsmo14/jl_benchmarks/new_problems.jl")
+        # include("wcsmo14/jl_benchmarks/compare_neo99_2D.jl")
+        # include("wcsmo14/jl_benchmarks/compare_polytop.jl")
+        # include("wcsmo14/jl_benchmarks/compare_top3d.jl")
+        # include("wcsmo14/jl_benchmarks/compare_top3d125.jl")
+        # include("wcsmo14/jl_benchmarks/new_problems.jl")
     end
 end
