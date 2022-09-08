@@ -1,6 +1,6 @@
 module FEA
 
-using ..TopOpt: TopOpt, CPU, PENALTY_BEFORE_INTERPOLATION, whichdevice
+using ..TopOpt: TopOpt, PENALTY_BEFORE_INTERPOLATION
 using ..TopOptProblems, ..Utilities, Requires
 using Ferrite, Setfield, TimerOutputs, Preconditioners
 using IterativeSolvers, StaticArrays, SparseArrays

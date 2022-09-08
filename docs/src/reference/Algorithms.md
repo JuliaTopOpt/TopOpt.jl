@@ -14,15 +14,7 @@ TODO.
 
 ### SIMP
 
-```@docs
-SIMP
-```
-
-### Continuous CSIMP
-
-```@docs
-ContinuationSIMP
-```
+### Continuation CSIMP
 
 ### BESO
 

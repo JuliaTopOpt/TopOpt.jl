@@ -17,27 +17,30 @@ steps = 40 # maximum number of penalty steps, delta_p0 = 0.1
 
 # ### Continuation SIMP
 x0 = fill(0.5, 160 * 40) # initial design
+N = length(x0)
+penalty = TopOpt.PowerPenalty(1.0)
+solver = FEASolver(Direct, problem; xmin=xmin, penalty=penalty)
+stress = TopOpt.von_mises_stress_function(solver)
+filter = DensityFilter(solver; rmin=rmin)
+volfrac = TopOpt.Volume(solver)
+
+obj = x -> volfrac(filter(PseudoDensities(x))) - V
+thr = 150 # stress threshold
+constr = x -> begin
+    s = stress(filter(PseudoDensities(x)))
+    return (s .- thr) / length(s)
+end
+alg = PercivalAlg()
+options = PercivalOptions()
+model = Model(obj)
+addvar!(model, zeros(N), ones(N))
+add_ineq_constraint!(model, constr)
+
 x = copy(x0)
 for p in [1.0, 2.0, 3.0]
-    global penalty, stress, filter, result, stress, x
-    penalty = TopOpt.PowerPenalty(p)
-    solver = FEASolver(Direct, problem; xmin=xmin, penalty=penalty)
-    stress = TopOpt.von_mises_stress_function(solver)
-    filter = DensityFilter(solver; rmin=rmin)
-    volfrac = TopOpt.Volume(solver)
-
-    obj = x -> volfrac(filter(PseudoDensities(x))) - V
-    thr = 150 # stress threshold
-    constr = x -> begin
-        s = stress(filter(PseudoDensities(x)))
-        return (s .- thr) / length(s)
-    end
-    alg = PercivalAlg()
-    options = PercivalOptions()
-    optimizer = Optimizer(obj, constr, x, alg; options=options)
-    simp = SIMP(optimizer, solver, p)
-    result = simp(x)
-    x = result.topology
+    TopOpt.setpenalty!(solver, p)
+    global r = optimize(model, alg, x; options)
+    global x = r.minimizer
 end
 
 maximum(stress(filter(PseudoDensities(x0))))
@@ -49,7 +52,7 @@ maximum(stress(filter(PseudoDensities(x))))
 # using Makie
 # using TopOpt.TopOptProblems.Visualization: visualize
 # fig = visualize(
-#    problem; topology = penalty.(filter(result.topology)), default_exagg_scale = 0.07,
+#    problem; topology = r.minimizer, default_exagg_scale = 0.07,
 #    scale_range = 10.0, vector_linewidth = 3, vector_arrowsize = 0.5,
 # )
 # Makie.display(fig)

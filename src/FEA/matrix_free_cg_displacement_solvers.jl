@@ -29,11 +29,10 @@ function Base.show(
     return println("TopOpt matrix free conjugate gradient iterative solver")
 end
 function StaticMatrixFreeDisplacementSolver(sp, args...; kwargs...)
-    return StaticMatrixFreeDisplacementSolver(whichdevice(sp), sp, args...; kwargs...)
+    return StaticMatrixFreeDisplacementSolver(sp, args...; kwargs...)
 end
 
 function StaticMatrixFreeDisplacementSolver(
-    ::CPU,
     sp::StiffnessTopOptProblem{dim,T};
     conv=DefaultCriteria(),
     xmin=one(T) / 1000,

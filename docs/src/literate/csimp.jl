@@ -38,29 +38,10 @@ rmin = 3.0
 steps = 40 # maximum number of penalty steps, delta_p0 = 0.1
 reuse = true # adaptive penalty flag
 
-convcriteria = Nonconvex.GenericCriteria()
+convcriteria = Nonconvex.KKTCriteria()
+x0 = fill(V, TopOpt.getncells(problem))
 penalty = TopOpt.PowerPenalty(1.0)
-pcont = Continuation(penalty; steps=steps, xmin=xmin, pmax=5.0)
-
-# NOTE: non-convexity + computational error lead to different solutions that satisfy the KKT tolerance
-mma_options = options = MMAOptions(; maxiter=1000)
-maxtol = 0.01 # maximum tolerance
-mintol = 0.0001 # minimum tolerance
-b = log(mintol / maxtol) / steps
-a = maxtol / exp(b)
-mma_options_gen = TopOpt.MMAOptionsGen(;
-    steps=steps,
-    initial_options=mma_options,
-    ftol_gen=ExponentialContinuation(a, b, 0.0, steps + 1, mintol),
-)
-csimp_options = TopOpt.CSIMPOptions(;
-    steps=steps, options_gen=mma_options_gen, p_gen=pcont, reuse=reuse
-)
-
-# ### Define a finite element solver
 solver = FEASolver(Direct, problem; xmin=xmin, penalty=penalty)
-
-# ### Define compliance objective
 comp = Compliance(solver)
 filter = if problem isa TopOptProblems.TieBeam
     identity
@@ -68,34 +49,35 @@ else
     DensityFilter(solver; rmin=rmin)
 end
 obj = x -> comp(filter(PseudoDensities(x)))
-
-# ### Define volume constraint
-volfrac = TopOpt.Volume(solver)
+# Define volume constraint
+volfrac = Volume(solver)
 constr = x -> volfrac(filter(PseudoDensities(x))) - V
+model = Model(obj)
+addvar!(model, zeros(length(x0)), ones(length(x0)))
+add_ineq_constraint!(model, constr)
+alg = MMA87()
 
-# ### Define subproblem optimizer
-x0 = fill(V, length(solver.vars))
-optimizer = Optimizer(
-    obj, constr, x0, MMA87(); options=mma_options, convcriteria=convcriteria
-)
+ps = range(1.0, 5.0, length = nsteps + 1)
+# exponentially decaying tolerance from 10^-2 to 10^-4
+tols = exp10.(range(-2, -4, length = nsteps + 1))
+x = x0
+for j in 1:nsteps
+    p = ps[j]
+    tol = tols[j]
+    TopOpt.setpenalty!(solver, p)
+    options = MMAOptions(; tol = Tolerance(kkt = tol), maxiter=1000)
+    res = optimize(model, alg, x; options, convcriteria)
+    global x = res.minimizer
+end
 
-# ### Define continuation SIMP optimizer
-simp = SIMP(optimizer, solver, penalty.p)
-cont_simp = ContinuationSIMP(simp, steps, csimp_options)
-
-# ### Solve
-result = cont_simp(x0)
-
-@show result.convstate
-@show optimizer.workspace.iter
-@show result.objval
+@show obj(x)
+@show constr(x)
 
 # ### (Optional) Visualize the result using Makie.jl
 # Need to run `using Pkg; Pkg.add(Makie)` first
 # ```julia
 # using TopOpt.TopOptProblems.Visualization: visualize
-# fig = visualize(problem; topology = result.topology,
-#     problem; topology = result.topology, default_exagg_scale = 0.07,
+# fig = visualize(problem; topology = x, default_exagg_scale = 0.07,
 #     scale_range = 10.0, vector_linewidth = 3, vector_arrowsize = 0.5,
 # )
 # Makie.display(fig)

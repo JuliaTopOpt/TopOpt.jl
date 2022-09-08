@@ -2,8 +2,8 @@ module CheqFilters
 
 using ..Utilities, Ferrite, Requires
 using ..FEA, Statistics
-using ..TopOpt: CPU, TopOpt, ElementFEAInfo, PseudoDensities
-import ..TopOpt: whichdevice, PENALTY_BEFORE_INTERPOLATION
+using ..TopOpt: TopOpt, ElementFEAInfo, PseudoDensities
+import ..TopOpt: PENALTY_BEFORE_INTERPOLATION
 using Parameters: @unpack
 using SparseArrays, LinearAlgebra
 using ForwardDiff

@@ -10,7 +10,6 @@ using FromFile
 
 using TimerOutputs
 
-# function run_topopt()
 println("Start running.")
 # https://github.com/KristofferC/TimerOutputs.jl
 to = TimerOutput()
@@ -52,59 +51,25 @@ end
     constr = x -> volfrac(filter(PseudoDensities(x))) - V
 end
 
-# Define subproblem optimizer
-# TODO MMA02 converge to weird results under this criteria
-mma_options =
+@timeit to "problem definition" begin
+    x0 = fill(V, length(solver.vars))
+    model = Model(obj)
+    addvar!(model, zeros(length(x0)), ones(length(x0)))
+    add_ineq_constraint!(model, constr)
     options = MMAOptions(; maxiter=300, tol=Tolerance(; x=1e-3, fabs=1e-3, frel=0.0))
-ipopt_options = IpoptOptions(
-# maxiter = 100, 
-# tol = Tolerance(x = 1e-3, f = 1e-6),
-)
+    convcriteria = GenericCriteria()
+end
 
-convcriteria = GenericCriteria()
-# convcriteria = KKTCriteria()
-
-x0 = fill(V, length(solver.vars))
-@timeit to "optimizer def" optimizer = Optimizer(
-    obj,
-    constr,
-    x0,
-    MMA87();
-    options=mma_options,
-    # IpoptAlg(),
-    # options = ipopt_options,
-    convcriteria=convcriteria,
-);
-# MMA02(),
-
-# Define SIMP optimizer
-@timeit to "simp def" simp = SIMP(optimizer, solver, penalty.p);
-
-# Solve
-# initial solution, critical to set it to volfrac! (blame non-convexity :)
-@timeit to "simp run" result = simp(x0);
+@timeit to "simp run" r = optimize(model, alg, x0; options, convcriteria)
 
 # Print the timings in the default way
 show(to)
 println()
 
-@show result.convstate
-@show result.objval
-try
-    @show optimizer.workspace.iter
-catch
-    # IpoptWorkspace has no field iter
-end
-
 output = @capture_out begin
     show(to)
-    @show result.convstate
-    @show result.objval
-    try
-        @show optimizer.workspace.iter
-    catch
-        # IpoptWorkspace has no field iter
-    end
+    @show obj(r.minimizer)
+    @show constr(r.minimizer)
 end;
 
 open("jl-top3d.matlab_$(nels).txt", "w") do io
@@ -112,13 +77,8 @@ open("jl-top3d.matlab_$(nels).txt", "w") do io
 end
 
 # # # Visualize the result using Makie.jl
-# fig = visualize(problem; topology=result.topology, 
+# fig = visualize(problem; topology=r.minimizer,
 #     default_exagg_scale=0.07, scale_range=10.0, vector_linewidth=3, vector_arrowsize=0.5)
 # Makie.display(fig)
 
 # Makie.save("jl-top3d.matlab__$(nels).png", fig)
-
-# return problem, result
-# end
-
-# problem, result = run_topopt();
