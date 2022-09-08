@@ -21,23 +21,18 @@ obj = x -> comp(filter(PseudoDensities(x)))
 volfrac = TopOpt.Volume(solver)
 constr = x -> volfrac(filter(PseudoDensities(x))) - V
 
-mma_options =
-    options = MMAOptions(;
-        maxiter=3000, tol=Nonconvex.Tolerance(; x=1e-3, f=1e-3, kkt=0.001)
-    )
-convcriteria = Nonconvex.KKTCriteria()
 x0 = fill(V, length(solver.vars))
-optimizer = Optimizer(
-    obj, constr, x0, MMA87(); options=mma_options, convcriteria=convcriteria
+model = Model(obj)
+addvar!(model, zeros(length(x0)), ones(length(x0)))
+add_ineq_constraint!(model, constr)
+alg = MMA87()
+options = MMAOptions(;
+  maxiter=3000, tol=Nonconvex.Tolerance(; x=1e-3, f=1e-3, kkt=0.001)
 )
+convcriteria = Nonconvex.KKTCriteria()
+r = optimize(model, alg, x0; options, convcriteria)
 
-simp = SIMP(optimizer, solver, penalty.p);
-
-result = simp(x0);
-
-@show result.convstate
-@show optimizer.workspace.iter
-@show result.objval
+@show obj(r.minimizer)
 
 # This file was generated using Literate.jl, https://github.com/fredrikekre/Literate.jl
 

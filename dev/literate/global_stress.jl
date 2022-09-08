@@ -52,27 +52,26 @@ threshold = 3 * maximum(stress(filter(PseudoDensities(x0))))
 
 obj = x -> volfrac(filter(PseudoDensities(x)))
 constr = x -> norm(stress(filter(PseudoDensities(x))), 5) - threshold
-options = MMAOptions(; maxiter=2000, tol=Nonconvex.Tolerance(; kkt=1e-4))
 
 # ### Define subproblem optimizer
-x0 = fill(0.5, length(solver.vars))
-optimizer = Optimizer(obj, constr, x0, MMA87(); options=options, convcriteria=convcriteria)
+N = length(solver.vars)
+x0 = fill(0.5, N)
 
-# ### Define continuation SIMP optimizer
-simp = SIMP(optimizer, solver, 3.0)
+options = MMAOptions(; maxiter=2000, tol=Nonconvex.Tolerance(; kkt=1e-4))
+model = Model(obj)
+addvar!(model, zeros(N), ones(N))
+add_ineq_constraint!(model, constr)
+alg = MMA87()
+r = optimize(model, alg, x0; options, convcriteria)
 
-# ### Solve
-result = simp(x0)
-
-@show result.convstate
-@show optimizer.workspace.iter
-@show result.objval
+@show obj(r.minimizer)
+@show constr(r.minimizer)
 
 # ### (Optional) Visualize the result using Makie.jl
 # Need to run `using Pkg; Pkg.add(Makie)` first
 # ```julia
 # using TopOpt.TopOptProblems.Visualization: visualize
-# fig = visualize(problem; topology = result.topology)
+# fig = visualize(problem; topology = r.minimizer)
 # Makie.display(fig)
 # ```
 

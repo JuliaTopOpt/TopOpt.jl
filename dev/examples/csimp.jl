@@ -22,29 +22,11 @@ problem = problems[i]
 V = 0.5 # volume fraction
 xmin = 0.001 # minimum density
 rmin = 3.0
-steps = 40 # maximum number of penalty steps, delta_p0 = 0.1
-reuse = true # adaptive penalty flag
 
-convcriteria = Nonconvex.GenericCriteria()
+convcriteria = Nonconvex.KKTCriteria()
+x0 = fill(V, TopOpt.getncells(problem))
 penalty = TopOpt.PowerPenalty(1.0)
-pcont = Continuation(penalty; steps=steps, xmin=xmin, pmax=5.0)
-
-mma_options = options = MMAOptions(; maxiter=1000)
-maxtol = 0.01 # maximum tolerance
-mintol = 0.0001 # minimum tolerance
-b = log(mintol / maxtol) / steps
-a = maxtol / exp(b)
-mma_options_gen = TopOpt.MMAOptionsGen(;
-    steps=steps,
-    initial_options=mma_options,
-    ftol_gen=ExponentialContinuation(a, b, 0.0, steps + 1, mintol),
-)
-csimp_options = TopOpt.CSIMPOptions(;
-    steps=steps, options_gen=mma_options_gen, p_gen=pcont, reuse=reuse
-)
-
 solver = FEASolver(Direct, problem; xmin=xmin, penalty=penalty)
-
 comp = Compliance(solver)
 filter = if problem isa TopOptProblems.TieBeam
     identity
@@ -53,22 +35,29 @@ else
 end
 obj = x -> comp(filter(PseudoDensities(x)))
 
-volfrac = TopOpt.Volume(solver)
+volfrac = Volume(solver)
 constr = x -> volfrac(filter(PseudoDensities(x))) - V
+model = Model(obj)
+addvar!(model, zeros(length(x0)), ones(length(x0)))
+add_ineq_constraint!(model, constr)
+alg = MMA87()
 
-x0 = fill(V, length(solver.vars))
-optimizer = Optimizer(
-    obj, constr, x0, MMA87(); options=mma_options, convcriteria=convcriteria
-)
+nsteps = 8
+ps = range(1.0, 5.0, length = nsteps + 1)
 
-simp = SIMP(optimizer, solver, penalty.p)
-cont_simp = ContinuationSIMP(simp, steps, csimp_options)
+tols = exp10.(range(-2, -4, length = nsteps + 1))
+x = x0
+for j in 1:nsteps+1
+    p = ps[j]
+    tol = tols[j]
+    TopOpt.setpenalty!(solver, p)
+    options = MMAOptions(; tol = Tolerance(kkt = tol), maxiter=1000)
+    res = optimize(model, alg, x; options, convcriteria)
+    global x = res.minimizer
+end
 
-result = cont_simp(x0)
-
-@show result.convstate
-@show optimizer.workspace.iter
-@show result.objval
+@show obj(x)
+@show constr(x)
 
 # This file was generated using Literate.jl, https://github.com/fredrikekre/Literate.jl
 
