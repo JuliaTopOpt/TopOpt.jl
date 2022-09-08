@@ -35,8 +35,6 @@ problem = problems[i]
 V = 0.5 # volume fraction
 xmin = 0.001 # minimum density
 rmin = 3.0
-steps = 40 # maximum number of penalty steps, delta_p0 = 0.1
-reuse = true # adaptive penalty flag
 
 convcriteria = Nonconvex.KKTCriteria()
 x0 = fill(V, TopOpt.getncells(problem))
