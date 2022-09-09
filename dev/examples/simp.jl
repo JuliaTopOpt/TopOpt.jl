@@ -26,9 +26,7 @@ model = Model(obj)
 addvar!(model, zeros(length(x0)), ones(length(x0)))
 add_ineq_constraint!(model, constr)
 alg = MMA87()
-options = MMAOptions(;
-  maxiter=3000, tol=Nonconvex.Tolerance(; x=1e-3, f=1e-3, kkt=0.001)
-)
+options = MMAOptions(; maxiter=3000, tol=Nonconvex.Tolerance(; x=1e-3, f=1e-3, kkt=0.001))
 convcriteria = Nonconvex.KKTCriteria()
 r = optimize(model, alg, x0; options, convcriteria)
 
