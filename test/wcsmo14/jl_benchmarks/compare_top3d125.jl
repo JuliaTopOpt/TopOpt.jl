@@ -56,7 +56,7 @@ end
     add_ineq_constraint!(model, constr)
     alg = MMA87()
     options = MMAOptions(;
-        maxiter=1000, tol=Tolerance(; x=1e-3, fabs=1e-3, frel=0.0, kkt=1e-3),
+        maxiter=1000, tol=Tolerance(; x=1e-3, fabs=1e-3, frel=0.0, kkt=1e-3)
     )
     convcriteria = GenericCriteria()
 end

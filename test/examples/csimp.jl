@@ -52,14 +52,14 @@ for i in 1:length(problems)
     alg = MMA87()
 
     nsteps = 8
-    ps = range(1.0, 5.0, length = nsteps + 1)
-    tols = exp10.(range(-1, -3, length = nsteps + 1))
+    ps = range(1.0, 5.0; length=nsteps + 1)
+    tols = exp10.(range(-1, -3; length=nsteps + 1))
     global x = x0
-    for j in 1:nsteps + 1
+    for j in 1:(nsteps + 1)
         p = ps[j]
         tol = tols[j]
         TopOpt.setpenalty!(solver, p)
-        options = MMAOptions(; tol = Tolerance(kkt = tol), maxiter=1000)
+        options = MMAOptions(; tol=Tolerance(; kkt=tol), maxiter=1000)
         res = optimize(model, alg, x; options, convcriteria)
         global x = res.minimizer
     end
