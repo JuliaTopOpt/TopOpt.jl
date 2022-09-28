@@ -37,7 +37,8 @@ export Volume,
     PredictFunction,
     TrainFunction,
     StressTensor,
-    ElementStressTensor
+    ElementStressTensor,
+    MaterialInterpolation
 
 const to = TimerOutput()
 
@@ -64,5 +65,7 @@ include("element_k.jl")
 include("truss_stress.jl")
 
 include("neural.jl")
+
+include("interpolation.jl")
 
 end
