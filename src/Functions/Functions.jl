@@ -38,7 +38,9 @@ export Volume,
     TrainFunction,
     StressTensor,
     ElementStressTensor,
-    MaterialInterpolation
+    MaterialInterpolation,
+    MultiMaterialPseudoDensities,
+    element_densities
 
 const to = TimerOutput()
 

@@ -1,12 +1,16 @@
 struct MultiMaterialPseudoDensities{M <: AbstractMatrix}
     x::M
 end
-
+function MultiMaterialPseudoDensities(x::AbstractVector, nmats::Int)
+    d, r = divrem(length(x), nmats)
+    @assert r == 0
+    return MultiMaterialPseudoDensities(reshape(x, d, nmats))
+end
 function element_densities(x::MultiMaterialPseudoDensities, densities::AbstractVector)
     return x.x * densities
 end
 
-function sum(x::MultiMaterialPseudoDensities; dims)
+function Base.sum(x::MultiMaterialPseudoDensities; dims)
     return sum(x.x; dims)
 end
 
@@ -31,4 +35,8 @@ function (f::MaterialInterpolation)(x::AbstractMatrix)
     @assert size(x, 2) == length(f.ΔEs)
     y = map(f.penalty, x) * f.ΔEs .+ f.E0
     return PseudoDensities(y)
+end
+
+function Utilities.setpenalty!(interp::MaterialInterpolation, p::Real)
+    return Utilities.setpenalty!(interp.penalty, p)
 end

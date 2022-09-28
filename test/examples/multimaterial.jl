@@ -1,8 +1,8 @@
-using TopOpt, Test
+using TopOpt, Test, Zygote
 
 Es = [1e-4, 1.0, 2.0] # Young’s modulii of base material + 2 materials
-densities = [0.0, 1.0, 2.0] # for mass calculation
-nmats = 3
+densities = [1.0, 2.0] # for mass calculation
+nmats = 2
 
 v = 0.3 # Poisson’s ratio
 f = 1.0 # downward force
@@ -13,49 +13,51 @@ problem = PointLoadCantilever(
     (1.0, 1.0),
     1.0, v, f,
 )
-ncells = 160 * 40
-penalty = TopOpt.PowerPenalty(3.0)
-interp = MaterialInterpolation(Es, penalty)
+ncells = TopOpt.getncells(problem)
 
 # Parameter settings
 
 rmin = 3.0
+solver = FEASolver(Direct, problem; xmin = 0.0)
 filter = DensityFilter(solver; rmin=rmin)
 
-x0 = fill(M, TopOpt.getncells(problem) * (length(Es) - 1))
-
-solver = FEASolver(Direct, problem; xmin = 0.0)
-comp = Compliance(solver)
-obj = x -> comp(filter(PseudoDensities(x)))
-
 M = 0.5 # mass fraction
-function mass_constr(x::Matrix)
-    return sum(x * densities) / ncells - M
-end
-function mass_constr(x::Vector)
-    return mass_constr(reshape(x, ncells, nmats))
-end
-function multimat_constr(x::Vector)
-end
+x0 = fill(M / nmats, ncells * (length(Es) - 1))
 
-# Define volume constraint
-    global volfrac = Volume(solver)
-    global constr = x -> volfrac(filter(PseudoDensities(x))) - V
-    model = Model(obj)
-    addvar!(model, zeros(length(x0)), ones(length(x0)))
-    add_ineq_constraint!(model, constr)
-    alg = MMA87()
-
-    nsteps = 8
-    ps = range(1.0, 5.0; length=nsteps + 1)
-    tols = exp10.(range(-1, -3; length=nsteps + 1))
-    global x = x0
-    for j in 1:(nsteps + 1)
-        p = ps[j]
-        tol = tols[j]
-        TopOpt.setpenalty!(solver, p)
-        options = MMAOptions(; tol=Tolerance(; kkt=tol), maxiter=1000)
-        res = optimize(model, alg, x; options, convcriteria)
-        global x = res.minimizer
-    end
+comp = Compliance(solver)
+penalty = TopOpt.PowerPenalty(3.0)
+interp = MaterialInterpolation(Es, penalty)
+obj = x -> begin
+    return MultiMaterialPseudoDensities(x, nmats) |> interp |> filter |> comp
 end
+obj(x0)
+Zygote.gradient(obj, x0)
+
+# mass constraint
+constr1 = x -> begin
+    ρs = MultiMaterialPseudoDensities(x, nmats)
+    return sum(element_densities(ρs, densities)) / ncells - 1.0 # elements have unit volumes
+end
+constr1(x0)
+Zygote.gradient(constr1, x0)
+
+# material selection constraint
+constr2 = x -> begin
+    ρs = MultiMaterialPseudoDensities(x, nmats)
+    # aggregation
+    return sum(ρs, dims = 2) .- 1
+end
+constr2(x0)
+Zygote.jacobian(constr2, x0)
+
+model = Model(obj)
+addvar!(model, zeros(length(x0)), ones(length(x0)))
+add_ineq_constraint!(model, constr1)
+add_ineq_constraint!(model, constr2)
+alg = MMA87()
+
+tol = 1e-5
+options = MMAOptions(; tol=Tolerance(; kkt=tol), maxiter=1000)
+Nonconvex.NonconvexCore.show_residuals[] = true
+res = optimize(model, alg, x0; options)
+x = res.minimizer
