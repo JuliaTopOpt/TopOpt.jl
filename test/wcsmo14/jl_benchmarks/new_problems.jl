@@ -35,9 +35,9 @@ function NewPointLoadCantilever(
     ::Type{Val{CellType}},
     nels::NTuple{dim,Int},
     sizes::NTuple{dim},
-    E=1.0,
-    ν=0.3,
-    force=1.0,
+    E = 1.0,
+    ν = 0.3,
+    force = 1.0,
 ) where {dim,CellType}
     iseven(nels[2]) && (length(nels) < 3 || iseven(nels[3])) ||
         throw("Grid does not have an even number of elements along the y and/or z axes.")
@@ -65,7 +65,9 @@ function NewPointLoadCantilever(
     end
     if dim == 3
         addnodeset!(
-            rect_grid.grid, "down_force", x -> right(rect_grid, x) && bottom(rect_grid, x)
+            rect_grid.grid,
+            "down_force",
+            x -> right(rect_grid, x) && bottom(rect_grid, x),
         )
         #  && middlez(rect_grid, x));
     else
@@ -90,7 +92,10 @@ function NewPointLoadCantilever(
 
     #dbc = Dirichlet(:u, getfaceset(rect_grid.grid, "fixed_all"), (x,t) -> zeros(T, dim), collect(1:dim))
     dbc = Dirichlet(
-        :u, getnodeset(rect_grid.grid, "fixed_all"), (x, t) -> zeros(T, dim), collect(1:dim)
+        :u,
+        getnodeset(rect_grid.grid, "fixed_all"),
+        (x, t) -> zeros(T, dim),
+        collect(1:dim),
     )
     add!(ch, dbc)
     close!(ch)
@@ -110,7 +115,15 @@ function NewPointLoadCantilever(
     varind = find_varind(black, white)
 
     return NewPointLoadCantilever(
-        rect_grid, E, ν, ch, load_dict, black, white, varind, metadata
+        rect_grid,
+        E,
+        ν,
+        ch,
+        load_dict,
+        black,
+        white,
+        varind,
+        metadata,
     )
 end
 

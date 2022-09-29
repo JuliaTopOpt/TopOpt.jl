@@ -8,7 +8,6 @@ println("Start running.")
 # https://github.com/KristofferC/TimerOutputs.jl
 to = TimerOutput()
 reset_timer!(to)
-Nonconvex.NonconvexCore.show_residuals[] = true
 
 # Define the problem
 E = 1.0 # Young’s modulus
@@ -27,13 +26,13 @@ sizes = (3.0 / nels[1], 1.0 / nels[2])
 
 # Define a finite element solver
 @timeit to "penalty def" penalty = TopOpt.PowerPenalty(3.0)
-@timeit to "solver def" solver = FEASolver(Direct, problem; xmin=xmin, penalty=penalty);
+@timeit to "solver def" solver = FEASolver(Direct, problem; xmin = xmin, penalty = penalty);
 
 # Define compliance objective
 @timeit to "objective def" begin
     # Define compliance objective
     comp = Compliance(solver)
-    filter = DensityFilter(solver; rmin=rmin)
+    filter = DensityFilter(solver; rmin = rmin)
     obj = x -> comp(filter(PseudoDensities(x)))
 end
 
@@ -49,15 +48,17 @@ end
     addvar!(model, zeros(length(x0)), ones(length(x0)))
     add_ineq_constraint!(model, constr)
     alg = MMA87()
-    options = MMAOptions(;
-        maxiter=1000, tol=Tolerance(; x=1e-3, fabs=1e-3, frel=0.0, kkt=1e-3)
-    )
     convcriteria = GenericCriteria()
+    options = MMAOptions(;
+        maxiter = 1000,
+        tol = Tolerance(; x = 1e-3, fabs = 1e-3, frel = 0.0, kkt = 1e-3),
+        convcriteria,
+    )
 end
 
 # Solve
 # initial solution, critical to set it to volfrac! (blame non-convexity :)
-@timeit to "simp run" r = optimize(model, alg, x0; options, convcriteria)
+@timeit to "simp run" r = optimize(model, alg, x0; options)
 
 # Print the timings in the default way
 println()

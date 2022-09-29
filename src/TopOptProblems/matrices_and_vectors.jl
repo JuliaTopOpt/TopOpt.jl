@@ -52,7 +52,7 @@ initialize_K(sp::StiffnessTopOptProblem) = Symmetric(create_sparsity_pattern(sp.
 
 initialize_f(sp::StiffnessTopOptProblem{dim,T}) where {dim,T} = zeros(T, ndofs(sp.ch.dh))
 
-function make_Kes_and_fes(problem, quad_order=2)
+function make_Kes_and_fes(problem, quad_order = 2)
     return make_Kes_and_fes(problem, quad_order, Val{:Static})
 end
 function make_Kes_and_fes(problem, ::Type{Val{mat_type}}) where {mat_type}
@@ -79,9 +79,8 @@ function make_Kes_and_fes(problem, quad_order, ::Type{Val{mat_type}}) where {mat
     interpolation_space = Lagrange{dim,refshape,geom_order}()
     quadrature_rule = QuadratureRule{dim,refshape}(quad_order)
     cellvalues = CellScalarValues(quadrature_rule, interpolation_space)
-    facevalues = FaceScalarValues(
-        QuadratureRule{dim - 1,refshape}(quad_order), interpolation_space
-    )
+    facevalues =
+        FaceScalarValues(QuadratureRule{dim - 1,refshape}(quad_order), interpolation_space)
 
     # Calculate element stiffness matrices
     n_basefuncs = getnbasefunctions(cellvalues)
@@ -122,7 +121,7 @@ function _make_Kes_and_weights(
     body_force = ρ .* g # Force per unit volume
     Kes = Symmetric{T,MatrixType}[]
     sizehint!(Kes, nel)
-    weights = [zeros(VectorType) for i in 1:nel]
+    weights = [zeros(VectorType) for i = 1:nel]
     Ke_e = zeros(T, dim, dim)
     fe = zeros(T, Kesize)
     Ke_0 = Matrix{T}(undef, Kesize, Kesize)
@@ -131,19 +130,19 @@ function _make_Kes_and_weights(
         Ke_0 .= 0
         reinit!(cellvalues, cell)
         fe = weights[k]
-        for q_point in 1:getnquadpoints(cellvalues)
+        for q_point = 1:getnquadpoints(cellvalues)
             dΩ = getdetJdV(cellvalues, q_point)
-            for b in 1:n_basefuncs
+            for b = 1:n_basefuncs
                 ∇ϕb = shape_gradient(cellvalues, q_point, b)
                 ϕb = shape_value(cellvalues, q_point, b)
-                for d2 in 1:dim
-                    fe = @set fe[(b - 1) * dim + d2] += ϕb * body_force[d2] * dΩ
-                    for a in 1:n_basefuncs
+                for d2 = 1:dim
+                    fe = @set fe[(b-1)*dim+d2] += ϕb * body_force[d2] * dΩ
+                    for a = 1:n_basefuncs
                         ∇ϕa = shape_gradient(cellvalues, q_point, a)
                         Ke_e .= dotdot(∇ϕa, C, ∇ϕb) * dΩ
-                        for d1 in 1:dim
+                        for d1 = 1:dim
                             #if dim*(b-1) + d2 >= dim*(a-1) + d1
-                            Ke_0[dim * (a - 1) + d1, dim * (b - 1) + d2] += Ke_e[d1, d2]
+                            Ke_0[dim*(a-1)+d1, dim*(b-1)+d2] += Ke_e[d1, d2]
                             #end
                         end
                     end
@@ -174,31 +173,29 @@ function _make_Kes_and_weights(
     nel = getncells(dh.grid)
     body_force = ρ .* g # Force per unit volume
     Kes = let Kesize = Kesize, nel = nel
-        [Symmetric(zeros(T, Kesize, Kesize), :U) for i in 1:nel]
+        [Symmetric(zeros(T, Kesize, Kesize), :U) for i = 1:nel]
     end
     weights = let Kesize = Kesize, nel = nel
-        [zeros(T, Kesize) for i in 1:nel]
+        [zeros(T, Kesize) for i = 1:nel]
     end
     Ke_e = zeros(T, dim, dim)
     celliterator = CellIterator(dh)
     for (k, cell) in enumerate(celliterator)
         reinit!(cellvalues, cell)
         fe = weights[k]
-        for q_point in 1:getnquadpoints(cellvalues)
+        for q_point = 1:getnquadpoints(cellvalues)
             dΩ = getdetJdV(cellvalues, q_point)
-            for b in 1:n_basefuncs
+            for b = 1:n_basefuncs
                 ∇ϕb = shape_gradient(cellvalues, q_point, b)
                 ϕb = shape_value(cellvalues, q_point, b)
-                for d2 in 1:dim
-                    fe[(b - 1) * dim + d2] += ϕb * body_force[d2] * dΩ
-                    for a in 1:n_basefuncs
+                for d2 = 1:dim
+                    fe[(b-1)*dim+d2] += ϕb * body_force[d2] * dΩ
+                    for a = 1:n_basefuncs
                         ∇ϕa = shape_gradient(cellvalues, q_point, a)
                         Ke_e .= dotdot(∇ϕa, C, ∇ϕb) * dΩ
-                        for d1 in 1:dim
+                        for d1 = 1:dim
                             #if dim*(b-1) + d2 >= dim*(a-1) + d1
-                            Kes[k].data[dim * (a - 1) + d1, dim * (b - 1) + d2] += Ke_e[
-                                d1, d2
-                            ]
+                            Kes[k].data[dim*(a-1)+d1, dim*(b-1)+d2] += Ke_e[d1, d2]
                             #end
                         end
                     end
@@ -219,7 +216,7 @@ function _make_dloads(fes, problem, facevalues)
     N = nnodespercell(problem)
     T = floattype(problem)
     dloads = deepcopy(fes)
-    for i in 1:length(dloads)
+    for i = 1:length(dloads)
         if eltype(dloads) <: SArray
             dloads[i] = zero(eltype(dloads))
         else
@@ -241,16 +238,16 @@ function _make_dloads(fes, problem, facevalues)
             fe = dloads[cellid]
             getcoordinates!(cell_coords, grid, cellid)
             reinit!(facevalues, cell_coords, faceid)
-            for q_point in 1:getnquadpoints(facevalues)
+            for q_point = 1:getnquadpoints(facevalues)
                 dΓ = getdetJdV(facevalues, q_point) # Face area
                 normal = getnormal(facevalues, q_point) # Nomral vector at quad point
-                for i in 1:n_basefuncs
+                for i = 1:n_basefuncs
                     ϕ = shape_value(facevalues, q_point, i) # Shape function value
-                    for d in 1:dim
+                    for d = 1:dim
                         if fe isa SArray
-                            fe = @set fe[(i - 1) * dim + d] += ϕ * t * normal[d] * dΓ
+                            fe = @set fe[(i-1)*dim+d] += ϕ * t * normal[d] * dΓ
                         else
-                            fe[(i - 1) * dim + d] += ϕ * t * normal[d] * dΓ
+                            fe[(i-1)*dim+d] += ϕ * t * normal[d] * dΓ
                         end
                     end
                 end
@@ -279,7 +276,7 @@ function make_cload(problem)
     for nodeidx in keys(cloads)
         for (dofidx, force) in enumerate(cloads[nodeidx])
             if force != 0
-                dof = node_dofs[(nodeidx - 1) * dim + dofidx]
+                dof = node_dofs[(nodeidx-1)*dim+dofidx]
                 push!(inds, dof)
                 push!(vals, force)
             end

@@ -24,14 +24,13 @@ problem = problems[i]
 V = 0.5 # volume fraction
 xmin = 0.001 # minimum density
 steps = 40 # maximum number of penalty steps, delta_p0 = 0.1
-convcriteria = KKTCriteria()
 
 penalty = TopOpt.PowerPenalty(3.0)
 # Define a finite element solver
-solver = FEASolver(Direct, problem; xmin=xmin, penalty=penalty)
+solver = FEASolver(Direct, problem; xmin = xmin, penalty = penalty)
 # Define compliance objective
 stress = TopOpt.von_mises_stress_function(solver)
-filter = DensityFilter(solver; rmin=rmin)
+filter = DensityFilter(solver; rmin = rmin)
 volfrac = TopOpt.Volume(solver)
 nvars = length(solver.vars)
 x0 = fill(1.0, nvars)
@@ -39,14 +38,14 @@ threshold = 3 * maximum(stress(filter(PseudoDensities(x0))))
 
 x = copy(x0)
 x .= 1
-for p in 1.0:1.0:3.0
+for p = 1.0:1.0:3.0
     global x
     penalty = TopOpt.PowerPenalty(p)
     # Define a finite element solver
-    solver = FEASolver(Direct, problem; xmin=xmin, penalty=penalty)
+    solver = FEASolver(Direct, problem; xmin = xmin, penalty = penalty)
     # Define compliance objective
     stress = TopOpt.von_mises_stress_function(solver)
-    filter = DensityFilter(solver; rmin=rmin)
+    filter = DensityFilter(solver; rmin = rmin)
     volfrac = TopOpt.Volume(solver)
     obj = x -> 2volfrac(filter(PseudoDensities(x)))
     constr =
@@ -58,7 +57,7 @@ for p in 1.0:1.0:3.0
             ]
         end
     alg = PercivalAlg()
-    options = PercivalOptions(; max_iter=5, subsolver_max_eval=200)
+    options = PercivalOptions(; max_iter = 5, subsolver_max_eval = 200)
     model = Nonconvex.Model(obj)
     Nonconvex.addvar!(model, zeros(nvars), ones(nvars))
     Nonconvex.add_ineq_constraint!(model, constr)

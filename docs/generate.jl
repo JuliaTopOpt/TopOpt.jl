@@ -10,10 +10,10 @@ for example in readdir(EXAMPLE_DIR)
         script = Literate.script(input, GENERATED_DIR)
         code = strip(read(script, String))
         mdpost(str) = replace(str, "@__CODE__" => code)
-        Literate.markdown(input, GENERATED_DIR; postprocess=mdpost)
-        Literate.notebook(input, GENERATED_DIR; execute=true)
+        Literate.markdown(input, GENERATED_DIR; postprocess = mdpost)
+        Literate.notebook(input, GENERATED_DIR; execute = true)
     elseif any(endswith.(example, [".png", ".jpg", ".gif"]))
-        cp(joinpath(EXAMPLE_DIR, example), joinpath(GENERATED_DIR, example); force=true)
+        cp(joinpath(EXAMPLE_DIR, example), joinpath(GENERATED_DIR, example); force = true)
     else
         @warn "ignoring $example"
     end

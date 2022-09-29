@@ -20,10 +20,10 @@ const ferrite_to_vtk = Dict(
 Converting a Ferrite grid to a VTKUnstructuredData from [VTKDataTypes](https://github.com/mohamed82008/VTKDataTypes.jl).
 """
 function VTKDataTypes.VTKUnstructuredData(
-    grid::Ferrite.Grid{dim,<:Ferrite.Cell{dim,N,M},T}
+    grid::Ferrite.Grid{dim,<:Ferrite.Cell{dim,N,M},T},
 ) where {dim,N,M,T}
     celltype = ferrite_to_vtk[eltype(grid.cells)]
-    celltypes = [celltype for i in 1:length(grid.cells)]
+    celltypes = [celltype for i = 1:length(grid.cells)]
     connectivity = copy(reinterpret(NTuple{N,Int}, grid.cells))
     node_coords = copy(reshape(reinterpret(Float64, grid.nodes), dim, length(grid.nodes)))
     return VTKUnstructuredData(node_coords, celltypes, connectivity)
@@ -46,11 +46,13 @@ Do not want to spend more time on this now...
 function GeometryBasics.Mesh(glmesh::GeometryTypes.GLNormalVertexcolorMesh)
     newverts = reinterpret(GeometryBasics.Point{3,Float32}, glmesh.vertices)
     newfaces = reinterpret(
-        GeometryBasics.NgonFace{3,GeometryBasics.OffsetInteger{-1,UInt32}}, glmesh.faces
+        GeometryBasics.NgonFace{3,GeometryBasics.OffsetInteger{-1,UInt32}},
+        glmesh.faces,
     )
     newnormals = reinterpret(GeometryBasics.Vec{3,Float32}, glmesh.normals)
     return GeometryBasics.Mesh(
-        GeometryBasics.meta(newverts; normals=newnormals, color=glmesh.color), newfaces
+        GeometryBasics.meta(newverts; normals = newnormals, color = glmesh.color),
+        newfaces,
     )
 end
 
@@ -58,7 +60,9 @@ end
 Get mesh of the topopt problem with a given topology indicator vector
 """
 function GeometryBasics.Mesh(
-    problem::AbstractTopOptProblem, topology::Array{T,1}; kwargs...
+    problem::AbstractTopOptProblem,
+    topology::Array{T,1};
+    kwargs...,
 ) where {T}
     mesh = VTKUnstructuredData(problem)
     topology = round.(topology)
@@ -67,6 +71,6 @@ function GeometryBasics.Mesh(
     deleteat!(mesh.cell_types, inds)
     topology = topology[setdiff(1:length(topology), inds)]
     mesh.cell_data["topology"] = topology
-    glmesh = GLMesh(mesh; color="topology", kwargs...)
+    glmesh = GLMesh(mesh; color = "topology", kwargs...)
     return GeometryBasics.Mesh(glmesh)
 end

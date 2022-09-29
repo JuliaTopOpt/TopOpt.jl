@@ -96,7 +96,7 @@
 
     dof_cells = problem.metadata.dof_cells
     cell_dofs = problem.metadata.cell_dofs
-    for i in 1:Ferrite.ndofs(problem.ch.dh)
+    for i = 1:Ferrite.ndofs(problem.ch.dh)
         d_cells = dof_cells[i]
         for c in d_cells
             (cellid, localdof) = c
@@ -104,9 +104,8 @@
         end
     end
 
-    node_first_cells = [
-        (1, 1), (1, 2), (2, 2), (1, 4), (1, 3), (2, 3), (3, 4), (3, 3), (4, 3)
-    ]
+    node_first_cells =
+        [(1, 1), (1, 2), (2, 2), (1, 4), (1, 3), (2, 3), (3, 4), (3, 3), (4, 3)]
     # First node is the first cell's first node.
     @test problem.metadata.node_cells[1] == [(1, 1)]
     # Second node is the first cell's second node,

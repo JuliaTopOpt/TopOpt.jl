@@ -44,17 +44,17 @@ function GESO(
     vol::Volume,
     vol_limit,
     filter;
-    maxiter=1000,
-    tol=0.001,
-    p=3.0,
-    Pcmin=0.6,
-    Pcmax=1.0,
-    Pmmin=0.5,
-    Pmmax=1.0,
-    Pen=3.0,
-    sens_tol=tol / 100,
-    string_length=4,
-    k=10,
+    maxiter = 1000,
+    tol = 0.001,
+    p = 3.0,
+    Pcmin = 0.6,
+    Pcmax = 1.0,
+    Pmmin = 0.5,
+    Pmmax = 1.0,
+    Pen = 3.0,
+    sens_tol = tol / 100,
+    string_length = 4,
+    k = 10,
 )
     penalty = comp.solver.penalty
     setpenalty!(penalty, p)
@@ -70,7 +70,7 @@ function GESO(
     sens = zeros(T, nvars)
     old_sens = zeros(T, nvars)
     obj_trace = zeros(MVector{k,T})
-    var_volumes = vol.cellvolumes[.!black .& .!white]
+    var_volumes = vol.cellvolumes[.!black.&.!white]
     cum_var_volumes = zeros(T, nvars)
     order = zeros(Int, nvars)
     genotypes = trues(string_length, nvars)
@@ -125,12 +125,13 @@ end
 
 function get_probs(b::GESO, Prg)
     return (
-        b.Pcmin + (b.Pcmax - b.Pcmin) * Prg^b.Pen, b.Pmmin + (b.Pmmax - b.Pmmin) * Prg^b.Pen
+        b.Pcmin + (b.Pcmax - b.Pcmin) * Prg^b.Pen,
+        b.Pmmin + (b.Pmmax - b.Pmmin) * Prg^b.Pen,
     )
 end
 
 function crossover!(children, genotypes, i, j)
-    for k in 1:size(genotypes, 1)
+    for k = 1:size(genotypes, 1)
         r = rand()
         if r < 0.5
             children[k, i] = genotypes[k, i]
@@ -213,7 +214,7 @@ function update!(var_black, children, genotypes, Pc, Pm, high_class, mid_class, 
         genotypes .= children
 
         for i in high_class
-            for j in 1:size(genotypes, 1)
+            for j = 1:size(genotypes, 1)
                 r = rand()
                 if r < Pm && !genotypes[j, i]
                     genotypes[j, i] = !genotypes[j, i]
@@ -225,7 +226,7 @@ function update!(var_black, children, genotypes, Pc, Pm, high_class, mid_class, 
             end
         end
         for i in mid_class
-            for j in 1:size(genotypes, 1)
+            for j = 1:size(genotypes, 1)
                 r = rand()
                 if r < Pm && genotypes[j, i]
                     genotypes[j, i] = !genotypes[j, i]
@@ -237,7 +238,7 @@ function update!(var_black, children, genotypes, Pc, Pm, high_class, mid_class, 
             end
         end
         for i in low_class
-            for j in 1:size(genotypes, 1)
+            for j = 1:size(genotypes, 1)
                 r = rand()
                 if r < Pm && genotypes[j, i]
                     genotypes[j, i] = !genotypes[j, i]
@@ -253,7 +254,7 @@ function update!(var_black, children, genotypes, Pc, Pm, high_class, mid_class, 
     return var_black
 end
 
-function (b::GESO)(x0=copy(b.comp.solver.vars); seed=NaN)
+function (b::GESO)(x0 = copy(b.comp.solver.vars); seed = NaN)
     @unpack sens, old_sens, tol, maxiter = b
     @unpack obj_trace, topology, sens_tol, vars = b
     @unpack Pcmin, Pcmax, Pmmin, Pmmax, Pen = b
@@ -272,7 +273,7 @@ function (b::GESO)(x0=copy(b.comp.solver.vars); seed=NaN)
     isnan(seed) || Random.seed!(seed)
 
     # Initialize the topology
-    for i in 1:length(topology)
+    for i = 1:length(topology)
         if black[i]
             topology[i] = 1
         elseif white[i]
@@ -296,8 +297,8 @@ function (b::GESO)(x0=copy(b.comp.solver.vars); seed=NaN)
         if iter > 1
             old_sens .= sens
         end
-        for j in max(2, 10 - iter + 2):10
-            obj_trace[j - 1] = obj_trace[j]
+        for j = max(2, 10 - iter + 2):10
+            obj_trace[j-1] = obj_trace[j]
         end
         obj_trace[10], pb = Zygote.pullback(f, vars)
         sens = pb(1.0)[1]
@@ -307,20 +308,27 @@ function (b::GESO)(x0=copy(b.comp.solver.vars); seed=NaN)
         end
 
         # Classify the cells by their sensitivities
-        sortperm!(order, sens; rev=true)
+        sortperm!(order, sens; rev = true)
         accumulate!(+, cum_var_volumes, view(var_volumes, order))
         N1 = findfirst(check, cum_var_volumes) - 1
         N2 = (nel - N1) ÷ 2
         N3 = nvars - N1 - N2
         high_class = @view order[1:N1]
-        mid_class = @view order[(N1 + 1):(N1 + N2)]
-        low_class = @view order[(N1 + N2 + 1):end]
+        mid_class = @view order[(N1+1):(N1+N2)]
+        low_class = @view order[(N1+N2+1):end]
 
         # Crossover and mutation
         Prg = get_progress(current_volume, total_volume, design_volume)
         Pc, Pm = get_probs(b, Prg)
         vars .= update!(
-            var_black, children, genotypes, Pc, Pm, high_class, mid_class, low_class
+            var_black,
+            children,
+            genotypes,
+            Pc,
+            Pm,
+            high_class,
+            mid_class,
+            low_class,
         )
 
         # Update crossover and mutation probabilities
@@ -334,7 +342,7 @@ function (b::GESO)(x0=copy(b.comp.solver.vars); seed=NaN)
         end
     end
 
-    for i in 1:length(topology)
+    for i = 1:length(topology)
         if black[i]
             topology[i] = 1
         elseif white[i]

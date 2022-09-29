@@ -26,7 +26,7 @@ LinearAlgebra.dot(u::DisplacementResult, weights::AbstractArray) = dot(u.u, weig
 
 Construct the Displacement function struct.
 """
-function Displacement(solver::AbstractFEASolver; maxfevals=10^8)
+function Displacement(solver::AbstractFEASolver; maxfevals = 10^8)
     T = eltype(solver.u)
     dh = solver.problem.ch.dh
     k = ndofs_per_cell(dh)
@@ -79,14 +79,14 @@ function ChainRulesCore.rrule(dp::Displacement, x::PseudoDensities)
         else
             solver.rhs .= Δ
         end
-        solver(; reuse_chol=true, assemble_f=false)
+        solver(; reuse_chol = true, assemble_f = false)
         dudx_tmp .= 0
-        for e in 1:length(x.x)
+        for e = 1:length(x.x)
             _, dρe = get_ρ_dρ(x.x[e], penalty, xmin)
             celldofs!(global_dofs, dh, e)
             Keu = bcmatrix(Kes[e]) * u.u[global_dofs]
             dudx_tmp[e] = -dρe * dot(Keu, solver.lhs[global_dofs])
         end
-        return nothing, Tangent{typeof(x)}(; x=dudx_tmp) # J1' * v, J2' * v
+        return nothing, Tangent{typeof(x)}(; x = dudx_tmp) # J1' * v, J2' * v
     end
 end

@@ -57,7 +57,9 @@ rectgrid = RectilinearGrid((60,20), (1.0,1.0))
 ```
 """
 function RectilinearGrid(
-    ::Type{Val{CellType}}, nels::NTuple{dim,Int}, sizes::NTuple{dim,T}
+    ::Type{Val{CellType}},
+    nels::NTuple{dim,Int},
+    sizes::NTuple{dim,T},
 ) where {dim,T,CellType}
     if dim === 2
         if CellType === :Linear
@@ -139,7 +141,12 @@ LGrid(Val{:Linear}, (2, 4), (2, 2), Vec{2,Float64}((0.0,0.0)), Vec{2,Float64}((2
 ```
 """
 function LGrid(
-    ::Type{Val{CellType}}, ::Type{T}; length=100, height=100, upperslab=50, lowerslab=50
+    ::Type{Val{CellType}},
+    ::Type{T};
+    length = 100,
+    height = 100,
+    upperslab = 50,
+    lowerslab = 50,
 ) where {T,CellType}
     @assert length > upperslab
     @assert height > lowerslab
@@ -168,7 +175,11 @@ function LGrid(
 end
 
 function _LinearLGrid(
-    nel1::NTuple{2,Int}, nel2::NTuple{2,Int}, LL::Vec{2,T}, UR::Vec{2,T}, MR::Vec{2,T}
+    nel1::NTuple{2,Int},
+    nel2::NTuple{2,Int},
+    LL::Vec{2,T},
+    UR::Vec{2,T},
+    MR::Vec{2,T},
 ) where {T}
     @assert nel1[2] > nel2[2]
 
@@ -195,14 +206,14 @@ function _LinearLGrid(
     Ferrite._generate_2d_nodes!(nodes, n_nodes_x1, n_nodes_y1, LL, _LR, _UR, _UL)
 
     node_array1 = reshape(collect(1:n_nodes1), (n_nodes_x1, n_nodes_y1))
-    for j in 1:nel_y1, i in 1:nel_x1
+    for j = 1:nel_y1, i = 1:nel_x1
         push!(
             cells,
             Quadrilateral((
                 node_array1[i, j],
-                node_array1[i + 1, j],
-                node_array1[i + 1, j + 1],
-                node_array1[i, j + 1],
+                node_array1[i+1, j],
+                node_array1[i+1, j+1],
+                node_array1[i, j+1],
             )),
         )
         if i == 1
@@ -228,17 +239,16 @@ function _LinearLGrid(
     _UL = Vec{2,T}((_UR[1] + offsetstep, MR[2]))
     Ferrite._generate_2d_nodes!(nodes, n_nodes_x2, n_nodes_y2, _LL, _LR, MR, _UL)
 
-    node_array2 = reshape(
-        collect((indexoffset + 1):(indexoffset + n_nodes2)), (n_nodes_x2, n_nodes_y2)
-    )
-    for j in 1:nel_y2
+    node_array2 =
+        reshape(collect((indexoffset+1):(indexoffset+n_nodes2)), (n_nodes_x2, n_nodes_y2))
+    for j = 1:nel_y2
         push!(
             cells,
             Quadrilateral((
                 node_array1[end, j],
                 node_array2[1, j],
-                node_array2[1, j + 1],
-                node_array1[end, j + 1],
+                node_array2[1, j+1],
+                node_array1[end, j+1],
             )),
         )
         j == 1 && push!(boundary, (length(cells), 1))
@@ -247,14 +257,14 @@ function _LinearLGrid(
             push!(boundary, (length(cells), 2))
             push!(facesets["right"], (length(cells), 2))
         end
-        for i in 1:nel_x2
+        for i = 1:nel_x2
             push!(
                 cells,
                 Quadrilateral((
                     node_array2[i, j],
-                    node_array2[i + 1, j],
-                    node_array2[i + 1, j + 1],
-                    node_array2[i, j + 1],
+                    node_array2[i+1, j],
+                    node_array2[i+1, j+1],
+                    node_array2[i, j+1],
                 )),
             )
             if i == nel_x2
@@ -284,31 +294,30 @@ function _LinearLGrid(
     Ferrite._generate_2d_nodes!(nodes, n_nodes_x3, n_nodes_y3, _LL, _LR, UR, _UL)
 
     # Generate cells
-    node_array3 = reshape(
-        collect((indexoffset + 1):(indexoffset + n_nodes3)), (n_nodes_x3, n_nodes_y3)
-    )
+    node_array3 =
+        reshape(collect((indexoffset+1):(indexoffset+n_nodes3)), (n_nodes_x3, n_nodes_y3))
 
-    for i in 1:nel_x3
+    for i = 1:nel_x3
         push!(
             cells,
             Quadrilateral((
                 node_array1[i, end],
-                node_array1[i + 1, end],
-                node_array3[i + 1, 1],
+                node_array1[i+1, end],
+                node_array3[i+1, 1],
                 node_array3[i, 1],
             )),
         )
         i == 1 && push!(boundary, (length(cells), 4))
         i == nel_x3 && push!(boundary, (length(cells), 2))
     end
-    for j in 1:nel_y3, i in 1:nel_x3
+    for j = 1:nel_y3, i = 1:nel_x3
         push!(
             cells,
             Quadrilateral((
                 node_array3[i, j],
-                node_array3[i + 1, j],
-                node_array3[i + 1, j + 1],
-                node_array3[i, j + 1],
+                node_array3[i+1, j],
+                node_array3[i+1, j+1],
+                node_array3[i, j+1],
             )),
         )
         i == 1 && push!(boundary, (length(cells), 4))
@@ -322,12 +331,20 @@ function _LinearLGrid(
     boundary_matrix = Ferrite.boundaries_to_sparse(boundary)
 
     return Grid(
-        cells, nodes; facesets=facesets, nodesets=nodesets, boundary_matrix=boundary_matrix
+        cells,
+        nodes;
+        facesets = facesets,
+        nodesets = nodesets,
+        boundary_matrix = boundary_matrix,
     )
 end
 
 function _QuadraticLGrid(
-    nel1::NTuple{2,Int}, nel2::NTuple{2,Int}, LL::Vec{2,T}, UR::Vec{2,T}, MR::Vec{2,T}
+    nel1::NTuple{2,Int},
+    nel2::NTuple{2,Int},
+    LL::Vec{2,T},
+    UR::Vec{2,T},
+    MR::Vec{2,T},
 ) where {T}
     @assert nel1[2] > nel2[2]
 
@@ -354,19 +371,19 @@ function _QuadraticLGrid(
     Ferrite._generate_2d_nodes!(nodes, n_nodes_x1, n_nodes_y1, LL, _LR, _UR, _UL)
 
     node_array1 = reshape(collect(1:n_nodes1), (n_nodes_x1, n_nodes_y1))
-    for j in 1:nel_y1, i in 1:nel_x1
+    for j = 1:nel_y1, i = 1:nel_x1
         push!(
             cells,
             QuadraticQuadrilateral((
-                node_array1[2 * i - 1, 2 * j - 1],
-                node_array1[2 * i + 1, 2 * j - 1],
-                node_array1[2 * i + 1, 2 * j + 1],
-                node_array1[2 * i - 1, 2 * j + 1],
-                node_array1[2 * i, 2 * j - 1],
-                node_array1[2 * i + 1, 2 * j],
-                node_array1[2 * i, 2 * j + 1],
-                node_array1[2 * i - 1, 2 * j],
-                node_array1[2 * i, 2 * j],
+                node_array1[2*i-1, 2*j-1],
+                node_array1[2*i+1, 2*j-1],
+                node_array1[2*i+1, 2*j+1],
+                node_array1[2*i-1, 2*j+1],
+                node_array1[2*i, 2*j-1],
+                node_array1[2*i+1, 2*j],
+                node_array1[2*i, 2*j+1],
+                node_array1[2*i-1, 2*j],
+                node_array1[2*i, 2*j],
             )),
         )
         if i == 1
@@ -392,22 +409,21 @@ function _QuadraticLGrid(
     _UL = Vec{2,T}((_UR[1] + offsetstep, MR[2]))
     Ferrite._generate_2d_nodes!(nodes, n_nodes_x2, n_nodes_y2, _LL, _LR, MR, _UL)
 
-    node_array2 = reshape(
-        collect((indexoffset + 1):(indexoffset + n_nodes2)), (n_nodes_x2, n_nodes_y2)
-    )
-    for j in 1:nel_y2
+    node_array2 =
+        reshape(collect((indexoffset+1):(indexoffset+n_nodes2)), (n_nodes_x2, n_nodes_y2))
+    for j = 1:nel_y2
         push!(
             cells,
             QuadraticQuadrilateral((
-                node_array1[end, 2 * j - 1],
-                node_array2[2, 2 * j - 1],
-                node_array2[2, 2 * j + 1],
-                node_array1[end, 2 * j + 1],
-                node_array2[1, 2 * j - 1],
-                node_array2[2, 2 * j],
-                node_array2[1, 2 * j + 1],
-                node_array1[end, 2 * j],
-                node_array2[1, 2 * j],
+                node_array1[end, 2*j-1],
+                node_array2[2, 2*j-1],
+                node_array2[2, 2*j+1],
+                node_array1[end, 2*j+1],
+                node_array2[1, 2*j-1],
+                node_array2[2, 2*j],
+                node_array2[1, 2*j+1],
+                node_array1[end, 2*j],
+                node_array2[1, 2*j],
             )),
         )
         j == 1 && push!(boundary, (length(cells), 1))
@@ -416,19 +432,19 @@ function _QuadraticLGrid(
             push!(boundary, (length(cells), 2))
             push!(facesets["right"], (length(cells), 2))
         end
-        for i in 1:nel_x2
+        for i = 1:nel_x2
             push!(
                 cells,
                 QuadraticQuadrilateral((
-                    node_array2[2 * i, 2 * j - 1],
-                    node_array2[2 * i + 2, 2 * j - 1],
-                    node_array2[2 * i + 2, 2 * j + 1],
-                    node_array2[2 * i, 2 * j + 1],
-                    node_array2[2 * i + 1, 2 * j - 1],
-                    node_array2[2 * i + 2, 2 * j],
-                    node_array2[2 * i + 1, 2 * j + 1],
-                    node_array2[2 * i, 2 * j],
-                    node_array2[2 * i + 1, 2 * j],
+                    node_array2[2*i, 2*j-1],
+                    node_array2[2*i+2, 2*j-1],
+                    node_array2[2*i+2, 2*j+1],
+                    node_array2[2*i, 2*j+1],
+                    node_array2[2*i+1, 2*j-1],
+                    node_array2[2*i+2, 2*j],
+                    node_array2[2*i+1, 2*j+1],
+                    node_array2[2*i, 2*j],
+                    node_array2[2*i+1, 2*j],
                 )),
             )
             if i == nel_x2
@@ -458,41 +474,40 @@ function _QuadraticLGrid(
     Ferrite._generate_2d_nodes!(nodes, n_nodes_x3, n_nodes_y3, _LL, _LR, UR, _UL)
 
     # Generate cells
-    node_array3 = reshape(
-        collect((indexoffset + 1):(indexoffset + n_nodes3)), (n_nodes_x3, n_nodes_y3)
-    )
+    node_array3 =
+        reshape(collect((indexoffset+1):(indexoffset+n_nodes3)), (n_nodes_x3, n_nodes_y3))
 
-    for i in 1:nel_x3
+    for i = 1:nel_x3
         push!(
             cells,
             QuadraticQuadrilateral((
-                node_array1[2i - 1, end],
-                node_array1[2i + 1, end],
-                node_array3[2i + 1, 2],
-                node_array3[2i - 1, 2],
+                node_array1[2i-1, end],
+                node_array1[2i+1, end],
+                node_array3[2i+1, 2],
+                node_array3[2i-1, 2],
                 node_array1[2i, end],
-                node_array3[2i + 1, 1],
+                node_array3[2i+1, 1],
                 node_array3[2i, 2],
-                node_array3[2i - 1, 1],
+                node_array3[2i-1, 1],
                 node_array3[2i, 1],
             )),
         )
         i == 1 && push!(boundary, (length(cells), 4))
         i == nel_x3 && push!(boundary, (length(cells), 2))
     end
-    for j in 1:nel_y3, i in 1:nel_x3
+    for j = 1:nel_y3, i = 1:nel_x3
         push!(
             cells,
             QuadraticQuadrilateral((
-                node_array3[2i - 1, 2j],
-                node_array3[2i + 1, 2j],
-                node_array3[2i + 1, 2j + 2],
-                node_array3[2i - 1, 2j + 2],
+                node_array3[2i-1, 2j],
+                node_array3[2i+1, 2j],
+                node_array3[2i+1, 2j+2],
+                node_array3[2i-1, 2j+2],
                 node_array3[2i, 2j],
-                node_array3[2i + 1, 2j + 1],
-                node_array3[2i, 2j + 2],
-                node_array3[2i - 1, 2j + 1],
-                node_array3[2i, 2j + 1],
+                node_array3[2i+1, 2j+1],
+                node_array3[2i, 2j+2],
+                node_array3[2i-1, 2j+1],
+                node_array3[2i, 2j+1],
             )),
         )
 
@@ -507,11 +522,19 @@ function _QuadraticLGrid(
     boundary_matrix = Ferrite.boundaries_to_sparse(boundary)
 
     return Grid(
-        cells, nodes; facesets=facesets, nodesets=nodesets, boundary_matrix=boundary_matrix
+        cells,
+        nodes;
+        facesets = facesets,
+        nodesets = nodesets,
+        boundary_matrix = boundary_matrix,
     )
 end
 
-function TieBeamGrid(::Type{Val{CellType}}, ::Type{T}=Float64, refine=1) where {T,CellType}
+function TieBeamGrid(
+    ::Type{Val{CellType}},
+    ::Type{T} = Float64,
+    refine = 1,
+) where {T,CellType}
     if CellType === :Linear
         return _LinearTieBeamGrid(T, refine)
     else
@@ -519,7 +542,7 @@ function TieBeamGrid(::Type{Val{CellType}}, ::Type{T}=Float64, refine=1) where {
     end
 end
 
-function _LinearTieBeamGrid(::Type{T}=Float64, refine=1) where {T}
+function _LinearTieBeamGrid(::Type{T} = Float64, refine = 1) where {T}
     nodes = Node{2,T}[]
     cells = Quadrilateral[]
     boundary = Tuple{Int,Int}[]
@@ -543,14 +566,14 @@ function _LinearTieBeamGrid(::Type{T}=Float64, refine=1) where {T}
     Ferrite._generate_2d_nodes!(nodes, n_nodes_x1, n_nodes_y1, LL, LR, UR, UL)
 
     node_array1 = reshape(collect(1:n_nodes1), (n_nodes_x1, n_nodes_y1))
-    for j in 1:nel_y1, i in 1:nel_x1
+    for j = 1:nel_y1, i = 1:nel_x1
         push!(
             cells,
             Quadrilateral((
                 node_array1[i, j],
-                node_array1[i + 1, j],
-                node_array1[i + 1, j + 1],
-                node_array1[i, j + 1],
+                node_array1[i+1, j],
+                node_array1[i+1, j+1],
+                node_array1[i, j+1],
             )),
         )
         if i == 1
@@ -588,18 +611,17 @@ function _LinearTieBeamGrid(::Type{T}=Float64, refine=1) where {T}
     UL = Vec{2,T}((T(30), nel_y1 / refine + T(4)))
 
     Ferrite._generate_2d_nodes!(nodes, n_nodes_x2, n_nodes_y2, LL, LR, UR, UL)
-    node_array2 = reshape(
-        collect((indexoffset + 1):(indexoffset + n_nodes2)), (n_nodes_x2, n_nodes_y2)
-    )
+    node_array2 =
+        reshape(collect((indexoffset+1):(indexoffset+n_nodes2)), (n_nodes_x2, n_nodes_y2))
 
     t = 30
-    for i in 1:refine
+    for i = 1:refine
         push!(
             cells,
             Quadrilateral((
-                node_array1[t * refine + i, nel_y1 + 1],
-                node_array1[t * refine + i + 1, nel_y1 + 1],
-                node_array2[i + 1, 1],
+                node_array1[t*refine+i, nel_y1+1],
+                node_array1[t*refine+i+1, nel_y1+1],
+                node_array2[i+1, 1],
                 node_array2[i, 1],
             )),
         )
@@ -613,14 +635,14 @@ function _LinearTieBeamGrid(::Type{T}=Float64, refine=1) where {T}
         end
     end
 
-    for j in 1:nel_y2, i in 1:nel_x2
+    for j = 1:nel_y2, i = 1:nel_x2
         push!(
             cells,
             Quadrilateral((
                 node_array2[i, j],
-                node_array2[i + 1, j],
-                node_array2[i + 1, j + 1],
-                node_array2[i, j + 1],
+                node_array2[i+1, j],
+                node_array2[i+1, j+1],
+                node_array2[i, j+1],
             )),
         )
         if i == 1
@@ -639,10 +661,10 @@ function _LinearTieBeamGrid(::Type{T}=Float64, refine=1) where {T}
     end
 
     boundary_matrix = Ferrite.boundaries_to_sparse(boundary)
-    return Grid(cells, nodes; facesets=facesets, boundary_matrix=boundary_matrix)
+    return Grid(cells, nodes; facesets = facesets, boundary_matrix = boundary_matrix)
 end
 
-function _QuadraticTieBeamGrid(::Type{T}=Float64, refine=1) where {T}
+function _QuadraticTieBeamGrid(::Type{T} = Float64, refine = 1) where {T}
     nodes = Node{2,T}[]
     cells = QuadraticQuadrilateral[]
     boundary = Tuple{Int,Int}[]
@@ -666,19 +688,19 @@ function _QuadraticTieBeamGrid(::Type{T}=Float64, refine=1) where {T}
     Ferrite._generate_2d_nodes!(nodes, n_nodes_x1, n_nodes_y1, LL, LR, UR, UL)
 
     node_array1 = reshape(collect(1:n_nodes1), (n_nodes_x1, n_nodes_y1))
-    for j in 1:nel_y1, i in 1:nel_x1
+    for j = 1:nel_y1, i = 1:nel_x1
         push!(
             cells,
             QuadraticQuadrilateral((
-                node_array1[2 * i - 1, 2 * j - 1],
-                node_array1[2 * i + 1, 2 * j - 1],
-                node_array1[2 * i + 1, 2 * j + 1],
-                node_array1[2 * i - 1, 2 * j + 1],
-                node_array1[2 * i, 2 * j - 1],
-                node_array1[2 * i + 1, 2 * j],
-                node_array1[2 * i, 2 * j + 1],
-                node_array1[2 * i - 1, 2 * j],
-                node_array1[2 * i, 2 * j],
+                node_array1[2*i-1, 2*j-1],
+                node_array1[2*i+1, 2*j-1],
+                node_array1[2*i+1, 2*j+1],
+                node_array1[2*i-1, 2*j+1],
+                node_array1[2*i, 2*j-1],
+                node_array1[2*i+1, 2*j],
+                node_array1[2*i, 2*j+1],
+                node_array1[2*i-1, 2*j],
+                node_array1[2*i, 2*j],
             )),
         )
         if i == 1
@@ -716,23 +738,22 @@ function _QuadraticTieBeamGrid(::Type{T}=Float64, refine=1) where {T}
     UL = Vec{2,T}((T(30), nel_y1 / refine + T(4)))
 
     Ferrite._generate_2d_nodes!(nodes, n_nodes_x2, n_nodes_y2, LL, LR, UR, UL)
-    node_array2 = reshape(
-        collect((indexoffset + 1):(indexoffset + n_nodes2)), (n_nodes_x2, n_nodes_y2)
-    )
+    node_array2 =
+        reshape(collect((indexoffset+1):(indexoffset+n_nodes2)), (n_nodes_x2, n_nodes_y2))
 
     t = 30
-    for i in 1:refine
+    for i = 1:refine
         push!(
             cells,
             QuadraticQuadrilateral((
-                node_array1[2 * (refine * t + i - 1) + 1, 2 * nel_y1 + 1],
-                node_array1[2 * (refine * t + i - 1) + 3, 2 * nel_y1 + 1],
-                node_array2[1 + 2i, 2],
-                node_array2[2i - 1, 2],
-                node_array1[2 * (refine * t + i - 1) + 2, 2 * nel_y1 + 1],
-                node_array2[1 + 2i, 1],
+                node_array1[2*(refine*t+i-1)+1, 2*nel_y1+1],
+                node_array1[2*(refine*t+i-1)+3, 2*nel_y1+1],
+                node_array2[1+2i, 2],
+                node_array2[2i-1, 2],
+                node_array1[2*(refine*t+i-1)+2, 2*nel_y1+1],
+                node_array2[1+2i, 1],
                 node_array2[2i, 2],
-                node_array2[2i - 1, 1],
+                node_array2[2i-1, 1],
                 node_array2[2i, 1],
             )),
         )
@@ -747,19 +768,19 @@ function _QuadraticTieBeamGrid(::Type{T}=Float64, refine=1) where {T}
         end
     end
 
-    for j in 1:nel_y2, i in 1:nel_x2
+    for j = 1:nel_y2, i = 1:nel_x2
         push!(
             cells,
             QuadraticQuadrilateral((
-                node_array2[2 * i - 1, 2 * j],
-                node_array2[2 * i + 1, 2 * j],
-                node_array2[2 * i + 1, 2 * j + 2],
-                node_array2[2 * i - 1, 2 * j + 2],
-                node_array2[2 * i, 2 * j],
-                node_array2[2 * i + 1, 2 * j + 1],
-                node_array2[2 * i, 2 * j + 2],
-                node_array2[2 * i - 1, 2 * j + 1],
-                node_array2[2 * i, 2 * j + 1],
+                node_array2[2*i-1, 2*j],
+                node_array2[2*i+1, 2*j],
+                node_array2[2*i+1, 2*j+2],
+                node_array2[2*i-1, 2*j+2],
+                node_array2[2*i, 2*j],
+                node_array2[2*i+1, 2*j+1],
+                node_array2[2*i, 2*j+2],
+                node_array2[2*i-1, 2*j+1],
+                node_array2[2*i, 2*j+1],
             )),
         )
         if i == 1
@@ -778,5 +799,5 @@ function _QuadraticTieBeamGrid(::Type{T}=Float64, refine=1) where {T}
     end
 
     boundary_matrix = Ferrite.boundaries_to_sparse(boundary)
-    return Grid(cells, nodes; facesets=facesets, boundary_matrix=boundary_matrix)
+    return Grid(cells, nodes; facesets = facesets, boundary_matrix = boundary_matrix)
 end

@@ -10,12 +10,12 @@ end
 function BlockCompliance(
     problem::MultiLoad,
     solver::AbstractDisplacementSolver;
-    method=:exact,
-    sample_once=true,
-    nv=nothing,
-    V=nothing,
-    sample_method=:hutch,
-    decay=1.0,
+    method = :exact,
+    sample_once = true,
+    nv = nothing,
+    V = nothing,
+    sample_method = :hutch,
+    decay = 1.0,
     kwargs...,
 )
     comp = Compliance(solver; kwargs...)
@@ -30,12 +30,20 @@ function BlockCompliance(
         if V === nothing
             nv = nv === nothing ? 1 : nv
             method = DiagonalEstimation(
-                problem.F, nv, length(comp.grad), sample_once, sample_method
+                problem.F,
+                nv,
+                length(comp.grad),
+                sample_once,
+                sample_method,
             )
         else
             nv = nv === nothing ? size(V, 2) : nv
             method = DiagonalEstimation(
-                problem.F, view(V, :, 1:nv), length(comp.grad), sample_once, sample_method
+                problem.F,
+                view(V, :, 1:nv),
+                length(comp.grad),
+                sample_once,
+                sample_method,
             )
         end
     end
@@ -68,7 +76,7 @@ function ChainRulesCore.rrule(bc::BlockCompliance, x::PseudoDensities)
         @unpack elementinfo = solver
         w = Δ
         compute_jtvp!_bc(newΔ, bc, bc.method, w)
-        return (nothing, Tangent{typeof(x)}(; x=newΔ))
+        return (nothing, Tangent{typeof(x)}(; x = newΔ))
     end
 end
 
@@ -81,15 +89,15 @@ end
 function compute_exact_bc(bc, F, Y)
     @unpack compliance, raw_val = bc
     @unpack solver = compliance
-    solver(; rhs=F, lhs=Y, assemble_f=false)
-    raw_val .= vec(sum(F .* Y; dims=1))
+    solver(; rhs = F, lhs = Y, assemble_f = false)
+    raw_val .= vec(sum(F .* Y; dims = 1))
     return raw_val
 end
 function compute_jtvp!_bc(out, bc, method::ExactDiagonal, w)
     @unpack Y, temp = method
     @unpack solver = bc.compliance
     out .= 0
-    for i in 1:size(Y, 2)
+    for i = 1:size(Y, 2)
         temp .= 0
         if w[i] != 0
             @views compute_inner(temp, Y[:, i], Y[:, i], solver)
@@ -106,8 +114,8 @@ function compute_exact_svd_bc(bc, F, US, V, Q, Y)
     @unpack compliance, raw_val = bc
     @unpack solver = compliance
     raw_val .= 0
-    solver(; assemble_f=false, rhs=US, lhs=Q)
-    for i in 1:length(raw_val)
+    solver(; assemble_f = false, rhs = US, lhs = Q)
+    for i = 1:length(raw_val)
         raw_val[i] = (F[:, i]' * Q) * V[i, :]
     end
     return raw_val
@@ -118,7 +126,7 @@ function compute_jtvp!_bc(out, bc, method::ExactSVDDiagonal, w)
     X = V' * Diagonal(w) * V
     ns = size(US, 2)
     out .= 0
-    for j in 1:ns, i in j:ns
+    for j = 1:ns, i = j:ns
         if X[i, j] != 0
             temp .= 0
             @views compute_inner(temp, Q[:, i], Q[:, j], solver)
@@ -141,9 +149,9 @@ function compute_approx_bc(bc, F, V, Y)
     nv = size(V, 2)
     raw_val .= 0
     bc.method.sample_once || bc.method.sample_method(V)
-    for i in 1:nv
+    for i = 1:nv
         @views mul!(solver.rhs, F, V[:, i])
-        solver(; assemble_f=false, reuse_chol=(i > 1))
+        solver(; assemble_f = false, reuse_chol = (i > 1))
         invKFv = solver.lhs
         Y[:, i] .= invKFv
         temp = F' * invKFv
@@ -157,11 +165,11 @@ function compute_jtvp!_bc(out, bc, method::DiagonalEstimation, w)
     @unpack F, V, Y, Q, temp = method
     nv = size(V, 2)
     out .= 0
-    for i in 1:nv
+    for i = 1:nv
         temp .= 0
         #q_i = K^-1 F (w .* v_i)
         @views mul!(solver.rhs, F, w .* V[:, i])
-        solver(; assemble_f=false, reuse_chol=(i > 1))
+        solver(; assemble_f = false, reuse_chol = (i > 1))
         Q[:, i] = solver.lhs
         #<q_i, dK/dx_e, y_i>
         @views compute_inner(temp, Q[:, i], Y[:, i], solver)
