@@ -50,6 +50,9 @@ if GROUP == "All" || GROUP == "Examples_2"
     @safetestset "Integer nonlinear programming for truss optimization example" begin
         include("examples/mixed_integer_truss/truss_compliance_2d1.jl")
     end
+    @safetestset "Multi-material" begin
+        include("examples/multimaterial.jl")
+    end
 end
 
 if GROUP == "All" || GROUP == "WCSMO14_1"
