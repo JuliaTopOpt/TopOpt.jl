@@ -24,7 +24,9 @@ abstract type AbstractMatrixFreeSolver <: AbstractDisplacementSolver end
     conv::Any
 end
 function Base.show(
-    ::IO, ::MIME{Symbol("text/plain")}, x::StaticMatrixFreeDisplacementSolver
+    ::IO,
+    ::MIME{Symbol("text/plain")},
+    x::StaticMatrixFreeDisplacementSolver,
 )
     return println("TopOpt matrix free conjugate gradient iterative solver")
 end
@@ -34,14 +36,14 @@ end
 
 function StaticMatrixFreeDisplacementSolver(
     sp::StiffnessTopOptProblem{dim,T};
-    conv=DefaultCriteria(),
-    xmin=one(T) / 1000,
-    cg_max_iter=700,
-    tol=xmin,
-    penalty=PowerPenalty{T}(1),
-    prev_penalty=deepcopy(penalty),
-    preconditioner=identity,
-    quad_order=2,
+    conv = DefaultCriteria(),
+    xmin = one(T) / 1000,
+    cg_max_iter = 700,
+    tol = xmin,
+    penalty = PowerPenalty{T}(1),
+    prev_penalty = deepcopy(penalty),
+    preconditioner = identity,
+    quad_order = 2,
 ) where {dim,T}
     elementinfo = ElementFEAInfo(sp, quad_order, Val{:Static})
     if eltype(elementinfo.Kes) <: Symmetric
@@ -49,7 +51,7 @@ function StaticMatrixFreeDisplacementSolver(
     else
         f = x -> sumdiag(rawmatrix(x))
     end
-    meandiag = mapreduce(f, +, elementinfo.Kes; init=zero(T))
+    meandiag = mapreduce(f, +, elementinfo.Kes; init = zero(T))
     xes = deepcopy(elementinfo.fes)
 
     u = zeros(T, ndofs(sp.ch.dh))
@@ -104,13 +106,22 @@ function buildoperator(solver::StaticMatrixFreeDisplacementSolver)
 end
 
 function (s::StaticMatrixFreeDisplacementSolver)(;
-    assemble_f=true, rhs=assemble_f ? s.f : s.rhs, lhs=assemble_f ? s.u : s.lhs, kwargs...
+    assemble_f = true,
+    rhs = assemble_f ? s.f : s.rhs,
+    lhs = assemble_f ? s.u : s.lhs,
+    kwargs...,
 )
     if assemble_f
         assemble_f!(s.f, s.problem, s.elementinfo, s.vars, getpenalty(s), s.xmin)
     end
     matrix_free_apply2f!(
-        rhs, s.elementinfo, s.meandiag, s.vars, s.problem, getpenalty(s), s.xmin
+        rhs,
+        s.elementinfo,
+        s.meandiag,
+        s.vars,
+        s.problem,
+        getpenalty(s),
+        s.xmin,
     )
 
     @unpack cg_max_iter, cg_statevars = s
@@ -128,23 +139,23 @@ function (s::StaticMatrixFreeDisplacementSolver)(;
             lhs,
             operator,
             rhs;
-            tol=tol,
-            maxiter=cg_max_iter,
-            log=false,
-            statevars=cg_statevars,
-            initially_zero=false,
+            tol = tol,
+            maxiter = cg_max_iter,
+            log = false,
+            statevars = cg_statevars,
+            initially_zero = false,
         )
     else
         return cg!(
             lhs,
             operator,
             rhs;
-            tol=tol,
-            maxiter=cg_max_iter,
-            log=false,
-            statevars=cg_statevars,
-            initially_zero=false,
-            Pl=preconditioner,
+            tol = tol,
+            maxiter = cg_max_iter,
+            log = false,
+            statevars = cg_statevars,
+            initially_zero = false,
+            Pl = preconditioner,
         )
     end
 end

@@ -56,8 +56,8 @@ if GROUP == "All" || GROUP == "WCSMO14_1"
     # This was originlly part of https://github.com/JuliaTopOpt/TopOpt.jl_WCSMO21
     @safetestset "Continuum demos" begin
         include("wcsmo14/demos/continuum/cont_compliance1.jl")
-        include("wcsmo14/demos/continuum/cont_compliance2.jl")
-        include("wcsmo14/demos/continuum/cont_stress.jl")
+        # include("wcsmo14/demos/continuum/cont_compliance2.jl")
+        # include("wcsmo14/demos/continuum/cont_stress.jl")
     end
 end
 

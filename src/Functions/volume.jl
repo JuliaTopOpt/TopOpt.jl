@@ -16,7 +16,7 @@ function project(f::Volume, V, x)
     if f.fraction
         V = V * f.total_volume
     end
-    inds = sortperm(x; rev=true)
+    inds = sortperm(x; rev = true)
     total = zero(V)
     i = 0
     while i <= length(inds)
@@ -31,7 +31,7 @@ function project(f::Volume, V, x)
     return x
 end
 
-function Volume(solver::AbstractFEASolver; fraction=true)
+function Volume(solver::AbstractFEASolver; fraction = true)
     problem = solver.problem
     dh = problem.ch.dh
     varind = problem.varind
@@ -66,12 +66,12 @@ function (v::Volume{T})(x::PseudoDensities) where {T}
     return fraction ? vol / total_volume : vol
 end
 function ChainRulesCore.rrule(vol::Volume, x::PseudoDensities)
-    return vol(x), Δ -> (nothing, Tangent{typeof(x)}(; x=Δ * vol.grad))
+    return vol(x), Δ -> (nothing, Tangent{typeof(x)}(; x = Δ * vol.grad))
 end
 
 function compute_volume(cellvolumes::Vector, x, fixed_volume, varind, black, white)
     vol = fixed_volume
-    for i in 1:length(cellvolumes)
+    for i = 1:length(cellvolumes)
         if !(black[i]) && !(white[i])
             vol += x[varind[i]] * cellvolumes[i]
         end

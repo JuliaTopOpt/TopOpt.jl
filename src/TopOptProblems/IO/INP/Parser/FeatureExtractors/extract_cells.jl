@@ -1,4 +1,4 @@
-function extract_cells(file, ::Type{TI}=Int) where {TI}
+function extract_cells(file, ::Type{TI} = Int) where {TI}
     line = readline(file)
 
     cell_idx_pattern = r"^(\d+)\s*,"
@@ -18,7 +18,9 @@ function extract_cells(file, ::Type{TI}=Int) where {TI}
 end
 
 function _extract_cells!(
-    cells::AbstractVector{NTuple{nnodes,TI}}, file, prev_cell_idx::TI
+    cells::AbstractVector{NTuple{nnodes,TI}},
+    file,
+    prev_cell_idx::TI,
 ) where {nnodes,TI}
     cell_idx_pattern = r"^(\d+)\s*,"
     node_idx_pattern = r",\s*(\d+)"

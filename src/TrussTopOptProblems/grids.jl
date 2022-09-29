@@ -21,7 +21,9 @@ nnodes(cell::Ferrite.Cell) = nnodes(typeof(cell))
 Ferrite.getncells(tg::TrussGrid) = Ferrite.getncells(tg.grid)
 
 function TrussGrid(
-    node_points::Matrix{T}, elements::Matrix{iT}; crosssecs=TrussFEACrossSec{T}(1.0)
+    node_points::Matrix{T},
+    elements::Matrix{iT};
+    crosssecs = TrussFEACrossSec{T}(1.0),
 ) where {xdim,T,iT,fT}
     grid = _LinearTrussGrid(node_points, elements)
     ncells = getncells(grid)
@@ -29,7 +31,7 @@ function TrussGrid(
         @assert length(crosssecs) == ncells
         crosssecs = convert(Vector{TrussFEACrossSec{T}}, crosssecs)
     elseif crosssecs isa TrussFEACrossSec
-        crosssecs = [convert(TrussFEACrossSec{T}, crosssecs) for i in 1:ncells]
+        crosssecs = [convert(TrussFEACrossSec{T}, crosssecs) for i = 1:ncells]
     else
         error("Invalid crossecs: $(crossecs)")
     end
@@ -39,7 +41,7 @@ end
 function TrussGrid(
     node_points::Dict{iT,SVector{xdim,T}},
     elements::Dict{iT,Tuple{iT,iT}};
-    crosssecs=TrussFEACrossSec{T}(1.0),
+    crosssecs = TrussFEACrossSec{T}(1.0),
 ) where {xdim,T,iT,fT}
     grid = _LinearTrussGrid(node_points, elements)
     ncells = getncells(grid)
@@ -47,7 +49,7 @@ function TrussGrid(
         @assert length(crosssecs) == ncells
         crosssecs = convert(Vector{TrussFEACrossSec{T}}, crosssecs)
     elseif crosssecs isa TrussFEACrossSec
-        crosssecs = [convert(TrussFEACrossSec{T}, crosssecs) for i in 1:ncells]
+        crosssecs = [convert(TrussFEACrossSec{T}, crosssecs) for i = 1:ncells]
     else
         error("Invalid crossecs: $(crossecs)")
     end
@@ -63,13 +65,13 @@ function _LinearTrussGrid(node_points::Matrix{T}, elements::Matrix{iT}) where {T
     @assert nconnect == 2
     CellType = xdim == 2 ? Line2D : Line3D
     cells = Vector{CellType}(undef, n_elems)
-    for e_ind in 1:n_elems
+    for e_ind = 1:n_elems
         cells[e_ind] = CellType((elements[:, e_ind]...,))
     end
 
     # * Generate nodes
     nodes = Vector{Node{xdim,T}}(undef, n_nodes)
-    for n_id in 1:n_nodes
+    for n_id = 1:n_nodes
         nodes[n_id] = Node((node_points[:, n_id]...,))
     end
 
@@ -77,7 +79,8 @@ function _LinearTrussGrid(node_points::Matrix{T}, elements::Matrix{iT}) where {T
 end
 
 function _LinearTrussGrid(
-    node_points::Dict{iT,SVector{xdim,T}}, elements::Dict{iT,Tuple{iT,iT}}
+    node_points::Dict{iT,SVector{xdim,T}},
+    elements::Dict{iT,Tuple{iT,iT}},
 ) where {xdim,T,iT,fT}
     n_nodes = length(node_points)
 

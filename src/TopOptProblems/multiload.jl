@@ -27,7 +27,7 @@ function MultiLoad(problem::StiffnessTopOptProblem, N::Int, load_rules::Vector{<
     V = Float64[]
     for (pos, f) in load_rules
         dofs = find_nearest_dofs(problem, pos)
-        for i in 1:N
+        for i = 1:N
             load = f()
             append!(I, dofs)
             push!(J, fill(i, length(dofs))...)
@@ -38,7 +38,9 @@ function MultiLoad(problem::StiffnessTopOptProblem, N::Int, load_rules::Vector{<
     return MultiLoad(problem, F)
 end
 function MultiLoad(
-    problem::StiffnessTopOptProblem, N::Int, dist::Distributions.Distribution=Uniform(-2, 2)
+    problem::StiffnessTopOptProblem,
+    N::Int,
+    dist::Distributions.Distribution = Uniform(-2, 2),
 )
     F = generate_random_loads(problem, N, dist, random_direction)
     return MultiLoad(problem, F)
@@ -79,7 +81,7 @@ function get_surface_dofs(problem::StiffnessTopOptProblem)
 
     faces, cells, _ = findnz(boundary_matrix)
     surface_node_inds = Int[]
-    for i in 1:length(cells)
+    for i = 1:length(cells)
         cellind = cells[i]
         faceind = faces[i]
         face = [Ferrite.faces(interpolation)[faceind]...]
@@ -94,8 +96,8 @@ end
 function generate_random_loads(
     problem::StiffnessTopOptProblem,
     N::Int,
-    scalar::Distributions.Distribution=Distributions.Uniform(-2, 2),
-    direction::Function=random_direction,
+    scalar::Distributions.Distribution = Distributions.Uniform(-2, 2),
+    direction::Function = random_direction,
 )
     loadrule = () -> direction() .* rand(scalar)
     surface_dofs = get_surface_dofs(problem)
@@ -104,7 +106,7 @@ function generate_random_loads(
     FJ = Int[]
     FV = Float64[]
     nodeinds = rand(1:size(surface_dofs, 2), N)
-    for i in 1:N
+    for i = 1:N
         load = loadrule()
         dofs = surface_dofs[:, nodeinds[i]]
         append!(FI, dofs)

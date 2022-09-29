@@ -38,8 +38,6 @@ gm_ins_dir = joinpath(@__DIR__, "instances", "ground_meshes");
 #     # smallest_pos_eigval = 1/sparse_eigvals[1]
 #     # @test smallest_pos_eigval >= 1.0
 
-#     Nonconvex.NonconvexCore.show_residuals[] = true
-
 #     comp = TopOpt.Compliance(solver)
 #     # TODO "manual" interior point loop, adjusting the c value every iter
 #     for c in [0.1] # 10:-0.1:0.1
@@ -96,9 +94,8 @@ gm_ins_dir = joinpath(@__DIR__, "instances", "ground_meshes");
     ndim, nnodes, ncells = length(node_points[1]), length(node_points), length(elements)
     loads = load_cases["0"]
 
-    problem = TrussProblem(
-        Val{:Linear}, node_points, elements, loads, fixities, mats, crossecs
-    )
+    problem =
+        TrussProblem(Val{:Linear}, node_points, elements, loads, fixities, mats, crossecs)
 
     xmin = 0.0001 # minimum density
     p = 1.0 # penalty
@@ -155,16 +152,16 @@ gm_ins_dir = joinpath(@__DIR__, "instances", "ground_meshes");
     m = Model(obj)
     addvar!(m, zeros(length(x0)), ones(length(x0)))
     Nonconvex.add_ineq_constraint!(m, vol_constr)
-    Nonconvex.NonconvexCore.show_residuals[] = false
     alg = IpoptAlg()
-    options = IpoptOptions(; max_iter=200)
-    r1 = Nonconvex.optimize(m, alg, x0; options=options)
+    options = IpoptOptions(; max_iter = 200)
+    r1 = Nonconvex.optimize(m, alg, x0; options = options)
     @test vol_constr(r1.minimizer) < 1e-7
 
     Nonconvex.add_sd_constraint!(m, buckling_matrix_constr)
-    alg = SDPBarrierAlg(; sub_alg=IpoptAlg())
-    options = SDPBarrierOptions(; sub_options=IpoptOptions(; max_iter=200), keep_all=true)
-    r2 = Nonconvex.optimize(m, alg, x0; options=options)
+    alg = SDPBarrierAlg(; sub_alg = IpoptAlg())
+    options =
+        SDPBarrierOptions(; sub_options = IpoptOptions(; max_iter = 200), keep_all = true)
+    r2 = Nonconvex.optimize(m, alg, x0; options = options)
     @test vol_constr(r2.minimizer) < 1e-7
 
     # * check result stability

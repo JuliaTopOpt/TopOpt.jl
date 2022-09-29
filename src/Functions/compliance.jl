@@ -28,14 +28,24 @@ function (o::Compliance{T})(x::PseudoDensities) where {T}
     solver.vars .= x.x
     solver()
     return compute_compliance(
-        cell_comp, grad, cell_dofs, Kes, u, black, white, varind, solver.vars, penalty, xmin
+        cell_comp,
+        grad,
+        cell_dofs,
+        Kes,
+        u,
+        black,
+        white,
+        varind,
+        solver.vars,
+        penalty,
+        xmin,
     )
 end
 
 function ChainRulesCore.rrule(comp::Compliance, x::PseudoDensities)
     out = comp(x)
     out_grad = copy(comp.grad)
-    return out, Δ -> (nothing, Tangent{typeof(x)}(; x=out_grad * Δ))
+    return out, Δ -> (nothing, Tangent{typeof(x)}(; x = out_grad * Δ))
 end
 
 """
@@ -46,15 +56,25 @@ d(cell compliance)/d(x_e) = f_e^T * d(u_e)/d(x_e) = f_e^T * (- K_e^-1 * d(K_e)/d
                           = - d(ρ_e)/d(x_e) * cell_compliance
 """
 function compute_compliance(
-    cell_comp::Vector{T}, grad, cell_dofs, Kes, u, black, white, varind, x, penalty, xmin
+    cell_comp::Vector{T},
+    grad,
+    cell_dofs,
+    Kes,
+    u,
+    black,
+    white,
+    varind,
+    x,
+    penalty,
+    xmin,
 ) where {T}
     obj = zero(T)
     grad .= 0
-    @inbounds for i in 1:size(cell_dofs, 2)
+    @inbounds for i = 1:size(cell_dofs, 2)
         cell_comp[i] = zero(T)
         Ke = rawmatrix(Kes[i])
-        for w in 1:size(Ke, 2)
-            for v in 1:size(Ke, 1)
+        for w = 1:size(Ke, 2)
+            for v = 1:size(Ke, 1)
                 cell_comp[i] += u[cell_dofs[v, i]] * Ke[v, w] * u[cell_dofs[w, i]]
             end
         end
@@ -83,20 +103,40 @@ function compute_inner(inner, u1, u2, solver)
     @unpack cell_dofs = metadata
     penalty = getpenalty(solver)
     return compute_inner(
-        inner, u1, u2, cell_dofs, Kes, black, white, varind, solver.vars, penalty, xmin
+        inner,
+        u1,
+        u2,
+        cell_dofs,
+        Kes,
+        black,
+        white,
+        varind,
+        solver.vars,
+        penalty,
+        xmin,
     )
 end
 function compute_inner(
-    inner::AbstractVector{T}, u1, u2, cell_dofs, Kes, black, white, varind, x, penalty, xmin
+    inner::AbstractVector{T},
+    u1,
+    u2,
+    cell_dofs,
+    Kes,
+    black,
+    white,
+    varind,
+    x,
+    penalty,
+    xmin,
 ) where {T}
     obj = zero(T)
-    @inbounds for i in 1:size(cell_dofs, 2)
+    @inbounds for i = 1:size(cell_dofs, 2)
         inner[i] = zero(T)
         cell_comp = zero(T)
         Ke = rawmatrix(Kes[i])
         if !black[i] && !white[i]
-            for w in 1:size(Ke, 2)
-                for v in 1:size(Ke, 1)
+            for w = 1:size(Ke, 2)
+                for v = 1:size(Ke, 1)
                     cell_comp += u1[cell_dofs[v, i]] * Ke[v, w] * u2[cell_dofs[w, i]]
                 end
             end
