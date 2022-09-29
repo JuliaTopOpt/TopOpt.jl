@@ -1,4 +1,4 @@
-struct MultiMaterialVariables{M <: AbstractMatrix}
+struct MultiMaterialVariables{M<:AbstractMatrix}
     x::M
 end
 function MultiMaterialVariables(x::AbstractVector, nmats::Int)
@@ -14,7 +14,7 @@ function Base.sum(x::MultiMaterialVariables; dims)
     return sum(x.x; dims)
 end
 
-struct MaterialInterpolation{T, P}
+struct MaterialInterpolation{T,P}
     Es::Vector{T}
     penalty::P
 end
@@ -44,9 +44,9 @@ function tounit(x::AbstractVector)
     T = eltype(x)
     stick = one(T)
     y = Vector{T}(undef, n)
-    for i in 1:n-1
+    for i = 1:n-1
         xi = x[i]
-        z = logistic(xi - log(n-i))
+        z = logistic(xi - log(n - i))
         y[i] = z * stick
         stick *= 1 - z
     end

@@ -7,21 +7,16 @@ nmats = 3
 v = 0.3 # Poisson’s ratio
 f = 1.0 # downward force
 
-problem = PointLoadCantilever(
-    Val{:Linear},
-    (160, 40),
-    (1.0, 1.0),
-    1.0, v, f,
-)
+problem = PointLoadCantilever(Val{:Linear}, (160, 40), (1.0, 1.0), 1.0, v, f)
 ncells = TopOpt.getncells(problem)
 
 # Parameter settings
 
 rmin = 3.0
 solver = FEASolver(Direct, problem; xmin = 0.0)
-filter = DensityFilter(solver; rmin=rmin)
+filter = DensityFilter(solver; rmin = rmin)
 
-M = 1/nmats/2 # mass fraction
+M = 1 / nmats / 2 # mass fraction
 x0 = fill(M, ncells * (length(Es) - 1))
 
 comp = Compliance(solver)
@@ -47,7 +42,7 @@ add_ineq_constraint!(model, constr)
 
 tol = 1e-3
 alg = MMA87()
-options = MMAOptions(; tol=Tolerance(; kkt=tol), maxiter=1000)
+options = MMAOptions(; tol = Tolerance(; kkt = tol), maxiter = 1000)
 
 res = optimize(model, alg, x0; options)
 x = res.minimizer
@@ -55,8 +50,8 @@ x = res.minimizer
 @test constr(x) < 1e-6
 @test constr(x0) > 0
 @test all(==(1), sum(ρs, dims = 2))
-sum(ρs[:,2:3]) / size(ρs, 1) # the material elements as a ratio
+sum(ρs[:, 2:3]) / size(ρs, 1) # the material elements as a ratio
 
-for i in 1:3
-    @test minimum(abs, ρs[:,i] .- 0.5) > 0.48 # mostly binary design
+for i = 1:3
+    @test minimum(abs, ρs[:, i] .- 0.5) > 0.48 # mostly binary design
 end
