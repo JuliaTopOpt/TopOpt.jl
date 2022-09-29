@@ -20,12 +20,12 @@ nels = (160, 40)
 problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), E, v, f)
 
 # ### Define the FEA Solver and penalty functions
-solver = FEASolver(Direct, problem; xmin=0.01, penalty=TopOpt.PowerPenalty(3.0))
+solver = FEASolver(Direct, problem; xmin = 0.01, penalty = TopOpt.PowerPenalty(3.0))
 
 # ### Define the compliance objective function and volume fraction constraint
 comp = Compliance(solver)
 volfrac = Volume(solver)
-sensfilter = SensFilter(solver; rmin=4.0)
+sensfilter = SensFilter(solver; rmin = 4.0)
 beso = BESO(comp, volfrac, 0.5, sensfilter)
 
 # ### Run optimization

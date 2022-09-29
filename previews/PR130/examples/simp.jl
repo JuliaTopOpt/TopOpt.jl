@@ -12,10 +12,10 @@ xmin = 1e-6 # minimum density
 rmin = 2.0; # density filter radius
 
 penalty = TopOpt.PowerPenalty(3.0)
-solver = FEASolver(Direct, problem; xmin=xmin, penalty=penalty)
+solver = FEASolver(Direct, problem; xmin = xmin, penalty = penalty)
 
 comp = TopOpt.Compliance(solver)
-filter = DensityFilter(solver; rmin=rmin)
+filter = DensityFilter(solver; rmin = rmin)
 obj = x -> comp(filter(PseudoDensities(x)))
 
 volfrac = TopOpt.Volume(solver)
@@ -27,7 +27,11 @@ addvar!(model, zeros(length(x0)), ones(length(x0)))
 add_ineq_constraint!(model, constr)
 alg = MMA87()
 convcriteria = Nonconvex.KKTCriteria()
-options = MMAOptions(; maxiter=3000, tol=Nonconvex.Tolerance(; x=1e-3, f=1e-3, kkt=0.001), convcriteria)
+options = MMAOptions(;
+    maxiter = 3000,
+    tol = Nonconvex.Tolerance(; x = 1e-3, f = 1e-3, kkt = 0.001),
+    convcriteria,
+)
 r = optimize(model, alg, x0; options)
 
 @show obj(r.minimizer)
