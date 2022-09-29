@@ -15,7 +15,7 @@ jobs:
       fail-fast: false
       matrix:
         version:
-          - '1.7'
+          - '1'
         os:
           - ubuntu-latest
         arch:
@@ -60,7 +60,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        version: ['1.7',]
+        version: ['1',]
         os: ['ubuntu-latest',]
     steps:
       - uses: actions/checkout@v2
