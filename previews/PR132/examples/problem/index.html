@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Problem types · TopOpt.jl</title><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.045/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.13.24/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">TopOpt.jl</a></span></div><form class="docs-search" action="../../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../../">Home</a></li><li class="is-active"><a class="tocitem" href>Problem types</a><ul class="internal"><li><a class="tocitem" href="#Continuum-problems"><span>Continuum problems</span></a></li><li><a class="tocitem" href="#Truss-problems"><span>Truss problems</span></a></li></ul></li><li><a class="tocitem" href="../../functions/">Functions</a></li><li><span class="tocitem">Examples</span><ul><li><a class="tocitem" href="../simp/">SIMP example: Point Load Cantilever</a></li><li><a class="tocitem" href="../beso/">BESO example: HalfMBB Beam</a></li><li><a class="tocitem" href="../geso/">GESO example: HalfMBB Beam</a></li><li><a class="tocitem" href="../csimp/">Continuous SIMP example</a></li><li><a class="tocitem" href="../global_stress/">Global stress objective example</a></li><li><a class="tocitem" href="../TOBS/">Topological optimization of binary structures (TOBS)</a></li></ul></li><li><span class="tocitem">API Reference</span><ul><li><a class="tocitem" href="../../reference/TopOptProblems/"><code>TopOptProblems</code></a></li><li><a class="tocitem" href="../../reference/Algorithms/"><code>Algorithms</code></a></li></ul></li><li><a class="tocitem" href="../../bibliography/">Bibliography</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Problem types</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Problem types</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/JuliaTopOpt/TopOpt.jl/blob/master/docs/src/literate/problem.jl" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="Problem-domain-definition"><a class="docs-heading-anchor" href="#Problem-domain-definition">Problem domain definition</a><a id="Problem-domain-definition-1"></a><a class="docs-heading-anchor-permalink" href="#Problem-domain-definition" title="Permalink"></a></h1><p>In this section, the syntax to construct multiple problem types will be shown. In <code>TopOpt.jl</code>, there are a number of standard topology optimization problem domains that can be defined using a few lines of code. This is for the convenience of testing and comparing algorithms and formulations on standard testing problems.</p><h2 id="Continuum-problems"><a class="docs-heading-anchor" href="#Continuum-problems">Continuum problems</a><a id="Continuum-problems-1"></a><a class="docs-heading-anchor-permalink" href="#Continuum-problems" title="Permalink"></a></h2><h3 id="D-and-3D-point-load-cantilever-beam"><a class="docs-heading-anchor" href="#D-and-3D-point-load-cantilever-beam">2D and 3D point load cantilever beam</a><a id="D-and-3D-point-load-cantilever-beam-1"></a><a class="docs-heading-anchor-permalink" href="#D-and-3D-point-load-cantilever-beam" title="Permalink"></a></h3><p><img src="https://user-images.githubusercontent.com/19524993/165186251-f26e9dbc-a224-4fa0-b0c6-d0210a00d426.jpg" alt="cantilever"/></p><p>In this problem, the domain is divided into equally sized rectangular, quadrilateral elements. The number of elements (<code>nels</code>) and element sizes (<code>elsizes</code>) can be used to control the resolution of the problem&#39;s domain as well as its dimension. For instance, using <code>nels = (160, 40)</code> and <code>elsizes = (1.0, 1.0)</code> constructs a 2D problem domain of size 160 mm x 40 mm problem domain where each element is 1 mm x 1 mm. While <code>nels = (160, 40, 40)</code> and <code>elsizes = (1.0, 1.0, 2.0)</code> constructs a 3D problem domain of size 160 mm x 40 mm x 40 mm where each element is 1 mm x 1 mm x 2 mm.</p><p>Additionally, the Young’s modulus, Poisson’s ratio and downward force magnitude. Finally, the order of the geometric and field shape functions can be specified using either <code>:Linear</code> or <code>:Quadratic</code> as shown below.</p><pre><code class="language-julia hljs">using TopOpt
+
+E = 1.0 # Young’s modulus in MPa
+ν = 0.3 # Poisson’s ratio
+f = 1.0 # downward force in N - negative is upward
+nels = (160, 40) # number of elements
+elsizes = (1.0, 1.0) # the size of each element in mm
+order = :Linear # shape function order
+problem = PointLoadCantilever(Val{order}, nels, elsizes, E, ν, f)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi"></code></pre><h3 id="D-and-3D-half-Messerschmitt–Bolkow–Blohm-(MBB)-beam-problem"><a class="docs-heading-anchor" href="#D-and-3D-half-Messerschmitt–Bolkow–Blohm-(MBB)-beam-problem">2D and 3D half Messerschmitt–Bolkow–Blohm (MBB) beam problem</a><a id="D-and-3D-half-Messerschmitt–Bolkow–Blohm-(MBB)-beam-problem-1"></a><a class="docs-heading-anchor-permalink" href="#D-and-3D-half-Messerschmitt–Bolkow–Blohm-(MBB)-beam-problem" title="Permalink"></a></h3><p><img src="https://user-images.githubusercontent.com/19524993/165186211-3bfe26d8-82c9-4ae4-a37d-baa03d19b47c.jpg" alt="halfmbb"/></p><p>A similar problem type exists for the well known half MBB problem shown above. The constructor and parameters are similar to that of the point load cantilever beam. Also 2D and 3D variants exist by changing the lengths of <code>nels</code> and <code>elsizes</code>.</p><pre><code class="language-julia hljs">E = 1.0 # Young’s modulus in MPa
+ν = 0.3 # Poisson’s ratio
+f = 1.0 # downward force in N - negative is upward
+nels = (60, 20) # number of elements
+elsizes = (1.0, 1.0) # the size of each element in mm
+order = :Quadratic # shape function order
+problem = HalfMBB(Val{order}, nels, elsizes, E, ν, f)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi"></code></pre><h3 id="D-L-beam-problem"><a class="docs-heading-anchor" href="#D-L-beam-problem">2D L-beam problem</a><a id="D-L-beam-problem-1"></a><a class="docs-heading-anchor-permalink" href="#D-L-beam-problem" title="Permalink"></a></h3><p><img src="https://user-images.githubusercontent.com/19524993/165194043-e2f1b4f2-940a-478d-ac94-4399e1524a81.jpg" alt="lbeam"/></p><p>The L-beam is another well known testing problem in topology optimization available in <code>TopOpt.jl</code>. To construct an L-beam problem, you can use the following constructor. The L-beam problem is only a 2D problem.</p><pre><code class="language-julia hljs">E = 1.0 # Young’s modulus in MPa
+ν = 0.3 # Poisson’s ratio
+f = 1.0 # downward force in N - negative is upward
+order = :Quadratic # shape function order
+problem = LBeam(
+    Val{order}; length=100, height=100, upperslab=50, lowerslab=50, E=1.0, ν=0.3, force=1.0
+)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi"></code></pre><p>where <code>E</code>, <code>ν</code> and <code>force</code> are the Young&#39;s modulus, Poisson&#39;s ratio and downward force respectively. The definition of <code>length</code>, <code>height</code>, <code>upperslab</code> and <code>lowerslab</code> are shown below. Each element is assumed to be a 1 mm x 1 mm element. The load is always applied at the midpoint of the &quot;lowerslab&quot; side. A positive value for the force is downward and a negative value is upward.</p><pre><code class="nohighlight hljs">        upperslab
+       ............
+       .          .
+       .          .
+       .          .
+height .          .
+       .          ......................
+       .                               .
+       .                               . lowerslab
+       .                               .
+       .................................
+                    length
+</code></pre><h3 id="D-tie-beam-problem"><a class="docs-heading-anchor" href="#D-tie-beam-problem">2D tie-beam problem</a><a id="D-tie-beam-problem-1"></a><a class="docs-heading-anchor-permalink" href="#D-tie-beam-problem" title="Permalink"></a></h3><p><img src="https://user-images.githubusercontent.com/19524993/165222174-927bfb06-ee6a-4eb0-b1df-4a32aa1474d5.png" alt="tiebeam"/></p><p>The tie-beam problem shown above is a well-known problem in topology optimization literature. A distributed load of 1 N/mm is applied on the elements specified in the figure. To construct an instance of the tie-beam problem for a certain order of shape functions, you can use:</p><pre><code class="language-julia hljs">order = :Quadratic # shape function order
+problem = TieBeam(Val{order})</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi"></code></pre><p>The tie-beam problem only exists as a 2D problem.</p><h3 id="Reading-INP-files"><a class="docs-heading-anchor" href="#Reading-INP-files">Reading INP files</a><a id="Reading-INP-files-1"></a><a class="docs-heading-anchor-permalink" href="#Reading-INP-files" title="Permalink"></a></h3><p>Instead of defining a problem type programmatically, one can also use CAD/CAE software to define a 2D/3D problem domain using a graphical user interface and then export a .inp file from the CAD/CAE software. The .inp file can then be read into TopOpt.jl using:</p><pre><code class="language-julia hljs">filename = &quot;../data/problem.inp&quot; # path to inp file
+problem = InpStiffness(filename);</code></pre><p>For example, the following problem with fixed load, distributed loads and tetrahedral elements was defined usign FreeCAD and imported into TopOpt.jl to perform topology optimization.</p><p><img src="https://user-images.githubusercontent.com/19524993/165223774-2705347e-369f-463e-80f5-4e30093251c1.PNG" alt="inpfile"/></p><h2 id="Truss-problems"><a class="docs-heading-anchor" href="#Truss-problems">Truss problems</a><a id="Truss-problems-1"></a><a class="docs-heading-anchor-permalink" href="#Truss-problems" title="Permalink"></a></h2><h3 id="D-and-3D-truss-problem-from-json-file"><a class="docs-heading-anchor" href="#D-and-3D-truss-problem-from-json-file">2D and 3D truss problem from json file</a><a id="D-and-3D-truss-problem-from-json-file-1"></a><a class="docs-heading-anchor-permalink" href="#D-and-3D-truss-problem-from-json-file" title="Permalink"></a></h3><p>2D/3D truss problems can be imported from json files describing the nodes, elements, fixities and loading as shown below.</p><pre><code class="language-julia hljs">path_to_file = &quot;../data/tim_2d.json&quot; # path to json file
+mats = TrussFEAMaterial(10.0, 0.3) # Young’s modulus and Poisson’s ratio
+crossecs = TrussFEACrossSec(800.0) # Cross-sectional area
+node_points, elements, _, _, fixities, load_cases = load_truss_json(path_to_file)
+loads = load_cases[&quot;0&quot;]
+problem = TrussProblem(Val{:Linear}, node_points, elements, loads, fixities, mats, crossecs);</code></pre><p>The structure of the JSON file can be displayed using the code below, where <code>f</code> is a Julia dictionary.</p><pre><code class="language-julia hljs">using JSON
+
+f = JSON.parsefile(path_to_file)
+print(JSON.json(f, 2));</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">{
+  &quot;node_num&quot;: 19,
+  &quot;elements&quot;: [
+    {
+      &quot;end_node_inds&quot;: [
+        0,
+        2
+      ],
+      &quot;elem_tag&quot;: &quot;&quot;
+    },
+    {
+      &quot;end_node_inds&quot;: [
+        0,
+        3
+      ],
+      &quot;elem_tag&quot;: &quot;&quot;
+    },
+    {
+      &quot;end_node_inds&quot;: [
+        2,
+        3
+      ],
+      &quot;elem_tag&quot;: &quot;&quot;
+    },
+    {
+      &quot;end_node_inds&quot;: [
+        2,
+        1
+      ],
+      &quot;elem_tag&quot;: &quot;&quot;
+    },
+    {
+      &quot;end_node_inds&quot;: [
+        2,
+        4
+      ],
+      &quot;elem_tag&quot;: &quot;&quot;
+    },
+    {
+      &quot;end_node_inds&quot;: [
+        2,
+        5
+      ],
+      &quot;elem_tag&quot;: &quot;&quot;
+    },
+    {
+      &quot;end_node_inds&quot;: [
+        4,
+        5
+      ],
+      &quot;elem_tag&quot;: &quot;&quot;
+    },
+    {
+      &quot;end_node_inds&quot;: [
+        4,
+        3
+      ],
+      &quot;elem_tag&quot;: &quot;&quot;
+    },
+    {
+      &quot;end_node_inds&quot;: [
+        4,
+        6
+      ],
+      &quot;elem_tag&quot;: &quot;&quot;
+    },
+    {
+      &quot;end_node_inds&quot;: [
+        4,
+        7
+      ],
+      &quot;elem_tag&quot;: &quot;&quot;
+    },
+    {
+      &quot;end_node_inds&quot;: [
+        6,
+        7
+      ],
+      &quot;elem_tag&quot;: &quot;&quot;
+    },
+    {
+      &quot;end_node_inds&quot;: [
+        6,
+        5
+      ],
+      &quot;elem_tag&quot;: &quot;&quot;
+    },
+    {
+      &quot;end_node_inds&quot;: [
+        6,
+        8
+      ],
+      &quot;elem_tag&quot;: &quot;&quot;
+    },
+    {
+      &quot;end_node_inds&quot;: [
+        6,
+        9
+      ],
+      &quot;elem_tag&quot;: &quot;&quot;
+    },
+    {
+      &quot;end_node_inds&quot;: [
+        8,
+        9
+      ],
+      &quot;elem_tag&quot;: &quot;&quot;
+    },
+    {
+      &quot;end_node_inds&quot;: [
+        8,
+        7
+      ],
+      &quot;elem_tag&quot;: &quot;&quot;
+    },
+    {
+      &quot;end_node_inds&quot;: [
+        8,
+        10
+      ],
+      &quot;elem_tag&quot;: &quot;&quot;
+    },
+    {
+      &quot;end_node_inds&quot;: [
+        8,
+        11
+      ],
+      &quot;elem_tag&quot;: &quot;&quot;
+    },
+    {
+      &quot;end_node_inds&quot;: [
+        10,
+        11
+      ],
+      &quot;elem_tag&quot;: &quot;&quot;
+    },
+    {
+      &quot;end_node_inds&quot;: [
+        10,
+        9
+      ],
+      &quot;elem_tag&quot;: &quot;&quot;
+    },
+    {
+      &quot;end_node_inds&quot;: [
+        10,
+        12
+      ],
+      &quot;elem_tag&quot;: &quot;&quot;
+    },
+    {
+      &quot;end_node_inds&quot;: [
+        10,
+        13
+      ],
+      &quot;elem_tag&quot;: &quot;&quot;
+    },
+    {
+      &quot;end_node_inds&quot;: [
+        12,
+        13
+      ],
+      &quot;elem_tag&quot;: &quot;&quot;
+    },
+    {
+      &quot;end_node_inds&quot;: [
+        12,
+        11
+      ],
+      &quot;elem_tag&quot;: &quot;&quot;
+    },
+    {
+      &quot;end_node_inds&quot;: [
+        12,
+        14
+      ],
+      &quot;elem_tag&quot;: &quot;&quot;
+    },
+    {
+      &quot;end_node_inds&quot;: [
+        12,
+        15
+      ],
+      &quot;elem_tag&quot;: &quot;&quot;
+    },
+    {
+      &quot;end_node_inds&quot;: [
+        14,
+        15
+      ],
+      &quot;elem_tag&quot;: &quot;&quot;
+    },
+    {
+      &quot;end_node_inds&quot;: [
+        14,
+        13
+      ],
+      &quot;elem_tag&quot;: &quot;&quot;
+    },
+    {
+      &quot;end_node_inds&quot;: [
+        14,
+        16
+      ],
+      &quot;elem_tag&quot;: &quot;&quot;
+    },
+    {
+      &quot;end_node_inds&quot;: [
+        14,
+        17
+      ],
+      &quot;elem_tag&quot;: &quot;&quot;
+    },
+    {
+      &quot;end_node_inds&quot;: [
+        16,
+        17
+      ],
+      &quot;elem_tag&quot;: &quot;&quot;
+    },
+    {
+      &quot;end_node_inds&quot;: [
+        16,
+        15
+      ],
+      &quot;elem_tag&quot;: &quot;&quot;
+    },
+    {
+      &quot;end_node_inds&quot;: [
+        16,
+        18
+      ],
+      &quot;elem_tag&quot;: &quot;&quot;
+    },
+    {
+      &quot;end_node_inds&quot;: [
+        18,
+        17
+      ],
+      &quot;elem_tag&quot;: &quot;&quot;
+    },
+    {
+      &quot;end_node_inds&quot;: [
+        1,
+        3
+      ],
+      &quot;elem_tag&quot;: &quot;&quot;
+    },
+    {
+      &quot;end_node_inds&quot;: [
+        3,
+        5
+      ],
+      &quot;elem_tag&quot;: &quot;&quot;
+    },
+    {
+      &quot;end_node_inds&quot;: [
+        5,
+        7
+      ],
+      &quot;elem_tag&quot;: &quot;&quot;
+    },
+    {
+      &quot;end_node_inds&quot;: [
+        7,
+        9
+      ],
+      &quot;elem_tag&quot;: &quot;&quot;
+    },
+    {
+      &quot;end_node_inds&quot;: [
+        9,
+        11
+      ],
+      &quot;elem_tag&quot;: &quot;&quot;
+    },
+    {
+      &quot;end_node_inds&quot;: [
+        11,
+        13
+      ],
+      &quot;elem_tag&quot;: &quot;&quot;
+    },
+    {
+      &quot;end_node_inds&quot;: [
+        13,
+        15
+      ],
+      &quot;elem_tag&quot;: &quot;&quot;
+    },
+    {
+      &quot;end_node_inds&quot;: [
+        15,
+        17
+      ],
+      &quot;elem_tag&quot;: &quot;&quot;
+    }
+  ],
+  &quot;materials&quot;: [
+    {
+      &quot;family&quot;: &quot;DummyMaterial&quot;,
+      &quot;E_unit&quot;: &quot;kN/m2&quot;,
+      &quot;elem_tags&quot;: [],
+      &quot;name&quot;: &quot;DummyMaterial&quot;,
+      &quot;G12&quot;: 8.076e7,
+      &quot;E&quot;: 1.0,
+      &quot;type_name&quot;: &quot;ISO&quot;,
+      &quot;density&quot;: 78.5,
+      &quot;density_unit&quot;: &quot;kN/m3&quot;,
+      &quot;fy_unit&quot;: &quot;kN/m2&quot;,
+      &quot;fy&quot;: 235000.0,
+      &quot;G12_unit&quot;: &quot;kN/m2&quot;
+    }
+  ],
+  &quot;loadcases&quot;: {
+    &quot;1&quot;: {
+      &quot;lc_ind&quot;: 1,
+      &quot;ploads&quot;: [
+        {
+          &quot;loadcase&quot;: 1,
+          &quot;force&quot;: [
+            0,
+            -1
+          ],
+          &quot;force_unit&quot;: &quot;kN&quot;,
+          &quot;node_ind&quot;: 18
+        }
+      ]
+    },
+    &quot;0&quot;: {
+      &quot;lc_ind&quot;: 0,
+      &quot;ploads&quot;: [
+        {
+          &quot;loadcase&quot;: 0,
+          &quot;force&quot;: [
+            -1,
+            0
+          ],
+          &quot;force_unit&quot;: &quot;kN&quot;,
+          &quot;node_ind&quot;: 18
+        }
+      ]
+    }
+  },
+  &quot;cross_secs&quot;: [
+    {
+      &quot;name&quot;: &quot;&quot;,
+      &quot;A&quot;: 1.0,
+      &quot;family&quot;: &quot;DummyCroSec&quot;,
+      &quot;A_unit&quot;: &quot;m2&quot;,
+      &quot;elem_tags&quot;: []
+    }
+  ],
+  &quot;element_num&quot;: 42,
+  &quot;supports&quot;: [
+    {
+      &quot;condition&quot;: [
+        1,
+        1
+      ],
+      &quot;node_ind&quot;: 0
+    },
+    {
+      &quot;condition&quot;: [
+        1,
+        1
+      ],
+      &quot;node_ind&quot;: 1
+    }
+  ],
+  &quot;_info&quot;: &quot;TTObuckling example used in PENLAB.&quot;,
+  &quot;TO_model_type&quot;: &quot;ground_mesh&quot;,
+  &quot;dimension&quot;: 2,
+  &quot;nodes&quot;: [
+    {
+      &quot;point&quot;: [
+        0,
+        0
+      ],
+      &quot;node_ind&quot;: 0
+    },
+    {
+      &quot;point&quot;: [
+        0,
+        1
+      ],
+      &quot;node_ind&quot;: 1
+    },
+    {
+      &quot;point&quot;: [
+        1,
+        0
+      ],
+      &quot;node_ind&quot;: 2
+    },
+    {
+      &quot;point&quot;: [
+        1,
+        1
+      ],
+      &quot;node_ind&quot;: 3
+    },
+    {
+      &quot;point&quot;: [
+        2,
+        0
+      ],
+      &quot;node_ind&quot;: 4
+    },
+    {
+      &quot;point&quot;: [
+        2,
+        1
+      ],
+      &quot;node_ind&quot;: 5
+    },
+    {
+      &quot;point&quot;: [
+        3,
+        0
+      ],
+      &quot;node_ind&quot;: 6
+    },
+    {
+      &quot;point&quot;: [
+        3,
+        1
+      ],
+      &quot;node_ind&quot;: 7
+    },
+    {
+      &quot;point&quot;: [
+        4,
+        0
+      ],
+      &quot;node_ind&quot;: 8
+    },
+    {
+      &quot;point&quot;: [
+        4,
+        1
+      ],
+      &quot;node_ind&quot;: 9
+    },
+    {
+      &quot;point&quot;: [
+        5,
+        0
+      ],
+      &quot;node_ind&quot;: 10
+    },
+    {
+      &quot;point&quot;: [
+        5,
+        1
+      ],
+      &quot;node_ind&quot;: 11
+    },
+    {
+      &quot;point&quot;: [
+        6,
+        0
+      ],
+      &quot;node_ind&quot;: 12
+    },
+    {
+      &quot;point&quot;: [
+        6,
+        1
+      ],
+      &quot;node_ind&quot;: 13
+    },
+    {
+      &quot;point&quot;: [
+        7,
+        0
+      ],
+      &quot;node_ind&quot;: 14
+    },
+    {
+      &quot;point&quot;: [
+        7,
+        1
+      ],
+      &quot;node_ind&quot;: 15
+    },
+    {
+      &quot;point&quot;: [
+        8,
+        0
+      ],
+      &quot;node_ind&quot;: 16
+    },
+    {
+      &quot;point&quot;: [
+        8,
+        1
+      ],
+      &quot;node_ind&quot;: 17
+    },
+    {
+      &quot;point&quot;: [
+        8.5,
+        0.5
+      ],
+      &quot;node_ind&quot;: 18
+    }
+  ],
+  &quot;unit&quot;: &quot;meter&quot;,
+  &quot;generate_time&quot;: &quot;05/21/2019 07:40:59&quot;,
+  &quot;model_name&quot;: &quot;tim&quot;,
+  &quot;model_type&quot;: &quot;truss&quot;
+}</code></pre><h3 id="D-and-3D-truss-point-load-cantilever-beam"><a class="docs-heading-anchor" href="#D-and-3D-truss-point-load-cantilever-beam">2D and 3D truss point load cantilever beam</a><a id="D-and-3D-truss-point-load-cantilever-beam-1"></a><a class="docs-heading-anchor-permalink" href="#D-and-3D-truss-point-load-cantilever-beam" title="Permalink"></a></h3><p><img src="https://user-images.githubusercontent.com/19524993/165228327-def94c04-6505-4f13-afea-4f28a370380e.png" alt="truss_cantilever"/></p><p>Much like the continuum 2D/3D point load cantilever beam, you can also create a 2D/3D truss-based cantilever beam with a point load as shown above using the following syntax.</p><pre><code class="language-julia hljs">E = 1.0 # Young’s modulus in MPa
+ν = 0.3 # Poisson’s ratio
+nels = (60, 20) # number of boundary trusses
+elsizes = (1.0, 1.0) # the length of each boundary truss in mm
+force = 1.0 # upward force in N - negative is downward
+problem = PointLoadCantileverTruss(nels, elsizes, E, ν, force; k_connect=1);</code></pre><p><code>nels</code>, <code>elsizes</code>, <code>E</code> and <code>ν</code> have an analagous intepretation to the continuum cantilever beam. <code>force</code> is the upward concentrated force in Newton (downward is negative). <code>k_connect</code> is the k-ring of each node defining the connectivity of the nodes in the graph, default is 1. For a 2D domain, a node will be connected to <code>8</code> neighboring nodes if <code>k_connect = 1</code>, and <code>8 + 16 = 24</code> neighboring nodes if <code>k_connect = 2</code>.</p><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../">« Home</a><a class="docs-footer-nextpage" href="../../functions/">Functions »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.23 on <span class="colophon-date" title="Thursday 29 September 2022 07:51">Thursday 29 September 2022</span>. Using Julia version 1.7.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
