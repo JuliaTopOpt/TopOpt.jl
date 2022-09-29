@@ -34,7 +34,7 @@ constr = x -> begin
     return sum(element_densities(ρs, densities)) / ncells - 0.3 # elements have unit volumes
 end
 constr(x0)
-Zygote.gradient(constr1, x0)
+Zygote.gradient(constr, x0)
 
 model = Model(obj)
 addvar!(model, fill(-10.0, length(x0)), fill(10.0, length(x0)))
