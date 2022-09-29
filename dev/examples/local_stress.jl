@@ -15,9 +15,9 @@ steps = 40 # maximum number of penalty steps, delta_p0 = 0.1
 x0 = fill(0.5, 160 * 40) # initial design
 N = length(x0)
 penalty = TopOpt.PowerPenalty(1.0)
-solver = FEASolver(Direct, problem; xmin=xmin, penalty=penalty)
+solver = FEASolver(Direct, problem; xmin = xmin, penalty = penalty)
 stress = TopOpt.von_mises_stress_function(solver)
-filter = DensityFilter(solver; rmin=rmin)
+filter = DensityFilter(solver; rmin = rmin)
 volfrac = TopOpt.Volume(solver)
 
 obj = x -> volfrac(filter(PseudoDensities(x))) - V

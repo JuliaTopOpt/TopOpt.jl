@@ -31,18 +31,16 @@ rmin = 2.0; # density filter radius
 
 # ### Define a finite element solver
 penalty = TopOpt.PowerPenalty(3.0)
-solver = FEASolver(Direct, problem; xmin=xmin, penalty=penalty)
+solver = FEASolver(Direct, problem; xmin = xmin, penalty = penalty)
 
 # ### Define compliance objective
 comp = TopOpt.Compliance(solver)
-filter = DensityFilter(solver; rmin=rmin)
+filter = DensityFilter(solver; rmin = rmin)
 obj = x -> comp(filter(PseudoDensities(x)))
 
 # ### Define volume constraint
 volfrac = TopOpt.Volume(solver)
 constr = x -> volfrac(filter(PseudoDensities(x))) - V
-
-# You can enable the iteration printouts with `Nonconvex.NonconvexCore.show_residuals[] = true`
 
 # ### Define subproblem optimizer
 x0 = fill(V, length(solver.vars))
@@ -50,9 +48,13 @@ model = Model(obj)
 addvar!(model, zeros(length(x0)), ones(length(x0)))
 add_ineq_constraint!(model, constr)
 alg = MMA87()
-options = MMAOptions(; maxiter=3000, tol=Nonconvex.Tolerance(; x=1e-3, f=1e-3, kkt=0.001))
 convcriteria = Nonconvex.KKTCriteria()
-r = optimize(model, alg, x0; options, convcriteria)
+options = MMAOptions(;
+    maxiter = 3000,
+    tol = Nonconvex.Tolerance(; x = 1e-3, f = 1e-3, kkt = 0.001),
+    convcriteria,
+)
+r = optimize(model, alg, x0; options)
 
 @show obj(r.minimizer)
 
