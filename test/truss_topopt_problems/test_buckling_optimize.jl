@@ -38,8 +38,6 @@ gm_ins_dir = joinpath(@__DIR__, "instances", "ground_meshes");
 #     # smallest_pos_eigval = 1/sparse_eigvals[1]
 #     # @test smallest_pos_eigval >= 1.0
 
-#     Nonconvex.NonconvexCore.show_residuals[] = true
-
 #     comp = TopOpt.Compliance(solver)
 #     # TODO "manual" interior point loop, adjusting the c value every iter
 #     for c in [0.1] # 10:-0.1:0.1
@@ -155,7 +153,6 @@ gm_ins_dir = joinpath(@__DIR__, "instances", "ground_meshes");
     m = Model(obj)
     addvar!(m, zeros(length(x0)), ones(length(x0)))
     Nonconvex.add_ineq_constraint!(m, vol_constr)
-    Nonconvex.NonconvexCore.show_residuals[] = false
     alg = IpoptAlg()
     options = IpoptOptions(; max_iter=200)
     r1 = Nonconvex.optimize(m, alg, x0; options=options)

@@ -25,7 +25,6 @@ problem = problems[i]
 # Parameter settings
 xmin = 0.001 # minimum density
 steps = 40 # maximum number of penalty steps, delta_p0 = 0.1
-convcriteria = Nonconvex.KKTCriteria()
 penalty = TopOpt.PowerPenalty(3.0)
 # Define a finite element solver
 solver = FEASolver(Direct, problem; xmin=xmin, penalty=penalty)

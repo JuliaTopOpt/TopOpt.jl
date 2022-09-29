@@ -63,7 +63,6 @@ end
     constr = x -> volfrac(PseudoDensities(x)) - V
 
     options = MMAOptions(; maxiter=3000, tol=Nonconvex.Tolerance(; kkt=0.001))
-    convcriteria = Nonconvex.KKTCriteria()
     x0 = fill(V, length(solver.vars))
     nelem = length(x0)
 
@@ -113,7 +112,6 @@ end # end testset
     constr = x -> volfrac(PseudoDensities(x)) - V
 
     options = MMAOptions(; maxiter=3000, tol=Nonconvex.Tolerance(; kkt=0.001))
-    convcriteria = Nonconvex.KKTCriteria()
     x0 = fill(V, length(solver.vars))
     nelem = length(x0)
 

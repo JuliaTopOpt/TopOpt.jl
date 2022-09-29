@@ -42,17 +42,15 @@ obj = x -> comp(filter(PseudoDensities(x)))
 volfrac = TopOpt.Volume(solver)
 constr = x -> volfrac(filter(PseudoDensities(x))) - V
 
-# You can enable the iteration printouts with `Nonconvex.NonconvexCore.show_residuals[] = true`
-
 # ### Define subproblem optimizer
 x0 = fill(V, length(solver.vars))
 model = Model(obj)
 addvar!(model, zeros(length(x0)), ones(length(x0)))
 add_ineq_constraint!(model, constr)
 alg = MMA87()
-options = MMAOptions(; maxiter=3000, tol=Nonconvex.Tolerance(; x=1e-3, f=1e-3, kkt=0.001))
+options = MMAOptions(; maxiter=3000, tol=Nonconvex.Tolerance(; x=1e-3, f=1e-3, kkt=0.001), convcriteria)
 convcriteria = Nonconvex.KKTCriteria()
-r = optimize(model, alg, x0; options, convcriteria)
+r = optimize(model, alg, x0; options)
 
 @show obj(r.minimizer)
 

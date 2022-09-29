@@ -57,12 +57,12 @@ constr = x -> norm(stress(filter(PseudoDensities(x))), 5) - threshold
 N = length(solver.vars)
 x0 = fill(0.5, N)
 
-options = MMAOptions(; maxiter=2000, tol=Nonconvex.Tolerance(; kkt=1e-4))
+options = MMAOptions(; maxiter=2000, tol=Nonconvex.Tolerance(; kkt=1e-4), convcriteria)
 model = Model(obj)
 addvar!(model, zeros(N), ones(N))
 add_ineq_constraint!(model, constr)
 alg = MMA87()
-r = optimize(model, alg, x0; options, convcriteria)
+r = optimize(model, alg, x0; options)
 
 @show obj(r.minimizer)
 @show constr(r.minimizer)

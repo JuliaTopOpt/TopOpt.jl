@@ -59,8 +59,8 @@ for i in 1:length(problems)
         p = ps[j]
         tol = tols[j]
         TopOpt.setpenalty!(solver, p)
-        options = MMAOptions(; tol=Tolerance(; kkt=tol), maxiter=1000)
-        res = optimize(model, alg, x; options, convcriteria)
+        options = MMAOptions(; tol=Tolerance(; kkt=tol), maxiter=1000, convcriteria)
+        res = optimize(model, alg, x; options)
         global x = res.minimizer
     end
 end

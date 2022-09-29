@@ -14,7 +14,6 @@ println("Start running.")
 # https://github.com/KristofferC/TimerOutputs.jl
 to = TimerOutput()
 reset_timer!(to)
-Nonconvex.NonconvexCore.show_residuals[] = true
 
 # Define the problem
 E = 1.0 # Young’s modulus
@@ -56,11 +55,11 @@ end
     model = Model(obj)
     addvar!(model, zeros(length(x0)), ones(length(x0)))
     add_ineq_constraint!(model, constr)
-    options = MMAOptions(; maxiter=300, tol=Tolerance(; x=1e-3, fabs=1e-3, frel=0.0))
     convcriteria = GenericCriteria()
+    options = MMAOptions(; maxiter=300, tol=Tolerance(; x=1e-3, fabs=1e-3, frel=0.0), convcriteria)
 end
 
-@timeit to "simp run" r = optimize(model, alg, x0; options, convcriteria)
+@timeit to "simp run" r = optimize(model, alg, x0; options)
 
 # Print the timings in the default way
 show(to)

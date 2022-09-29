@@ -24,7 +24,6 @@ problem = problems[i]
 V = 0.5 # volume fraction
 xmin = 0.001 # minimum density
 steps = 40 # maximum number of penalty steps, delta_p0 = 0.1
-convcriteria = KKTCriteria()
 
 penalty = TopOpt.PowerPenalty(3.0)
 # Define a finite element solver
