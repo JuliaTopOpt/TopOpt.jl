@@ -16,8 +16,8 @@ x0 = fill(V, prod(problem_size)) # initial design
 
 problem = HalfMBB(Val{:Linear}, problem_size, (1.0, 1.0), E, v, f)
 
-solver = FEASolver(Direct, problem; xmin=xmin)
-cheqfilter = DensityFilter(solver; rmin=rmin)
+solver = FEASolver(Direct, problem; xmin = xmin)
+cheqfilter = DensityFilter(solver; rmin = rmin)
 comp = TopOpt.Compliance(solver)
 
 function obj(x)
@@ -33,10 +33,10 @@ m = Model(obj)
 addvar!(m, zeros(length(x0)), ones(length(x0)))
 Nonconvex.add_ineq_constraint!(m, constr)
 
-options = MMAOptions(; maxiter=1000, tol=Tolerance(; kkt=1e-4, x=1e-4, f=1e-4))
+options = MMAOptions(; maxiter = 1000, tol = Tolerance(; kkt = 1e-4, x = 1e-4, f = 1e-4))
 TopOpt.setpenalty!(solver, p)
 # Method of Moving Asymptotes
-@time r = Nonconvex.optimize(m, MMA87(), x0; options=options)
+@time r = Nonconvex.optimize(m, MMA87(), x0; options = options)
 
 @show obj(r.minimizer)
 @show constr(r.minimizer)

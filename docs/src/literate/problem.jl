@@ -46,7 +46,14 @@ E = 1.0 # Young’s modulus in MPa
 f = 1.0 # downward force in N - negative is upward
 order = :Quadratic # shape function order
 problem = LBeam(
-    Val{order}; length=100, height=100, upperslab=50, lowerslab=50, E=1.0, ν=0.3, force=1.0
+    Val{order};
+    length = 100,
+    height = 100,
+    upperslab = 50,
+    lowerslab = 50,
+    E = 1.0,
+    ν = 0.3,
+    force = 1.0,
 )
 
 # where `E`, `ν` and `force` are the Young's modulus, Poisson's ratio and downward force respectively. The definition of `length`, `height`, `upperslab` and `lowerslab` are shown below. Each element is assumed to be a 1 mm x 1 mm element. The load is always applied at the midpoint of the "lowerslab" side. A positive value for the force is downward and a negative value is upward.
@@ -119,6 +126,6 @@ E = 1.0 # Young’s modulus in MPa
 nels = (60, 20) # number of boundary trusses
 elsizes = (1.0, 1.0) # the length of each boundary truss in mm
 force = 1.0 # upward force in N - negative is downward
-problem = PointLoadCantileverTruss(nels, elsizes, E, ν, force; k_connect=1);
+problem = PointLoadCantileverTruss(nels, elsizes, E, ν, force; k_connect = 1);
 
 # `nels`, `elsizes`, `E` and `ν` have an analagous intepretation to the continuum cantilever beam. `force` is the upward concentrated force in Newton (downward is negative). `k_connect` is the k-ring of each node defining the connectivity of the nodes in the graph, default is 1. For a 2D domain, a node will be connected to `8` neighboring nodes if `k_connect = 1`, and `8 + 16 = 24` neighboring nodes if `k_connect = 2`.

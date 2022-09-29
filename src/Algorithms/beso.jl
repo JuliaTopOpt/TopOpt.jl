@@ -33,12 +33,12 @@ function BESO(
     vol::Volume,
     vol_limit,
     filter;
-    maxiter=200,
-    tol=0.0001,
-    p=3.0,
-    er=0.02,
-    sens_tol=tol / 100,
-    k=10,
+    maxiter = 200,
+    tol = 0.0001,
+    p = 3.0,
+    er = 0.02,
+    sens_tol = tol / 100,
+    k = 10,
 )
     solver = comp.solver
     T = eltype(solver.vars)
@@ -74,7 +74,7 @@ end
 
 update_penalty!(b::BESO, p::Number) = (b.p = p)
 
-function (b::BESO)(x0=copy(b.obj.solver.vars))
+function (b::BESO)(x0 = copy(b.obj.solver.vars))
     T = eltype(x0)
     @unpack sens, old_sens, er, tol, maxiter = b
     @unpack obj_trace, topology, sens_tol, vars = b
@@ -85,7 +85,7 @@ function (b::BESO)(x0=copy(b.obj.solver.vars))
     k = length(obj_trace)
 
     # Initialize the topology
-    for i in 1:length(topology)
+    for i = 1:length(topology)
         if black[i]
             topology[i] = 1
         elseif white[i]
@@ -109,8 +109,8 @@ function (b::BESO)(x0=copy(b.obj.solver.vars))
             old_sens .= sens
         end
         vol = max(vol * (1 - er), V)
-        for j in max(2, k - iter + 2):k
-            obj_trace[j - 1] = obj_trace[j]
+        for j = max(2, k - iter + 2):k
+            obj_trace[j-1] = obj_trace[j]
         end
         obj_trace[k], pb = Zygote.pullback(f, vars)
         sens = pb(1.0)[1]
@@ -121,7 +121,7 @@ function (b::BESO)(x0=copy(b.obj.solver.vars))
         l1, l2 = minimum(sens), maximum(sens)
         while (l2 - l1) / l2 > sens_tol
             th = (l1 + l2) / 2
-            for i in 1:length(topology)
+            for i = 1:length(topology)
                 if !black[i] && !white[i]
                     topology[i] = T(sign(sens[varind[i]] - th) > 0)
                     vars[varind[i]] = topology[i]
@@ -135,8 +135,8 @@ function (b::BESO)(x0=copy(b.obj.solver.vars))
         end
         true_vol = dot(topology, cellvolumes) / total_volume
         if iter >= k
-            l = sum(@view obj_trace[1:(k ÷ 2)])
-            h = sum(@view obj_trace[(k ÷ 2 + 1):k])
+            l = sum(@view obj_trace[1:(k÷2)])
+            h = sum(@view obj_trace[(k÷2+1):k])
             change = abs(l - h) / h
         end
     end

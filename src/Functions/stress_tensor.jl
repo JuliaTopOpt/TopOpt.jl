@@ -1,9 +1,9 @@
 @params struct StressTensor{T} <: AbstractFunction{T}
-    problem
-    solver
+    problem::Any
+    solver::Any
     global_dofs::Vector{Int}
-    cellvalues
-    cells
+    cellvalues::Any
+    cells::Any
     _::T
 end
 function StressTensor(solver)
@@ -13,7 +13,12 @@ function StressTensor(solver)
     global_dofs = zeros(Int, n)
     cellvalues = solver.elementinfo.cellvalues
     return StressTensor(
-        problem, solver, global_dofs, cellvalues, collect(CellIterator(dh)), 0.0
+        problem,
+        solver,
+        global_dofs,
+        cellvalues,
+        collect(CellIterator(dh)),
+        0.0,
     )
 end
 
@@ -35,8 +40,8 @@ end
 
 @params struct ElementStressTensor{T} <: AbstractFunction{T}
     stress_tensor::StressTensor{T}
-    cell
-    cellidx
+    cell::Any
+    cellidx::Any
 end
 function Base.getindex(f::StressTensor{T}, cellidx) where {T}
     reinit!(f, cellidx)
@@ -51,7 +56,7 @@ function ChainRulesCore.rrule(::typeof(reinit!), st::ElementStressTensor, cellid
     return reinit!(st, cellidx), _ -> (NoTangent(), NoTangent(), NoTangent())
 end
 
-function (f::ElementStressTensor)(u::DisplacementResult; element_dofs=false)
+function (f::ElementStressTensor)(u::DisplacementResult; element_dofs = false)
     st = f.stress_tensor
     reinit!(f, f.cellidx)
     if element_dofs
@@ -62,12 +67,10 @@ function (f::ElementStressTensor)(u::DisplacementResult; element_dofs=false)
     n_basefuncs = getnbasefunctions(st.cellvalues)
     n_quad = getnquadpoints(st.cellvalues)
     dim = TopOptProblems.getdim(st.problem)
-    return sum(
-        map(1:n_basefuncs, 1:n_quad) do a, q_point
-            _u = cellu[dim * (a - 1) .+ (1:dim)]
-            return tensor_kernel(f, q_point, a)(DisplacementResult(_u))
-        end,
-    )
+    return sum(map(1:n_basefuncs, 1:n_quad) do a, q_point
+        _u = cellu[dim*(a-1).+(1:dim)]
+        return tensor_kernel(f, q_point, a)(DisplacementResult(_u))
+    end)
 end
 
 @params struct ElementStressTensorKernel{T} <: AbstractFunction{T}
@@ -75,7 +78,7 @@ end
     ν::T
     q_point::Int
     a::Int
-    cellvalues
+    cellvalues::Any
     dim::Int
 end
 function (f::ElementStressTensorKernel)(u::DisplacementResult)
@@ -88,9 +91,12 @@ function (f::ElementStressTensorKernel)(u::DisplacementResult)
 end
 function ChainRulesCore.rrule(f::ElementStressTensorKernel, u::DisplacementResult)
     v, (∇,) = AD.value_and_jacobian(
-        AD.ForwardDiffBackend(), u -> vec(f(DisplacementResult(u))), u.u
+        AD.ForwardDiffBackend(),
+        u -> vec(f(DisplacementResult(u))),
+        u.u,
     )
-    return reshape(v, f.dim, f.dim), Δ -> (NoTangent(), Tangent{typeof(u)}(; u=∇' * vec(Δ)))
+    return reshape(v, f.dim, f.dim),
+    Δ -> (NoTangent(), Tangent{typeof(u)}(; u = ∇' * vec(Δ)))
 end
 
 function tensor_kernel(f::StressTensor, quad, basef)

@@ -29,8 +29,8 @@ function TrussProblem(
     elements::Dict{iT,Tuple{iT,iT}},
     loads::Dict{iT,SVector{xdim,T}},
     supports::Dict{iT,SVector{xdim,fT}},
-    mats=TrussFEAMaterial{T}(1.0, 0.3),
-    crosssecs=TrussFEACrossSec{T}(1.0),
+    mats = TrussFEAMaterial{T}(1.0, 0.3),
+    crosssecs = TrussFEACrossSec{T}(1.0),
 ) where {xdim,T,iT,fT,CellType}
     # unify number type
     # _T = promote_type(eltype(sizes), typeof(mats), typeof(ν), typeof(force))
@@ -53,7 +53,7 @@ function TrussProblem(
         @assert length(mats) == ncells
         mats = convert(Vector{TrussFEAMaterial{T}}, mats)
     elseif mats isa TrussFEAMaterial
-        mats = [convert(TrussFEAMaterial{T}, mats) for i in 1:ncells]
+        mats = [convert(TrussFEAMaterial{T}, mats) for i = 1:ncells]
     else
         error("Invalid mats: $(mats)")
     end
@@ -70,7 +70,7 @@ function TrussProblem(
     addnodeset!(truss_grid.grid, "load", load_nodesets)
 
     # * support nodeset
-    for i in 1:xdim
+    for i = 1:xdim
         if haskey(truss_grid.grid.nodesets, get_fixities_node_set_name(i))
             pop!(truss_grid.grid.nodesets, get_fixities_node_set_name(i))
         end
@@ -99,7 +99,7 @@ function TrussProblem(
     close!(dh)
 
     ch = ConstraintHandler(dh)
-    for i in 1:xdim
+    for i = 1:xdim
         dbc = Dirichlet(
             :u,
             getnodeset(truss_grid.grid, get_fixities_node_set_name(i)),
@@ -179,7 +179,12 @@ problem = PointLoadCantileverTruss(nels, sizes, E, ν, force, k_connect=2)
 ```
 """
 function PointLoadCantileverTruss(
-    nels::NTuple{dim,Int}, sizes::NTuple{dim}, E=1.0, ν=0.3, force=1.0; k_connect=1
+    nels::NTuple{dim,Int},
+    sizes::NTuple{dim},
+    E = 1.0,
+    ν = 0.3,
+    force = 1.0;
+    k_connect = 1,
 ) where {dim,CellType}
     iseven(nels[2]) && (length(nels) < 3 || iseven(nels[3])) ||
         throw("Grid does not have an even number of elements along the y and/or z axes.")
@@ -196,32 +201,34 @@ function PointLoadCantileverTruss(
     kdtree = KDTree(node_mat)
     if dim == 2
         # 4+1*4 -> 4+3*4 -> 4+5*4
-        k_ = 4 * k_connect + 4 * sum(1:2:(2 * k_connect - 1))
+        k_ = 4 * k_connect + 4 * sum(1:2:(2*k_connect-1))
     else
-        k_ = 8 * k_connect + 6 * sum(1:9:(9 * k_connect - 1))
+        k_ = 8 * k_connect + 6 * sum(1:9:(9*k_connect-1))
     end
     idxs, _ = knn(kdtree, node_mat, k_ + 1, true)
     connect_mat = zeros(Int, 2, k_ * length(idxs))
     for (i, v) in enumerate(idxs)
-        connect_mat[1, ((i - 1) * k_ + 1):(i * k_)] = ones(Int, k_) * i
-        connect_mat[2, ((i - 1) * k_ + 1):(i * k_)] = v[2:end] # skip the point itself
+        connect_mat[1, ((i-1)*k_+1):(i*k_)] = ones(Int, k_) * i
+        connect_mat[2, ((i-1)*k_+1):(i*k_)] = v[2:end] # skip the point itself
     end
     truss_grid = TrussGrid(node_mat, connect_mat)
 
     # reference domain dimension for a line element
     ξdim = 1
     ncells = getncells(truss_grid)
-    mats = [TrussFEAMaterial{T}(E, ν) for i in 1:ncells]
+    mats = [TrussFEAMaterial{T}(E, ν) for i = 1:ncells]
 
     # * support nodeset
-    for i in 1:dim
+    for i = 1:dim
         addnodeset!(truss_grid.grid, get_fixities_node_set_name(i), x -> left(rect_grid, x))
     end
 
     # * load nodeset
     if dim == 2
         addnodeset!(
-            truss_grid.grid, "force", x -> right(rect_grid, x) && middley(rect_grid, x)
+            truss_grid.grid,
+            "force",
+            x -> right(rect_grid, x) && middley(rect_grid, x),
         )
     else
         addnodeset!(
@@ -239,7 +246,7 @@ function PointLoadCantileverTruss(
     close!(dh)
 
     ch = ConstraintHandler(dh)
-    for i in 1:dim
+    for i = 1:dim
         dbc = Dirichlet(
             :u,
             getnodeset(truss_grid.grid, get_fixities_node_set_name(i)),

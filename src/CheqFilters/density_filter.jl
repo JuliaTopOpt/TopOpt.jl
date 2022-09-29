@@ -13,12 +13,17 @@ DensityFilter{false}(args...) = DensityFilter(Val(false), args...)
 
 DensityFilter(solver; rmin) = DensityFilter(Val(true), solver, rmin)
 function DensityFilter(
-    ::Val{filtering}, solver::AbstractFEASolver, args...
+    ::Val{filtering},
+    solver::AbstractFEASolver,
+    args...,
 ) where {filtering}
     return DensityFilter(Val(filtering), solver, args...)
 end
 function DensityFilter(
-    ::Val{true}, solver::TS, rmin::T, ::Type{TI}=Int
+    ::Val{true},
+    solver::TS,
+    rmin::T,
+    ::Type{TI} = Int,
 ) where {T,TI<:Integer,TS<:AbstractFEASolver}
     metadata = FilterMetadata(solver, rmin, TI)
     TM = typeof(metadata)
@@ -35,7 +40,10 @@ function DensityFilter(
 end
 
 function DensityFilter(
-    ::Val{false}, solver::TS, rmin::T, ::Type{TI}=Int
+    ::Val{false},
+    solver::TS,
+    rmin::T,
+    ::Type{TI} = Int,
 ) where {T,TS<:AbstractFEASolver,TI<:Integer}
     metadata = FilterMetadata(T, TI)
     jacobian = zeros(T, 0, 0)
@@ -52,7 +60,7 @@ end
 function ChainRulesCore.rrule(f::DensityFilter{true}, x::PseudoDensities)
     return f(x), Δ -> begin
         _Δ = hasproperty(Δ, :x) ? Δ.x : Δ
-        (nothing, Tangent{typeof(x)}(; x=f.jacobian' * _Δ))
+        (nothing, Tangent{typeof(x)}(; x = f.jacobian' * _Δ))
     end
 end
 
@@ -70,8 +78,8 @@ function getJacobian(solver, metadata::FilterMetadata)
     I = Int[]
     J = Int[]
     V = T[]
-    for n in 1:nnodes
-        r = node_cells.offsets[n]:(node_cells.offsets[n + 1] - 1)
+    for n = 1:nnodes
+        r = node_cells.offsets[n]:(node_cells.offsets[n+1]-1)
         for i in r
             c = node_cells.values[i][1]
             if black[c] || white[c]
@@ -91,7 +99,7 @@ function getJacobian(solver, metadata::FilterMetadata)
     I = Int[]
     J = Int[]
     V = T[]
-    for i in 1:length(black)
+    for i = 1:length(black)
         if black[i] || white[i]
             continue
         end
@@ -117,8 +125,8 @@ end
 function scalecols!(A::SparseMatrixCSC)
     @unpack colptr, nzval = A
     T = eltype(A)
-    for col in 1:(length(colptr) - 1)
-        inds = colptr[col]:(colptr[col + 1] - 1)
+    for col = 1:(length(colptr)-1)
+        inds = colptr[col]:(colptr[col+1]-1)
         s = sum(nzval[inds])
         if s != 0
             nzval[inds] .= nzval[inds] ./ s
