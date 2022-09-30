@@ -16,11 +16,11 @@ problem = problems[i]</code></pre><pre class="documenter-example-output"><code c
 xmin = 0.001 # minimum density
 steps = 40 # maximum number of penalty steps, delta_p0 = 0.1
 convcriteria = Nonconvex.KKTCriteria()
-penalty = TopOpt.PowerPenalty(1.0)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">PowerPenalty{Float64}(1.0)</code></pre><h3 id="Define-a-finite-element-solver"><a class="docs-heading-anchor" href="#Define-a-finite-element-solver">Define a finite element solver</a><a id="Define-a-finite-element-solver-1"></a><a class="docs-heading-anchor-permalink" href="#Define-a-finite-element-solver" title="Permalink"></a></h3><pre><code class="language-julia hljs">solver = FEASolver(Direct, problem; xmin = xmin, penalty = penalty)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi"></code></pre><h3 id="Define-**stress**-objective"><a class="docs-heading-anchor" href="#Define-**stress**-objective">Define <strong>stress</strong> objective</a><a id="Define-**stress**-objective-1"></a><a class="docs-heading-anchor-permalink" href="#Define-**stress**-objective" title="Permalink"></a></h3><p>Notice that gradient is derived automatically by automatic differentiation (Zygote.jl)!</p><pre><code class="language-julia hljs">stress = TopOpt.von_mises_stress_function(solver)
+penalty = TopOpt.PowerPenalty(1.0)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">PowerPenalty{Float64}(1.0)</code></pre><h3 id="Define-a-finite-element-solver"><a class="docs-heading-anchor" href="#Define-a-finite-element-solver">Define a finite element solver</a><a id="Define-a-finite-element-solver-1"></a><a class="docs-heading-anchor-permalink" href="#Define-a-finite-element-solver" title="Permalink"></a></h3><pre><code class="language-julia hljs">solver = FEASolver(Direct, problem; xmin=xmin, penalty=penalty)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi"></code></pre><h3 id="Define-**stress**-objective"><a class="docs-heading-anchor" href="#Define-**stress**-objective">Define <strong>stress</strong> objective</a><a id="Define-**stress**-objective-1"></a><a class="docs-heading-anchor-permalink" href="#Define-**stress**-objective" title="Permalink"></a></h3><p>Notice that gradient is derived automatically by automatic differentiation (Zygote.jl)!</p><pre><code class="language-julia hljs">stress = TopOpt.von_mises_stress_function(solver)
 filter = if problem isa TopOptProblems.TieBeam
     identity
 else
-    DensityFilter(solver; rmin = rmin)
+    DensityFilter(solver; rmin=rmin)
 end
 volfrac = TopOpt.Volume(solver)
 
@@ -31,8 +31,7 @@ obj = x -&gt; volfrac(filter(PseudoDensities(x)))
 constr = x -&gt; norm(stress(filter(PseudoDensities(x))), 5) - threshold</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">#3 (generic function with 1 method)</code></pre><h3 id="Define-subproblem-optimizer"><a class="docs-heading-anchor" href="#Define-subproblem-optimizer">Define subproblem optimizer</a><a id="Define-subproblem-optimizer-1"></a><a class="docs-heading-anchor-permalink" href="#Define-subproblem-optimizer" title="Permalink"></a></h3><pre><code class="language-julia hljs">N = length(solver.vars)
 x0 = fill(0.5, N)
 
-options =
-    MMAOptions(; maxiter = 2000, tol = Nonconvex.Tolerance(; kkt = 1e-4), convcriteria)
+options = MMAOptions(; maxiter=2000, tol=Nonconvex.Tolerance(; kkt=1e-4), convcriteria)
 model = Model(obj)
 addvar!(model, zeros(N), ones(N))
 add_ineq_constraint!(model, constr)
@@ -40,7 +39,7 @@ alg = MMA87()
 r = optimize(model, alg, x0; options)
 
 @show obj(r.minimizer)
-@show constr(r.minimizer)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">-0.00025090938048322187</code></pre><h3 id="(Optional)-Visualize-the-result-using-Makie.jl"><a class="docs-heading-anchor" href="#(Optional)-Visualize-the-result-using-Makie.jl">(Optional) Visualize the result using Makie.jl</a><a id="(Optional)-Visualize-the-result-using-Makie.jl-1"></a><a class="docs-heading-anchor-permalink" href="#(Optional)-Visualize-the-result-using-Makie.jl" title="Permalink"></a></h3><p>Need to run <code>using Pkg; Pkg.add(Makie)</code> first</p><pre><code class="language-julia hljs">using TopOpt.TopOptProblems.Visualization: visualize
+@show constr(r.minimizer)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">-0.0002509093216360725</code></pre><h3 id="(Optional)-Visualize-the-result-using-Makie.jl"><a class="docs-heading-anchor" href="#(Optional)-Visualize-the-result-using-Makie.jl">(Optional) Visualize the result using Makie.jl</a><a id="(Optional)-Visualize-the-result-using-Makie.jl-1"></a><a class="docs-heading-anchor-permalink" href="#(Optional)-Visualize-the-result-using-Makie.jl" title="Permalink"></a></h3><p>Need to run <code>using Pkg; Pkg.add(Makie)</code> first</p><pre><code class="language-julia hljs">using TopOpt.TopOptProblems.Visualization: visualize
 fig = visualize(problem; topology = r.minimizer)
 Makie.display(fig)</code></pre><h2 id="global-stress-plain-program"><a class="docs-heading-anchor" href="#global-stress-plain-program">Plain Program</a><a id="global-stress-plain-program-1"></a><a class="docs-heading-anchor-permalink" href="#global-stress-plain-program" title="Permalink"></a></h2><p>Below follows a version of the program without any comments. The file is also available here: <a href="../global_stress.jl">global-stress.jl</a></p><pre><code class="language-julia hljs">using TopOpt, LinearAlgebra
 
@@ -65,13 +64,13 @@ steps = 40 # maximum number of penalty steps, delta_p0 = 0.1
 convcriteria = Nonconvex.KKTCriteria()
 penalty = TopOpt.PowerPenalty(1.0)
 
-solver = FEASolver(Direct, problem; xmin = xmin, penalty = penalty)
+solver = FEASolver(Direct, problem; xmin=xmin, penalty=penalty)
 
 stress = TopOpt.von_mises_stress_function(solver)
 filter = if problem isa TopOptProblems.TieBeam
     identity
 else
-    DensityFilter(solver; rmin = rmin)
+    DensityFilter(solver; rmin=rmin)
 end
 volfrac = TopOpt.Volume(solver)
 
@@ -84,8 +83,7 @@ constr = x -&gt; norm(stress(filter(PseudoDensities(x))), 5) - threshold
 N = length(solver.vars)
 x0 = fill(0.5, N)
 
-options =
-    MMAOptions(; maxiter = 2000, tol = Nonconvex.Tolerance(; kkt = 1e-4), convcriteria)
+options = MMAOptions(; maxiter=2000, tol=Nonconvex.Tolerance(; kkt=1e-4), convcriteria)
 model = Model(obj)
 addvar!(model, zeros(N), ones(N))
 add_ineq_constraint!(model, constr)
@@ -95,4 +93,4 @@ r = optimize(model, alg, x0; options)
 @show obj(r.minimizer)
 @show constr(r.minimizer)
 
-# This file was generated using Literate.jl, https://github.com/fredrikekre/Literate.jl</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../csimp/">« Continuous SIMP example</a><a class="docs-footer-nextpage" href="../TOBS/">Topological optimization of binary structures (TOBS) »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.23 on <span class="colophon-date" title="Friday 30 September 2022 03:29">Friday 30 September 2022</span>. Using Julia version 1.8.1.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+# This file was generated using Literate.jl, https://github.com/fredrikekre/Literate.jl</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../csimp/">« Continuous SIMP example</a><a class="docs-footer-nextpage" href="../TOBS/">Topological optimization of binary structures (TOBS) »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.23 on <span class="colophon-date" title="Friday 30 September 2022 06:10">Friday 30 September 2022</span>. Using Julia version 1.8.1.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>

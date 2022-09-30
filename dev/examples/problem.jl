@@ -21,14 +21,7 @@ E = 1.0 # Young’s modulus in MPa
 f = 1.0 # downward force in N - negative is upward
 order = :Quadratic # shape function order
 problem = LBeam(
-    Val{order};
-    length = 100,
-    height = 100,
-    upperslab = 50,
-    lowerslab = 50,
-    E = 1.0,
-    ν = 0.3,
-    force = 1.0,
+    Val{order}; length=100, height=100, upperslab=50, lowerslab=50, E=1.0, ν=0.3, force=1.0
 )
 
 order = :Quadratic # shape function order
@@ -54,7 +47,7 @@ E = 1.0 # Young’s modulus in MPa
 nels = (60, 20) # number of boundary trusses
 elsizes = (1.0, 1.0) # the length of each boundary truss in mm
 force = 1.0 # upward force in N - negative is downward
-problem = PointLoadCantileverTruss(nels, elsizes, E, ν, force; k_connect = 1);
+problem = PointLoadCantileverTruss(nels, elsizes, E, ν, force; k_connect=1);
 
 # This file was generated using Literate.jl, https://github.com/fredrikekre/Literate.jl
 
