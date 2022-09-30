@@ -15,7 +15,7 @@ function load_truss_geo(io::IOStream)
     nnodes, nelements = parse.(iT, split(strip(chomp(readline(io)))))
 
     node_points = Dict{iT,SVector{ndim,T}}()
-    for i = 1:nnodes
+    for i in 1:nnodes
         strs = split(strip(chomp(readline(io))))
         node_id = parse(iT, strs[1])
         point = parse.(T, strs[2:end])
@@ -24,7 +24,7 @@ function load_truss_geo(io::IOStream)
     end
 
     elements = Dict{iT,Tuple{iT,iT}}()
-    for i = 1:nelements
+    for i in 1:nelements
         strs = split(strip(chomp(readline(io))))
         elem_id = parse(iT, strs[1])
         node_ids = parse.(iT, strs[2:end])
@@ -36,9 +36,9 @@ function load_truss_geo(io::IOStream)
     nloaded_nodes = parse(iT, strip(chomp(readline(io))))
     @assert nloadcases == 1
     load_cases = Dict()
-    for lc_ind = 1:nloadcases
+    for lc_ind in 1:nloadcases
         ploads = Dict{iT,SVector{ndim,T}}()
-        for pl = 1:nloaded_nodes
+        for pl in 1:nloaded_nodes
             strs = split(strip(chomp(readline(io))))
             node_id = parse(iT, strs[1])
             load = parse.(T, strs[2:end])
@@ -50,7 +50,7 @@ function load_truss_geo(io::IOStream)
 
     nfixities = parse(iT, strip(chomp(readline(io))))
     fixities = Dict{iT,SVector{ndim,Bool}}()
-    for i = 1:nfixities
+    for i in 1:nfixities
         strs = split(strip(chomp(readline(io))))
         node_id = parse(iT, strs[1])
         condition = map(!, parse.(Bool, strs[2:end]))

@@ -7,11 +7,11 @@ end
 function MeanCompliance(
     problem::MultiLoad,
     solver::AbstractDisplacementSolver;
-    method = :exact_svd,
-    sample_once = true,
-    nv = nothing,
-    V = nothing,
-    sample_method = :hutch,
+    method=:exact_svd,
+    sample_once=true,
+    nv=nothing,
+    V=nothing,
+    sample_method=:hutch,
     kwargs...,
 )
     if method == :exact
@@ -27,8 +27,9 @@ function MeanCompliance(
             method = TraceEstimationMean(problem.F, nv, sample_once, sample_method)
         else
             nv = nv === nothing ? size(V, 2) : nv
-            method =
-                TraceEstimationMean(problem.F, view(V, :, 1:nv), sample_once, sample_method)
+            method = TraceEstimationMean(
+                problem.F, view(V, :, 1:nv), sample_once, sample_method
+            )
         end
     else
         if sample_method isa Symbol
@@ -40,10 +41,7 @@ function MeanCompliance(
         else
             nv = nv === nothing ? size(V, 2) : nv
             method = TraceEstimationSVDMean(
-                problem.F,
-                view(V, :, 1:nv),
-                sample_once,
-                sample_method,
+                problem.F, view(V, :, 1:nv), sample_once, sample_method
             )
         end
     end
@@ -59,7 +57,7 @@ function (ec::MeanCompliance{T})(x::PseudoDensities) where {T}
     return compute_mean_compliance(ec, ec.method, solver.vars, ec.grad)
 end
 function ChainRulesCore.rrule(ec::MeanCompliance, x::PseudoDensities)
-    return ec(x), Δ -> (nothing, Tangent{typeof(x)}(; x = Δ * ec.grad))
+    return ec(x), Δ -> (nothing, Tangent{typeof(x)}(; x=Δ * ec.grad))
 end
 
 function compute_mean_compliance(ec::MeanCompliance, ::ExactMean, x, grad)
@@ -75,22 +73,12 @@ function compute_exact_ec(ec, x, grad, F, n)
     T = eltype(grad)
     obj = zero(T)
     grad .= 0
-    for i = 1:size(F, 2)
+    for i in 1:size(F, 2)
         @views solver.rhs .= F[:, i]
-        solver(; assemble_f = false, reuse_chol = (i > 1))
+        solver(; assemble_f=false, reuse_chol=(i > 1))
         u = solver.lhs
         obj += compute_compliance(
-            cell_comp,
-            grad_temp,
-            cell_dofs,
-            Kes,
-            u,
-            black,
-            white,
-            varind,
-            x,
-            penalty,
-            xmin,
+            cell_comp, grad_temp, cell_dofs, Kes, u, black, white, varind, x, penalty, xmin
         )
         grad .+= grad_temp
     end
@@ -114,9 +102,9 @@ function compute_approx_ec(ec, x, grad, F, V, n)
     obj = zero(T)
     grad .= 0
     ec.method.sample_once || ec.method.sample_method(V)
-    for i = 1:nv
+    for i in 1:nv
         @views mul!(solver.rhs, F, V[:, i])
-        solver(; assemble_f = false, reuse_chol = (i > 1))
+        solver(; assemble_f=false, reuse_chol=(i > 1))
         invKFv = solver.lhs
         obj += compute_compliance(
             cell_comp,
@@ -160,7 +148,7 @@ function hadamard3!(V)
     while size(H, 1) < n
         n1 = nv ÷ 2
         H1 = H[:, 1:n1]
-        H2 = H[:, (n1+1):nv]
+        H2 = H[:, (n1 + 1):nv]
         H = [H1 H2; H1 -H2]
     end
     V .= H[1:n, :]
@@ -191,18 +179,13 @@ function hadamard!(V)
     return V
 end
 
-function generate_scenarios(
-    dof::Int,
-    size::Tuple{Int,Int},
-    f,
-    perturb = () -> (rand() - 0.5),
-)
+function generate_scenarios(dof::Int, size::Tuple{Int,Int}, f, perturb=() -> (rand() - 0.5))
     ndofs, nscenarios = size
     I = Int[]
     J = Int[]
     V = Float64[]
-    V = [f * (1 + perturb()) for s = 1:nscenarios]
-    I = [dof for s = 1:nscenarios]
+    V = [f * (1 + perturb()) for s in 1:nscenarios]
+    I = [dof for s in 1:nscenarios]
     J = 1:nscenarios
     return sparse(I, J, V, ndofs, nscenarios)
 end

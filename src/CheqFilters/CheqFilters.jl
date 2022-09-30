@@ -40,8 +40,7 @@ function FilterMetadata(solver, rmin::T, ::Type{TI}) where {T,TI}
     problem = solver.problem
     cell_neighbouring_nodes, cell_node_weights = get_neighbour_info(problem, rmin)
     return FilterMetadata(
-        RaggedArray(cell_neighbouring_nodes),
-        RaggedArray(cell_node_weights),
+        RaggedArray(cell_neighbouring_nodes), RaggedArray(cell_node_weights)
     )
 end
 

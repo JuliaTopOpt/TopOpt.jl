@@ -41,7 +41,7 @@ end
 function default_quad_order(problem)
     if TopOptProblems.getdim(problem) == 2 &&
        TopOptProblems.nnodespercell(problem) in (3, 6) ||
-       TopOptProblems.getdim(problem) == 3 &&
+        TopOptProblems.getdim(problem) == 3 &&
        TopOptProblems.nnodespercell(problem) in (4, 10)
         return 3
     end

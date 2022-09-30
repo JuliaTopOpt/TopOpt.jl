@@ -23,8 +23,8 @@ problem = PointLoadCantilever(Val{:Linear}, problem_size, (1.0, 1.0), E, v, f);
 
 # FEA solver and auxiliary functions need to be defined as well:
 
-solver = FEASolver(Direct, problem; xmin = xmin);
-cheqfilter = DensityFilter(solver; rmin = rmin); # filter function
+solver = FEASolver(Direct, problem; xmin=xmin);
+cheqfilter = DensityFilter(solver; rmin=rmin); # filter function
 comp = TopOpt.Compliance(solver); # compliance function
 
 # The usual topology optimization problem adresses compliance minimization under volume restriction. Therefore, the objective and the constraint are:
@@ -43,7 +43,7 @@ options = TOBSOptions(); # optimization options with default values
 TopOpt.setpenalty!(solver, p);
 
 # Perform TOBS optimization
-@time r = Nonconvex.optimize(m, TOBSAlg(), x0; options = options)
+@time r = Nonconvex.optimize(m, TOBSAlg(), x0; options=options)
 
 # ### Results
 @show obj(r.minimizer)

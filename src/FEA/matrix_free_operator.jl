@@ -51,7 +51,7 @@ function mul!(y::TV, A::MatrixFreeOperator, x::TV) where {TV<:AbstractVector}
     @unpack cell_dofs, dof_cells = metadata
     @unpack penalty, xmin, vars, fixed_dofs, free_dofs, xes = A
 
-    for i = 1:nels
+    for i in 1:nels
         if PENALTY_BEFORE_INTERPOLATION
             px = ifelse(
                 black[i],
@@ -66,7 +66,7 @@ function mul!(y::TV, A::MatrixFreeOperator, x::TV) where {TV<:AbstractVector}
             )
         end
         xe = xes[i]
-        for j = 1:dofspercell
+        for j in 1:dofspercell
             xe = @set xe[j] = x[cell_dofs[j, i]]
         end
         if eltype(Kes) <: Symmetric
@@ -76,14 +76,14 @@ function mul!(y::TV, A::MatrixFreeOperator, x::TV) where {TV<:AbstractVector}
         end
     end
 
-    for i = 1:length(fixed_dofs)
+    for i in 1:length(fixed_dofs)
         dof = fixed_dofs[i]
         y[dof] = meandiag * x[dof]
     end
-    for i = 1:length(free_dofs)
+    for i in 1:length(free_dofs)
         dof = free_dofs[i]
         yi = zero(T)
-        r = dof_cells.offsets[dof]:(dof_cells.offsets[dof+1]-1)
+        r = dof_cells.offsets[dof]:(dof_cells.offsets[dof + 1] - 1)
         for ind in r
             k, m = dof_cells.values[ind]
             yi += xes[k][m]

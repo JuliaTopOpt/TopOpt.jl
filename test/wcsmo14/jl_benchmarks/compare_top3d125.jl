@@ -26,18 +26,19 @@ rmin = sqrt(3); # density filter radius
 
 nels = (48, 24, 24)
 sizes = (1.0, 1.0, 1.0)
-@timeit to "problem def" problem =
-    NewPointLoadCantilever(Val{:Linear}, nels, sizes, E, v, f);
+@timeit to "problem def" problem = NewPointLoadCantilever(
+    Val{:Linear}, nels, sizes, E, v, f
+);
 
 # Define a finite element solver
 @timeit to "penalty def" penalty = TopOpt.PowerPenalty(3.0)
-@timeit to "solver def" solver = FEASolver(Direct, problem; xmin = xmin, penalty = penalty);
+@timeit to "solver def" solver = FEASolver(Direct, problem; xmin=xmin, penalty=penalty);
 
 # Define compliance objective
 @timeit to "objective def" begin
     # Define compliance objective
     comp = Compliance(solver)
-    filter = DensityFilter(solver; rmin = rmin)
+    filter = DensityFilter(solver; rmin=rmin)
     obj = x -> comp(filter(PseudoDensities(x)))
 end
 
@@ -55,9 +56,7 @@ end
     alg = MMA87()
     convcriteria = GenericCriteria()
     options = MMAOptions(;
-        maxiter = 1000,
-        tol = Tolerance(; x = 1e-3, fabs = 1e-3, frel = 0.0, kkt = 1e-3),
-        convcriteria,
+        maxiter=1000, tol=Tolerance(; x=1e-3, fabs=1e-3, frel=0.0, kkt=1e-3), convcriteria
     )
 end
 

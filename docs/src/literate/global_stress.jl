@@ -35,7 +35,7 @@ convcriteria = Nonconvex.KKTCriteria()
 penalty = TopOpt.PowerPenalty(1.0)
 
 # ### Define a finite element solver
-solver = FEASolver(Direct, problem; xmin = xmin, penalty = penalty)
+solver = FEASolver(Direct, problem; xmin=xmin, penalty=penalty)
 
 # ### Define **stress** objective
 # Notice that gradient is derived automatically by automatic differentiation (Zygote.jl)!
@@ -43,7 +43,7 @@ stress = TopOpt.von_mises_stress_function(solver)
 filter = if problem isa TopOptProblems.TieBeam
     identity
 else
-    DensityFilter(solver; rmin = rmin)
+    DensityFilter(solver; rmin=rmin)
 end
 volfrac = TopOpt.Volume(solver)
 
@@ -57,8 +57,7 @@ constr = x -> norm(stress(filter(PseudoDensities(x))), 5) - threshold
 N = length(solver.vars)
 x0 = fill(0.5, N)
 
-options =
-    MMAOptions(; maxiter = 2000, tol = Nonconvex.Tolerance(; kkt = 1e-4), convcriteria)
+options = MMAOptions(; maxiter=2000, tol=Nonconvex.Tolerance(; kkt=1e-4), convcriteria)
 model = Model(obj)
 addvar!(model, zeros(N), ones(N))
 add_ineq_constraint!(model, constr)

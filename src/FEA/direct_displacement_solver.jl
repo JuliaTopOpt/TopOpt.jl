@@ -21,11 +21,11 @@ function Base.show(::IO, ::MIME{Symbol("text/plain")}, x::DirectDisplacementSolv
 end
 function DirectDisplacementSolver(
     sp::StiffnessTopOptProblem{dim,T};
-    xmin = T(1) / 1000,
-    penalty = PowerPenalty{T}(1),
-    prev_penalty = deepcopy(penalty),
-    quad_order = default_quad_order(sp),
-    qr = false,
+    xmin=T(1) / 1000,
+    penalty=PowerPenalty{T}(1),
+    prev_penalty=deepcopy(penalty),
+    quad_order=default_quad_order(sp),
+    qr=false,
 ) where {dim,T}
     elementinfo = ElementFEAInfo(sp, quad_order, Val{:Static})
     globalinfo = GlobalFEAInfo(sp)
@@ -35,26 +35,16 @@ function DirectDisplacementSolver(
     vars = fill(one(T), getncells(sp.ch.dh.grid) - sum(sp.black) - sum(sp.white))
     varind = sp.varind
     return DirectDisplacementSolver(
-        sp,
-        globalinfo,
-        elementinfo,
-        u,
-        lhs,
-        rhs,
-        vars,
-        penalty,
-        prev_penalty,
-        xmin,
-        qr,
+        sp, globalinfo, elementinfo, u, lhs, rhs, vars, penalty, prev_penalty, xmin, qr
     )
 end
 function (s::DirectDisplacementSolver{T})(
-    ::Type{Val{safe}} = Val{false},
-    ::Type{newT} = T;
-    assemble_f = true,
-    reuse_chol = false,
-    rhs = assemble_f ? s.globalinfo.f : s.rhs,
-    lhs = assemble_f ? s.u : s.lhs,
+    ::Type{Val{safe}}=Val{false},
+    ::Type{newT}=T;
+    assemble_f=true,
+    reuse_chol=false,
+    rhs=assemble_f ? s.globalinfo.f : s.rhs,
+    lhs=assemble_f ? s.u : s.lhs,
     kwargs...,
 ) where {T,safe,newT}
     globalinfo = s.globalinfo
@@ -66,12 +56,12 @@ function (s::DirectDisplacementSolver{T})(
         s.vars,
         getpenalty(s),
         s.xmin;
-        assemble_f = assemble_f,
+        assemble_f=assemble_f,
     )
     K = globalinfo.K
     if safe
         m = meandiag(K)
-        for i = 1:size(K, 1)
+        for i in 1:size(K, 1)
             if K[i, i] ≈ zero(T)
                 K[i, i] = m
             end

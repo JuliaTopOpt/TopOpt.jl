@@ -112,9 +112,9 @@ function PointLoadCantilever(
     ::Type{Val{CellType}},
     nels::NTuple{dim,Int},
     sizes::NTuple{dim},
-    E = 1.0,
-    ν = 0.3,
-    force = 1.0,
+    E=1.0,
+    ν=0.3,
+    force=1.0,
 ) where {dim,CellType}
     iseven(nels[2]) && (length(nels) < 3 || iseven(nels[3])) ||
         throw("Grid does not have an even number of elements along the y and/or z axes.")
@@ -141,9 +141,7 @@ function PointLoadCantilever(
         pop!(rect_grid.grid.nodesets, "down_force")
     end
     addnodeset!(
-        rect_grid.grid,
-        "down_force",
-        x -> right(rect_grid, x) && middley(rect_grid, x),
+        rect_grid.grid, "down_force", x -> right(rect_grid, x) && middley(rect_grid, x)
     )
 
     # Create displacement field u
@@ -160,10 +158,7 @@ function PointLoadCantilever(
 
     #dbc = Dirichlet(:u, getfaceset(rect_grid.grid, "fixed_all"), (x,t) -> zeros(T, dim), collect(1:dim))
     dbc = Dirichlet(
-        :u,
-        getnodeset(rect_grid.grid, "fixed_all"),
-        (x, t) -> zeros(T, dim),
-        collect(1:dim),
+        :u, getnodeset(rect_grid.grid, "fixed_all"), (x, t) -> zeros(T, dim), collect(1:dim)
     )
     add!(ch, dbc)
     close!(ch)
@@ -183,16 +178,7 @@ function PointLoadCantilever(
     varind = find_varind(black, white)
 
     return PointLoadCantilever(
-        rect_grid,
-        E,
-        ν,
-        ch,
-        force,
-        force_dof,
-        black,
-        white,
-        varind,
-        metadata,
+        rect_grid, E, ν, ch, force, force_dof, black, white, varind, metadata
     )
 end
 
@@ -285,9 +271,9 @@ function HalfMBB(
     ::Type{Val{CellType}},
     nels::NTuple{dim,Int},
     sizes::NTuple{dim},
-    E = 1.0,
-    ν = 0.3,
-    force = 1.0,
+    E=1.0,
+    ν=0.3,
+    force=1.0,
 ) where {dim,CellType}
     _T = promote_type(eltype(sizes), typeof(E), typeof(ν), typeof(force))
     if _T <: Integer
@@ -311,9 +297,7 @@ function HalfMBB(
         pop!(rect_grid.grid.nodesets, "fixed_u2")
     end
     addnodeset!(
-        rect_grid.grid,
-        "fixed_u2",
-        x -> bottom(rect_grid, x) && right(rect_grid, x),
+        rect_grid.grid, "fixed_u2", x -> bottom(rect_grid, x) && right(rect_grid, x)
     )
 
     if haskey(rect_grid.grid.nodesets, "down_force")
@@ -445,23 +429,23 @@ problem = LBeam(Val{celltype}, E = E, ν = ν, force = force)
 """
 function LBeam(
     ::Type{Val{CellType}},
-    ::Type{T} = Float64;
-    length = 100,
-    height = 100,
-    upperslab = 50,
-    lowerslab = 50,
-    E = 1.0,
-    ν = 0.3,
-    force = 1.0,
+    ::Type{T}=Float64;
+    length=100,
+    height=100,
+    upperslab=50,
+    lowerslab=50,
+    E=1.0,
+    ν=0.3,
+    force=1.0,
 ) where {T,CellType}
     # Create displacement field u
     grid = LGrid(
         Val{CellType},
         T;
-        length = length,
-        height = height,
-        upperslab = upperslab,
-        lowerslab = lowerslab,
+        length=length,
+        height=height,
+        upperslab=upperslab,
+        lowerslab=lowerslab,
     )
 
     dh = DofHandler(grid)
@@ -509,7 +493,7 @@ function boundingbox(grid::Ferrite.Grid{dim}) where {dim}
     end
 end
 
-function RectilinearTopology(b, topology = ones(getncells(getdh(b).grid)))
+function RectilinearTopology(b, topology=ones(getncells(getdh(b).grid)))
     bb = boundingbox(getdh(b).grid)
     go = getgeomorder(b)
     nels = Int.(round.(bb[2] .- bb[1]))
@@ -517,8 +501,9 @@ function RectilinearTopology(b, topology = ones(getncells(getdh(b).grid)))
     if go === 1
         rectgrid = generate_grid(Quadrilateral, nels, Vec{dim}(bb[1]), Vec{dim}(bb[2]))
     elseif go === 2
-        rectgrid =
-            generate_grid(QuadraticQuadrilateral, nels, Vec{dim}(bb[1]), Vec{dim}(bb[2]))
+        rectgrid = generate_grid(
+            QuadraticQuadrilateral, nels, Vec{dim}(bb[1]), Vec{dim}(bb[2])
+        )
     else
         throw("Unsupported geometry.")
     end
@@ -605,12 +590,7 @@ end
 - `CellType`: can be either `:Linear` or `:Quadratic` to determine the order of the geometric and field basis functions and element type. Only isoparametric elements are supported for now.
 """
 function TieBeam(
-    ::Type{Val{CellType}},
-    ::Type{T} = Float64,
-    refine = 1,
-    force = T(1);
-    E = T(1),
-    ν = T(0.3),
+    ::Type{Val{CellType}}, ::Type{T}=Float64, refine=1, force=T(1); E=T(1), ν=T(0.3)
 ) where {T,CellType}
     grid = TieBeamGrid(Val{CellType}, T, refine)
     dh = DofHandler(grid)
@@ -679,9 +659,7 @@ Constructs an instance of the type `RayProblem` that is a 2D beam with:
     metadata::Metadata
 end
 function RayProblem(
-    nels::NTuple{2,Int},
-    pins::Vector{<:Vector},
-    loads::Dict{<:Vector,<:Vector},
+    nels::NTuple{2,Int}, pins::Vector{<:Vector}, loads::Dict{<:Vector,<:Vector}
 )
     T = Float64
     rect_grid = RectilinearGrid(Val{:Linear}, nels, (1.0, 1.0))
@@ -708,7 +686,7 @@ function RayProblem(
 
     ch = ConstraintHandler(dh)
 
-    for i = 1:length(pins)
+    for i in 1:length(pins)
         dbc = Dirichlet(
             :u,
             getnodeset(rect_grid.grid, "fixed$i"),
