@@ -50,6 +50,7 @@ All the following features are available in TopOpt.jl but the documentation is c
 - Linear and quadratic triangle, quadrilateral, tetrahedron and hexahedron elements in ground mesh
 - Fixed and non-design domain support
 - Concentrated and distributed loads
+- Multi-material design parameterisation
 
 ### High level algorithms and penalty types
 
@@ -122,7 +123,6 @@ To cite this package, you can cite the following 2 conference publications.
 ## Contribute
 
 We always welcome new contributors! Feel free to open an issue or reach out to us via email if you want to collaborate. There are plenty of things to do including beginner friendly tasks and research-oriented tasks. You can help us create the best topology optimization ecosystem in the world! Some beginner-friendly ideas you could be working on include:
-- Multi-material design parameterisation
 - Level set design parameterization
 - Lattice design parameterization
 - Local volume constraints
