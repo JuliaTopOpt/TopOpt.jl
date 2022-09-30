@@ -15,8 +15,7 @@ function Base.show(::IO, ::MIME{Symbol("text/plain")}, ::TrussElementKσ)
 end
 
 function TrussElementKσ(
-    problem::TrussProblem{xdim,T},
-    solver::AbstractFEASolver,
+    problem::TrussProblem{xdim,T}, solver::AbstractFEASolver
 ) where {xdim,T}
     Es = getE(problem)
     As = getA(problem)
@@ -48,7 +47,7 @@ function TrussElementKσ(
         push!(EALγ_s, (E * A / L) * γ)
 
         fill!(δmat, 0.0)
-        for i = 2:size(R, 2)
+        for i in 2:size(R, 2)
             δ = vcat(-R[:, i], R[:, i])
             # @assert δ' * γ ≈ 0
             δmat .+= δ * δ'
@@ -89,7 +88,7 @@ function (eksig::TrussElementKσ)(u::DisplacementResult, x::PseudoDensities)
     dh = problem.ch.dh
     @assert getncells(dh.grid) == length(x.x)
     @assert ndofs(dh) == length(u.u)
-    for ci = 1:length(x.x)
+    for ci in 1:length(x.x)
         celldofs!(global_dofs, dh, ci)
         Kσes[ci] = eksig(u.u[global_dofs], x.x[ci], ci)
     end
@@ -97,9 +96,7 @@ function (eksig::TrussElementKσ)(u::DisplacementResult, x::PseudoDensities)
 end
 
 function ChainRulesCore.rrule(
-    eksig::TrussElementKσ{T},
-    u::DisplacementResult,
-    x::PseudoDensities,
+    eksig::TrussElementKσ{T}, u::DisplacementResult, x::PseudoDensities
 ) where {T}
     @unpack problem, Kσes, global_dofs = eksig
     dh = problem.ch.dh
@@ -107,28 +104,28 @@ function ChainRulesCore.rrule(
     function pullback_fn(Δ)
         Δu = zeros(T, size(u.u))
         Δx = zeros(T, size(x.x))
-        for ci = 1:length(x.x)
+        for ci in 1:length(x.x)
             celldofs!(global_dofs, dh, ci)
             function vec_eksig_fn(ux_vec)
-                u_e = ux_vec[1:(end-1)]
+                u_e = ux_vec[1:(end - 1)]
                 x_e = ux_vec[end]
                 return vec(eksig(u_e, x_e, ci))
             end
             jac_cell = ForwardDiff.jacobian(vec_eksig_fn, [u.u[global_dofs]; x.x[ci]])
             jtv = jac_cell' * vec(Δ[ci])
-            Δu[global_dofs] += jtv[1:(end-1)]
+            Δu[global_dofs] += jtv[1:(end - 1)]
             Δx[ci] = jtv[end]
         end
         return Tangent{typeof(eksig)}(;
-            problem = NoTangent(),
-            Kσes = Δ,
-            EALγ_s = NoTangent(),
-            δmat_s = NoTangent(),
-            L_s = NoTangent(),
-            global_dofs = NoTangent(),
+            problem=NoTangent(),
+            Kσes=Δ,
+            EALγ_s=NoTangent(),
+            δmat_s=NoTangent(),
+            L_s=NoTangent(),
+            global_dofs=NoTangent(),
         ),
-        Tangent{typeof(u)}(; u = Δu),
-        Tangent{typeof(x)}(; x = Δx)
+        Tangent{typeof(u)}(; u=Δu),
+        Tangent{typeof(x)}(; x=Δx)
     end
     return Kσes, pullback_fn
 end

@@ -21,10 +21,7 @@ function SensFilter(::Val{filtering}, solver::AbstractFEASolver, args...) where 
     return SensFilter(Val(filtering), solver, args...)
 end
 function SensFilter(
-    ::Val{true},
-    solver::TS,
-    rmin::T,
-    ::Type{TI} = Int,
+    ::Val{true}, solver::TS, rmin::T, ::Type{TI}=Int
 ) where {T,TI<:Integer,TS<:AbstractFEASolver}
     metadata = FilterMetadata(solver, rmin, TI)
     TM = typeof(metadata)
@@ -43,21 +40,12 @@ function SensFilter(
     cell_weights = zeros(T, nnodes)
 
     return SensFilter(
-        Val(true),
-        elementinfo,
-        metadata,
-        rmin,
-        nodal_grad,
-        last_grad,
-        cell_weights,
+        Val(true), elementinfo, metadata, rmin, nodal_grad, last_grad, cell_weights
     )
 end
 
 function SensFilter(
-    ::Val{false},
-    solver::TS,
-    rmin::T,
-    ::Type{TI} = Int,
+    ::Val{false}, solver::TS, rmin::T, ::Type{TI}=Int
 ) where {T,TS<:AbstractFEASolver,TI<:Integer}
     elementinfo = solver.elementinfo
     metadata = FilterMetadata(T, TI)
@@ -65,13 +53,7 @@ function SensFilter(
     last_grad = T[]
     cell_weights = T[]
     return SensFilter(
-        Val(false),
-        elementinfo,
-        metadata,
-        rmin,
-        nodal_grad,
-        last_grad,
-        cell_weights,
+        Val(false), elementinfo, metadata, rmin, nodal_grad, last_grad, cell_weights
     )
 end
 
@@ -86,7 +68,7 @@ function ChainRulesCore.rrule(cf::SensFilter{true}, x::PseudoDensities)
         else
             newΔ = copy(Δ)
         end
-        cf.rmin <= 0 && return (NoTangent(), Tangent{typeof(x)}(; x = newΔ))
+        cf.rmin <= 0 && return (NoTangent(), Tangent{typeof(x)}(; x=newΔ))
         @unpack elementinfo, nodal_grad, cell_weights, metadata = cf
         @unpack black, white, varind, cellvolumes, cells = elementinfo
         @unpack cell_neighbouring_nodes, cell_node_weights = metadata
@@ -112,7 +94,7 @@ function ChainRulesCore.rrule(cf::SensFilter{true}, x::PseudoDensities)
             cell_node_weights,
             nodal_grad,
         )
-        return (NoTangent(), Tangent{typeof(x)}(; x = newΔ))
+        return (NoTangent(), Tangent{typeof(x)}(; x=newΔ))
     end
 end
 
@@ -128,10 +110,10 @@ function update_nodal_grad!(
     grad,
 )
     T = eltype(nodal_grad)
-    for n = 1:length(nodal_grad)
+    for n in 1:length(nodal_grad)
         nodal_grad[n] = zero(T)
         cell_weights[n] = zero(T)
-        r = node_cells.offsets[n]:(node_cells.offsets[n+1]-1)
+        r = node_cells.offsets[n]:(node_cells.offsets[n + 1] - 1)
         for i in r
             c = node_cells.values[i][1]
             if black[c] || white[c]
@@ -147,7 +129,7 @@ function update_nodal_grad!(
 end
 
 function normalize_grad!(nodal_grad::AbstractVector, cell_weights)
-    for n = 1:length(nodal_grad)
+    for n in 1:length(nodal_grad)
         if cell_weights[n] > 0
             nodal_grad[n] /= cell_weights[n]
         end
@@ -163,7 +145,7 @@ function update_grad!(
     cell_node_weights,
     nodal_grad,
 )
-    @inbounds for i = 1:length(black)
+    @inbounds for i in 1:length(black)
         if black[i] || white[i]
             continue
         end

@@ -56,7 +56,7 @@ end
 function (ek::ElementK{T})(x::PseudoDensities) where {T}
     @unpack solver, Kes = ek
     @assert getncells(solver.problem.ch.dh.grid) == length(x)
-    for ci = 1:length(x)
+    for ci in 1:length(x)
         Kes[ci] = ek(x.x[ci], ci)
     end
     return copy(Kes)
@@ -77,19 +77,19 @@ function ChainRulesCore.rrule(ek::ElementK, x::PseudoDensities)
     """
     function pullback_fn(Δ)
         Δx = similar(x.x)
-        for ci = 1:length(x.x)
+        for ci in 1:length(x.x)
             ek_cell_fn = xe -> vec(ek(xe, ci))
             jac_cell = ForwardDiff.derivative(ek_cell_fn, x.x[ci])
             Δx[ci] = jac_cell' * vec(Δ[ci])
         end
         return Tangent{typeof(ek)}(;
-            solver = NoTangent(),
-            Kes = Δ,
-            Kes_0 = NoTangent(),
-            penalty = NoTangent(),
-            xmin = NoTangent(),
+            solver=NoTangent(),
+            Kes=Δ,
+            Kes_0=NoTangent(),
+            penalty=NoTangent(),
+            xmin=NoTangent(),
         ),
-        Tangent{typeof(x)}(; x = Δx)
+        Tangent{typeof(x)}(; x=Δx)
     end
     return Kes, pullback_fn
 end

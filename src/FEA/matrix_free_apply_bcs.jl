@@ -6,7 +6,7 @@ function matrix_free_apply2f!(
     problem::StiffnessTopOptProblem,
     penalty,
     xmin,
-    applyzero::Bool = false,
+    applyzero::Bool=false,
 ) where {dim,T}
     @unpack Kes, black, white, varind, metadata = elementinfo
     @unpack dof_cells, cell_dofs = metadata
@@ -49,12 +49,12 @@ function update_f!(
     varind,
     M,
 ) where {T}
-    for ind = 1:length(values)
+    for ind in 1:length(values)
         d = prescribed_dofs[ind]
         v = values[ind]
         m = size(Kes[ind], 1)
 
-        r = dof_cells.offsets[d]:(dof_cells.offsets[d+1]-1)
+        r = dof_cells.offsets[d]:(dof_cells.offsets[d + 1] - 1)
         if !applyzero && v != 0
             for idx in r
                 (i, j) = dof_cells.values[idx]
@@ -62,21 +62,13 @@ function update_f!(
                     px = ifelse(
                         black[i],
                         one(T),
-                        ifelse(
-                            white[i],
-                            xmin;
-                            px = density(penalty(vars[varind[i]]), xmin),
-                        ),
+                        ifelse(white[i], xmin; px=density(penalty(vars[varind[i]]), xmin)),
                     )
                 else
                     px = ifelse(
                         black[i],
                         one(T),
-                        ifelse(
-                            white[i],
-                            xmin;
-                            px = penalty(density(vars[varind[i]], xmin)),
-                        ),
+                        ifelse(white[i], xmin; px=penalty(density(vars[varind[i]], xmin))),
                     )
                 end
                 if eltype(Kes) <: Symmetric
@@ -84,7 +76,7 @@ function update_f!(
                 else
                     Ke = Kes[i]
                 end
-                for row = 1:m
+                for row in 1:m
                     f[cell_dofs[row, i]] -= px * v * Ke[row, j]
                 end
             end

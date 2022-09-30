@@ -15,10 +15,10 @@ GENERATED_EXAMPLES = [
 bib = CitationBibliography(joinpath(@__DIR__, "biblio", "ref.bib"))
 makedocs(
     bib;
-    sitename = "TopOpt.jl",
-    format = Documenter.HTML(; prettyurls = get(ENV, "CI", nothing) == "true"),
+    sitename="TopOpt.jl",
+    format=Documenter.HTML(; prettyurls=get(ENV, "CI", nothing) == "true"),
     # doctest = false,
-    pages = [
+    pages=[
         "Home" => "index.md",
         "Problem types" => "examples/problem.md",
         "Functions" => "functions.md",
@@ -34,5 +34,5 @@ makedocs(
 # end
 
 if get(ENV, "CI", nothing) == "true"
-    deploydocs(; repo = "github.com/JuliaTopOpt/TopOpt.jl.git", push_preview = true)
+    deploydocs(; repo="github.com/JuliaTopOpt/TopOpt.jl.git", push_preview=true)
 end

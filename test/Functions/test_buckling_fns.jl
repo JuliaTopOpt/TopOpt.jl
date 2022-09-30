@@ -17,10 +17,10 @@ gm_ins_dir = joinpath(@__DIR__, "..", "truss_topopt_problems", "instances", "gro
     einfo = ElementFEAInfo(problem)
     k = size(einfo.Kes[1], 1)
     N = length(einfo.Kes)
-    for _ = 1:3
+    for _ in 1:3
         v = rand(T, total_ndof)
         f = Kx -> sum(ak(Kx) * v)
-        Kes = [rand(T, k, k) for _ = 1:N]
+        Kes = [rand(T, k, k) for _ in 1:N]
         Kes .= transpose.(Kes) .+ Kes
         val1, grad1 = NonconvexCore.value_gradient(f, Kes)
         val2, grad2 = f(Kes), Zygote.gradient(f, Kes)[1]
@@ -39,7 +39,7 @@ end
 @testset "ElementK" begin
     nels = (2, 2)
     problem = PointLoadCantilever(Val{:Quadratic}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
-    solver = FEASolver(Direct, problem; xmin = 0.01, penalty = TopOpt.PowerPenalty(1.0))
+    solver = FEASolver(Direct, problem; xmin=0.01, penalty=TopOpt.PowerPenalty(1.0))
 
     ek = ElementK(solver)
     dh = problem.ch.dh
@@ -53,11 +53,11 @@ end
         @test k1 ≈ k0
     end
 
-    for _ = 1:3
-        vs = [rand(T, k, k) for i = 1:N]
+    for _ in 1:3
+        vs = [rand(T, k, k) for i in 1:N]
         f = x -> begin
             Kes = ek(PseudoDensities(x))
-            sum([sum(Kes[i] * vs[i]) for i = 1:length(x)])
+            sum([sum(Kes[i] * vs[i]) for i in 1:length(x)])
         end
 
         x = clamp.(rand(prod(nels)), 0.1, 1.0)
@@ -82,8 +82,9 @@ end
     ndim, nnodes, ncells = length(node_points[1]), length(node_points), length(elements)
     loads = load_cases["0"]
 
-    problem =
-        TrussProblem(Val{:Linear}, node_points, elements, loads, fixities, mats, crossecs)
+    problem = TrussProblem(
+        Val{:Linear}, node_points, elements, loads, fixities, mats, crossecs
+    )
     solver = FEASolver(Direct, problem)
     solver()
     u = solver.u
@@ -98,12 +99,12 @@ end
     # * check geometric stiffness matrix consistency
     Kσs_0 = get_truss_Kσs(problem, u, solver.elementinfo.cellvalues)
 
-    for _ = 1:3
-        vs = [rand(T, k, k) for i = 1:N]
+    for _ in 1:3
+        vs = [rand(T, k, k) for i in 1:N]
         f =
             x -> begin
                 Keσs = esigk(TopOpt.Functions.DisplacementResult(u), PseudoDensities(x))
-                sum([sum(Keσs[i] * vs[i]) for i = 1:length(x)])
+                sum([sum(Keσs[i] * vs[i]) for i in 1:length(x)])
             end
 
         x = clamp.(rand(nels), 0.1, 1.0)
@@ -130,7 +131,7 @@ end
     T = eltype(problem.E)
     total_ndof = ndofs(dh)
 
-    for _ = 1:3
+    for _ in 1:3
         v = rand(T, total_ndof)
         K = sprand(Float64, total_ndof, total_ndof, 0.75)
         K = K + K'
@@ -170,8 +171,9 @@ end
     ndim, nnodes, ncells = length(node_points[1]), length(node_points), length(elements)
     loads = load_cases["0"]
 
-    problem =
-        TrussProblem(Val{:Linear}, node_points, elements, loads, fixities, mats, crossecs)
+    problem = TrussProblem(
+        Val{:Linear}, node_points, elements, loads, fixities, mats, crossecs
+    )
 
     xmin = 0.0001 # minimum density
     p = 4.0 # penalty
@@ -220,7 +222,7 @@ end
     # * check initial design stability
     @test isfinite(logdet(cholesky(buckling_matrix_constr(x0))))
 
-    for _ = 1:3
+    for _ in 1:3
         v = rand(eltype(x0), total_ndof)
         f = x -> sum(buckling_matrix_constr(x) * v)
 
@@ -228,7 +230,7 @@ end
 
         solver.vars = x
         solver()
-        K, G = buckling(problem, solver.globalinfo, solver.elementinfo, x; u = solver.u)
+        K, G = buckling(problem, solver.globalinfo, solver.elementinfo, x; u=solver.u)
         @test K + G ≈ buckling_matrix_constr(x)
 
         val1, grad1 = NonconvexCore.value_gradient(f, x)

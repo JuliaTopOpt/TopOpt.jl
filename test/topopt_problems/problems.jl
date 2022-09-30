@@ -21,7 +21,7 @@ force = 1.0
     @test problem.varind == 1:ncells
     grid = problem.ch.dh.grid
     @test length(grid.cells) == ncells
-    for i = 1:2, j = 1:2
+    for i in 1:2, j in 1:2
         @test boundingbox(grid)[i][j] ≈ problem.rect_grid.corners[i][j] atol = 1e-8
     end
     @test length(grid.boundary_matrix.nzval) == 2 * 160 + 2 * 40
@@ -50,7 +50,7 @@ force = 1.0
         end
     end
     @test sum(length, getindex.((grid.facesets,), ["bottom", "right", "top", "left"])) ==
-          2 * 160 + 2 * 40
+        2 * 160 + 2 * 40
 end
 
 # Half MBB beam problem
@@ -66,7 +66,7 @@ end
     @test problem.varind == 1:ncells
     grid = problem.ch.dh.grid
     @test length(grid.cells) == ncells
-    for i = 1:2, j = 1:2
+    for i in 1:2, j in 1:2
         @test boundingbox(grid)[i][j] ≈ problem.rect_grid.corners[i][j] atol = 1e-8
     end
     @test length(grid.boundary_matrix.nzval) == 2 * 60 + 2 * 20
@@ -95,13 +95,13 @@ end
         end
     end
     @test sum(length, getindex.((grid.facesets,), ["bottom", "right", "top", "left"])) ==
-          2 * 60 + 2 * 20
+        2 * 60 + 2 * 20
 end
 
 # L-beam problem
 @testset "L-beam" begin
     global E, ν, force
-    problem = LBeam(Val{:Linear}, Float64; force = force)
+    problem = LBeam(Val{:Linear}, Float64; force=force)
     ncells = 100 * 50 + 50 * 50
     @test problem.E == E
     @test problem.ν == ν
@@ -112,7 +112,7 @@ end
     grid = problem.ch.dh.grid
     @test length(grid.cells) == ncells
     corners = [[0.0, 0.0], [100.0, 100.0]]
-    for i = 1:2, j = 1:2
+    for i in 1:2, j in 1:2
         @test boundingbox(grid)[i][j] ≈ corners[i][j] atol = 1e-8
     end
     @test length(grid.boundary_matrix.nzval) == 100 * 2 + 50 * 4
@@ -143,7 +143,7 @@ end
     grid = problem.ch.dh.grid
     @test length(grid.cells) == ncells
     corners = [[0.0, 0.0], [32.0, 7.0]]
-    for i = 1:2, j = 1:2
+    for i in 1:2, j in 1:2
         @test boundingbox(grid)[i][j] ≈ corners[i][j] atol = 1e-8
     end
     @test length(grid.boundary_matrix.nzval) == 32 * 2 + 3 * 2 + 4 * 2

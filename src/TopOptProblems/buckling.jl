@@ -9,7 +9,7 @@ function get_Kσs(sp::StiffnessTopOptProblem{xdim,TT}, u_dofs, cellvalues) where
     ndof_pc = ndofs_per_cell(dh)
     n_basefuncs = getnbasefunctions(cellvalues)
     global_dofs = zeros(Int, ndof_pc)
-    Kσs = [zeros(TT, ndof_pc, ndof_pc) for i = 1:getncells(dh.grid)]
+    Kσs = [zeros(TT, ndof_pc, ndof_pc) for i in 1:getncells(dh.grid)]
     Kσ_e = zeros(TT, ndof_pc, ndof_pc)
     # block-diagonal - block σ_e = σ_ij, i,j in xdim
     # ! shouldn't this be xdim*xdim by xdim*xdim?
@@ -27,14 +27,14 @@ function get_Kσs(sp::StiffnessTopOptProblem{xdim,TT}, u_dofs, cellvalues) where
         reinit!(cellvalues, cell)
         # get cell's dof's global dof indices, i.e. CC_a^e
         celldofs!(global_dofs, dh, cellidx)
-        for q_point = 1:getnquadpoints(cellvalues)
+        for q_point in 1:getnquadpoints(cellvalues)
             dΩ = getdetJdV(cellvalues, q_point)
-            for d = 1:xdim
-                ψ_e[((d-1)*xdim+1):(d*xdim), ((d-1)*xdim+1):(d*xdim)] .= 0
+            for d in 1:xdim
+                ψ_e[((d - 1) * xdim + 1):(d * xdim), ((d - 1) * xdim + 1):(d * xdim)] .= 0
             end
-            for a = 1:n_basefuncs
+            for a in 1:n_basefuncs
                 ∇ϕ = shape_gradient(cellvalues, q_point, a)
-                _u = @view u_dofs[(@view global_dofs[xdim*(a-1).+(1:xdim)])]
+                _u = @view u_dofs[(@view global_dofs[xdim * (a - 1) .+ (1:xdim)])]
                 # u_i,j, i for spatial xdim, j for partial derivative
                 @einsum u_p[i, j] = _u[i] * ∇ϕ[j]
                 # effect of the quadratic term in the strain formula have on the stress field is ignored
@@ -42,10 +42,12 @@ function get_Kσs(sp::StiffnessTopOptProblem{xdim,TT}, u_dofs, cellvalues) where
                 # isotropic solid
                 @einsum σ[i, j] =
                     E * ν / (1 - ν^2) * δ[i, j] * ϵ[k, k] + E * ν * (1 + ν) * ϵ[i, j]
-                for d = 1:xdim
+                for d in 1:xdim
                     # block diagonal
-                    ψ_e[((d-1)*xdim.+1):(d*xdim), ((d-1)*xdim.+1):(d*xdim)] .+= σ
-                    G[(xdim*(d-1)+1):(xdim*d), (a-1)*xdim+d] .= ∇ϕ
+                    ψ_e[
+                        ((d - 1) * xdim .+ 1):(d * xdim), ((d - 1) * xdim .+ 1):(d * xdim)
+                    ] .+= σ
+                    G[(xdim * (d - 1) + 1):(xdim * d), (a - 1) * xdim + d] .= ∇ϕ
                 end
             end
             Kσ_e .+= G' * ψ_e * G * dΩ

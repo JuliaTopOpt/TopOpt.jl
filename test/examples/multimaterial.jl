@@ -13,8 +13,8 @@ ncells = TopOpt.getncells(problem)
 # Parameter settings
 
 rmin = 3.0
-solver = FEASolver(Direct, problem; xmin = 0.0)
-filter = DensityFilter(solver; rmin = rmin)
+solver = FEASolver(Direct, problem; xmin=0.0)
+filter = DensityFilter(solver; rmin=rmin)
 
 M = 1 / nmats / 2 # mass fraction
 x0 = fill(M, ncells * (length(Es) - 1))
@@ -23,7 +23,7 @@ comp = Compliance(solver)
 penalty = TopOpt.PowerPenalty(3.0)
 interp = MaterialInterpolation(Es, penalty)
 obj = x -> begin
-    return MultiMaterialVariables(x, nmats) |> interp |> filter |> comp
+    return comp(filter(interp(MultiMaterialVariables(x, nmats))))
 end
 obj(x0)
 Zygote.gradient(obj, x0)
@@ -42,16 +42,16 @@ add_ineq_constraint!(model, constr)
 
 tol = 1e-3
 alg = MMA87()
-options = MMAOptions(; tol = Tolerance(; kkt = tol), maxiter = 1000)
+options = MMAOptions(; tol=Tolerance(; kkt=tol), maxiter=1000)
 
 res = optimize(model, alg, x0; options)
 x = res.minimizer
 ρs = PseudoDensities(MultiMaterialVariables(x, nmats))
 @test constr(x) < 1e-6
 @test constr(x0) > 0
-@test all(==(1), sum(ρs, dims = 2))
+@test all(==(1), sum(ρs; dims=2))
 sum(ρs[:, 2:3]) / size(ρs, 1) # the material elements as a ratio
 
-for i = 1:3
+for i in 1:3
     @test minimum(abs, ρs[:, i] .- 0.5) > 0.48 # mostly binary design
 end
