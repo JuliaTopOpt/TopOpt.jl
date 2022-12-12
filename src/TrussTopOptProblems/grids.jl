@@ -1,7 +1,6 @@
 using ..TopOpt.TopOptProblems: AbstractGrid
 const Vec = Ferrite.Vec
 
-# @params struct TrussGrid{xdim,N,M,C<:Ferrite.Cell{xdim,N,M},T} <: AbstractGrid{xdim, T}
 struct TrussGrid{xdim,T,N,M,TG<:Ferrite.Grid{xdim,<:Ferrite.Cell{xdim,N,M},T}} <:
        AbstractGrid{xdim,T}
     grid::TG
@@ -22,7 +21,7 @@ Ferrite.getncells(tg::TrussGrid) = Ferrite.getncells(tg.grid)
 
 function TrussGrid(
     node_points::Matrix{T}, elements::Matrix{iT}; crosssecs=TrussFEACrossSec{T}(1.0)
-) where {xdim,T,iT,fT}
+) where {T,iT}
     grid = _LinearTrussGrid(node_points, elements)
     ncells = getncells(grid)
     if crosssecs isa Vector
@@ -40,7 +39,7 @@ function TrussGrid(
     node_points::Dict{iT,SVector{xdim,T}},
     elements::Dict{iT,Tuple{iT,iT}};
     crosssecs=TrussFEACrossSec{T}(1.0),
-) where {xdim,T,iT,fT}
+) where {xdim,T,iT}
     grid = _LinearTrussGrid(node_points, elements)
     ncells = getncells(grid)
     if crosssecs isa Vector
@@ -78,7 +77,7 @@ end
 
 function _LinearTrussGrid(
     node_points::Dict{iT,SVector{xdim,T}}, elements::Dict{iT,Tuple{iT,iT}}
-) where {xdim,T,iT,fT}
+) where {xdim,T,iT}
     n_nodes = length(node_points)
 
     # * Generate cells, Line2d or Line3d

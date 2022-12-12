@@ -1,9 +1,14 @@
+assert_eq(x1, x2) = @assert x1 == x2
+function ChainRulesCore.rrule(::typeof(assert_eq), x1, x2)
+    assert_eq(x1, x2), _ -> (NoTangent(), NoTangent(), NoTangent())
+end
+
 struct MultiMaterialVariables{M<:AbstractMatrix}
     x::M
 end
 function MultiMaterialVariables(x::AbstractVector, nmats::Int)
     d, r = divrem(length(x), nmats - 1)
-    @assert r == 0
+    assert_eq(r, 0)
     return MultiMaterialVariables(reshape(x, d, nmats - 1))
 end
 function element_densities(x::PseudoDensities, densities::AbstractVector)
@@ -20,13 +25,14 @@ struct MaterialInterpolation{T,P}
 end
 (f::MaterialInterpolation)(x::PseudoDensities) = f(x.x)
 (f::MaterialInterpolation)(x::MultiMaterialVariables) = f(x.x)
+
 function (f::MaterialInterpolation)(x::AbstractVector)
     d, r = divrem(length(x), length(f.Es) - 1)
-    @assert r == 0
+    assert_eq(r, 0)
     return f(reshape(x, d, length(f.Es) - 1))
 end
 function (f::MaterialInterpolation)(x::AbstractMatrix)
-    @assert size(x, 2) == length(f.Es) - 1
+    assert_eq(size(x, 2), length(f.Es) - 1)
     y = map(f.penalty, tounit(x)) * f.Es
     return PseudoDensities(y)
 end

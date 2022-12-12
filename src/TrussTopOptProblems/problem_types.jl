@@ -180,7 +180,7 @@ problem = PointLoadCantileverTruss(nels, sizes, E, ν, force, k_connect=2)
 """
 function PointLoadCantileverTruss(
     nels::NTuple{dim,Int}, sizes::NTuple{dim}, E=1.0, ν=0.3, force=1.0; k_connect=1
-) where {dim,CellType}
+) where {dim}
     iseven(nels[2]) && (length(nels) < 3 || iseven(nels[3])) ||
         throw("Grid does not have an even number of elements along the y and/or z axes.")
     _T = promote_type(eltype(sizes), typeof(E), typeof(ν), typeof(force))
