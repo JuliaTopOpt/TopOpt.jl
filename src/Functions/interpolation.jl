@@ -23,16 +23,13 @@ struct MaterialInterpolation{T,P}
     Es::Vector{T}
     penalty::P
 end
-(f::MaterialInterpolation)(x::PseudoDensities) = f(x.x)
-(f::MaterialInterpolation)(x::MultiMaterialVariables) = f(x.x)
-
-function (f::MaterialInterpolation)(x::AbstractVector)
-    d, r = divrem(length(x), length(f.Es) - 1)
-    assert_eq(r, 0)
-    return f(reshape(x, d, length(f.Es) - 1))
+function (f::MaterialInterpolation)(x::PseudoDensities)
+    assert_eq(size(x.x, 2), length(f.Es))
+    y = map(f.penalty, x.x) * f.Es
+    return PseudoDensities(y)
 end
-function (f::MaterialInterpolation)(x::AbstractMatrix)
-    assert_eq(size(x, 2), length(f.Es) - 1)
+function (f::MaterialInterpolation)(x::MultiMaterialVariables)
+    assert_eq(size(x.x, 2), length(f.Es) - 1)
     y = map(f.penalty, tounit(x)) * f.Es
     return PseudoDensities(y)
 end
@@ -41,9 +38,7 @@ function Utilities.setpenalty!(interp::MaterialInterpolation, p::Real)
     return Utilities.setpenalty!(interp.penalty, p)
 end
 
-function PseudoDensities(x::MultiMaterialVariables)
-    return PseudoDensities(tounit(x.x))
-end
+tounit(x::MultiMaterialVariables) = PseudoDensities(tounit(x.x))
 
 function tounit(x::AbstractVector)
     n = length(x) + 1

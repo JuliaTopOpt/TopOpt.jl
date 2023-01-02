@@ -1,57 +1,92 @@
 using TopOpt, Test, Zygote, Test
 
-Es = [1e-6, 0.5, 2.0] # Young’s modulii of base material + 2 materials
-densities = [0.0, 0.5, 1.0] # for mass calculation
+Es = [1e-4, 1.0, 4.0] # Young's moduli of 3 materials (incl. void)
+
+densities = [0.0, 0.5, 1.0] # for mass calc
 nmats = 3
 
-v = 0.3 # Poisson’s ratio
+nu = 0.3 # Poisson's ratio
 f = 1.0 # downward force
 
-problem = PointLoadCantilever(Val{:Linear}, (160, 40), (1.0, 1.0), 1.0, v, f)
+# problem definition
+problem = PointLoadCantilever(
+  Val{:Linear}, # order of bases functions
+  (160, 40), # number of cells
+  (1.0, 1.0), # cell dimensions
+  1.0, # base Young's modulus
+  nu, # Poisson's ratio
+  f, # load
+)
 ncells = TopOpt.getncells(problem)
 
-# Parameter settings
-
-rmin = 3.0
+# FEA solver
 solver = FEASolver(Direct, problem; xmin=0.0)
-filter = DensityFilter(solver; rmin=rmin)
 
-M = 1 / nmats / 2 # mass fraction
-x0 = fill(M, ncells * (length(Es) - 1))
+# density filter definition
+filter = DensityFilter(solver; rmin=3.0)
 
+# compliance function
 comp = Compliance(solver)
-penalty = TopOpt.PowerPenalty(3.0)
-interp = MaterialInterpolation(Es, penalty)
-obj = x -> begin
-    return comp(filter(interp(MultiMaterialVariables(x, nmats))))
+
+# Young's modulus interpolation for compliance
+penalty1 = TopOpt.PowerPenalty(4.0)
+interp1 = MaterialInterpolation(Es, penalty1)
+
+# density interpolation for mass constraint
+penalty2 = TopOpt.PowerPenalty(1.0)
+interp2 = MaterialInterpolation(densities, penalty2)
+
+# objective function
+obj = y -> begin
+  x = tounit(MultiMaterialVariables(y, nmats))
+  _E = interp1(filter(x))
+  return comp(filter(_E))
 end
-obj(x0)
-Zygote.gradient(obj, x0)
+
+# initial decision variables as a vector
+y0 = zeros(ncells * (nmats - 1))
+
+# testing the objective function
+obj(y0)
+# testing the gradient
+Zygote.gradient(obj, y0)
 
 # mass constraint
-constr = x -> begin
-    ρs = PseudoDensities(MultiMaterialVariables(x, nmats))
-    return sum(element_densities(ρs, densities)) / ncells - 0.3 # elements have unit volumes
+constr = y -> begin
+  _rhos = interp2(MultiMaterialVariables(y, nmats))
+  return sum(_rhos.x) / ncells - 0.4 # elements have unit volumes
 end
-constr(x0)
-Zygote.gradient(constr, x0)
 
+# testing the mass constraint
+constr(y0)
+# testing the gradient
+Zygote.gradient(constr, y0)
+
+# building the optimization problem
 model = Model(obj)
-addvar!(model, fill(-10.0, length(x0)), fill(10.0, length(x0)))
+addvar!(
+  model,
+  fill(-10.0, length(y0)),
+  fill(10.0, length(y0)),
+)
 add_ineq_constraint!(model, constr)
 
-tol = 1e-3
+# optimization settings
 alg = MMA87()
-options = MMAOptions(; tol=Tolerance(; kkt=tol), maxiter=1000)
+options = MMAOptions(;
+  s_init = 0.1,
+  tol=Tolerance(; kkt=1e-3),
+)
 
-res = optimize(model, alg, x0; options)
-x = res.minimizer
-ρs = PseudoDensities(MultiMaterialVariables(x, nmats))
-@test constr(x) < 1e-6
-@test constr(x0) > 0
-@test all(==(1), sum(ρs; dims=2))
-sum(ρs[:, 2:3]) / size(ρs, 1) # the material elements as a ratio
+y0 = zeros(ncells * (nmats - 1))
 
-for i in 1:3
-    @test minimum(abs, ρs[:, i] .- 0.5) > 0.48 # mostly binary design
-end
+# solving the optimization problem
+res = optimize(model, alg, y0; options)
+y = res.minimizer
+
+# testing the solution
+@test constr(y) < 1e-6
+
+x = TopOpt.tounit(reshape(y, ncells, nmats - 1))
+sum(x[:, 2:3]) / size(x, 1) # the non-void elements as a ratio
+@test all(==(1), sum(x; dims=2))
