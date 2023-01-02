@@ -85,14 +85,15 @@ We use [Nonconvex.jl](https://github.com/JuliaNonconvex/Nonconvex.jl) for the op
 - Integer nonlinear programming (design variables guaranteed to be integer)
 - Sequential integer linear programming in the topology optimization for binary structures (TOBS) algorithm
 
+### Handling uncertainty
+- Handling load uncertainty in compliance-based topology optimization
+- Reliability-based topology optimization
+
 ### Visualization and post-processing
 
 - End-to-end topology optimization from INP file to VTK file
 - Interactive visualization of designs and deformation using [Makie.jl](https://makie.juliaplots.org/stable/)
 - Interactive visualization of designs using Dash apps and [DashVtk](https://github.com/JuliaTopOpt/DashVtk_Examples/tree/main/src/TopOptDemo)
-
-### Handling uncertainty
-- Handling load uncertainty in compliance-based topology optimization
 
 ## Citation
 
@@ -129,7 +130,6 @@ We always welcome new contributors! Feel free to open an issue or reach out to u
 - Supporting rectilinear grids
 - Wrapping OpenLSTO_jll which is the precompiled binary for M2DOLab/OpenLSTO
 - Wrapping TopOpt_in_PETSc_jll which is the precompiled binary for topopt/TopOpt_in_PETSc
-- Reliability-based design optimization
 - Robust optimization
 - Stochastic optimization
 
