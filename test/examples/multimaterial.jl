@@ -89,4 +89,4 @@ y = res.minimizer
 
 x = TopOpt.tounit(reshape(y, ncells, nmats - 1))
 sum(x[:, 2:3]) / size(x, 1) # the non-void elements as a ratio
-@test all(==(1), sum(x; dims=2))
+@test all(x -> isapprox(x, 1), sum(x; dims=2))
