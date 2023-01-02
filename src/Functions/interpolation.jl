@@ -30,8 +30,7 @@ function (f::MaterialInterpolation)(x::PseudoDensities)
 end
 function (f::MaterialInterpolation)(x::MultiMaterialVariables)
     assert_eq(size(x.x, 2), length(f.Es) - 1)
-    y = map(f.penalty, tounit(x)) * f.Es
-    return PseudoDensities(y)
+    return f(tounit(x))
 end
 
 function Utilities.setpenalty!(interp::MaterialInterpolation, p::Real)

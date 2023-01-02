@@ -1,6 +1,6 @@
 using TopOpt, Test, Zygote, Test
 
-Es = [1e-4, 1.0, 4.0] # Young's moduli of 3 materials (incl. void)
+Es = [1e-5, 1.0, 4.0] # Young's moduli of 3 materials (incl. void)
 
 densities = [0.0, 0.5, 1.0] # for mass calc
 nmats = 3
@@ -23,13 +23,13 @@ ncells = TopOpt.getncells(problem)
 solver = FEASolver(Direct, problem; xmin=0.0)
 
 # density filter definition
-filter = DensityFilter(solver; rmin=3.0)
+filter = DensityFilter(solver; rmin=4.0)
 
 # compliance function
 comp = Compliance(solver)
 
 # Young's modulus interpolation for compliance
-penalty1 = TopOpt.PowerPenalty(4.0)
+penalty1 = TopOpt.PowerPenalty(3.0)
 interp1 = MaterialInterpolation(Es, penalty1)
 
 # density interpolation for mass constraint
@@ -40,7 +40,7 @@ interp2 = MaterialInterpolation(densities, penalty2)
 obj = y -> begin
   x = tounit(MultiMaterialVariables(y, nmats))
   _E = interp1(filter(x))
-  return comp(filter(_E))
+  return comp(_E)
 end
 
 # initial decision variables as a vector
