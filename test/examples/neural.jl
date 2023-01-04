@@ -24,7 +24,7 @@ comp = Compliance(solver)
 volfrac = Volume(solver)
 
 m = 20
-act = relu
+act = leakyrelu
 nn = Chain(Dense(2, m, act), Dense(m, m, act), Dense(m, m, act), Dense(m, 1, sigmoid))
 nn_model = NeuralNetwork(nn, problem)
 tf = TrainFunction(nn_model)
