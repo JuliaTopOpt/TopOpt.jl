@@ -44,6 +44,15 @@ VTKDataTypes = "10d27dd1-1d0f-5a4c-b178-bd2d0045a217"
 WriteVTK = "64499a7a-5c06-52f2-abe2-ccb03c286192"
 Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
 
+[weakdeps]
+Makie = "ee78f7c6-11fb-53f2-987a-cfe4a2b5a57a"
+
+[extensions]
+MakieExt = "Makie" 
+
+[extras]
+Makie = "ee78f7c6-11fb-53f2-987a-cfe4a2b5a57a"
+
 [compat]
 AbstractDifferentiation = "0.4"
 ChainRulesCore = "1"
@@ -59,6 +68,7 @@ IterativeSolvers = "0.9"
 JuliaFormatter = "1"
 JSON = "0.21"
 MacroTools = "0.5"
+Makie = "0.18, 0.19"
 MappedArrays = "0.4"
 NearestNeighbors = "0.4"
 Nonconvex = "2"
@@ -78,4 +88,4 @@ TimerOutputs = "0.5"
 VTKDataTypes = "0.1"
 WriteVTK = "1.9"
 Zygote = "0.6"
-julia = "1.5, 1.6"
+julia = "1.7, 1.8"

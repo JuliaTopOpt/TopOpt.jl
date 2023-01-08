@@ -1,9 +1,24 @@
-using .Makie: Makie
-using LinearAlgebra: norm
-using .Makie: lift, cam3d!, Point3f0, Vec3f0, Figure, Auto
-using .Makie: DataAspect, Axis, labelslidergrid!, set_close_to!, labelslider!, LScene
-using GeometryBasics: GLTriangleFace
-using ..TopOptProblems: getcloaddict
+module MakieExt
+
+@static if isdefined(Base, :get_extension)
+    using Makie: Makie
+    using LinearAlgebra: norm
+    using Makie: lift, cam3d!, Point3f0, Vec3f0, Figure, Auto
+    using Makie: DataAspect, Axis, labelslidergrid!, set_close_to!, labelslider!, LScene
+    using GeometryBasics: GLTriangleFace
+    using ..TopOpt.TopOptProblems: getcloaddict, QuadraticHexahedron,  StiffnessTopOptProblem
+    import ..TopOpt.Visualization: visualize
+    using ..TopOpt.Visualization: Ferrite
+else
+    using ..Makie: Makie
+    using LinearAlgebra: norm
+    using ..Makie: lift, cam3d!, Point3f0, Vec3f0, Figure, Auto
+    using ..Makie: DataAspect, Axis, labelslidergrid!, set_close_to!, labelslider!, LScene
+    using GeometryBasics: GLTriangleFace
+    using ...TopOptProblems: getcloaddict, QuadraticHexahedron, StiffnessTopOptProblem
+    import ..Visualization: visualize
+    using ..Visualization: Ferrite
+end
 
 ################################
 # Credit to Simon Danisch for the conversion code below
@@ -244,4 +259,6 @@ function visualize(problem::StiffnessTopOptProblem{dim,T}; kwargs...) where {dim
     node_displacements = zeros(T, dim, nnodes)
     cloaddict = getcloaddict(problem)
     return visualize(mesh, node_displacements; cloaddict=cloaddict, kwargs...)
+end
+
 end
