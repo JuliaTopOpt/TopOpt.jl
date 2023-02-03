@@ -57,9 +57,8 @@ r = optimize(model, alg, x0; options)
 @show obj(r.minimizer)
 
 # ### (Optional) Visualize the result using Makie.jl
-# Need to run `using Pkg; Pkg.add(["Makie", "GLMakie"])` first
+# Need to run `using Pkg; Pkg.add(Makie)` first
 # ```julia
-# using Makie, GLMakie
 # using TopOpt.TopOptProblems.Visualization: visualize
 # fig = visualize(
 #     problem; topology = r.minimizer,
