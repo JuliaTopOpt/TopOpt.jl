@@ -1,9 +1,12 @@
-using .Makie: Makie
 using LinearAlgebra: norm
-using .Makie: lift, cam3d!, Point3f0, Vec3f0, Figure, Auto
-using .Makie: DataAspect, Axis, labelslidergrid!, set_close_to!, labelslider!, LScene
+# using Makie
+using .Makie: Makie
+using Makie: lift, cam3d!, Point3f0, Vec3f0, Figure, Auto, RGBAf
+using Makie: DataAspect, Axis, LScene, SliderGrid
+using Makie.GeometryBasics
+using ColorSchemes
 using GeometryBasics: GLTriangleFace
-using ..TopOptProblems: getcloaddict
+using ..TopOptProblems: getcloaddict, boundingbox
 
 ################################
 # Credit to Simon Danisch for the conversion code below
@@ -66,182 +69,280 @@ function Makie.convert_arguments(P, x::AbstractVector{<:Ferrite.Node{N,T}}) wher
     return convert_arguments(P, reinterpret(Point{N,T}, x))
 end
 
+"""
+Duplicate nodes and cells to make drawing a uniform color per cell face work.
+Inspired by: https://discourse.julialang.org/t/makie-triangle-face-colour-mesh/18011/7
+"""
+function _explode_nodes_and_cells(grid::Ferrite.Grid{xdim, cell_type, T}) where {xdim, cell_type, T}
+    new_nodes = Vector{Ferrite.Node}()
+    new_cells = similar(grid.cells, 0)
+    new_node_id_from_old = Dict{Int, Vector{Int}}(i => [] for i in 1:length(grid.nodes))
+    old_node_id_from_new = Vector{Int}()
+    node_count = 0
+    for (cid, cell) in enumerate(grid.cells)
+        for (local_id, nid) in enumerate(cell.nodes)
+            if xdim == 3
+                push!(new_nodes, grid.nodes[nid])
+            elseif xdim == 2
+                node = grid.nodes[nid]
+                push!(new_nodes, Ferrite.Node((node.x[1], node.x[2], zero(T))))
+            else
+                error("Unsupported xdim $xdim !")
+            end
+            push!(new_node_id_from_old[nid], node_count + local_id)
+            push!(old_node_id_from_new, nid)
+        end
+        num_cnodes = length(cell.nodes)
+        push!(new_cells, cell_type(Tuple(node_count+1:node_count+num_cnodes)))
+        node_count += num_cnodes
+    end
+    @assert length(grid.cells) == length(new_cells)
+    return new_nodes, new_cells, new_node_id_from_old, old_node_id_from_new
+end
+
+function _create_colorbar(fig, colormap, cell_colors)
+    val_range = maximum(cell_colors) - minimum(cell_colors)
+    Makie.Colorbar(fig, colormap = colormap,
+        highclip = :black, lowclip = :white, 
+        ticks = minimum(cell_colors):val_range/10:maximum(cell_colors),
+        limits = (minimum(cell_colors), maximum(cell_colors)), 
+    )
+end
+
 ################################
 
+"""
+    function visualize(problem::StiffnessTopOptProblem{dim,T};
+        u=undef,
+        topology=undef,
+        cloaddict=undef,
+        undeformed_mesh_color=dim==2 ? RGBAf(0,0,0,1.0) : RGBAf(0.5,0.5,0.5,0.4),
+        cell_colors=undef,
+        draw_legend=false,
+        colormap=ColorSchemes.Spectral_10,
+        deformed_mesh_color=RGBAf(0,1,1,0.4),
+        vector_arrowsize=1.0,
+        vector_linewidth=1.0,
+        default_support_scale=1.0,
+        default_load_scale=1.0,
+        scale_range=1.0,
+        default_exagg_scale=1.0,
+        exagg_range=10.0,
+        kw...
+    ) where {dim,T}
+
+Visualizer based on [Makie.jl](https://makie.juliaplots.org/stable/index.html). We take advantage of the interactive
+functionality provided by `GLMakie.jl`. To use the interactive backend, please install and activate `GLMakie` by `import Pkg; Pkg.add("GLMakie"); using TopOpt, Makie, GLMakie`
+
+Note that if you want to export publication-quality vector graphics, you can still use `CairoMakie` backend and `save("name.pdf", fig)` with the figure handle return by `visualize`, even though the visualization window does not show up. You can do so by simply replacing `using Makie, GLMakie` with `using Makie, CairoMakie`.
+So we recommend using `GLMakie` backend until you are satisfied, and switch backend to export the high-quality figures.
+
+# Inputs
+
+- `problem`: continuum topopt problem
+
+# Optional arguments
+
+- `u=undef`: nodal displacement vector (dim `n_dof`). 
+    Usually got from `solver.vars = x_you_want; solver(); u = solver.u;`. If `undef`, assumed to be a zero vector.
+- `topology=undef` : desired topology density vector (dim `n_cells`). If `undef`, assume all cells are included. 
+    For display, we apply a transparency of `x[i]` to `cell[i]` to see all the gray-scale cells, not only the black and white ones.
+- `cloaddict=undef` : Dict(node_id => load vector). If `undef`, the dict will be parsed from the problem by `getcloaddict(problem)`.
+- `undeformed_mesh_color` : color used for displaying the undeformed mesh.
+- `cell_colors=undef` : Vector (dim `n_cells`) of a value per cell to show the color map. If this is used, `undeformed_mesh_color` will be ignored.
+- `draw_legend=false` : draw the color legend for cell_colors.
+- `colormap=ColorSchemes.Spectral_10` : color map used to show `cell_color`. See [catalog](https://juliagraphics.github.io/ColorSchemes.jl/stable/catalogue/) for more options.
+- `deformed_mesh_color` : color used for displaying deformed mesh if `u` is specified.
+- `vector_arrowsize=1.0` : the vector arrow size used for displaying loads and supports vectors.
+- `vector_linewidth=1.0` : line width for loads and supports vectors.
+- `default_support_scale=1.0` : the default support scale used in the slider.
+- `default_load_scale=1.0` : the default load scale used in the slider.
+- `scale_range=1.0` : the upper limit of the sliders controlling the support and load scale sliders.
+- `default_exagg_scale=1.0` : default deformation exaggeration scale.
+- `exagg_range=10.0` : the upper limit of the slider controlling the deformation exaggeration slider.
+- `kw...` : optional keyword argument passed to [Makie.mesh!](https://docs.makie.org/stable/api/#mesh!) function.
+
+# Returns
+- `Makie.Figure` handle
+
+"""
 function visualize(
-    mesh::Ferrite.Grid{dim,<:Ferrite.AbstractCell,TT},
-    u;
+    problem::StiffnessTopOptProblem{dim,T};
+    u=undef,
     topology=undef,
     cloaddict=undef,
-    undeformed_mesh_color=(:gray, 0.4),
-    deformed_mesh_color=(:cyan, 0.4),
+    undeformed_mesh_color=dim==2 ? RGBAf(0,0,0,1.0) : RGBAf(0.5,0.5,0.5,0.4),
+    cell_colors=undef,
+    draw_legend=false,
+    colormap=ColorSchemes.Spectral_10,
+    deformed_mesh_color=RGBAf(0,1,1,0.4),
+    display_supports=true,
     vector_arrowsize=1.0,
     vector_linewidth=1.0,
     default_support_scale=1.0,
     default_load_scale=1.0,
     scale_range=1.0,
     default_exagg_scale=1.0,
-    exagg_range=1.0,
-) where {dim,TT}
-    T = eltype(u)
-    nnodes = length(mesh.nodes)
-    if topology !== undef
-        mesh_cells = mesh.cells[Bool.(round.(Int, topology))]
-        # TODO display opacity accroding to topology values
-        # undeformed_mesh_color = [(:gray,t) for t in topology]
-    else
-        mesh_cells = mesh.cells
-    end
+    exagg_range=10.0,
+    kw...
+) where {dim,T}
+    mesh = problem.ch.dh.grid
+    node_dofs = problem.metadata.node_dofs
+    nnodes = Ferrite.getnnodes(mesh)
+    # coord_min, coord_max = boundingbox(mesh)
+    # mesh_dim = maximum([coord_max...] - [coord_min...])
 
-    # * initialize the makie scene
-    fig = Figure(; resolution=(1200, 800))
+    given_u = u!==undef
+    cloaddict = cloaddict===undef ? getcloaddict(problem) : cloaddict
 
-    #TODO make this work without creating a Node
+    mesh_cells = mesh.cells
+    topology = topology == undef ? ones(T, length(mesh_cells)) : topology
+    nodes = Vector{Ferrite.Node}(undef, nnodes)
     if dim == 2
-        nodes = Vector{Ferrite.Node}(undef, nnodes)
         for (i, node) in enumerate(mesh.nodes)
             nodes[i] = Ferrite.Node((node.x[1], node.x[2], zero(T)))
         end
-        u = [u; zeros(T, 1, nnodes)]
+    else
+        nodes = mesh.nodes
+    end
 
+    # * initialize the makie scene
+    fig = Figure()
+
+    if dim == 2
         ax1 = Axis(fig[1, 1])
         # tightlimits!(ax1)
         # ax1.aspect = AxisAspect(1)
         ax1.aspect = DataAspect()
     else
-        nodes = mesh.nodes
-
         # https://jkrumbiegel.github.io/MakieLayout.jl/v0.3/layoutables/#LScene-1
         # https://makie.juliaplots.org/stable/cameras.html#D-Camera
         # ax1 = layout[1, 1] = LScene(scene, camera = cam3d!, raw = false)
-        ax1 = LScene(fig[1, 1]; scenekw=(camera=cam3d!, raw=false), height=750)
+        ax1 = LScene(fig[1, 1]; scenekw=(camera=cam3d!, raw=false)) # , height=750
     end
-    # TODO show the ground mesh in another Axis https://makie.juliaplots.org/stable/makielayout/grids.html
-    # ax1.title = "TopOpt result"
 
     # * support / load appearance / deformatione exaggeration control
-    lsgrid = labelslidergrid!(
-        fig,
-        ["deformation exaggeration", "support scale", "load scale"],
-        [
-            LinRange(0.0:0.01:exagg_range),
-            LinRange(0.0:0.01:scale_range),
-            LinRange(0.0:0.01:scale_range),
-        ];
-        width=Auto(),
-        # tellwidth = true,
-        # horizontal = false,
-    )
-    set_close_to!(lsgrid.sliders[1], default_exagg_scale)
-    set_close_to!(lsgrid.sliders[2], default_support_scale)
-    set_close_to!(lsgrid.sliders[3], default_load_scale)
-    fig[2, 1] = lsgrid.layout
+    if display_supports
+        condition_lsgrid = SliderGrid(
+            fig[2, 1],
+            (label = "support scale", range = 0.0:0.01:scale_range, format = "{:.2f}", startvalue = default_support_scale),
+            (label = "load scale",    range = 0.0:0.01:scale_range, format = "{:.2f}", startvalue = default_load_scale),
+            width=Auto(),
+        )
+    end
+    if given_u
+        deform_lsgrid = SliderGrid(
+            fig[3, 1],
+            (label = "deformation exaggeration", range = 0.0:0.01:exagg_range, format = "{:.2f}", startvalue = default_exagg_scale),
+            width=Auto(),
+        )
+    end
 
-    # * undeformed mesh
-    Makie.mesh!(ax1, nodes, mesh_cells; color=undeformed_mesh_color, shading=true)
+    dup_nodes, dup_cells, new_node_id_from_old, old_node_id_from_new = _explode_nodes_and_cells(mesh)
+    # each color for each duplicated vertex
+    undeformed_mesh_colors = Vector{RGBAf}(undef, length(dup_nodes))
+    # * color per cell
+    scaled_cell_colors = similar(topology)
+    scaled_cell_colors .= 0.0
+    if cell_colors !== undef
+        @assert length(cell_colors) == length(topology)
+        val_range = maximum(cell_colors) - minimum(cell_colors)
+        scaled_cell_colors = (cell_colors .- minimum(cell_colors)) / val_range
+    end
+    for i in eachindex(dup_cells)
+        cell_xvar = topology[i]
+        for new_nid in dup_cells[i].nodes
+            # set the alpha value to pseudo density of the cell
+            ccolor = undeformed_mesh_color
+            if cell_colors !== undef
+                ccolor = ColorSchemes.get(colormap, scaled_cell_colors[i])
+            end
+            undeformed_mesh_colors[new_nid] = RGBAf(ccolor.r, ccolor.g, ccolor.b, cell_xvar)
+        end
+    end
+    if cell_colors !== undef && draw_legend
+        _create_colorbar(fig[1,2], colormap, cell_colors)
+    end
+
+    # * Undeformed mesh
+    Makie.mesh!(ax1, dup_nodes, dup_cells; color=undeformed_mesh_colors, kw...)
 
     # * deformed mesh
-    if norm(u) > eps()
+    if given_u
+        if u !== undef
+            u = reshape(u[node_dofs], dim, nnodes)
+            if dim == 2
+                u = [u; zeros(T, 1, nnodes)]
+            end
+        end
+        dup_u = Matrix{T}(undef, 3, length(dup_nodes))
+        for new_nid in axes(dup_u, 2)
+            dup_u[:,new_nid] = u[:,old_node_id_from_new[new_nid]]
+        end
+
         exagg_deformed_nodes = lift(
             s -> [
-                Ferrite.Node(Tuple([node.x[j] + s * u[j, i] for j in 1:3])) for
-                (i, node) in enumerate(nodes)
+                Ferrite.Node(Tuple([new_node.x[ax_id] + s * dup_u[ax_id, nid] for ax_id in 1:3])) for
+                (nid, new_node) in enumerate(dup_nodes)
             ],
-            lsgrid.sliders[1].value,
+            deform_lsgrid.sliders[1].value,
         )
-        new_nodes = Vector{Ferrite.Node}(undef, length(nodes))
-        Makie.mesh!(ax1, exagg_deformed_nodes, mesh_cells; color=deformed_mesh_color)
+        deformed_mesh_colors = [RGBAf(deformed_mesh_color.r, deformed_mesh_color.g, deformed_mesh_color.b, ccolor.alpha) for ccolor in undeformed_mesh_colors]
+        Makie.mesh!(ax1, exagg_deformed_nodes, dup_cells; color=deformed_mesh_colors, kw...)
     end
 
-    # * dot points for deformation nodes
-    # Makie.scatter!(ax1, Point3f0.(getfield.(new_nodes, :x)), markersize = 0.1);
-    # points = Point3f0.(getfield.(nodes, :x))
-    # * deformation vectors
-    # GeometryTypes.Vec{3, Float64}
-    # displacevec = reinterpret(Vec3f0, u, (size(u, 2),))
-    # displacevec = Vec3f0.([u[:,i] for i=1:size(u,2)])
-    # displace = norm.(displacevec)
-    # Makie.arrows!(points, displacevec, linecolor = (:black, 0.3))
+    if display_supports
+        # TODO pressure loads?
+        # * load vectors
+        if cloaddict !== undef
+            if length(cloaddict) > 0
+                loaded_nodes = Point3f0.(nodes[node_ind].x for (node_ind, _) in cloaddict)
+                Makie.arrows!(
+                    ax1,
+                    loaded_nodes,
+                    lift(
+                        s -> Vec3f0.(s .* load_vec for (_, load_vec) in cloaddict),
+                        condition_lsgrid.sliders[2].value,
+                    );
+                    linecolor=:purple,
+                    arrowcolor=:purple,
+                    arrowsize=vector_arrowsize,
+                    linewidth=vector_linewidth,
+                )
+                Makie.scatter!(ax1, loaded_nodes) #, markersize = lift(s -> s * 3, lsgrid.sliders[2].value))
+            end
+        end
 
-    # TODO pressure loads?
-    # * load vectors
-    if cloaddict !== undef
-        if length(cloaddict) > 0
-            loaded_nodes = Point3f0.(nodes[node_ind].x for (node_ind, _) in cloaddict)
-            Makie.arrows!(
-                ax1,
-                loaded_nodes,
-                lift(
-                    s -> Vec3f0.(s .* load_vec for (_, load_vec) in cloaddict),
-                    lsgrid.sliders[3].value,
-                );
-                linecolor=:purple,
-                arrowcolor=:purple,
-                arrowsize=vector_arrowsize,
-                linewidth=vector_linewidth,
-            )
-            Makie.scatter!(ax1, loaded_nodes) #, markersize = lift(s -> s * 3, lsgrid.sliders[2].value))
+        # * support vectors
+        ch = problem.ch
+        for (dbc_id, dbc) in enumerate(ch.dbcs)
+            support_vectors = []
+            if 1 in dbc.components
+                push!(support_vectors, [1.0, 0.0, 0.0])
+            end
+            if 2 in dbc.components
+                push!(support_vectors, [0.0, 1.0, 0.0])
+            end
+            if 3 in dbc.components
+                push!(support_vectors, [0.0, 0.0, 1.0])
+            end
+            node_ids = dbc.faces
+            fixed_nodes = Point3f0.(nodes[node_ind].x for node_ind in node_ids)
+            # draw one axis for all nodes in the set each time
+            for v in support_vectors
+                Makie.arrows!(
+                    ax1,
+                    fixed_nodes,
+                    lift(s -> [Vec3f0(s .* v) for nid in node_ids], condition_lsgrid.sliders[1].value);
+                    linecolor=:orange,
+                    arrowcolor=:orange,
+                    arrowsize=vector_arrowsize,
+                    linewidth=vector_linewidth,
+                )
+            end
+            Makie.scatter!(ax1, fixed_nodes) #, markersize = lift(s -> s * 3, lsgrid.sliders[1].value))
         end
-    end
-
-    # * support vectors
-    for (nodeset_name, node_ids) in mesh.nodesets
-        vectors = []
-        if occursin("fixed_u1", nodeset_name)
-            push!(vectors, [1.0, 0.0, 0.0])
-        elseif occursin("fixed_u2", nodeset_name)
-            push!(vectors, [0.0, 1.0, 0.0])
-        elseif occursin("fixed_u3", nodeset_name)
-            push!(vectors, [0.0, 0.0, 1.0])
-        elseif occursin("fixed_all", nodeset_name)
-            push!(vectors, [1.0, 0.0, 0.0])
-            push!(vectors, [0.0, 1.0, 0.0])
-            push!(vectors, [0.0, 0.0, 1.0])
-        else
-            continue
-        end
-        fixed_nodes = Point3f0.(nodes[node_ind].x for node_ind in node_ids)
-        for v in vectors
-            Makie.arrows!(
-                ax1,
-                fixed_nodes,
-                lift(s -> [Vec3f0(s .* v) for nid in node_ids], lsgrid.sliders[2].value);
-                linecolor=:orange,
-                arrowcolor=:orange,
-                arrowsize=vector_arrowsize,
-                linewidth=vector_linewidth,
-            )
-        end
-        Makie.scatter!(ax1, fixed_nodes) #, markersize = lift(s -> s * 3, lsgrid.sliders[1].value))
-    end
+    end # end if display_supports
 
     return fig
-end
-
-"""
-draw problem's initial grid with a given displacement vector `u`
-"""
-function visualize(
-    problem::StiffnessTopOptProblem{dim,T}, u::AbstractVector; kwargs...
-) where {dim,T}
-    mesh = problem.ch.dh.grid
-    node_dofs = problem.metadata.node_dofs
-    nnodes = Ferrite.getnnodes(mesh)
-    if u === undef
-        node_displacements = zeros(T, dim, nnodes)
-    else
-        node_displacements = reshape(u[node_dofs], dim, nnodes)
-    end
-    cloaddict = getcloaddict(problem)
-    return visualize(
-        mesh, node_displacements; topology=undef, cloaddict=cloaddict, kwargs...
-    )
-end
-
-function visualize(problem::StiffnessTopOptProblem{dim,T}; kwargs...) where {dim,T}
-    mesh = problem.ch.dh.grid
-    nnodes = Ferrite.getnnodes(mesh)
-    node_displacements = zeros(T, dim, nnodes)
-    cloaddict = getcloaddict(problem)
-    return visualize(mesh, node_displacements; cloaddict=cloaddict, kwargs...)
 end

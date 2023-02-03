@@ -1,5 +1,4 @@
 using TopOpt, Zygote, ChainRulesCore
-# using Makie
 Nonconvex.@load Ipopt
 
 E = 1.0 # Young’s modulus

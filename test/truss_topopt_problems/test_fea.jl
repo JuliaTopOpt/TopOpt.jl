@@ -76,7 +76,7 @@ ins_dir = joinpath(@__DIR__, "instances", "fea_examples");
 
     # if get(ENV, "CI", nothing) != "true"
     #     ## TODO plot analysis result with
-    #     fig = visualize(problem; solver.u)
+    #     fig = visualize(problem; u=solver.u)
     #     Makie.display(fig)
     # end
 
