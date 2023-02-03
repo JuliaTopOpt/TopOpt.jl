@@ -47,9 +47,9 @@ maximum(stress(filter(PseudoDensities(x0))))
 maximum(stress(filter(PseudoDensities(x))))
 
 # ### (Optional) Visualize the result using Makie.jl
-# Need to run `using Pkg; Pkg.add(Makie)` first
+# Need to run `using Pkg; Pkg.add(["Makie", "GLMakie"])` first
 # ```julia
-# using Makie
+# using Makie, GLMakie
 # using TopOpt.TopOptProblems.Visualization: visualize
 # fig = visualize(
 #    problem; topology = r.minimizer, default_exagg_scale = 0.07,
