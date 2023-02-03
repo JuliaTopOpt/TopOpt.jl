@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Global stress objective example · TopOpt.jl</title><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.045/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.13.24/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">TopOpt.jl</a></span></div><form class="docs-search" action="../../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../../">Home</a></li><li><a class="tocitem" href="../problem/">Problem types</a></li><li><a class="tocitem" href="../../functions/">Functions</a></li><li><span class="tocitem">Examples</span><ul><li><a class="tocitem" href="../simp/">SIMP example: Point Load Cantilever</a></li><li><a class="tocitem" href="../beso/">BESO example: HalfMBB Beam</a></li><li><a class="tocitem" href="../geso/">GESO example: HalfMBB Beam</a></li><li><a class="tocitem" href="../csimp/">Continuous SIMP example</a></li><li class="is-active"><a class="tocitem" href>Global stress objective example</a><ul class="internal"><li><a class="tocitem" href="#Commented-Program"><span>Commented Program</span></a></li><li><a class="tocitem" href="#global-stress-plain-program"><span>Plain Program</span></a></li></ul></li><li><a class="tocitem" href="../TOBS/">Topological optimization of binary structures (TOBS)</a></li></ul></li><li><span class="tocitem">API Reference</span><ul><li><a class="tocitem" href="../../reference/TopOptProblems/"><code>TopOptProblems</code></a></li><li><a class="tocitem" href="../../reference/Algorithms/"><code>Algorithms</code></a></li></ul></li><li><a class="tocitem" href="../../bibliography/">Bibliography</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Examples</a></li><li class="is-active"><a href>Global stress objective example</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Global stress objective example</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/JuliaTopOpt/TopOpt.jl/blob/master/docs/src/literate/global_stress.jl" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="Global-stress-objective-example"><a class="docs-heading-anchor" href="#Global-stress-objective-example">Global stress objective example</a><a id="Global-stress-objective-example-1"></a><a class="docs-heading-anchor-permalink" href="#Global-stress-objective-example" title="Permalink"></a></h1><div class="admonition is-success"><header class="admonition-header">Tip</header><div class="admonition-body"><p>This example is also available as a Jupyter notebook: <a href="https://nbviewer.jupyter.org/github/JuliaTopOpt/TopOpt.jl/blob/gh-pages/previews/PR140/examples/global_stress.ipynb"><code>global_stress.ipynb</code></a></p></div></div><h2 id="Commented-Program"><a class="docs-heading-anchor" href="#Commented-Program">Commented Program</a><a id="Commented-Program-1"></a><a class="docs-heading-anchor-permalink" href="#Commented-Program" title="Permalink"></a></h2><p>What follows is a program spliced with comments. The full program, without comments, can be found in the next <a href="#global-stress-plain-program">section</a>.</p><pre><code class="language-julia hljs">using TopOpt, LinearAlgebra</code></pre><h3 id="Define-the-problem"><a class="docs-heading-anchor" href="#Define-the-problem">Define the problem</a><a id="Define-the-problem-1"></a><a class="docs-heading-anchor-permalink" href="#Define-the-problem" title="Permalink"></a></h3><pre><code class="language-julia hljs">E = 1.0 # Young’s modulus
+v = 0.3 # Poisson’s ratio
+f = 1.0 # downward force
+rmin = 3.0 # filter radius
+
+problems = Any[
+    PointLoadCantilever(Val{:Linear}, (60, 20), (1.0, 1.0), E, v, f),
+    HalfMBB(Val{:Linear}, (60, 20), (1.0, 1.0), E, v, f),
+]
+problem_names = [&quot;Cantilever beam&quot;, &quot;Half MBB beam&quot;, &quot;L-beam&quot;, &quot;Tie-beam&quot;]
+
+i = 1
+println(problem_names[i])
+problem = problems[i]</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi"></code></pre><h3 id="Parameter-settings"><a class="docs-heading-anchor" href="#Parameter-settings">Parameter settings</a><a id="Parameter-settings-1"></a><a class="docs-heading-anchor-permalink" href="#Parameter-settings" title="Permalink"></a></h3><pre><code class="language-julia hljs">V = 0.5 # volume fraction
+xmin = 0.001 # minimum density
+steps = 40 # maximum number of penalty steps, delta_p0 = 0.1
+convcriteria = Nonconvex.KKTCriteria()
+penalty = TopOpt.PowerPenalty(1.0)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">PowerPenalty{Float64}(1.0)</code></pre><h3 id="Define-a-finite-element-solver"><a class="docs-heading-anchor" href="#Define-a-finite-element-solver">Define a finite element solver</a><a id="Define-a-finite-element-solver-1"></a><a class="docs-heading-anchor-permalink" href="#Define-a-finite-element-solver" title="Permalink"></a></h3><pre><code class="language-julia hljs">solver = FEASolver(Direct, problem; xmin=xmin, penalty=penalty)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi"></code></pre><h3 id="Define-**stress**-objective"><a class="docs-heading-anchor" href="#Define-**stress**-objective">Define <strong>stress</strong> objective</a><a id="Define-**stress**-objective-1"></a><a class="docs-heading-anchor-permalink" href="#Define-**stress**-objective" title="Permalink"></a></h3><p>Notice that gradient is derived automatically by automatic differentiation (Zygote.jl)!</p><pre><code class="language-julia hljs">stress = TopOpt.von_mises_stress_function(solver)
+filter = if problem isa TopOptProblems.TieBeam
+    identity
+else
+    DensityFilter(solver; rmin=rmin)
+end
+volfrac = TopOpt.Volume(solver)
+
+x0 = ones(length(solver.vars))
+threshold = 3 * maximum(stress(filter(PseudoDensities(x0))))
+
+obj = x -&gt; volfrac(filter(PseudoDensities(x)))
+constr = x -&gt; norm(stress(filter(PseudoDensities(x))), 5) - threshold</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">#3 (generic function with 1 method)</code></pre><h3 id="Define-subproblem-optimizer"><a class="docs-heading-anchor" href="#Define-subproblem-optimizer">Define subproblem optimizer</a><a id="Define-subproblem-optimizer-1"></a><a class="docs-heading-anchor-permalink" href="#Define-subproblem-optimizer" title="Permalink"></a></h3><pre><code class="language-julia hljs">N = length(solver.vars)
+x0 = fill(0.5, N)
+
+options = MMAOptions(; maxiter=2000, tol=Nonconvex.Tolerance(; kkt=1e-4), convcriteria)
+model = Model(obj)
+addvar!(model, zeros(N), ones(N))
+add_ineq_constraint!(model, constr)
+alg = MMA87()
+r = optimize(model, alg, x0; options)
+
+@show obj(r.minimizer)
+@show constr(r.minimizer)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">-0.00025090938048322187</code></pre><h3 id="(Optional)-Visualize-the-result-using-Makie.jl"><a class="docs-heading-anchor" href="#(Optional)-Visualize-the-result-using-Makie.jl">(Optional) Visualize the result using Makie.jl</a><a id="(Optional)-Visualize-the-result-using-Makie.jl-1"></a><a class="docs-heading-anchor-permalink" href="#(Optional)-Visualize-the-result-using-Makie.jl" title="Permalink"></a></h3><p>Need to run <code>using Pkg; Pkg.add([&quot;Makie&quot;, &quot;GLMakie&quot;])</code> first</p><pre><code class="language-julia hljs">using Makie, GLMakie
+using TopOpt.TopOptProblems.Visualization: visualize
+fig = visualize(problem; topology = r.minimizer)
+Makie.display(fig)</code></pre><h2 id="global-stress-plain-program"><a class="docs-heading-anchor" href="#global-stress-plain-program">Plain Program</a><a id="global-stress-plain-program-1"></a><a class="docs-heading-anchor-permalink" href="#global-stress-plain-program" title="Permalink"></a></h2><p>Below follows a version of the program without any comments. The file is also available here: <a href="../global_stress.jl">global-stress.jl</a></p><pre><code class="language-julia hljs">using TopOpt, LinearAlgebra
+
+E = 1.0 # Young’s modulus
+v = 0.3 # Poisson’s ratio
+f = 1.0 # downward force
+rmin = 3.0 # filter radius
+
+problems = Any[
+    PointLoadCantilever(Val{:Linear}, (60, 20), (1.0, 1.0), E, v, f),
+    HalfMBB(Val{:Linear}, (60, 20), (1.0, 1.0), E, v, f),
+]
+problem_names = [&quot;Cantilever beam&quot;, &quot;Half MBB beam&quot;, &quot;L-beam&quot;, &quot;Tie-beam&quot;]
+
+i = 1
+println(problem_names[i])
+problem = problems[i]
+
+V = 0.5 # volume fraction
+xmin = 0.001 # minimum density
+steps = 40 # maximum number of penalty steps, delta_p0 = 0.1
+convcriteria = Nonconvex.KKTCriteria()
+penalty = TopOpt.PowerPenalty(1.0)
+
+solver = FEASolver(Direct, problem; xmin=xmin, penalty=penalty)
+
+stress = TopOpt.von_mises_stress_function(solver)
+filter = if problem isa TopOptProblems.TieBeam
+    identity
+else
+    DensityFilter(solver; rmin=rmin)
+end
+volfrac = TopOpt.Volume(solver)
+
+x0 = ones(length(solver.vars))
+threshold = 3 * maximum(stress(filter(PseudoDensities(x0))))
+
+obj = x -&gt; volfrac(filter(PseudoDensities(x)))
+constr = x -&gt; norm(stress(filter(PseudoDensities(x))), 5) - threshold
+
+N = length(solver.vars)
+x0 = fill(0.5, N)
+
+options = MMAOptions(; maxiter=2000, tol=Nonconvex.Tolerance(; kkt=1e-4), convcriteria)
+model = Model(obj)
+addvar!(model, zeros(N), ones(N))
+add_ineq_constraint!(model, constr)
+alg = MMA87()
+r = optimize(model, alg, x0; options)
+
+@show obj(r.minimizer)
+@show constr(r.minimizer)
+
+# This file was generated using Literate.jl, https://github.com/fredrikekre/Literate.jl</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../csimp/">« Continuous SIMP example</a><a class="docs-footer-nextpage" href="../TOBS/">Topological optimization of binary structures (TOBS) »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.24 on <span class="colophon-date" title="Friday 3 February 2023 21:12">Friday 3 February 2023</span>. Using Julia version 1.8.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
