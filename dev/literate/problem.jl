@@ -85,7 +85,7 @@ problem = TieBeam(Val{order})
 filename = "../data/problem.inp" # path to inp file
 problem = InpStiffness(filename);
 
-# For example, the following problem with fixed load, distributed loads and tetrahedral elements was defined usign FreeCAD and imported into TopOpt.jl to perform topology optimization.
+# For example, the following problem with fixed load, distributed loads and tetrahedral elements was defined usign FreeCAD and imported into TopOpt.jl to perform topology optimization. More information on how to specify the supports and loads in FreeCAD can be found in the webpage of FreeCAD's [FEM Workbench](https://wiki.freecad.org/FEM_Workbench).
 
 # ![inpfile](https://user-images.githubusercontent.com/19524993/165223774-2705347e-369f-463e-80f5-4e30093251c1.PNG)
 
