@@ -136,5 +136,5 @@ gm_ins_dir = joinpath(@__DIR__, "instances", "ground_meshes");
 #     # fig
 
 #     # using TopOpt.TrussTopOptProblems.TrussVisualization: visualize
-#     # fig = visualize(problem, u1)
+#     # fig = visualize(problem; u=u1)
 # end # end test set

@@ -82,7 +82,7 @@ end
     # if get(ENV, "CI", nothing) != "true"
     #     solver()
     #     fig = visualize(
-    #         problem, solver.u; topology = result.topology, vector_arrowsize = 0.1,
+    #         problem, u=solver.u, topology = result.topology, vector_arrowsize = 0.1,
     #         vector_linewidth=0.8, default_exagg_scale=ndim == 3 ? 1.0 : 0.01,
     #         exagg_range = ndim == 3 ? 10.0 : 0.1,
     #     )

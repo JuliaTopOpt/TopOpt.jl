@@ -15,10 +15,10 @@ using Pkg
 pkg"add TopOpt"
 ```
 
-To additionally load the visualization submodule of `TopOpt`, you will need to install `Makie.jl` using:
+To additionally load the visualization submodule of `TopOpt`, you will need to install `GLMakie.jl` using:
 
 ```julia
-pkg"add Makie"
+pkg"add Makie, GLMakie"
 ```
 
 To load the package, use:
@@ -30,7 +30,7 @@ using TopOpt
 and to optionally load the visualization sub-module as part of `TopOpt`, use:
 
 ```julia
-using TopOpt, Makie
+using TopOpt, Makie, GLMakie
 ```
 
 ![gif1](https://user-images.githubusercontent.com/19524993/138464511-2685f3fe-e7c5-482e-8b06-43ab0fb82990.gif)

@@ -479,18 +479,22 @@ function LBeam(
     return LBeam(E, ν, ch, force, force_dof, black, white, varind, metadata)
 end
 
-function boundingbox(grid::Ferrite.Grid{dim}) where {dim}
-    xmin1 = minimum(n -> n.x[1], grid.nodes)
-    xmax1 = maximum(n -> n.x[1], grid.nodes)
-    xmin2 = minimum(n -> n.x[2], grid.nodes)
-    xmax2 = maximum(n -> n.x[2], grid.nodes)
+function boundingbox(nodes::Vector{Node{dim, T}}) where {dim, T}
+    xmin1 = minimum(n -> n.x[1], nodes)
+    xmax1 = maximum(n -> n.x[1], nodes)
+    xmin2 = minimum(n -> n.x[2], nodes)
+    xmax2 = maximum(n -> n.x[2], nodes)
     if dim === 2
         return ((xmin1, xmin2), (xmax1, xmax2))
     else
-        xmin3 = minimum(n -> n.x[3], grid.nodes)
-        xmax3 = maximum(n -> n.x[3], grid.nodes)
+        xmin3 = minimum(n -> n.x[3], nodes)
+        xmax3 = maximum(n -> n.x[3], nodes)
         return ((xmin1, xmin2, xmin3), (xmax1, xmax2, xmax3))
     end
+end
+
+function boundingbox(grid::Ferrite.Grid{dim}) where {dim}
+    return boundingbox(grid.nodes)
 end
 
 function RectilinearTopology(b, topology=ones(getncells(getdh(b).grid)))

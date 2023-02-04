@@ -1,7 +1,7 @@
 module TrussComplianceDemo3D1
 
 using TopOpt, LinearAlgebra, StatsFuns
-# using Makie
+# using Makie, GLMakie
 # using TopOpt.TrussTopOptProblems.TrussVisualization: visualize
 
 # 3D
@@ -46,7 +46,7 @@ TopOpt.setpenalty!(solver, p)
 @show obj(r.minimizer)
 @show constr(r.minimizer)
 # fig = visualize(
-#     problem, solver.u; topology = r.minimizer,
+#     problem; u=solver.u, topology = r.minimizer,
 #     default_exagg_scale=0.0, exagg_range=100.0,
 # )
 # Makie.display(fig)
