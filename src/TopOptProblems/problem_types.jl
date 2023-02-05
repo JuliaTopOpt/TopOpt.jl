@@ -479,7 +479,7 @@ function LBeam(
     return LBeam(E, ν, ch, force, force_dof, black, white, varind, metadata)
 end
 
-function boundingbox(nodes::Vector{Node{dim, T}}) where {dim, T}
+function boundingbox(nodes::Vector{Node{dim,T}}) where {dim,T}
     xmin1 = minimum(n -> n.x[1], nodes)
     xmax1 = maximum(n -> n.x[1], nodes)
     xmin2 = minimum(n -> n.x[2], nodes)

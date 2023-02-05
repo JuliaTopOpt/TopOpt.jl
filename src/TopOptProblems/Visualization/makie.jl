@@ -73,10 +73,12 @@ end
 Duplicate nodes and cells to make drawing a uniform color per cell face work.
 Inspired by: https://discourse.julialang.org/t/makie-triangle-face-colour-mesh/18011/7
 """
-function _explode_nodes_and_cells(grid::Ferrite.Grid{xdim, cell_type, T}) where {xdim, cell_type, T}
+function _explode_nodes_and_cells(
+    grid::Ferrite.Grid{xdim,cell_type,T}
+) where {xdim,cell_type,T}
     new_nodes = Vector{Ferrite.Node}()
     new_cells = similar(grid.cells, 0)
-    new_node_id_from_old = Dict{Int, Vector{Int}}(i => [] for i in 1:length(grid.nodes))
+    new_node_id_from_old = Dict{Int,Vector{Int}}(i => [] for i in 1:length(grid.nodes))
     old_node_id_from_new = Vector{Int}()
     node_count = 0
     for (cid, cell) in enumerate(grid.cells)
@@ -93,7 +95,7 @@ function _explode_nodes_and_cells(grid::Ferrite.Grid{xdim, cell_type, T}) where 
             push!(old_node_id_from_new, nid)
         end
         num_cnodes = length(cell.nodes)
-        push!(new_cells, cell_type(Tuple(node_count+1:node_count+num_cnodes)))
+        push!(new_cells, cell_type(Tuple((node_count + 1):(node_count + num_cnodes))))
         node_count += num_cnodes
     end
     @assert length(grid.cells) == length(new_cells)
@@ -102,10 +104,13 @@ end
 
 function _create_colorbar(fig, colormap, cell_colors)
     val_range = maximum(cell_colors) - minimum(cell_colors)
-    Makie.Colorbar(fig, colormap = colormap,
-        highclip = :black, lowclip = :white, 
-        ticks = minimum(cell_colors):val_range/10:maximum(cell_colors),
-        limits = (minimum(cell_colors), maximum(cell_colors)), 
+    return Makie.Colorbar(
+        fig;
+        colormap=colormap,
+        highclip=:black,
+        lowclip=:white,
+        ticks=minimum(cell_colors):(val_range / 10):maximum(cell_colors),
+        limits=(minimum(cell_colors), maximum(cell_colors)),
     )
 end
 
@@ -171,11 +176,11 @@ function visualize(
     u=undef,
     topology=undef,
     cloaddict=undef,
-    undeformed_mesh_color=dim==2 ? RGBAf(0,0,0,1.0) : RGBAf(0.5,0.5,0.5,0.4),
+    undeformed_mesh_color=dim == 2 ? RGBAf(0, 0, 0, 1.0) : RGBAf(0.5, 0.5, 0.5, 0.4),
     cell_colors=undef,
     draw_legend=false,
     colormap=ColorSchemes.Spectral_10,
-    deformed_mesh_color=RGBAf(0,1,1,0.4),
+    deformed_mesh_color=RGBAf(0, 1, 1, 0.4),
     display_supports=true,
     vector_arrowsize=1.0,
     vector_linewidth=1.0,
@@ -184,7 +189,7 @@ function visualize(
     scale_range=1.0,
     default_exagg_scale=1.0,
     exagg_range=10.0,
-    kw...
+    kw...,
 ) where {dim,T}
     mesh = problem.ch.dh.grid
     node_dofs = problem.metadata.node_dofs
@@ -192,8 +197,8 @@ function visualize(
     # coord_min, coord_max = boundingbox(mesh)
     # mesh_dim = maximum([coord_max...] - [coord_min...])
 
-    given_u = u!==undef
-    cloaddict = cloaddict===undef ? getcloaddict(problem) : cloaddict
+    given_u = u !== undef
+    cloaddict = cloaddict === undef ? getcloaddict(problem) : cloaddict
 
     mesh_cells = mesh.cells
     topology = topology == undef ? ones(T, length(mesh_cells)) : topology
@@ -225,20 +230,37 @@ function visualize(
     if display_supports
         condition_lsgrid = SliderGrid(
             fig[2, 1],
-            (label = "support scale", range = 0.0:0.01:scale_range, format = "{:.2f}", startvalue = default_support_scale),
-            (label = "load scale",    range = 0.0:0.01:scale_range, format = "{:.2f}", startvalue = default_load_scale),
+            (
+                label="support scale",
+                range=0.0:0.01:scale_range,
+                format="{:.2f}",
+                startvalue=default_support_scale,
+            ),
+            (
+                label="load scale",
+                range=0.0:0.01:scale_range,
+                format="{:.2f}",
+                startvalue=default_load_scale,
+            );
             width=Auto(),
         )
     end
     if given_u
         deform_lsgrid = SliderGrid(
             fig[3, 1],
-            (label = "deformation exaggeration", range = 0.0:0.01:exagg_range, format = "{:.2f}", startvalue = default_exagg_scale),
+            (
+                label="deformation exaggeration",
+                range=0.0:0.01:exagg_range,
+                format="{:.2f}",
+                startvalue=default_exagg_scale,
+            );
             width=Auto(),
         )
     end
 
-    dup_nodes, dup_cells, new_node_id_from_old, old_node_id_from_new = _explode_nodes_and_cells(mesh)
+    dup_nodes, dup_cells, new_node_id_from_old, old_node_id_from_new = _explode_nodes_and_cells(
+        mesh
+    )
     # each color for each duplicated vertex
     undeformed_mesh_colors = Vector{RGBAf}(undef, length(dup_nodes))
     # * color per cell
@@ -261,7 +283,7 @@ function visualize(
         end
     end
     if cell_colors !== undef && draw_legend
-        _create_colorbar(fig[1,2], colormap, cell_colors)
+        _create_colorbar(fig[1, 2], colormap, cell_colors)
     end
 
     # * Undeformed mesh
@@ -277,17 +299,25 @@ function visualize(
         end
         dup_u = Matrix{T}(undef, 3, length(dup_nodes))
         for new_nid in axes(dup_u, 2)
-            dup_u[:,new_nid] = u[:,old_node_id_from_new[new_nid]]
+            dup_u[:, new_nid] = u[:, old_node_id_from_new[new_nid]]
         end
 
         exagg_deformed_nodes = lift(
             s -> [
-                Ferrite.Node(Tuple([new_node.x[ax_id] + s * dup_u[ax_id, nid] for ax_id in 1:3])) for
-                (nid, new_node) in enumerate(dup_nodes)
+                Ferrite.Node(
+                    Tuple([new_node.x[ax_id] + s * dup_u[ax_id, nid] for ax_id in 1:3])
+                ) for (nid, new_node) in enumerate(dup_nodes)
             ],
             deform_lsgrid.sliders[1].value,
         )
-        deformed_mesh_colors = [RGBAf(deformed_mesh_color.r, deformed_mesh_color.g, deformed_mesh_color.b, ccolor.alpha) for ccolor in undeformed_mesh_colors]
+        deformed_mesh_colors = [
+            RGBAf(
+                deformed_mesh_color.r,
+                deformed_mesh_color.g,
+                deformed_mesh_color.b,
+                ccolor.alpha,
+            ) for ccolor in undeformed_mesh_colors
+        ]
         Makie.mesh!(ax1, exagg_deformed_nodes, dup_cells; color=deformed_mesh_colors, kw...)
     end
 
@@ -333,7 +363,10 @@ function visualize(
                 Makie.arrows!(
                     ax1,
                     fixed_nodes,
-                    lift(s -> [Vec3f0(s .* v) for nid in node_ids], condition_lsgrid.sliders[1].value);
+                    lift(
+                        s -> [Vec3f0(s .* v) for nid in node_ids],
+                        condition_lsgrid.sliders[1].value,
+                    );
                     linecolor=:orange,
                     arrowcolor=:orange,
                     arrowsize=vector_arrowsize,

@@ -2,8 +2,15 @@ abstract type AbstractFEASolver end
 
 abstract type AbstractDisplacementSolver <: AbstractFEASolver end
 
-mutable struct DirectDisplacementSolver{T,dim,TP1<:AbstractPenalty{T},TP2<:StiffnessTopOptProblem{dim,T}, TG <: GlobalFEAInfo{T}, TE <: ElementFEAInfo{dim, T}, Tu <: AbstractVector{T}} <:
-                       AbstractDisplacementSolver
+mutable struct DirectDisplacementSolver{
+    T,
+    dim,
+    TP1<:AbstractPenalty{T},
+    TP2<:StiffnessTopOptProblem{dim,T},
+    TG<:GlobalFEAInfo{T},
+    TE<:ElementFEAInfo{dim,T},
+    Tu<:AbstractVector{T},
+} <: AbstractDisplacementSolver
     problem::TP2
     globalinfo::TG
     elementinfo::TE

@@ -12,14 +12,14 @@ using ..TrussTopOptProblems: TrussProblem
 using ..TopOpt.TopOptProblems.Visualization: _create_colorbar
 
 function visualize(
-    problem::TrussProblem{xdim, T};
+    problem::TrussProblem{xdim,T};
     u=undef,
     topology=undef,
-    undeformed_mesh_color=RGBAf(0,0,0,1.0),
+    undeformed_mesh_color=RGBAf(0, 0, 0, 1.0),
     cell_colors=undef,
     draw_legend=false,
     colormap=ColorSchemes.Spectral_10,
-    deformed_mesh_color=RGBAf(0,1,1,0.4),
+    deformed_mesh_color=RGBAf(0, 1, 1, 0.4),
     display_supports=true,
     vector_arrowsize=0.3,
     vector_linewidth=1.0,
@@ -30,12 +30,12 @@ function visualize(
     exagg_range=10.0,
     default_element_linewidth_scale=6.0,
     element_linewidth_range=10.0,
-    kw...
-) where {xdim, T}
+    kw...,
+) where {xdim,T}
     ndim = getdim(problem)
     ncells = Ferrite.getncells(problem)
     nnodes = Ferrite.getnnodes(problem)
-    given_u = u!==undef
+    given_u = u !== undef
     topology = topology == undef ? ones(T, ncells) : topology
 
     fig = Figure()
@@ -51,21 +51,41 @@ function visualize(
     # * linewidth scaling / support / load appearance / deformatione exaggeration control
     linewidth_lsgrid = SliderGrid(
         fig[2, 1],
-        (label = "element linewidth", range = 0.0:0.01:element_linewidth_range, format = "{:.2f}", startvalue = default_element_linewidth_scale),
+        (
+            label="element linewidth",
+            range=0.0:0.01:element_linewidth_range,
+            format="{:.2f}",
+            startvalue=default_element_linewidth_scale,
+        );
         width=Auto(),
     )
     if display_supports
         condition_lsgrid = SliderGrid(
             fig[3, 1],
-            (label = "support scale", range = 0.0:0.01:scale_range, format = "{:.2f}", startvalue = default_support_scale),
-            (label = "load scale",    range = 0.0:0.01:scale_range, format = "{:.2f}", startvalue = default_load_scale),
+            (
+                label="support scale",
+                range=0.0:0.01:scale_range,
+                format="{:.2f}",
+                startvalue=default_support_scale,
+            ),
+            (
+                label="load scale",
+                range=0.0:0.01:scale_range,
+                format="{:.2f}",
+                startvalue=default_load_scale,
+            );
             width=Auto(),
         )
     end
     if given_u
         deform_lsgrid = SliderGrid(
             fig[4, 1],
-            (label = "deformation exaggeration", range = 0.0:0.01:exagg_range, format = "{:.2f}", startvalue = default_exagg_scale),
+            (
+                label="deformation exaggeration",
+                range=0.0:0.01:exagg_range,
+                format="{:.2f}",
+                startvalue=default_exagg_scale,
+            );
             width=Auto(),
         )
     end
@@ -87,21 +107,23 @@ function visualize(
         scaled_cell_colors = (cell_colors .- minimum(cell_colors)) / val_range
     end
     if cell_colors !== undef && draw_legend
-        _create_colorbar(fig[1,2], colormap, cell_colors)
+        _create_colorbar(fig[1, 2], colormap, cell_colors)
     end
 
     # linewidth: 2Xncells vector, 2i ~ 2i-1 represents a line's two endpoints' width
-    undeformed_mesh_colors = Vector{RGBAf}(undef, 2*length(topology))
-    topology_linewidth = similar(topology, 2*length(topology))
+    undeformed_mesh_colors = Vector{RGBAf}(undef, 2 * length(topology))
+    topology_linewidth = similar(topology, 2 * length(topology))
     for i in eachindex(topology)
         ccolor = undeformed_mesh_color
         if cell_colors !== undef
             ccolor = ColorSchemes.get(colormap, scaled_cell_colors[i])
         end
-        topology_linewidth[2*i-1:2*i] .= topology[i]
-        undeformed_mesh_colors[2*i-1:2*i] .= ccolor
+        topology_linewidth[(2 * i - 1):(2 * i)] .= topology[i]
+        undeformed_mesh_colors[(2 * i - 1):(2 * i)] .= ccolor
     end
-    element_linewidth = lift(s -> topology_linewidth .* s, linewidth_lsgrid.sliders[1].value)
+    element_linewidth = lift(
+        s -> topology_linewidth .* s, linewidth_lsgrid.sliders[1].value
+    )
     linesegments!(ax1, edges_pts; linewidth=element_linewidth, color=undeformed_mesh_colors)
 
     # # * deformed truss elements
@@ -157,7 +179,10 @@ function visualize(
             for v in support_vectors
                 Makie.arrows!(
                     fixed_nodes,
-                    lift(s -> [PtT(s .* v) for nid in node_ids], condition_lsgrid.sliders[1].value);
+                    lift(
+                        s -> [PtT(s .* v) for nid in node_ids],
+                        condition_lsgrid.sliders[1].value,
+                    );
                     arrowcolor=:orange,
                     arrowsize=vector_arrowsize,
                     linecolor=:orange,

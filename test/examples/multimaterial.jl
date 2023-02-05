@@ -10,12 +10,12 @@ f = 1.0 # downward force
 
 # problem definition
 problem = PointLoadCantilever(
-  Val{:Linear}, # order of bases functions
-  (160, 40), # number of cells
-  (1.0, 1.0), # cell dimensions
-  1.0, # base Young's modulus
-  nu, # Poisson's ratio
-  f, # load
+    Val{:Linear}, # order of bases functions
+    (160, 40), # number of cells
+    (1.0, 1.0), # cell dimensions
+    1.0, # base Young's modulus
+    nu, # Poisson's ratio
+    f, # load
 )
 ncells = TopOpt.getncells(problem)
 
@@ -38,9 +38,9 @@ interp2 = MaterialInterpolation(densities, penalty2)
 
 # objective function
 obj = y -> begin
-  x = tounit(MultiMaterialVariables(y, nmats))
-  _E = interp1(filter(x))
-  return comp(_E)
+    x = tounit(MultiMaterialVariables(y, nmats))
+    _E = interp1(filter(x))
+    return comp(_E)
 end
 
 # initial decision variables as a vector
@@ -53,8 +53,8 @@ Zygote.gradient(obj, y0)
 
 # mass constraint
 constr = y -> begin
-  _rhos = interp2(MultiMaterialVariables(y, nmats))
-  return sum(_rhos.x) / ncells - 0.4 # elements have unit volumes
+    _rhos = interp2(MultiMaterialVariables(y, nmats))
+    return sum(_rhos.x) / ncells - 0.4 # elements have unit volumes
 end
 
 # testing the mass constraint
@@ -64,19 +64,12 @@ Zygote.gradient(constr, y0)
 
 # building the optimization problem
 model = Model(obj)
-addvar!(
-  model,
-  fill(-10.0, length(y0)),
-  fill(10.0, length(y0)),
-)
+addvar!(model, fill(-10.0, length(y0)), fill(10.0, length(y0)))
 add_ineq_constraint!(model, constr)
 
 # optimization settings
 alg = MMA87()
-options = MMAOptions(;
-  s_init = 0.1,
-  tol=Tolerance(; kkt=1e-3),
-)
+options = MMAOptions(; s_init=0.1, tol=Tolerance(; kkt=1e-3))
 
 y0 = zeros(ncells * (nmats - 1))
 
