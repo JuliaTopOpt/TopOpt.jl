@@ -1,8 +1,8 @@
 module TrussComplianceDemo2D1
 
 using TopOpt, LinearAlgebra, StatsFuns
-# using Makie, GLMakie
-# using TopOpt.TrussTopOptProblems.TrussVisualization: visualize
+using Makie, GLMakie
+using TopOpt.TrussTopOptProblems.TrussVisualization: visualize
 
 # 2D
 ndim = 2
@@ -10,7 +10,7 @@ node_points, elements, mats, crosssecs, fixities, load_cases = load_truss_json(
     joinpath(@__DIR__, "tim_$(ndim)d.json")
 )
 ndim, nnodes, ncells = length(node_points[1]), length(node_points), length(elements)
-loads = load_cases["0"]
+loads = load_cases["1"]
 problem = TrussProblem(
     Val{:Linear}, node_points, elements, loads, fixities, mats, crosssecs
 )
@@ -47,10 +47,10 @@ TopOpt.setpenalty!(solver, p)
 
 @show obj(r.minimizer)
 @show constr(r.minimizer)
-# fig = visualize(
-#     problem; u=solver.u, topology = r.minimizer,
-#     default_exagg_scale=0.0
-# )
-# Makie.display(fig)
+fig = visualize(
+    problem, solver.u, topology = r.minimizer,
+    default_exagg_scale=0.0
+)
+Makie.display(fig)
 
 end
