@@ -1,7 +1,7 @@
 name = "TopOpt"
 uuid = "53a1e1a5-51bb-58a9-8a02-02056cc81109"
 authors = ["mohamed82008 <mohamed82008@gmail.com>", "yijiangh <yijiang94817@gmail.com>"]
-version = "0.6.2"
+version = "0.7.0"
 
 [deps]
 AbstractDifferentiation = "c29ec348-61ec-40c8-8164-b8c60e9d9f3d"
