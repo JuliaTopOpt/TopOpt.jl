@@ -36,7 +36,7 @@ function NeuralNetwork(nn_model, input_coords::AbstractVector)
         input_coords,
     )
 end
-function NeuralNetwork(nn_model, problem::AbstractTopOptProblem; scale = true)
+function NeuralNetwork(nn_model, problem::AbstractTopOptProblem; scale=true)
     centroids = getcentroids(problem)
     if scale
         m, s = mean(centroids), std(centroids)
