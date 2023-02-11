@@ -105,8 +105,56 @@ problem = TrussProblem(Val{:Linear}, node_points, elements, loads, fixities, mat
 
 using JSON
 
-f = JSON.parsefile(path_to_file)
-print(JSON.json(f, 2));
+f = JSON.parsefile(path_to_file) # use print(JSON.json(f,2));) to view the .json file
+# 2D truss
+# The structure of the JSON file for 2D truss is as followed:
+# Every key is in string, followed by its value (Int or String), a dictionary of values, or a list of dictionary.
+#   An example of the structure.
+# basic information (::String)
+#   "unit"          : "meter" 
+#   "materials"     : "NameOfYourMaterial"
+#   "model_type"    : "truss"
+#   "generate_time" : generated date-time
+#   "TO_model_type" : "ground_mesh"
+#   "model_name"    : "NameOfYourModel"
+#   "_info"         : "AdditionalInfo"
+
+# structural information
+
+#   "dimension"     : number of dimension in Int (2 for 2D, 3 for 3D)
+#   "node_num"      : total number of nodes (::Int)
+#   "element_num    : total number of elements (::Int)
+#   "elements"      : a list of dictionaries, where each dictionary is structured as followed
+#               {
+#                 "end_node_inds" : [
+#                  start node index , end node index in Int
+#                    ],
+#                 "elem_tag" : tag of your element in string
+#               }
+#   "loadcases" : a dictionary of load detail
+#       The dictionary is structured as followed.
+#       a string of Index of the load case : a dictionary of each load
+#   for example 
+#     { "0":
+#         {
+#         "lc_ind" : 0,  #(same as the load case index 0)
+#         "ploads" : [#a list of dictionaries for each load
+#                 {
+#                     "node_ind" : Index of a point that the load is applied (Int)
+#                     "force" : a list of force magitude along x y z axis
+#                             [x,y,z]
+#                     "force_unit": "kN"
+#                     "loadcase" : 0  (same as the Index of the loadcase)
+#                 }
+#         }}      
+#   "nodes" : a list of dictionaries structured as followed
+#           [{
+#               "node_ind" : index of a node, starts from 0.
+#               "points" : a list of x,y,z coordinate of the node (Float)
+#                   [x , y , z ] 
+#           }
+#              ]
+
 
 # ### 2D and 3D truss point load cantilever beam
 
