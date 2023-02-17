@@ -2,9 +2,9 @@ using Ferrite
 using LinearAlgebra: norm
 
 # using Makie: Makie
-using .Makie: Makie
-using Makie: lift, cam3d!, Point3f0, Vec3f0, Figure, Auto, linesegments!, Point2f0, RGBAf
-using Makie: DataAspect, Axis, LScene, SliderGrid
+using .GLMakie: Makie
+using .Makie: lift, cam3d!, Point3f0, Vec3f0, Figure, Auto, linesegments!, Point2f0, RGBAf
+using .Makie: DataAspect, Axis, LScene, SliderGrid
 using ColorSchemes
 
 using ...TopOpt.TopOptProblems: getdim

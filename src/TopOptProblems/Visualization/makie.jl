@@ -1,9 +1,9 @@
 using LinearAlgebra: norm
 # using Makie
-using .Makie: Makie
-using Makie: lift, cam3d!, Point3f0, Vec3f0, Figure, Auto, RGBAf
-using Makie: DataAspect, Axis, LScene, SliderGrid
-using Makie.GeometryBasics
+using .GLMakie: Makie
+using .Makie: lift, cam3d!, Point3f0, Vec3f0, Figure, Auto, RGBAf
+using .Makie: DataAspect, Axis, LScene, SliderGrid
+using .Makie.GeometryBasics
 using ColorSchemes
 using GeometryBasics: GLTriangleFace
 using ..TopOptProblems: getcloaddict, boundingbox
