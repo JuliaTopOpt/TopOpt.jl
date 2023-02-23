@@ -17,7 +17,7 @@ Construct the TrussStress function struct.
 """
 function TrussStress(solver::AbstractFEASolver; maxfevals=10^8)
     T = eltype(solver.u)
-    dim = getdim(problem)
+    dim = 3 #getdim(problem) 
     dh = solver.problem.ch.dh
     N = getncells(dh.grid)
     σ = zeros(T, N)
