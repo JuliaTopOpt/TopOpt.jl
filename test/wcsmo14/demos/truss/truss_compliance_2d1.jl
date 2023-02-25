@@ -23,6 +23,9 @@ V = 0.5 # maximum volume fraction
 solver = FEASolver(Direct, problem; xmin=xmin)
 comp = TopOpt.Compliance(solver)
 
+ts = TopOpt.TrussStress(solver)
+ts(PseudoDensities(x0))
+
 function obj(x)
     # minimize compliance
     return comp(PseudoDensities(x))
