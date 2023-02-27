@@ -1,4 +1,4 @@
-# module TrussComplianceDemo2D2
+module TrussComplianceDemo2D2
 
 using TopOpt, LinearAlgebra, StatsFuns
 #using Makie, GLMakie
