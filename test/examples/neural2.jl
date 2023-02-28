@@ -33,17 +33,17 @@ m = 20
 act = leakyrelu
 nn = NeuralNetwork(
     Chain(
-        Dense(2, m, act, init = Flux.glorot_normal),
-        Dense(m, m, act, init = Flux.glorot_normal),
-        Dense(m, m, act, init = Flux.glorot_normal),
-        Dense(m, m, act, init = Flux.glorot_normal),
-        Dense(m, m, act, init = Flux.glorot_normal),
-        Dense(m, m, act, init = Flux.glorot_normal),
+        Dense(2, m, act; init=Flux.glorot_normal),
+        Dense(m, m, act; init=Flux.glorot_normal),
+        Dense(m, m, act; init=Flux.glorot_normal),
+        Dense(m, m, act; init=Flux.glorot_normal),
+        Dense(m, m, act; init=Flux.glorot_normal),
+        Dense(m, m, act; init=Flux.glorot_normal),
         softmax,
         x -> [x[1]],
     ),
-    problem,
-    scale = true,
+    problem;
+    scale=true,
 )
 w0 = nn.init_params
 # w0 ./= 10
@@ -64,7 +64,13 @@ maxiter = 100
 epoch = 1
 constr_tol = 0.01
 violation = Inf
-todensities(w; filter = true) = filter ? PseudoDensities(proj.(cheqfilter(nn(NNParams(w))).x)) : PseudoDensities(proj.(nn(NNParams(w)).x))
+function todensities(w; filter=true)
+    return if filter
+        PseudoDensities(proj.(cheqfilter(nn(NNParams(w))).x))
+    else
+        PseudoDensities(proj.(nn(NNParams(w)).x))
+    end
+end
 while true
     epoch > maxiter && break
     eps < eps_star && violation < constr_tol && break
@@ -74,8 +80,8 @@ while true
     global comp = Compliance(solver)
     global volfrac = Volume(solver)
 
-    global obj = w -> comp(todensities(w, filter = true)) / C0
-    global constr = w -> volfrac(todensities(w, filter = false)) / V - 1
+    global obj = w -> comp(todensities(w; filter=true)) / C0
+    global constr = w -> volfrac(todensities(w; filter=false)) / V - 1
     global combined_obj = w -> obj(w) + alpha * constr(w)^2
 
     global Δ = Zygote.gradient(combined_obj, w)[1]
@@ -87,7 +93,7 @@ while true
     global alpha = min(alpha_max, alpha + delta_alpha)
     global p = min(p_max, p + delta_p)
     global epoch += 1
-    global x = todensities(w; filter = false)
+    global x = todensities(w; filter=false)
     global eps = sum(0.05 .< x.x .< 0.95) / length(x.x)
     @info "eps = $eps"
     @info "obj = $(comp(todensities(w; filter = true)))"

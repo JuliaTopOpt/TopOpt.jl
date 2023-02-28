@@ -17,7 +17,7 @@ Construct the TrussStress function struct.
 """
 function TrussStress(solver::AbstractFEASolver; maxfevals=10^8)
     T = eltype(solver.u)
-    dim = getdim(problem)
+    dim = TopOptProblems.getdim(solver.problem)
     dh = solver.problem.ch.dh
     N = getncells(dh.grid)
     σ = zeros(T, N)
@@ -62,15 +62,15 @@ function (ts::TrussStress{T})(x::PseudoDensities) where {T}
 end
 
 # TODO complete
-"""
-rrule for autodiff.
+# """
+# rrule for autodiff.
     
-du/dxe = -K^-1 * dK/dxe * u
-d(u)/d(x_e) = - K^-1 * d(K)/d(x_e) * u
-            = - K^-1 * (Σ_ei d(ρ_ei)/d(x_e) * K_ei) * u
-            = - K^-1 * [d(ρ_e)/d(x_e) * K_e * u]
-d(u)/d(x_e)' * Δ = -d(ρ_e)/d(x_e) * u' * K_e * (K^-1 * Δ)
-"""
+# du/dxe = -K^-1 * dK/dxe * u
+# d(u)/d(x_e) = - K^-1 * d(K)/d(x_e) * u
+#             = - K^-1 * (Σ_ei d(ρ_ei)/d(x_e) * K_ei) * u
+#             = - K^-1 * [d(ρ_e)/d(x_e) * K_e * u]
+# d(u)/d(x_e)' * Δ = -d(ρ_e)/d(x_e) * u' * K_e * (K^-1 * Δ)
+# """
 # function ChainRulesCore.rrule(dp::TrussStress, x)
 #     @unpack dudx_tmp, solver, global_dofs = dp
 #     @unpack penalty, problem, u, xmin = solver
