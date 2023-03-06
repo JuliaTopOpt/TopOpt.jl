@@ -1,0 +1,109 @@
+{
+    "unit": "meter",
+    "materials": [
+        {
+            "E": 1.0,
+            "name": "DummyMaterial",
+            "family": "DummyMaterial",
+            "elem_tags": [],
+            "E_unit": "kN/m2",
+            "density_unit": "kN/m3",
+            "fy_unit": "kN/m2"
+        }
+    ],
+    "dimension": 2,
+    "generate_time": "06-MAR-2023",
+    "elements": [
+        {
+            "end_node_inds": [
+                0,
+                1
+            ],
+            "elem_tag": ""
+        },
+        {
+            "end_node_inds": [
+                0,
+                2
+            ],
+            "elem_tag": ""
+        },
+        {
+            "end_node_inds": [
+                1,
+                2
+            ],
+            "elem_tag": ""
+        }
+    ],
+    "supports": [
+        {
+            "node_ind": 0,
+            "condition": [
+                1,
+                1
+            ]
+        },
+        {
+            "node_ind": 2,
+            "condition": [
+                0,
+                1
+            ]
+        }
+    ],
+    "node_num": 3,
+    "TO_model_type": "ground_mesh",
+    "_info": "Test problem for truss_stress.jl",
+    "model_name": "Pitipat",
+    "element_num": 3,
+    "model_type": "truss",
+    "loadcases": {
+        "0": {
+            "ploads": [
+                {
+                    "node_ind": 1,
+                    "force": [
+                        0.0,
+                        -100.0
+                    ],
+                    "loadcase": 0,
+                    "force_unit": "kN"
+                }
+            ],
+            "lc_ind": 0
+        }
+    },
+    "cross_secs": [
+        {
+            "A": 1.0,
+            "name": "",
+            "family": "DummyCroSec",
+            "elem_tags": [],
+            "A_unit": "m2"
+        }
+    ],
+    "nodes": [
+        {
+            "node_ind": 0,
+            "point": [
+                0.0,
+                0.0
+            ]
+        },
+        {
+            "node_ind": 1,
+            "point": [
+                5.0,
+                5.0
+            ]
+        },
+        {
+            "node_ind": 2,
+            "point": [
+                10.0,
+                0.0
+            ]
+        }
+    ]
+}
