@@ -16,7 +16,7 @@ end
 Construct the TrussStress function struct.
 """
 function TrussStress(solver::AbstractFEASolver; maxfevals=10^8)
-    println("This is modified")
+
     T = eltype(solver.u)
     dim = TopOptProblems.getdim(solver.problem)
     dh = solver.problem.ch.dh
