@@ -32,7 +32,7 @@ function TrussStress(solver::AbstractFEASolver; maxfevals=10^8)
         fill!(R, 0.0)
         R[1, 1:dim] = R_coord[:, 1]
         R[2, (dim + 1):(2 * dim)] = R_coord[:, 2]
-        push!(transf_matrices, R)
+        push!(transf_matrices, copy(R))
     end
     return TrussStress(σ, u_fn, transf_matrices, 0, maxfevals)
 end
