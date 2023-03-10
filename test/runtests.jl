@@ -82,3 +82,9 @@ if GROUP == "All" || GROUP == "WCSMO14_2"
         # include("wcsmo14/jl_benchmarks/new_problems.jl")
     end
 end
+
+if GROUP == "All" || GROUP == "truss_stress"
+    @testset "Truss Stress" begin
+        include("Functions/test_truss_stress_fns.jl")
+    end
+end
