@@ -30,7 +30,6 @@ Input JSON file name "testfile2.json"
 using TopOpt
 #using Makie, GLMakie
 #using TopOpt.TrussTopOptProblems.TrussVisualization: visualize
-using JSON
 #using ColorSchemes
 
 @testset "TrussStress" begin
@@ -52,7 +51,7 @@ using JSON
         Val{:Linear}, node_points, elements, loads, fixities, mats, crosssecs
     )
 
-    println("This problem has ", nnodes, " nodes and ", ncells, " elements.")
+    # println("This problem has ", nnodes, " nodes and ", ncells, " elements.")
 
     # Dummy Density vector so PseudoDensities works
     x = ones(ncells,1)[:,1]
