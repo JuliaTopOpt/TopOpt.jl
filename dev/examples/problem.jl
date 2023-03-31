@@ -38,9 +38,7 @@ loads = load_cases["0"]
 problem = TrussProblem(Val{:Linear}, node_points, elements, loads, fixities, mats, crossecs);
 
 using JSON
-
 f = JSON.parsefile(path_to_file)
-print(JSON.json(f, 2));
 
 E = 1.0 # Young’s modulus in MPa
 ν = 0.3 # Poisson’s ratio

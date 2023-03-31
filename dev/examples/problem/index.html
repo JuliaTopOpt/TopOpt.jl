@@ -33,529 +33,84 @@ height .          .
                     length
 </code></pre><h3 id="D-tie-beam-problem"><a class="docs-heading-anchor" href="#D-tie-beam-problem">2D tie-beam problem</a><a id="D-tie-beam-problem-1"></a><a class="docs-heading-anchor-permalink" href="#D-tie-beam-problem" title="Permalink"></a></h3><p><img src="https://user-images.githubusercontent.com/19524993/165222174-927bfb06-ee6a-4eb0-b1df-4a32aa1474d5.png" alt="tiebeam"/></p><p>The tie-beam problem shown above is a well-known problem in topology optimization literature. A distributed load of 1 N/mm is applied on the elements specified in the figure. To construct an instance of the tie-beam problem for a certain order of shape functions, you can use:</p><pre><code class="language-julia hljs">order = :Quadratic # shape function order
 problem = TieBeam(Val{order})</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi"></code></pre><p>The tie-beam problem only exists as a 2D problem.</p><h3 id="Reading-INP-files"><a class="docs-heading-anchor" href="#Reading-INP-files">Reading INP files</a><a id="Reading-INP-files-1"></a><a class="docs-heading-anchor-permalink" href="#Reading-INP-files" title="Permalink"></a></h3><p>Instead of defining a problem type programmatically, one can also use CAD/CAE software to define a 2D/3D problem domain using a graphical user interface and then export a .inp file from the CAD/CAE software. The .inp file can then be read into TopOpt.jl using:</p><pre><code class="language-julia hljs">filename = &quot;../data/problem.inp&quot; # path to inp file
-problem = InpStiffness(filename);</code></pre><p>For example, the following problem with fixed load, distributed loads and tetrahedral elements was defined usign FreeCAD and imported into TopOpt.jl to perform topology optimization. More information on how to specify the supports and loads in FreeCAD can be found in the webpage of FreeCAD&#39;s <a href="https://wiki.freecad.org/FEM_Workbench">FEM Workbench</a>.</p><p><img src="https://user-images.githubusercontent.com/19524993/165223774-2705347e-369f-463e-80f5-4e30093251c1.PNG" alt="inpfile"/></p><h2 id="Truss-problems"><a class="docs-heading-anchor" href="#Truss-problems">Truss problems</a><a id="Truss-problems-1"></a><a class="docs-heading-anchor-permalink" href="#Truss-problems" title="Permalink"></a></h2><h3 id="D-and-3D-truss-problem-from-json-file"><a class="docs-heading-anchor" href="#D-and-3D-truss-problem-from-json-file">2D and 3D truss problem from json file</a><a id="D-and-3D-truss-problem-from-json-file-1"></a><a class="docs-heading-anchor-permalink" href="#D-and-3D-truss-problem-from-json-file" title="Permalink"></a></h3><p>2D/3D truss problems can be imported from json files describing the nodes, elements, fixities and loading as shown below.</p><pre><code class="language-julia hljs">path_to_file = &quot;../data/tim_2d.json&quot; # path to json file
+problem = InpStiffness(filename);</code></pre><p>For example, the following problem with fixed load, distributed loads and tetrahedral elements was defined usign FreeCAD and imported into TopOpt.jl to perform topology optimization. More information on how to specify the supports and loads in FreeCAD can be found in the webpage of FreeCAD&#39;s <a href="https://wiki.freecad.org/FEM_Workbench">FEM Workbench</a>.</p><p><img src="https://user-images.githubusercontent.com/19524993/165223774-2705347e-369f-463e-80f5-4e30093251c1.PNG" alt="inpfile"/></p><h2 id="Truss-problems"><a class="docs-heading-anchor" href="#Truss-problems">Truss problems</a><a id="Truss-problems-1"></a><a class="docs-heading-anchor-permalink" href="#Truss-problems" title="Permalink"></a></h2><h3 id="D-and-3D-truss-problem-from-json-file"><a class="docs-heading-anchor" href="#D-and-3D-truss-problem-from-json-file">2D and 3D truss problem from json file</a><a id="D-and-3D-truss-problem-from-json-file-1"></a><a class="docs-heading-anchor-permalink" href="#D-and-3D-truss-problem-from-json-file" title="Permalink"></a></h3><p>Data for constructing a 2D/3D truss problems can be imported from a json file:</p><pre><code class="language-julia hljs">path_to_file = &quot;../data/tim_2d.json&quot; # path to json file
 mats = TrussFEAMaterial(10.0, 0.3) # Young’s modulus and Poisson’s ratio
 crossecs = TrussFEACrossSec(800.0) # Cross-sectional area
 node_points, elements, _, _, fixities, load_cases = load_truss_json(path_to_file)
 loads = load_cases[&quot;0&quot;]
-problem = TrussProblem(Val{:Linear}, node_points, elements, loads, fixities, mats, crossecs);</code></pre><p>The structure of the JSON file can be displayed using the code below, where <code>f</code> is a Julia dictionary.</p><pre><code class="language-julia hljs">using JSON
-
-f = JSON.parsefile(path_to_file)
-print(JSON.json(f, 2));</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">{
-  &quot;node_num&quot;: 19,
-  &quot;elements&quot;: [
-    {
-      &quot;end_node_inds&quot;: [
-        0,
-        2
-      ],
-      &quot;elem_tag&quot;: &quot;&quot;
-    },
-    {
-      &quot;end_node_inds&quot;: [
-        0,
-        3
-      ],
-      &quot;elem_tag&quot;: &quot;&quot;
-    },
-    {
-      &quot;end_node_inds&quot;: [
-        2,
-        3
-      ],
-      &quot;elem_tag&quot;: &quot;&quot;
-    },
-    {
-      &quot;end_node_inds&quot;: [
-        2,
-        1
-      ],
-      &quot;elem_tag&quot;: &quot;&quot;
-    },
-    {
-      &quot;end_node_inds&quot;: [
-        2,
-        4
-      ],
-      &quot;elem_tag&quot;: &quot;&quot;
-    },
-    {
-      &quot;end_node_inds&quot;: [
-        2,
-        5
-      ],
-      &quot;elem_tag&quot;: &quot;&quot;
-    },
-    {
-      &quot;end_node_inds&quot;: [
-        4,
-        5
-      ],
-      &quot;elem_tag&quot;: &quot;&quot;
-    },
-    {
-      &quot;end_node_inds&quot;: [
-        4,
-        3
-      ],
-      &quot;elem_tag&quot;: &quot;&quot;
-    },
-    {
-      &quot;end_node_inds&quot;: [
-        4,
-        6
-      ],
-      &quot;elem_tag&quot;: &quot;&quot;
-    },
-    {
-      &quot;end_node_inds&quot;: [
-        4,
-        7
-      ],
-      &quot;elem_tag&quot;: &quot;&quot;
-    },
-    {
-      &quot;end_node_inds&quot;: [
-        6,
-        7
-      ],
-      &quot;elem_tag&quot;: &quot;&quot;
-    },
-    {
-      &quot;end_node_inds&quot;: [
-        6,
-        5
-      ],
-      &quot;elem_tag&quot;: &quot;&quot;
-    },
-    {
-      &quot;end_node_inds&quot;: [
-        6,
-        8
-      ],
-      &quot;elem_tag&quot;: &quot;&quot;
-    },
-    {
-      &quot;end_node_inds&quot;: [
-        6,
-        9
-      ],
-      &quot;elem_tag&quot;: &quot;&quot;
-    },
-    {
-      &quot;end_node_inds&quot;: [
-        8,
-        9
-      ],
-      &quot;elem_tag&quot;: &quot;&quot;
-    },
-    {
-      &quot;end_node_inds&quot;: [
-        8,
-        7
-      ],
-      &quot;elem_tag&quot;: &quot;&quot;
-    },
-    {
-      &quot;end_node_inds&quot;: [
-        8,
-        10
-      ],
-      &quot;elem_tag&quot;: &quot;&quot;
-    },
-    {
-      &quot;end_node_inds&quot;: [
-        8,
-        11
-      ],
-      &quot;elem_tag&quot;: &quot;&quot;
-    },
-    {
-      &quot;end_node_inds&quot;: [
-        10,
-        11
-      ],
-      &quot;elem_tag&quot;: &quot;&quot;
-    },
-    {
-      &quot;end_node_inds&quot;: [
-        10,
-        9
-      ],
-      &quot;elem_tag&quot;: &quot;&quot;
-    },
-    {
-      &quot;end_node_inds&quot;: [
-        10,
-        12
-      ],
-      &quot;elem_tag&quot;: &quot;&quot;
-    },
-    {
-      &quot;end_node_inds&quot;: [
-        10,
-        13
-      ],
-      &quot;elem_tag&quot;: &quot;&quot;
-    },
-    {
-      &quot;end_node_inds&quot;: [
-        12,
-        13
-      ],
-      &quot;elem_tag&quot;: &quot;&quot;
-    },
-    {
-      &quot;end_node_inds&quot;: [
-        12,
-        11
-      ],
-      &quot;elem_tag&quot;: &quot;&quot;
-    },
-    {
-      &quot;end_node_inds&quot;: [
-        12,
-        14
-      ],
-      &quot;elem_tag&quot;: &quot;&quot;
-    },
-    {
-      &quot;end_node_inds&quot;: [
-        12,
-        15
-      ],
-      &quot;elem_tag&quot;: &quot;&quot;
-    },
-    {
-      &quot;end_node_inds&quot;: [
-        14,
-        15
-      ],
-      &quot;elem_tag&quot;: &quot;&quot;
-    },
-    {
-      &quot;end_node_inds&quot;: [
-        14,
-        13
-      ],
-      &quot;elem_tag&quot;: &quot;&quot;
-    },
-    {
-      &quot;end_node_inds&quot;: [
-        14,
-        16
-      ],
-      &quot;elem_tag&quot;: &quot;&quot;
-    },
-    {
-      &quot;end_node_inds&quot;: [
-        14,
-        17
-      ],
-      &quot;elem_tag&quot;: &quot;&quot;
-    },
-    {
-      &quot;end_node_inds&quot;: [
-        16,
-        17
-      ],
-      &quot;elem_tag&quot;: &quot;&quot;
-    },
-    {
-      &quot;end_node_inds&quot;: [
-        16,
-        15
-      ],
-      &quot;elem_tag&quot;: &quot;&quot;
-    },
-    {
-      &quot;end_node_inds&quot;: [
-        16,
-        18
-      ],
-      &quot;elem_tag&quot;: &quot;&quot;
-    },
-    {
-      &quot;end_node_inds&quot;: [
-        18,
-        17
-      ],
-      &quot;elem_tag&quot;: &quot;&quot;
-    },
-    {
-      &quot;end_node_inds&quot;: [
-        1,
-        3
-      ],
-      &quot;elem_tag&quot;: &quot;&quot;
-    },
-    {
-      &quot;end_node_inds&quot;: [
-        3,
-        5
-      ],
-      &quot;elem_tag&quot;: &quot;&quot;
-    },
-    {
-      &quot;end_node_inds&quot;: [
-        5,
-        7
-      ],
-      &quot;elem_tag&quot;: &quot;&quot;
-    },
-    {
-      &quot;end_node_inds&quot;: [
-        7,
-        9
-      ],
-      &quot;elem_tag&quot;: &quot;&quot;
-    },
-    {
-      &quot;end_node_inds&quot;: [
-        9,
-        11
-      ],
-      &quot;elem_tag&quot;: &quot;&quot;
-    },
-    {
-      &quot;end_node_inds&quot;: [
-        11,
-        13
-      ],
-      &quot;elem_tag&quot;: &quot;&quot;
-    },
-    {
-      &quot;end_node_inds&quot;: [
-        13,
-        15
-      ],
-      &quot;elem_tag&quot;: &quot;&quot;
-    },
-    {
-      &quot;end_node_inds&quot;: [
-        15,
-        17
-      ],
-      &quot;elem_tag&quot;: &quot;&quot;
-    }
-  ],
-  &quot;materials&quot;: [
-    {
-      &quot;family&quot;: &quot;DummyMaterial&quot;,
-      &quot;E_unit&quot;: &quot;kN/m2&quot;,
-      &quot;elem_tags&quot;: [],
-      &quot;name&quot;: &quot;DummyMaterial&quot;,
-      &quot;G12&quot;: 8.076e7,
-      &quot;E&quot;: 1.0,
-      &quot;type_name&quot;: &quot;ISO&quot;,
-      &quot;density&quot;: 78.5,
-      &quot;density_unit&quot;: &quot;kN/m3&quot;,
-      &quot;fy_unit&quot;: &quot;kN/m2&quot;,
-      &quot;fy&quot;: 235000.0,
-      &quot;G12_unit&quot;: &quot;kN/m2&quot;
-    }
-  ],
-  &quot;loadcases&quot;: {
-    &quot;1&quot;: {
-      &quot;lc_ind&quot;: 1,
-      &quot;ploads&quot;: [
+problem = TrussProblem(Val{:Linear}, node_points, elements, loads, fixities, mats, crossecs);</code></pre><p>The structure of the JSON file can be parsed to a dictionary using the code below.</p><pre><code class="language-julia hljs">using JSON
+f = JSON.parsefile(path_to_file)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Dict{String, Any} with 15 entries:
+  &quot;node_num&quot;      =&gt; 19
+  &quot;elements&quot;      =&gt; Any[Dict{String, Any}(&quot;end_node_inds&quot;=&gt;Any[0, 2], &quot;elem_ta…
+  &quot;materials&quot;     =&gt; Any[Dict{String, Any}(&quot;family&quot;=&gt;&quot;DummyMaterial&quot;, &quot;E_unit&quot;=…
+  &quot;loadcases&quot;     =&gt; Dict{String, Any}(&quot;1&quot;=&gt;Dict{String, Any}(&quot;lc_ind&quot;=&gt;1, &quot;plo…
+  &quot;cross_secs&quot;    =&gt; Any[Dict{String, Any}(&quot;name&quot;=&gt;&quot;&quot;, &quot;A&quot;=&gt;1.0, &quot;family&quot;=&gt;&quot;Dum…
+  &quot;element_num&quot;   =&gt; 42
+  &quot;supports&quot;      =&gt; Any[Dict{String, Any}(&quot;condition&quot;=&gt;Any[1, 1], &quot;node_ind&quot;=&gt;…
+  &quot;_info&quot;         =&gt; &quot;TTObuckling example used in PENLAB.&quot;
+  &quot;TO_model_type&quot; =&gt; &quot;ground_mesh&quot;
+  &quot;dimension&quot;     =&gt; 2
+  &quot;nodes&quot;         =&gt; Any[Dict{String, Any}(&quot;point&quot;=&gt;Any[0, 0], &quot;node_ind&quot;=&gt;0), …
+  &quot;unit&quot;          =&gt; &quot;meter&quot;
+  &quot;generate_time&quot; =&gt; &quot;05/21/2019 07:40:59&quot;
+  &quot;model_name&quot;    =&gt; &quot;tim&quot;
+  &quot;model_type&quot;    =&gt; &quot;truss&quot;</code></pre><p>The JSON file contains important information for nodal geometry, element connectivity, supports, materials, and cross sections, where every key is a string, and the corresponding value can be a single number, dictionary of values, or a list of dictionary.</p><p>⚠️ Be careful that unlike the normal one-indexed convention used in Julia, <strong>all the index information in the JSON file starts from ZERO</strong>. This is just a choice out of convenience, because some of the developers use python in their CAD software to generate these JSONs.</p><p>The MUST-HAVE key-value pairs of the JSON are:</p><pre><code class="nohighlight hljs">  &quot;dimension&quot;     : model dimension (2 or 3)
+  &quot;node_num&quot;      : total number of nodes (::Int)
+  &quot;element_num    : total number of elements (::Int)
+  &quot;nodes&quot; : a list of dictionaries, where each dict is structured as followed
+          {
+              &quot;node_ind&quot; : index of a node, starts from 0.
+              &quot;points&quot; : a list of x,y,z coordinate of the node (Float)
+                  [x , y , z] (or [x, y] if dimension=2)
+          }
+  &quot;elements&quot; : a list of dictionaries, where each dict is structured as followed
+          {
+              &quot;end_node_inds&quot; : [
+                    start node index, end node index in Int (zero-indexed!)
+                 ],
+              &quot;elem_tag&quot; : tag of your element in string to link
+                  to its corresponding material and cross section, e.g. `steel_set1`
+          }
+  &quot;supports&quot; : a list of dictionaries, where each dict is structured as followed
+         {
+          &quot;node_ind&quot;: 0,
+          &quot;condition&quot;: a boolean list marking the fixed dofs, [tx,ty] for 2D,
+             [tx,ty,tz] for 3D
+          }
+  &quot;loadcases&quot; : a dictionary of load cases that maps a load case index to a dictionary
+          { &quot;0&quot;:
+              {
+                &quot;lc_ind&quot; : 0,  #(same as the load case index 0)
+                &quot;ploads&quot; : [#a list of dictionaries for each load
+                        {
+                            &quot;node_ind&quot; : node index where the point load is applied
+                            &quot;force&quot; : a list of force magitude along x y z axis
+                                    [x,y,z] (or [x,y] for 2D)
+                            &quot;loadcase&quot; : 0  (same as lc_ind)
+                        }
+              }
+          }
+  &quot;materials&quot; : a list of dictionaries, where each dict is structured as followed
         {
-          &quot;loadcase&quot;: 1,
-          &quot;force&quot;: [
-            0,
-            -1
-          ],
-          &quot;force_unit&quot;: &quot;kN&quot;,
-          &quot;node_ind&quot;: 18
+         &quot;name&quot;: material name in string,
+         &quot;elem_tags&quot;: a list of element tags to which the material is applied, e.g. `steel_set1`,
+         &quot;E&quot;: Young&#39;s modulus
+         &quot;G12&quot;: in-plane shear modulus, not used for truss models now
+         &quot;density&quot;: material density, not used now
         }
-      ]
-    },
-    &quot;0&quot;: {
-      &quot;lc_ind&quot;: 0,
-      &quot;ploads&quot;: [
+  &quot;cross_secs&quot; : a list of dictionaries, where each dict is structured as followed
         {
-          &quot;loadcase&quot;: 0,
-          &quot;force&quot;: [
-            -1,
-            0
-          ],
-          &quot;force_unit&quot;: &quot;kN&quot;,
-          &quot;node_ind&quot;: 18
-        }
-      ]
-    }
-  },
-  &quot;cross_secs&quot;: [
-    {
-      &quot;name&quot;: &quot;&quot;,
-      &quot;A&quot;: 1.0,
-      &quot;family&quot;: &quot;DummyCroSec&quot;,
-      &quot;A_unit&quot;: &quot;m2&quot;,
-      &quot;elem_tags&quot;: []
-    }
-  ],
-  &quot;element_num&quot;: 42,
-  &quot;supports&quot;: [
-    {
-      &quot;condition&quot;: [
-        1,
-        1
-      ],
-      &quot;node_ind&quot;: 0
-    },
-    {
-      &quot;condition&quot;: [
-        1,
-        1
-      ],
-      &quot;node_ind&quot;: 1
-    }
-  ],
-  &quot;_info&quot;: &quot;TTObuckling example used in PENLAB.&quot;,
-  &quot;TO_model_type&quot;: &quot;ground_mesh&quot;,
-  &quot;dimension&quot;: 2,
-  &quot;nodes&quot;: [
-    {
-      &quot;point&quot;: [
-        0,
-        0
-      ],
-      &quot;node_ind&quot;: 0
-    },
-    {
-      &quot;point&quot;: [
-        0,
-        1
-      ],
-      &quot;node_ind&quot;: 1
-    },
-    {
-      &quot;point&quot;: [
-        1,
-        0
-      ],
-      &quot;node_ind&quot;: 2
-    },
-    {
-      &quot;point&quot;: [
-        1,
-        1
-      ],
-      &quot;node_ind&quot;: 3
-    },
-    {
-      &quot;point&quot;: [
-        2,
-        0
-      ],
-      &quot;node_ind&quot;: 4
-    },
-    {
-      &quot;point&quot;: [
-        2,
-        1
-      ],
-      &quot;node_ind&quot;: 5
-    },
-    {
-      &quot;point&quot;: [
-        3,
-        0
-      ],
-      &quot;node_ind&quot;: 6
-    },
-    {
-      &quot;point&quot;: [
-        3,
-        1
-      ],
-      &quot;node_ind&quot;: 7
-    },
-    {
-      &quot;point&quot;: [
-        4,
-        0
-      ],
-      &quot;node_ind&quot;: 8
-    },
-    {
-      &quot;point&quot;: [
-        4,
-        1
-      ],
-      &quot;node_ind&quot;: 9
-    },
-    {
-      &quot;point&quot;: [
-        5,
-        0
-      ],
-      &quot;node_ind&quot;: 10
-    },
-    {
-      &quot;point&quot;: [
-        5,
-        1
-      ],
-      &quot;node_ind&quot;: 11
-    },
-    {
-      &quot;point&quot;: [
-        6,
-        0
-      ],
-      &quot;node_ind&quot;: 12
-    },
-    {
-      &quot;point&quot;: [
-        6,
-        1
-      ],
-      &quot;node_ind&quot;: 13
-    },
-    {
-      &quot;point&quot;: [
-        7,
-        0
-      ],
-      &quot;node_ind&quot;: 14
-    },
-    {
-      &quot;point&quot;: [
-        7,
-        1
-      ],
-      &quot;node_ind&quot;: 15
-    },
-    {
-      &quot;point&quot;: [
-        8,
-        0
-      ],
-      &quot;node_ind&quot;: 16
-    },
-    {
-      &quot;point&quot;: [
-        8,
-        1
-      ],
-      &quot;node_ind&quot;: 17
-    },
-    {
-      &quot;point&quot;: [
-        8.5,
-        0.5
-      ],
-      &quot;node_ind&quot;: 18
-    }
-  ],
-  &quot;unit&quot;: &quot;meter&quot;,
-  &quot;generate_time&quot;: &quot;05/21/2019 07:40:59&quot;,
-  &quot;model_name&quot;: &quot;tim&quot;,
-  &quot;model_type&quot;: &quot;truss&quot;
-}</code></pre><h3 id="D-and-3D-truss-point-load-cantilever-beam"><a class="docs-heading-anchor" href="#D-and-3D-truss-point-load-cantilever-beam">2D and 3D truss point load cantilever beam</a><a id="D-and-3D-truss-point-load-cantilever-beam-1"></a><a class="docs-heading-anchor-permalink" href="#D-and-3D-truss-point-load-cantilever-beam" title="Permalink"></a></h3><p><img src="https://user-images.githubusercontent.com/19524993/165228327-def94c04-6505-4f13-afea-4f28a370380e.png" alt="truss_cantilever"/></p><p>Much like the continuum 2D/3D point load cantilever beam, you can also create a 2D/3D truss-based cantilever beam with a point load as shown above using the following syntax.</p><pre><code class="language-julia hljs">E = 1.0 # Young’s modulus in MPa
+         &quot;name&quot;: cross section name in string,
+         &quot;elem_tags&quot;: [],
+         &quot;A&quot;: 1.0, # cross section area
+        }</code></pre><p>When parsed by the <code>load_truss_json</code> function, materials and cross sections with <code>element_tags = []</code> will be treated as the fallback material or cross section for elements with an empty <code>elem_tag</code> (<code>&quot;&quot;</code>)</p><p>The following entries are optional for providing additional information about the model:</p><pre><code class="nohighlight hljs">  &quot;unit&quot;          : &quot;meter&quot;
+  &quot;model_type&quot;    : &quot;truss&quot;
+  &quot;generate_time&quot; :  generated date-time in string
+  &quot;TO_model_type&quot; : &quot;ground_mesh&quot;
+  &quot;model_name&quot;    : &quot;NameOfYourModel&quot;
+  &quot;_info&quot;         : &quot;AdditionalInfo&quot;</code></pre><h3 id="D-and-3D-truss-point-load-cantilever-beam"><a class="docs-heading-anchor" href="#D-and-3D-truss-point-load-cantilever-beam">2D and 3D truss point load cantilever beam</a><a id="D-and-3D-truss-point-load-cantilever-beam-1"></a><a class="docs-heading-anchor-permalink" href="#D-and-3D-truss-point-load-cantilever-beam" title="Permalink"></a></h3><p><img src="https://user-images.githubusercontent.com/19524993/165228327-def94c04-6505-4f13-afea-4f28a370380e.png" alt="truss_cantilever"/></p><p>Much like the continuum 2D/3D point load cantilever beam, you can also create a 2D/3D truss-based cantilever beam with a point load as shown above using the following syntax.</p><pre><code class="language-julia hljs">E = 1.0 # Young’s modulus in MPa
 ν = 0.3 # Poisson’s ratio
 nels = (60, 20) # number of boundary trusses
 elsizes = (1.0, 1.0) # the length of each boundary truss in mm
 force = 1.0 # upward force in N - negative is downward
-problem = PointLoadCantileverTruss(nels, elsizes, E, ν, force; k_connect=1);</code></pre><p><code>nels</code>, <code>elsizes</code>, <code>E</code> and <code>ν</code> have an analagous intepretation to the continuum cantilever beam. <code>force</code> is the upward concentrated force in Newton (downward is negative). <code>k_connect</code> is the k-ring of each node defining the connectivity of the nodes in the graph, default is 1. For a 2D domain, a node will be connected to <code>8</code> neighboring nodes if <code>k_connect = 1</code>, and <code>8 + 16 = 24</code> neighboring nodes if <code>k_connect = 2</code>.</p><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../">« Home</a><a class="docs-footer-nextpage" href="../../functions/">Functions »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.24 on <span class="colophon-date" title="Tuesday 28 February 2023 11:23">Tuesday 28 February 2023</span>. Using Julia version 1.8.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+problem = PointLoadCantileverTruss(nels, elsizes, E, ν, force; k_connect=1);</code></pre><p><code>nels</code>, <code>elsizes</code>, <code>E</code> and <code>ν</code> have an analagous intepretation to the continuum cantilever beam. <code>force</code> is the upward concentrated force in Newton (downward is negative). <code>k_connect</code> is the k-ring of each node defining the connectivity of the nodes in the graph, default is 1. For a 2D domain, a node will be connected to <code>8</code> neighboring nodes if <code>k_connect = 1</code>, and <code>8 + 16 = 24</code> neighboring nodes if <code>k_connect = 2</code>.</p><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../">« Home</a><a class="docs-footer-nextpage" href="../../functions/">Functions »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.24 on <span class="colophon-date" title="Friday 31 March 2023 23:32">Friday 31 March 2023</span>. Using Julia version 1.8.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
