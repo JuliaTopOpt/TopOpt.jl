@@ -13,6 +13,7 @@ if GROUP == "All" || GROUP == "Core_Tests"
     @safetestset "Functions" begin
         include("Functions/test_common_fns.jl")
         include("Functions/test_buckling_fns.jl")
+        include("Functions/test_truss_stress_fns.jl")
     end
     @safetestset "Solver" begin
         include("fea/solvers.jl")
@@ -80,11 +81,5 @@ if GROUP == "All" || GROUP == "WCSMO14_2"
         # include("wcsmo14/jl_benchmarks/compare_top3d.jl")
         # include("wcsmo14/jl_benchmarks/compare_top3d125.jl")
         # include("wcsmo14/jl_benchmarks/new_problems.jl")
-    end
-end
-
-if GROUP == "All" || GROUP == "truss_stress"
-    @testset "Truss Stress" begin
-        include("Functions/test_truss_stress_fns.jl")
     end
 end

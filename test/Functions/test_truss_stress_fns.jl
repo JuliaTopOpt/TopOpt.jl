@@ -5,115 +5,6 @@ problem
 Input JSON file name "testfile2.json"
 """
 
-# {
-#     "unit": "meter",
-#     "materials": [
-#         {
-#             "E": 1.0,
-#             "name": "DummyMaterial",
-#             "family": "DummyMaterial",
-#             "elem_tags": [],
-#             "E_unit": "kN/m2",
-#             "density_unit": "kN/m3",
-#             "fy_unit": "kN/m2"
-#         }
-#     ],
-#     "dimension": 2,
-#     "generate_time": "06-MAR-2023",
-#     "elements": [
-#         {
-#             "end_node_inds": [
-#                 0,
-#                 1
-#             ],
-#             "elem_tag": ""
-#         },
-#         {
-#             "end_node_inds": [
-#                 0,
-#                 2
-#             ],
-#             "elem_tag": ""
-#         },
-#         {
-#             "end_node_inds": [
-#                 1,
-#                 2
-#             ],
-#             "elem_tag": ""
-#         }
-#     ],
-#     "supports": [
-#         {
-#             "node_ind": 0,
-#             "condition": [
-#                 1,
-#                 1
-#             ]
-#         },
-#         {
-#             "node_ind": 2,
-#             "condition": [
-#                 0,
-#                 1
-#             ]
-#         }
-#     ],
-#     "node_num": 3,
-#     "TO_model_type": "ground_mesh",
-#     "_info": "Test problem for truss_stress.jl",
-#     "model_name": "Pitipat",
-#     "element_num": 3,
-#     "model_type": "truss",
-#     "loadcases": {
-#         "0": {
-#             "ploads": [
-#                 {
-#                     "node_ind": 1,
-#                     "force": [
-#                         0.0,
-#                         -100.0
-#                     ],
-#                     "loadcase": 0,
-#                     "force_unit": "kN"
-#                 }
-#             ],
-#             "lc_ind": 0
-#         }
-#     },
-#     "cross_secs": [
-#         {
-#             "A": 1.0,
-#             "name": "",
-#             "family": "DummyCroSec",
-#             "elem_tags": [],
-#             "A_unit": "m2"
-#         }
-#     ],
-#     "nodes": [
-#         {
-#             "node_ind": 0,
-#             "point": [
-#                 0.0,
-#                 0.0
-#             ]
-#         },
-#         {
-#             "node_ind": 1,
-#             "point": [
-#                 5.0,
-#                 5.0
-#             ]
-#         },
-#         {
-#             "node_ind": 2,
-#             "point": [
-#                 10.0,
-#                 0.0
-#             ]
-#         }
-#     ]
-# }
 # Draw a 3 member truss using / \ to represent the members
 # Truss is a 2D truss structure with 3 nodes and 3 elements
 #         2
@@ -142,53 +33,54 @@ using TopOpt
 using JSON
 #using ColorSchemes
 
-# Hand calculated result.
-result_stress = [-50*sqrt(2.), 50.0000, -50*sqrt(2.)]
-# Data input
+@testset "TrussStress" begin
+    # Hand calculated result.
+    result_stress = [-50*sqrt(2.), 50.0000, -50*sqrt(2.)]
+    # Data input
 
-# Load the JSON file using load_truss_json
-# Geometric connection
-node_points, elements, mats, crosssecs, fixities, load_cases = 
-    load_truss_json(joinpath(@__DIR__, "testfile2_compact.json"))
-# Problem setup
-ndim, nnodes, ncells = 
-    length(node_points[1]), length(node_points), length(elements)
-# Get the load case 0
-loads = load_cases["0"]
-# Assemble the problem
-problem = TrussProblem(
-    Val{:Linear}, node_points, elements, loads, fixities, mats, crosssecs
-)
+    # Load the JSON file using load_truss_json
+    # Geometric connection
+    node_points, elements, mats, crosssecs, fixities, load_cases = 
+        load_truss_json(joinpath(@__DIR__, "testfile2_compact.json"))
+    # Problem setup
+    ndim, nnodes, ncells = 
+        length(node_points[1]), length(node_points), length(elements)
+    # Get the load case 0
+    loads = load_cases["0"]
+    # Assemble the problem
+    problem = TrussProblem(
+        Val{:Linear}, node_points, elements, loads, fixities, mats, crosssecs
+    )
 
-println("This problem has ", nnodes, " nodes and ", ncells, " elements.")
+    println("This problem has ", nnodes, " nodes and ", ncells, " elements.")
 
-# Dummy Density vector so PseudoDensities works
-x = ones(ncells,1)[:,1]
-#set xmin for FEASolver
-xmin = 0.0001
-# Set the solver and solve
-solver = FEASolver(Direct, problem; xmin=xmin)
-# Get the stress
-ts = TrussStress(solver)
-σ =ts(PseudoDensities(x))
+    # Dummy Density vector so PseudoDensities works
+    x = ones(ncells,1)[:,1]
+    #set xmin for FEASolver
+    xmin = 0.0001
+    # Set the solver and solve
+    solver = FEASolver(Direct, problem; xmin=xmin)
+    # Get the stress
+    ts = TrussStress(solver)
+    σ =ts(PseudoDensities(x))
 
-@show σ
-# Check the result
-@assert abs(σ[1] - result_stress[1]) < 1e-12
-@assert abs(σ[2] - result_stress[2]) < 1e-12
-@assert abs(σ[3] - result_stress[3]) < 1e-12
+    @show σ
+    # Check the result
+    @assert abs(σ[1] - result_stress[1]) < 1e-12
+    @assert abs(σ[2] - result_stress[2]) < 1e-12
+    @assert abs(σ[3] - result_stress[3]) < 1e-12
 
-#visualization
-#color_per_cell = abs.(σ.*x)
-# fig1 = visualize(
-#             problem, u = fill(0.1, nnodes*ndim), topology=x,
-#             default_exagg_scale=0.0
-#             ,default_element_linewidth_scale = 5.0
-#             ,default_load_scale = 0.5
-#             ,default_support_scale = 0.1
-#             ,cell_colors = color_per_cell
-#            ,colormap = ColorSchemes.Spectral_10
-
-#          )
-# Makie.display(fig1)
+    #visualization
+    #color_per_cell = abs.(σ.*x)
+    # fig1 = visualize(
+    #             problem, u = fill(0.1, nnodes*ndim), topology=x,
+    #             default_exagg_scale=0.0
+    #             ,default_element_linewidth_scale = 5.0
+    #             ,default_load_scale = 0.5
+    #             ,default_support_scale = 0.1
+    #             ,cell_colors = color_per_cell
+    #            ,colormap = ColorSchemes.Spectral_10
+    #          )
+    # Makie.display(fig1)
+end
 
