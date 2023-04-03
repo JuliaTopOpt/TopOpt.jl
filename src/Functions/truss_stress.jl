@@ -16,7 +16,6 @@ end
 Construct the TrussStress function struct.
 """
 function TrussStress(solver::AbstractFEASolver; maxfevals=10^8)
-
     T = eltype(solver.u)
     dim = TopOptProblems.getdim(solver.problem)
     dh = solver.problem.ch.dh
@@ -65,7 +64,7 @@ end
 # TODO complete
 # """
 # rrule for autodiff.
-    
+
 # du/dxe = -K^-1 * dK/dxe * u
 # d(u)/d(x_e) = - K^-1 * d(K)/d(x_e) * u
 #             = - K^-1 * (Σ_ei d(ρ_ei)/d(x_e) * K_ei) * u

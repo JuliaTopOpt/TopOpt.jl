@@ -34,16 +34,16 @@ using TopOpt
 
 @testset "TrussStress" begin
     # Hand calculated result.
-    result_stress = [-50*sqrt(2.), 50.0000, -50*sqrt(2.)]
+    result_stress = [-50 * sqrt(2.0), 50.0000, -50 * sqrt(2.0)]
     # Data input
 
     # Load the JSON file using load_truss_json
     # Geometric connection
-    node_points, elements, mats, crosssecs, fixities, load_cases = 
-        load_truss_json(joinpath(@__DIR__, "testfile2_compact.json"))
+    node_points, elements, mats, crosssecs, fixities, load_cases = load_truss_json(
+        joinpath(@__DIR__, "testfile2_compact.json")
+    )
     # Problem setup
-    ndim, nnodes, ncells = 
-        length(node_points[1]), length(node_points), length(elements)
+    ndim, nnodes, ncells = length(node_points[1]), length(node_points), length(elements)
     # Get the load case 0
     loads = load_cases["0"]
     # Assemble the problem
@@ -54,14 +54,14 @@ using TopOpt
     # println("This problem has ", nnodes, " nodes and ", ncells, " elements.")
 
     # Dummy Density vector so PseudoDensities works
-    x = ones(ncells,1)[:,1]
+    x = ones(ncells, 1)[:, 1]
     #set xmin for FEASolver
     xmin = 0.0001
     # Set the solver and solve
     solver = FEASolver(Direct, problem; xmin=xmin)
     # Get the stress
     ts = TrussStress(solver)
-    σ =ts(PseudoDensities(x))
+    σ = ts(PseudoDensities(x))
 
     @show σ
     # Check the result
@@ -82,4 +82,3 @@ using TopOpt
     #          )
     # Makie.display(fig1)
 end
-
