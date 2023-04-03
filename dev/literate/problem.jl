@@ -103,7 +103,7 @@ problem = TrussProblem(Val{:Linear}, node_points, elements, loads, fixities, mat
 
 # The structure of the JSON file can be parsed to a dictionary using the code below.
 using JSON
-f = JSON.parsefile(path_to_file) 
+f = JSON.parsefile(path_to_file)
 
 # The JSON file contains important information for nodal geometry, element connectivity, supports, materials, and cross sections,
 # where every key is a string, and the corresponding value can be a single number, dictionary of values, or a list of dictionary.
