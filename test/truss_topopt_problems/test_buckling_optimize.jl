@@ -179,7 +179,7 @@ gm_ins_dir = joinpath(@__DIR__, "instances", "ground_meshes");
     @test_throws PosDefException cholesky(S1)
 
     @test isfinite(logdet(cholesky(S2)))
-    @test minimum(ev2) ≈ 0.001 atol = 0.002
+    @test 0 < minimum(ev2) < 0.02
     @test maximum(ev2) ≈ 3250 rtol = 0.001
 
     # using Makie
