@@ -31,7 +31,7 @@ function TrussStress(solver::AbstractFEASolver; maxfevals=10^8)
         fill!(R, 0.0)
         R[1, 1:dim] = R_coord[:, 1]
         R[2, (dim + 1):(2 * dim)] = R_coord[:, 2]
-        push!(transf_matrices, R)
+        push!(transf_matrices, copy(R))
     end
     return TrussStress(σ, u_fn, transf_matrices, 0, maxfevals)
 end
@@ -64,7 +64,7 @@ end
 # TODO complete
 # """
 # rrule for autodiff.
-    
+
 # du/dxe = -K^-1 * dK/dxe * u
 # d(u)/d(x_e) = - K^-1 * d(K)/d(x_e) * u
 #             = - K^-1 * (Σ_ei d(ρ_ei)/d(x_e) * K_ei) * u

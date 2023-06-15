@@ -13,6 +13,7 @@ if GROUP == "All" || GROUP == "Core_Tests"
     @safetestset "Functions" begin
         include("Functions/test_common_fns.jl")
         include("Functions/test_buckling_fns.jl")
+        include("Functions/test_truss_stress_fns.jl")
     end
     @safetestset "Solver" begin
         include("fea/solvers.jl")
