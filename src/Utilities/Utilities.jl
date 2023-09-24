@@ -5,6 +5,7 @@ using ForwardDiff, Ferrite, IterativeSolvers, Requires
 export AbstractPenalty,
     PowerPenalty,
     RationalPenalty,
+    SinhPenalty,
     HeavisideProjection,
     SigmoidProjection,
     ProjectedPenalty,

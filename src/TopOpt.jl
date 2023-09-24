@@ -8,11 +8,26 @@ using Requires, Reexport, ChainRulesCore
 struct PseudoDensities{I,P,F,T,N,A<:AbstractArray{T,N}} <: AbstractArray{T,N}
     x::A
 end
+function Base.setindex!(A::PseudoDensities, x, inds...)
+    return A.x[inds...] = x
+end
 function PseudoDensities(x::A) where {T,N,A<:AbstractArray{T,N}}
     return PseudoDensities{false,false,false,T,N,A}(x)
 end
 function PseudoDensities{I,P,F}(x::A) where {I,P,F,T,N,A<:AbstractArray{T,N}}
     return PseudoDensities{I,P,F,T,N,A}(x)
+end
+
+Base.BroadcastStyle(::Type{T}) where {T<:PseudoDensities} = Broadcast.ArrayStyle{T}()
+function Base.similar(
+    bc::Broadcast.Broadcasted{Broadcast.ArrayStyle{T}}, ::Type{ElType}
+) where {T,ElType}
+    return similar(T, axes(bc))
+end
+function Base.similar(
+    ::Type{<:TV}, axes::Tuple{Union{Integer,Base.OneTo},Vararg{Union{Integer,Base.OneTo}}}
+) where {I,P,F,T,N,A,TV<:PseudoDensities{I,P,F,T,N,A}}
+    return PseudoDensities{I,P,F}(similar(A, axes))
 end
 
 function ChainRulesCore.rrule(
@@ -104,6 +119,6 @@ export TopOpt,
     MMA87,
     MMA02,
     HeavisideProjection,
-    ProjectedPenalty,
-    PowerPenalty
+    SigmoidProjection,
+    ProjectedPenalty
 end
