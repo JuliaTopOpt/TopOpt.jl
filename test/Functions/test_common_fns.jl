@@ -6,12 +6,23 @@ using Ferrite: ndofs_per_cell, getncells
 
 Random.seed!(1)
 
-@testset "HeavisideProjection" begin
-    proj = HeavisideProjection(5.0)
-    for T1 in (true, false), T2 in (true, false), T3 in (true, false)
-        x = PseudoDensities{T1,T2,T3}(rand(4))
-        @test typeof(proj(x)) === typeof(x)
-        @test typeof(proj.(x)) === typeof(x)
+get_pen_T(::PseudoDensities{<:Any,T,<:Any}) where {T} = T
+
+@testset "Projections and penalties" begin
+    for proj in (HeavisideProjection(5.0), SigmoidProjection(4.0))
+        for T1 in (true, false), T2 in (true, false), T3 in (true, false)
+            x = PseudoDensities{T1,T2,T3}(rand(4))
+            @test typeof(proj(x)) === typeof(x)
+            @test typeof(proj.(x)) === typeof(x)
+        end
+    end
+
+    for pen in (PowerPenalty(3.0), RationalPenalty(3.0), SinhPenalty(3.0))
+        for T1 in (true, false), T2 in (true, false), T3 in (true, false)
+            x = PseudoDensities{T1,T2,T3}(rand(4))
+            @test get_pen_T(pen(x)) === true
+            @test get_pen_T(ProjectedPenalty(pen)(x)) === true
+        end
     end
 end
 
@@ -19,7 +30,7 @@ end
     nels = (2, 2)
     problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
     for p in (1.0, 2.0, 3.0)
-        solver = FEASolver(Direct, problem; xmin=0.01, penalty=TopOpt.PowerPenalty(p))
+        solver = FEASolver(Direct, problem; xmin=0.01, penalty=PowerPenalty(p))
         comp = Compliance(solver)
         f = x -> comp(PseudoDensities(x))
         for i in 1:3
@@ -38,7 +49,7 @@ end
     nels = (2, 2)
     problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
     for p in (1.0, 2.0, 3.0)
-        solver = FEASolver(Direct, problem; xmin=0.01, penalty=TopOpt.PowerPenalty(p))
+        solver = FEASolver(Direct, problem; xmin=0.01, penalty=PowerPenalty(p))
         dp = Displacement(solver)
         u = dp(PseudoDensities(solver.vars))
         for _ in 1:3
@@ -59,7 +70,7 @@ end
     nels = (2, 2)
     problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
     for p in (1.0, 2.0, 3.0)
-        solver = FEASolver(Direct, problem; xmin=0.01, penalty=TopOpt.PowerPenalty(p))
+        solver = FEASolver(Direct, problem; xmin=0.01, penalty=PowerPenalty(p))
         vol = Volume(solver)
         constr = x -> vol(PseudoDensities(x)) - 0.3
         for i in 1:3
@@ -78,8 +89,8 @@ end
     nels = (2, 2)
     problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
     for p in (1.0, 2.0, 3.0)
-        solver = FEASolver(Direct, problem; xmin=0.01, penalty=TopOpt.PowerPenalty(p))
-        filter = TopOpt.DensityFilter(solver; rmin=4.0)
+        solver = FEASolver(Direct, problem; xmin=0.01, penalty=PowerPenalty(p))
+        filter = DensityFilter(solver; rmin=4.0)
         for i in 1:3
             x = rand(prod(nels))
             v = rand(prod(nels))
@@ -123,7 +134,7 @@ end
     end
     problem = MultiLoad(base_problem, F)
     for p in (1.0, 2.0, 3.0)
-        solver = FEASolver(Direct, problem; xmin=0.01, penalty=TopOpt.PowerPenalty(p))
+        solver = FEASolver(Direct, problem; xmin=0.01, penalty=PowerPenalty(p))
         exact_svd_block = BlockCompliance(problem, solver; method=:exact)
         constr = Nonconvex.FunctionWrapper(
             x -> exact_svd_block(x) .- 1000.0,
@@ -147,7 +158,7 @@ end
     nels = (2, 2)
     problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
     for p in (1.0, 2.0, 3.0)
-        solver = FEASolver(Direct, problem; xmin=0.01, penalty=TopOpt.PowerPenalty(p))
+        solver = FEASolver(Direct, problem; xmin=0.01, penalty=PowerPenalty(p))
         st = StressTensor(solver)
         # element stress tensor - element 1
         est = st[1]

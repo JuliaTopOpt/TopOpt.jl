@@ -1,21 +1,27 @@
+import ..TopOpt: PseudoDensities
+
 abstract type AbstractPenalty{T} end
 abstract type AbstractCPUPenalty{T} <: AbstractPenalty{T} end
 abstract type AbstractProjection end
 
+function (P::AbstractCPUPenalty)(x::PseudoDensities{I,<:Any,F}) where {I,F}
+    return PseudoDensities{I,true,F}(P.(x.x))
+end
+
 mutable struct PowerPenalty{T} <: AbstractCPUPenalty{T}
     p::T
 end
-@inline (P::PowerPenalty)(x) = x^(P.p)
+(P::PowerPenalty)(x::Real) = x^(P.p)
 
 mutable struct RationalPenalty{T} <: AbstractCPUPenalty{T}
     p::T
 end
-@inline (R::RationalPenalty)(x) = x / (1 + R.p * (1 - x))
+(R::RationalPenalty)(x::Real) = x / (1 + R.p * (1 - x))
 
 mutable struct SinhPenalty{T} <: AbstractCPUPenalty{T}
     p::T
 end
-@inline (R::SinhPenalty)(x) = sinh(R.p * x) / sinh(R.p)
+(R::SinhPenalty)(x::Real) = sinh(R.p * x) / sinh(R.p)
 
 struct ProjectedPenalty{T,Tpen<:AbstractPenalty{T},Tproj} <: AbstractCPUPenalty{T}
     penalty::Tpen
@@ -24,19 +30,20 @@ end
 function ProjectedPenalty(penalty::AbstractPenalty{T}) where {T}
     return ProjectedPenalty(penalty, HeavisideProjection(10 * one(T)))
 end
-@inline (P::ProjectedPenalty)(x) = P.penalty(P.proj(x))
+@inline (P::ProjectedPenalty)(x::Real) = P.penalty(P.proj(x))
 @forward_property ProjectedPenalty penalty
 
 mutable struct HeavisideProjection{T} <: AbstractProjection
     β::T
 end
 @inline (P::HeavisideProjection)(x::Real) = 1 - exp(-P.β * x) + x * exp(-P.β)
-(p::HeavisideProjection)(x::AbstractArray) = p.(x)
+(P::HeavisideProjection)(x::AbstractArray) = P.(x)
 
 mutable struct SigmoidProjection{T} <: AbstractProjection
     β::T
 end
-@inline (P::SigmoidProjection)(x) = 1 / (1 + exp((P.β + 1) * (-x + 0.5)))
+@inline (P::SigmoidProjection)(x::Real) = 1 / (1 + exp((P.β + 1) * (-x + 0.5)))
+(P::SigmoidProjection)(x::AbstractArray) = P.(x)
 
 import Base: copy
 copy(p::TP) where {TP<:AbstractPenalty} = TP(p.p)

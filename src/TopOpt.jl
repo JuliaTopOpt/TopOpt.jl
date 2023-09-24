@@ -115,6 +115,6 @@ export TopOpt,
     MMA87,
     MMA02,
     HeavisideProjection,
-    ProjectedPenalty,
-    PowerPenalty
+    SigmoidProjection,
+    ProjectedPenalty
 end
