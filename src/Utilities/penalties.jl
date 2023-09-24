@@ -30,7 +30,9 @@ end
 mutable struct HeavisideProjection{T} <: AbstractProjection
     β::T
 end
-@inline (P::HeavisideProjection)(x) = 1 - exp(-P.β * x) + x * exp(-P.β)
+@inline (P::HeavisideProjection)(x::Real) = 1 - exp(-P.β * x) + x * exp(-P.β)
+(p::HeavisideProjection)(x::AbstractArray) = p.(x)
+
 mutable struct SigmoidProjection{T} <: AbstractProjection
     β::T
 end

@@ -6,6 +6,15 @@ using Ferrite: ndofs_per_cell, getncells
 
 Random.seed!(1)
 
+@testset "HeavisideProjection" begin
+    proj = HeavisideProjection(5.0)
+    for T1 in (true, false), T2 in (true, false), T3 in (true, false)
+        x = PseudoDensities{T1,T2,T3}(rand(4))
+        @test typeof(proj(x)) === typeof(x)
+        @test typeof(proj.(x)) === typeof(x)
+    end
+end
+
 @testset "Compliance" begin
     nels = (2, 2)
     problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
