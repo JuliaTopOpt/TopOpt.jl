@@ -22,22 +22,18 @@ The following types are all concrete subtypes of `StiffnessTopOptProblem`. `Poin
 
 ```@docs
 PointLoadCantilever
-PointLoadCantilever(::Type{Val{CellType}}, nels::NTuple{dim,Int}, sizes::NTuple{dim}, E, ν, force) where {dim, CellType}
 ```
 
 ```@docs
 HalfMBB
-HalfMBB(::Type{Val{CellType}}, nels::NTuple{dim,Int}, sizes::NTuple{dim}, E, ν, force) where {dim, CellType}
 ```
 
 ```@docs
 LBeam
-LBeam(::Type{Val{CellType}}, ::Type{T}=Float64; length = 100, height = 100, upperslab = 50, lowerslab = 50, E = 1.0, ν = 0.3, force = 1.0) where {T, CellType}
 ```
 
 ```@docs
 TieBeam
-TieBeam(::Type{Val{CellType}}, ::Type{T} = Float64, refine = 1, force = T(1); E = T(1), ν = T(0.3)) where {T, CellType}
 ```
 
 ### Reading INP Files
@@ -46,11 +42,10 @@ In `TopOpt.jl`, you can import a `.inp` file to an instance of the problem struc
 
 ```@docs
 InpStiffness
-InpStiffness(filepath_with_ext::AbstractString; keep_load_cells = false)
 ```
 
 ```@docs
-IO.INP.Parser.InpContent
+InputOutput.INP.Parser.InpContent
 ```
 
 ## Grids
