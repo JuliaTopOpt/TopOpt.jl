@@ -14,7 +14,7 @@ end
 - `dim`: dimension of the problem
 - `TF`: number type for computations and coordinates
 - `N`: number of nodes in a cell of the grid
-- `inp_content`: an instance of [`InpContent`](@ref) which stores all the information from the ``.inp` file.
+- `inp_content`: an instance of [`InputOutput.INP.Parser.InpContent`](@ref) which stores all the information from the ``.inp` file.
 - `geom_order`: a field equal to `Val{GO}` where `GO` is an integer representing the order of the finite elements. Linear elements have a `geom_order` of `Val{1}` and quadratic elements have a `geom_order` of `Val{2}`.
 - `metadata`: Metadata having various cell-node-dof relationships
 - `black`: a `BitVector` of length equal to the number of elements where `black[e]` is 1 iff the `e`^th element must be part of the final design
