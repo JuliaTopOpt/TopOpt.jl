@@ -45,7 +45,7 @@ InpStiffness
 ```
 
 ```@docs
-InputOutput.INP.Parser.InpContent
+Parser.InpContent
 ```
 
 ## Grids
