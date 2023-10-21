@@ -5,6 +5,9 @@ using Requires, Reexport, ChainRulesCore
 
 @reexport using Nonconvex, NonconvexMMA, NonconvexSemidefinite, NonconvexPercival
 
+# I: interpolated
+# P: penalized
+# F: filtered
 struct PseudoDensities{I,P,F,T,N,A<:AbstractArray{T,N}} <: AbstractArray{T,N}
     x::A
 end
@@ -16,6 +19,9 @@ function PseudoDensities(x::A) where {T,N,A<:AbstractArray{T,N}}
 end
 function PseudoDensities{I,P,F}(x::A) where {I,P,F,T,N,A<:AbstractArray{T,N}}
     return PseudoDensities{I,P,F,T,N,A}(x)
+end
+function ChainRulesCore.rrule(::Type{PseudoDensities{I, P, F, T, N, A}}, x) where {I, P, F, T, N, A <: AbstractArray{T, N}}
+    PseudoDensities{I, P, F, T, N, A}(x), Δ -> (NoTangent(), Δ isa Tangent ? Δ.x : Δ)
 end
 
 Base.BroadcastStyle(::Type{T}) where {T<:PseudoDensities} = Broadcast.ArrayStyle{T}()
