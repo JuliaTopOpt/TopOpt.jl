@@ -18,6 +18,7 @@ makedocs(
     sitename="TopOpt.jl",
     format=Documenter.HTML(; prettyurls=get(ENV, "CI", nothing) == "true"),
     # doctest = false,
+    warnonly = true,
     pages=[
         "Home" => "index.md",
         "Problem types" => "examples/problem.md",
