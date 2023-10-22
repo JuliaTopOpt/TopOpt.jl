@@ -18,4 +18,3 @@ x0 = ones(length(solver.vars))
 result = geso(x0)
 
 # This file was generated using Literate.jl, https://github.com/fredrikekre/Literate.jl
-

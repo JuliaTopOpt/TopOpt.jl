@@ -48,4 +48,3 @@ force = 1.0 # upward force in N - negative is downward
 problem = PointLoadCantileverTruss(nels, elsizes, E, ν, force; k_connect=1);
 
 # This file was generated using Literate.jl, https://github.com/fredrikekre/Literate.jl
-
