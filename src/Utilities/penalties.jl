@@ -33,7 +33,9 @@ end
 @inline (P::ProjectedPenalty)(x::Real) = P.penalty(P.proj(x))
 @forward_property ProjectedPenalty penalty
 
-(P::AbstractProjection)(x::PseudoDensities{I,T,F}) where {I,T,F} = PseudoDensities{I,T,F}(P(x.x))
+function (P::AbstractProjection)(x::PseudoDensities{I,T,F}) where {I,T,F}
+    return PseudoDensities{I,T,F}(P(x.x))
+end
 (P::AbstractProjection)(x::AbstractArray) = map(P, x)
 
 mutable struct HeavisideProjection{T} <: AbstractProjection

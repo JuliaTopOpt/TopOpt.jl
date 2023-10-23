@@ -17,8 +17,8 @@ makedocs(;
     sitename="TopOpt.jl",
     format=Documenter.HTML(; prettyurls=get(ENV, "CI", nothing) == "true"),
     # doctest = false,
-    warnonly = true,
-    plugins = [bib],
+    warnonly=true,
+    plugins=[bib],
     pages=[
         "Home" => "index.md",
         "Problem types" => "examples/problem.md",
