@@ -13,11 +13,12 @@ GENERATED_EXAMPLES = [
 ]
 
 bib = CitationBibliography(joinpath(@__DIR__, "biblio", "ref.bib"))
-makedocs(
-    bib;
+makedocs(;
     sitename="TopOpt.jl",
     format=Documenter.HTML(; prettyurls=get(ENV, "CI", nothing) == "true"),
     # doctest = false,
+    warnonly=true,
+    plugins=[bib],
     pages=[
         "Home" => "index.md",
         "Problem types" => "examples/problem.md",

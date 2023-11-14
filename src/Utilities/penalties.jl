@@ -5,7 +5,7 @@ abstract type AbstractCPUPenalty{T} <: AbstractPenalty{T} end
 abstract type AbstractProjection end
 
 function (P::AbstractCPUPenalty)(x::PseudoDensities{I,<:Any,F}) where {I,F}
-    return PseudoDensities{I,true,F}(P.(x.x))
+    return PseudoDensities{I,true,F}(map(P, x.x))
 end
 
 mutable struct PowerPenalty{T} <: AbstractCPUPenalty{T}
@@ -33,17 +33,20 @@ end
 @inline (P::ProjectedPenalty)(x::Real) = P.penalty(P.proj(x))
 @forward_property ProjectedPenalty penalty
 
+function (P::AbstractProjection)(x::PseudoDensities{I,T,F}) where {I,T,F}
+    return PseudoDensities{I,T,F}(P(x.x))
+end
+(P::AbstractProjection)(x::AbstractArray) = map(P, x)
+
 mutable struct HeavisideProjection{T} <: AbstractProjection
     β::T
 end
 @inline (P::HeavisideProjection)(x::Real) = 1 - exp(-P.β * x) + x * exp(-P.β)
-(P::HeavisideProjection)(x::AbstractArray) = P.(x)
 
 mutable struct SigmoidProjection{T} <: AbstractProjection
     β::T
 end
 @inline (P::SigmoidProjection)(x::Real) = 1 / (1 + exp((P.β + 1) * (-x + 0.5)))
-(P::SigmoidProjection)(x::AbstractArray) = P.(x)
 
 import Base: copy
 copy(p::TP) where {TP<:AbstractPenalty} = TP(p.p)

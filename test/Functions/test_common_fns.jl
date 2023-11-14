@@ -14,6 +14,7 @@ get_pen_T(::PseudoDensities{<:Any,T,<:Any}) where {T} = T
             x = PseudoDensities{T1,T2,T3}(rand(4))
             @test typeof(proj(x)) === typeof(x)
             @test typeof(proj.(x)) === typeof(x)
+            Zygote.gradient(sum ∘ proj ∘ PseudoDensities, x)
         end
     end
 
@@ -22,6 +23,7 @@ get_pen_T(::PseudoDensities{<:Any,T,<:Any}) where {T} = T
             x = PseudoDensities{T1,T2,T3}(rand(4))
             @test get_pen_T(pen(x)) === true
             @test get_pen_T(ProjectedPenalty(pen)(x)) === true
+            Zygote.gradient(sum ∘ pen ∘ PseudoDensities, x)
         end
     end
 end
