@@ -11,7 +11,9 @@ using Parameters: @unpack
 using TimerOutputs, Ferrite, StaticArrays, StatsFuns
 using SparseArrays, Statistics, ChainRulesCore, Zygote
 using Nonconvex: Nonconvex
-using Flux, AbstractDifferentiation
+using Flux
+import AbstractDifferentiation
+const AD = AbstractDifferentiation
 
 export Volume,
     Compliance,
