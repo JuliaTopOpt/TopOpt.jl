@@ -1,6 +1,6 @@
 # TopOpt
 
-[![Actions Status](https://github.com/juliatopopt/TopOpt.jl/workflows/CI/badge.svg)](https://github.com/juliatopopt/TopOpt.jl/actions)
+[![Actions Status](https://github.com/JuliaTopOpt/TopOpt.jl/actions/workflows/CI.yml/badge.svg)](https://github.com/juliatopopt/TopOpt.jl/actions)
 [![Documentation](https://img.shields.io/badge/doc-latest-blue.svg)](https://juliatopopt.github.io/TopOpt.jl/dev)
 [![codecov](https://codecov.io/gh/juliatopopt/TopOpt.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/juliatopopt/TopOpt.jl)
 
