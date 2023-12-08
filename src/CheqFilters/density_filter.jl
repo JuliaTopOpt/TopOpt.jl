@@ -43,10 +43,10 @@ function DensityFilter(
 end
 
 function (cf::DensityFilter{true,T})(x::PseudoDensities{I,P}) where {I,P,T}
-    cf.rmin <= 0 && return x
+    cf.rmin <= 0 && return PseudoDensities{I,P,true}(x.x)
     @unpack jacobian = cf
     out = similar(x.x)
-    mul!(out, jacobian, x)
+    mul!(out, jacobian, x.x)
     return PseudoDensities{I,P,true}(out)
 end
 function ChainRulesCore.rrule(f::DensityFilter{true}, x::PseudoDensities)
