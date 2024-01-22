@@ -1,8 +1,6 @@
-using ReliabilityOptimization,
-    Test, NonconvexTOBS, ChainRulesCore, TopOpt, Zygote, FiniteDifferences
+using ReliabilityOptimization, Test, NonconvexTOBS,
+    ChainRulesCore, TopOpt, Zygote, FiniteDifferences
 
-const densities = [0.0, 0.5, 1.0] # for mass calculation
-const nmats = 3 # number of materials
 const v = 0.3 # Poisson’s ratio
 const f = 1.0 # downward force
 const V = 0.4 # volume fraction
@@ -15,21 +13,21 @@ solver = FEASolver(Direct, problem; xmin = 0.0)
 filter = DensityFilter(solver; rmin = 3.0) # filter to avoid checkerboarding
 comp = Compliance(solver) # function that returns compliance
 penalty = TopOpt.PowerPenalty(3.0) # SIMP penalty
-# Young’s modulii of air (void) + 2 materials
-const avgEs = [1e-6, 0.5, 2.0]
-logEs = MvNormal(log.(avgEs), Matrix(Diagonal(0.1 .* abs.(log.(avgEs)))))
+const avgEs = [1e-6, 0.5]
+logEs = MvNormal(log.(avgEs), Matrix(Diagonal(0.1 .* avgEs .|> log .|> abs))) 
 # 'Original' function. At least one input is random.
 # In this example, Es is the random input.
-compObj = x -> x |> PseudoDensities |> filter |> comp
+function compObj(x, E)
+    # comp(filter(PseudoDensities(x)))
+    interp = MaterialInterpolation(E, penalty)
+    MultiMaterialVariables(x, 2) |> interp |> filter |> comp
+end
 # wrap original function in RandomFunction struct
 rf = RandomFunction(compObj, logEs, FORM(RIA()))
 # initial homogeneous distribution of pseudo-densities
 x0 = fill(V, ncells * (length(logEs) - 1))
 # call wrapper with example input
 # (Returns propability distribution of the objective for current point)
-@show typeof(x0)
-@show typeof(x0[1])
-@show length(x0)
 d = rf(x0)
 constr = x -> volfrac(filter(PseudoDensities(x))) - V
 function obj(x) # objective for TO problem
