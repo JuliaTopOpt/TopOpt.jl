@@ -1,7 +1,7 @@
 function extract_cload!(
     cloads::Dict{TI,Vector{TF}}, file, ::Type{Val{dim}}
 ) where {TI,TF,dim}
-    pattern = r"(\d+)\s*,\s*(\d)\s*,\s*(\-?\d+\.\d*E[\+\-]\d{2})"
+    pattern = r"\s*([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)\s*,\s*([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)\s*,\s*([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)\s*"
     line = readline(file)
     m = match(stopping_pattern, line)
     while m isa Nothing

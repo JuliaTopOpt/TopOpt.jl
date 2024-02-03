@@ -1,7 +1,5 @@
 using TopOpt.TopOptProblems.InputOutput.INP
-using Ferrite
-
-using Test
+using Ferrite, Test
 
 cube = INP.Parser.import_inp(joinpath(@__DIR__, "testcube.inp"))
 dh = cube.dh
@@ -35,3 +33,28 @@ force_node = collect(keys(raw_inp.cloads))[1]
 for n in raw_inp.nodesets["FemConstraintDisplacement"]
     @test raw_inp.node_coords[n][3] == 0
 end
+
+raw_inp = INP.Parser.extract_inp(joinpath(@__DIR__, "MBB.inp"))
+# element type
+@test raw_inp.celltype == "CPS4"
+# node coordinates
+@test raw_inp.node_coords[1] == (0.0, 0.0)
+@test raw_inp.node_coords[2] == (5.0, 0.0)
+@test raw_inp.node_coords[450] == (195.0, 50.0)
+@test raw_inp.node_coords[451] == (200.0, 50.0)
+# cell connectivity
+@test raw_inp.cells[1] == (1, 2, 43, 42)
+@test raw_inp.cells[2] == (2, 3, 44, 43)
+@test raw_inp.cells[399] == (408, 409, 450, 449)
+@test raw_inp.cells[400] == (409, 410, 451, 450)
+# Dirichlet boundary conditions
+@test raw_inp.nodedbcs["fixed_support"] == [(1, 0.0), (2, 0.0)]
+@test raw_inp.nodedbcs["roller_support"] == [(1, 0.0)]
+# concentrated load
+@test raw_inp.cloads[431] == [0.0, -3.0]
+# material density
+@test raw_inp.density == 0
+# Young's modulus
+@test raw_inp.E == 42000
+# Poisson ratio
+@test raw_inp.ν == 0.2

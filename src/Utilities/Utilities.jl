@@ -1,6 +1,6 @@
 module Utilities
 
-using ForwardDiff, Ferrite, IterativeSolvers, Requires
+using ForwardDiff, Ferrite, IterativeSolvers, Requires, StaticArrays, LinearAlgebra
 
 export AbstractPenalty,
     PowerPenalty,
@@ -13,6 +13,7 @@ export AbstractPenalty,
     RaggedArray,
     @debug,
     compliance,
+    sumdiag,
     meandiag,
     density,
     find_black_and_white,
