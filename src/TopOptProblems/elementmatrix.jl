@@ -142,16 +142,3 @@ function Base.convert(
     end
     return element_Kes
 end
-
-for TM in (:(StaticMatrix{m,m,T}), :(Symmetric{T,<:StaticMatrix{m,m,T}}))
-    @eval begin
-        @generated function sumdiag(K::$TM) where {m,T}
-            return reduce((ex1, ex2) -> :($ex1 + $ex2), [:(K[$j, $j]) for j in 1:m])
-        end
-    end
-end
-@doc """
-sumdiag(K::Union{StaticMatrix, Symmetric{<:Any, <:StaticMatrix}})
-
-Computes the sum of the diagonal of the static matrix `K`.
-""" sumdiag

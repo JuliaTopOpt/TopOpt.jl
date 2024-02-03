@@ -17,7 +17,7 @@ abstract type AbstractMatrixFreeSolver <: AbstractDisplacementSolver end
     prev_penalty::TP
     xmin::T
     cg_max_iter::Integer
-    tol::T
+    abstol::T
     cg_statevars::CGStateVariables{T}
     preconditioner::Any
     preconditioner_initialized::Base.RefValue{Bool}
@@ -37,7 +37,7 @@ function StaticMatrixFreeDisplacementSolver(
     conv=DefaultCriteria(),
     xmin=one(T) / 1000,
     cg_max_iter=700,
-    tol=xmin,
+    abstol=1e-7,
     penalty=PowerPenalty{T}(1),
     prev_penalty=deepcopy(penalty),
     preconditioner=identity,
@@ -77,7 +77,7 @@ function StaticMatrixFreeDisplacementSolver(
         prev_penalty,
         xmin,
         cg_max_iter,
-        tol,
+        abstol,
         cg_statevars,
         preconditioner,
         Ref(false),
@@ -114,7 +114,7 @@ function (s::StaticMatrixFreeDisplacementSolver)(;
     )
 
     @unpack cg_max_iter, cg_statevars = s
-    @unpack preconditioner_initialized, preconditioner, tol = s
+    @unpack preconditioner_initialized, preconditioner, abstol = s
     operator = buildoperator(s)
 
     if !(preconditioner === identity)
@@ -128,7 +128,7 @@ function (s::StaticMatrixFreeDisplacementSolver)(;
             lhs,
             operator,
             rhs;
-            tol=tol,
+            abstol,
             maxiter=cg_max_iter,
             log=false,
             statevars=cg_statevars,
@@ -139,7 +139,7 @@ function (s::StaticMatrixFreeDisplacementSolver)(;
             lhs,
             operator,
             rhs;
-            tol=tol,
+            abstol,
             maxiter=cg_max_iter,
             log=false,
             statevars=cg_statevars,
