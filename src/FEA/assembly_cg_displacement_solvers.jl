@@ -25,7 +25,7 @@ function PCGDisplacementSolver(
     conv=DefaultCriteria(),
     xmin=T(1) / 1000,
     cg_max_iter=700,
-    abstol=1e-7,
+    abstol=T(1e-7),
     penalty=PowerPenalty{T}(1),
     prev_penalty=deepcopy(penalty),
     preconditioner=identity,
