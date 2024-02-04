@@ -8,8 +8,8 @@ force = -1.0
 problem = PointLoadCantilever(Val{:Linear}, nels, sizes, E, ν, force)
 solver1 = FEASolver(Direct, problem)
 # Takes forever to compile
-solver2 = FEASolver(CG, MatrixFree, problem, abstol = 1e-7)
-solver3 = FEASolver(CG, Assembly, problem, abstol = 1e-7)
+solver2 = FEASolver(CG, MatrixFree, problem; abstol=1e-7)
+solver3 = FEASolver(CG, Assembly, problem; abstol=1e-7)
 
 x0 = rand(length(solver1.vars))
 solver1.vars .= x0

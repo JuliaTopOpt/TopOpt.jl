@@ -12,7 +12,7 @@ using TimerOutputs, Ferrite, StaticArrays, StatsFuns
 using SparseArrays, Statistics, ChainRulesCore, Zygote
 using Nonconvex: Nonconvex
 using Flux
-import AbstractDifferentiation
+using AbstractDifferentiation: AbstractDifferentiation
 const AD = AbstractDifferentiation
 
 export Volume,
