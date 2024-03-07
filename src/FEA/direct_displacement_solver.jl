@@ -79,7 +79,7 @@ function (s::DirectDisplacementSolver{T})(
         if s.qr
             globalinfo.qrK = qr(newK.data)
         else
-            cholK = cholesky(Symmetric(K), check = false)
+            cholK = cholesky(Symmetric(K); check=false)
             if issuccess(cholK)
                 globalinfo.cholK = cholK
             else
