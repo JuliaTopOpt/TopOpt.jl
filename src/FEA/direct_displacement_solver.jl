@@ -92,6 +92,6 @@ function (s::DirectDisplacementSolver{T})(
     nans && return nothing
     new_rhs = T === newT ? rhs : newT.(rhs)
     fact = s.qr ? globalinfo.qrK : globalinfo.cholK
-    ldiv!(lhs, fact, new_rhs)
+    lhs .= fact \ new_rhs
     return nothing
 end
