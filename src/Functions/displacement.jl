@@ -79,7 +79,7 @@ function ChainRulesCore.rrule(dp::Displacement, x::PseudoDensities)
         else
             solver.rhs .= Δ
         end
-        solver(; reuse_chol=true, assemble_f=false)
+        solver(; reuse_fact=true, assemble_f=false)
         dudx_tmp .= 0
         for e in 1:length(x.x)
             _, dρe = get_ρ_dρ(x.x[e], penalty, xmin)

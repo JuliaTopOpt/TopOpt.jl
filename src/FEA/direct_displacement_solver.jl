@@ -49,13 +49,12 @@ function (s::DirectDisplacementSolver{T})(
     ::Type{Val{safe}}=Val{false},
     ::Type{newT}=T;
     assemble_f=true,
-    reuse_chol=false,
+    reuse_fact=false,
     rhs=assemble_f ? s.globalinfo.f : s.rhs,
     lhs=assemble_f ? s.u : s.lhs,
     kwargs...,
 ) where {T,safe,newT}
     globalinfo = s.globalinfo
-    N = size(globalinfo.K, 1)
     assemble!(
         globalinfo,
         s.problem,
@@ -75,40 +74,24 @@ function (s::DirectDisplacementSolver{T})(
         end
     end
     nans = false
-    if !reuse_chol
-        try
-            if T === newT
-                if s.qr
-                    globalinfo.qrK = qr(K.data)
-                else
-                    globalinfo.cholK = cholesky(Symmetric(K))
-                end
-            else
-                if s.qr
-                    globalinfo.qrK = qr((newT.(K)).data)
-                else
-                    globalinfo.cholK = cholesky(Symmetric(newT.(K)))
-                end
-            end
-        catch err
-            lhs .= T(NaN)
-            nans = true
-        end
-    end
-    if !nans
-        if T === newT
-            if s.qr
-                lhs .= globalinfo.qrK \ rhs
-            else
-                lhs .= globalinfo.cholK \ rhs
-            end
+    if !reuse_fact
+        newK = T === newT ? K : newT.(K)
+        if s.qr
+            globalinfo.qrK = qr(newK.data)
         else
-            if s.qr
-                lhs .= globalinfo.qrK \ newT.(rhs)
+            cholK = cholesky(Symmetric(K); check=false)
+            if issuccess(cholK)
+                globalinfo.cholK = cholK
             else
-                lhs .= globalinfo.cholK \ newT.(rhs)
+                @warn "The global stiffness matrix is not positive definite. Please check your boundary conditions."
+                lhs .= T(NaN)
+                nans = true
             end
         end
     end
+    nans && return nothing
+    new_rhs = T === newT ? rhs : newT.(rhs)
+    fact = s.qr ? globalinfo.qrK : globalinfo.cholK
+    lhs .= fact \ new_rhs
     return nothing
 end

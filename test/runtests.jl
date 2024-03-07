@@ -33,18 +33,21 @@ if GROUP == "All" || GROUP == "Examples_1"
     @safetestset "CSIMP example" begin
         include("examples/csimp.jl")
     end
+end
+
+if GROUP == "All" || GROUP == "Examples_2"
     @safetestset "Global stress example" begin
         include("examples/global_stress.jl")
     end
     @safetestset "Local stress example" begin
         include("examples/local_stress.jl")
     end
+end
+
+if GROUP == "All" || GROUP == "Examples_3"
     @safetestset "More examples" begin
         include("examples/test_examples.jl")
     end
-end
-
-if GROUP == "All" || GROUP == "Examples_2"
     @safetestset "Neural network example" begin
         include("examples/neural.jl")
     end

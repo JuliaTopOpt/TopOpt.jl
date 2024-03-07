@@ -143,7 +143,7 @@ function compute_approx_bc(bc, F, V, Y)
     bc.method.sample_once || bc.method.sample_method(V)
     for i in 1:nv
         @views mul!(solver.rhs, F, V[:, i])
-        solver(; assemble_f=false, reuse_chol=(i > 1))
+        solver(; assemble_f=false, reuse_fact=(i > 1))
         invKFv = solver.lhs
         Y[:, i] .= invKFv
         temp = F' * invKFv
@@ -161,7 +161,7 @@ function compute_jtvp!_bc(out, bc, method::DiagonalEstimation, w)
         temp .= 0
         #q_i = K^-1 F (w .* v_i)
         @views mul!(solver.rhs, F, w .* V[:, i])
-        solver(; assemble_f=false, reuse_chol=(i > 1))
+        solver(; assemble_f=false, reuse_fact=(i > 1))
         Q[:, i] = solver.lhs
         #<q_i, dK/dx_e, y_i>
         @views compute_inner(temp, Q[:, i], Y[:, i], solver)

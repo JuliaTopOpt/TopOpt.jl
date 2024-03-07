@@ -25,6 +25,7 @@ jobs:
           - Extended_Tests
           - Examples_1
           - Examples_2
+          - Examples_3
           - WCSMO14_1
           - WCSMO14_2
     steps:
