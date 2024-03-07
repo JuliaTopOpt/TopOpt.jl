@@ -81,7 +81,7 @@ end
 #     u = dp(x)
 #     return u, Δ -> begin # v
 #         solver.rhs .= Δ
-#         solver(reuse_chol = true, assemble_f = false)
+#         solver(reuse_fact = true, assemble_f = false)
 #         dudx_tmp .= 0
 #         for e in 1:length(x)
 #             _, dρe = get_ρ_dρ(x[e], penalty, xmin)

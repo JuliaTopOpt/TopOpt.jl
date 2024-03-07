@@ -75,7 +75,7 @@ function compute_exact_ec(ec, x, grad, F, n)
     grad .= 0
     for i in 1:size(F, 2)
         @views solver.rhs .= F[:, i]
-        solver(; assemble_f=false, reuse_chol=(i > 1))
+        solver(; assemble_f=false, reuse_fact=(i > 1))
         u = solver.lhs
         obj += compute_compliance(
             cell_comp, grad_temp, cell_dofs, Kes, u, black, white, varind, x, penalty, xmin
@@ -104,7 +104,7 @@ function compute_approx_ec(ec, x, grad, F, V, n)
     ec.method.sample_once || ec.method.sample_method(V)
     for i in 1:nv
         @views mul!(solver.rhs, F, V[:, i])
-        solver(; assemble_f=false, reuse_chol=(i > 1))
+        solver(; assemble_f=false, reuse_fact=(i > 1))
         invKFv = solver.lhs
         obj += compute_compliance(
             cell_comp,
