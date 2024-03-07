@@ -83,7 +83,7 @@ function (s::DirectDisplacementSolver{T})(
             if issuccess(cholK)
                 globalinfo.cholK = cholK
             else
-                @warn "The global stiffness matrix is not positive definite. Please check your boundary condittions."
+                @warn "The global stiffness matrix is not positive definite. Please check your boundary conditions."
                 lhs .= T(NaN)
                 nans = true
             end
