@@ -9,12 +9,14 @@ function extract_set!(
     line = readline(file)
     m = match(stopping_pattern, line)
     while m isa Nothing
-        m = match(pattern_single, line)
-        if m != nothing
-            push!(vector, parse(TI, m[1]) - offset)
+        if match(pattern_single, line) !== nothing
+            m = eachmatch(r"(\d+)", line)
+            for _m in m
+                push!(vector, parse(TI, _m.match) - offset)
+            end
         else
             m = match(pattern_subset, line)
-            if m != nothing
+            if m !== nothing
                 subsetname = String(m[1])
                 if haskey(sets, subsetname)
                     append!(vector, sets[subsetname])
