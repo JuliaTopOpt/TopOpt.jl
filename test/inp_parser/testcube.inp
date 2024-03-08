@@ -56,9 +56,7 @@ Evolumes
 ** written by write_node_sets_constraints_displacement function
 ** FemConstraintDisplacement
 *NSET,NSET=FemConstraintDisplacement
-1,
-3,
-5,
+1,3, 5,
 7,
 13,
 14,

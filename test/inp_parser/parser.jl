@@ -30,6 +30,7 @@ force_node = collect(keys(raw_inp.cloads))[1]
 @test raw_inp.dloads["DLOAD_SET_1"] == 1
 
 @test raw_inp.nodedbcs["FemConstraintDisplacement"] == [(1, 0), (2, 0), (3, 0)]
+@test raw_inp.nodesets["FemConstraintDisplacement"] == [1, 3, 5, 7, 13, 14, 15, 16, 22]
 for n in raw_inp.nodesets["FemConstraintDisplacement"]
     @test raw_inp.node_coords[n][3] == 0
 end
