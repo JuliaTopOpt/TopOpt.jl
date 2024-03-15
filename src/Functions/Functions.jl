@@ -13,6 +13,8 @@ using SparseArrays, Statistics, ChainRulesCore, Zygote
 using Nonconvex: Nonconvex
 using Flux
 using AbstractDifferentiation: AbstractDifferentiation
+using StatsBase, Statistics 
+using Plots:heatmap  
 const AD = AbstractDifferentiation
 
 export Volume,
@@ -45,7 +47,16 @@ export Volume,
     MaterialInterpolation,
     MultiMaterialVariables,
     element_densities,
-    tounit
+    tounit,
+    DefGradTensor,
+    GoodnessTensor, 
+    ElementDefGradTensor, 
+    ElementGoodnessTensor, 
+    FToK2AndK3,
+    Entropy_Calc,
+    Entropy,
+    SMu_gen, 
+    SAlpha_gen 
 
 const to = TimerOutput()
 
@@ -67,6 +78,10 @@ include("apply_boundary.jl")
 include("assemble_K.jl")
 include("element_ksigma.jl")
 include("element_k.jl")
+
+# Goodness related
+include("defgrad.jl")
+include("goodness.jl")
 
 # TODO no rrules yet
 include("truss_stress.jl")

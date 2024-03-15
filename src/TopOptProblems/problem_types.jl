@@ -341,7 +341,7 @@ function HalfMBB(
     return HalfMBB(rect_grid, E, ν, ch, force, force_dof, black, white, varind, metadata)
 end
 
-nnodespercell(p::Union{PointLoadCantilever,HalfMBB}) = nnodespercell(p.rect_grid)
+#nnodespercell(p::Union{PointLoadCantilever,HalfMBB}) = nnodespercell(p.rect_grid)
 function getcloaddict(p::Union{PointLoadCantilever{dim,T},HalfMBB{dim,T}}) where {dim,T}
     f = T[0, -p.force, 0]
     fnode = Tuple(getnodeset(p.rect_grid.grid, "down_force"))[1]
@@ -718,3 +718,99 @@ function RayProblem(
 end
 nnodespercell(p::RayProblem) = nnodespercell(p.rect_grid)
 getcloaddict(p::RayProblem) = p.loads
+
+@params struct JosephLoadCantilever{dim,T,N,M} <: StiffnessTopOptProblem{dim,T}
+    rect_grid::RectilinearGrid{dim,T,N,M}
+    E::T
+    ν::T
+    ch::ConstraintHandler{<:DofHandler{dim,<:Cell{dim,N,M},T},T}
+    disp::T
+    black::AbstractVector
+    white::AbstractVector
+    varind::AbstractVector{Int}
+    metadata::Metadata
+end
+
+function Base.show(::IO, ::MIME{Symbol("text/plain")}, ::JosephLoadCantilever)
+    return println("TopOpt joseph load cantilever beam problem")
+end
+
+function JosephLoadCantilever(
+    ::Type{Val{CellType}},
+    nels::NTuple{dim,Int},
+    sizes::NTuple{dim},
+    E=1.0,
+    ν=0.3,
+    disp=1.0,
+) where {dim,CellType}
+    iseven(nels[2]) && (length(nels) < 3 || iseven(nels[3])) ||
+        throw("Grid does not have an even number of elements along the y and/or z axes.")
+
+    _T = promote_type(eltype(sizes), typeof(E), typeof(ν), typeof(disp))
+    if _T <: Integer
+        T = Float64
+    else
+        T = _T
+    end
+    if CellType === :Linear || dim === 3
+        rect_grid = RectilinearGrid(Val{:Linear}, nels, T.(sizes))
+    else
+        rect_grid = RectilinearGrid(Val{:Quadratic}, nels, T.(sizes))
+    end
+
+    if haskey(rect_grid.grid.facesets, "fixed_left")
+        pop!(rect_grid.grid.facesets, "fixed_left")
+    end
+    #addfaceset!(rect_grid.grid, "fixed_all", x -> left(rect_grid, x));
+    addnodeset!(rect_grid.grid, "fixed_left", x -> left(rect_grid, x))
+
+    if haskey(rect_grid.grid.nodesets, "disp_right")
+        pop!(rect_grid.grid.nodesets, "disp_right")
+    end
+    addnodeset!(
+        rect_grid.grid, "disp_right", x -> right(rect_grid, x)
+    )
+
+    # Create displacement field u
+    dh = DofHandler(rect_grid.grid)
+    if CellType === :Linear || dim === 3
+        push!(dh, :u, dim) # Add a displacement field
+    else
+        ip = Lagrange{2,RefCube,2}()
+        push!(dh, :u, dim, ip) # Add a displacement field        
+    end
+    close!(dh)
+
+    ch = ConstraintHandler(dh)
+
+    #dbc = Dirichlet(:u, getfaceset(rect_grid.grid, "fixed_all"), (x,t) -> zeros(T, dim), collect(1:dim))
+    dbc_left = Dirichlet(
+        :u, getnodeset(rect_grid.grid, "fixed_left"), (x, t) -> zeros(T, dim), collect(1:dim)
+    )
+    add!(ch, dbc_left)
+    dbc_right = Dirichlet(
+        :u, getnodeset(rect_grid.grid, "disp_right"), (x, t) -> fill(T(disp), dim), collect(1:dim)
+    )
+    add!(ch, dbc_right)
+    close!(ch)
+    t = T(0)
+    update!(ch, t)
+
+    metadata = Metadata(dh)
+
+    #fnode = Tuple(getnodeset(rect_grid.grid, "down_force"))[1]
+    #node_dofs = metadata.node_dofs
+    #force_dof = node_dofs[2, fnode]
+
+    N = nnodespercell(rect_grid)
+    M = nfacespercell(rect_grid)
+
+    black, white = find_black_and_white(dh)
+    varind = find_varind(black, white)
+
+    return JosephLoadCantilever(
+        rect_grid, E, ν, ch, disp, black, white, varind, metadata
+    )
+end
+
+nnodespercell(p::Union{PointLoadCantilever,HalfMBB,JosephLoadCantilever}) = nnodespercell(p.rect_grid)
