@@ -1,22 +1,31 @@
 function FToK2AndK3(F::Vector{Matrix{Float64}})
-    k1_list=[]
-    k2_list=[]
-    k3_list=[]
-    lambda_list=[]
+    k1_list=Float64[]
+    k2_list=Float64[]
+    k3_list=Float64[]
+    lambda_list=Float64[]
     #Catches potential error of an empty F value
-    if length(F)==0
-        throw("F is empty")
-    end
-    #Catches the error of F being the wrong size
-    x=[0 0 0; 0 0 0; 0 0 0]
-    for l in 1:length(F)
-        if size(F[l])!=size(x)
-            msg = "Error at index $l: Deformation gradient shape is not (3,3)"
-            throw(ArgumentError(msg))
-        end
+    #if length(F)==0
+    #    throw("F is empty")
+    #end
 
+    function Fto3by3(F)
+        return Vector{Matrix{Float64}}(map(eachindex(F)) do i
+            F_tmp = F[i]
+            if size(F_tmp) == (2, 2)
+                # Build an immutable 3x3 matrix from the 2x2 F_item
+                [F_tmp zeros(2, 1); 0 0 1]
+            elseif size(F_tmp) == (3, 3)
+                F_tmp
+            else
+                error("Unexpected deformation gradient size at index $l")
+            end
+        end)
+    end
+    F3by3 = Fto3by3(F) # 3 by 3
+
+    for l in 1:length(F3by3)       
         #Here begins calculations to get k1, k2, and k3
-        C=transpose(F[l])*F[l]
+        C=transpose(F3by3[l])*F3by3[l]  
         #creates object R which holds eigenvalues and eigenvectors, which are then extracted
         R=eigen(C)
         lam2 = R.values
@@ -48,9 +57,6 @@ function FToK2AndK3(F::Vector{Matrix{Float64}})
         kproduct=lam[1]*lam[2]*lam[3]
         k1=log(lam[1]*lam[2]*lam[3])
 
-
-
-        
         # for r in 1:3
         #     g[r] = float(log(lam[r])-(k1/3))
         # end
@@ -60,16 +66,8 @@ function FToK2AndK3(F::Vector{Matrix{Float64}})
         g3=float(log(lam[3])-(k1/3))
         g=[g1,g2,g3]
 
-
-
         k2=sqrt(g[1]^2+g[2]^2+g[3]^2)
-        k3=3*sqrt(6)*g[1]*g[2]*g[3]/(k2^3);
-
-        
-
-
-        
-        
+        k3=3*sqrt(6)*g[1]*g[2]*g[3]/(k2^3)
 
         #Adds k1, k2, and k3 valus for element to the lists of values of all elements
         k1_list=vcat(k1_list,k1)

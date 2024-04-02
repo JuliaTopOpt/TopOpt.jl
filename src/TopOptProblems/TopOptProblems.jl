@@ -49,6 +49,7 @@ export RayProblem,
     bcmatrix,
     save_mesh,
     RandomMagnitude,
-    MultiLoad
+    MultiLoad,
+    JosephLoadCantilever
 
 end # module
