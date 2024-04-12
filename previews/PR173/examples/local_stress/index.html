@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>- · TopOpt.jl</title><meta name="title" content="- · TopOpt.jl"/><meta property="og:title" content="- · TopOpt.jl"/><meta property="twitter:title" content="- · TopOpt.jl"/><meta name="description" content="Documentation for TopOpt.jl."/><meta property="og:description" content="Documentation for TopOpt.jl."/><meta property="twitter:description" content="Documentation for TopOpt.jl."/><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../search_index.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">TopOpt.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../">Home</a></li><li><a class="tocitem" href="../problem/">Problem types</a></li><li><a class="tocitem" href="../../functions/">Functions</a></li><li><span class="tocitem">Examples</span><ul><li><a class="tocitem" href="../simp/">SIMP example: Point Load Cantilever</a></li><li><a class="tocitem" href="../beso/">BESO example: HalfMBB Beam</a></li><li><a class="tocitem" href="../geso/">GESO example: HalfMBB Beam</a></li><li><a class="tocitem" href="../csimp/">Continuous SIMP example</a></li><li><a class="tocitem" href="../global_stress/">Global stress objective example</a></li><li><a class="tocitem" href="../TOBS/">Topological optimization of binary structures (TOBS)</a></li></ul></li><li><span class="tocitem">API Reference</span><ul><li><a class="tocitem" href="../../reference/TopOptProblems/"><code>TopOptProblems</code></a></li><li><a class="tocitem" href="../../reference/Algorithms/"><code>Algorithms</code></a></li></ul></li><li><a class="tocitem" href="../../bibliography/">Bibliography</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>-</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>-</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/JuliaTopOpt/TopOpt.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/JuliaTopOpt/TopOpt.jl/blob/master/docs/src/literate/local_stress.jl" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><p>using Revise</p><pre><code class="language-julia hljs">using TopOpt, LinearAlgebra, StatsFuns
+using StatsFuns: logsumexp
+
+E = 1.0 # Young’s modulus
+v = 0.3 # Poisson’s ratio
+f = 1.0 # downward force
+rmin = 3.0</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">3.0</code></pre><h3 id="Define-the-problem"><a class="docs-heading-anchor" href="#Define-the-problem">Define the problem</a><a id="Define-the-problem-1"></a><a class="docs-heading-anchor-permalink" href="#Define-the-problem" title="Permalink"></a></h3><pre><code class="language-julia hljs">problem = PointLoadCantilever(Val{:Linear}, (160, 40), (1.0, 1.0), E, v, f)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi"></code></pre><h3 id="Parameter-settings"><a class="docs-heading-anchor" href="#Parameter-settings">Parameter settings</a><a id="Parameter-settings-1"></a><a class="docs-heading-anchor-permalink" href="#Parameter-settings" title="Permalink"></a></h3><pre><code class="language-julia hljs">V = 0.5 # volume fraction
+xmin = 0.0001 # minimum density
+steps = 40 # maximum number of penalty steps, delta_p0 = 0.1</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">40</code></pre><h3 id="Continuation-SIMP"><a class="docs-heading-anchor" href="#Continuation-SIMP">Continuation SIMP</a><a id="Continuation-SIMP-1"></a><a class="docs-heading-anchor-permalink" href="#Continuation-SIMP" title="Permalink"></a></h3><pre><code class="language-julia hljs">x0 = fill(0.5, 160 * 40) # initial design
+N = length(x0)
+penalty = TopOpt.PowerPenalty(1.0)
+solver = FEASolver(Direct, problem; xmin=xmin, penalty=penalty)
+stress = TopOpt.von_mises_stress_function(solver)
+filter = DensityFilter(solver; rmin=rmin)
+volfrac = TopOpt.Volume(solver)
+
+obj = x -&gt; volfrac(filter(PseudoDensities(x))) - V
+thr = 150 # stress threshold
+constr = x -&gt; begin
+    s = stress(filter(PseudoDensities(x)))
+    return (s .- thr) / length(s)
+end
+alg = PercivalAlg()
+options = PercivalOptions()
+model = Model(obj)
+addvar!(model, zeros(N), ones(N))
+add_ineq_constraint!(model, constr)
+
+x = copy(x0)
+for p in [1.0, 2.0, 3.0]
+    TopOpt.setpenalty!(solver, p)
+    global r = optimize(model, alg, x; options)
+    global x = r.minimizer
+end
+
+maximum(stress(filter(PseudoDensities(x0))))
+maximum(stress(filter(PseudoDensities(x))))</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">153.92267215442754</code></pre><h3 id="(Optional)-Visualize-the-result-using-Makie.jl"><a class="docs-heading-anchor" href="#(Optional)-Visualize-the-result-using-Makie.jl">(Optional) Visualize the result using Makie.jl</a><a id="(Optional)-Visualize-the-result-using-Makie.jl-1"></a><a class="docs-heading-anchor-permalink" href="#(Optional)-Visualize-the-result-using-Makie.jl" title="Permalink"></a></h3><p>Need to run <code>using Pkg; Pkg.add([&quot;Makie&quot;, &quot;GLMakie&quot;])</code> first</p><pre><code class="language-julia hljs">using Makie, GLMakie
+using TopOpt.TopOptProblems.Visualization: visualize
+fig = visualize(
+   problem; topology = r.minimizer, default_exagg_scale = 0.07,
+   scale_range = 10.0, vector_linewidth = 3, vector_arrowsize = 0.5,
+)
+Makie.display(fig)</code></pre><h2 id="local-stress-plain-program"><a class="docs-heading-anchor" href="#local-stress-plain-program">Plain Program</a><a id="local-stress-plain-program-1"></a><a class="docs-heading-anchor-permalink" href="#local-stress-plain-program" title="Permalink"></a></h2><p>Below follows a version of the program without any comments. The file is also available here: <a href="../local_stress.jl">local-stress.jl</a></p><pre><code class="language-julia hljs">using TopOpt, LinearAlgebra, StatsFuns
+using StatsFuns: logsumexp
+
+E = 1.0 # Young’s modulus
+v = 0.3 # Poisson’s ratio
+f = 1.0 # downward force
+rmin = 3.0
+
+problem = PointLoadCantilever(Val{:Linear}, (160, 40), (1.0, 1.0), E, v, f)
+
+V = 0.5 # volume fraction
+xmin = 0.0001 # minimum density
+steps = 40 # maximum number of penalty steps, delta_p0 = 0.1
+
+x0 = fill(0.5, 160 * 40) # initial design
+N = length(x0)
+penalty = TopOpt.PowerPenalty(1.0)
+solver = FEASolver(Direct, problem; xmin=xmin, penalty=penalty)
+stress = TopOpt.von_mises_stress_function(solver)
+filter = DensityFilter(solver; rmin=rmin)
+volfrac = TopOpt.Volume(solver)
+
+obj = x -&gt; volfrac(filter(PseudoDensities(x))) - V
+thr = 150 # stress threshold
+constr = x -&gt; begin
+    s = stress(filter(PseudoDensities(x)))
+    return (s .- thr) / length(s)
+end
+alg = PercivalAlg()
+options = PercivalOptions()
+model = Model(obj)
+addvar!(model, zeros(N), ones(N))
+add_ineq_constraint!(model, constr)
+
+x = copy(x0)
+for p in [1.0, 2.0, 3.0]
+    TopOpt.setpenalty!(solver, p)
+    global r = optimize(model, alg, x; options)
+    global x = r.minimizer
+end
+
+maximum(stress(filter(PseudoDensities(x0))))
+maximum(stress(filter(PseudoDensities(x))))
+
+# This file was generated using Literate.jl, https://github.com/fredrikekre/Literate.jl</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.3.0 on <span class="colophon-date" title="Friday 12 April 2024 14:16">Friday 12 April 2024</span>. Using Julia version 1.10.2.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
