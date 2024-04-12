@@ -1,9 +1,9 @@
-@params struct StressTensor{T} <: AbstractFunction{T}
-    problem::Any
-    solver::Any
+struct StressTensor{T,TP,TS,TC1,TC2} <: AbstractFunction{T}
+    problem::TP
+    solver::TS
     global_dofs::Vector{Int}
-    cellvalues::Any
-    cells::Any
+    cellvalues::TC1
+    cells::TC2
     _::T
 end
 function StressTensor(solver)
@@ -33,10 +33,10 @@ function (f::StressTensor)(dofs::DisplacementResult)
     end
 end
 
-@params struct ElementStressTensor{T} <: AbstractFunction{T}
-    stress_tensor::StressTensor{T}
-    cell::Any
-    cellidx::Any
+struct ElementStressTensor{T,TS<:StressTensor{T},TC1,TC2} <: AbstractFunction{T}
+    stress_tensor::TS
+    cell::TC1
+    cellidx::TC2
 end
 function Base.getindex(f::StressTensor{T}, cellidx) where {T}
     reinit!(f, cellidx)
@@ -62,20 +62,21 @@ function (f::ElementStressTensor)(u::DisplacementResult; element_dofs=false)
     n_basefuncs = getnbasefunctions(st.cellvalues)
     n_quad = getnquadpoints(st.cellvalues)
     dim = TopOptProblems.getdim(st.problem)
-    return sum(
-        map(1:n_basefuncs, 1:n_quad) do a, q_point
-            _u = cellu[dim * (a - 1) .+ (1:dim)]
-            return tensor_kernel(f, q_point, a)(DisplacementResult(_u))
-        end,
-    )
+
+    stresses_and_vols = map(1:n_basefuncs, 1:n_quad) do a, q_point
+        dΩ = getdetJdV(st.cellvalues, q_point)
+        _u = cellu[dim * (a - 1) .+ (1:dim)]
+        return tensor_kernel(f, q_point, a)(DisplacementResult(_u)) * dΩ, dΩ
+    end
+    return sum(first, stresses_and_vols) / sum(last, stresses_and_vols)
 end
 
-@params struct ElementStressTensorKernel{T} <: AbstractFunction{T}
+struct ElementStressTensorKernel{T,TC} <: AbstractFunction{T}
     E::T
     ν::T
     q_point::Int
     a::Int
-    cellvalues::Any
+    cellvalues::TC
     dim::Int
 end
 function (f::ElementStressTensorKernel)(u::DisplacementResult)
@@ -95,8 +96,8 @@ end
 
 function tensor_kernel(f::StressTensor, quad, basef)
     return ElementStressTensorKernel(
-        f.problem.E,
-        f.problem.ν,
+        TopOptProblems.getE(f.problem),
+        TopOptProblems.getν(f.problem),
         quad,
         basef,
         f.cellvalues,
