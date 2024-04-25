@@ -62,12 +62,13 @@ function (f::ElementDefGradTensor)(u::DisplacementResult; element_dofs=false) #-
     n_basefuncs = getnbasefunctions(st.cellvalues)
     n_quad = getnquadpoints(st.cellvalues)
     dim = TopOptProblems.getdim(st.problem)
-    return sum(
-        map(1:n_basefuncs, 1:n_quad) do a, q_point
+    return sum(map(1:n_quad) do  q_point
+        dΩ = getdetJdV(st.cellvalues, q_point) 
+        sum(map(1:n_basefuncs) do a   
             _u = cellu[dim * (a - 1) .+ (1:dim)]
             return tensor_kernel(f, q_point, a)(DisplacementResult(_u))
-        end,
-    ) + I(dim)
+        end) * dΩ
+    end) + I(dim)
 end
 
 @params struct ElementDefGradTensorKernel{T} <: AbstractFunction{T} # ------------------------------------------------------------------------------------------------------------[C7]
@@ -81,9 +82,6 @@ end
 function (f::ElementDefGradTensorKernel)(u::DisplacementResult) # ----------------------------------------------------------------------------------------------------------------[C8] ---- nifty
     @unpack E, ν, q_point, a, cellvalues = f
     ∇ϕ = Vector(shape_gradient(cellvalues, q_point, a))
-    # ϵ = (u.u .* ∇ϕ' .+ ∇ϕ .* u.u') ./ 2
-    # c1 = E * ν / (1 - ν^2) * sum(diag(ϵ))
-    # c2 = E * ν * (1 + ν)
     return u.u * ∇ϕ'
 end
 function ChainRulesCore.rrule(f::ElementDefGradTensorKernel, u::DisplacementResult)
