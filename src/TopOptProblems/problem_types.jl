@@ -719,7 +719,43 @@ end
 nnodespercell(p::RayProblem) = nnodespercell(p.rect_grid)
 getcloaddict(p::RayProblem) = p.loads
 
-@params struct JosephLoadCantilever{dim,T,N,M} <: StiffnessTopOptProblem{dim,T}
+"""
+```
+///**********************************->
+///*                                *->
+///*                                *-> disp
+///*                                *->
+///**********************************-> 
+
+
+@params struct TensionBar{dim, T, N, M} <: StiffnessTopOptProblem{dim, T}
+    rect_grid::RectilinearGrid{dim, T, N, M}
+    E::T
+    ν::T
+    ch::ConstraintHandler{<:DofHandler{dim, <:Cell{dim,N,M}, T}, T}
+    disp::T
+    black::AbstractVector
+    white::AbstractVector
+    varind::AbstractVector{Int}
+    metadata::Metadata
+end
+```
+
+- `dim`: dimension of the problem
+- `T`: number type for computations and coordinates
+- `N`: number of nodes in a cell of the grid
+- `M`: number of faces in a cell of the grid
+- `rect_grid`: a RectilinearGrid struct
+- `E`: Young's modulus
+- `ν`: Poisson's ration
+- `disp`: displacement over the right face of the beam (positive is right)
+- `ch`: a `Ferrite.ConstraintHandler` struct
+- `metadata`: Metadata having various cell-node-dof relationships
+- `black`: a `BitVector` of length equal to the number of elements where `black[e]` is 1 iff the `e`^th element must be part of the final design
+- `white`:  a `BitVector` of length equal to the number of elements where `white[e]` is 1 iff the `e`^th element must not be part of the final design
+- `varind`: an `AbstractVector{Int}` of length equal to the number of elements where `varind[e]` gives the index of the decision variable corresponding to element `e`. Because some elements can be fixed to be black or white, not every element has a decision variable associated.
+"""
+@params struct TensionBar{dim,T,N,M} <: StiffnessTopOptProblem{dim,T}
     rect_grid::RectilinearGrid{dim,T,N,M}
     E::T
     ν::T
@@ -731,21 +767,18 @@ getcloaddict(p::RayProblem) = p.loads
     metadata::Metadata
 end
 
-function Base.show(::IO, ::MIME{Symbol("text/plain")}, ::JosephLoadCantilever)
-    return println("TopOpt joseph load cantilever beam problem")
+function Base.show(::IO, ::MIME{Symbol("text/plain")}, ::TensionBar)
+    return println("TopOpt tension bar problem")
 end
 
-function JosephLoadCantilever(
+function TensionBar(
     ::Type{Val{CellType}},
     nels::NTuple{dim,Int},
     sizes::NTuple{dim},
-    E=1.0,
-    ν=0.3,
-    disp=1.0,
+    E,
+    ν,
+    disp,
 ) where {dim,CellType}
-    iseven(nels[2]) && (length(nels) < 3 || iseven(nels[3])) ||
-        throw("Grid does not have an even number of elements along the y and/or z axes.")
-
     _T = promote_type(eltype(sizes), typeof(E), typeof(ν), typeof(disp))
     if _T <: Integer
         T = Float64
@@ -767,9 +800,7 @@ function JosephLoadCantilever(
     if haskey(rect_grid.grid.nodesets, "disp_right")
         pop!(rect_grid.grid.nodesets, "disp_right")
     end
-    addnodeset!(
-        rect_grid.grid, "disp_right", x -> right(rect_grid, x)
-    )
+    addnodeset!(rect_grid.grid, "disp_right", x -> right(rect_grid, x))
 
     # Create displacement field u
     dh = DofHandler(rect_grid.grid)
@@ -784,13 +815,10 @@ function JosephLoadCantilever(
     ch = ConstraintHandler(dh)
 
     #dbc = Dirichlet(:u, getfaceset(rect_grid.grid, "fixed_all"), (x,t) -> zeros(T, dim), collect(1:dim))
-    dbc_left = Dirichlet(
-        :u, getnodeset(rect_grid.grid, "fixed_left"), (x, t) -> zeros(T, dim), collect(1:dim)
-    )
+    dbc_left = Dirichlet(:u, getnodeset(rect_grid.grid, "fixed_left"), (x, t) -> zeros(T, dim), collect(1:dim))
     add!(ch, dbc_left)
-    dbc_right = Dirichlet(
-        :u, getnodeset(rect_grid.grid, "disp_right"), (x, t) -> fill(T(disp), dim), collect(1:dim)
-    )
+    #dbc_right = Dirichlet(:u, getnodeset(rect_grid.grid, "disp_right"), (x, t) -> fill(T(disp), dim), collect(1:dim))
+    dbc_right = Dirichlet(:u, getnodeset(rect_grid.grid, "disp_right"), (x, t) -> T[disp; zeros(dim-1)], collect(1:dim))
     add!(ch, dbc_right)
     close!(ch)
     t = T(0)
@@ -808,9 +836,9 @@ function JosephLoadCantilever(
     black, white = find_black_and_white(dh)
     varind = find_varind(black, white)
 
-    return JosephLoadCantilever(
+    return TensionBar(
         rect_grid, E, ν, ch, disp, black, white, varind, metadata
     )
 end
 
-nnodespercell(p::Union{PointLoadCantilever,HalfMBB,JosephLoadCantilever}) = nnodespercell(p.rect_grid)
+nnodespercell(p::Union{PointLoadCantilever,HalfMBB,TensionBar}) = nnodespercell(p.rect_grid)

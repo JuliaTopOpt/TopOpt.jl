@@ -50,6 +50,6 @@ export RayProblem,
     save_mesh,
     RandomMagnitude,
     MultiLoad,
-    JosephLoadCantilever
+    TensionBar
 
 end # module
