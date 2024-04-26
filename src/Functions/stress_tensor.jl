@@ -83,8 +83,8 @@ function (f::ElementStressTensorKernel)(u::DisplacementResult)
     @unpack E, ν, q_point, a, cellvalues = f
     ∇ϕ = Vector(shape_gradient(cellvalues, q_point, a))
     ϵ = (u.u .* ∇ϕ' .+ ∇ϕ .* u.u') ./ 2
-    c1 = E * ν / (1 - ν^2) * sum(diag(ϵ))
-    c2 = E * ν * (1 + ν)
+    c1 = E * ν / ((1 + ν)*(1 - 2*ν)) * sum(diag(ϵ))
+    c2 = E / (1 + ν)
     return c1 * I + c2 * ϵ
 end
 function ChainRulesCore.rrule(f::ElementStressTensorKernel, u::DisplacementResult)
