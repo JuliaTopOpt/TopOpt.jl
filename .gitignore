@@ -15,3 +15,7 @@ Manifest.toml
 */__pycache__
 
 examples/benchmark/iterations
+
+*.ipynb
+*.jl
+*.vtu
