@@ -62,13 +62,14 @@ function (f::ElementDefGradTensor)(u::DisplacementResult; element_dofs=false) #-
     n_basefuncs = getnbasefunctions(st.cellvalues)
     n_quad = getnquadpoints(st.cellvalues)
     dim = TopOptProblems.getdim(st.problem)
+    V = sum(st.cellvalues.detJdV)
     return sum(map(1:n_quad) do  q_point
         dΩ = getdetJdV(st.cellvalues, q_point) 
         sum(map(1:n_basefuncs) do a   
             _u = cellu[dim * (a - 1) .+ (1:dim)]
             return tensor_kernel(f, q_point, a)(DisplacementResult(_u))
         end) * dΩ
-    end) + I(dim)
+    end) ./ V + I(dim)
 end
 
 @params struct ElementDefGradTensorKernel{T} <: AbstractFunction{T} # ------------------------------------------------------------------------------------------------------------[C7]
