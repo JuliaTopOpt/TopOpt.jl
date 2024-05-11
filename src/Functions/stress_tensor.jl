@@ -63,13 +63,17 @@ function (f::ElementStressTensor)(u::DisplacementResult; element_dofs=false)
     n_quad = getnquadpoints(st.cellvalues)
     dim = TopOptProblems.getdim(st.problem)
     V = sum(st.cellvalues.detJdV)
-    return sum(map(1:n_quad) do  q_point
-        dΩ = getdetJdV(st.cellvalues, q_point) 
-        sum(map(1:n_basefuncs) do a   
-            _u = cellu[dim * (a - 1) .+ (1:dim)]
-            return tensor_kernel(f, q_point, a)(DisplacementResult(_u))
-        end) * dΩ
-    end) ./ V
+    return sum(
+        map(1:n_quad) do q_point
+            dΩ = getdetJdV(st.cellvalues, q_point)
+            sum(
+                map(1:n_basefuncs) do a
+                    _u = cellu[dim * (a - 1) .+ (1:dim)]
+                    return tensor_kernel(f, q_point, a)(DisplacementResult(_u))
+                end,
+            ) * dΩ
+        end,
+    ) ./ V
 end
 
 @params struct ElementStressTensorKernel{T} <: AbstractFunction{T}
@@ -84,7 +88,7 @@ function (f::ElementStressTensorKernel)(u::DisplacementResult)
     @unpack E, ν, q_point, a, cellvalues = f
     ∇ϕ = Vector(shape_gradient(cellvalues, q_point, a))
     ϵ = (u.u .* ∇ϕ' .+ ∇ϕ .* u.u') ./ 2
-    c1 = E * ν / ((1 + ν)*(1 - 2*ν)) * sum(diag(ϵ))
+    c1 = E * ν / ((1 + ν) * (1 - 2 * ν)) * sum(diag(ϵ))
     c2 = E / (1 + ν)
     return c1 * I + c2 * ϵ
 end
