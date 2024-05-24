@@ -9,7 +9,15 @@ include("generate.jl")
 
 GENERATED_EXAMPLES = [
     joinpath("examples", f) for
-    f in ("simp.md", "beso.md", "geso.md", "csimp.md", "global_stress.md", "TOBS.md")
+    f in (
+        "simp.md",
+        "beso.md",
+        "geso.md", 
+        "csimp.md",
+        "global_stress.md",
+        "TOBS.md",
+        "RBTO.md",
+    )
 ]
 
 bib = CitationBibliography(joinpath(@__DIR__, "biblio", "ref.bib"))
