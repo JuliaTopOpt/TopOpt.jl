@@ -1,5 +1,7 @@
 # # Multimaterial RBTO example 
 
+# [Reliability-based topology optimization](https://link.springer.com/article/10.1007/s00158-010-0518-6) (RBTO) allows the search for an optimal design while considering uncertainty in the problem, such as material properties. In the following, an example of RBTO with two materials is developed. First, packages and basic problem definitions are needed.
+
 # Packages and definitions.
 
 using ReliabilityOptimization, Test, ChainRulesCore
