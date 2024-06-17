@@ -50,6 +50,7 @@ export RayProblem,
     save_mesh,
     RandomMagnitude,
     MultiLoad,
-    TensionBar
+    TensionBar,
+    TensionRoller
 
 end # module

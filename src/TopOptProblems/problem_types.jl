@@ -341,7 +341,6 @@ function HalfMBB(
     return HalfMBB(rect_grid, E, ν, ch, force, force_dof, black, white, varind, metadata)
 end
 
-#nnodespercell(p::Union{PointLoadCantilever,HalfMBB}) = nnodespercell(p.rect_grid)
 function getcloaddict(p::Union{PointLoadCantilever{dim,T},HalfMBB{dim,T}}) where {dim,T}
     f = T[0, -p.force, 0]
     fnode = Tuple(getnodeset(p.rect_grid.grid, "down_force"))[1]
@@ -716,7 +715,6 @@ function RayProblem(
 
     return RayProblem(rect_grid, 1.0, 0.3, ch, loadsdict, black, white, varind, metadata)
 end
-nnodespercell(p::RayProblem) = nnodespercell(p.rect_grid)
 getcloaddict(p::RayProblem) = p.loads
 
 """
@@ -794,7 +792,6 @@ function TensionBar(
     if haskey(rect_grid.grid.facesets, "fixed_left")
         pop!(rect_grid.grid.facesets, "fixed_left")
     end
-    #addfaceset!(rect_grid.grid, "fixed_all", x -> left(rect_grid, x));
     addnodeset!(rect_grid.grid, "fixed_left", x -> left(rect_grid, x))
 
     if haskey(rect_grid.grid.nodesets, "disp_right")
@@ -814,10 +811,8 @@ function TensionBar(
 
     ch = ConstraintHandler(dh)
 
-    #dbc = Dirichlet(:u, getfaceset(rect_grid.grid, "fixed_all"), (x,t) -> zeros(T, dim), collect(1:dim))
     dbc_left = Dirichlet(:u, getnodeset(rect_grid.grid, "fixed_left"), (x, t) -> zeros(T, dim), collect(1:dim))
     add!(ch, dbc_left)
-    #dbc_right = Dirichlet(:u, getnodeset(rect_grid.grid, "disp_right"), (x, t) -> fill(T(disp), dim), collect(1:dim))
     dbc_right = Dirichlet(:u, getnodeset(rect_grid.grid, "disp_right"), (x, t) -> T[disp; zeros(dim-1)], collect(1:dim))
     add!(ch, dbc_right)
     close!(ch)
@@ -826,9 +821,137 @@ function TensionBar(
 
     metadata = Metadata(dh)
 
-    #fnode = Tuple(getnodeset(rect_grid.grid, "down_force"))[1]
-    #node_dofs = metadata.node_dofs
-    #force_dof = node_dofs[2, fnode]
+    N = nnodespercell(rect_grid)
+    M = nfacespercell(rect_grid)
+
+    black, white = find_black_and_white(dh)
+    varind = find_varind(black, white)
+
+    return TensionBar(rect_grid, E, ν, ch, disp, black, white, varind, metadata)
+end
+
+"""
+```
+O**********************************->
+O*                                *->
+O*                                *-> disp x
+O*                                *->
+O**********************************-> 
+//
+
+@params struct TensionRoller{dim, T, N, M} <: StiffnessTopOptProblem{dim, T}
+    rect_grid::RectilinearGrid{dim, T, N, M}
+    E::T
+    ν::T
+    ch::ConstraintHandler{<:DofHandler{dim, <:Cell{dim,N,M}, T}, T}
+    disp::T
+    black::AbstractVector
+    white::AbstractVector
+    varind::AbstractVector{Int}
+    metadata::Metadata
+end
+```
+
+- `dim`: dimension of the problem
+- `T`: number type for computations and coordinates
+- `N`: number of nodes in a cell of the grid
+- `M`: number of faces in a cell of the grid
+- `rect_grid`: a RectilinearGrid struct
+- `E`: Young's modulus
+- `ν`: Poisson's ration
+- `disp`: displacement over the right face of the beam (positive is right)
+- `ch`: a `Ferrite.ConstraintHandler` struct
+- `metadata`: Metadata having various cell-node-dof relationships
+- `black`: a `BitVector` of length equal to the number of elements where `black[e]` is 1 iff the `e`^th element must be part of the final design
+- `white`:  a `BitVector` of length equal to the number of elements where `white[e]` is 1 iff the `e`^th element must not be part of the final design
+- `varind`: an `AbstractVector{Int}` of length equal to the number of elements where `varind[e]` gives the index of the decision variable corresponding to element `e`. Because some elements can be fixed to be black or white, not every element has a decision variable associated.
+"""
+@params struct TensionRoller{dim,T,N,M} <: StiffnessTopOptProblem{dim,T}
+    rect_grid::RectilinearGrid{dim,T,N,M}
+    E::T
+    ν::T
+    ch::ConstraintHandler{<:DofHandler{dim,<:Cell{dim,N,M},T},T}
+    disp::T
+    black::AbstractVector
+    white::AbstractVector
+    varind::AbstractVector{Int}
+    metadata::Metadata
+end
+
+function Base.show(::IO, ::MIME{Symbol("text/plain")}, ::TensionRoller)
+    return println("TopOpt tension bar problem with unconstrained y and z displacement at the grips")
+end
+
+function TensionRoller(
+    ::Type{Val{CellType}},
+    nels::NTuple{dim,Int},
+    sizes::NTuple{dim},
+    E,
+    ν,
+    disp,
+) where {dim,CellType}
+    _T = promote_type(eltype(sizes), typeof(E), typeof(ν), typeof(disp))
+    if _T <: Integer
+        T = Float64
+    else
+        T = _T
+    end
+    if CellType === :Linear || dim === 3
+        rect_grid = RectilinearGrid(Val{:Linear}, nels, T.(sizes))
+    else
+        rect_grid = RectilinearGrid(Val{:Quadratic}, nels, T.(sizes))
+    end
+
+    if haskey(rect_grid.grid.facesets, "fixed_left")
+        pop!(rect_grid.grid.facesets, "fixed_left")
+    end
+    addnodeset!(rect_grid.grid, "fixed_left", x -> left(rect_grid, x))
+
+    if haskey(rect_grid.grid.nodesets, "disp_right")
+        pop!(rect_grid.grid.nodesets, "disp_right")
+    end
+    addnodeset!(rect_grid.grid, "disp_right", x -> right(rect_grid, x))
+
+    if haskey(rect_grid.grid.nodesets, "fixed_pt1")
+        pop!(rect_grid.grid.nodesets, "fixed_pt1")
+    end
+    if haskey(rect_grid.grid.nodesets, "fixed_pt2")
+        pop!(rect_grid.grid.nodesets, "fixed_pt2")
+    end
+    if dim == 2
+        addnodeset!(rect_grid.grid, "fixed_pt1", x -> left(rect_grid, x) && bottom(rect_grid, x))
+    elseif dim == 3
+        addnodeset!(rect_grid.grid, "fixed_pt1", x -> left(rect_grid, x) && bottom(rect_grid, x) && front(rect_grid, x))
+        addnodeset!(rect_grid.grid, "fixed_pt2", x -> left(rect_grid, x) && bottom(rect_grid, x) && back(rect_grid, x))
+    end
+    
+    # Create displacement field u
+    dh = DofHandler(rect_grid.grid)
+    if CellType === :Linear || dim === 3
+        push!(dh, :u, dim) # Add a displacement field
+    else
+        ip = Lagrange{2,RefCube,2}()
+        push!(dh, :u, dim, ip) # Add a displacement field        
+    end
+    close!(dh)
+
+    ch = ConstraintHandler(dh)
+
+    dbc_left = Dirichlet(:u, getnodeset(rect_grid.grid, "fixed_left"), (x, t) -> zeros(T, 1), [1]) # set u1 to 0 for left face
+    add!(ch, dbc_left)
+    dbc_right = Dirichlet(:u, getnodeset(rect_grid.grid, "disp_right"), (x, t) -> T[disp], [1]) # set u1 to 'disp' for right face
+    add!(ch, dbc_right)
+    dbc_fixed_midpt1 = Dirichlet(:u, getnodeset(rect_grid.grid, "fixed_pt1"), (x, t) -> zeros(T, dim), collect(1:dim)) # fix left bottom (front) point to prevent translation in y
+    add!(ch, dbc_fixed_midpt1)
+    if dim == 3
+        dbc_fixed_midpt2 = Dirichlet(:u, getnodeset(rect_grid.grid, "fixed_pt2"), (x, t) -> zeros(T, 1), [2]) # set u2 = 0 for left bottom back point to prevent moment about x-axis
+        add!(ch, dbc_fixed_midpt2)
+    end
+    close!(ch)
+    t = T(0)
+    update!(ch, t)
+
+    metadata = Metadata(dh)
 
     N = nnodespercell(rect_grid)
     M = nfacespercell(rect_grid)
@@ -836,9 +959,7 @@ function TensionBar(
     black, white = find_black_and_white(dh)
     varind = find_varind(black, white)
 
-    return TensionBar(
-        rect_grid, E, ν, ch, disp, black, white, varind, metadata
-    )
+    return TensionRoller(rect_grid, E, ν, ch, disp, black, white, varind, metadata)
 end
 
-nnodespercell(p::Union{PointLoadCantilever,HalfMBB,TensionBar}) = nnodespercell(p.rect_grid)
+nnodespercell(p::Union{PointLoadCantilever,HalfMBB,RayProblem,TensionBar,TensionRoller}) = nnodespercell(p.rect_grid)
