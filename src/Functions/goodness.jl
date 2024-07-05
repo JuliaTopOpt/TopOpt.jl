@@ -1,82 +1,148 @@
-function FToK2AndK3(F::Vector{Matrix{Float64}})
-    k1_list=Float64[]
-    k2_list=Float64[]
-    k3_list=Float64[]
-    lambda_list=Float64[]
-    #Catches potential error of an empty F value
-    #if length(F)==0
-    #    throw("F is empty")
-    #end
+#= Orthogonal decomposition function to convert F to an invariant basis (K₁, K₂, K₃) for isotropic hyperelastic strain (Criscione JC et al. JMPS, 2000)
+K = FToK123(F) and K = orth_decomp(F) 
+In the current formulation orth_decomp is not autodiff compatible, but FToK123(F) ≈ orth_decomp(F)
+Benchmarking suggests that FToK123 is also about twice as fast as orth_decomp
+K is of dims a Vector{Vector{T}} of dim [1:3][1:nels]
+Outputs: K = [K₁ K₂ K₃] where each term is a vector of length nels =#
 
-    function Fto3by3(F)
-        return Vector{Matrix{Float64}}(map(eachindex(F)) do i
-            F_tmp = F[i]
-            if size(F_tmp) == (2, 2)
-                # Build an immutable 3x3 matrix from the 2x2 F_item
-                [F_tmp zeros(2, 1); 0 0 1]
-            elseif size(F_tmp) == (3, 3)
-                F_tmp
-            else
-                error("Unexpected deformation gradient size at index $l")
-            end
-        end)
-    end
-    F3by3 = Fto3by3(F) # 3 by 3
+function FToK123(F::AbstractMatrix{T}) where {T}
+    @assert size(F) == (3, 3)
+    K = Vector{T}(undef,3) 
+    g = Vector{T}(undef,3)
+      
+    C = transpose(F)*F  
+    λ = sqrt.(eigen(C).values)
 
-    for l in 1:length(F3by3)       
-        #Here begins calculations to get k1, k2, and k3
-        C=transpose(F3by3[l])*F3by3[l]  
-        #creates object R which holds eigenvalues and eigenvectors, which are then extracted
-        R=eigen(C)
-        lam2 = R.values
-        n = R.vectors
-
-        Q=n
-        g=[0.0,0.0,0.0]
-        lam=sqrt.(lam2)
-
-        #Tries to sort lam vector, and attempts to catch errors in trying to do so
-        #Not necessary 
-        # try
-        #     lam=sort([lam[1],lam[2],lam[3]],rev=true)
-        # catch
-        #     has_complex=false
-        #     for s in 1:3
-        #         if lam2[s]<0
-        #             has_complex=true
-        #         end
-        #     end
-        #     if has_complex==true
-        #         throw("Lambda values include complex numbers")
-        #     else 
-        #         throw("Lambda values cannot be sorted")
-        #     end
-        # end
-
-
-        kproduct=lam[1]*lam[2]*lam[3]
-        k1=log(lam[1]*lam[2]*lam[3])
-
-        # for r in 1:3
-        #     g[r] = float(log(lam[r])-(k1/3))
-        # end
-
-        g1=float(log(lam[1])-(k1/3))
-        g2=float(log(lam[2])-(k1/3))
-        g3=float(log(lam[3])-(k1/3))
-        g=[g1,g2,g3]
-
-        k2=sqrt(g[1]^2+g[2]^2+g[3]^2)
-        k3=3*sqrt(6)*g[1]*g[2]*g[3]/(k2^3)
-
-        #Adds k1, k2, and k3 valus for element to the lists of values of all elements
-        k1_list=vcat(k1_list,k1)
-        k2_list=vcat(k2_list,k2)
-        k3_list= vcat(k3_list,k3)
-
-    end
-    return(map(Float64,k1_list),map(Float64,k2_list),map(Float64,k3_list))
+    K[1] = log(λ[1]*λ[2]*λ[3])
+    g = log.(λ) .- (K[1]/3)
+    K[2] = sqrt(sum(g.^2))
+    K[3] = 3*sqrt(6)*g[1]*g[2]*g[3]/(K[2]^3)
+    return K
 end
+
+function FToK123(F::AbstractVector{<:AbstractMatrix{T}}) where {T}
+    nels = length(F)
+    Kel = map(i -> FToK123(F[i]), 1:nels)
+    K = [[Kel[i][j] for i in 1:nels] for j in 1:3]
+    return K
+end
+
+function orth_decomp(F::AbstractMatrix{T}) where {T}
+    @assert size(F) == (3, 3)
+    K = Vector{T}(undef,3)
+    
+    J = det(F)
+    B = F*transpose(F)
+    V = sqrt(B)
+    η = log(V)
+    devη = η - (1/3)*(tr(η))*Matrix(I,3,3)
+
+    K[1] = log(J)
+    K[2] = sqrt(tr(devη^2))
+    Φ = devη/K[2]
+    K[3] = 3*sqrt(6)*det(Φ)
+    return K # warning: final K values may need to be modified to ensure they are within physical limits (e.g., K₃ ∈ [-1 1])
+end
+
+function orth_decomp(F::AbstractVector{<:AbstractMatrix{T}}) where {T}
+    nels = length(F)
+    Kel =  map(i -> orth_decomp(F[i]), 1:nels)
+    K = [[Kel[i][j] for i in 1:nels] for j in 1:3] # transposing the vector of vectors to yield K[1:3][el]
+    return K
+end
+
+#= Function that produces stress and kinematic terms used to construct the virtual fields
+stressTerms, kinTerms = sensitivityFieldFunctions(:ConstitutiveModel) 
+stressTerms = fns[1]
+kinTerms = fns[2]
+Outputs: stressTerms[i,j] (i.e. ∂²W(K₁,K₂,K₃)/∂Kᵢ∂ξⱼ) and kinTerms[i,j,k] (this is equivalent to d^3W/dK_i/dXi_j/dK_kk) =#
+
+function sensitivityFieldFncs(matlModel::Symbol)
+    @variables α K[1:3] # K[1:3] are the orthogonal strain invariants
+    λᵅ = Array{Any}(undef,3)
+    λᵅ[1] = exp(α*K[2]*sqrt(2/3)*sin((-asin(K[3])+2π)/3))
+    λᵅ[2] = exp(α*K[2]*sqrt(2/3)*sin((-asin(K[3]))/3))
+    λᵅ[3] = exp(α*K[2]*sqrt(2/3)*sin((-asin(K[3])-2π)/3))
+
+    # construct the work function for called constitutive model, W
+    Ī₁ = sum(substitute(λᵅ[i], Dict(α => 2)) for i in 1:3)
+    bulk = (exp(K[1])-1)^2 # equivalent to (J-1)²
+    if matlModel in (:MooneyRivlin, :MR) # note: bulk modulus (κ) must be the final parameter in ξ for all matlModel
+        ξ = @variables C₁₀ C₀₁ κ
+        Ī₂ = sum(substitute(λᵅ[i], Dict(α => -2)) for i in 1:3)
+        W = C₁₀*(Ī₁-3) + C₀₁*(Ī₂-3) + (κ/2)*bulk
+    elseif matlModel in (:NeoHookean, :NH)
+        ξ = @variables µ κ
+        W = (µ/2)*(Ī₁-3) + (κ/2)*bulk
+    elseif matlModel in (:Yeoh2, :Y2)
+        ξ = @variables C₁₀ C₂₀ κ
+        W = C₁₀*(Ī₁-3) + C₂₀*(Ī₁-3)^2 + (κ/2)*bulk
+    elseif matlModel in (:Yeoh3, :Y3)
+        ξ = @variables C₁₀ C₂₀ C₃₀ κ
+        W = C₁₀*(Ī₁-3) + C₂₀*(Ī₁-3)^2 + C₃₀*(Ī₁-3)^3 + (κ/2)*bulk
+    end
+
+    # solve for terms used to in stress and kinematic field calculations
+    stressTerms = Array{Any}(undef,length(K),length(ξ))
+    for i = 1:length(K)
+        for j = 1:length(ξ)
+            ∂Kᵢ∂ξⱼ = Differential(K[i])*Differential(ξ[j]) # ∂²/∂Kᵢ∂ξⱼ
+            if i == 1 && j == length(ξ)
+                stressTerms[i,j] = eval(build_function(expand_derivatives(∂Kᵢ∂ξⱼ(W)),K[1])) # ∂²W(K₁)/∂K₁∂κ
+            elseif i != 1 && j != length(ξ)
+                stressTerms[i,j] = eval(build_function(expand_derivatives(∂Kᵢ∂ξⱼ(W)),K[2],K[3])) # ∂²W(K₂,K₃)/∂Kᵢ∂ξⱼ
+            end
+        end
+    end
+    kinTerms = Array{Any}(undef,length(K),length(ξ),length(K))
+    for i = 1:length(K)
+        for j = 1:length(ξ)
+            for k = 1:length(K)
+                ∂Kᵢ∂ξⱼ∂Kₖ = Differential(K[i])*Differential(ξ[j])*Differential(K[k]) # ∂³/∂Kᵢ∂ξⱼ∂Kₖ
+                if i == 1 && j == length(ξ) && k == 1 
+                    kinTerms[i,j,k] = eval(build_function(expand_derivatives(∂Kᵢ∂ξⱼ∂Kₖ(W)),K[1])) # ∂³W(K₁)/∂²K₁∂κ
+                elseif i != 1 && j != length(ξ) && k != 1 
+                    kinTerms[i,j,k] = eval(build_function(expand_derivatives(∂Kᵢ∂ξⱼ∂Kₖ(W)),K[2],K[3])) # ∂³W(K₂,K₃)/∂Kᵢ∂ξⱼ∂Kₖ
+                end
+            end
+        end
+    end
+    return stressTerms, kinTerms
+end
+
+# Function that produces a volume-weighted element-wise sensitivity metric
+# sens_IVW = sensitivity_PVW(x,K,V0,stressTerms,kinTerms,ξ)
+    # x is the 
+    # K₁, K₂, and K₃ are all vectors of size [nels] (acquired from FtoK123 or orth_decomp)
+    # Where matl_props is a vector, e.g. for Mooney-Rivlin matl_props could be [0.04 0.001 0.5]
+    # Vol is a vector of size [nels] that contains information of the volume for each element
+    # stressTerms and kinTerms are acquired from sensitivityFieldFunctions
+        # This function only needs to be run once!
+
+# Outputs
+# sens_IVW (sensitivity metric across all elements)
+
+function sensitivityPVW(x,K,V0,stressTerms,kinTerms,ξ)
+    # Stress term evaluation at K
+    ξᵢ∂²W_∂K₁∂ξᵢ = ξ[end]*stressTerms[1,end].(K[1]) 
+    ξᵢ∂²W_∂K₂∂ξᵢ = sum(map(i -> ξ[i]*stressTerms[2,i].(K[2],K[3]), 1:length(ξ)-1))
+    ξᵢ∂²W_∂K₃∂ξᵢ = sum(map(i -> ξ[i]*stressTerms[3,i].(K[2],K[3]), 1:length(ξ)-1))
+
+    # Internal virtual work (IVW) evaluation
+    IVW_bar = zeros(length(x))
+    for i = 1:length(ξ) # ξᵢ
+        for j = 1:length(K) # Kⱼ
+            if i == length(ξ) && j == 1
+                IVW_bar += 3*V0.*(x.^2).*ξᵢ∂²W_∂K₁∂ξᵢ.*kinTerms[1,i,j].(K[1])
+            elseif i != length(ξ) && j != 1 
+                IVW_bar += V0.*(x.^2).*(ξᵢ∂²W_∂K₂∂ξᵢ.*kinTerms[2,i,j].(K[2],K[3]) + (9*(ones(length(x))-(K[3].^2))./(K[2].^2)).*ξᵢ∂²W_∂K₃∂ξᵢ.*kinTerms[3,i,j].(K[2],K[3]))
+            end
+        end
+    end
+    return IVW_bar/sum(V0.*x) # Volume-weighted element-wise sensitivity metric of all IVW fields
+end
+
+# NOTE: Functions below are legacy material. They should work properly, however, they are less well vetted than the sensitivity related functions.
 
 function Entropy_Calc(h::Matrix{Int64})
     #Calcuates entropy based on h matrix given
@@ -153,9 +219,6 @@ function Entropy(F::Vector{Vector{Matrix{Float64}}},n_bins::Int64=100,offset::Fl
        return (map(Float64,Entropy_Value_List),map(Float64,ElementWise_Entropy_List))
    end
    
-   
-
-
    function Entropy(F::Vector{Matrix{Float64}},n_bins::Int64=100,offset::Float64=0.005,make_plot::Bool=false,save_plot::Bool=false,saveplot_name::String="",saveplot_path::String="")
     #Creates a vector of entropy values, in the case multiple time signatures are given. If not and F is of length one, returns a vector of length one  
     F=[F]
@@ -219,7 +282,6 @@ function Entropy(F::Vector{Vector{Matrix{Float64}}},n_bins::Int64=100,offset::Fl
     return (map(Float64,Entropy_Value_List),map.(Float64,ElementWise_Entropy_List))
 end
 
-
 function SMu_gen(k2_list::Vector{Float64},k3_list::Vector{Float64},alpha::Float64=2.0,mu::Float64=1.0)
     #Takes in a list of k2 and k3 values, and returns both total and element-wise sensitivity in terms of mu
     SMu_List=[]
@@ -261,15 +323,4 @@ function SAlpha_gen(k2_list::Vector{Float64},k3_list::Vector{Float64},alpha::Flo
     end
     Sum=sum(SAlpha_List)
     return (map(Float64,SAlpha_List)), Sum
-end
-
-# function Sensitivity(F::Vector{Matrix{Float64}},alpha::Float64=2.0,mu::Float64=1.0)
-
-function Sensitivity(x,dispfun,defgrad)
-    sim1_u= dispfun(x)
-    F = defgrad(sim1_u);
-    k1,k2,k3=FToK2AndK3(F)
-    S=SAlpha_gen(k2,k3);
-    Sens_Corrected=ceil(x).*S[1]
-    return Sens_Corrected
 end

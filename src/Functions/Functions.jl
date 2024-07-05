@@ -14,6 +14,7 @@ using Nonconvex: Nonconvex
 using Flux
 using AbstractDifferentiation: AbstractDifferentiation
 using StatsBase, Statistics 
+using Symbolics  
 using Plots:heatmap  
 const AD = AbstractDifferentiation
 
@@ -49,14 +50,15 @@ export Volume,
     element_densities,
     tounit,
     DefGradTensor,
-    GoodnessTensor, 
     ElementDefGradTensor, 
-    ElementGoodnessTensor, 
-    FToK2AndK3,
+    FToK123,
+    orth_decomp,
+    sensitivityFieldFncs,
+    sensitivityPVW,
     Entropy_Calc,
     Entropy,
     SMu_gen, 
-    SAlpha_gen 
+    SAlpha_gen
 
 const to = TimerOutput()
 
