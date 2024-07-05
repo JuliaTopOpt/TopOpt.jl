@@ -51,6 +51,16 @@ function ChainRulesCore.rrule(::typeof(reinit!), st::ElementDefGradTensor, celli
     return reinit!(st, cellidx), _ -> (NoTangent(), NoTangent(), NoTangent())
 end
 
+function Fto3by3(F::Matrix{T}) where {T} 
+    if size(F) == (2,2)
+        F = [F zeros(T,2); zeros(T,1,2) T(1)] # plane strain assumption dictates that F₃₃ = 1
+    elseif size(F) == (3,3)
+        F
+    else
+        error("Invalid dimensions of deformation gradient tensor")
+    end
+end
+
 function (f::ElementDefGradTensor)(u::DisplacementResult; element_dofs=false) #---------------------------------------------------------------------------------[C4] summing from C8
     st = f.defgrad_tensor
     reinit!(f, f.cellidx) # refreshing f
@@ -63,13 +73,18 @@ function (f::ElementDefGradTensor)(u::DisplacementResult; element_dofs=false) #-
     n_quad = getnquadpoints(st.cellvalues)
     dim = TopOptProblems.getdim(st.problem)
     V = sum(st.cellvalues.detJdV)
-    return sum(map(1:n_quad) do  q_point
+    F = sum(map(1:n_quad) do  q_point
         dΩ = getdetJdV(st.cellvalues, q_point) 
         sum(map(1:n_basefuncs) do a   
             _u = cellu[dim * (a - 1) .+ (1:dim)]
             return tensor_kernel(f, q_point, a)(DisplacementResult(_u))
         end) * dΩ
     end) ./ V + I(dim)
+    
+    if dim == 2
+        F = Fto3by3(F) 
+    end
+    return F
 end
 
 @params struct ElementDefGradTensorKernel{T} <: AbstractFunction{T} # ------------------------------------------------------------------------------------------------------------[C7]
