@@ -7,17 +7,16 @@ Outputs: K = [K₁ K₂ K₃] where each term is a vector of length nels =#
 
 function FToK123(F::AbstractMatrix{T}) where {T}
     @assert size(F) == (3, 3)
-    K = Vector{T}(undef,3) 
     g = Vector{T}(undef,3)
       
     C = transpose(F)*F  
     λ = sqrt.(eigen(C).values)
 
-    K[1] = log(λ[1]*λ[2]*λ[3])
-    g = log.(λ) .- (K[1]/3)
-    K[2] = sqrt(sum(g.^2))
-    K[3] = 3*sqrt(6)*g[1]*g[2]*g[3]/(K[2]^3)
-    return K
+    K₁ = log(λ[1]*λ[2]*λ[3])
+    g = log.(λ) .- (K₁/3)
+    K₂ = sqrt(sum(g.^2))
+    K₃ = 3*sqrt(6)*g[1]*g[2]*g[3]/(K₂^3)
+    return [K₁ K₂ K₃]
 end
 
 function FToK123(F::AbstractVector{<:AbstractMatrix{T}}) where {T}
