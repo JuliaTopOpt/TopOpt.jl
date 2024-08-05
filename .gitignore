@@ -17,5 +17,7 @@ Manifest.toml
 examples/benchmark/iterations
 
 *.ipynb
-*.jl
+/*.jl
 *.vtu
+*.png
+*.zip
