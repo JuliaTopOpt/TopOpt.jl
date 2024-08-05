@@ -12,10 +12,12 @@ export AbstractFEASolver,
     DirectDisplacementSolver,
     PCGDisplacementSolver,
     StaticMatrixFreeDisplacementSolver,
+    HyperelasticDisplacementSolver,
     Displacement,
     Direct,
     CG,
     MatrixFree,
+    Hyperelastic,
     FEASolver,
     Assembly,
     DefaultCriteria,
@@ -34,6 +36,7 @@ include("direct_displacement_solver.jl")
 include("assembly_cg_displacement_solvers.jl")
 include("matrix_free_cg_displacement_solvers.jl")
 include("matrix_free_apply_bcs.jl")
+include("iterative_hyperelastic_solver.jl")
 include("simulate.jl")
 include("solvers_api.jl")
 

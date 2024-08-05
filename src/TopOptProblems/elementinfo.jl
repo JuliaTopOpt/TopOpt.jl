@@ -38,6 +38,21 @@ An instance of the `ElementFEAInfo` type stores element information such as:
     cells::Any
 end
 
+@params struct ElementFEAInfo_hyperelastic{dim,T}
+    Kes::AbstractVector{<:AbstractMatrix{T}}
+    fes::AbstractVector{<:AbstractVector{T}}
+    ges::AbstractVector{<:AbstractVector{T}}
+    fixedload::AbstractVector{T}
+    cellvolumes::AbstractVector{T}
+    cellvalues::CellValues{dim,T,<:Any}
+    facevalues::FaceValues{<:Any,T,<:Any}
+    metadata::Metadata
+    black::AbstractVector
+    white::AbstractVector
+    varind::AbstractVector{Int}
+    cells::Any
+end
+
 function Base.show(io::Base.IO, ::MIME"text/plain", efeainfo::ElementFEAInfo)
     return print(
         io,
@@ -75,6 +90,39 @@ function ElementFEAInfo(
         element_Kes,
         weights,
         fixedload,
+        cellvolumes,
+        cellvalues,
+        facevalues,
+        sp.metadata,
+        sp.black,
+        sp.white,
+        sp.varind,
+        cells,
+    )
+end
+
+function ElementFEAInfo_hyperelastic(
+    mp, sp, u, quad_order=2, ::Type{Val{mat_type}}=Val{:Static}
+) where {mat_type}
+    Kes, weights, dloads, ges, cellvalues, facevalues = make_Kes_and_fes_hyperelastic(
+        mp, sp, u, quad_order, Val{mat_type}
+    )
+    element_Kes = convert( # make sure this isn't going to symmetric
+        Vector{<:ElementMatrix},
+        Kes;
+        bc_dofs=sp.ch.prescribed_dofs,
+        dof_cells=sp.metadata.dof_cells,
+    )
+    fixedload = Vector(make_cload_hyperelastic(sp))
+    assemble_f!(fixedload, sp, dloads) # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! GUT FEELING
+    #assemble_f!(fixedload, sp, ges) # it would seem that this was an issue
+    cellvolumes = get_cell_volumes(sp, cellvalues)
+    cells = sp.ch.dh.grid.cells
+    return ElementFEAInfo_hyperelastic(
+        element_Kes,
+        weights,
+        ges,
+        fixedload, # this is g version now!!!!!!!!
         cellvolumes,
         cellvalues,
         facevalues,
@@ -144,6 +192,17 @@ function GlobalFEAInfo(K, f)
     chol = cholesky(Matrix{eltype(K)}(I, size(K)...))
     qrfact = qr(Matrix{eltype(K)}(I, size(K)...))
     return GlobalFEAInfo(K, f, chol, qrfact)
+end
+
+@params mutable struct GlobalFEAInfo_hyperelastic{T}
+    K::AbstractMatrix{T}
+    g::AbstractVector{T}
+end
+
+function GlobalFEAInfo_hyperelastic(sp::StiffnessTopOptProblem)
+    K = initialize_K(sp; symmetric=false)
+    g = initialize_f(sp)
+    return GlobalFEAInfo_hyperelastic(K, g)
 end
 
 """

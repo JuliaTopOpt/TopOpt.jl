@@ -65,14 +65,15 @@ function Base.convert(
 ) where {N,T,TM<:StaticMatrix{N,N,T}}
     fill_matrix = zero(TM)
     fill_mask = ones(SVector{N,Bool})
-    element_Kes = fill(ElementMatrix(fill_matrix, fill_mask), length(Kes))
+    element_Kes = fill(ElementMatrix(fill_matrix, fill_mask), length(Kes)) #lil different
     for i in bc_dofs
         d_cells = dof_cells[i]
         for c in d_cells
             (cellid, localdof) = c
             Ke = element_Kes[cellid]
             new_Ke = @set Ke.mask[localdof] = false
-            element_Kes[cellid] = Symmetric(new_Ke)
+            #element_Kes[cellid] = Symmetric(new_Ke) ######################################### DOOOOOOOOOOOOO NOOTTTTTTTTTTTTTTTTTTT FORGETTTTTTTT
+            element_Kes[cellid] = new_Ke
         end
     end
     for e in 1:length(element_Kes)
