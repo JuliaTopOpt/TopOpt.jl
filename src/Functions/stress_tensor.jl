@@ -55,10 +55,15 @@ function (f::ElementStressTensor)(u::DisplacementResult; element_dofs=false)
     st = f.stress_tensor
     reinit!(f, f.cellidx)
     if element_dofs
-        cellu = u.u
+        return _element_stres_tensor(f, u)
     else
-        cellu = u.u[copy(st.global_dofs)]
+        return _element_stress_tensor(f, DisplacementResult(u.u[copy(st.global_dofs)]))
     end
+end
+
+function _element_stress_tensor(f::ElementStressTensor, u::DisplacementResult)
+    st = f.stress_tensor
+    cellu = u.u
     n_basefuncs = getnbasefunctions(st.cellvalues)
     n_quad = getnquadpoints(st.cellvalues)
     dim = TopOptProblems.getdim(st.problem)
@@ -74,6 +79,18 @@ function (f::ElementStressTensor)(u::DisplacementResult; element_dofs=false)
             ) * dΩ
         end,
     ) ./ V
+end
+
+function ChainRulesCore.rrule(
+    ::typeof(_element_stress_tensor), f::ElementStressTensor, u::DisplacementResult
+)
+    J = ForwardDiff.jacobian(
+        vec ∘ (u -> _element_stress_tensor(f, DisplacementResult(u))), u.u
+    )
+    return _element_stress_tensor(f, u),
+    Δ -> begin
+        NoTangent(), NoTangent(), Tangent{typeof(u)}(; u=J' * vec(Δ))
+    end
 end
 
 struct ElementStressTensorKernel{T,Tc} <: AbstractFunction{T}
