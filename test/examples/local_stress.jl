@@ -39,7 +39,7 @@ threshold = 3 * maximum(stress(filter(PseudoDensities(x0))))
 x = copy(x0)
 x .= 1
 for p in 1.0:1.0:3.0
-    global x
+    global x, solver, stress, filter, volfrac, obj, constr, alg, options, model, r
     penalty = TopOpt.PowerPenalty(p)
     # Define a finite element solver
     solver = FEASolver(Direct, problem; xmin=xmin, penalty=penalty)
