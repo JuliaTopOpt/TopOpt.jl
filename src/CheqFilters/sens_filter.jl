@@ -1,7 +1,9 @@
-@params struct SensFilter{_filtering,T,TV<:AbstractVector{T}} <: AbstractSensFilter
+struct SensFilter{
+    _filtering,T,TV<:AbstractVector{T},TE<:ElementFEAInfo,TM<:FilterMetadata
+} <: AbstractSensFilter
     filtering::Val{_filtering}
-    elementinfo::ElementFEAInfo
-    metadata::FilterMetadata
+    elementinfo::TE
+    metadata::TM
     rmin::T
     nodal_grad::TV
     last_grad::TV

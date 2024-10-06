@@ -1,7 +1,9 @@
-@params mutable struct AssembleK{T} <: AbstractFunction{T}
-    problem::StiffnessTopOptProblem
-    K::AbstractMatrix{T}
-    global_dofs::AbstractVector{<:Integer} # preallocated dof vector for a cell
+mutable struct AssembleK{
+    T,Tp<:StiffnessTopOptProblem,TK<:AbstractMatrix{T},Tg<:AbstractVector{<:Integer}
+} <: AbstractFunction{T}
+    problem::Tp
+    K::TK
+    global_dofs::Tg # preallocated dof vector for a cell
 end
 
 function Base.show(::IO, ::MIME{Symbol("text/plain")}, ::AssembleK)

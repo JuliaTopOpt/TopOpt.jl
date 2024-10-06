@@ -1,7 +1,9 @@
-@params mutable struct Volume{T} <: AbstractFunction{T}
-    solver::AbstractFEASolver
-    cellvolumes::AbstractVector{T}
-    grad::AbstractVector{T}
+mutable struct Volume{
+    T,Ts<:AbstractFEASolver,Tc<:AbstractVector{T},Tg<:AbstractVector{T}
+} <: AbstractFunction{T}
+    solver::Ts
+    cellvolumes::Tc
+    grad::Tg
     total_volume::T
     fixed_volume::T
     fraction::Bool

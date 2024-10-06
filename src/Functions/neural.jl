@@ -17,12 +17,12 @@ abstract type AbstractMLModel end
 # in -- params --> out -> filter -> compliance === loss
 # params -- in --> out -> filter -> compliance === loss
 
-@params struct NeuralNetwork <: AbstractMLModel
-    model::Any
-    init_params::Any
-    params_to_out::Any
-    in_to_out::Any
-    centroids::Any
+struct NeuralNetwork{Tm,Ti1,Tp,Ti2,Tc} <: AbstractMLModel
+    model::Tm
+    init_params::Ti1
+    params_to_out::Tp
+    in_to_out::Ti2
+    centroids::Tc
 end
 function NeuralNetwork(nn_model, input_coords::AbstractVector)
     f = x -> nn_model(x)[1]
@@ -49,15 +49,15 @@ function NeuralNetwork(nn_model, problem::AbstractTopOptProblem; scale=true)
     return NeuralNetwork(nn_model, scentroids)
 end
 
-@params struct PredictFunction <: Function
-    model::AbstractMLModel
+struct PredictFunction{Tm<:AbstractMLModel} <: Function
+    model::Tm
 end
 function (pf::PredictFunction)(in)
     return PseudoDensities(pf.model.in_to_out(in))
 end
 
-@params struct TrainFunction <: Function
-    model::AbstractMLModel
+struct TrainFunction{Tm<:AbstractMLModel} <: Function
+    model::Tm
 end
 function (tf::TrainFunction)(p)
     return PseudoDensities(tf.model.params_to_out(p))

@@ -16,12 +16,12 @@ An instance of the `Metadata` type stores ... information such as:
 - `node_dofs`: a `ndofspernode x nnodes` Matrix that maps `[localdofidx, node_idx]` into dof indices
     node_dofs[j,nodeidx] = j-th dof of node `nodeidx`
 """
-@params struct Metadata
-    cell_dofs::Any
-    dof_cells::Any
+struct Metadata{Tc,Td,Tn1,Tn2}
+    cell_dofs::Tc
+    dof_cells::Td
     #node_first_cells::TTupleVec
-    node_cells::Any
-    node_dofs::Any
+    node_cells::Tn1
+    node_dofs::Tn2
 end
 
 function Metadata(dh::DofHandler{dim}) where {dim}

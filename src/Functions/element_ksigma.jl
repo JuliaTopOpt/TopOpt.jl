@@ -1,13 +1,21 @@
 using TopOpt.TopOptProblems: getE
 using TopOpt.TrussTopOptProblems: truss_reinit!
 
-@params mutable struct TrussElementKσ{T} <: AbstractFunction{T}
-    problem::TrussProblem
-    Kσes::AbstractVector{<:AbstractMatrix{T}}
-    EALγ_s::AbstractVector{<:AbstractVector{T}}
-    δmat_s::AbstractVector{<:AbstractMatrix{T}}
-    L_s::AbstractVector{T}
-    global_dofs::AbstractVector{<:Integer}
+mutable struct TrussElementKσ{
+    T,
+    Tp<:TrussProblem,
+    TK<:AbstractVector{<:AbstractMatrix{T}},
+    TE<:AbstractVector{<:AbstractVector{T}},
+    Td<:AbstractVector{<:AbstractMatrix{T}},
+    TL<:AbstractVector{T},
+    Tg<:AbstractVector{<:Integer},
+} <: AbstractFunction{T}
+    problem::Tp
+    Kσes::TK
+    EALγ_s::TE
+    δmat_s::Td
+    L_s::TL
+    global_dofs::Tg
 end
 
 function Base.show(::IO, ::MIME{Symbol("text/plain")}, ::TrussElementKσ)

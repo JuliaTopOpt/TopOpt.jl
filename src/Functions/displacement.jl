@@ -1,8 +1,14 @@
-@params mutable struct Displacement{T} <: AbstractFunction{T}
-    u::AbstractVector{T} # displacement vector
-    dudx_tmp::AbstractVector # directional derivative
-    solver::AbstractDisplacementSolver
-    global_dofs::AbstractVector{<:Integer}
+mutable struct Displacement{
+    T,
+    Tu<:AbstractVector{T},
+    Td<:AbstractVector,
+    Ts<:AbstractDisplacementSolver,
+    Tg<:AbstractVector{<:Integer},
+} <: AbstractFunction{T}
+    u::Tu # displacement vector
+    dudx_tmp::Td # directional derivative
+    solver::Ts
+    global_dofs::Tg
     fevals::Int
     maxfevals::Int
 end

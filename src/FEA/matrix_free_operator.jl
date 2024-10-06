@@ -1,8 +1,8 @@
 abstract type AbstractMatrixOperator{Tconv} end
 
-@params struct MatrixOperator{Tconv} <: AbstractMatrixOperator{Tconv}
-    K::Any
-    f::Any
+struct MatrixOperator{Tconv,TK,Tf} <: AbstractMatrixOperator{Tconv}
+    K::TK
+    f::Tf
     conv::Tconv
 end
 function Base.show(::IO, ::MIME{Symbol("text/plain")}, ::MatrixOperator)
@@ -13,16 +13,27 @@ Base.size(op::MatrixOperator, i...) = size(op.K, i...)
 Base.eltype(op::MatrixOperator) = eltype(op.K)
 LinearAlgebra.:*(op::MatrixOperator, b) = mul!(similar(b), op.K, b)
 
-@params struct MatrixFreeOperator{Tconv,T,dim} <: AbstractMatrixOperator{Tconv}
-    f::AbstractVector{T}
-    elementinfo::ElementFEAInfo{dim,T}
+struct MatrixFreeOperator{
+    Tconv,
+    T,
+    dim,
+    Tf<:AbstractVector{T},
+    Te<:ElementFEAInfo{dim,T},
+    Tv<:AbstractVector{T},
+    Tx,
+    Tf1,
+    Tf2,
+    Tp,
+} <: AbstractMatrixOperator{Tconv}
+    f::Tf
+    elementinfo::Te
     meandiag::T
-    vars::AbstractVector{T}
-    xes::Any
-    fixed_dofs::Any
-    free_dofs::Any
+    vars::Tv
+    xes::Tx
+    fixed_dofs::Tf1
+    free_dofs::Tf2
     xmin::T
-    penalty::Any
+    penalty::Tp
     conv::Tconv
 end
 function Base.show(::IO, ::MIME{Symbol("text/plain")}, ::MatrixFreeOperator)

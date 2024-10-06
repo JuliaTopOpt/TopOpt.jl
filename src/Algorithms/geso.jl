@@ -1,5 +1,5 @@
-@params mutable struct GESOResult{T}
-    topology::AbstractVector{T}
+mutable struct GESOResult{T,Tt<:AbstractVector{T}}
+    topology::Tt
     objval::T
     change::T
     converged::Bool

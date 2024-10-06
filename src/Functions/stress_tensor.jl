@@ -1,9 +1,9 @@
-@params struct StressTensor{T} <: AbstractFunction{T}
-    problem::Any
-    solver::Any
+struct StressTensor{T,Tp,Ts,Tc1,Tc2} <: AbstractFunction{T}
+    problem::Tp
+    solver::Ts
     global_dofs::Vector{Int}
-    cellvalues::Any
-    cells::Any
+    cellvalues::Tc1
+    cells::Tc2
     _::T
 end
 function StressTensor(solver)
@@ -33,10 +33,10 @@ function (f::StressTensor)(dofs::DisplacementResult)
     end
 end
 
-@params struct ElementStressTensor{T} <: AbstractFunction{T}
-    stress_tensor::StressTensor{T}
-    cell::Any
-    cellidx::Any
+struct ElementStressTensor{T,Ts<:StressTensor{T},Tc1,Tc2} <: AbstractFunction{T}
+    stress_tensor::Ts
+    cell::Tc1
+    cellidx::Tc2
 end
 function Base.getindex(f::StressTensor{T}, cellidx) where {T}
     reinit!(f, cellidx)
@@ -63,28 +63,32 @@ function (f::ElementStressTensor)(u::DisplacementResult; element_dofs=false)
     n_quad = getnquadpoints(st.cellvalues)
     dim = TopOptProblems.getdim(st.problem)
     V = sum(st.cellvalues.detJdV)
-    return sum(map(1:n_quad) do  q_point
-        dΩ = getdetJdV(st.cellvalues, q_point) 
-        sum(map(1:n_basefuncs) do a   
-            _u = cellu[dim * (a - 1) .+ (1:dim)]
-            return tensor_kernel(f, q_point, a)(DisplacementResult(_u))
-        end) * dΩ
-    end) ./ V
+    return sum(
+        map(1:n_quad) do q_point
+            dΩ = getdetJdV(st.cellvalues, q_point)
+            sum(
+                map(1:n_basefuncs) do a
+                    _u = cellu[dim * (a - 1) .+ (1:dim)]
+                    return tensor_kernel(f, q_point, a)(DisplacementResult(_u))
+                end,
+            ) * dΩ
+        end,
+    ) ./ V
 end
 
-@params struct ElementStressTensorKernel{T} <: AbstractFunction{T}
+struct ElementStressTensorKernel{T,Tc} <: AbstractFunction{T}
     E::T
     ν::T
     q_point::Int
     a::Int
-    cellvalues::Any
+    cellvalues::Tc
     dim::Int
 end
 function (f::ElementStressTensorKernel)(u::DisplacementResult)
     @unpack E, ν, q_point, a, cellvalues = f
     ∇ϕ = Vector(shape_gradient(cellvalues, q_point, a))
     ϵ = (u.u .* ∇ϕ' .+ ∇ϕ .* u.u') ./ 2
-    c1 = E * ν / ((1 + ν)*(1 - 2*ν)) * sum(diag(ϵ))
+    c1 = E * ν / ((1 + ν) * (1 - 2 * ν)) * sum(diag(ϵ))
     c2 = E / (1 + ν)
     return c1 * I + c2 * ϵ
 end

@@ -29,8 +29,8 @@ A type that represents a rectilinear grid with corner points `corners`.
 - `black_cells`: cells fixed to have material during optimization
 - `constant_cells`: cells fixed to be either void or have material during optimization
 """
-@params struct RectilinearGrid{dim,T,N,M,TG<:Ferrite.Grid{dim,<:Ferrite.Cell{dim,N,M},T}} <:
-               AbstractGrid{dim,T}
+struct RectilinearGrid{dim,T,N,M,TG<:Ferrite.Grid{dim,<:Ferrite.Cell{dim,N,M},T}} <:
+       AbstractGrid{dim,T}
     grid::TG
     nels::NTuple{dim,Int}
     sizes::NTuple{dim,T}

@@ -24,18 +24,32 @@ An instance of the `ElementFEAInfo` type stores element information such as:
 - `varind`: a vector such that `varind[i]` gives the decision variable index of element `i`.
 - `cells`: the cell connectivities.
 """
-@params struct ElementFEAInfo{dim,T}
-    Kes::AbstractVector{<:AbstractMatrix{T}}
-    fes::AbstractVector{<:AbstractVector{T}}
-    fixedload::AbstractVector{T}
-    cellvolumes::AbstractVector{T}
-    cellvalues::CellValues{dim,T,<:Any}
-    facevalues::FaceValues{<:Any,T,<:Any}
-    metadata::Metadata
-    black::AbstractVector
-    white::AbstractVector
-    varind::AbstractVector{Int}
-    cells::Any
+struct ElementFEAInfo{
+    dim,
+    T,
+    TK<:AbstractVector{<:AbstractMatrix{T}},
+    Tf1<:AbstractVector{<:AbstractVector{T}},
+    Tf2<:AbstractVector{T},
+    Tc1<:AbstractVector{T},
+    Tc2<:CellValues{dim,T,<:Any},
+    Tf3<:FaceValues{<:Any,T,<:Any},
+    Tm<:Metadata,
+    Tb<:AbstractVector,
+    Tw<:AbstractVector,
+    Tv<:AbstractVector{Int},
+    Tc3<:Any,
+}
+    Kes::TK
+    fes::Tf1
+    fixedload::Tf2
+    cellvolumes::Tc1
+    cellvalues::Tc2
+    facevalues::Tf3
+    metadata::Tm
+    black::Tb
+    white::Tw
+    varind::Tv
+    cells::Tc3
 end
 
 function Base.show(io::Base.IO, ::MIME"text/plain", efeainfo::ElementFEAInfo)
@@ -95,11 +109,11 @@ end
 
 An instance of `GlobalFEAInfo` hosts the global stiffness matrix `K`, the load vector `f` and the cholesky decomposition of the `K`, `cholK`.
 """
-@params mutable struct GlobalFEAInfo{T}
-    K::AbstractMatrix{T}
-    f::AbstractVector{T}
-    cholK::Any
-    qrK::Any
+mutable struct GlobalFEAInfo{T,TK<:AbstractMatrix{T},Tf<:AbstractVector{T},Tc,Tq}
+    K::TK
+    f::Tf
+    cholK::Tc
+    qrK::Tq
 end
 function Base.show(::IO, ::MIME{Symbol("text/plain")}, ::GlobalFEAInfo)
     return println("TopOpt global FEA information")
