@@ -77,4 +77,4 @@ f = visualize(
     vector_linewidth=3,
     vector_arrowsize=0.5,
 )
-savefig("result.png", _f)
+save("result.png", _f)
