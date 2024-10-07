@@ -1,6 +1,8 @@
 using GeometryBasics: GeometryBasics
 using GeometryTypes: GeometryTypes
-using ..TopOptProblems: getdh
+using ..TopOptProblems:
+    getdh, AbstractTopOptProblem, StiffnessTopOptProblem, QuadraticHexahedron
+using Ferrite, VTKDataTypes
 
 """
 map Ferrite cell type to VTKDataTypes cell type

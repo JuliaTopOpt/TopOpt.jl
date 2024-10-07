@@ -77,7 +77,6 @@ end
 # Need to run `using Pkg; Pkg.add(["Makie", "GLMakie"])` first
 # ```julia
 # using Makie, GLMakie
-# using TopOpt.TopOptProblems.Visualization: visualize
 # fig = visualize(problem; topology = x, default_exagg_scale = 0.07,
 #     scale_range = 10.0, vector_linewidth = 3, vector_arrowsize = 0.5,
 # )

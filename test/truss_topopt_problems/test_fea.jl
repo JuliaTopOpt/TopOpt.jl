@@ -9,7 +9,6 @@ using TopOpt.TopOptProblems:
 using TopOpt.TrussTopOptProblems: getA, default_quad_order, compute_local_axes
 # if get(ENV, "CI", nothing) != "true"
 #     import Makie
-#     using TopOpt.TrussTopOptProblems.TrussVisualization: visualize
 # end
 
 include("utils.jl")

@@ -1,6 +1,5 @@
 using TopOpt, LinearAlgebra, StatsFuns
 # using Makie, GLMakie
-# using TopOpt.TrussTopOptProblems.TrussVisualization: visualize
 
 Nonconvex.@load Juniper
 

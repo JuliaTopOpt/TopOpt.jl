@@ -1,7 +1,7 @@
 module TopOpt
 
 const PENALTY_BEFORE_INTERPOLATION = true
-using Requires, Reexport, ChainRulesCore
+using Reexport, ChainRulesCore
 
 @reexport using Nonconvex, NonconvexMMA, NonconvexSemidefinite, NonconvexPercival
 
@@ -49,6 +49,8 @@ export PseudoDensities
 # Utilities
 include(joinpath("Utilities", "Utilities.jl"))
 using .Utilities
+
+function visualize end
 
 # Topopology optimization problem definitions
 include(joinpath("TopOptProblems", "TopOptProblems.jl"))
@@ -121,5 +123,6 @@ export TopOpt,
     MMA02,
     HeavisideProjection,
     SigmoidProjection,
-    ProjectedPenalty
+    ProjectedPenalty,
+    visualize
 end

@@ -29,7 +29,6 @@ Input JSON file name "testfile2.json"
 
 using TopOpt
 #using Makie, GLMakie
-#using TopOpt.TrussTopOptProblems.TrussVisualization: visualize
 #using ColorSchemes
 
 @testset "TrussStress" begin

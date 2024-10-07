@@ -5,7 +5,6 @@ using TopOpt.TrussTopOptProblems: load_truss_json, load_truss_geo
 using Base.Iterators
 # if get(ENV, "CI", nothing) != "true"
 #     import Makie
-#     @eval using TopOpt.TrussTopOptProblems.TrussVisualization: visualize
 # end
 
 ins_dir = joinpath(@__DIR__, "instances", "ground_meshes");

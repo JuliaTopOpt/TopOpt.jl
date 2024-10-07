@@ -36,7 +36,6 @@ result = geso(x0)
 # Need to run `using Pkg; Pkg.add(["Makie", "GLMakie"])` first
 # ```julia
 # using Makie, GLMakie
-# using TopOpt.TopOptProblems.Visualization: visualize
 # fig = visualize(problem; topology = result.topology)
 # Makie.display(fig)
 # ```

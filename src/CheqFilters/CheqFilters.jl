@@ -1,6 +1,6 @@
 module CheqFilters
 
-using ..Utilities, Ferrite, Requires
+using ..Utilities, Ferrite
 using ..FEA, Statistics
 using ..TopOpt: TopOpt, ElementFEAInfo, PseudoDensities
 import ..TopOpt: PENALTY_BEFORE_INTERPOLATION

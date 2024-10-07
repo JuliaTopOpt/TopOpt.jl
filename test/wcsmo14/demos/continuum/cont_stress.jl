@@ -2,7 +2,6 @@ module ContStressDemo
 
 using TopOpt, LinearAlgebra, StatsFuns
 # using Makie, GLMakie
-# using TopOpt.TopOptProblems.Visualization: visualize
 
 E = 1.0 # Young’s modulus
 v = 0.3 # Poisson’s ratio

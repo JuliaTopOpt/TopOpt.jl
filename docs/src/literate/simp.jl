@@ -60,7 +60,6 @@ r = optimize(model, alg, x0; options)
 # Need to run `using Pkg; Pkg.add(["Makie", "GLMakie"])` first
 # ```julia
 # using Makie, GLMakie
-# using TopOpt.TopOptProblems.Visualization: visualize
 # fig = visualize(
 #     problem; topology = r.minimizer,
 #     default_exagg_scale = 0.07, scale_range = 10.0,

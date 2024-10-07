@@ -4,7 +4,7 @@ using ..TopOpt: dim, TopOpt, PENALTY_BEFORE_INTERPOLATION, PseudoDensities
 using ..TopOptProblems, ..TrussTopOptProblems
 using ..TopOptProblems: initialize_K, getdh
 using ..FEA, ..CheqFilters
-using ..Utilities, ForwardDiff, LinearAlgebra, Requires
+using ..Utilities, ForwardDiff, LinearAlgebra
 using ..TrussTopOptProblems: getA, compute_local_axes
 
 using Parameters: @unpack

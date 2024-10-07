@@ -1,7 +1,6 @@
 using TopOpt
 Nonconvex.@load Ipopt
 # import Makie, GLMakie
-# using TopOpt.TopOptProblems.Visualization: visualize
 
 using Suppressor
 

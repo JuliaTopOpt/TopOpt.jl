@@ -128,6 +128,5 @@ tf(res2.minimizer)
 using Makie, CairoMakie
 
 topology = filter(tf(res2.minimizer))
-using TopOpt.TopOptProblems.Visualization: visualize
 visualize(problem; topology)
 =#

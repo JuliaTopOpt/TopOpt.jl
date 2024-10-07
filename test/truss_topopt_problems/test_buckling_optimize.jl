@@ -79,7 +79,6 @@ gm_ins_dir = joinpath(@__DIR__, "instances", "ground_meshes");
 #     @test smallest_pos_eigval >= 1.0
 
 #     # using Makie
-#     # using TopOpt.TrussTopOptProblems.TrussVisualization: visualize
 #     # fig = visualize(problem; topology=r.minimizer)
 # end
 
@@ -184,7 +183,6 @@ gm_ins_dir = joinpath(@__DIR__, "instances", "ground_meshes");
 
     # using Makie
     # import GLMakie
-    # using TopOpt.TrussTopOptProblems.TrussVisualization: visualize
 
     # fig = visualize(problem; topology=x0)
     # Makie.display(fig)

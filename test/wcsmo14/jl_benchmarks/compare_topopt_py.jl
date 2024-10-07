@@ -1,6 +1,5 @@
 using TopOpt
 # import Makie, GLMakie
-# using TopOpt.TopOptProblems.Visualization: visualize
 
 using TimerOutputs
 using Suppressor

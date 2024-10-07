@@ -2,7 +2,6 @@ module TrussComplianceDemo2D2
 
 using TopOpt, LinearAlgebra, StatsFuns
 #using Makie, GLMakie
-#using TopOpt.TrussTopOptProblems.TrussVisualization: visualize
 
 # 2D
 ndim = 2

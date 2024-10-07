@@ -2,7 +2,6 @@ module TrussComplianceDemo3D1
 
 using TopOpt, LinearAlgebra, StatsFuns
 # using Makie, GLMakie
-# using TopOpt.TrussTopOptProblems.TrussVisualization: visualize
 
 # 3D
 ndim = 3

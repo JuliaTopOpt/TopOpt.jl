@@ -2,7 +2,6 @@
 using TopOpt, LinearAlgebra, StatsFuns, Test
 using StatsFuns: logsumexp
 # using Makie, CairoMakie
-# using TopOpt.TopOptProblems.Visualization: visualize
 
 E = 1.0 # Young’s modulus
 v = 0.3 # Poisson’s ratio
