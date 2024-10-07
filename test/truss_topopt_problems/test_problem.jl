@@ -82,7 +82,7 @@ end
     fig = visualize(
         problem;
         u=solver.u,
-        topology=result.topology,
+        topology=result.minimizer,
         vector_arrowsize=0.1,
         vector_linewidth=0.8,
         default_exagg_scale=ndim == 3 ? 1.0 : 0.01,
