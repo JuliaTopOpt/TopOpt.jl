@@ -69,7 +69,7 @@ end
 
 s = stress(filter(PseudoDensities(x)))
 @test (maximum(s) - threshold) / threshold < 0.01
-f = visualize(
+fig = visualize(
     problem;
     topology=filter(PseudoDensities(x)),
     default_exagg_scale=0.07,
@@ -77,4 +77,4 @@ f = visualize(
     vector_linewidth=3,
     vector_arrowsize=0.5,
 )
-save("result.png", _f)
+save("result.png", fig)
