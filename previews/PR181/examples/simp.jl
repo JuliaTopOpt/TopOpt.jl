@@ -34,4 +34,21 @@ r = optimize(model, alg, x0; options)
 
 @show obj(r.minimizer)
 
+using Makie
+using CairoMakie
+
+fig = visualize(
+    problem;
+    topology=r.minimizer,
+    default_exagg_scale=0.07,
+    scale_range=10.0,
+    vector_linewidth=3,
+    vector_arrowsize=0.5,
+)
+Makie.display(fig)
+
+using Makie, GeometryBasics
+result_mesh = GeometryBasics.Mesh(problem, r.minimizer);
+Makie.mesh(result_mesh)
+
 # This file was generated using Literate.jl, https://github.com/fredrikekre/Literate.jl

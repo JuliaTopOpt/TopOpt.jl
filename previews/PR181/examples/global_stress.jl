@@ -50,4 +50,10 @@ r = optimize(model, alg, x0; options)
 @show obj(r.minimizer)
 @show constr(r.minimizer)
 
+using Makie
+using CairoMakie
+
+fig = visualize(problem; topology=r.minimizer)
+Makie.display(fig)
+
 # This file was generated using Literate.jl, https://github.com/fredrikekre/Literate.jl

@@ -60,4 +60,17 @@ end
 @show obj(x)
 @show constr(x)
 
+using Makie
+using CairoMakie
+
+fig = visualize(
+    problem;
+    topology=x,
+    default_exagg_scale=0.07,
+    scale_range=10.0,
+    vector_linewidth=3,
+    vector_arrowsize=0.5,
+)
+Makie.display(fig)
+
 # This file was generated using Literate.jl, https://github.com/fredrikekre/Literate.jl
