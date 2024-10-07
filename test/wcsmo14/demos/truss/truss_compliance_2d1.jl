@@ -1,7 +1,9 @@
 module TrussComplianceDemo2D1
 
 using TopOpt, LinearAlgebra, StatsFuns
-#using Makie, GLMakie
+using Makie
+using CairoMakie
+# using GLMakie
 
 # 2D
 ndim = 2
@@ -46,10 +48,7 @@ TopOpt.setpenalty!(solver, p)
 
 @show obj(r.minimizer)
 @show constr(r.minimizer)
-#fig = visualize(
-#    problem; solver.u, topology = r.minimizer,
-#    default_exagg_scale=0.0
-#)
-#Makie.display(fig)
+fig = visualize(problem; solver.u, topology=r.minimizer, default_exagg_scale=0.0)
+Makie.display(fig)
 
 end

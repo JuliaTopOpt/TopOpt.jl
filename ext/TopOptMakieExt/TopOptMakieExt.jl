@@ -6,7 +6,7 @@ using Makie: DataAspect, Axis, LScene, SliderGrid, linesegments!, Point2f0
 using Makie.GeometryBasics
 using ColorSchemes
 using GeometryBasics: GLTriangleFace
-import TopOpt
+using TopOpt: TopOpt
 using TopOpt.TopOptProblems: getcloaddict, boundingbox, getdim, StiffnessTopOptProblem
 using TopOpt.TrussTopOptProblems: TrussProblem
 using Ferrite
