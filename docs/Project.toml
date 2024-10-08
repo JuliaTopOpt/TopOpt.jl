@@ -1,10 +1,13 @@
 [deps]
+CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
 Cbc = "9961bab8-2fa3-5c5a-9d89-47fab24efd76"
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
 DocumenterCitations = "daee34ce-89f3-4625-b898-19384cb65244"
+GeometryBasics = "5c1252a2-5f33-56bf-86c9-59e7332b4326"
 JSON = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 Literate = "98b081ad-f1c9-55d3-8b20-4c87d4299306"
+Makie = "ee78f7c6-11fb-53f2-987a-cfe4a2b5a57a"
 Nonconvex = "01bcebdf-4d21-426d-b5c4-6132c1619978"
 NonconvexTOBS = "6c0b5230-d4c9-466e-bfd4-b31e6272ab65"
 StatsFuns = "4c63d2b9-4356-54db-8cca-17b64c39e42c"

@@ -1,6 +1,7 @@
 using TopOpt
-# import Makie, GLMakie
-# using TopOpt.TopOptProblems.Visualization: visualize
+using Makie
+using CairoMakie
+# using GLMakie
 
 using TimerOutputs
 
@@ -63,8 +64,15 @@ show(to)
 @show obj(r.minimizer)
 @show constr(r.minimizer)
 
-# # # Visualize the result using Makie.jl
-# fig = visualize(problem; topology=r.minimizer, 
-#     default_exagg_scale=0.07, scale_range=10.0, vector_linewidth=3, vector_arrowsize=0.005, 
-#     default_support_scale=0.01, default_load_scale=0.01)
-# Makie.display(fig)
+# Visualize the result using Makie.jl
+fig = visualize(
+    problem;
+    topology=r.minimizer,
+    default_exagg_scale=0.07,
+    scale_range=10.0,
+    vector_linewidth=3,
+    vector_arrowsize=0.005,
+    default_support_scale=0.01,
+    default_load_scale=0.01,
+)
+Makie.display(fig)

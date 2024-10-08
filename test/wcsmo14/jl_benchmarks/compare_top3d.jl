@@ -1,7 +1,8 @@
 using TopOpt
 Nonconvex.@load Ipopt
-# import Makie, GLMakie
-# using TopOpt.TopOptProblems.Visualization: visualize
+using Makie
+using CairoMakie
+# using GLMakie
 
 using Suppressor
 
@@ -77,9 +78,15 @@ open("jl-top3d.matlab_$(nels).txt", "w") do io
     write(io, output)
 end
 
-# # # Visualize the result using Makie.jl
-# fig = visualize(problem; topology=r.minimizer,
-#     default_exagg_scale=0.07, scale_range=10.0, vector_linewidth=3, vector_arrowsize=0.5)
-# Makie.display(fig)
+# Visualize the result using Makie.jl
+fig = visualize(
+    problem;
+    topology=r.minimizer,
+    default_exagg_scale=0.07,
+    scale_range=10.0,
+    vector_linewidth=3,
+    vector_arrowsize=0.5,
+)
+Makie.display(fig)
 
-# Makie.save("jl-top3d.matlab__$(nels).png", fig)
+Makie.save("jl-top3d.matlab__$(nels).png", fig)

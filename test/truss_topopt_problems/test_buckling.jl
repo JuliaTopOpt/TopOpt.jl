@@ -135,6 +135,5 @@ gm_ins_dir = joinpath(@__DIR__, "instances", "ground_meshes");
 #     # lines!(tip_displacement[:,1], load_parameters.*P_val, color = :blue, linewidth = 3)
 #     # fig
 
-#     # using TopOpt.TrussTopOptProblems.TrussVisualization: visualize
 #     # fig = visualize(problem; u=u1)
 # end # end test set

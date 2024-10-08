@@ -1,7 +1,7 @@
 module TopOpt
 
 const PENALTY_BEFORE_INTERPOLATION = true
-using Requires, Reexport, ChainRulesCore
+using Reexport, ChainRulesCore
 
 @reexport using Nonconvex, NonconvexMMA, NonconvexSemidefinite, NonconvexPercival
 
@@ -49,6 +49,12 @@ export PseudoDensities
 # Utilities
 include(joinpath("Utilities", "Utilities.jl"))
 using .Utilities
+
+function visualize(arg::T; kwargs...) where {T}
+    return error(
+        "`visualize` is not defined for input type `$T`. This may be because the input to the function is incorrect or because you forgot to load `Makie` in your code. You can load `Makie` with `using Makie`. To see the available methods of `visualize` and their documentation, you can run `? visualize` in the Julia REPL.",
+    )
+end
 
 # Topopology optimization problem definitions
 include(joinpath("TopOptProblems", "TopOptProblems.jl"))
@@ -121,5 +127,6 @@ export TopOpt,
     MMA02,
     HeavisideProjection,
     SigmoidProjection,
-    ProjectedPenalty
+    ProjectedPenalty,
+    visualize
 end

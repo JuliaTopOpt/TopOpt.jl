@@ -6,6 +6,10 @@ using NonconvexIpopt
 using TopOpt
 using Arpack
 
+using Makie
+using CairoMakie
+# using GLMakie
+
 fea_ins_dir = joinpath(@__DIR__, "instances", "fea_examples");
 gm_ins_dir = joinpath(@__DIR__, "instances", "ground_meshes");
 
@@ -78,8 +82,6 @@ gm_ins_dir = joinpath(@__DIR__, "instances", "ground_meshes");
 #     smallest_pos_eigval = 1/sparse_eigvals[1]
 #     @test smallest_pos_eigval >= 1.0
 
-#     # using Makie
-#     # using TopOpt.TrussTopOptProblems.TrussVisualization: visualize
 #     # fig = visualize(problem; topology=r.minimizer)
 # end
 
@@ -182,13 +184,9 @@ gm_ins_dir = joinpath(@__DIR__, "instances", "ground_meshes");
     @test 0 < minimum(ev2) < 0.02
     @test maximum(ev2) ≈ 3250 rtol = 0.001
 
-    # using Makie
-    # import GLMakie
-    # using TopOpt.TrussTopOptProblems.TrussVisualization: visualize
+    fig = visualize(problem; topology=x0)
+    Makie.display(fig)
 
-    # fig = visualize(problem; topology=x0)
-    # Makie.display(fig)
-
-    # fig = visualize(problem; topology=r2.minimizer)
-    # Makie.display(fig)
+    fig = visualize(problem; topology=r2.minimizer)
+    Makie.display(fig)
 end

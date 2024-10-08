@@ -124,10 +124,9 @@ Zygote.gradient(constr, p0)
 
 tf(res2.minimizer)
 
-#=
-using Makie, CairoMakie
+using Makie
+using CairoMakie
+# using GLMakie
 
 topology = filter(tf(res2.minimizer))
-using TopOpt.TopOptProblems.Visualization: visualize
 visualize(problem; topology)
-=#

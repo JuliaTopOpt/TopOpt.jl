@@ -1,6 +1,7 @@
 using TopOpt, LinearAlgebra, StatsFuns
-# using Makie, GLMakie
-# using TopOpt.TrussTopOptProblems.TrussVisualization: visualize
+using Makie
+using CairoMakie
+# using GLMakie
 
 Nonconvex.@load Juniper
 
@@ -42,8 +43,5 @@ TopOpt.setpenalty!(solver, p)
 
 @show obj(r.minimizer)
 @show constr(r.minimizer)
-# fig = visualize(
-#     problem; solver.u, topology = r.minimizer,
-#     default_exagg_scale=0.0
-# )
-# Makie.display(fig)
+fig = visualize(problem; solver.u, topology=r.minimizer, default_exagg_scale=0.0)
+Makie.display(fig)

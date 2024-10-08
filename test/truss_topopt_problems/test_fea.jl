@@ -7,10 +7,9 @@ using TopOpt
 using TopOpt.TopOptProblems:
     boundingbox, nnodespercell, getgeomorder, getmetadata, getdh, getE, getdim
 using TopOpt.TrussTopOptProblems: getA, default_quad_order, compute_local_axes
-# if get(ENV, "CI", nothing) != "true"
-#     import Makie
-#     using TopOpt.TrussTopOptProblems.TrussVisualization: visualize
-# end
+using Makie
+using CairoMakie
+# using GLMakie
 
 include("utils.jl")
 
@@ -74,11 +73,8 @@ ins_dir = joinpath(@__DIR__, "instances", "fea_examples");
     solver = FEASolver(Direct, problem)
     solver()
 
-    # if get(ENV, "CI", nothing) != "true"
-    #     ## TODO plot analysis result with
-    #     fig = visualize(problem; u=solver.u)
-    #     Makie.display(fig)
-    # end
+    fig = visualize(problem; u=solver.u)
+    Makie.display(fig)
 
     # we use kN for force and m for length
     # thus, pressure/modulus is in kN/m
