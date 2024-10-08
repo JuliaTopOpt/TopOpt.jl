@@ -17,4 +17,10 @@ beso = BESO(comp, volfrac, 0.5, sensfilter)
 x0 = ones(length(solver.vars))
 result = beso(x0)
 
+using Makie
+using CairoMakie
+
+fig = visualize(problem; topology=result.topology)
+Makie.display(fig)
+
 # This file was generated using Literate.jl, https://github.com/fredrikekre/Literate.jl

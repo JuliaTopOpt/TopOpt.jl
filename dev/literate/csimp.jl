@@ -74,15 +74,19 @@ end
 @show constr(x)
 
 # ### (Optional) Visualize the result using Makie.jl
-# Need to run `using Pkg; Pkg.add(["Makie", "GLMakie"])` first
-# ```julia
-# using Makie, GLMakie
-# using TopOpt.TopOptProblems.Visualization: visualize
-# fig = visualize(problem; topology = x, default_exagg_scale = 0.07,
-#     scale_range = 10.0, vector_linewidth = 3, vector_arrowsize = 0.5,
-# )
-# Makie.display(fig)
-# ```
+# Need to run `using Pkg; Pkg.add("Makie")` first and either `Pkg.add("CairoMakie")` or `Pkg.add("GLMakie")`
+using Makie
+using CairoMakie
+# alternatively, `using GLMakie`
+fig = visualize(
+    problem;
+    topology=x,
+    default_exagg_scale=0.07,
+    scale_range=10.0,
+    vector_linewidth=3,
+    vector_arrowsize=0.5,
+)
+Makie.display(fig)
 
 #md # ## [Plain Program](@id csimp-plain-program)
 #md #
