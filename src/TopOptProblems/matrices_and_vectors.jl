@@ -103,7 +103,7 @@ function make_Kes_and_fes(problem, quad_order, ::Type{Val{mat_type}}) where {mat
     return Kes, weights, dloads, cellvalues, facevalues
 end
 
-function make_Kes_and_fes_hyperelastic(mp, problem, u, quad_order, ::Type{Val{mat_type}}) where {mat_type}
+function make_Kes_and_fes_hyperelastic(mp, problem, u, quad_order, ::Type{Val{mat_type}}, ts) where {mat_type}
     T = floattype(problem)
     dim = getdim(problem)
     geom_order = getgeomorder(problem)
@@ -150,10 +150,10 @@ function make_Kes_and_fes_hyperelastic(mp, problem, u, quad_order, ::Type{Val{ma
         cellvalues,
         cellvaluesV,
     )
-    dloads, ges2 = _make_dloads_hyperelastic(weights, problem, facevalues, facevaluesV, ges)
-    ges3 = ges + ges2
+    dloads, ges2 = _make_dloads_hyperelastic(weights, problem, facevalues, facevaluesV, ges, ts)
+    ges += ges2
 
-    return Kes, weights, dloads, ges3, cellvalues, facevalues # switched to ges2 to solve error where 2x ges2 with no contribution from dload
+    return Kes, weights, dloads, ges, cellvalues, facevalues # switched to ges2 to solve error where 2x ges2 with no contribution from dload
 end
 
 const g = [0.0, 9.81, 0.0] # N/kg or m/s^2
@@ -265,9 +265,14 @@ end
 function Ψ(C, mp) # JGB: add to .ipynb
     μ = mp.μ
     λ = mp.λ
-    Ic = tr(C)
+    I1 = tr(C)
     J = sqrt(det(C))
-    return μ / 2 * (Ic - 3) - μ * log(J) + λ / 2 * log(J)^2
+    return μ / 2 * (I1 - 3) - μ * log(J) + λ / 2 * (J - 1)^2 # Ferrite.jl version
+    #return μ / 2 * (Ic - 3 - 2 * log(J)) + λ / 2 * (J-1)^2 # Bower version
+    #Cnew = @MArray C
+    #I1bar = Ic*J^-2/3
+    #I1bar = Ic*det(C)^-1/3
+    #return μ / 2 * (I1bar - 3) + 0.5*(λ + 2μ/3)*(J-1)^2 # ABAQUS/Bower version
 end
 
 function constitutive_driver(C, mp) # JGB removed type ::NeoHook from mp
@@ -482,7 +487,7 @@ function _make_dloads(fes, problem, facevalues)
     return dloads
 end
 
-function _make_dloads_hyperelastic(fes, problem, facevalues, facevaluesV, ges)
+function _make_dloads_hyperelastic(fes, problem, facevalues, facevaluesV, ges, ts)
     dim = getdim(problem)
     N = nnodespercell(problem)
     T = floattype(problem)
@@ -502,7 +507,7 @@ function _make_dloads_hyperelastic(fes, problem, facevalues, facevaluesV, ges)
             ges2[i] .= 0
         end
     end
-    pressuredict = getpressuredict(problem)
+    pressuredict = getpressuredict(problem; ts=ts)
     dh = getdh(problem)
     grid = dh.grid
     boundary_matrix = grid.boundary_matrix
@@ -571,10 +576,10 @@ function make_cload(problem)
     return sparsevec(inds, vals, ndofs(dh))
 end
 
-function make_cload_hyperelastic(problem)
+function make_cload_hyperelastic(problem,ts)
     T = floattype(problem)
     dim = getdim(problem)
-    cloads = getcloaddict(problem)
+    cloads = getcloaddict(problem; ts=ts)
     dh = getdh(problem)
     metadata = getmetadata(problem)
     node_dofs = metadata.node_dofs

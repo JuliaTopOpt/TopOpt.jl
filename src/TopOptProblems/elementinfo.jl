@@ -102,10 +102,10 @@ function ElementFEAInfo(
 end
 
 function ElementFEAInfo_hyperelastic(
-    mp, sp, u, quad_order=2, ::Type{Val{mat_type}}=Val{:Static}
+    mp, sp, u, quad_order=2, ::Type{Val{mat_type}}=Val{:Static}, nearlyincompressible=false; ts = 1.0,
 ) where {mat_type}
     Kes, weights, dloads, ges, cellvalues, facevalues = make_Kes_and_fes_hyperelastic(
-        mp, sp, u, quad_order, Val{mat_type}
+        mp, sp, u, quad_order, Val{mat_type}, ts
     )
     element_Kes = convert( # make sure this isn't going to symmetric
         Vector{<:ElementMatrix},
@@ -113,7 +113,7 @@ function ElementFEAInfo_hyperelastic(
         bc_dofs=sp.ch.prescribed_dofs,
         dof_cells=sp.metadata.dof_cells,
     )
-    fixedload = Vector(make_cload_hyperelastic(sp))
+    fixedload = Vector(make_cload_hyperelastic(sp,ts))
     assemble_f!(fixedload, sp, dloads) # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! GUT FEELING
     #assemble_f!(fixedload, sp, ges) # it would seem that this was an issue
     cellvolumes = get_cell_volumes(sp, cellvalues)

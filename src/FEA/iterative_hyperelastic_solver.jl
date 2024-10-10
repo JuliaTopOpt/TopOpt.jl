@@ -1,6 +1,6 @@
-abstract type AbstractHyperelasticSolver <: AbstractDisplacementSolver end
+abstract type AbstractHyperelasticSolver <: AbstractFEASolver end
 
-mutable struct HyperelasticDisplacementSolver{
+mutable struct HyperelasticCompressibleDisplacementSolver{
     T,
     dim,
     TP1<:AbstractPenalty{T},
@@ -14,119 +14,158 @@ mutable struct HyperelasticDisplacementSolver{
     globalinfo::TG
     elementinfo::TE
     u::Tu # JGB: u --> u0
-    lhs::Tu
-    rhs::Tu
     vars::Tu
     penalty::TP1
     prev_penalty::TP1
     xmin::T
-    qr::Bool
+    tsteps::Int
+    ntsteps::Int
 end
-function Base.show(::IO, ::MIME{Symbol("text/plain")}, x::HyperelasticDisplacementSolver)
-    return println("TopOpt hyperelastic solver")
+mutable struct HyperelasticNearlyIncompressibleDisplacementSolver{
+    T,
+    dim,
+    TP1<:AbstractPenalty{T},
+    TP2<:StiffnessTopOptProblem{dim,T},
+    TG<:GlobalFEAInfo_hyperelastic{T},
+    TE<:ElementFEAInfo_hyperelastic{dim,T},
+    Tu<:AbstractVector{T},
+} <: AbstractHyperelasticSolver
+    mp
+    problem::TP2
+    globalinfo::TG
+    elementinfo::TE
+    u::Tu # JGB: u --> u0
+    vars::Tu
+    penalty::TP1
+    prev_penalty::TP1
+    xmin::T
+    tsteps::Int
+    ntsteps::Int
+end
+function Base.show(::IO, ::MIME{Symbol("text/plain")}, x::HyperelasticCompressibleDisplacementSolver)
+    return println("TopOpt compressible hyperelastic solver")
+end
+function Base.show(::IO, ::MIME{Symbol("text/plain")}, x::HyperelasticNearlyIncompressibleDisplacementSolver)
+    return println("TopOpt nearly-incompressible hyperelastic solver")
 end
 function HyperelasticDisplacementSolver(
     mp, # JGB: add type later
     sp::StiffnessTopOptProblem{dim,T}; # JGB: eventually add ::HyperelaticParam type
-    xmin=T(1) / 1000,
+    xmin=T(1)/1000,
     penalty=PowerPenalty{T}(1),
     prev_penalty=deepcopy(penalty),
     quad_order=default_quad_order(sp),
-    qr=false,
+    tstep = 1,
+    ntsteps = 20,
+    nearlyincompressible=false
 ) where {dim,T}
     u = zeros(T, ndofs(sp.ch.dh))
+    ts0 = tstep/ntsteps
+    update!(sp.ch,ts0) # set initial time-step (adjusts dirichlet bcs)
     apply!(u,sp.ch) # apply dbc for initial guess
-    elementinfo = ElementFEAInfo_hyperelastic(mp, sp, u, quad_order, Val{:Static}) # JGB: add u
+    elementinfo = ElementFEAInfo_hyperelastic(mp, sp, u, quad_order, Val{:Static}, nearlyincompressible; ts = ts0) # JGB: add u
     globalinfo = GlobalFEAInfo_hyperelastic(sp) # JGB: small issue this leads to symmetric K initialization
     #u = zeros(T, ndofs(sp.ch.dh)) # JGB
-    lhs = similar(u)
-    rhs = similar(u)
     vars = fill(one(T), getncells(sp.ch.dh.grid) - sum(sp.black) - sum(sp.white))
     varind = sp.varind
-    return HyperelasticDisplacementSolver(
-        mp, sp, globalinfo, elementinfo, u, lhs, rhs, vars, penalty, prev_penalty, xmin, qr # u to u0
-    )
+    if nearlyincompressible
+        return HyperelasticNearlyIncompressibleDisplacementSolver(mp, sp, globalinfo, elementinfo, u, vars, penalty, prev_penalty, xmin, tstep, ntsteps) 
+    else 
+        return HyperelasticCompressibleDisplacementSolver(mp, sp, globalinfo, elementinfo, u, vars, penalty, prev_penalty, xmin, tstep, ntsteps)
+    end
 end
-function (s::HyperelasticDisplacementSolver{T})(
+function (s::HyperelasticCompressibleDisplacementSolver{T})(
+    ::Type{Val{safe}}=Val{false},
+    ::Type{newT}=T;
+    assemble_f=true,
+    kwargs...,
+) where {T,safe,newT}
+    globalinfo = s.globalinfo
+    dh = s.problem.ch.dh
+    ch = s.problem.ch
+
+    # Pre-allocation of vectors for the solution and Newton increments
+    _ndofs = ndofs(dh)
+    #un = s.u
+    un = zeros(_ndofs) # previous solution vector
+    #apply!(un, ch)
+
+    # Perform Newton iterations
+    NEWTON_TOL = 1e-8
+    NEWTON_MAXITER =30 # OG is 30
+    #prog = ProgressMeter.ProgressThresh(NEWTON_TOL, "Solving:")
+
+    ntsteps = s.ntsteps
+    for tstep ∈ 1:ntsteps
+        ts = tstep/ntsteps
+        update!(ch,ts)
+        apply!(un,ch)
+        println(maximum(un))
+        u  = zeros(_ndofs) 
+        Δu = zeros(_ndofs)
+        ΔΔu = zeros(_ndofs)
+
+        newton_itr = -1
+        while true; newton_itr += 1
+            # Construct the current guess
+            u .= un .+ Δu
+            #u += Δu
+            # Compute residual and tangent for current guess
+            s.elementinfo = ElementFEAInfo_hyperelastic(s.mp, s.problem, u, default_quad_order(s.problem), Val{:Static}; ts=ts) # JGB: add u
+            #s.globalinfo = GlobalFEAInfo_hyperelastic(s.problem) # JGB: small issue this leads to symmetric K initialization
+            #assemble_global!(K, g, dh, cv, fv, mp, u, ΓN)
+            assemble_hyperelastic!(s.globalinfo,s.problem,s.elementinfo,s.vars,getpenalty(s),s.xmin,assemble_f=assemble_f)
+            #K = s.globalinfo.K
+            #g = s.globalinfo.g
+            # Apply boundary conditions
+            #if newton_itr == 1
+            #    BSON.bson("C:\\Users\\jbecktt\\.julia\\juliaup\\julia-1.10.5+0.x64.w64.mingw32\\dev\\TopOpt\\test2.bson",K=s.globalinfo.K,g=s.globalinfo.g)
+            #end
+            #apply_zero!(s.globalinfo.K, s.globalinfo.g, ch) # why is this not active currently!!
+            #if newton_itr == 1
+            #    BSON.bson("C:\\Users\\jbecktt\\.julia\\juliaup\\julia-1.10.5+0.x64.w64.mingw32\\dev\\TopOpt\\test2.bson",K1=s.globalinfo.K,g1=s.globalinfo.g)
+            #end
+            # Compute the residual norm and compare with tolerance
+            normg = norm(s.globalinfo.g)
+            println("Tstep: $tstep / $ntsteps. Iteration: $newton_itr. normg is equal to " * string(normg))
+            if normg < NEWTON_TOL
+                break
+            elseif newton_itr > NEWTON_MAXITER
+                error("Reached maximum Newton iterations, aborting")
+            end
+
+            # Compute increment using conjugate gradients
+            IterativeSolvers.cg!(ΔΔu, s.globalinfo.K, s.globalinfo.g; maxiter=1000)
+
+            apply_zero!(ΔΔu, ch)
+            Δu .-= ΔΔu  #Δu = Δu - Δ(Δu)
+            #u = un + Δu
+            #println("Finished iteration $newton_itr of tstep $tstep of $ntsteps")
+        end
+        un = u
+    end
+    # worst case scenario I can save F here for now
+    s.u .= un #, F_storage, F_avg
+    return nothing
+end
+
+function (s::HyperelasticNearlyIncompressibleDisplacementSolver{T})(
     ::Type{Val{safe}}=Val{false},
     ::Type{newT}=T;
     assemble_f=true,
     reuse_fact=false,
-    #rhs=assemble_f ? s.globalinfo.f : s.rhs,
-    rhs=assemble_f ? s.globalinfo.g : s.rhs,
-    lhs=assemble_f ? s.u : s.lhs,
     kwargs...,
 ) where {T,safe,newT}
-    #=globalinfo = s.globalinfo
-    assemble!(
-        globalinfo,
-        s.problem,
-        s.elementinfo,
-        s.vars,
-        getpenalty(s),
-        s.xmin;
-        assemble_f=assemble_f,
-    )
-    K = globalinfo.K
-    if safe
-        m = meandiag(K)
-        for i in 1:size(K, 1)
-            if K[i, i] ≈ zero(T)
-                K[i, i] = m
-            end
-        end
-    end
-    nans = false
-    if !reuse_fact
-        newK = T === newT ? K : newT.(K)
-        if s.qr
-            globalinfo.qrK = qr(newK.data)
-        else
-            cholK = cholesky(Symmetric(K); check=false)
-            if issuccess(cholK)
-                globalinfo.cholK = cholK
-            else
-                @warn "The global stiffness matrix is not positive definite. Please check your boundary conditions."
-                lhs .= T(NaN)
-                nans = true
-            end
-        end
-    end
-    nans && return nothing
-    new_rhs = T === newT ? rhs : newT.(rhs)
-    fact = s.qr ? globalinfo.qrK : globalinfo.cholK
-    lhs .= fact \ new_rhs
-    =#
-    # NEW STUFF
     globalinfo = s.globalinfo
-    #assemble_hyperelastic!(
-    #    globalinfo,
-    #    s.problem,
-    #    s.elementinfo,
-    #    s.vars,
-    #    getpenalty(s),
-    #    s.xmin;
-    #    assemble_f=assemble_f,
-    #)
-    #K = globalinfo.K
     dh = s.problem.ch.dh
     ch = s.problem.ch
 
     # Pre-allocation of vectors for the solution and Newton increments
     _ndofs = ndofs(dh)
     un = s.u
-    #un = zeros(_ndofs) # previous solution vector
     u  = zeros(_ndofs)
-    #u = s.u
     Δu = zeros(_ndofs)
     ΔΔu = zeros(_ndofs)
-    #apply!(un, ch)
-
-    # Create sparse matrix and residual vector
-    #K = create_sparsity_pattern(dh)
-    #K = globalinfo.K
-    #g = zeros(_ndofs)
-    #g = globalinfo.g
 
     # Perform Newton iterations
     newton_itr = -1

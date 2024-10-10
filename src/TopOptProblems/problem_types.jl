@@ -21,9 +21,9 @@ getgeomorder(p::StiffnessTopOptProblem) = nnodespercell(p) == 9 ? 2 : 1
 getdensity(::StiffnessTopOptProblem{dim,T}) where {dim,T} = T(0)
 getmetadata(p::StiffnessTopOptProblem) = p.metadata
 getdh(p::StiffnessTopOptProblem) = p.ch.dh
-getcloaddict(p::StiffnessTopOptProblem{dim,T}) where {dim,T} = Dict{String,Vector{T}}()
-getpressuredict(p::StiffnessTopOptProblem{dim,T}) where {dim,T} = Dict{String,T}()
-getfacesets(p::StiffnessTopOptProblem{dim,T}) where {dim,T} = Dict{String,Tuple{Int,T}}()
+getcloaddict(p::StiffnessTopOptProblem{dim,T}; kwargs...) where {dim,T} = Dict{String,Vector{T}}()
+getpressuredict(p::StiffnessTopOptProblem{dim,T}; kwargs...) where {dim,T} = Dict{String,T}()
+getfacesets(p::StiffnessTopOptProblem{dim,T}; kwargs...) where {dim,T} = Dict{String,Tuple{Int,T}}()
 Ferrite.getncells(problem::StiffnessTopOptProblem) = Ferrite.getncells(getdh(problem).grid)
 
 """
@@ -162,7 +162,8 @@ function PointLoadCantilever(
     )
     add!(ch, dbc)
     close!(ch)
-    t = T(0)
+
+    t = T(1)
     update!(ch, t)
 
     metadata = Metadata(dh)
@@ -323,7 +324,7 @@ function HalfMBB(
     add!(ch, dbc2)
     close!(ch)
 
-    t = T(0)
+    t = T(1)
     update!(ch, t)
 
     metadata = Metadata(dh)
@@ -341,8 +342,8 @@ function HalfMBB(
     return HalfMBB(rect_grid, E, ν, ch, force, force_dof, black, white, varind, metadata)
 end
 
-function getcloaddict(p::Union{PointLoadCantilever{dim,T},HalfMBB{dim,T}}) where {dim,T}
-    f = T[0, -p.force, 0]
+function getcloaddict(p::Union{PointLoadCantilever{dim,T},HalfMBB{dim,T}}; ts=1.0) where {dim,T}
+    f = T[0, -p.force*ts, 0]
     fnode = Tuple(getnodeset(p.rect_grid.grid, "down_force"))[1]
     return Dict{Int,Vector{T}}(fnode => f)
 end
@@ -461,7 +462,7 @@ function LBeam(
     add!(ch, dbc)
     close!(ch)
 
-    t = T(0)
+    t = T(1)
     update!(ch, t)
 
     metadata = Metadata(dh)
@@ -521,8 +522,8 @@ end
 
 nnodespercell(p::LBeam{T,N}) where {T,N} = N
 getdim(::LBeam) = 2
-function getcloaddict(p::LBeam{T}) where {T}
-    f = T[0, -p.force]
+function getcloaddict(p::LBeam{T};ts=1.0) where {T}
+    f = T[0, -p.force*ts]
     fnode = Tuple(getnodeset(getdh(p).grid, "load"))[1]
     return Dict{Int,Vector{T}}(fnode => f)
 end
@@ -612,7 +613,7 @@ function TieBeam(
     add!(ch, dbc2)
     close!(ch)
 
-    t = T(0)
+    t = T(1)
     update!(ch, t)
 
     metadata = Metadata(dh)
@@ -625,8 +626,8 @@ end
 
 getdim(::TieBeam) = 2
 nnodespercell(::TieBeam{T,N}) where {T,N} = N
-function getpressuredict(p::TieBeam{T}) where {T}
-    return Dict{String,T}("rightload" => 2 * p.force, "bottomload" => -p.force)
+function getpressuredict(p::TieBeam{T}; ts=1.0) where {T}
+    return Dict{String,T}("rightload" => 2 * p.force * ts, "bottomload" => -p.force * ts)
 end
 getfacesets(p::TieBeam) = getdh(p).grid.facesets
 
@@ -699,7 +700,7 @@ function RayProblem(
         add!(ch, dbc)
     end
     close!(ch)
-    t = T(0)
+    t = T(1)
     update!(ch, t)
 
     metadata = Metadata(dh)
@@ -715,8 +716,9 @@ function RayProblem(
 
     return RayProblem(rect_grid, 1.0, 0.3, ch, loadsdict, black, white, varind, metadata)
 end
-getcloaddict(p::RayProblem) = p.loads
-
+function getcloaddict(p::RayProblem; ts=1.0)
+    return Dict(k => v .* ts for (k, v) in p.loads)
+end
 """
 ```
 ///**********************************->
@@ -813,10 +815,10 @@ function TensionBar(
 
     dbc_left = Dirichlet(:u, getnodeset(rect_grid.grid, "fixed_left"), (x, t) -> zeros(T, dim), collect(1:dim))
     add!(ch, dbc_left)
-    dbc_right = Dirichlet(:u, getnodeset(rect_grid.grid, "disp_right"), (x, t) -> T[disp; zeros(dim-1)], collect(1:dim))
+    dbc_right = Dirichlet(:u, getnodeset(rect_grid.grid, "disp_right"), (x, t) -> t*T[disp; zeros(dim-1)], collect(1:dim))
     add!(ch, dbc_right)
     close!(ch)
-    t = T(0)
+    t = T(1)
     update!(ch, t)
 
     metadata = Metadata(dh)
@@ -939,7 +941,7 @@ function TensionRoller(
 
     dbc_left = Dirichlet(:u, getnodeset(rect_grid.grid, "fixed_left"), (x, t) -> zeros(T, 1), [1]) # set u1 to 0 for left face
     add!(ch, dbc_left)
-    dbc_right = Dirichlet(:u, getnodeset(rect_grid.grid, "disp_right"), (x, t) -> T[disp], [1]) # set u1 to 'disp' for right face
+    dbc_right = Dirichlet(:u, getnodeset(rect_grid.grid, "disp_right"), (x, t) -> t*T[disp], [1]) # set u1 to 'disp' for right face
     add!(ch, dbc_right)
     dbc_fixed_midpt1 = Dirichlet(:u, getnodeset(rect_grid.grid, "fixed_pt1"), (x, t) -> zeros(T, dim), collect(1:dim)) # fix left bottom (front) point to prevent translation in y
     add!(ch, dbc_fixed_midpt1)
@@ -948,7 +950,7 @@ function TensionRoller(
         add!(ch, dbc_fixed_midpt2)
     end
     close!(ch)
-    t = T(0)
+    t = T(1)
     update!(ch, t)
 
     metadata = Metadata(dh)
