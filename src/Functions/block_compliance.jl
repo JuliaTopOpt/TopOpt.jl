@@ -1,9 +1,11 @@
-@params mutable struct BlockCompliance{T,TC<:Compliance{T},TM,TS} <: AbstractFunction{T}
+mutable struct BlockCompliance{
+    T,TC<:Compliance{T},TM,TS,Tr<:AbstractVector{T},Tv<:AbstractVector{T}
+} <: AbstractFunction{T}
     compliance::TC
     method::TM
     F::TS
-    raw_val::AbstractVector{T}
-    val::AbstractVector{T}
+    raw_val::Tr
+    val::Tv
     fevals::Int
     decay::T
 end

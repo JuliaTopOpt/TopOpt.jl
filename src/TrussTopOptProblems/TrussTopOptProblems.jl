@@ -26,8 +26,6 @@ include("matrices_and_vectors.jl")
 include("elementinfo.jl")
 include(joinpath("TrussIO", "TrussIO.jl"))
 using .TrussIO
-include(joinpath("TrussVisualization", "TrussVisualization.jl"))
-using .TrussVisualization
 
 export TrussGrid, TrussProblem, TrussFEACrossSec, TrussFEAMaterial
 export PointLoadCantileverTruss

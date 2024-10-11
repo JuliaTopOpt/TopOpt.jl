@@ -1,7 +1,9 @@
-@params mutable struct Compliance{T} <: AbstractFunction{T}
-    solver::AbstractDisplacementSolver
-    cell_comp::AbstractVector{T}
-    grad::AbstractVector{T}
+mutable struct Compliance{
+    T,TS<:AbstractDisplacementSolver,TC<:AbstractVector{T},TG<:AbstractVector{T}
+} <: AbstractFunction{T}
+    solver::TS
+    cell_comp::TC
+    grad::TG
 end
 Utilities.getpenalty(c::Compliance) = getpenalty(getsolver(c))
 Utilities.setpenalty!(c::Compliance, p) = setpenalty!(getsolver(c), p)

@@ -1,5 +1,5 @@
-@params mutable struct BESOResult{T}
-    topology::AbstractVector{T}
+mutable struct BESOResult{T,Tt<:AbstractVector{T}}
+    topology::Tt
     objval::T
     change::T
     converged::Bool
@@ -9,22 +9,32 @@ end
 """
 The BESO algorithm, see [HuangXie2010](@cite).
 """
-@params struct BESO{T} <: TopOptAlgorithm
-    comp::Compliance
-    vol::Volume
-    vol_limit::Any
-    filter::Any
+struct BESO{
+    T,
+    Tc<:Compliance,
+    Tv1<:Volume,
+    Tv2,
+    Tf,
+    Ts<:AbstractVector{T},
+    To1<:AbstractVector{T},
+    To2<:MVector{<:Any,T},
+    Tr<:BESOResult{T},
+} <: TopOptAlgorithm
+    comp::Tc
+    vol::Tv1
+    vol_limit::Tv2
+    filter::Tf
     vars::Vector{T}
     topology::Vector{T}
     er::T
     maxiter::Int
     p::T
-    sens::AbstractVector{T}
-    old_sens::AbstractVector{T}
-    obj_trace::MVector{<:Any,T}
+    sens::Ts
+    old_sens::To1
+    obj_trace::To2
     tol::T
     sens_tol::T
-    result::BESOResult{T}
+    result::Tr
 end
 Base.show(::IO, ::MIME{Symbol("text/plain")}, ::BESO) = println("TopOpt BESO algorithm")
 

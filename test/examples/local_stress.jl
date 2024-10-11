@@ -1,8 +1,9 @@
 # using Revise
 using TopOpt, LinearAlgebra, StatsFuns, Test
 using StatsFuns: logsumexp
-# using Makie, CairoMakie
-# using TopOpt.TopOptProblems.Visualization: visualize
+using Makie
+using CairoMakie
+# using GLMakie
 
 E = 1.0 # Young’s modulus
 v = 0.3 # Poisson’s ratio
@@ -39,7 +40,7 @@ threshold = 3 * maximum(stress(filter(PseudoDensities(x0))))
 x = copy(x0)
 x .= 1
 for p in 1.0:1.0:3.0
-    global x
+    global x, solver, stress, filter, volfrac, obj, constr, alg, options, model, r
     penalty = TopOpt.PowerPenalty(p)
     # Define a finite element solver
     solver = FEASolver(Direct, problem; xmin=xmin, penalty=penalty)
@@ -68,9 +69,12 @@ end
 
 s = stress(filter(PseudoDensities(x)))
 @test (maximum(s) - threshold) / threshold < 0.01
-# f = visualize(
-#    problem; topology = filter(PseudoDensities(x)), default_exagg_scale = 0.07,
-#    scale_range = 10.0, vector_linewidth = 3, vector_arrowsize = 0.5,
-# )
-# savefig("result.png", _f)
-# end
+fig = visualize(
+    problem;
+    topology=filter(PseudoDensities(x)),
+    default_exagg_scale=0.07,
+    scale_range=10.0,
+    vector_linewidth=3,
+    vector_arrowsize=0.5,
+)
+save("result.png", fig)

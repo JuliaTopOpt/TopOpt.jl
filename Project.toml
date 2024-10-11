@@ -1,7 +1,7 @@
 name = "TopOpt"
 uuid = "53a1e1a5-51bb-58a9-8a02-02056cc81109"
 authors = ["mohamed82008 <mohamed82008@gmail.com>", "yijiangh <yijiang94817@gmail.com>"]
-version = "0.9.1"
+version = "0.9.2"
 
 [deps]
 AbstractDifferentiation = "c29ec348-61ec-40c8-8164-b8c60e9d9f3d"
@@ -34,7 +34,6 @@ Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
 Preconditioners = "af69fa37-3177-5a40-98ee-561f696e4fcd"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 Reexport = "189a3867-3050-52da-a836-e630ba90ab69"
-Requires = "ae029012-a4dd-5104-9daa-d747884805df"
 Revise = "295af30f-e4ad-537b-8983-00126c2a3abe"
 Setfield = "efcf1570-3423-57d1-acb7-fd33fddbac46"
 SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
@@ -49,6 +48,12 @@ TimerOutputs = "a759f4b9-e2f1-59dc-863e-4aeb61b1ea8f"
 VTKDataTypes = "10d27dd1-1d0f-5a4c-b178-bd2d0045a217"
 WriteVTK = "64499a7a-5c06-52f2-abe2-ccb03c286192"
 Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
+
+[weakdeps]
+Makie = "ee78f7c6-11fb-53f2-987a-cfe4a2b5a57a"
+
+[extensions]
+TopOptMakieExt = "Makie"
 
 [compat]
 AbstractDifferentiation = "0.4, 0.5, 0.6"
@@ -66,6 +71,7 @@ IterativeSolvers = "0.9"
 JSON = "0.21"
 JuliaFormatter = "1"
 MacroTools = "0.5"
+Makie = "0.21"
 MappedArrays = "0.4"
 NearestNeighbors = "0.4"
 Nonconvex = "2"
@@ -75,7 +81,6 @@ NonconvexSemidefinite = "0.1.7"
 Parameters = "0.12"
 Preconditioners = "0.3, 0.4, 0.5, 0.6"
 Reexport = "1"
-Requires = "1.1"
 Revise = "3"
 Setfield = "0.7, 0.8, 1"
 StaticArrays = "1"
@@ -86,4 +91,4 @@ TimerOutputs = "0.5"
 VTKDataTypes = "0.1"
 WriteVTK = "1.9"
 Zygote = "0.6"
-julia = "1.5, 1.6"
+julia = "1.9"

@@ -1,8 +1,9 @@
-@params struct DensityFilter{_filtering,T} <: AbstractDensityFilter
+struct DensityFilter{_filtering,T,TM<:FilterMetadata,TJ<:AbstractMatrix{T}} <:
+       AbstractDensityFilter
     filtering::Val{_filtering}
-    metadata::FilterMetadata
+    metadata::TM
     rmin::T
-    jacobian::AbstractMatrix{T}
+    jacobian::TJ
 end
 function Base.show(::IO, ::MIME{Symbol("text/plain")}, ::DensityFilter)
     return println("TopOpt density filter")
@@ -127,10 +128,10 @@ function scalecols!(A::SparseMatrixCSC)
     return A
 end
 
-@params struct ProjectedDensityFilter <: AbstractDensityFilter
-    filter::DensityFilter
-    preproj::Any
-    postproj::Any
+struct ProjectedDensityFilter{TF<:DensityFilter,TP1,TP2} <: AbstractDensityFilter
+    filter::TF
+    preproj::TP1
+    postproj::TP2
 end
 function Nonconvex.NonconvexCore.getdim(f::ProjectedDensityFilter)
     return Nonconvex.NonconvexCore.getdim(f.filter)

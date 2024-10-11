@@ -6,11 +6,17 @@ Base.size(x::ElementStiffnessMatrix, i...) = size(x.x, i...)
 Base.getindex(x::ElementStiffnessMatrix, i...) = x.x[i...]
 Base.:*(x::ElementStiffnessMatrix, y) = ElementStiffnessMatrix(x.x * y)
 
-@params mutable struct ElementK{T} <: AbstractFunction{T}
-    solver::AbstractDisplacementSolver
-    Kes::AbstractVector{<:AbstractMatrix{T}}
-    Kes_0::AbstractVector{<:AbstractMatrix{T}} # un-interpolated
-    penalty::AbstractPenalty{T}
+mutable struct ElementK{
+    T,
+    Ts<:AbstractDisplacementSolver,
+    TK1<:AbstractVector{<:AbstractMatrix{T}},
+    TK2<:AbstractVector{<:AbstractMatrix{T}},
+    Tp<:AbstractPenalty{T},
+} <: AbstractFunction{T}
+    solver::Ts
+    Kes::TK1
+    Kes_0::TK2 # un-interpolated
+    penalty::Tp
     xmin::T
 end
 

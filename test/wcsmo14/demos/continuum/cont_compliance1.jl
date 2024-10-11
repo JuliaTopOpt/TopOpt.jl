@@ -1,8 +1,9 @@
 module ContComplianceDemo1
 
 using TopOpt, LinearAlgebra, StatsFuns
-# using Makie, GLMakie
-# using TopOpt.TopOptProblems.Visualization: visualize
+using Makie
+using CairoMakie
+# using GLMakie
 
 E = 1.0 # Young’s modulus
 v = 0.3 # Poisson’s ratio
@@ -41,8 +42,9 @@ TopOpt.setpenalty!(solver, p)
 @show obj(r.minimizer)
 @show constr(r.minimizer)
 topology = cheqfilter(PseudoDensities(r.minimizer)).x
-# fig = visualize(problem; solver.u,
-#     topology = topology, default_exagg_scale=0.0, scale_range=10.0)
-# Makie.display(fig)
+fig = visualize(
+    problem; solver.u, topology=topology, default_exagg_scale=0.0, scale_range=10.0
+)
+Makie.display(fig)
 
 end

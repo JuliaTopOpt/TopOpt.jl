@@ -28,9 +28,10 @@ Input JSON file name "testfile2.json"
 # 3 -> -70.7106 [50sqrt(2) , compression]
 
 using TopOpt
-#using Makie, GLMakie
-#using TopOpt.TrussTopOptProblems.TrussVisualization: visualize
-#using ColorSchemes
+using Makie
+using CairoMakie
+# using GLMakie
+using ColorSchemes
 
 @testset "TrussStress" begin
     # Hand calculated result.
@@ -70,15 +71,17 @@ using TopOpt
     @assert abs(σ[3] - result_stress[3]) < 1e-12
 
     #visualization
-    #color_per_cell = abs.(σ.*x)
-    # fig1 = visualize(
-    #             problem, u = fill(0.1, nnodes*ndim), topology=x,
-    #             default_exagg_scale=0.0
-    #             ,default_element_linewidth_scale = 5.0
-    #             ,default_load_scale = 0.5
-    #             ,default_support_scale = 0.1
-    #             ,cell_colors = color_per_cell
-    #            ,colormap = ColorSchemes.Spectral_10
-    #          )
-    # Makie.display(fig1)
+    color_per_cell = abs.(σ .* x)
+    fig1 = visualize(
+        problem;
+        u=fill(0.1, nnodes * ndim),
+        topology=x,
+        default_exagg_scale=0.0,
+        default_element_linewidth_scale=5.0,
+        default_load_scale=0.5,
+        default_support_scale=0.1,
+        cell_colors=color_per_cell,
+        colormap=ColorSchemes.Spectral_10,
+    )
+    Makie.display(fig1)
 end

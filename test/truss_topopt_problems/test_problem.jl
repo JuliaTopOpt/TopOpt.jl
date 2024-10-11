@@ -3,10 +3,9 @@ using TopOpt
 using TopOpt.TopOptProblems: getE
 using TopOpt.TrussTopOptProblems: load_truss_json, load_truss_geo
 using Base.Iterators
-# if get(ENV, "CI", nothing) != "true"
-#     import Makie
-#     @eval using TopOpt.TrussTopOptProblems.TrussVisualization: visualize
-# end
+using Makie
+using CairoMakie
+# using GLMakie
 
 ins_dir = joinpath(@__DIR__, "instances", "ground_meshes");
 
@@ -79,15 +78,17 @@ end
     )
     println("$(result.convstate)")
 
-    # if get(ENV, "CI", nothing) != "true"
-    #     solver()
-    #     fig = visualize(
-    #         problem, u=solver.u, topology = result.topology, vector_arrowsize = 0.1,
-    #         vector_linewidth=0.8, default_exagg_scale=ndim == 3 ? 1.0 : 0.01,
-    #         exagg_range = ndim == 3 ? 10.0 : 0.1,
-    #     )
-    #     Makie.display(fig)
-    # end
+    solver()
+    fig = visualize(
+        problem;
+        u=solver.u,
+        topology=result.minimizer,
+        vector_arrowsize=0.1,
+        vector_linewidth=0.8,
+        default_exagg_scale=ndim == 3 ? 1.0 : 0.01,
+        exagg_range=ndim == 3 ? 10.0 : 0.1,
+    )
+    Makie.display(fig)
 end # end testset
 
 @testset "PointLoadCantileverTruss" for dim in [2, 3]
@@ -122,9 +123,6 @@ end # end testset
     TopOpt.setpenalty!(solver, penalty.p)
     result = Nonconvex.optimize(m, MMA87(), x0; options=options)
 
-    # if get(ENV, "CI", nothing) != "true"
-    #     fig = visualize(
-    #         problem; topology = result.minimizer)
-    #     Makie.display(fig)
-    # end
+    fig = visualize(problem; topology=result.minimizer)
+    Makie.display(fig)
 end # end testset

@@ -1,8 +1,9 @@
-@params mutable struct MeanCompliance{T,TC<:Compliance{T},TM,TS} <: AbstractFunction{T}
+mutable struct MeanCompliance{T,TC<:Compliance{T},TM,TS,Tg<:AbstractVector{T}} <:
+               AbstractFunction{T}
     compliance::TC
     method::TM
     F::TS
-    grad_temp::AbstractVector{T}
+    grad_temp::Tg
 end
 function MeanCompliance(
     problem::MultiLoad,

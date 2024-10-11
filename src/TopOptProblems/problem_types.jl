@@ -35,7 +35,7 @@ Ferrite.getncells(problem::StiffnessTopOptProblem) = Ferrite.getncells(getdh(pro
 ///********************************** v
 
 
-@params struct PointLoadCantilever{dim, T, N, M} <: StiffnessTopOptProblem{dim, T}
+struct PointLoadCantilever{dim, T, N, M} <: StiffnessTopOptProblem{dim, T}
     rect_grid::RectilinearGrid{dim, T, N, M}
     E::T
     ν::T
@@ -64,17 +64,29 @@ end
 - `white`:  a `BitVector` of length equal to the number of elements where `white[e]` is 1 iff the `e`^th element must not be part of the final design
 - `varind`: an `AbstractVector{Int}` of length equal to the number of elements where `varind[e]` gives the index of the decision variable corresponding to element `e`. Because some elements can be fixed to be black or white, not every element has a decision variable associated.
 """
-@params struct PointLoadCantilever{dim,T,N,M} <: StiffnessTopOptProblem{dim,T}
-    rect_grid::RectilinearGrid{dim,T,N,M}
+struct PointLoadCantilever{
+    dim,
+    T,
+    N,
+    M,
+    Tr<:RectilinearGrid{dim,T,N,M},
+    Tc<:ConstraintHandler{<:DofHandler{dim,<:Cell{dim,N,M},T},T},
+    Tf<:Integer,
+    Tb<:AbstractVector,
+    Tw<:AbstractVector,
+    Tv<:AbstractVector{Int},
+    Tm<:Metadata,
+} <: StiffnessTopOptProblem{dim,T}
+    rect_grid::Tr
     E::T
     ν::T
-    ch::ConstraintHandler{<:DofHandler{dim,<:Cell{dim,N,M},T},T}
+    ch::Tc
     force::T
-    force_dof::Integer
-    black::AbstractVector
-    white::AbstractVector
-    varind::AbstractVector{Int}
-    metadata::Metadata
+    force_dof::Tf
+    black::Tb
+    white::Tw
+    varind::Tv
+    metadata::Tm
 end
 function Base.show(::IO, ::MIME{Symbol("text/plain")}, ::PointLoadCantilever)
     return println("TopOpt point load cantilever beam problem")
@@ -224,17 +236,29 @@ end
 - `white`:  a `BitVector` of length equal to the number of elements where `white[e]` is 1 iff the `e`^th element must not be part of the final design
 - `varind`: an `AbstractVector{Int}` of length equal to the number of elements where `varind[e]` gives the index of the decision variable corresponding to element `e`. Because some elements can be fixed to be black or white, not every element has a decision variable associated.
 """
-@params struct HalfMBB{dim,T,N,M} <: StiffnessTopOptProblem{dim,T}
-    rect_grid::RectilinearGrid{dim,T,N,M}
+struct HalfMBB{
+    dim,
+    T,
+    N,
+    M,
+    Tr<:RectilinearGrid{dim,T,N,M},
+    Tc<:ConstraintHandler{<:DofHandler{dim,<:Cell{dim,N,M},T},T},
+    Tf<:Integer,
+    Tb<:AbstractVector,
+    Tw<:AbstractVector,
+    Tv<:AbstractVector{Int},
+    Tm<:Metadata,
+} <: StiffnessTopOptProblem{dim,T}
+    rect_grid::Tr
     E::T
     ν::T
-    ch::ConstraintHandler{<:DofHandler{dim,<:Cell{dim,N,M},T},T}
+    ch::Tc
     force::T
-    force_dof::Integer
-    black::AbstractVector
-    white::AbstractVector
-    varind::AbstractVector{Int}
-    metadata::Metadata
+    force_dof::Tf
+    black::Tb
+    white::Tw
+    varind::Tv
+    metadata::Tm
 end
 function Base.show(::IO, ::MIME{Symbol("text/plain")}, ::HalfMBB)
     return println("TopOpt half MBB problem")
@@ -389,16 +413,26 @@ end
 - `white`:  a `BitVector` of length equal to the number of elements where `white[e]` is 1 iff the `e`^th element must not be part of the final design
 - `varind`: an `AbstractVector{Int}` of length equal to the number of elements where `varind[e]` gives the index of the decision variable corresponding to element `e`. Because some elements can be fixed to be black or white, not every element has a decision variable associated.
 """
-@params struct LBeam{T,N,M} <: StiffnessTopOptProblem{2,T}
+struct LBeam{
+    T,
+    N,
+    M,
+    Tc<:ConstraintHandler{<:DofHandler{2,<:Cell{2,N,M},T},T},
+    Tf<:Integer,
+    Tb<:AbstractVector,
+    Tw<:AbstractVector,
+    Tv<:AbstractVector{Int},
+    Tm<:Metadata,
+} <: StiffnessTopOptProblem{2,T}
     E::T
     ν::T
-    ch::ConstraintHandler{<:DofHandler{2,<:Cell{2,N,M},T},T}
+    ch::Tc
     force::T
-    force_dof::Integer
-    black::AbstractVector
-    white::AbstractVector
-    varind::AbstractVector{Int}
-    metadata::Metadata
+    force_dof::Tf
+    black::Tb
+    white::Tw
+    varind::Tv
+    metadata::Tm
 end
 Base.show(::IO, ::MIME{Symbol("text/plain")}, ::LBeam) = println("TopOpt L-beam problem")
 
@@ -569,15 +603,24 @@ end
 - `white`:  a `BitVector` of length equal to the number of elements where `white[e]` is 1 iff the `e`^th element must not be part of the final design
 - `varind`: an `AbstractVector{Int}` of length equal to the number of elements where `varind[e]` gives the index of the decision variable corresponding to element `e`. Because some elements can be fixed to be black or white, not every element has a decision variable associated.
 """
-@params struct TieBeam{T,N,M} <: StiffnessTopOptProblem{2,T}
+struct TieBeam{
+    T,
+    N,
+    M,
+    Tc<:ConstraintHandler{<:DofHandler{2,<:Cell{2,N,M},T},T},
+    Tb<:AbstractVector,
+    Tw<:AbstractVector,
+    Tv<:AbstractVector{Int},
+    Tm<:Metadata,
+} <: StiffnessTopOptProblem{2,T}
     E::T
     ν::T
     force::T
-    ch::ConstraintHandler{<:DofHandler{2,<:Cell{2,N,M},T},T}
-    black::AbstractVector
-    white::AbstractVector
-    varind::AbstractVector{Int}
-    metadata::Metadata
+    ch::Tc
+    black::Tb
+    white::Tw
+    varind::Tv
+    metadata::Tm
 end
 function Base.show(::IO, ::MIME{Symbol("text/plain")}, ::TieBeam)
     return println("TopOpt tie-beam problem")
@@ -651,16 +694,27 @@ Constructs an instance of the type `RayProblem` that is a 2D beam with:
  - Loads specified in `loads` where `loads` is a dictionary mapping the location of each load to its vector value, e.g. `Dict([10, 18] => [1.0, -1.0], [5, 5] => [1.0, -1.0])` which defines a load of `[1.0, -1.0]` at the point located at `[10, 18]` and a similar load at the point located at `[5, 5]`.
 ```
 """
-@params struct RayProblem{T,N,M} <: StiffnessTopOptProblem{2,T}
-    rect_grid::RectilinearGrid{2,T,N,M}
+struct RayProblem{
+    T,
+    N,
+    M,
+    Tr<:RectilinearGrid{2,T,N,M},
+    Tc<:ConstraintHandler{<:DofHandler{2,<:Cell{2,N,M},T},T},
+    Tl<:Dict,
+    Tb<:AbstractVector,
+    Tw<:AbstractVector,
+    Tv<:AbstractVector{Int},
+    Tm<:Metadata,
+} <: StiffnessTopOptProblem{2,T}
+    rect_grid::Tr
     E::T
     ν::T
-    ch::ConstraintHandler{<:DofHandler{2,<:Cell{2,N,M},T},T}
-    loads::Dict
-    black::AbstractVector
-    white::AbstractVector
-    varind::AbstractVector{Int}
-    metadata::Metadata
+    ch::Tc
+    loads::Tl
+    black::Tb
+    white::Tw
+    varind::Tv
+    metadata::Tm
 end
 function RayProblem(
     nels::NTuple{2,Int}, pins::Vector{<:Vector}, loads::Dict{<:Vector,<:Vector}

@@ -1,6 +1,6 @@
 module CheqFilters
 
-using ..Utilities, Ferrite, Requires
+using ..Utilities, Ferrite
 using ..FEA, Statistics
 using ..TopOpt: TopOpt, ElementFEAInfo, PseudoDensities
 import ..TopOpt: PENALTY_BEFORE_INTERPOLATION
@@ -21,9 +21,9 @@ abstract type AbstractCheqFilter end
 abstract type AbstractSensFilter <: AbstractCheqFilter end
 abstract type AbstractDensityFilter <: AbstractCheqFilter end
 
-@params struct FilterMetadata
-    cell_neighbouring_nodes::Any
-    cell_node_weights::Any
+struct FilterMetadata{TC1,TC2}
+    cell_neighbouring_nodes::TC1
+    cell_node_weights::TC2
 end
 function Base.show(::IO, ::MIME{Symbol("text/plain")}, ::FilterMetadata)
     return println("TopOpt filter metadata")

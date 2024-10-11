@@ -1,8 +1,8 @@
 using TimerOutputs
 
-@params struct LinearElasticityResult
-    comp::Any
-    u::Any
+struct LinearElasticityResult{Tc,Tu}
+    comp::Tc
+    u::Tu
 end
 function Base.show(::IO, ::MIME{Symbol("text/plain")}, ::LinearElasticityResult)
     return println("TopOpt linear elasticity result")

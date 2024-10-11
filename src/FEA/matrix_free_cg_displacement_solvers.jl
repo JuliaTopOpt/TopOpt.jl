@@ -1,27 +1,44 @@
 abstract type AbstractMatrixFreeSolver <: AbstractDisplacementSolver end
 
-@params mutable struct StaticMatrixFreeDisplacementSolver{T,dim,TP<:AbstractPenalty{T}} <:
-                       AbstractDisplacementSolver
-    elementinfo::ElementFEAInfo{dim}
-    problem::StiffnessTopOptProblem{dim}
-    f::AbstractVector{T}
+mutable struct StaticMatrixFreeDisplacementSolver{
+    T,
+    dim,
+    TP<:AbstractPenalty{T},
+    Te<:ElementFEAInfo{dim},
+    Tp1<:StiffnessTopOptProblem{dim},
+    Tf<:AbstractVector{T},
+    Tu<:AbstractVector{T},
+    Tl<:AbstractVector{T},
+    Tr<:AbstractVector{T},
+    Tv<:AbstractVector{T},
+    Tx,
+    Tf1,
+    Tf2,
+    Tc1<:Integer,
+    Tc2<:CGStateVariables{T},
+    Tp2,
+    Tc3,
+} <: AbstractDisplacementSolver
+    elementinfo::Te
+    problem::Tp1
+    f::Tf
     meandiag::T
-    u::AbstractVector{T}
-    lhs::AbstractVector{T}
-    rhs::AbstractVector{T}
-    vars::AbstractVector{T}
-    xes::Any
-    fixed_dofs::Any
-    free_dofs::Any
+    u::Tu
+    lhs::Tl
+    rhs::Tr
+    vars::Tv
+    xes::Tx
+    fixed_dofs::Tf1
+    free_dofs::Tf2
     penalty::TP
     prev_penalty::TP
     xmin::T
-    cg_max_iter::Integer
+    cg_max_iter::Tc1
     abstol::T
-    cg_statevars::CGStateVariables{T}
-    preconditioner::Any
+    cg_statevars::Tc2
+    preconditioner::Tp2
     preconditioner_initialized::Base.RefValue{Bool}
-    conv::Any
+    conv::Tc3
 end
 function Base.show(
     ::IO, ::MIME{Symbol("text/plain")}, x::StaticMatrixFreeDisplacementSolver

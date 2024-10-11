@@ -3,15 +3,27 @@ using ..TopOpt.TopOptProblems:
 
 get_fixities_node_set_name(i) = "fixed_u$(i)"
 
-@params struct TrussProblem{xdim,T,N,M} <: StiffnessTopOptProblem{xdim,T}
-    truss_grid::TrussGrid{xdim,T,N,M} # ground truss mesh
-    materials::Vector{TrussFEAMaterial{T}}
-    ch::ConstraintHandler{<:DofHandler{xdim,<:Ferrite.Cell{xdim,N,M},T},T}
+struct TrussProblem{
+    xdim,
+    T,
+    N,
+    M,
+    Tt<:TrussGrid{xdim,T,N,M},
+    Tm1<:Vector{<:TrussFEAMaterial{T}},
+    Tc<:ConstraintHandler{<:DofHandler{xdim,<:Ferrite.Cell{xdim,N,M},T},T},
+    Tb<:AbstractVector,
+    Tw<:AbstractVector,
+    Tv<:AbstractVector{Int},
+    Tm2<:Metadata,
+} <: StiffnessTopOptProblem{xdim,T}
+    truss_grid::Tt # ground truss mesh
+    materials::Tm1
+    ch::Tc
     force::Dict{Int,SVector{xdim,T}}
-    black::AbstractVector
-    white::AbstractVector
-    varind::AbstractVector{Int} # variable dof => free dof, based on black & white
-    metadata::Metadata
+    black::Tb
+    white::Tw
+    varind::Tv # variable dof => free dof, based on black & white
+    metadata::Tm2
 end
 # - `force_dof`: dof number at which the force is applied
 

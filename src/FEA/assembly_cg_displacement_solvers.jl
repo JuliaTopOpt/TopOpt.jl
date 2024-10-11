@@ -1,21 +1,35 @@
-@params mutable struct PCGDisplacementSolver{T,dim,TP<:AbstractPenalty{T}} <:
-                       AbstractDisplacementSolver
-    problem::StiffnessTopOptProblem{dim,T}
-    globalinfo::GlobalFEAInfo{T}
-    elementinfo::ElementFEAInfo{dim,T}
-    u::AbstractVector{T}
-    lhs::AbstractVector{T}
-    rhs::AbstractVector{T}
-    vars::AbstractVector{T}
+mutable struct PCGDisplacementSolver{
+    T,
+    dim,
+    TP<:AbstractPenalty{T},
+    Tp1<:StiffnessTopOptProblem{dim,T},
+    Tg<:GlobalFEAInfo{T},
+    Te<:ElementFEAInfo{dim,T},
+    Tu<:AbstractVector{T},
+    Tl<:AbstractVector{T},
+    Tr<:AbstractVector{T},
+    Tv<:AbstractVector{T},
+    Tc1<:Integer,
+    Tc2<:CGStateVariables{T,<:AbstractVector{T}},
+    Tp2,
+    Tc3,
+} <: AbstractDisplacementSolver
+    problem::Tp1
+    globalinfo::Tg
+    elementinfo::Te
+    u::Tu
+    lhs::Tl
+    rhs::Tr
+    vars::Tv
     penalty::TP
     prev_penalty::TP
     xmin::T
-    cg_max_iter::Integer
+    cg_max_iter::Tc1
     abstol::T
-    cg_statevars::CGStateVariables{T,<:AbstractVector{T}}
-    preconditioner::Any
-    preconditioner_initialized::Ref{Bool}
-    conv::Any
+    cg_statevars::Tc2
+    preconditioner::Tp2
+    preconditioner_initialized::Base.RefValue{Bool}
+    conv::Tc3
 end
 function Base.show(::IO, ::MIME{Symbol("text/plain")}, x::PCGDisplacementSolver)
     return println("TopOpt preconditioned conjugate gradient iterative solver")

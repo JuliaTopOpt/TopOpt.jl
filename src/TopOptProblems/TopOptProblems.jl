@@ -1,7 +1,7 @@
 module TopOptProblems
 
 using Ferrite, StaticArrays, LinearAlgebra
-using SparseArrays, Setfield, Requires
+using SparseArrays, Setfield
 using ..TopOpt.Utilities
 using ..TopOpt: PENALTY_BEFORE_INTERPOLATION
 using ..Utilities: @forward_property
@@ -26,9 +26,6 @@ include("buckling.jl")
 
 include(joinpath("IO", "IO.jl"))
 using .InputOutput
-
-include("Visualization/Visualization.jl")
-using .Visualization
 
 export RayProblem,
     PointLoadCantilever,

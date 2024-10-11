@@ -1,7 +1,9 @@
-@params mutable struct TrussStress{T} <: AbstractFunction{T}
-    σ::AbstractVector{T} # stress vector, axial stress per cell
-    u_fn::Displacement
-    transf_matrices::AbstractVector{<:AbstractMatrix{T}}
+mutable struct TrussStress{
+    T,Ts<:AbstractVector{T},Tu<:Displacement,Tt<:AbstractVector{<:AbstractMatrix{T}}
+} <: AbstractFunction{T}
+    σ::Ts # stress vector, axial stress per cell
+    u_fn::Tu
+    transf_matrices::Tt
     fevals::Int
     maxfevals::Int
 end

@@ -57,25 +57,25 @@ r = optimize(model, alg, x0; options)
 @show obj(r.minimizer)
 
 # ### (Optional) Visualize the result using Makie.jl
-# Need to run `using Pkg; Pkg.add(["Makie", "GLMakie"])` first
-# ```julia
-# using Makie, GLMakie
-# using TopOpt.TopOptProblems.Visualization: visualize
-# fig = visualize(
-#     problem; topology = r.minimizer,
-#     default_exagg_scale = 0.07, scale_range = 10.0,
-#     vector_linewidth = 3, vector_arrowsize = 0.5,
-# )
-# Makie.display(fig)
-# ```
+# Need to run `using Pkg; Pkg.add("Makie")` first and either `Pkg.add("CairoMakie")` or `Pkg.add("GLMakie")`
+using Makie
+using CairoMakie
+# alternatively, `using GLMakie`
+fig = visualize(
+    problem;
+    topology=r.minimizer,
+    default_exagg_scale=0.07,
+    scale_range=10.0,
+    vector_linewidth=3,
+    vector_arrowsize=0.5,
+)
+Makie.display(fig)
 
 # or convert it to a Mesh
 # Need to run `using Pkg; Pkg.add(GeometryBasics)` first
-# ```julia
-# import Makie, GeometryBasics
-# result_mesh = GeometryBasics.Mesh(problem, r.minimizer);
-# Makie.mesh(result_mesh)
-# ```
+using Makie, GeometryBasics
+result_mesh = GeometryBasics.Mesh(problem, r.minimizer);
+Makie.mesh(result_mesh)
 
 #md # ## [Plain Program](@id simp-plain-program)
 #md #
