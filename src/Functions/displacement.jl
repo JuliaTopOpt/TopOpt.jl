@@ -60,7 +60,7 @@ function Displacement(solver::AbstractHyperelasticSolver; maxfevals=10^8)
     global_dofs = zeros(Int, k)
     total_ndof = ndofs(dh)
     u = zeros(T, total_ndof)
-    F = [zeros(3, 3) for _ in 1:total_ndof/dim]
+    F = [zeros(typeof(solver.elementinfo.Fes[1])) for _ in 1:total_ndof/dim]
     dudx_tmp = zeros(T, length(solver.vars))
     return HyperelasticDisplacement(u, F, dudx_tmp, solver, global_dofs, 0, maxfevals)
 end
@@ -89,7 +89,7 @@ function (dp::HyperelasticDisplacement{T})(x::PseudoDensities) where {T}
     @assert length(global_dofs) == ndofs_per_cell(solver.problem.ch.dh)
     solver.vars .= x.x
     solver()
-    return DisplacementResult(copy(solver.u)) #, copy(solver.F) # I need to add F support
+    return DisplacementResult(copy(solver.u)), copy(solver.F) #, copy(solver.F) # I need to add F support
 end
 
 """

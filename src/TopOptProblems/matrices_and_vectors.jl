@@ -1,51 +1,84 @@
 function gettypes(
     ::Type{T}, # number type
     ::Type{Val{:Static}}, # matrix type
-    ::Type{Val{Kesize}}, # matrix size
+    ::Type{Val{Kesize}}; # matrix size
+    hyperelastic = false,
 ) where {T,Kesize}
-    return SMatrix{Kesize,Kesize,T,Kesize^2}, SVector{Kesize,T}
+    return hyperelastic ? 
+    (SMatrix{Kesize,Kesize,T,Kesize^2}, SVector{Kesize,T}, SMatrix{3,3,T,3^2}) : 
+    (SMatrix{Kesize,Kesize,T,Kesize^2}, SVector{Kesize,T})
 end
 function gettypes(
     ::Type{T}, # number type
     ::Type{Val{:SMatrix}}, # matrix type
-    ::Type{Val{Kesize}}, # matrix size
+    ::Type{Val{Kesize}}; # matrix size
+    hyperelastic = false,
 ) where {T,Kesize}
-    return SMatrix{Kesize,Kesize,T,Kesize^2}, SVector{Kesize,T}
+    if hyperelastic 
+        return SMatrix{Kesize,Kesize,T,Kesize^2}, SVector{Kesize,T}, SMatrix{3,3,T,3^2}
+    else
+        return SMatrix{Kesize,Kesize,T,Kesize^2}, SVector{Kesize,T}
+    end
 end
 function gettypes(
     ::Type{T}, # number type
     ::Type{Val{:MMatrix}}, # matrix type
-    ::Type{Val{Kesize}}, # matrix size
+    ::Type{Val{Kesize}}; # matrix size
+    hyperelastic = false,
 ) where {T,Kesize}
-    return MMatrix{Kesize,Kesize,T,Kesize^2}, MVector{Kesize,T}
+    if hyperelastic
+        return MMatrix{Kesize,Kesize,T,Kesize^2}, MVector{Kesize,T}, MMatrix{3,3,T,3^2}
+    else
+        return MMatrix{Kesize,Kesize,T,Kesize^2}, MVector{Kesize,T}
+    end
 end
 function gettypes(
     ::Type{BigFloat}, # number type
     ::Type{Val{:Static}}, # matrix type
-    ::Type{Val{Kesize}}, # matrix size
+    ::Type{Val{Kesize}}; # matrix size
+    hyperelastic = false,
 ) where {Kesize}
-    return SizedMatrix{Kesize,Kesize,BigFloat,Kesize^2}, SizedVector{Kesize,BigFloat}
+    if hyperelastic
+        return SizedMatrix{Kesize,Kesize,BigFloat,Kesize^2}, SizedVector{Kesize,BigFloat}, SizedMatrix{3,3,BigFloat,3^2}
+    else 
+        return SizedMatrix{Kesize,Kesize,BigFloat,Kesize^2}, SizedVector{Kesize,BigFloat}
+    end
 end
 function gettypes(
     ::Type{BigFloat}, # number type
     ::Type{Val{:SMatrix}}, # matrix type
-    ::Type{Val{Kesize}}, # matrix size
+    ::Type{Val{Kesize}}; # matrix size
+    hyperelastic = false,
 ) where {Kesize}
-    return SizedMatrix{Kesize,Kesize,BigFloat,Kesize^2}, SizedVector{Kesize,BigFloat}
+    if hyperelastic
+        return SizedMatrix{Kesize,Kesize,BigFloat,Kesize^2}, SizedVector{Kesize,BigFloat}, SizedMatrix{3,3,BigFloat,3^2}
+    else 
+        return SizedMatrix{Kesize,Kesize,BigFloat,Kesize^2}, SizedVector{Kesize,BigFloat}
+    end
 end
 function gettypes(
     ::Type{BigFloat}, # number type
     ::Type{Val{:MMatrix}}, # matrix type
-    ::Type{Val{Kesize}}, # matrix size
+    ::Type{Val{Kesize}}; # matrix size
+    hyperelastic = false,
 ) where {Kesize}
-    return SizedMatrix{Kesize,Kesize,BigFloat,Kesize^2}, SizedVector{Kesize,BigFloat}
+    if hyperelastic
+        return SizedMatrix{Kesize,Kesize,BigFloat,Kesize^2}, SizedVector{Kesize,BigFloat}, SizedMatrix{3,3,BigFloat,3^2}
+    else
+        return SizedMatrix{Kesize,Kesize,BigFloat,Kesize^2}, SizedVector{Kesize,BigFloat}
+    end
 end
 function gettypes(
     ::Type{T}, # number type
     ::Any, # matrix type
-    ::Any, # matrix size
+    ::Any; # matrix size
+    hyperelastic = false,
 ) where {T}
-    return Matrix{T}, Vector{T}
+    if hyperelastic
+        return Matrix{T}, Vector{T}, Matrix{T}
+    else
+        return Matrix{T}, Vector{T}
+    end
 end
 
 initialize_K(sp::StiffnessTopOptProblem;symmetric::Bool=true) = symmetric ? Symmetric(create_sparsity_pattern(sp.ch.dh)) : create_sparsity_pattern(sp.ch.dh)
@@ -136,10 +169,10 @@ function make_Kes_and_fes_hyperelastic(mp, problem, u, quad_order, ::Type{Val{ma
     n_basefuncs = getnbasefunctions(cellvalues)
 
     Kesize = dim * n_basefuncs
-    MatrixType, VectorType = gettypes(T, Val{mat_type}, Val{Kesize})
-    Kes, weights, ges = _make_Kes_and_weights_hyperelastic(
+    MatrixType, VectorType, MatrixTypeF = gettypes(T, Val{mat_type}, Val{Kesize}; hyperelastic = true)
+    Kes, weights, ges, Fes = _make_Kes_and_weights_hyperelastic(
         dh,
-        Tuple{MatrixType,VectorType},
+        Tuple{MatrixType,VectorType,MatrixTypeF},
         Val{n_basefuncs},
         Val{dim * n_basefuncs},
         #C,
@@ -153,7 +186,7 @@ function make_Kes_and_fes_hyperelastic(mp, problem, u, quad_order, ::Type{Val{ma
     dloads, ges2 = _make_dloads_hyperelastic(weights, problem, facevalues, facevaluesV, ges, ts)
     ges += ges2
 
-    return Kes, weights, dloads, ges, cellvalues, facevalues # switched to ges2 to solve error where 2x ges2 with no contribution from dload
+    return Kes, weights, dloads, ges, Fes, cellvalues, facevalues # switched to ges2 to solve error where 2x ges2 with no contribution from dload
 end
 
 const g = [0.0, 9.81, 0.0] # N/kg or m/s^2
@@ -287,7 +320,7 @@ end
 # `weights` : a vector of `xdim` vectors, element_id => self-weight load vector
 function _make_Kes_and_weights_hyperelastic(
     dh::DofHandler{dim,N,T},
-    ::Type{Tuple{MatrixType,VectorType}},
+    ::Type{Tuple{MatrixType,VectorType,MatrixTypeF}},
     ::Type{Val{n_basefuncs}},
     ::Type{Val{Kesize}},
     mp,
@@ -296,26 +329,17 @@ function _make_Kes_and_weights_hyperelastic(
     quadrature_rule,
     cellvalues,
     cellvaluesV,
-) where {dim,N,T,MatrixType<:StaticArray,VectorType,n_basefuncs,Kesize}
+) where {dim,N,T,MatrixType<:StaticArray,VectorType,MatrixTypeF<:StaticArray,n_basefuncs,Kesize}
     # Calculate element stiffness matrices
     nel = getncells(dh.grid)
     body_force = ρ .* g # Force per unit volume
     #Kes = Symmetric{T,MatrixType}[] # JGB: scary (is this sucker symmetric?)
-    #Kes = MatrixType{T}[]
-    #Kes = Vector{MatrixType{T}}()
-    #Kes = Vector{MatrixType}[]
-    #Kes = Vector{T,MatrixType}()
     Kes = Vector{MatrixType}()
     sizehint!(Kes, nel)
     weights = [zeros(VectorType) for i in 1:nel]
     ges = [zeros(VectorType) for i in 1:nel]
-    Ke_e = zeros(T, dim, dim)
-    ge = zeros(T, Kesize)
-    ge2 = zeros(T, Kesize)
-    fe = zeros(T, Kesize)
-    fe2 = zeros(T, Kesize)
+    Fes = [zeros(MatrixTypeF) for _ in 1:nel]
     Ke_0 = Matrix{T}(undef, Kesize, Kesize)
-    Ke_02 = Matrix{T}(undef, Kesize, Kesize) # JGB: just for checking
     celliterator = CellIterator(dh)
     for (k, cell) in enumerate(celliterator)
         Ke_0 .= 0
@@ -325,13 +349,13 @@ function _make_Kes_and_weights_hyperelastic(
         reinit!(cellvalues, cell)
         reinit!(cellvaluesV, cell)
         fe = weights[k]
-        #fe2 = weights[k]
         ge = ges[k]
-        #ge2 = ges[k]
+        Fe = Fes[k]
         for q_point in 1:getnquadpoints(cellvalues)
             dΩ = getdetJdV(cellvalues, q_point)
             ∇u = function_gradient(cellvaluesV, q_point, ue) # JGB add (NEEDS TO BE CHECKED!!)
             F = one(∇u) + ∇u # JGB add 
+            Fe += F*dΩ
             C = tdot(F) # JGB add 
             S, ∂S∂C = constitutive_driver(C, mp) # JGB add 
             P = F ⋅ S # JGB add 
@@ -349,30 +373,10 @@ function _make_Kes_and_weights_hyperelastic(
                     Ke_0[a,b] += (∇ϕb∂P∂F ⊡ ∇ϕa) * dΩ
                 end
             end
-            #=for b in 1:n_basefuncs
-                ∇ϕb = shape_gradient(cellvalues, q_point, b) # JGB: like ∇δui 3x3
-                ϕb = shape_value(cellvalues, q_point, b) # JGB: like δui 
-                for d2 in 1:dim
-                    #ge[b] += ( ∇ϕb ⊡ P - ϕb ⋅ body_force ) * dΩ  # Add contribution to the residual from this test function
-                    #∇ϕb∂P∂F = ∇ϕb ⊡ ∂P∂F # Hoisted computation # JGB add
-                    fe2 = @set fe2[(b - 1) * dim + d2] += ϕb * body_force[d2] * dΩ # weird but probably fine... just not in ferrite.jl example code (leaving in case of zygote issues)
-                    ge2 = @set ge2[(b - 1) * dim + d2] += ( ∇ϕb ⋅ P[d2,:] - ϕb * body_force[d2]) * dΩ
-                    for a in 1:n_basefuncs
-                        ∇ϕa = shape_gradient(cellvalues, q_point, a) # JGB: like ∇δuj
-                        Ke_e .= dotdot(∇ϕa, SymmetricTensor{4,dim}(∂P∂F), ∇ϕb) * dΩ#(∇ϕb∂P∂F ⊡ ∇ϕa) * dΩ          -------error: doesn't understand method
-                        for d1 in 1:dim
-                            # C = SymmetricTensor{4,dim}(g)
-                            #Ke_0[a,b] += (∇ϕb∂P∂F ⊡ ∇ϕa) * dΩ
-                            #Ke_02[dim * (a - 1) + d1, dim * (b - 1) + d2] += Ke_e[d1, d2]
-                            Ke_02[dim * (a - 1) + d1, dim * (b - 1) + d2] += Ke_e[d1,d2]
-                        end
-                    end
-                end
-            end=#
         end
-        # ge and fe still technically need checked with mean, norm, etc. to verify they are working correctly because they are trivial the first time through
         weights[k] = fe
         ges[k] = ge
+        Fes[k] = Fe
         if MatrixType <: SizedMatrix # Work around because full constructor errors
             #push!(Kes, Symmetric(SizedMatrix{Kesize,Kesize,T}(Ke_0)))
             push!(Kes, SizedMatrix{Kesize,Kesize,T}(Ke_0))
@@ -381,7 +385,7 @@ function _make_Kes_and_weights_hyperelastic(
             push!(Kes, MatrixType(Ke_0))
         end
     end
-    return Kes, weights, ges # weights is fes
+    return Kes, weights, ges, Fes # weights is fes
 end
 # Fallback
 #= bring this up to speed at a later time to match with

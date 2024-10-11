@@ -43,6 +43,7 @@ end
     fes::AbstractVector{<:AbstractVector{T}}
     ges::AbstractVector{<:AbstractVector{T}}
     fixedload::AbstractVector{T}
+    Fes::AbstractVector{<:AbstractMatrix{T}}
     cellvolumes::AbstractVector{T}
     cellvalues::CellValues{dim,T,<:Any}
     facevalues::FaceValues{<:Any,T,<:Any}
@@ -104,7 +105,7 @@ end
 function ElementFEAInfo_hyperelastic(
     mp, sp, u, quad_order=2, ::Type{Val{mat_type}}=Val{:Static}, nearlyincompressible=false; ts = 1.0,
 ) where {mat_type}
-    Kes, weights, dloads, ges, cellvalues, facevalues = make_Kes_and_fes_hyperelastic(
+    Kes, weights, dloads, ges, Fes, cellvalues, facevalues = make_Kes_and_fes_hyperelastic(
         mp, sp, u, quad_order, Val{mat_type}, ts
     )
     element_Kes = convert( # make sure this isn't going to symmetric
@@ -123,6 +124,7 @@ function ElementFEAInfo_hyperelastic(
         weights,
         ges,
         fixedload, # this is g version now!!!!!!!!
+        Fes,
         cellvolumes,
         cellvalues,
         facevalues,
