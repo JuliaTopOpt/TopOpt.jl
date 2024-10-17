@@ -73,7 +73,7 @@ function RaggedArray(vv::Vector{Vector{T}}) where {T}
     offsets = [1; 1 .+ accumulate(+, collect(length(v) for v in vv))]
     values = Vector{T}(undef, offsets[end] - 1)
     for (i, v) in enumerate(vv)
-        r = offsets[i]:(offsets[i + 1] - 1)
+        r = offsets[i]:(offsets[i + 1]-1)
         values[r] .= v
     end
     return RaggedArray(offsets, values)
@@ -81,24 +81,24 @@ end
 
 function Base.getindex(ra::RaggedArray, i)
     @assert 1 <= i < length(ra.offsets)
-    r = ra.offsets[i]:(ra.offsets[i + 1] - 1)
+    r = ra.offsets[i]:(ra.offsets[i + 1]-1)
     @assert 1 <= r.start && r.stop <= length(ra.values)
     return @view ra.values[r]
 end
 function Base.getindex(ra::RaggedArray, i, j)
     @assert 1 <= j < length(ra.offsets)
-    r = ra.offsets[j]:(ra.offsets[j + 1] - 1)
+    r = ra.offsets[j]:(ra.offsets[j + 1]-1)
     @assert 1 <= i <= length(r)
     return ra.values[r[i]]
 end
 function Base.setindex!(ra::RaggedArray, v, i, j)
     @assert 1 <= j < length(ra.offsets)
-    r = ra.offsets[j]:(ra.offsets[j + 1] - 1)
+    r = ra.offsets[j]:(ra.offsets[j + 1]-1)
     @assert 1 <= i <= length(r)
     return ra.values[r[i]] = v
 end
 
-function find_varind(black, white, ::Type{TI}=Int) where {TI}
+function find_varind(black, white; (::Type{TI})=Int) where {TI}
     nel = length(black)
     nel == length(white) || throw("Black and white vectors should be of the same length")
     varind = zeros(TI, nel)

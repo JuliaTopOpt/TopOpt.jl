@@ -40,7 +40,7 @@ Returns a `ndof_per_cell` x `ncells` matrix that maps `[localdofidx, cellidx]` i
 function get_cell_dofs_matrix(dh)
     cell_dofs = zeros(Int, ndofs_per_cell(dh), getncells(dh.grid))
     for i in 1:size(cell_dofs, 2)
-        r = dh.cell_dofs_offset[i]:(dh.cell_dofs_offset[i + 1] - 1)
+        r = dh.cell_dofs_offset[i]:(dh.cell_dofs_offset[i + 1]-1)
         for j in 1:length(r)
             cell_dofs[j, i] = dh.cell_dofs[r[j]]
         end
@@ -107,7 +107,7 @@ function get_node_cells(dh)
     return RaggedArray(node_cells_vecofvecs)
 end
 
-node_field_offset(dh, f) = sum(view(dh.field_dims, 1:(f - 1)))
+node_field_offset(dh, f) = sum(view(dh.field_dims, 1:(f-1)))
 
 """
 Returns
@@ -131,8 +131,7 @@ function get_node_dofs(dh::DofHandler)
             for idx in 1:min(interpol_points, length(cell.nodes))
                 node = cell.nodes[idx]
                 if !visited[node]
-                    noderange =
-                        (offset + (idx - 1) * field_dim + 1):(offset + idx * field_dim) # the dofs in this node
+                    noderange = (offset+(idx-1)*field_dim+1):(offset+idx*field_dim) # the dofs in this node
                     for i in 1:field_dim
                         node_dofs[node_offset + i, node] = _celldofs[noderange[i]]
                     end

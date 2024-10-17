@@ -1,4 +1,4 @@
-function extract_cells(file, ::Type{TI}=Int) where {TI}
+function extract_cells(file; (::Type{TI})=Int) where {TI}
     line = readline(file)
 
     cell_idx_pattern = r"^(\d+)\s*,"

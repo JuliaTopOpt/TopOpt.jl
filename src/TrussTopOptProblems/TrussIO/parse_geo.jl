@@ -2,7 +2,7 @@
 
 function load_truss_geo(filepath::AbstractString)
     open(filepath) do io
-        load_truss_geo(io)
+        return load_truss_geo(io)
     end
 end
 

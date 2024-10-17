@@ -1,4 +1,4 @@
-function extract_nodes(file, ::Type{TF}=Float64, ::Type{TI}=Int) where {TF,TI}
+function extract_nodes(file; (::Type{TF})=Float64, (::Type{TI})=Int) where {TF,TI}
     line = readline(file)
 
     pattern = r"(\d+)\s*,\s*(-?\d+\.?\d*(e[-\+]?\d*)?)\s*,\s*(-?\d+\.?\d*(e[-\+]?\d*)?)\s*(,\s*(-?\d+\.?\d*(e[-\+]?\d*)?))?"

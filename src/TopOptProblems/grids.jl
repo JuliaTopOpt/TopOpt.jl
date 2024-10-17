@@ -229,7 +229,7 @@ function _LinearLGrid(
     Ferrite._generate_2d_nodes!(nodes, n_nodes_x2, n_nodes_y2, _LL, _LR, MR, _UL)
 
     node_array2 = reshape(
-        collect((indexoffset + 1):(indexoffset + n_nodes2)), (n_nodes_x2, n_nodes_y2)
+        collect((indexoffset+1):(indexoffset+n_nodes2)), (n_nodes_x2, n_nodes_y2)
     )
     for j in 1:nel_y2
         push!(
@@ -285,7 +285,7 @@ function _LinearLGrid(
 
     # Generate cells
     node_array3 = reshape(
-        collect((indexoffset + 1):(indexoffset + n_nodes3)), (n_nodes_x3, n_nodes_y3)
+        collect((indexoffset+1):(indexoffset+n_nodes3)), (n_nodes_x3, n_nodes_y3)
     )
 
     for i in 1:nel_x3
@@ -393,7 +393,7 @@ function _QuadraticLGrid(
     Ferrite._generate_2d_nodes!(nodes, n_nodes_x2, n_nodes_y2, _LL, _LR, MR, _UL)
 
     node_array2 = reshape(
-        collect((indexoffset + 1):(indexoffset + n_nodes2)), (n_nodes_x2, n_nodes_y2)
+        collect((indexoffset+1):(indexoffset+n_nodes2)), (n_nodes_x2, n_nodes_y2)
     )
     for j in 1:nel_y2
         push!(
@@ -459,7 +459,7 @@ function _QuadraticLGrid(
 
     # Generate cells
     node_array3 = reshape(
-        collect((indexoffset + 1):(indexoffset + n_nodes3)), (n_nodes_x3, n_nodes_y3)
+        collect((indexoffset+1):(indexoffset+n_nodes3)), (n_nodes_x3, n_nodes_y3)
     )
 
     for i in 1:nel_x3
@@ -511,7 +511,9 @@ function _QuadraticLGrid(
     )
 end
 
-function TieBeamGrid(::Type{Val{CellType}}, ::Type{T}=Float64, refine=1) where {T,CellType}
+function TieBeamGrid(
+    ::Type{Val{CellType}}; (::Type{T})=Float64, refine=1
+) where {T,CellType}
     if CellType === :Linear
         return _LinearTieBeamGrid(T, refine)
     else
@@ -519,7 +521,7 @@ function TieBeamGrid(::Type{Val{CellType}}, ::Type{T}=Float64, refine=1) where {
     end
 end
 
-function _LinearTieBeamGrid(::Type{T}=Float64, refine=1) where {T}
+function _LinearTieBeamGrid(; (::Type{T})=Float64, refine=1) where {T}
     nodes = Node{2,T}[]
     cells = Quadrilateral[]
     boundary = Tuple{Int,Int}[]
@@ -589,7 +591,7 @@ function _LinearTieBeamGrid(::Type{T}=Float64, refine=1) where {T}
 
     Ferrite._generate_2d_nodes!(nodes, n_nodes_x2, n_nodes_y2, LL, LR, UR, UL)
     node_array2 = reshape(
-        collect((indexoffset + 1):(indexoffset + n_nodes2)), (n_nodes_x2, n_nodes_y2)
+        collect((indexoffset+1):(indexoffset+n_nodes2)), (n_nodes_x2, n_nodes_y2)
     )
 
     t = 30
@@ -642,7 +644,7 @@ function _LinearTieBeamGrid(::Type{T}=Float64, refine=1) where {T}
     return Grid(cells, nodes; facesets=facesets, boundary_matrix=boundary_matrix)
 end
 
-function _QuadraticTieBeamGrid(::Type{T}=Float64, refine=1) where {T}
+function _QuadraticTieBeamGrid(; (::Type{T})=Float64, refine=1) where {T}
     nodes = Node{2,T}[]
     cells = QuadraticQuadrilateral[]
     boundary = Tuple{Int,Int}[]
@@ -717,7 +719,7 @@ function _QuadraticTieBeamGrid(::Type{T}=Float64, refine=1) where {T}
 
     Ferrite._generate_2d_nodes!(nodes, n_nodes_x2, n_nodes_y2, LL, LR, UR, UL)
     node_array2 = reshape(
-        collect((indexoffset + 1):(indexoffset + n_nodes2)), (n_nodes_x2, n_nodes_y2)
+        collect((indexoffset+1):(indexoffset+n_nodes2)), (n_nodes_x2, n_nodes_y2)
     )
 
     t = 30

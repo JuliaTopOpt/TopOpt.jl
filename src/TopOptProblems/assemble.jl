@@ -1,6 +1,6 @@
 function assemble(
     problem::StiffnessTopOptProblem{dim,T},
-    elementinfo::ElementFEAInfo{dim,T},
+    elementinfo::ElementFEAInfo{dim,T};
     vars=ones(T, getncells(getdh(problem).grid)),
     penalty=PowerPenalty(T(1)),
     xmin=T(0.001),
@@ -13,10 +13,10 @@ end
 function assemble!(
     globalinfo::GlobalFEAInfo{T},
     problem::StiffnessTopOptProblem{dim,T},
-    elementinfo::ElementFEAInfo{dim,T,TK},
+    elementinfo::ElementFEAInfo{dim,T,TK};
     vars=ones(T, getncells(getdh(problem).grid)),
     penalty=PowerPenalty(T(1)),
-    xmin=T(0.001);
+    xmin=T(0.001),
     assemble_f=true,
 ) where {dim,T,TK}
     ch = problem.ch
@@ -91,7 +91,7 @@ function assemble_f(
     problem::StiffnessTopOptProblem{dim,T},
     elementinfo::ElementFEAInfo{dim,T},
     vars::AbstractVector{T},
-    penalty,
+    penalty;
     xmin=T(1) / 1000,
 ) where {dim,T}
     f = get_f(problem, vars)
@@ -126,7 +126,7 @@ function update_f!(
 )
     @inbounds for dofidx in 1:length(f)
         f[dofidx] = fixedload[dofidx]
-        r = dof_cells.offsets[dofidx]:(dof_cells.offsets[dofidx + 1] - 1)
+        r = dof_cells.offsets[dofidx]:(dof_cells.offsets[dofidx + 1]-1)
         for i in r
             cellidx, localidx = dof_cells.values[i]
             if black[cellidx]
@@ -161,7 +161,7 @@ end
 
 function update_f!(f::Vector, dof_cells, dloads)
     for dofidx in 1:length(f)
-        r = dof_cells.offsets[dofidx]:(dof_cells.offsets[dofidx + 1] - 1)
+        r = dof_cells.offsets[dofidx]:(dof_cells.offsets[dofidx + 1]-1)
         for i in r
             cellidx, localidx = dof_cells.values[i]
             f[dofidx] += dloads[cellidx][localidx]

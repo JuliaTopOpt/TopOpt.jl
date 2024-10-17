@@ -94,7 +94,7 @@ function mul!(y::TV, A::MatrixFreeOperator, x::TV) where {TV<:AbstractVector}
     for i in 1:length(free_dofs)
         dof = free_dofs[i]
         yi = zero(T)
-        r = dof_cells.offsets[dof]:(dof_cells.offsets[dof + 1] - 1)
+        r = dof_cells.offsets[dof]:(dof_cells.offsets[dof + 1]-1)
         for ind in r
             k, m = dof_cells.values[ind]
             yi += xes[k][m]

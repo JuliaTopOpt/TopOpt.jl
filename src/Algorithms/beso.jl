@@ -119,7 +119,7 @@ function (b::BESO)(x0=copy(b.obj.solver.vars))
             old_sens .= sens
         end
         vol = max(vol * (1 - er), V)
-        for j in max(2, k - iter + 2):k
+        for j in max(2, k-iter+2):k
             obj_trace[j - 1] = obj_trace[j]
         end
         obj_trace[k], pb = Zygote.pullback(f, vars)

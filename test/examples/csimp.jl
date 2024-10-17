@@ -55,7 +55,7 @@ nsteps = 8
 ps = range(1.0, 5.0; length=nsteps + 1)
 tols = exp10.(range(-1, -3; length=nsteps + 1))
 global x = x0
-for j in 1:(nsteps + 1)
+for j in 1:(nsteps+1)
     p = ps[j]
     tol = tols[j]
     TopOpt.setpenalty!(solver, p)

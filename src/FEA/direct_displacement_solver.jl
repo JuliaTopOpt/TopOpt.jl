@@ -45,9 +45,9 @@ function DirectDisplacementSolver(
         sp, globalinfo, elementinfo, u, lhs, rhs, vars, penalty, prev_penalty, xmin, qr
     )
 end
-function (s::DirectDisplacementSolver{T})(
-    ::Type{Val{safe}}=Val{false},
-    ::Type{newT}=T;
+function (s::DirectDisplacementSolver{T})(;
+    (::Type{Val{safe}})=Val{false},
+    (::Type{newT})=T,
     assemble_f=true,
     reuse_fact=false,
     rhs=assemble_f ? s.globalinfo.f : s.rhs,

@@ -41,7 +41,7 @@ function NeuralNetwork(nn_model, problem::AbstractTopOptProblem; scale=true)
     if scale
         m, s = mean(centroids), std(centroids)
         scentroids = map(centroids) do c
-            (c .- m) ./ s
+            return (c .- m) ./ s
         end
     else
         scentroids = centroids

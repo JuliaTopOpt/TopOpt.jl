@@ -82,9 +82,9 @@ Assembly global geometric stiffness matrix of the given truss problem.
 function buckling(
     problem::TrussProblem{xdim,T},
     ginfo,
-    einfo,
+    einfo;
     vars=ones(T, getncells(getdh(problem).grid)),
-    xmin=T(0.0);
+    xmin=T(0.0),
     u=undef,
 ) where {xdim,T}
     dh = problem.ch.dh

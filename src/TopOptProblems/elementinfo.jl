@@ -70,7 +70,7 @@ Constructs an instance of `ElementFEAInfo` from a stiffness problem `sp` using a
 The static matrices and vectors are more performant and GPU-compatible therefore they are used by default.
 """
 function ElementFEAInfo(
-    sp, quad_order=2, ::Type{Val{mat_type}}=Val{:Static}
+    sp; quad_order=2, (::Type{Val{mat_type}})=Val{:Static}
 ) where {mat_type}
     Kes, weights, dloads, cellvalues, facevalues = make_Kes_and_fes(
         sp, quad_order, Val{mat_type}
@@ -124,7 +124,7 @@ end
 
 Constructs an empty instance of `GlobalFEAInfo` where the field `K` is an empty sparse matrix of element type `T` and the field `f` is an empty dense vector of element type `T`.
 """
-GlobalFEAInfo(::Type{T}=Float64) where {T} = GlobalFEAInfo{T}()
+GlobalFEAInfo((::Type{T})=Float64) where {T} = GlobalFEAInfo{T}()
 function GlobalFEAInfo{T}() where {T}
     return GlobalFEAInfo(sparse(zeros(T, 0, 0)), zeros(T, 0), cholesky(one(T)), qr(one(T)))
 end

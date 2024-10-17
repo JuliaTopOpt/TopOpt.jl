@@ -17,7 +17,7 @@ function extract_nodedbcs!(node_dbcs::Dict{String,Vector{Tuple{TI,TF}}}, file) w
                 end
             else
                 node_dbcs[nodesetname] = [(dof1, val)]
-                for dof in (dof1 + 1):dof2
+                for dof in (dof1+1):dof2
                     push!(node_dbcs[nodesetname], (dof, val))
                 end
             end
@@ -36,7 +36,7 @@ function extract_nodedbcs!(node_dbcs::Dict{String,Vector{Tuple{TI,TF}}}, file) w
                 end
             else
                 node_dbcs[nodesetname] = [(dof1, zero(TF))]
-                for dof in (dof1 + 1):dof2
+                for dof in (dof1+1):dof2
                     push!(node_dbcs[nodesetname], (dof, zero(TF)))
                 end
             end

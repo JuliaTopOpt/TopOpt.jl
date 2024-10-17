@@ -71,7 +71,7 @@ output = @capture_out begin
 end;
 
 open("jl-topopt.py_$(nels).txt", "w") do io
-    write(io, output)
+    return write(io, output)
 end
 
 # Visualize the result using Makie.jl

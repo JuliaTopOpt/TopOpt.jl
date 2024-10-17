@@ -23,7 +23,7 @@ function SensFilter(::Val{filtering}, solver::AbstractFEASolver, args...) where 
     return SensFilter(Val(filtering), solver, args...)
 end
 function SensFilter(
-    ::Val{true}, solver::TS, rmin::T, ::Type{TI}=Int
+    ::Val{true}, solver::TS, rmin::T; (::Type{TI})=Int
 ) where {T,TI<:Integer,TS<:AbstractFEASolver}
     metadata = FilterMetadata(solver, rmin, TI)
     TM = typeof(metadata)
@@ -47,7 +47,7 @@ function SensFilter(
 end
 
 function SensFilter(
-    ::Val{false}, solver::TS, rmin::T, ::Type{TI}=Int
+    ::Val{false}, solver::TS, rmin::T; (::Type{TI})=Int
 ) where {T,TS<:AbstractFEASolver,TI<:Integer}
     elementinfo = solver.elementinfo
     metadata = FilterMetadata(T, TI)
@@ -115,7 +115,7 @@ function update_nodal_grad!(
     for n in 1:length(nodal_grad)
         nodal_grad[n] = zero(T)
         cell_weights[n] = zero(T)
-        r = node_cells.offsets[n]:(node_cells.offsets[n + 1] - 1)
+        r = node_cells.offsets[n]:(node_cells.offsets[n + 1]-1)
         for i in r
             c = node_cells.values[i][1]
             if black[c] || white[c]

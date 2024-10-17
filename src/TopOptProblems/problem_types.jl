@@ -123,7 +123,7 @@ problem = PointLoadCantilever(Val{celltype}, nels, sizes, E, ν, force)
 function PointLoadCantilever(
     ::Type{Val{CellType}},
     nels::NTuple{dim,Int},
-    sizes::NTuple{dim},
+    sizes::NTuple{dim};
     E=1.0,
     ν=0.3,
     force=1.0,
@@ -294,7 +294,7 @@ problem = HalfMBB(Val{celltype}, nels, sizes, E, ν, force)
 function HalfMBB(
     ::Type{Val{CellType}},
     nels::NTuple{dim,Int},
-    sizes::NTuple{dim},
+    sizes::NTuple{dim};
     E=1.0,
     ν=0.3,
     force=1.0,
@@ -462,8 +462,8 @@ problem = LBeam(Val{celltype}, E = E, ν = ν, force = force)
 ```
 """
 function LBeam(
-    ::Type{Val{CellType}},
-    ::Type{T}=Float64;
+    ::Type{Val{CellType}};
+    (::Type{T})=Float64,
     length=100,
     height=100,
     upperslab=50,
@@ -637,7 +637,7 @@ end
 - `CellType`: can be either `:Linear` or `:Quadratic` to determine the order of the geometric and field basis functions and element type. Only isoparametric elements are supported for now.
 """
 function TieBeam(
-    ::Type{Val{CellType}}, ::Type{T}=Float64, refine=1, force=T(1); E=T(1), ν=T(0.3)
+    ::Type{Val{CellType}}; (::Type{T})=Float64, refine=1, force=T(1), E=T(1), ν=T(0.3)
 ) where {T,CellType}
     grid = TieBeamGrid(Val{CellType}, T, refine)
     dh = DofHandler(grid)
@@ -764,7 +764,7 @@ function RayProblem(
     loadsdict = Dict{Int,Vector{Float64}}(
         map(enumerate(keys(loads))) do (i, k)
             fnode = Tuple(getnodeset(rect_grid.grid, "force$i"))[1]
-            (fnode => loads[k])
+            return (fnode => loads[k])
         end,
     )
 

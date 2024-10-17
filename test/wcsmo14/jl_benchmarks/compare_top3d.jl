@@ -75,7 +75,7 @@ output = @capture_out begin
 end;
 
 open("jl-top3d.matlab_$(nels).txt", "w") do io
-    write(io, output)
+    return write(io, output)
 end
 
 # Visualize the result using Makie.jl

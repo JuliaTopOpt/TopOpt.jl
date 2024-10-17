@@ -40,7 +40,7 @@ function TrussProblem(
     node_points::Dict{iT,SVector{xdim,T}},
     elements::Dict{iT,Tuple{iT,iT}},
     loads::Dict{iT,SVector{xdim,T}},
-    supports::Dict{iT,SVector{xdim,fT}},
+    supports::Dict{iT,SVector{xdim,fT}};
     mats=TrussFEAMaterial{T}(1.0, 0.3),
     crosssecs=TrussFEACrossSec{T}(1.0),
 ) where {xdim,T,iT,fT,CellType}
@@ -191,7 +191,7 @@ problem = PointLoadCantileverTruss(nels, sizes, E, ν, force, k_connect=2)
 ```
 """
 function PointLoadCantileverTruss(
-    nels::NTuple{dim,Int}, sizes::NTuple{dim}, E=1.0, ν=0.3, force=1.0; k_connect=1
+    nels::NTuple{dim,Int}, sizes::NTuple{dim}; E=1.0, ν=0.3, force=1.0, k_connect=1
 ) where {dim}
     iseven(nels[2]) && (length(nels) < 3 || iseven(nels[3])) ||
         throw("Grid does not have an even number of elements along the y and/or z axes.")
@@ -208,9 +208,9 @@ function PointLoadCantileverTruss(
     kdtree = KDTree(node_mat)
     if dim == 2
         # 4+1*4 -> 4+3*4 -> 4+5*4
-        k_ = 4 * k_connect + 4 * sum(1:2:(2 * k_connect - 1))
+        k_ = 4 * k_connect + 4 * sum(1:2:(2*k_connect-1))
     else
-        k_ = 8 * k_connect + 6 * sum(1:9:(9 * k_connect - 1))
+        k_ = 8 * k_connect + 6 * sum(1:9:(9*k_connect-1))
     end
     idxs, _ = knn(kdtree, node_mat, k_ + 1, true)
     connect_mat = zeros(Int, 2, k_ * length(idxs))

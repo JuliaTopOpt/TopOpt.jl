@@ -34,7 +34,7 @@ end
 function NewPointLoadCantilever(
     ::Type{Val{CellType}},
     nels::NTuple{dim,Int},
-    sizes::NTuple{dim},
+    sizes::NTuple{dim};
     E=1.0,
     ν=0.3,
     force=1.0,

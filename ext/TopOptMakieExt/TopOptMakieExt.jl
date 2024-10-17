@@ -98,7 +98,7 @@ function _explode_nodes_and_cells(
             push!(old_node_id_from_new, nid)
         end
         num_cnodes = length(cell.nodes)
-        push!(new_cells, cell_type(Tuple((node_count + 1):(node_count + num_cnodes))))
+        push!(new_cells, cell_type(Tuple((node_count+1):(node_count+num_cnodes))))
         node_count += num_cnodes
     end
     @assert length(grid.cells) == length(new_cells)
@@ -112,7 +112,7 @@ function _create_colorbar(fig, colormap, cell_colors)
         colormap=colormap,
         highclip=:black,
         lowclip=:white,
-        ticks=minimum(cell_colors):(val_range / 10):maximum(cell_colors),
+        ticks=minimum(cell_colors):(val_range/10):maximum(cell_colors),
         limits=(minimum(cell_colors), maximum(cell_colors)),
     )
 end
@@ -226,7 +226,7 @@ function TopOpt.visualize(
         # https://jkrumbiegel.github.io/MakieLayout.jl/v0.3/layoutables/#LScene-1
         # https://makie.juliaplots.org/stable/cameras.html#D-Camera
         # ax1 = layout[1, 1] = LScene(scene, camera = cam3d!, raw = false)
-        ax1 = LScene(fig[1, 1]; scenekw=(camera=cam3d!, raw=false)) # , height=750
+        ax1 = LScene(fig[1, 1]; scenekw=(camera=(cam3d!), raw=false)) # , height=750
     end
 
     # * support / load appearance / deformatione exaggeration control
@@ -417,7 +417,7 @@ function TopOpt.visualize(
         # ax1.aspect = AxisAspect(1)
         ax1.aspect = DataAspect()
     else
-        ax1 = LScene(fig[1, 1]; scenekw=(camera=cam3d!, raw=false)) #, height=750)
+        ax1 = LScene(fig[1, 1]; scenekw=(camera=(cam3d!), raw=false)) #, height=750)
     end
 
     # * linewidth scaling / support / load appearance / deformatione exaggeration control

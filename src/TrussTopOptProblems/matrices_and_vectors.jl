@@ -95,8 +95,8 @@ end
 function GenericCellScalarValues(
     ::Type{T},
     quad_rule::QuadratureRule{ξdim,shape},
-    func_interpol::Interpolation,
-    geom_interpol::Interpolation=func_interpol;
+    func_interpol::Interpolation;
+    geom_interpol::Interpolation=func_interpol,
     xdim=ξdim,
 ) where {ξdim,T,shape<:Ferrite.AbstractRefShape}
     @assert getdim(func_interpol) == getdim(geom_interpol)

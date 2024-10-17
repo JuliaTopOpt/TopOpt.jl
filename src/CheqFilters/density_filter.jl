@@ -19,7 +19,7 @@ function DensityFilter(
     return DensityFilter(Val(filtering), solver, args...)
 end
 function DensityFilter(
-    ::Val{true}, solver::TS, rmin::T, ::Type{TI}=Int
+    ::Val{true}, solver::TS, rmin::T; (::Type{TI})=Int
 ) where {T,TI<:Integer,TS<:AbstractFEASolver}
     metadata = FilterMetadata(solver, rmin, TI)
     TM = typeof(metadata)
@@ -36,7 +36,7 @@ function DensityFilter(
 end
 
 function DensityFilter(
-    ::Val{false}, solver::TS, rmin::T, ::Type{TI}=Int
+    ::Val{false}, solver::TS, rmin::T; (::Type{TI})=Int
 ) where {T,TS<:AbstractFEASolver,TI<:Integer}
     metadata = FilterMetadata(T, TI)
     jacobian = zeros(T, 0, 0)
@@ -72,7 +72,7 @@ function getJacobian(solver, metadata::FilterMetadata)
     J = Int[]
     V = T[]
     for n in 1:nnodes
-        r = node_cells.offsets[n]:(node_cells.offsets[n + 1] - 1)
+        r = node_cells.offsets[n]:(node_cells.offsets[n + 1]-1)
         for i in r
             c = node_cells.values[i][1]
             if black[c] || white[c]
@@ -118,8 +118,8 @@ end
 function scalecols!(A::SparseMatrixCSC)
     @unpack colptr, nzval = A
     T = eltype(A)
-    for col in 1:(length(colptr) - 1)
-        inds = colptr[col]:(colptr[col + 1] - 1)
+    for col in 1:(length(colptr)-1)
+        inds = colptr[col]:(colptr[col + 1]-1)
         s = sum(nzval[inds])
         if s != 0
             nzval[inds] .= nzval[inds] ./ s

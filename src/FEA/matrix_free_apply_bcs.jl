@@ -5,7 +5,7 @@ function matrix_free_apply2f!(
     vars,
     problem::StiffnessTopOptProblem,
     penalty,
-    xmin,
+    xmin;
     applyzero::Bool=false,
 ) where {dim,T}
     @unpack Kes, black, white, varind, metadata = elementinfo
@@ -54,7 +54,7 @@ function update_f!(
         v = values[ind]
         m = size(Kes[ind], 1)
 
-        r = dof_cells.offsets[d]:(dof_cells.offsets[d + 1] - 1)
+        r = dof_cells.offsets[d]:(dof_cells.offsets[d + 1]-1)
         if !applyzero && v != 0
             for idx in r
                 (i, j) = dof_cells.values[idx]

@@ -70,7 +70,7 @@ function GESO(
     sens = zeros(T, nvars)
     old_sens = zeros(T, nvars)
     obj_trace = zeros(MVector{k,T})
-    var_volumes = vol.cellvolumes[.!black .& .!white]
+    var_volumes = vol.cellvolumes[.! black .& .! white]
     cum_var_volumes = zeros(T, nvars)
     order = zeros(Int, nvars)
     genotypes = trues(string_length, nvars)
@@ -296,7 +296,7 @@ function (b::GESO)(x0=copy(b.comp.solver.vars); seed=NaN)
         if iter > 1
             old_sens .= sens
         end
-        for j in max(2, 10 - iter + 2):10
+        for j in max(2, 10-iter+2):10
             obj_trace[j - 1] = obj_trace[j]
         end
         obj_trace[10], pb = Zygote.pullback(f, vars)

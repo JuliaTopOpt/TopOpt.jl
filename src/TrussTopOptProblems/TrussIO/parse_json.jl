@@ -4,7 +4,7 @@ using JSON: JSON
 
 function load_truss_json(filepath::AbstractString)
     open(filepath) do io
-        load_truss_json(io)
+        return load_truss_json(io)
     end
 end
 

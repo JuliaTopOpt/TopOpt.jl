@@ -21,5 +21,5 @@ end
 
 # remove any .vtu files in the generated dir (should not be deployed)
 cd(GENERATED_DIR) do
-    foreach(file -> endswith(file, ".vtu") && rm(file), readdir())
+    return foreach(file -> endswith(file, ".vtu") && rm(file), readdir())
 end

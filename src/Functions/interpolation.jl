@@ -44,7 +44,7 @@ function tounit(x::AbstractVector)
     T = eltype(x)
     stick = one(T)
     y = Vector{T}(undef, n)
-    for i in 1:(n - 1)
+    for i in 1:(n-1)
         xi = x[i]
         z = logistic(xi - log(n - i))
         y[i] = z * stick
