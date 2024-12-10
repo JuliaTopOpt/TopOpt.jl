@@ -4,6 +4,7 @@ abstract type SolverSubtype end
 
 struct Direct <: SolverType end
 struct CG <: SolverType end
+struct Hyperelastic <: SolverType end
 
 struct MatrixFree <: SolverSubtype end
 struct Assembly <: SolverSubtype end
@@ -36,6 +37,10 @@ end
 
 function FEASolver(::Type{CG}, ::Type{Assembly}, problem; kwargs...)
     return PCGDisplacementSolver(problem; kwargs...)
+end
+
+function FEASolver(::Type{Hyperelastic}, mp, problem; kwargs...) # JGB: add place to add NeoHookean <: :HyperelasticParam
+    return HyperelasticDisplacementSolver(mp, problem; kwargs...)
 end
 
 function default_quad_order(problem)

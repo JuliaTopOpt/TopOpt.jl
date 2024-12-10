@@ -36,7 +36,9 @@ export RayProblem,
     StiffnessTopOptProblem,
     AbstractTopOptProblem,
     GlobalFEAInfo,
+    GlobalFEAInfo_hyperelastic,
     ElementFEAInfo,
+    ElementFEAInfo_hyperelastic,
     YoungsModulus,
     assemble,
     assemble_f!,
@@ -46,6 +48,9 @@ export RayProblem,
     bcmatrix,
     save_mesh,
     RandomMagnitude,
-    MultiLoad
+    MultiLoad,
+    TensionBar,
+    TensionRoller,
+    assemble_hyperelastic!
 
 end # module
