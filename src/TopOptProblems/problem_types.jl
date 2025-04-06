@@ -463,7 +463,7 @@ problem = LBeam(Val{celltype}, E = E, ν = ν, force = force)
 """
 function LBeam(
     ::Type{Val{CellType}},
-    ::Type{T}=Float64;
+    (::Type{T})=Float64;
     length=100,
     height=100,
     upperslab=50,
@@ -637,7 +637,7 @@ end
 - `CellType`: can be either `:Linear` or `:Quadratic` to determine the order of the geometric and field basis functions and element type. Only isoparametric elements are supported for now.
 """
 function TieBeam(
-    ::Type{Val{CellType}}, ::Type{T}=Float64, refine=1, force=T(1); E=T(1), ν=T(0.3)
+    ::Type{Val{CellType}}, (::Type{T})=Float64, refine=1, force=T(1); E=T(1), ν=T(0.3)
 ) where {T,CellType}
     grid = TieBeamGrid(Val{CellType}, T, refine)
     dh = DofHandler(grid)

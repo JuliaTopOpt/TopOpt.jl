@@ -511,7 +511,9 @@ function _QuadraticLGrid(
     )
 end
 
-function TieBeamGrid(::Type{Val{CellType}}, ::Type{T}=Float64, refine=1) where {T,CellType}
+function TieBeamGrid(
+    ::Type{Val{CellType}}, (::Type{T})=Float64, refine=1
+) where {T,CellType}
     if CellType === :Linear
         return _LinearTieBeamGrid(T, refine)
     else
@@ -519,7 +521,7 @@ function TieBeamGrid(::Type{Val{CellType}}, ::Type{T}=Float64, refine=1) where {
     end
 end
 
-function _LinearTieBeamGrid(::Type{T}=Float64, refine=1) where {T}
+function _LinearTieBeamGrid((::Type{T})=Float64, refine=1) where {T}
     nodes = Node{2,T}[]
     cells = Quadrilateral[]
     boundary = Tuple{Int,Int}[]
@@ -642,7 +644,7 @@ function _LinearTieBeamGrid(::Type{T}=Float64, refine=1) where {T}
     return Grid(cells, nodes; facesets=facesets, boundary_matrix=boundary_matrix)
 end
 
-function _QuadraticTieBeamGrid(::Type{T}=Float64, refine=1) where {T}
+function _QuadraticTieBeamGrid((::Type{T})=Float64, refine=1) where {T}
     nodes = Node{2,T}[]
     cells = QuadraticQuadrilateral[]
     boundary = Tuple{Int,Int}[]

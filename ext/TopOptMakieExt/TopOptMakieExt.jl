@@ -226,7 +226,7 @@ function TopOpt.visualize(
         # https://jkrumbiegel.github.io/MakieLayout.jl/v0.3/layoutables/#LScene-1
         # https://makie.juliaplots.org/stable/cameras.html#D-Camera
         # ax1 = layout[1, 1] = LScene(scene, camera = cam3d!, raw = false)
-        ax1 = LScene(fig[1, 1]; scenekw=(camera=cam3d!, raw=false)) # , height=750
+        ax1 = LScene(fig[1, 1]; scenekw=(camera=(cam3d!), raw=false)) # , height=750
     end
 
     # * support / load appearance / deformatione exaggeration control
@@ -417,7 +417,7 @@ function TopOpt.visualize(
         # ax1.aspect = AxisAspect(1)
         ax1.aspect = DataAspect()
     else
-        ax1 = LScene(fig[1, 1]; scenekw=(camera=cam3d!, raw=false)) #, height=750)
+        ax1 = LScene(fig[1, 1]; scenekw=(camera=(cam3d!), raw=false)) #, height=750)
     end
 
     # * linewidth scaling / support / load appearance / deformatione exaggeration control
