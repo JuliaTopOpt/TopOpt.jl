@@ -46,14 +46,13 @@ TODO: should directly convert VTKDataTypes.VTKUnstructuredData to GeometryBasics
 Do not want to spend more time on this now...
 ```
 function GeometryBasics.Mesh(glmesh::GeometryTypes.GLNormalVertexcolorMesh)
-    newverts = reinterpret(GeometryBasics.Point{3,Float32}, glmesh.vertices)
-    newfaces = reinterpret(
+    newverts = collect(reinterpret(GeometryBasics.Point{3,Float32}, glmesh.vertices))
+    newfaces = collect(reinterpret(
         GeometryBasics.NgonFace{3,GeometryBasics.OffsetInteger{-1,UInt32}}, glmesh.faces
-    )
-    newnormals = reinterpret(GeometryBasics.Vec{3,Float32}, glmesh.normals)
-    return GeometryBasics.Mesh(
-        GeometryBasics.meta(newverts; normals=newnormals, color=glmesh.color), newfaces
-    )
+    ))
+    newnormals = collect(reinterpret(GeometryBasics.Vec{3,Float32}, glmesh.normals))
+    newcolors = collect(reinterpret(GeometryBasics.Vec{4,Float32}, glmesh.color))
+    return GeometryBasics.MetaMesh(newverts, newfaces; normals=newnormals, color=newcolors)
 end
 
 """
