@@ -98,7 +98,7 @@ function Base.setindex!(ra::RaggedArray, v, i, j)
     return ra.values[r[i]] = v
 end
 
-function find_varind(black, white, ::Type{TI}=Int) where {TI}
+function find_varind(black, white, (::Type{TI})=Int) where {TI}
     nel = length(black)
     nel == length(white) || throw("Black and white vectors should be of the same length")
     varind = zeros(TI, nel)

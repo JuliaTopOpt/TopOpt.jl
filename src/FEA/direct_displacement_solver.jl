@@ -46,8 +46,8 @@ function DirectDisplacementSolver(
     )
 end
 function (s::DirectDisplacementSolver{T})(
-    ::Type{Val{safe}}=Val{false},
-    ::Type{newT}=T;
+    (::Type{Val{safe}})=Val{false},
+    (::Type{newT})=T;
     assemble_f=true,
     reuse_fact=false,
     rhs=assemble_f ? s.globalinfo.f : s.rhs,
