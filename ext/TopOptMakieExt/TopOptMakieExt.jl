@@ -1,11 +1,11 @@
 module TopOptMakieExt
 
 using LinearAlgebra: norm
-using Makie: Makie, lift, cam3d!, Point3f0, Vec3f0, Figure, Auto, RGBAf
-using Makie: DataAspect, Axis, LScene, SliderGrid, linesegments!, Point2f0
-using Makie.GeometryBasics
+using Makie: Makie, lift, cam3d!, Point3f, Vec3f, Figure, Auto, RGBAf
+using Makie: DataAspect, Axis, LScene, SliderGrid, linesegments!, Point2f
+using GeometryBasics
 using ColorSchemes
-using GeometryBasics: GLTriangleFace
+using GeometryBasics: TriangleFace
 using TopOpt: TopOpt
 using TopOpt.TopOptProblems: getcloaddict, boundingbox, getdim, StiffnessTopOptProblem
 using TopOpt.TrussTopOptProblems: TrussProblem
@@ -17,11 +17,11 @@ using Ferrite
 # https://github.com/JuliaPlots/AbstractPlotting.jl/blob/f16321dee2c77ac9c753fed9b1074a2df7b10db8/src/utilities/utilities.jl#L188
 # https://github.com/JuliaPlots/AbstractPlotting.jl/blob/444813136a506eba8b5b03e2125c7a5f24e825cb/src/conversions.jl#L522
 function Makie.to_vertices(nodes::Vector{<:Ferrite.Node})
-    return Point3f0.([n.x for n in nodes])
+    return Point3f.([n.x for n in nodes])
 end
 
 function Makie.to_triangles(cells::AbstractVector{<:Ferrite.Cell})
-    tris = GLTriangleFace[]
+    tris = TriangleFace{Int}[]
     for cell in cells
         to_triangle(tris, cell)
     end
@@ -31,41 +31,41 @@ end
 # https://github.com/JuliaPlots/AbstractPlotting.jl/blob/444813136a506eba8b5b03e2125c7a5f24e825cb/src/conversions.jl#L505
 function to_triangle(tris, cell::Union{Ferrite.Hexahedron,QuadraticHexahedron})
     nodes = cell.nodes
-    push!(tris, GLTriangleFace(nodes[1], nodes[2], nodes[5]))
-    push!(tris, GLTriangleFace(nodes[5], nodes[2], nodes[6]))
+    push!(tris, TriangleFace{Int}(nodes[1], nodes[2], nodes[5]))
+    push!(tris, TriangleFace{Int}(nodes[5], nodes[2], nodes[6]))
 
-    push!(tris, GLTriangleFace(nodes[6], nodes[2], nodes[3]))
-    push!(tris, GLTriangleFace(nodes[3], nodes[6], nodes[7]))
+    push!(tris, TriangleFace{Int}(nodes[6], nodes[2], nodes[3]))
+    push!(tris, TriangleFace{Int}(nodes[3], nodes[6], nodes[7]))
 
-    push!(tris, GLTriangleFace(nodes[7], nodes[8], nodes[3]))
-    push!(tris, GLTriangleFace(nodes[3], nodes[8], nodes[4]))
+    push!(tris, TriangleFace{Int}(nodes[7], nodes[8], nodes[3]))
+    push!(tris, TriangleFace{Int}(nodes[3], nodes[8], nodes[4]))
 
-    push!(tris, GLTriangleFace(nodes[4], nodes[8], nodes[5]))
-    push!(tris, GLTriangleFace(nodes[5], nodes[4], nodes[1]))
+    push!(tris, TriangleFace{Int}(nodes[4], nodes[8], nodes[5]))
+    push!(tris, TriangleFace{Int}(nodes[5], nodes[4], nodes[1]))
 
-    push!(tris, GLTriangleFace(nodes[1], nodes[2], nodes[3]))
-    return push!(tris, GLTriangleFace(nodes[3], nodes[1], nodes[4]))
+    push!(tris, TriangleFace{Int}(nodes[1], nodes[2], nodes[3]))
+    return push!(tris, TriangleFace{Int}(nodes[3], nodes[1], nodes[4]))
 end
 
 function to_triangle(tris, cell::Union{Ferrite.Tetrahedron,Ferrite.QuadraticTetrahedron})
     nodes = cell.nodes
-    push!(tris, GLTriangleFace(nodes[1], nodes[3], nodes[2]))
-    push!(tris, GLTriangleFace(nodes[3], nodes[4], nodes[2]))
-    push!(tris, GLTriangleFace(nodes[4], nodes[3], nodes[1]))
-    return push!(tris, GLTriangleFace(nodes[4], nodes[1], nodes[2]))
+    push!(tris, TriangleFace{Int}(nodes[1], nodes[3], nodes[2]))
+    push!(tris, TriangleFace{Int}(nodes[3], nodes[4], nodes[2]))
+    push!(tris, TriangleFace{Int}(nodes[4], nodes[3], nodes[1]))
+    return push!(tris, TriangleFace{Int}(nodes[4], nodes[1], nodes[2]))
 end
 
 function to_triangle(
     tris, cell::Union{Ferrite.Quadrilateral,Ferrite.QuadraticQuadrilateral}
 )
     nodes = cell.nodes
-    push!(tris, GLTriangleFace(nodes[1], nodes[2], nodes[3]))
-    return push!(tris, GLTriangleFace(nodes[3], nodes[4], nodes[1]))
+    push!(tris, TriangleFace{Int}(nodes[1], nodes[2], nodes[3]))
+    return push!(tris, TriangleFace{Int}(nodes[3], nodes[4], nodes[1]))
 end
 
 function to_triangle(tris, cell::Union{Ferrite.Triangle,Ferrite.QuadraticTriangle})
     nodes = cell.nodes
-    return push!(tris, GLTriangleFace(nodes[1], nodes[2], nodes[3]))
+    return push!(tris, TriangleFace{Int}(nodes[1], nodes[2], nodes[3]))
 end
 
 function Makie.convert_arguments(P, x::AbstractVector{<:Ferrite.Node{N,T}}) where {N,T}
@@ -84,7 +84,7 @@ function _explode_nodes_and_cells(
     new_node_id_from_old = Dict{Int,Vector{Int}}(i => [] for i in 1:length(grid.nodes))
     old_node_id_from_new = Vector{Int}()
     node_count = 0
-    for (cid, cell) in enumerate(grid.cells)
+    for (_, cell) in enumerate(grid.cells)
         for (local_id, nid) in enumerate(cell.nodes)
             if xdim == 3
                 push!(new_nodes, grid.nodes[nid])
@@ -129,8 +129,7 @@ end
         draw_legend=false,
         colormap=ColorSchemes.Spectral_10,
         deformed_mesh_color=RGBAf(0,1,1,0.4),
-        vector_arrowsize=1.0,
-        vector_linewidth=1.0,
+        vector_arrowsize=10.0,
         default_support_scale=1.0,
         default_load_scale=1.0,
         scale_range=1.0,
@@ -161,9 +160,7 @@ So we recommend using `GLMakie` backend until you are satisfied, and switch back
 - `draw_legend=false` : draw the color legend for cell_colors.
 - `colormap=ColorSchemes.Spectral_10` : color map used to show `cell_color`. See [catalog](https://juliagraphics.github.io/ColorSchemes.jl/stable/catalogue/) for more options.
 - `deformed_mesh_color` : color used for displaying deformed mesh if `u` is specified.
-- `vector_arrowsize=1.0` : the vector arrow size used for displaying loads and supports vectors.
-- `vector_linewidth=1.0` : line width for loads and supports vectors.
-- `default_support_scale=1.0` : the default support scale used in the slider.
+- `vector_arrowsize=10.0` : the vector arrow size used for displaying loads and supports vectors.- `default_support_scale=1.0` : the default support scale used in the slider.
 - `default_load_scale=1.0` : the default load scale used in the slider.
 - `scale_range=1.0` : the upper limit of the sliders controlling the support and load scale sliders.
 - `default_exagg_scale=1.0` : default deformation exaggeration scale.
@@ -185,8 +182,7 @@ function TopOpt.visualize(
     colormap=ColorSchemes.Spectral_10,
     deformed_mesh_color=RGBAf(0, 1, 1, 0.4),
     display_supports=true,
-    vector_arrowsize=1.0,
-    vector_linewidth=1.0,
+    vector_arrowsize=10.0,
     default_support_scale=1.0,
     default_load_scale=1.0,
     scale_range=1.0,
@@ -261,9 +257,7 @@ function TopOpt.visualize(
         )
     end
 
-    dup_nodes, dup_cells, new_node_id_from_old, old_node_id_from_new = _explode_nodes_and_cells(
-        mesh
-    )
+    dup_nodes, dup_cells, _, old_node_id_from_new = _explode_nodes_and_cells(mesh)
     # each color for each duplicated vertex
     undeformed_mesh_colors = Vector{RGBAf}(undef, length(dup_nodes))
     # * color per cell
@@ -329,26 +323,42 @@ function TopOpt.visualize(
         # * load vectors
         if cloaddict !== undef
             if length(cloaddict) > 0
-                loaded_nodes = Point3f0.(nodes[node_ind].x for (node_ind, _) in cloaddict)
-                Makie.arrows!(
-                    ax1,
-                    loaded_nodes,
-                    lift(
-                        s -> Vec3f0.(s .* load_vec for (_, load_vec) in cloaddict),
-                        condition_lsgrid.sliders[2].value,
-                    );
-                    linecolor=:purple,
-                    arrowcolor=:purple,
-                    arrowsize=vector_arrowsize,
-                    linewidth=vector_linewidth,
-                )
+                loaded_nodes = Point3f.(nodes[node_ind].x for (node_ind, _) in cloaddict)
+                load_items = collect(cloaddict)
+                loaded_nodes = Point3f.(nodes[node_ind].x for (node_ind, _) in load_items)
+
+                load_dirs = lift(condition_lsgrid.sliders[2].value) do s
+                    if dim == 2
+                        [Vec2f(s * lv[1], s * lv[2]) for (_, lv) in load_items]
+                    else
+                        [Vec3f(s * lv[1], s * lv[2], s * lv[3]) for (_, lv) in load_items]
+                    end
+                end
+
+                if dim == 2
+                    Makie.arrows2d!(
+                        ax1,
+                        [Point2f(p[1], p[2]) for p in loaded_nodes],
+                        load_dirs;
+                        color=:purple,
+                        lengthscale=vector_arrowsize,
+                    )
+                else
+                    Makie.arrows3d!(
+                        ax1,
+                        loaded_nodes,
+                        load_dirs;
+                        color=:purple,
+                        lengthscale=vector_arrowsize,
+                    )
+                end
                 Makie.scatter!(ax1, loaded_nodes) #, markersize = lift(s -> s * 3, lsgrid.sliders[2].value))
             end
         end
 
         # * support vectors
         ch = problem.ch
-        for (dbc_id, dbc) in enumerate(ch.dbcs)
+        for (_, dbc) in enumerate(ch.dbcs)
             support_vectors = []
             if 1 in dbc.components
                 push!(support_vectors, [1.0, 0.0, 0.0])
@@ -360,21 +370,30 @@ function TopOpt.visualize(
                 push!(support_vectors, [0.0, 0.0, 1.0])
             end
             node_ids = dbc.faces
-            fixed_nodes = Point3f0.(nodes[node_ind].x for node_ind in node_ids)
+            fixed_nodes = Point3f.(nodes[node_ind].x for node_ind in node_ids)
             # draw one axis for all nodes in the set each time
             for v in support_vectors
-                Makie.arrows!(
-                    ax1,
-                    fixed_nodes,
-                    lift(
-                        s -> [Vec3f0(s .* v) for nid in node_ids],
-                        condition_lsgrid.sliders[1].value,
-                    );
-                    linecolor=:orange,
-                    arrowcolor=:orange,
-                    arrowsize=vector_arrowsize,
-                    linewidth=vector_linewidth,
-                )
+                if dim == 2
+                    Makie.arrows2d!(
+                        ax1,
+                        [Point2f(p[1], p[2]) for p in fixed_nodes],
+                        lift(condition_lsgrid.sliders[1].value) do s
+                            [Vec2f(s * v[1], s * v[2]) for _ in node_ids]
+                        end;
+                        color=:orange,
+                        lengthscale=vector_arrowsize,
+                    )
+                else
+                    Makie.arrows3d!(
+                        ax1,
+                        fixed_nodes,
+                        lift(condition_lsgrid.sliders[1].value) do s
+                            [Vec3f(s * v[1], s * v[2], s * v[3]) for _ in node_ids]
+                        end;
+                        color=:orange,
+                        lengthscale=vector_arrowsize,
+                    )
+                end
             end
             Makie.scatter!(ax1, fixed_nodes) #, markersize = lift(s -> s * 3, lsgrid.sliders[1].value))
         end
@@ -393,8 +412,7 @@ function TopOpt.visualize(
     colormap=ColorSchemes.Spectral_10,
     deformed_mesh_color=RGBAf(0, 1, 1, 0.4),
     display_supports=true,
-    vector_arrowsize=0.3,
-    vector_linewidth=1.0,
+    vector_arrowsize=10.0,
     default_support_scale=1e-2,
     default_load_scale=1e-2,
     scale_range=1.0,
@@ -464,7 +482,7 @@ function TopOpt.visualize(
 
     # * undeformed truss elements
     nodes = problem.truss_grid.grid.nodes
-    PtT = ndim == 2 ? Point2f0 : Point3f0
+    PtT = ndim == 2 ? Point2f : Point3f
     edges_pts = [
         PtT(nodes[cell.nodes[1]].x) => PtT(nodes[cell.nodes[2]].x) for
         cell in problem.truss_grid.grid.cells
@@ -518,24 +536,27 @@ function TopOpt.visualize(
     if display_supports
         # * load vectors
         loaded_nodes = [PtT(nodes[node_id].x) for node_id in keys(problem.force)]
+        load_dirs = [PtT(force / norm(force)) for force in values(problem.force)]
         scaled_load_dirs = lift(
-            s -> [PtT(force / norm(force) * s) for force in values(problem.force)],
-            condition_lsgrid.sliders[2].value,
+            s -> [dir * s for dir in load_dirs], condition_lsgrid.sliders[2].value
         )
-        Makie.arrows!(
-            ax1,
-            loaded_nodes,
-            scaled_load_dirs;
-            arrowcolor=:purple,
-            arrowsize=vector_arrowsize,
-            linecolor=:purple,
-            linewidth=vector_linewidth,
-        )
+        if ndim == 2
+            dirs_obs = lift(dirs -> Vec2f.(dirs), scaled_load_dirs)
+            Makie.arrows2d!(
+                ax1, loaded_nodes, dirs_obs; color=:purple, lengthscale=vector_arrowsize
+            )
+        else
+            dirs_obs = lift(dirs -> Vec3f.(dirs), scaled_load_dirs)
+            Makie.arrows3d!(
+                ax1, loaded_nodes, dirs_obs; color=:purple, lengthscale=vector_arrowsize
+            )
+        end
+
         Makie.scatter!(ax1, loaded_nodes) #, markersize = lift(s -> s * 3, lsgrid.sliders[1].value))
 
         # * fixties vectors
         ch = problem.ch
-        for (dbc_id, dbc) in enumerate(ch.dbcs)
+        for (_, dbc) in enumerate(ch.dbcs)
             support_vectors = []
             node_ids = dbc.faces
             if 1 in dbc.components
@@ -549,17 +570,28 @@ function TopOpt.visualize(
             end
             fixed_nodes = PtT.(nodes[node_ind].x for node_ind in node_ids)
             for v in support_vectors
-                Makie.arrows!(
-                    fixed_nodes,
-                    lift(
-                        s -> [PtT(s .* v) for nid in node_ids],
-                        condition_lsgrid.sliders[1].value,
-                    );
-                    arrowcolor=:orange,
-                    arrowsize=vector_arrowsize,
-                    linecolor=:orange,
-                    linewidth=vector_linewidth,
-                )
+                support_dir = [PtT(v) for _ in node_ids]
+                if ndim == 2
+                    Makie.arrows2d!(
+                        ax1,
+                        fixed_nodes,
+                        lift(condition_lsgrid.sliders[1].value) do s
+                            [Vec2f(s * v[1], s * v[2]) for _ in node_ids]
+                        end;
+                        color=:orange,
+                        lengthscale=vector_arrowsize,
+                    )
+                else
+                    Makie.arrows3d!(
+                        ax1,
+                        fixed_nodes,
+                        lift(condition_lsgrid.sliders[1].value) do s
+                            [Vec3f(s * v[1], s * v[2], s * v[3]) for _ in node_ids]
+                        end;
+                        color=:orange,
+                        lengthscale=vector_arrowsize,
+                    )
+                end
             end
             Makie.scatter!(ax1, fixed_nodes) #, markersize = lift(s -> s * 3, lsgrid.sliders[1].value))
         end

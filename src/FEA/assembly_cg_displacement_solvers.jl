@@ -76,7 +76,7 @@ function PCGDisplacementSolver(
 end
 
 function (s::PCGDisplacementSolver{T})(
-    ::Type{Val{safe}}=Val{false};
+    (::Type{Val{safe}})=Val{false};
     assemble_f=true,
     rhs=assemble_f ? s.globalinfo.f : s.rhs,
     lhs=assemble_f ? s.u : s.lhs,

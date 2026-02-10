@@ -83,7 +83,6 @@ fig = visualize(
     topology=x,
     default_exagg_scale=0.07,
     scale_range=10.0,
-    vector_linewidth=3,
     vector_arrowsize=0.5,
 )
 Makie.display(fig)
