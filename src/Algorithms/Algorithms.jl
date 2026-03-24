@@ -6,7 +6,7 @@ using ..CheqFilters: AbstractCheqFilter
 using Setfield, StaticArrays
 using Parameters: @unpack, @pack!
 using ..Utilities, Ferrite
-using LinearAlgebra, Zygote
+using LinearAlgebra, Zygote, Random
 
 export BESO, GESO
 
