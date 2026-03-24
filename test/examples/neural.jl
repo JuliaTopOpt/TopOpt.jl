@@ -12,12 +12,12 @@ xmin = 0.0001
 rmin = 4.0
 p = 3.0
 convcriteria = KKTCriteria()
-solver = FEASolver(Direct, problem; xmin)
+solver = FEASolver(DirectSolver, problem; xmin)
 nvars = length(solver.vars)
 x0 = fill(V, nvars)
 
 penalty = TopOpt.PowerPenalty(p)
-solver = FEASolver(Direct, problem; xmin, penalty)
+solver = FEASolver(DirectSolver, problem; xmin, penalty)
 filter = DensityFilter(solver; rmin)
 comp = Compliance(solver)
 volfrac = Volume(solver)

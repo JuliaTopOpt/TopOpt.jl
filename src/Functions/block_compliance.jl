@@ -11,7 +11,7 @@ mutable struct BlockCompliance{
 end
 function BlockCompliance(
     problem::MultiLoad,
-    solver::AbstractDisplacementSolver;
+    solver::AbstractFEASolver;
     method=:exact,
     sample_once=true,
     nv=nothing,
@@ -20,6 +20,8 @@ function BlockCompliance(
     decay=1.0,
     kwargs...,
 )
+    # BlockCompliance is only valid for structural (LinearElasticity) problems
+    @assert solver.problem isa StiffnessTopOptProblem "BlockCompliance can only be used with StiffnessTopOptProblem (structural mechanics). Got $(typeof(solver.problem))"
     comp = Compliance(solver; kwargs...)
     if method == :exact
         method = ExactDiagonal(problem.F, length(comp.grad))

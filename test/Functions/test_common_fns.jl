@@ -32,7 +32,7 @@ end
     nels = (2, 2)
     problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
     for p in (1.0, 2.0, 3.0)
-        solver = FEASolver(Direct, problem; xmin=0.01, penalty=PowerPenalty(p))
+        solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(p))
         comp = Compliance(solver)
         f = x -> comp(PseudoDensities(x))
         for i in 1:3
@@ -51,7 +51,7 @@ end
     nels = (2, 2)
     problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
     for p in (1.0, 2.0, 3.0)
-        solver = FEASolver(Direct, problem; xmin=0.01, penalty=PowerPenalty(p))
+        solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(p))
         dp = Displacement(solver)
         u = dp(PseudoDensities(solver.vars))
         for _ in 1:3
@@ -72,7 +72,7 @@ end
     nels = (2, 2)
     problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
     for p in (1.0, 2.0, 3.0)
-        solver = FEASolver(Direct, problem; xmin=0.01, penalty=PowerPenalty(p))
+        solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(p))
         vol = Volume(solver)
         constr = x -> vol(PseudoDensities(x)) - 0.3
         for i in 1:3
@@ -91,7 +91,7 @@ end
     nels = (2, 2)
     problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
     for p in (1.0, 2.0, 3.0)
-        solver = FEASolver(Direct, problem; xmin=0.01, penalty=PowerPenalty(p))
+        solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(p))
         filter = DensityFilter(solver; rmin=4.0)
         for i in 1:3
             x = rand(prod(nels))
@@ -110,7 +110,7 @@ end
 @testset "SensFilter" begin
     nels = (2, 2)
     problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0))
-    solver = FEASolver(Direct, problem; xmin=1e-3, penalty=PowerPenalty(3.0))
+    solver = FEASolver(DirectSolver, problem; xmin=1e-3, penalty=PowerPenalty(3.0))
     sensfilter = SensFilter(solver; rmin=4.0)
     f = x -> sensfilter(PseudoDensities(x))
     x = rand(length(solver.vars))
@@ -136,7 +136,7 @@ end
     end
     problem = MultiLoad(base_problem, F)
     for p in (1.0, 2.0, 3.0)
-        solver = FEASolver(Direct, problem; xmin=0.01, penalty=PowerPenalty(p))
+        solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(p))
         exact_svd_block = BlockCompliance(problem, solver; method=:exact)
         constr = Nonconvex.FunctionWrapper(
             x -> exact_svd_block(x) .- 1000.0,
@@ -160,7 +160,7 @@ end
     nels = (2, 2)
     problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
     for p in (1.0, 2.0, 3.0)
-        solver = FEASolver(Direct, problem; xmin=0.01, penalty=PowerPenalty(p))
+        solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(p))
         st = StressTensor(solver)
         # element stress tensor - element 1
         est = st[1]

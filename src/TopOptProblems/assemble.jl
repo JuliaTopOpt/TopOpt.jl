@@ -87,6 +87,83 @@ function assemble!(
     return nothing
 end
 
+function assemble!(
+    globalinfo::GlobalFEAInfo{T},
+    problem::HeatTransferTopOptProblem{dim,T},
+    elementinfo::ElementFEAInfo{dim,T,TK},
+    vars=ones(T, getncells(getdh(problem).grid)),
+    penalty=PowerPenalty(T(1)),
+    xmin=T(0.001);
+    assemble_f=true,
+) where {dim,T,TK}
+    ch = problem.ch
+    dh = ch.dh
+    K, f = globalinfo.K, globalinfo.f
+    if assemble_f
+        f .= elementinfo.fixedload
+    end
+    Kes, fes = elementinfo.Kes, elementinfo.fes
+    black = problem.black
+    white = problem.white
+    varind = problem.varind
+
+    _K = K isa Symmetric ? K.data : K
+    _K.nzval .= 0
+    assembler = Ferrite.AssemblerSparsityPattern(_K, f, Int[], Int[])
+
+    global_dofs = zeros(Int, ndofs_per_cell(dh))
+    fe = zeros(typeof(fes[1]))
+    Ke = zeros(T, size(rawmatrix(Kes[1])))
+
+    celliterator = CellIterator(dh)
+    for (i, cell) in enumerate(celliterator)
+        # get global_dofs for cell#i
+        celldofs!(global_dofs, dh, i)
+        fe = fes[i]
+        _Ke = rawmatrix(Kes[i])
+        Ke = _Ke isa Symmetric ? _Ke.data : _Ke
+        if black[i]
+            if assemble_f
+                Ferrite.assemble!(assembler, global_dofs, Ke, fe)
+            else
+                Ferrite.assemble!(assembler, global_dofs, Ke)
+            end
+        elseif white[i]
+            if PENALTY_BEFORE_INTERPOLATION
+                px = xmin
+            else
+                px = penalty(xmin)
+            end
+            Ke = px * Ke
+            if assemble_f
+                fe = px * fe
+                Ferrite.assemble!(assembler, global_dofs, Ke, fe)
+            else
+                Ferrite.assemble!(assembler, global_dofs, Ke)
+            end
+        else
+            if PENALTY_BEFORE_INTERPOLATION
+                px = density(penalty(vars[varind[i]]), xmin)
+            else
+                px = penalty(density(vars[varind[i]], xmin))
+            end
+            Ke = px * Ke
+            if assemble_f
+                fe = px * fe
+                Ferrite.assemble!(assembler, global_dofs, Ke, fe)
+            else
+                Ferrite.assemble!(assembler, global_dofs, Ke)
+            end
+        end
+    end
+
+    #* apply boundary condition
+    _K = TK <: Symmetric ? K.data : K
+    apply!(_K, f, ch)
+
+    return nothing
+end
+
 function assemble_f(
     problem::StiffnessTopOptProblem{dim,T},
     elementinfo::ElementFEAInfo{dim,T},

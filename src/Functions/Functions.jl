@@ -45,7 +45,9 @@ export Volume,
     MaterialInterpolation,
     MultiMaterialVariables,
     element_densities,
-    tounit
+    tounit,
+    ThermalCompliance,
+    MeanTemperature
 
 const to = TimerOutput()
 
@@ -74,5 +76,8 @@ include("truss_stress.jl")
 include("neural.jl")
 
 include("interpolation.jl")
+
+# Thermal compliance for heat transfer problems
+include("thermal_compliance.jl")
 
 end

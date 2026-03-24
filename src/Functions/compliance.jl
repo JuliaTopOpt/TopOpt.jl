@@ -1,5 +1,5 @@
 mutable struct Compliance{
-    T,TS<:AbstractDisplacementSolver,TC<:AbstractVector{T},TG<:AbstractVector{T}
+    T,TS<:AbstractFEASolver,TC<:AbstractVector{T},TG<:AbstractVector{T}
 } <: AbstractFunction{T}
     solver::TS
     cell_comp::TC
@@ -8,8 +8,11 @@ end
 Utilities.getpenalty(c::Compliance) = getpenalty(getsolver(c))
 Utilities.setpenalty!(c::Compliance, p) = setpenalty!(getsolver(c), p)
 Nonconvex.NonconvexCore.getdim(::Compliance) = 1
+getsolver(c::Compliance) = c.solver
 
-function Compliance(solver::AbstractDisplacementSolver)
+function Compliance(solver::AbstractFEASolver)
+    # Compliance is only valid for structural (LinearElasticity) problems
+    @assert solver.problem isa StiffnessTopOptProblem "Compliance can only be used with StiffnessTopOptProblem (structural mechanics). Got $(typeof(solver.problem))"
     T = eltype(solver.vars)
     cell_comp = zeros(T, getncells(solver.problem.ch.dh.grid))
     grad = copy(cell_comp)

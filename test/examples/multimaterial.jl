@@ -20,7 +20,7 @@ problem = PointLoadCantilever(
 ncells = TopOpt.getncells(problem)
 
 # FEA solver
-solver = FEASolver(Direct, problem; xmin=0.0)
+solver = FEASolver(DirectSolver, problem; xmin=0.0)
 
 # density filter definition
 filter = DensityFilter(solver; rmin=4.0)

@@ -17,12 +17,12 @@ function simulate(
 )
     if round
         if hard
-            solver = FEASolver(Direct, problem; xmin=0.0)
+            solver = FEASolver(DirectSolver, problem; xmin=0.0)
         else
-            solver = FEASolver(Direct, problem; xmin=xmin)
+            solver = FEASolver(DirectSolver, problem; xmin=xmin)
         end
     else
-        solver = FEASolver(Direct, problem; xmin=xmin)
+        solver = FEASolver(DirectSolver, problem; xmin=xmin)
     end
     vars = solver.vars
     fill_vars!(vars, topology; round=round)

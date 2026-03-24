@@ -39,7 +39,7 @@ end
 @testset "ElementK" begin
     nels = (2, 2)
     problem = PointLoadCantilever(Val{:Quadratic}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
-    solver = FEASolver(Direct, problem; xmin=0.01, penalty=TopOpt.PowerPenalty(1.0))
+    solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=TopOpt.PowerPenalty(1.0))
 
     ek = ElementK(solver)
     dh = problem.ch.dh
@@ -85,7 +85,7 @@ end
     problem = TrussProblem(
         Val{:Linear}, node_points, elements, loads, fixities, mats, crossecs
     )
-    solver = FEASolver(Direct, problem)
+    solver = FEASolver(DirectSolver, problem)
     solver()
     u = solver.u
 
@@ -180,7 +180,7 @@ end
     V = 0.5 # maximum volume fraction
     x0 = fill(1.0, ncells) # initial design
 
-    solver = FEASolver(Direct, problem)
+    solver = FEASolver(DirectSolver, problem)
     ch = problem.ch
     dh = problem.ch.dh
     total_ndof = ndofs(dh)

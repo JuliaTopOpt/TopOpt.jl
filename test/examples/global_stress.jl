@@ -27,7 +27,7 @@ xmin = 0.001 # minimum density
 steps = 40 # maximum number of penalty steps, delta_p0 = 0.1
 penalty = TopOpt.PowerPenalty(3.0)
 # Define a finite element solver
-solver = FEASolver(Direct, problem; xmin=xmin, penalty=penalty)
+solver = FEASolver(DirectSolver, problem; xmin=xmin, penalty=penalty)
 stress = TopOpt.von_mises_stress_function(solver)
 filter = if problem isa TopOptProblems.TieBeam
     identity

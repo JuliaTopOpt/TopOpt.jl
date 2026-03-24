@@ -2,7 +2,7 @@ mutable struct Displacement{
     T,
     Tu<:AbstractVector{T},
     Td<:AbstractVector,
-    Ts<:AbstractDisplacementSolver,
+    Ts<:AbstractFEASolver,
     Tg<:AbstractVector{<:Integer},
 } <: AbstractFunction{T}
     u::Tu # displacement vector
@@ -33,6 +33,8 @@ LinearAlgebra.dot(u::DisplacementResult, weights::AbstractArray) = dot(u.u, weig
 Construct the Displacement function struct.
 """
 function Displacement(solver::AbstractFEASolver; maxfevals=10^8)
+    # Displacement is only valid for structural (LinearElasticity) problems
+    @assert solver.problem isa StiffnessTopOptProblem "Displacement can only be used with StiffnessTopOptProblem (structural mechanics). Got $(typeof(solver.problem))"
     T = eltype(solver.u)
     dh = solver.problem.ch.dh
     k = ndofs_per_cell(dh)

@@ -70,7 +70,7 @@ ins_dir = joinpath(@__DIR__, "instances", "fea_examples");
         @test Ke_m ≈ Ke
     end
 
-    solver = FEASolver(Direct, problem)
+    solver = FEASolver(DirectSolver, problem)
     solver()
 
     fig = visualize(problem; u=solver.u)

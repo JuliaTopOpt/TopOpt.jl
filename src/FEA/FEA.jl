@@ -8,34 +8,28 @@ using LinearAlgebra
 using Parameters: @unpack
 
 export AbstractFEASolver,
-    AbstractDisplacementSolver,
-    DirectDisplacementSolver,
-    PCGDisplacementSolver,
-    StaticMatrixFreeDisplacementSolver,
-    Displacement,
-    Direct,
-    CG,
-    MatrixFree,
     FEASolver,
-    Assembly,
+    DirectSolver,
+    CGAssembleSolver,
+    CGMatrixFreeSolver,
     DefaultCriteria,
     EnergyCriteria,
-    simulate
+    simulate,
+    AbstractPhysics,
+    LinearElasticity,
+    HeatTransfer
 
 const to = TimerOutput()
 
 # FEA solvers
 abstract type AbstractFEASolver end
 
+include("solvers_api.jl")  # Shared abstractions first
 include("grid_utils.jl")
 include("matrix_free_operator.jl")
 include("convergence_criteria.jl")
-include("direct_displacement_solver.jl")
-include("assembly_cg_displacement_solvers.jl")
-include("matrix_free_cg_displacement_solvers.jl")
 include("matrix_free_apply_bcs.jl")
 include("simulate.jl")
-include("solvers_api.jl")
 
 getcompliance(solver) = solver.u' * solver.globalinfo.K * solver.u
 

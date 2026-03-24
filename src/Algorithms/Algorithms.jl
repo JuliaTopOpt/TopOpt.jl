@@ -2,6 +2,7 @@ module Algorithms
 
 using Nonconvex, ..Functions, Parameters
 using ..TopOpt: PseudoDensities
+using ..CheqFilters: AbstractCheqFilter
 using Setfield, StaticArrays
 using Parameters: @unpack, @pack!
 using ..Utilities, Ferrite

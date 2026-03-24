@@ -7,7 +7,7 @@ using GeometryBasics
 using ColorSchemes
 using GeometryBasics: TriangleFace
 using TopOpt: TopOpt
-using TopOpt.TopOptProblems: getcloaddict, boundingbox, getdim, StiffnessTopOptProblem
+using TopOpt.TopOptProblems: getcloaddict, boundingbox, getdim, StiffnessTopOptProblem, HeatTransferTopOptProblem
 using TopOpt.TrussTopOptProblems: TrussProblem
 using Ferrite
 
@@ -398,6 +398,167 @@ function TopOpt.visualize(
             Makie.scatter!(ax1, fixed_nodes) #, markersize = lift(s -> s * 3, lsgrid.sliders[1].value))
         end
     end # end if display_supports
+
+    return fig
+end
+
+function TopOpt.visualize(
+    problem::HeatTransferTopOptProblem{dim,T};
+    u=undef,
+    topology=undef,
+    cloaddict=undef,
+    undeformed_mesh_color=dim == 2 ? RGBAf(0, 0, 0, 1.0) : RGBAf(0.5, 0.5, 0.5, 0.4),
+    cell_colors=undef,
+    draw_legend=false,
+    colormap=ColorSchemes.Spectral_10,
+    display_supports=true,
+    vector_arrowsize=10.0,
+    default_support_scale=1.0,
+    default_load_scale=1.0,
+    scale_range=1.0,
+    kw...,
+) where {dim,T}
+    mesh = problem.ch.dh.grid
+    node_dofs = problem.metadata.node_dofs
+    nnodes = Ferrite.getnnodes(mesh)
+
+    cloaddict = cloaddict === undef ? getcloaddict(problem) : cloaddict
+    mesh_cells = mesh.cells
+    topology = topology == undef ? ones(T, length(mesh_cells)) : topology
+    nodes = Vector{Ferrite.Node}(undef, nnodes)
+    if dim == 2
+        for (i, node) in enumerate(mesh.nodes)
+            nodes[i] = Ferrite.Node((node.x[1], node.x[2], zero(T)))
+        end
+    else
+        nodes = mesh.nodes
+    end
+
+    fig = Figure()
+    if dim == 2
+        ax1 = Axis(fig[1, 1])
+        ax1.aspect = DataAspect()
+    else
+        ax1 = LScene(fig[1, 1]; scenekw=(camera=cam3d!, raw=false))
+    end
+
+    if display_supports
+        condition_lsgrid = SliderGrid(
+            fig[2, 1],
+            (
+                label="support scale",
+                range=0.0:0.01:scale_range,
+                format="{:.2f}",
+                startvalue=default_support_scale,
+            ),
+            (
+                label="load scale",
+                range=0.0:0.01:scale_range,
+                format="{:.2f}",
+                startvalue=default_load_scale,
+            );
+            width=Auto(),
+        )
+    end
+
+    dup_nodes, dup_cells, _, old_node_id_from_new = _explode_nodes_and_cells(mesh)
+    undeformed_mesh_colors = Vector{RGBAf}(undef, length(dup_nodes))
+    scaled_cell_colors = similar(topology)
+    scaled_cell_colors .= 0.0
+    if cell_colors !== undef
+        @assert length(cell_colors) == length(topology)
+        val_range = maximum(cell_colors) - minimum(cell_colors)
+        scaled_cell_colors = (cell_colors .- minimum(cell_colors)) / val_range
+    end
+    for i in eachindex(dup_cells)
+        cell_xvar = topology[i]
+        for new_nid in dup_cells[i].nodes
+            ccolor = undeformed_mesh_color
+            if cell_colors !== undef
+                ccolor = ColorSchemes.get(colormap, scaled_cell_colors[i])
+            end
+            undeformed_mesh_colors[new_nid] = RGBAf(ccolor.r, ccolor.g, ccolor.b, cell_xvar)
+        end
+    end
+    if cell_colors !== undef && draw_legend
+        _create_colorbar(fig[1, 2], colormap, cell_colors)
+    end
+
+    Makie.mesh!(ax1, dup_nodes, dup_cells; color=undeformed_mesh_colors, kw...)
+
+    if display_supports
+        if cloaddict !== undef && length(cloaddict) > 0
+            load_items = collect(cloaddict)
+            loaded_nodes = Point3f.(nodes[node_ind].x for (node_ind, _) in load_items)
+
+            load_dirs = lift(condition_lsgrid.sliders[2].value) do s
+                if dim == 2
+                    [Vec2f(s * lv[1], s * lv[2]) for (_, lv) in load_items]
+                else
+                    [Vec3f(s * lv[1], s * lv[2], s * lv[3]) for (_, lv) in load_items]
+                end
+            end
+
+            if dim == 2
+                Makie.arrows2d!(
+                    ax1,
+                    [Point2f(p[1], p[2]) for p in loaded_nodes],
+                    load_dirs;
+                    color=:red,
+                    lengthscale=vector_arrowsize,
+                )
+            else
+                Makie.arrows3d!(
+                    ax1,
+                    loaded_nodes,
+                    load_dirs;
+                    color=:red,
+                    lengthscale=vector_arrowsize,
+                )
+            end
+            Makie.scatter!(ax1, loaded_nodes)
+        end
+
+        ch = problem.ch
+        for (_, dbc) in enumerate(ch.dbcs)
+            support_vectors = []
+            if 1 in dbc.components
+                push!(support_vectors, [1.0, 0.0, 0.0])
+            end
+            if 2 in dbc.components
+                push!(support_vectors, [0.0, 1.0, 0.0])
+            end
+            if 3 in dbc.components
+                push!(support_vectors, [0.0, 0.0, 1.0])
+            end
+            node_ids = dbc.faces
+            fixed_nodes = Point3f.(nodes[node_ind].x for node_ind in node_ids)
+            for v in support_vectors
+                if dim == 2
+                    Makie.arrows2d!(
+                        ax1,
+                        [Point2f(p[1], p[2]) for p in fixed_nodes],
+                        lift(condition_lsgrid.sliders[1].value) do s
+                            [Vec2f(s * v[1], s * v[2]) for _ in node_ids]
+                        end;
+                        color=:orange,
+                        lengthscale=vector_arrowsize,
+                    )
+                else
+                    Makie.arrows3d!(
+                        ax1,
+                        fixed_nodes,
+                        lift(condition_lsgrid.sliders[1].value) do s
+                            [Vec3f(s * v[1], s * v[2], s * v[3]) for _ in node_ids]
+                        end;
+                        color=:orange,
+                        lengthscale=vector_arrowsize,
+                    )
+                end
+            end
+            Makie.scatter!(ax1, fixed_nodes)
+        end
+    end
 
     return fig
 end

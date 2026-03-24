@@ -59,7 +59,7 @@ using ColorSchemes
     #set xmin for FEASolver
     xmin = 0.0001
     # Set the solver and solve
-    solver = FEASolver(Direct, problem; xmin=xmin)
+    solver = FEASolver(DirectSolver, problem; xmin=xmin)
     # Get the stress
     ts = TrussStress(solver)
     σ = ts(PseudoDensities(x))

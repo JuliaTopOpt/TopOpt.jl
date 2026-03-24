@@ -55,7 +55,7 @@ gm_ins_dir = joinpath(@__DIR__, "instances", "ground_meshes");
 #             # assemble K based on the conf (orig + u1)
 #             updated_nodes = Dict(nid => pt + u1[2*nid-1:2*nid] for (nid, pt) in node_points)
 #             problem = TrussProblem(Val{:Linear}, updated_nodes, elements, P, fixities, mats, crosssecs);
-#             solver = FEASolver(Direct, problem)
+#             solver = FEASolver(DirectSolver, problem)
 #             # trigger assembly
 #             solver()
 
