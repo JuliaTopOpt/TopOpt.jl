@@ -2,7 +2,7 @@
 # This script demonstrates topology optimization of a heat sink
 # for maximizing heat dissipation (minimizing thermal compliance)
 
-using TopOpt, Ferrite, LinearAlgebra, Printf
+using TopOpt, Ferrite, LinearAlgebra
 
 # Problem parameters
 nels = (60, 30)  # Mesh resolution
