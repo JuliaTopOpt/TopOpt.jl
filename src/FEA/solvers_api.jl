@@ -43,47 +43,6 @@ function init_direct_solver(
     return elementinfo, globalinfo, u, lhs, rhs, vars
 end
 
-# Common factorization and solve logic for direct solvers
-function direct_solve_core!(
-    solver::AbstractFEASolver,
-    globalinfo::GlobalFEAInfo,
-    lhs::AbstractVector,
-    rhs::AbstractVector,
-    reuse_fact::Bool,
-    safe::Bool,
-    matrix_name::String,
-)
-    T = eltype(solver)
-    K = globalinfo.K
-    if safe
-        m = meandiag(K)
-        for i in 1:size(K, 1)
-            if K[i, i] ≈ zero(T)
-                K[i, i] = m
-            end
-        end
-    end
-    nans = false
-    if !reuse_fact
-        if solver.qr
-            globalinfo.qrK = qr(K.data)
-        else
-            cholK = cholesky(Symmetric(K); check=false)
-            if issuccess(cholK)
-                globalinfo.cholK = cholK
-            else
-                @warn "The global $matrix_name matrix is not positive definite. Please check your boundary conditions."
-                lhs .= T(NaN)
-                nans = true
-            end
-        end
-    end
-    nans && return true
-    fact = solver.qr ? globalinfo.qrK : globalinfo.cholK
-    lhs .= fact \ rhs
-    return false
-end
-
 # ============================================================================
 # Unified GenericFEASolver with Two-Layered Dispatch
 # ============================================================================

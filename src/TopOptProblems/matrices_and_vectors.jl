@@ -48,13 +48,9 @@ function gettypes(
     return Matrix{T}, Vector{T}
 end
 
-initialize_K(sp::StiffnessTopOptProblem) = Symmetric(create_sparsity_pattern(sp.ch.dh))
-
-initialize_f(sp::StiffnessTopOptProblem{dim,T}) where {dim,T} = zeros(T, ndofs(sp.ch.dh))
-
-initialize_K(sp::HeatTransferTopOptProblem) = Symmetric(create_sparsity_pattern(sp.ch.dh))
-
-initialize_f(sp::HeatTransferTopOptProblem{dim,T}) where {dim,T} = zeros(T, ndofs(sp.ch.dh))
+# Common fallbacks for all problem types
+initialize_K(sp::AbstractTopOptProblem) = Symmetric(create_sparsity_pattern(sp.ch.dh))
+initialize_f(sp::AbstractTopOptProblem) = zeros(floattype(sp), ndofs(sp.ch.dh))
 
 function make_Kes_and_fes(problem, quad_order=2)
     return make_Kes_and_fes(problem, quad_order, Val{:Static})

@@ -56,40 +56,15 @@ end
 Computes thermal compliance: J = T^T K T = Σ ρ_e * u_e^T Ke u_e
 where ρ_e is the penalized density (material thermal conductivity).
 
-Gradient: dJ/dρ_e = -u_e^T Ke u_e * dρ_e/dx_e
+Gradient: dJ/dx_e = -u_e^T Ke u_e * dρ_e/dx_e
 For minimization with SIMP, this drives material toward low-conductivity regions.
+
+Uses the shared compute_element_energy kernel.
 """
 function compute_thermal_compliance(
     cell_comp::Vector{T}, grad, cell_dofs, Kes, u, black, white, varind, x, penalty, xmin
 ) where {T}
-    obj = zero(T)
-    grad .= 0
-    @inbounds for i in 1:size(cell_dofs, 2)
-        cell_comp[i] = zero(T)
-        Ke = rawmatrix(Kes[i])
-        # Compute element thermal compliance: u_e^T Ke u_e
-        for w in 1:size(Ke, 2)
-            for v in 1:size(Ke, 1)
-                cell_comp[i] += u[cell_dofs[v, i]] * Ke[v, w] * u[cell_dofs[w, i]]
-            end
-        end
-
-        if black[i]
-            obj += cell_comp[i]
-        elseif white[i]
-            if PENALTY_BEFORE_INTERPOLATION
-                obj += xmin * cell_comp[i]
-            else
-                obj += penalty(xmin) * cell_comp[i]
-            end
-        else
-            ρe, dρe = get_ρ_dρ(x[varind[i]], penalty, xmin)
-            grad[varind[i]] = -dρe * cell_comp[i]
-            obj += ρe * cell_comp[i]
-        end
-    end
-
-    return obj
+    return compute_element_energy(cell_comp, grad, cell_dofs, Kes, u, black, white, varind, x, penalty, xmin)
 end
 
 """

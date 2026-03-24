@@ -78,6 +78,7 @@ include("neural.jl")
 include("interpolation.jl")
 
 # Thermal compliance for heat transfer problems
+include("compute_element_energy.jl")
 include("thermal_compliance.jl")
 
 end
