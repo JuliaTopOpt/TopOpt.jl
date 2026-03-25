@@ -62,6 +62,43 @@ Random.seed!(42)
         # All gradients should be negative (more material = lower compliance)
         @test all(grad .< 0)
     end
+
+    @testset "Penalty power law verification" begin
+        # For SIMP, thermal compliance should follow power law
+        # J(ρ) = ρ^p * J(1) for uniform density
+        nels = (6, 4)
+        sizes = (1.0, 1.0)
+        k = 1.0
+        heatflux = Dict("top" => 1.0)
+
+        problem = HeatConductionProblem(
+            Val{:Linear}, nels, sizes, k;
+            Tleft=0.0, Tright=0.0, heatflux=heatflux
+        )
+
+        # Reference solution with full density
+        solver_ref = FEASolver(DirectSolver, problem; xmin=0.001, penalty=PowerPenalty(1.0))
+        comp_ref = ThermalCompliance(solver_ref)
+        tc_full = comp_ref(PseudoDensities(ones(prod(nels))))
+
+        # Test different penalty exponents
+        for p in [1.0, 2.0, 3.0]
+            solver = FEASolver(DirectSolver, problem; xmin=0.001, penalty=PowerPenalty(p))
+            comp = ThermalCompliance(solver)
+
+            # With uniform density ρ=0.5, compliance should scale as (0.5)^p
+            rho = 0.5
+            x_uniform = fill(rho, prod(nels))
+            tc_uniform = comp(PseudoDensities(x_uniform))
+
+            # Check power law approximately holds
+            expected_ratio = rho^p
+            actual_ratio = tc_uniform / tc_full
+
+            # Allow 20% tolerance for discretization effects
+            @test isapprox(actual_ratio, expected_ratio; rtol=0.2)
+        end
+    end
 end
 
 @testset "Thermal Compliance - Physical Validation" begin
