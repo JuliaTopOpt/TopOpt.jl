@@ -100,19 +100,10 @@ function ElementFEAInfo(
 end
 
 # Default fixed load computation for stiffness problems
-function _compute_fixedload(sp::StiffnessTopOptProblem{dim,T}, dloads, _) where {dim,T}
+# Body forces (self-weight) are in weights and get penalized during assembly
+# Concentrated loads from make_cload and distributed loads from dloads are NOT penalized
+function _compute_fixedload(sp::AbstractTopOptProblem, dloads, _) where {dim,T}
     fixedload = Vector(make_cload(sp))
-    assemble_f!(fixedload, sp, dloads)
-    return fixedload
-end
-
-# Fixed load computation for heat transfer problems
-# CRITICAL: Heat source is NOT penalized - it's assembled directly from dloads
-# The conductivity K is penalized in assemble!, but the heat source Q is constant
-function _compute_fixedload(
-    sp::HeatTransferTopOptProblem{dim,T}, dloads, _
-) where {dim,T}
-    fixedload = zeros(T, ndofs(sp.ch.dh))
     assemble_f!(fixedload, sp, dloads)
     return fixedload
 end

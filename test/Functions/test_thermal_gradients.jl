@@ -9,12 +9,9 @@ Random.seed!(42)
         nels = (8, 6)
         sizes = (1.0, 1.0)
         k = 1.0
-        heat_source = 1.0
-
-        problem = HeatConductionProblem(
-            Val{:Linear}, nels, sizes, k, heat_source;
-            Tleft=0.0, Tright=0.0
-        )
+        # Apply heat flux on top boundary (faceset "top")
+        heatflux = Dict("top" => 100.0)  # 100 W/m² into the domain
+        problem = HeatConductionProblem(Val{:Linear}, nels, sizes, k; Tleft=0.0, Tright=0.0, heatflux=heatflux)
 
         solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(1.0))
         comp = ThermalCompliance(solver)
@@ -39,8 +36,7 @@ Random.seed!(42)
             fd_grad = FDM.grad(FDM.central_fdm(5, 1), f, x)[1]
 
             # Gradient should match finite differences
-            # The key fix: heat source is NOT penalized, so gradients should be accurate
-            @test isapprox(grad_zygote, fd_grad; rtol=1e-2, atol=1e-6)
+            @test isapprox(grad_zygote, fd_grad; rtol=1e-3, atol=1e-6)
         end
     end
 

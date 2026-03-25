@@ -806,10 +806,11 @@ abstract type HeatTransferTopOptProblem{dim,T} <: AbstractTopOptProblem end
 getdim(::HeatTransferTopOptProblem{dim,T}) where {dim,T} = dim
 floattype(::HeatTransferTopOptProblem{dim,T}) where {dim,T} = T
 getk(p::HeatTransferTopOptProblem) = p.k
-getheat_source(p::HeatTransferTopOptProblem) = p.heat_source
 getmetadata(p::HeatTransferTopOptProblem) = p.metadata
 getdh(p::HeatTransferTopOptProblem) = p.ch.dh
 getpressuredict(p::HeatTransferTopOptProblem{dim,T}) where {dim,T} = Dict{String,T}()
+getheatfluxdict(p::HeatTransferTopOptProblem{dim,T}) where {dim,T} = Dict{String,T}()
+getfacesets(p::HeatTransferTopOptProblem) = getdh(p).grid.facesets
 Ferrite.getncells(problem::HeatTransferTopOptProblem) = Ferrite.getncells(getdh(problem).grid)
 getgeomorder(p::HeatTransferTopOptProblem) = nnodespercell(p) in (9, 27) ? 2 : 1
 getcloaddict(p::HeatTransferTopOptProblem{dim,T}) where {dim,T} = Dict{String,Vector{T}}()
@@ -819,21 +820,23 @@ getcloaddict(p::HeatTransferTopOptProblem{dim,T}) where {dim,T} = Dict{String,Ve
 
 A steady-state heat conduction problem with:
 - Temperature boundary conditions (Dirichlet)
-- Uniform volumetric heat generation
+- Surface heat flux (Neumann boundary condition)
 - Penalized thermal conductivity (SIMP)
 
 Constructor:
-    HeatConductionProblem(Val{:Linear}, nels, sizes, k, heat_source; Tleft=0.0, Tright=0.0)
+    HeatConductionProblem(Val{:Linear}, nels, sizes, k; Tleft=0.0, Tright=0.0, heatflux=Dict{String,Float64}())
 
 Arguments:
 - `nels`: tuple of number of elements in each dimension
 - `sizes`: tuple of element sizes
 - `k`: thermal conductivity (W/m·K)
-- `heat_source`: volumetric heat generation (W/m³)
 - `Tleft`: temperature on left boundary
 - `Tright`: temperature on right boundary
+- `heatflux`: Dict mapping faceset names to heat flux values (W/m²)
+  - Positive values = heat entering the domain (heat source on boundary)
+  - Negative values = heat leaving the domain (heat sink on boundary)
 
-Note: Heat source q is NOT penalized in the assembly. Only conductivity k(ρ) is penalized.
+Note: Heat flux q is NOT penalized in the assembly. Only conductivity k(ρ) is penalized.
 """
 struct HeatConductionProblem{
     dim,
@@ -846,11 +849,12 @@ struct HeatConductionProblem{
     Tw<:AbstractVector,
     Tv<:AbstractVector{Int},
     Tm<:Metadata,
+    Th<:AbstractDict{String,T},
 } <: HeatTransferTopOptProblem{dim, T}
     rect_grid::Tr
     k::T
     ch::Tc
-    heat_source::T
+    heatfluxdict::Th
     black::Tb
     white::Tw
     varind::Tv
@@ -861,33 +865,36 @@ function Base.show(::IO, ::MIME{Symbol("text/plain")}, ::HeatConductionProblem)
     return println("TopOpt heat conduction problem")
 end
 
+getheatfluxdict(p::HeatConductionProblem) = p.heatfluxdict
+
 """
-    HeatConductionProblem(::Type{Val{CellType}}, nels, sizes, k=1.0, heat_source=1.0; Tleft=0.0, Tright=0.0)
+    HeatConductionProblem(::Type{Val{CellType}}, nels, sizes, k=1.0; Tleft=0.0, Tright=0.0, heatflux=Dict{String,Float64}())
 
 Create a 2D/3D heat conduction problem on a rectangular domain.
 
 Temperature BCs are applied on left (Tleft) and right (Tright) boundaries.
-Heat generation is uniform throughout the domain.
+Heat flux BCs can be applied on any faceset via the `heatflux` argument.
 
 Example:
 ```julia
 nels = (60, 20)
 sizes = (1.0, 1.0)
 k = 1.0
-heat_source = 1.0
-problem = HeatConductionProblem(Val{:Linear}, nels, sizes, k, heat_source; Tleft=0.0, Tright=0.0)
+# Apply heat flux on top boundary (faceset "top")
+heatflux = Dict("top" => 100.0)  # 100 W/m² into the domain
+problem = HeatConductionProblem(Val{:Linear}, nels, sizes, k; Tleft=0.0, Tright=0.0, heatflux=heatflux)
 ```
 """
 function HeatConductionProblem(
     ::Type{Val{CellType}},
     nels::NTuple{dim, Int},
     sizes::NTuple{dim},
-    k=1.0,
-    heat_source=1.0;
+    k=1.0;
     Tleft=0.0,
     Tright=0.0,
+    heatflux=Dict{String,Float64}(),
 ) where {dim, CellType}
-    _T = promote_type(eltype(sizes), typeof(k), typeof(heat_source), typeof(Tleft), typeof(Tright))
+    _T = promote_type(eltype(sizes), typeof(k), typeof(Tleft), typeof(Tright))
     if _T <: Integer
         T = Float64
     else
@@ -936,8 +943,14 @@ function HeatConductionProblem(
     black, white = find_black_and_white(dh)
     varind = find_varind(black, white)
 
+    # Convert heatflux dict to proper type
+    heatfluxdict = Dict{String,T}()
+    for (key, val) in heatflux
+        heatfluxdict[key] = T(val)
+    end
+
     return HeatConductionProblem(
-        rect_grid, T(k), ch, T(heat_source), black, white, varind, metadata
+        rect_grid, T(k), ch, heatfluxdict, black, white, varind, metadata
     )
 end
 

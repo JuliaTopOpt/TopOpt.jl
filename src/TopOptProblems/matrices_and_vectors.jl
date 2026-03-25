@@ -210,11 +210,14 @@ function _make_Kes_and_weights(
 end
 
 """
-    _make_dload(problem)
+    _make_dloads(fes, problem, facevalues)
 
-Assemble a sparse vector for boundary (face) distributed loads
+Assemble distributed loads for boundary (face) loads.
+
+For structural problems: returns boundary traction/pressure loads.
+For heat transfer problems: returns zeros (no boundary distributed heat sources).
 """
-function _make_dloads(fes, problem, facevalues)
+function _make_dloads(fes, problem::StiffnessTopOptProblem, facevalues)
     dim = getdim(problem)
     N = nnodespercell(problem)
     T = floattype(problem)
@@ -262,12 +265,69 @@ function _make_dloads(fes, problem, facevalues)
     return dloads
 end
 
+# For heat transfer: surface heat flux (Neumann BC)
+# Heat flux q is positive INTO the domain (heat source on boundary)
+# Heat flux is NOT penalized - it's an external boundary condition
+function _make_dloads(fes, problem::HeatTransferTopOptProblem, facevalues)
+    dim = getdim(problem)
+    N = nnodespercell(problem)
+    T = floattype(problem)
+    # Initialize with zeros
+    dloads = deepcopy(fes)
+    for i in 1:length(dloads)
+        if eltype(dloads) <: SArray
+            dloads[i] = zero(eltype(dloads))
+        else
+            dloads[i] .= 0
+        end
+    end
+
+    heatfluxdict = getheatfluxdict(problem)
+    if isempty(heatfluxdict)
+        return dloads
+    end
+
+    dh = getdh(problem)
+    grid = dh.grid
+    boundary_matrix = grid.boundary_matrix
+    cell_coords = zeros(Ferrite.Vec{dim,T}, N)
+    n_basefuncs = getnbasefunctions(facevalues)
+
+    for (faceset_name, q) in heatfluxdict
+        # q is heat flux (W/m²), positive = heat INTO domain
+        # For thermal: fe[i] = ∫ ϕi * q dΓ
+        faceset = getfacesets(problem)[faceset_name]
+        for (cellid, faceid) in faceset
+            boundary_matrix[faceid, cellid] ||
+                throw("Face $((cellid, faceid)) not on boundary.")
+            fe = dloads[cellid]
+            getcoordinates!(cell_coords, grid, cellid)
+            reinit!(facevalues, cell_coords, faceid)
+            for q_point in 1:getnquadpoints(facevalues)
+                dΓ = getdetJdV(facevalues, q_point)  # Face area
+                for i in 1:n_basefuncs
+                    ϕ = shape_value(facevalues, q_point, i)  # Shape function value
+                    if fe isa SArray
+                        # fe is a scalar for heat transfer (temperature DOF)
+                        fe = @set fe[i] += ϕ * q * dΓ
+                    else
+                        fe[i] += ϕ * q * dΓ
+                    end
+                end
+            end
+            dloads[cellid] = fe
+        end
+    end
+
+    return dloads
+end
+
 """
     make_cload(problem)
 
-Assemble a sparse vector for concentrated loads
+Assemble a sparse vector for concentrated loads (point loads / point heat sources).
 """
-function make_cload(problem)
+function make_cload(problem::StiffnessTopOptProblem)
     T = floattype(problem)
     dim = getdim(problem)
     cloads = getcloaddict(problem)
@@ -286,6 +346,15 @@ function make_cload(problem)
         end
     end
     return sparsevec(inds, vals, ndofs(dh))
+end
+
+# For heat transfer: concentrated heat sources (point sources)
+# Returns zero vector by default (no point heat sources)
+function make_cload(problem::HeatTransferTopOptProblem)
+    T = floattype(problem)
+    dh = getdh(problem)
+    # No concentrated heat sources by default
+    return sparsevec(Int[], T[], ndofs(dh))
 end
 
 # ============================================================================
@@ -322,7 +391,6 @@ function make_Kes_and_fes(
 ) where {dim, T, mat_type}
     dh = getdh(problem)
     k = getk(problem)
-    q = getheat_source(problem)
 
     refshape = Ferrite.getrefshape(dh.field_interpolations[1])
 
@@ -345,48 +413,44 @@ function make_Kes_and_fes(
         Val{n_basefuncs},
         Val{Kesize},
         k,
-        q,
         quadrature_rule,
         cellvalues,
     )
+    # No body forces in heat transfer - weights is zeros
+    # Surface heat flux is computed via _make_dloads (NOT penalized)
     dloads = _make_dloads(weights, problem, facevalues)
 
     return Kes, weights, dloads, cellvalues, facevalues
 end
 
 # Element conductivity matrices for heat transfer (scalar field)
-# CRITICAL: Heat source (weights) is NOT scaled by density - it's external input
+# No body forces in heat transfer - weights should be zeros
+# Surface heat flux is computed separately via _make_dloads
 function _make_Kes_and_weights_heat(
     dh::DofHandler{dim, N, T},
     ::Type{Tuple{MatrixType, VectorType}},
     ::Type{Val{n_basefuncs}},
     ::Type{Val{Kesize}},
     k::T,
-    q,
     quadrature_rule,
     cellvalues,
 ) where {dim, N, T, MatrixType <: StaticArray, VectorType, n_basefuncs, Kesize}
     nel = getncells(dh.grid)
     Kes = Symmetric{T, MatrixType}[]
     sizehint!(Kes, nel)
-    # Heat source vector - this is NOT penalized (external input)
+    # No body forces in heat transfer - weights should be zeros
     weights = [zeros(VectorType) for i in 1:nel]
-    fe = zeros(T, Kesize)
     Ke_0 = Matrix{T}(undef, Kesize, Kesize)
 
     celliterator = CellIterator(dh)
     for (cell_idx, cell) in enumerate(celliterator)
         Ke_0 .= 0
-        fe .= 0
         reinit!(cellvalues, cell)
 
         for q_point in 1:getnquadpoints(cellvalues)
             dΩ = getdetJdV(cellvalues, q_point)
             for b in 1:n_basefuncs
                 ∇ϕb = shape_gradient(cellvalues, q_point, b)
-                ϕb = shape_value(cellvalues, q_point, b)
-                # Heat source contribution - NOT penalized
-                fe[b] += ϕb * q * dΩ
 
                 for a in 1:n_basefuncs
                     ∇ϕa = shape_gradient(cellvalues, q_point, a)
@@ -395,7 +459,6 @@ function _make_Kes_and_weights_heat(
                 end
             end
         end
-        weights[cell_idx] = fe
         if MatrixType <: SizedMatrix
             push!(Kes, Symmetric(SizedMatrix{Kesize, Kesize, T}(Ke_0)))
         else
@@ -412,26 +475,22 @@ function _make_Kes_and_weights_heat(
     ::Type{Val{n_basefuncs}},
     ::Type{Val{Kesize}},
     k::T,
-    q,
     quadrature_rule,
     cellvalues,
 ) where {dim, N, T, MatrixType, VectorType, n_basefuncs, Kesize}
     nel = getncells(dh.grid)
     Kes = [Symmetric(zeros(T, Kesize, Kesize), :U) for i in 1:nel]
+    # No body forces in heat transfer - weights should be zeros
     weights = [zeros(T, Kesize) for i in 1:nel]
-    fe = zeros(T, Kesize)
     Ke_e = zero(T)
 
     celliterator = CellIterator(dh)
     for (cell_idx, cell) in enumerate(celliterator)
         reinit!(cellvalues, cell)
-        fe .= 0
         for q_point in 1:getnquadpoints(cellvalues)
             dΩ = getdetJdV(cellvalues, q_point)
             for b in 1:n_basefuncs
                 ∇ϕb = shape_gradient(cellvalues, q_point, b)
-                ϕb = shape_value(cellvalues, q_point, b)
-                fe[b] += ϕb * q * dΩ  # NOT penalized
                 for a in 1:n_basefuncs
                     ∇ϕa = shape_gradient(cellvalues, q_point, a)
                     Ke_e = k * dot(∇ϕa, ∇ϕb) * dΩ
@@ -439,7 +498,6 @@ function _make_Kes_and_weights_heat(
                 end
             end
         end
-        weights[cell_idx] .= fe
     end
     return Kes, weights
 end

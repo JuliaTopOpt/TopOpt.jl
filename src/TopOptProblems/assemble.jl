@@ -12,7 +12,9 @@ function assemble(
     return globalinfo
 end
 
-# Default assembly for structural problems - penalizes both K and f
+# Assembly for all problem types
+# For structural: fes contains body forces (penalized), fixedload contains concentrated/distributed loads (not penalized)
+# For heat transfer: fes is zeros (no body forces), fixedload contains heat source (not penalized)
 function assemble!(
     globalinfo::GlobalFEAInfo,
     problem::AbstractTopOptProblem,
@@ -86,91 +88,6 @@ function assemble!(
     end
 
     #* apply boundary condition
-    TK = eltype(K)
-    _K = TK <: Symmetric ? K.data : K
-    apply!(_K, f, ch)
-
-    return nothing
-end
-
-# CRITICAL: Heat transfer assembly - penalizes K but NOT heat source Q
-# This is the key mathematical fix: heat source q is an external input,
-# not a material property, so it should remain constant regardless of density.
-function assemble!(
-    globalinfo::GlobalFEAInfo,
-    problem::HeatTransferTopOptProblem,
-    elementinfo::ElementFEAInfo,
-    vars=ones(floattype(problem), getncells(getdh(problem).grid)),
-    penalty=PowerPenalty(floattype(problem)),
-    xmin=floattype(problem)(0.001);
-    assemble_f=true,
-)
-    T = floattype(problem)
-    ch = problem.ch
-    dh = ch.dh
-    K, f = globalinfo.K, globalinfo.f
-    if assemble_f
-        f .= elementinfo.fixedload
-    end
-    Kes, fes = elementinfo.Kes, elementinfo.fes
-    black = problem.black
-    white = problem.white
-    varind = problem.varind
-
-    _K = K isa Symmetric ? K.data : K
-    _K.nzval .= 0
-    assembler = Ferrite.AssemblerSparsityPattern(_K, f, Int[], Int[])
-
-    global_dofs = zeros(Int, ndofs_per_cell(dh))
-    fe = zeros(typeof(fes[1]))
-    Ke = zeros(T, size(rawmatrix(Kes[1])))
-
-    celliterator = CellIterator(dh)
-    for (i, cell) in enumerate(celliterator)
-        celldofs!(global_dofs, dh, i)
-        fe = fes[i]  # Heat source - NOT penalized
-        _Ke = rawmatrix(Kes[i])
-        Ke = _Ke isa Symmetric ? _Ke.data : _Ke
-
-        if black[i]
-            # Full material: K and Q both assembled at full strength
-            if assemble_f
-                Ferrite.assemble!(assembler, global_dofs, Ke, fe)
-            else
-                Ferrite.assemble!(assembler, global_dofs, Ke)
-            end
-        elseif white[i]
-            # Void material: K at minimum, Q still NOT penalized
-            if PENALTY_BEFORE_INTERPOLATION
-                px = xmin
-            else
-                px = penalty(xmin)
-            end
-            Ke = px * Ke
-            # fe is NOT multiplied by px - heat source remains constant
-            if assemble_f
-                Ferrite.assemble!(assembler, global_dofs, Ke, fe)
-            else
-                Ferrite.assemble!(assembler, global_dofs, Ke)
-            end
-        else
-            # Design element: K penalized, Q NOT penalized
-            if PENALTY_BEFORE_INTERPOLATION
-                px = density(penalty(vars[varind[i]]), xmin)
-            else
-                px = penalty(density(vars[varind[i]], xmin))
-            end
-            Ke = px * Ke
-            # fe is NOT multiplied by px - heat source remains constant
-            if assemble_f
-                Ferrite.assemble!(assembler, global_dofs, Ke, fe)
-            else
-                Ferrite.assemble!(assembler, global_dofs, Ke)
-            end
-        end
-    end
-
-    # Apply boundary conditions
     TK = eltype(K)
     _K = TK <: Symmetric ? K.data : K
     apply!(_K, f, ch)
