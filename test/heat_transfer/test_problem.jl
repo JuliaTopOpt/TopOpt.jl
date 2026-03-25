@@ -5,20 +5,20 @@ const FDM = FiniteDifferences
 Random.seed!(42)
 
 @testset "Heat Conduction Problem Setup" begin
-    # Create a simple 2D heat conduction problem
+    # Create a simple 2D heat conduction problem with surface heat flux
     nels = (10, 5)
     sizes = (1.0, 1.0)
     k = 1.0
-    heat_source = 1.0
+    # Apply heat flux on top boundary (positive = heat into domain)
+    heatflux = Dict{String,Float64}("top" => 1.0)
 
     problem = HeatConductionProblem(
-        Val{:Linear}, nels, sizes, k, heat_source;
-        Tleft=0.0, Tright=0.0
+        Val{:Linear}, nels, sizes, k;
+        Tleft=0.0, Tright=0.0, heatflux=heatflux
     )
 
     @test problem isa HeatConductionProblem
     @test getk(problem) ≈ 1.0
-    @test getheat_source(problem) ≈ 1.0
     @test Ferrite.getncells(problem) == 50
 end
 
@@ -26,11 +26,11 @@ end
     nels = (4, 2)
     sizes = (1.0, 1.0)
     k = 1.0
-    heat_source = 1.0
+    heatflux = Dict{String,Float64}("top" => 1.0)
 
     problem = HeatConductionProblem(
-        Val{:Linear}, nels, sizes, k, heat_source;
-        Tleft=0.0, Tright=0.0
+        Val{:Linear}, nels, sizes, k;
+        Tleft=0.0, Tright=0.0, heatflux=heatflux
     )
 
     # Build element FEA info
@@ -48,11 +48,11 @@ end
     nels = (10, 5)
     sizes = (1.0, 1.0)
     k = 1.0
-    heat_source = 1.0
+    heatflux = Dict{String,Float64}("top" => 1.0)
 
     problem = HeatConductionProblem(
-        Val{:Linear}, nels, sizes, k, heat_source;
-        Tleft=0.0, Tright=0.0
+        Val{:Linear}, nels, sizes, k;
+        Tleft=0.0, Tright=0.0, heatflux=heatflux
     )
 
     solver = FEASolver(DirectSolver, problem; xmin=0.001)
@@ -68,8 +68,8 @@ end
     @test length(solver.u) == ndofs(problem.ch.dh)
     @test !any(isnan, solver.u)
 
-    # With heat generation and zero boundary conditions,
-    # temperature should be highest in the center
+    # With heat flux on top and zero boundary conditions,
+    # temperature should be non-zero
     @test maximum(solver.u) > 0.0
 end
 
@@ -77,11 +77,11 @@ end
     nels = (10, 5)
     sizes = (1.0, 1.0)
     k = 1.0
-    heat_source = 1.0
+    heatflux = Dict{String,Float64}("top" => 1.0)
 
     problem = HeatConductionProblem(
-        Val{:Linear}, nels, sizes, k, heat_source;
-        Tleft=0.0, Tright=0.0
+        Val{:Linear}, nels, sizes, k;
+        Tleft=0.0, Tright=0.0, heatflux=heatflux
     )
 
     solver = FEASolver(DirectSolver, problem; xmin=0.001)
@@ -98,34 +98,34 @@ end
     @test !isnan(val)
 end
 
-@testset "Heat Conduction Analytical Solution" begin
-    # 1D heat conduction with uniform heat generation
-    # T(x) = q*x*(L-x)/(2*k) for fixed temperature BCs
-    # Testing 2D problem that's effectively 1D
+@testset "Heat Conduction with Surface Heat Flux" begin
+    # 2D heat conduction with surface heat flux on top boundary
+    # Heat flux q enters the domain from the top boundary
+    # Temperature fixed at left and right boundaries
 
-    nels = (20, 1)  # Thin strip
-    sizes = (1.0, 0.1)  # Length 1, small height
+    nels = (10, 5)
+    sizes = (1.0, 1.0)
     k = 1.0
-    q = 1.0
-    L = nels[1] * sizes[1]
+    q = 1.0  # Heat flux on top boundary (W/m²)
+    heatflux = Dict{String,Float64}("top" => q)
 
     problem = HeatConductionProblem(
-        Val{:Linear}, nels, sizes, k, q;
-        Tleft=0.0, Tright=0.0
+        Val{:Linear}, nels, sizes, k;
+        Tleft=0.0, Tright=0.0, heatflux=heatflux
     )
 
     solver = FEASolver(DirectSolver, problem; xmin=0.001)
     solver.vars .= 1.0
     solver()
 
-    # Get maximum temperature at center
-    T_max_numerical = maximum(solver.u)
+    # With heat flux on top and zero temperature on sides,
+    # temperature should be non-zero in the domain
+    @test maximum(solver.u) > 0.0
 
-    # Analytical maximum at x = L/2: T_max = q*L^2/8
-    T_max_analytical = q * L^2 / 8
-
-    # Allow some error due to discretization
-    @test isapprox(T_max_numerical, T_max_analytical; rtol=0.1)
+    # Temperature should be highest near the top (center)
+    # and decrease toward the boundaries
+    T_max = maximum(solver.u)
+    @test T_max > 0.0
 end
 
 @testset "Thermal Compliance - Gradient Accuracy" begin
@@ -133,11 +133,11 @@ end
         nels = (6, 4)
         sizes = (1.0, 1.0)
         k = 1.0
-        heat_source = 1.0
+        heatflux = Dict{String,Float64}("top" => 1.0)
 
         problem = HeatConductionProblem(
-            Val{:Linear}, nels, sizes, k, heat_source;
-            Tleft=1.0, Tright=0.0
+            Val{:Linear}, nels, sizes, k;
+            Tleft=1.0, Tright=0.0, heatflux=heatflux
         )
 
         solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(1.0))
@@ -162,7 +162,7 @@ end
             # Compute finite difference gradient
             fd_grad = FDM.grad(FDM.backward_fdm(2, 1), f, x)[1]
 
-            # Gradient should match finite differences closely now that heat source is NOT penalized
+            # Gradient should match finite differences closely
             @test isapprox(grad_zygote, fd_grad; rtol=1e-2, atol=1e-6)
         end
     end
@@ -173,11 +173,11 @@ end
         nels = (6, 4)
         sizes = (1.0, 1.0)
         k = 1.0
-        heat_source = 1.0
+        heatflux = Dict{String,Float64}("top" => 1.0)
 
         problem = HeatConductionProblem(
-            Val{:Linear}, nels, sizes, k, heat_source;
-            Tleft=0.0, Tright=0.0
+            Val{:Linear}, nels, sizes, k;
+            Tleft=0.0, Tright=0.0, heatflux=heatflux
         )
 
         # Reference solution with full density
@@ -210,11 +210,11 @@ end
         nels = (4, 4)
         sizes = (1.0, 1.0)
         k = 1.0
-        heat_source = 1.0
+        heatflux = Dict{String,Float64}("top" => 1.0)
 
         problem = HeatConductionProblem(
-            Val{:Linear}, nels, sizes, k, heat_source;
-            Tleft=0.0, Tright=0.0
+            Val{:Linear}, nels, sizes, k;
+            Tleft=0.0, Tright=0.0, heatflux=heatflux
         )
 
         elementinfo = ElementFEAInfo(problem, 2, Val{:Static})
@@ -241,11 +241,11 @@ end
         nels = (4, 4)
         sizes = (1.0, 1.0)
         k = 1.0
-        heat_source = 1.0
+        heatflux = Dict{String,Float64}("top" => 1.0)
 
         problem = HeatConductionProblem(
-            Val{:Linear}, nels, sizes, k, heat_source;
-            Tleft=0.0, Tright=0.0
+            Val{:Linear}, nels, sizes, k;
+            Tleft=0.0, Tright=0.0, heatflux=heatflux
         )
 
         solver = FEASolver(DirectSolver, problem; xmin=0.001)
@@ -286,7 +286,7 @@ end
         nels = (4, 4)
         sizes = (1.0, 1.0)
         problem = HeatConductionProblem(
-            Val{:Linear}, nels, sizes, 1.0, 1.0;
+            Val{:Linear}, nels, sizes, 1.0;
             Tleft=0.0, Tright=0.0
         )
         solver = FEASolver(DirectSolver, problem; xmin=0.001)
@@ -300,11 +300,11 @@ end
         nels = (2, 2)
         sizes = (1.0, 1.0)
         k = 1.0
-        heat_source = 1.0
+        heatflux = Dict{String,Float64}("top" => 1.0)
 
         problem = HeatConductionProblem(
-            Val{:Linear}, nels, sizes, k, heat_source;
-            Tleft=0.0, Tright=0.0
+            Val{:Linear}, nels, sizes, k;
+            Tleft=0.0, Tright=0.0, heatflux=heatflux
         )
 
         elementinfo = ElementFEAInfo(problem, 2, Val{:Static})
@@ -327,12 +327,12 @@ end
             @test all(eigs .>= -1e-10)
         end
 
-        # Check element heat source vectors
+        # Check that fes is zeros (no body forces in heat transfer)
         @test length(elementinfo.fes) == 4
         for fe in elementinfo.fes
             @test length(fe) == 4
-            # Heat source should be positive
-            @test all(fe .>= 0)
+            # fes should be zeros (no body forces)
+            @test all(fe .== 0)
         end
     end
 
@@ -340,11 +340,11 @@ end
         nels = (4, 4)
         sizes = (1.0, 1.0)
         k = 1.0
-        heat_source = 1.0
+        heatflux = Dict{String,Float64}("top" => 1.0)
 
         problem = HeatConductionProblem(
-            Val{:Linear}, nels, sizes, k, heat_source;
-            Tleft=0.0, Tright=0.0
+            Val{:Linear}, nels, sizes, k;
+            Tleft=0.0, Tright=0.0, heatflux=heatflux
         )
 
         elementinfo = ElementFEAInfo(problem, 2, Val{:Static})

@@ -46,11 +46,11 @@ Random.seed!(42)
         nels = (6, 4)
         sizes = (1.0, 1.0)
         k = 1.0
-        heat_source = 1.0
+        heatflux = Dict("top" => 1.0)
 
         problem = HeatConductionProblem(
-            Val{:Linear}, nels, sizes, k, heat_source;
-            Tleft=0.0, Tright=0.0
+            Val{:Linear}, nels, sizes, k;
+            Tleft=0.0, Tright=0.0, heatflux=heatflux
         )
 
         solver = FEASolver(DirectSolver, problem; xmin=0.001, penalty=PowerPenalty(3.0))
@@ -68,19 +68,19 @@ end
     @testset "Higher conductivity gives lower thermal compliance" begin
         nels = (8, 4)
         sizes = (1.0, 1.0)
-        heat_source = 1.0
+        heatflux = Dict("top" => 1.0)
 
         # Compare two cases with different thermal conductivity
         k_low = 0.5
         k_high = 5.0
 
         problem_low = HeatConductionProblem(
-            Val{:Linear}, nels, sizes, k_low, heat_source;
-            Tleft=0.0, Tright=0.0
+            Val{:Linear}, nels, sizes, k_low;
+            Tleft=0.0, Tright=0.0, heatflux=heatflux
         )
         problem_high = HeatConductionProblem(
-            Val{:Linear}, nels, sizes, k_high, heat_source;
-            Tleft=0.0, Tright=0.0
+            Val{:Linear}, nels, sizes, k_high;
+            Tleft=0.0, Tright=0.0, heatflux=heatflux
         )
 
         solver_low = FEASolver(DirectSolver, problem_low; xmin=0.01)
@@ -97,19 +97,19 @@ end
         @test tc_high < tc_low
     end
 
-    @testset "Heat source scaling" begin
-        # Doubling heat source should double thermal compliance
+    @testset "Heat flux scaling" begin
+        # Doubling heat flux should double thermal compliance
         nels = (6, 4)
         sizes = (1.0, 1.0)
         k = 1.0
 
         problem1 = HeatConductionProblem(
-            Val{:Linear}, nels, sizes, k, 1.0;
-            Tleft=0.0, Tright=0.0
+            Val{:Linear}, nels, sizes, k;
+            Tleft=0.0, Tright=0.0, heatflux=Dict("top" => 1.0)
         )
         problem2 = HeatConductionProblem(
-            Val{:Linear}, nels, sizes, k, 2.0;
-            Tleft=0.0, Tright=0.0
+            Val{:Linear}, nels, sizes, k;
+            Tleft=0.0, Tright=0.0, heatflux=Dict("top" => 2.0)
         )
 
         solver1 = FEASolver(DirectSolver, problem1; xmin=0.01)
@@ -143,7 +143,7 @@ end
         nels = (4, 4)
         sizes = (1.0, 1.0)
         problem = HeatConductionProblem(
-            Val{:Linear}, nels, sizes, 1.0, 1.0;
+            Val{:Linear}, nels, sizes, 1.0;
             Tleft=0.0, Tright=0.0
         )
         solver = FEASolver(DirectSolver, problem; xmin=0.001)

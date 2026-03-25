@@ -122,15 +122,15 @@ Random.seed!(42)
 
     @testset "Heat transfer optimization workflow" begin
         # Complete heat transfer optimization workflow
-        # Tests that heat source is NOT penalized (key bug fix)
+        # Tests that heat flux is NOT penalized (key bug fix)
         nels = (16, 8)
         sizes = (1.0, 1.0)
         k = 1.0
-        heat_source = 1.0
+        heatflux = Dict{String,Float64}("top" => 1.0)
 
         problem = HeatConductionProblem(
-            Val{:Linear}, nels, sizes, k, heat_source;
-            Tleft=0.0, Tright=0.0
+            Val{:Linear}, nels, sizes, k;
+            Tleft=0.0, Tright=0.0, heatflux=heatflux
         )
 
         solver = FEASolver(DirectSolver, problem; xmin=0.001, penalty=PowerPenalty(2.0))

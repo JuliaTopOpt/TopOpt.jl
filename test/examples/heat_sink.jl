@@ -10,14 +10,16 @@ println("=" ^ 50)
 nels = (60, 30)  # Mesh resolution
 sizes = (1.0, 1.0)  # Element sizes
 k = 1.0  # Thermal conductivity
-heat_source = 1.0  # Volumetric heat generation
+# Heat flux on top boundary (W/m²) - heat entering the domain
+heatflux = Dict{String,Float64}("top" => 100.0)
 V = 0.5  # Volume fraction constraint
 
 # Create heat conduction problem
 # Temperature is fixed at left and right edges (heat sink fins)
+# Heat flux enters from top boundary
 problem = HeatConductionProblem(
-    Val{:Linear}, nels, sizes, k, heat_source;
-    Tleft=100.0, Tright=0.0
+    Val{:Linear}, nels, sizes, k;
+    Tleft=100.0, Tright=0.0, heatflux=heatflux
 )
 
 println("Created heat conduction problem with $(Ferrite.getncells(problem)) elements")
