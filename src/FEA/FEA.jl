@@ -16,7 +16,8 @@ export AbstractFEASolver,
     EnergyCriteria,
     simulate,
     AbstractPhysics,
-    LinearElasticity
+    LinearElasticity,
+    HeatTransfer
 
 const to = TimerOutput()
 

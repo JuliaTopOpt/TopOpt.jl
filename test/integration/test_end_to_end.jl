@@ -120,6 +120,44 @@ Random.seed!(42)
         @test res.fcalls > 0
     end
 
+    @testset "Heat transfer optimization workflow" begin
+        # Complete heat transfer optimization workflow
+        # Tests that heat source is NOT penalized (key bug fix)
+        nels = (16, 8)
+        sizes = (1.0, 1.0)
+        k = 1.0
+        heat_source = 1.0
+
+        problem = HeatConductionProblem(
+            Val{:Linear}, nels, sizes, k, heat_source;
+            Tleft=0.0, Tright=0.0
+        )
+
+        solver = FEASolver(DirectSolver, problem; xmin=0.001, penalty=PowerPenalty(2.0))
+
+        # Thermal compliance optimization
+        comp = ThermalCompliance(solver)
+        vol = Volume(solver)
+        filter = DensityFilter(solver; rmin=2.0)
+
+        # Brief optimization
+        V = 0.5
+        obj = x -> comp(filter(PseudoDensities(x)))
+        constr = x -> vol(filter(PseudoDensities(x))) - V
+
+        model = Model(obj)
+        addvar!(model, zeros(length(solver.vars)), ones(length(solver.vars)))
+        add_ineq_constraint!(model, constr)
+        alg = MMA87()
+
+        options = MMAOptions(; tol=Tolerance(; kkt=0.01), maxiter=30)
+        x0 = fill(V, length(solver.vars))
+        res = optimize(model, alg, x0; options)
+
+        @test length(res.minimizer) == getncells(problem)
+        @test res.fcalls > 0
+    end
+
     @testset "BESO + DensityFilter integration" begin
         # BESO with filtering
         nels = (12, 6)

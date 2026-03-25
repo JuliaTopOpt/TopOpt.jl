@@ -106,6 +106,17 @@ function _compute_fixedload(sp::StiffnessTopOptProblem{dim,T}, dloads, _) where 
     return fixedload
 end
 
+# Fixed load computation for heat transfer problems
+# CRITICAL: Heat source is NOT penalized - it's assembled directly from dloads
+# The conductivity K is penalized in assemble!, but the heat source Q is constant
+function _compute_fixedload(
+    sp::HeatTransferTopOptProblem{dim,T}, dloads, _
+) where {dim,T}
+    fixedload = zeros(T, ndofs(sp.ch.dh))
+    assemble_f!(fixedload, sp, dloads)
+    return fixedload
+end
+
 """
     struct GlobalFEAInfo{T, TK<:AbstractMatrix{T}, Tf<:AbstractVector{T}, Tchol}
         K::TK
@@ -141,6 +152,12 @@ end
 Constructs an instance of `GlobalFEAInfo` where the field `K` is a sparse matrix with the correct size and sparsity pattern for the problem instance `sp`. The field `f` is a dense vector of the appropriate size. The values in `K` and `f` are meaningless though and require calling the function `assemble!` to update.
 """
 function GlobalFEAInfo(sp::StiffnessTopOptProblem)
+    K = initialize_K(sp)
+    f = initialize_f(sp)
+    return GlobalFEAInfo(K, f)
+end
+
+function GlobalFEAInfo(sp::HeatTransferTopOptProblem)
     K = initialize_K(sp)
     f = initialize_f(sp)
     return GlobalFEAInfo(K, f)

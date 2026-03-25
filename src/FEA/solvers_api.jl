@@ -7,6 +7,7 @@ abstract type SolverResult end
 # Physics types - dispatch to different element matrix/assembly functions
 abstract type AbstractPhysics end
 struct LinearElasticity <: AbstractPhysics end      # Structural mechanics (dim DOFs/node)
+struct HeatTransfer <: AbstractPhysics end          # Heat conduction (1 DOF/node)
 
 # Linear solver algorithm types
 abstract type AbstractLinearSolver end
@@ -15,7 +16,7 @@ struct CGAssemblySolver <: AbstractLinearSolver end       # CG with assembled ma
 struct CGMatrixFreeSolver <: AbstractLinearSolver end     # Matrix-free CG
 
 # Export new abstractions
-export AbstractPhysics, LinearElasticity
+export AbstractPhysics, LinearElasticity, HeatTransfer
 export AbstractLinearSolver, DirectSolver, CGAssemblySolver, CGMatrixFreeSolver
 
 # Export shared abstractions
@@ -271,6 +272,9 @@ end
 function Base.show(::IO, ::MIME{Symbol("text/plain")}, ::GenericFEASolver{T,LinearElasticity,DirectSolver}) where {T}
     return println("TopOpt direct structural solver (GenericFEASolver)")
 end
+function Base.show(::IO, ::MIME{Symbol("text/plain")}, ::GenericFEASolver{T,HeatTransfer,DirectSolver}) where {T}
+    return println("TopOpt direct heat transfer solver (GenericFEASolver)")
+end
 function Base.show(::IO, ::MIME{Symbol("text/plain")}, ::GenericFEASolver{T,LinearElasticity,CGAssemblySolver}) where {T}
     return println("TopOpt CG with assembly structural solver (GenericFEASolver)")
 end
@@ -312,6 +316,7 @@ end
 
 # Trait function to infer physics type from problem type
 physics_type(::StiffnessTopOptProblem) = LinearElasticity
+physics_type(::HeatTransferTopOptProblem) = HeatTransfer
 
 # ============================================================================
 # Unified FEASolver Factory with Two-Layered Dispatch
