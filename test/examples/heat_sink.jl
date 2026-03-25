@@ -1,7 +1,7 @@
 # Heat Sink Topology Optimization Example
 # Demonstrates thermal compliance minimization for heat dissipation
 
-using TopOpt, Ferrite, LinearAlgebra
+using TopOpt, Ferrite, LinearAlgebra, Zygote
 
 println("Heat Sink Topology Optimization Example")
 println("=" ^ 50)
@@ -82,3 +82,9 @@ println("  Gradient norm: $(norm(grad))")
 println("  All gradients negative (expected): $(all(grad .< 0))")
 
 println("\nHeat sink optimization example completed successfully!")
+
+using Makie
+using CairoMakie
+# alternatively, `using GLMakie`
+fig = visualize(problem; topology=result.minimizer)
+Makie.display(fig)

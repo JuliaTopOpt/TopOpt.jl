@@ -7,7 +7,7 @@ using GeometryBasics
 using ColorSchemes
 using GeometryBasics: TriangleFace
 using TopOpt: TopOpt
-using TopOpt.TopOptProblems: getcloaddict, boundingbox, getdim, StiffnessTopOptProblem
+using TopOpt.TopOptProblems: getcloaddict, boundingbox, getdim, StiffnessTopOptProblem, HeatTransferTopOptProblem, HeatConductionProblem
 using TopOpt.TrussTopOptProblems: TrussProblem
 using Ferrite
 
@@ -596,6 +596,101 @@ function TopOpt.visualize(
             Makie.scatter!(ax1, fixed_nodes) #, markersize = lift(s -> s * 3, lsgrid.sliders[1].value))
         end
     end # end if display_supports
+
+    return fig
+end
+
+"""
+    function visualize(problem::HeatTransferTopOptProblem{dim,T};
+        topology=undef,
+        undeformed_mesh_color=dim==2 ? RGBAf(0,0,0,1.0) : RGBAf(0.5,0.5,0.5,0.4),
+        cell_colors=undef,
+        draw_legend=false,
+        colormap=ColorSchemes.Spectral_10,
+        kw...
+    ) where {dim,T}
+
+Visualize a heat transfer topology optimization problem.
+
+# Inputs
+
+- `problem`: heat transfer topopt problem
+
+# Optional arguments
+
+- `topology=undef`: desired topology density vector. If `undef`, assume all cells are included.
+- `undeformed_mesh_color`: color used for displaying the mesh.
+- `cell_colors=undef`: Vector of a value per cell to show the color map.
+- `draw_legend=false`: draw the color legend for cell_colors.
+- `colormap=ColorSchemes.Spectral_10`: color map used to show `cell_color`.
+- `kw...`: optional keyword argument passed to Makie.mesh! function.
+
+# Returns
+- `Makie.Figure` handle
+
+"""
+function TopOpt.visualize(
+    problem::HeatTransferTopOptProblem{dim,T};
+    topology=undef,
+    undeformed_mesh_color=dim == 2 ? RGBAf(0, 0, 0, 1.0) : RGBAf(0.5, 0.5, 0.5, 0.4),
+    cell_colors=undef,
+    draw_legend=false,
+    colormap=ColorSchemes.Spectral_10,
+    kw...,
+) where {dim,T}
+    mesh = problem.ch.dh.grid
+    nnodes = Ferrite.getnnodes(mesh)
+
+    topology = topology == undef ? ones(T, Ferrite.getncells(mesh)) : topology
+
+    # Convert 2D nodes to 3D for visualization
+    nodes = Vector{Ferrite.Node}(undef, nnodes)
+    if dim == 2
+        for (i, node) in enumerate(mesh.nodes)
+            nodes[i] = Ferrite.Node((node.x[1], node.x[2], zero(T)))
+        end
+    else
+        nodes = mesh.nodes
+    end
+
+    # Initialize Makie figure
+    fig = Figure()
+
+    if dim == 2
+        ax1 = Axis(fig[1, 1])
+        ax1.aspect = DataAspect()
+    else
+        ax1 = LScene(fig[1, 1]; scenekw=(camera=cam3d!, raw=false))
+    end
+
+    # Explode nodes and cells for per-cell coloring
+    dup_nodes, dup_cells, _, old_node_id_from_new = _explode_nodes_and_cells(mesh)
+
+    # Color per cell
+    undeformed_mesh_colors = Vector{RGBAf}(undef, length(dup_nodes))
+    scaled_cell_colors = similar(topology)
+    scaled_cell_colors .= 0.0
+    if cell_colors !== undef
+        @assert length(cell_colors) == length(topology)
+        val_range = maximum(cell_colors) - minimum(cell_colors)
+        scaled_cell_colors = (cell_colors .- minimum(cell_colors)) / val_range
+    end
+    for i in eachindex(dup_cells)
+        cell_xvar = topology[i]
+        for new_nid in dup_cells[i].nodes
+            ccolor = undeformed_mesh_color
+            if cell_colors !== undef
+                ccolor = ColorSchemes.get(colormap, scaled_cell_colors[i])
+            end
+            undeformed_mesh_colors[new_nid] = RGBAf(ccolor.r, ccolor.g, ccolor.b, cell_xvar)
+        end
+    end
+    if cell_colors !== undef && draw_legend
+        _create_colorbar(fig[1, 2], colormap, cell_colors)
+    end
+
+    # Draw mesh
+    Makie.mesh!(ax1, dup_nodes, dup_cells; color=undeformed_mesh_colors, kw...)
 
     return fig
 end
