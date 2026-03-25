@@ -10,14 +10,10 @@ if GROUP == "All" || GROUP == "Core_Tests"
         include("topopt_problems/problems.jl")
         include("topopt_problems/metadata.jl")
     end
-    @safetestset "Heat Transfer Tests" begin
-        include("heat_transfer/test_problem.jl")
-    end
     @safetestset "Functions" begin
         include("Functions/test_common_fns.jl")
         include("Functions/test_buckling_fns.jl")
         include("Functions/test_truss_stress_fns.jl")
-        include("Functions/test_thermal_gradients.jl")
         include("Functions/test_mean_compliance.jl")
     end
     @safetestset "Algorithms" begin
@@ -68,9 +64,6 @@ if GROUP == "All" || GROUP == "Examples_3"
     end
     @safetestset "Multi-material" begin
         include("examples/multimaterial.jl")
-    end
-    @safetestset "Heat sink example" begin
-        include("examples/heat_sink.jl")
     end
 end
 

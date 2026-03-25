@@ -555,20 +555,6 @@ end
 
 @testset "MeanCompliance - Error Handling" begin
 
-    @testset "Rejects heat transfer problems" begin
-        nels = (4, 2)
-        sizes = (1.0, 1.0)
-        problem = HeatConductionProblem(
-            Val{:Linear}, nels, sizes, 1.0, 1.0;
-            Tleft=0.0, Tright=0.0
-        )
-
-        solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(1.0))
-
-        # MeanCompliance requires structural problem
-        @test_throws AssertionError Compliance(solver)
-    end
-
     @testset "Construction validation" begin
         E = 1.0
         ν = 0.3

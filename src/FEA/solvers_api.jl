@@ -6,8 +6,7 @@ abstract type SolverResult end
 
 # Physics types - dispatch to different element matrix/assembly functions
 abstract type AbstractPhysics end
-struct LinearElasticity <: AbstractPhysics end      # Structural LinearElasticity (dim DOFs/node)
-struct HeatTransfer <: AbstractPhysics end  # Heat conduction (1 DOF/node)
+struct LinearElasticity <: AbstractPhysics end      # Structural mechanics (dim DOFs/node)
 
 # Linear solver algorithm types
 abstract type AbstractLinearSolver end
@@ -16,7 +15,7 @@ struct CGAssemblySolver <: AbstractLinearSolver end       # CG with assembled ma
 struct CGMatrixFreeSolver <: AbstractLinearSolver end     # Matrix-free CG
 
 # Export new abstractions
-export AbstractPhysics, LinearElasticity, HeatTransfer
+export AbstractPhysics, LinearElasticity
 export AbstractLinearSolver, DirectSolver, CGAssemblySolver, CGMatrixFreeSolver
 
 # Export shared abstractions
@@ -272,9 +271,6 @@ end
 function Base.show(::IO, ::MIME{Symbol("text/plain")}, ::GenericFEASolver{T,LinearElasticity,DirectSolver}) where {T}
     return println("TopOpt direct structural solver (GenericFEASolver)")
 end
-function Base.show(::IO, ::MIME{Symbol("text/plain")}, ::GenericFEASolver{T,HeatTransfer,DirectSolver}) where {T}
-    return println("TopOpt direct heat transfer solver (GenericFEASolver)")
-end
 function Base.show(::IO, ::MIME{Symbol("text/plain")}, ::GenericFEASolver{T,LinearElasticity,CGAssemblySolver}) where {T}
     return println("TopOpt CG with assembly structural solver (GenericFEASolver)")
 end
@@ -316,7 +312,6 @@ end
 
 # Trait function to infer physics type from problem type
 physics_type(::StiffnessTopOptProblem) = LinearElasticity
-physics_type(::HeatTransferTopOptProblem) = HeatTransfer
 
 # ============================================================================
 # Unified FEASolver Factory with Two-Layered Dispatch
@@ -347,13 +342,7 @@ function FEASolver(
     _abstol = abstol === nothing ? T(1e-7) : T(abstol)
 
     # Build element matrices based on physics type
-    if Physics === LinearElasticity
-        elementinfo = ElementFEAInfo(problem, quad_order, Val{:Static})
-    elseif Physics === HeatTransfer
-        elementinfo = ElementFEAInfo(problem, quad_order, Val{:Static})
-    else
-        error("Physics type $Physics not yet implemented")
-    end
+    elementinfo = ElementFEAInfo(problem, quad_order, Val{:Static})
 
     globalinfo = GlobalFEAInfo(problem)
 

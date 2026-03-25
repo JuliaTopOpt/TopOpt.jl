@@ -45,9 +45,7 @@ export Volume,
     MaterialInterpolation,
     MultiMaterialVariables,
     element_densities,
-    tounit,
-    ThermalCompliance,
-    MeanTemperature
+    tounit
 
 const to = TimerOutput()
 
@@ -77,8 +75,7 @@ include("neural.jl")
 
 include("interpolation.jl")
 
-# Thermal compliance for heat transfer problems
+# Shared element energy kernel (used by Compliance)
 include("compute_element_energy.jl")
-include("thermal_compliance.jl")
 
 end
