@@ -102,7 +102,7 @@ end
 # Default fixed load computation for stiffness problems
 # Body forces (self-weight) are in weights and get penalized during assembly
 # Concentrated loads from make_cload and distributed loads from dloads are NOT penalized
-function _compute_fixedload(sp::AbstractTopOptProblem, dloads, _) where {dim,T}
+function _compute_fixedload(sp::AbstractTopOptProblem, dloads, _)
     fixedload = Vector(make_cload(sp))
     assemble_f!(fixedload, sp, dloads)
     return fixedload
