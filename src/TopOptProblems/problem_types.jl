@@ -818,15 +818,32 @@ getcloaddict(p::HeatTransferTopOptProblem{dim,T}) where {dim,T} = Dict{String,Ve
 """
     struct HeatConductionProblem{dim, T, N, M} <: HeatTransferTopOptProblem{dim, T}
 
+```
+  T = T_left                         T = T_right
+  ┌────────────────────────────────────────┐
+  │                                        │
+  │                                        │
+  │          k(ρ)∇²T = 0                   │
+  │         (heat conduction)              │
+  │                                        │
+  │                                        │
+  └────────────────────────────────────────┘
+            ▲ q (heat flux on boundary)
+            │
+  ┌────────────────────────────────────────┐
+  │    ρ = design density (0 to 1)         │
+  │    k(ρ) = penalized conductivity       │
+  │    q = heat flux (NOT penalized)       │
+  └────────────────────────────────────────┘
+```
+
 A steady-state heat conduction problem with:
-- Temperature boundary conditions (Dirichlet)
-- Surface heat flux (Neumann boundary condition)
-- Penalized thermal conductivity (SIMP)
+- Temperature BCs: T = `T_left` on left boundary, T = `T_right` on right boundary
+- Heat flux BCs: q on specified boundaries (facesets)
+- Objective: minimize thermal compliance J = ∫ q·T dΓ
 
-Constructor:
-    HeatConductionProblem(Val{:Linear}, nels, sizes, k; Tleft=0.0, Tright=0.0, heatflux=Dict{String,Float64}())
 
-Arguments:
+Constructor arguments:
 - `nels`: tuple of number of elements in each dimension
 - `sizes`: tuple of element sizes
 - `k`: thermal conductivity (W/m·K)
