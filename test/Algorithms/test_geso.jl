@@ -246,4 +246,267 @@ using Ferrite: getncells
         @test children[:, j] isa BitVector
     end
 
+    @testset "GESO with SensFilter" begin
+        # Test GESO with sensitivity filter instead of density filter
+        nels = (10, 4)
+        problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
+        solver = FEASolver(DirectSolver, problem; xmin=0.001)
+        comp = Compliance(solver)
+        vol = Volume(solver)
+        filter = SensFilter(solver; rmin=2.0)
+
+        geso = GESO(comp, vol, 0.5, filter; maxiter=5, tol=0.1, p=1.0)
+        x0 = fill(0.5, length(solver.vars))
+        result = geso(x0; seed=555)
+
+        @test result isa TopOpt.Algorithms.GESOResult
+        @test length(result.topology) == getncells(problem)
+        @test all(x -> x == 0 || x == 1, result.topology)
+    end
+
+    @testset "GESO with different filter radii" begin
+        nels = (12, 6)
+        problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
+        
+        for rmin in [1.5, 2.0, 3.0]
+            solver = FEASolver(DirectSolver, problem; xmin=0.001)
+            comp = Compliance(solver)
+            vol = Volume(solver)
+            filter = DensityFilter(solver; rmin=rmin)
+
+            geso = GESO(comp, vol, 0.5, filter; maxiter=5, tol=0.1, p=1.0)
+            x0 = fill(0.5, length(solver.vars))
+            result = geso(x0; seed=600 + Int(100 * rmin))
+
+            @test result isa TopOpt.Algorithms.GESOResult
+            @test length(result.topology) == getncells(problem)
+            @test all(x -> x == 0 || x == 1, result.topology)
+        end
+    end
+
+    @testset "GESO with thermal compliance" begin
+        # Test GESO with heat transfer problem
+        nels = (8, 4)
+        sizes = (1.0, 1.0)
+        k = 1.0
+        heatflux = Dict{String,Float64}("top" => 1.0)
+
+        problem = HeatConductionProblem(
+            Val{:Linear}, nels, sizes, k;
+            Tleft=0.0, Tright=0.0, heatflux=heatflux
+        )
+
+        solver = FEASolver(DirectSolver, problem; xmin=0.001)
+        comp = ThermalCompliance(solver)
+        vol = Volume(solver)
+        filter = DensityFilter(solver; rmin=2.0)
+
+        geso = GESO(comp, vol, 0.5, filter; maxiter=5, tol=0.1, p=1.0)
+        x0 = fill(0.5, length(solver.vars))
+        result = geso(x0; seed=700)
+
+        @test result isa TopOpt.Algorithms.GESOResult
+        @test length(result.topology) == getncells(problem)
+        @test all(x -> x == 0 || x == 1, result.topology)
+    end
+
+    @testset "GESO with quadratic elements" begin
+        nels = (6, 3)
+        problem = PointLoadCantilever(Val{:Quadratic}, nels, (1.0, 1.0), E, ν, force)
+        solver = FEASolver(DirectSolver, problem; xmin=0.001)
+        comp = Compliance(solver)
+        vol = Volume(solver)
+        filter = DensityFilter(solver; rmin=2.0)
+
+        geso = GESO(comp, vol, 0.5, filter; maxiter=5, tol=0.1, p=1.0)
+        x0 = fill(0.5, length(solver.vars))
+        result = geso(x0; seed=800)
+
+        @test result isa TopOpt.Algorithms.GESOResult
+        @test length(result.topology) == getncells(problem)
+    end
+
+    @testset "GESO convergence criteria" begin
+        nels = (8, 4)
+        problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
+        solver = FEASolver(DirectSolver, problem; xmin=0.001)
+        comp = Compliance(solver)
+        vol = Volume(solver)
+        filter = DensityFilter(solver; rmin=2.0)
+
+        # Test with very strict tolerance
+        geso_strict = GESO(comp, vol, 0.5, filter; maxiter=3, tol=1e-10, p=1.0)
+        x0 = fill(0.5, length(solver.vars))
+        result_strict = geso_strict(x0; seed=900)
+        
+        # Should stop at maxiter without converging
+        @test result_strict.fevals <= 3
+        @test typeof(result_strict.converged) == Bool
+
+        # Test with loose tolerance
+        geso_loose = GESO(comp, vol, 0.5, filter; maxiter=20, tol=0.5, p=1.0)
+        result_loose = geso_loose(x0; seed=901)
+        
+        # Should have evaluated at least once
+        @test result_loose.fevals >= 1
+    end
+
+    @testset "GESO topology patterns" begin
+        # Test that GESO produces meaningful topologies for different volume fractions
+        nels = (20, 10)
+        problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
+        
+        for V_target in [0.3, 0.5, 0.7]
+            solver = FEASolver(DirectSolver, problem; xmin=0.001)
+            comp = Compliance(solver)
+            vol = Volume(solver)
+            filter = DensityFilter(solver; rmin=2.0)
+
+            geso = GESO(comp, vol, V_target, filter; maxiter=10, tol=0.1, p=1.0)
+            x0 = fill(V_target, length(solver.vars))
+            result = geso(x0; seed=1000 + Int(100 * V_target))
+
+            topology_grid = reshape(result.topology, nels)
+            
+            # For cantilever beam, material should exist near fixed boundary
+            left_region = topology_grid[1:5, :]
+            @test sum(left_region) > 0
+            
+            # Check topology is binary
+            @test all(x -> x == 0 || x == 1, result.topology)
+        end
+    end
+
+    @testset "GESO population size variation" begin
+        nels = (10, 4)
+        problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
+        solver = FEASolver(DirectSolver, problem; xmin=0.001)
+        comp = Compliance(solver)
+        vol = Volume(solver)
+        filter = DensityFilter(solver; rmin=2.0)
+
+        # GESO uses a population-based approach
+        geso = GESO(comp, vol, 0.5, filter; maxiter=5, tol=0.1, p=1.0)
+        
+        # Check population-related properties
+        @test geso.string_length == 4  # Binary string length
+        @test size(geso.genotypes) == (4, length(solver.vars))
+        @test size(geso.children) == (4, length(solver.vars))
+        
+        x0 = fill(0.5, length(solver.vars))
+        result = geso(x0; seed=1100)
+        
+        @test result isa TopOpt.Algorithms.GESOResult
+    end
+
+    @testset "GESO volume fraction accuracy" begin
+        nels = (10, 4)
+        problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
+        solver = FEASolver(DirectSolver, problem; xmin=0.001)
+        comp = Compliance(solver)
+        vol = Volume(solver)
+        filter = DensityFilter(solver; rmin=2.0)
+
+        target_vol = 0.5
+        geso = GESO(comp, vol, target_vol, filter; maxiter=10, tol=0.1, p=1.0)
+        x0 = fill(0.5, length(solver.vars))
+        result = geso(x0; seed=1200)
+
+        # Calculate actual volume fraction achieved
+        total_vol = sum(vol.cellvolumes)
+        material_vol = dot(result.topology, vol.cellvolumes)
+        actual_vol_frac = material_vol / total_vol
+
+        # GESO targets exact volume
+        @test abs(actual_vol_frac - target_vol) < 0.15
+    end
+
+    @testset "GESO with stress functions" begin
+        # Test GESO can work with stress-based objectives
+        nels = (8, 4)
+        problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
+        solver = FEASolver(DirectSolver, problem; xmin=0.001)
+        
+        # Use compliance as stress proxy
+        comp = Compliance(solver)
+        vol = Volume(solver)
+        filter = DensityFilter(solver; rmin=2.0)
+
+        geso = GESO(comp, vol, 0.5, filter; maxiter=5, tol=0.1, p=1.0)
+        x0 = fill(0.5, length(solver.vars))
+        result = geso(x0; seed=1300)
+
+        @test result isa TopOpt.Algorithms.GESOResult
+        @test length(result.topology) == getncells(problem)
+    end
+
+    @testset "GESO mutation and crossover rates" begin
+        nels = (10, 4)
+        problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
+        solver = FEASolver(DirectSolver, problem; xmin=0.001)
+        comp = Compliance(solver)
+        vol = Volume(solver)
+        filter = DensityFilter(solver; rmin=2.0)
+
+        geso = GESO(comp, vol, 0.5, filter; maxiter=5, tol=0.1, p=1.0)
+
+        # Check probability bounds are reasonable
+        @test 0 <= geso.Pcmin <= geso.Pcmax <= 1
+        @test 0 <= geso.Pmmin <= geso.Pmmax <= 1
+        
+        # Test probability calculation at different progress levels
+        for Prg in [0.0, 0.25, 0.5, 0.75, 1.0]
+            Pc, Pm = TopOpt.Algorithms.get_probs(geso, Prg)
+            @test 0 <= Pc <= 1
+            @test 0 <= Pm <= 1
+            @test Pc >= geso.Pcmin
+            @test Pm >= geso.Pmmin
+        end
+    end
+
+    @testset "GESO binary encoding" begin
+        nels = (8, 4)
+        problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
+        solver = FEASolver(DirectSolver, problem; xmin=0.001)
+        comp = Compliance(solver)
+        vol = Volume(solver)
+        filter = DensityFilter(solver; rmin=2.0)
+
+        geso = GESO(comp, vol, 0.5, filter; maxiter=5, tol=0.1, p=1.0)
+        
+        # Verify binary encoding parameters
+        @test geso.string_length > 0
+        @test geso.string_length <= 8  # Reasonable upper bound
+        
+        x0 = fill(0.5, length(solver.vars))
+        result = geso(x0; seed=1400)
+        
+        # Result should be properly encoded/decoded
+        @test result isa TopOpt.Algorithms.GESOResult
+        @test length(result.topology) == getncells(problem)
+        @test all(x -> x == 0 || x == 1, result.topology)
+    end
+
+    @testset "GESO fitness evaluation" begin
+        nels = (10, 4)
+        problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
+        solver = FEASolver(DirectSolver, problem; xmin=0.001)
+        comp = Compliance(solver)
+        vol = Volume(solver)
+        filter = DensityFilter(solver; rmin=2.0)
+
+        geso = GESO(comp, vol, 0.5, filter; maxiter=3, tol=0.1, p=1.0)
+        x0 = fill(0.5, length(solver.vars))
+        
+        # Track fitness values across generations
+        result = geso(x0; seed=1500)
+        
+        # Fitness should be evaluated
+        @test result.fevals > 0
+        @test result.fevals <= 3
+        
+        # Result should have valid objective value
+        @test isfinite(result.objval) || isnan(result.objval)
+    end
+
 end

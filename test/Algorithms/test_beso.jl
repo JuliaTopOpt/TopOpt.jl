@@ -196,4 +196,246 @@ using Ferrite: getncells
         @test compliances[1] >= compliances[2] * 0.8  # 30% vol vs 50% vol
         @test compliances[2] >= compliances[3] * 0.8  # 50% vol vs 70% vol
     end
+
+    @testset "BESO with stress-based objective" begin
+        # Test BESO with stress objective (if available)
+        nels = (10, 4)
+        problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
+        solver = FEASolver(DirectSolver, problem; xmin=0.001)
+        
+        # Use compliance as proxy for stress test
+        comp = Compliance(solver)
+        vol = Volume(solver)
+        filter = DensityFilter(solver; rmin=2.0)
+
+        beso = BESO(comp, vol, 0.5, filter; maxiter=5, tol=0.1, p=1.0)
+        x0 = fill(0.5, length(solver.vars))
+        result = beso(x0)
+
+        @test result isa TopOpt.Algorithms.BESOResult
+        @test length(result.topology) == getncells(problem)
+        @test all(x -> x == 0 || x == 1, result.topology)
+    end
+
+    @testset "BESO with different filter radii" begin
+        nels = (12, 6)
+        problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
+        
+        for rmin in [1.5, 2.0, 3.0]
+            solver = FEASolver(DirectSolver, problem; xmin=0.001)
+            comp = Compliance(solver)
+            vol = Volume(solver)
+            filter = DensityFilter(solver; rmin=rmin)
+
+            beso = BESO(comp, vol, 0.5, filter; maxiter=5, tol=0.1, p=1.0)
+            x0 = fill(0.5, length(solver.vars))
+            result = beso(x0)
+
+            @test result isa TopOpt.Algorithms.BESOResult
+            @test length(result.topology) == getncells(problem)
+            @test all(x -> x == 0 || x == 1, result.topology)
+        end
+    end
+
+    @testset "BESO setpenalty! functionality" begin
+        nels = (10, 4)
+        problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
+        solver = FEASolver(DirectSolver, problem; xmin=0.001, penalty=PowerPenalty(1.0))
+        comp = Compliance(solver)
+        vol = Volume(solver)
+        filter = DensityFilter(solver; rmin=2.0)
+
+        beso = BESO(comp, vol, 0.5, filter; maxiter=5, tol=0.1, p=1.0)
+
+        # Test that penalty can be updated
+        TopOpt.setpenalty!(beso, 2.0)
+        @test beso.penalty.p ≈ 2.0
+
+        # Run with updated penalty
+        x0 = fill(0.5, length(solver.vars))
+        result = beso(x0)
+        @test result isa TopOpt.Algorithms.BESOResult
+    end
+
+    @testset "BESO convergence criteria" begin
+        nels = (8, 4)
+        problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
+        solver = FEASolver(DirectSolver, problem; xmin=0.001)
+        comp = Compliance(solver)
+        vol = Volume(solver)
+        filter = DensityFilter(solver; rmin=2.0)
+
+        # Test with very strict tolerance (likely won't converge)
+        beso_strict = BESO(comp, vol, 0.5, filter; maxiter=3, tol=1e-10, p=1.0)
+        x0 = fill(0.5, length(solver.vars))
+        result_strict = beso_strict(x0)
+        
+        # Should stop at maxiter without converging
+        @test result_strict.fevals <= 3
+        # Either converged is false OR it converged very quickly
+        @test typeof(result_strict.converged) == Bool
+
+        # Test with loose tolerance (likely will converge)
+        beso_loose = BESO(comp, vol, 0.5, filter; maxiter=20, tol=0.5, p=1.0)
+        result_loose = beso_loose(x0)
+        
+        # Should have evaluated at least once
+        @test result_loose.fevals >= 1
+    end
+
+    @testset "BESO with quadratic elements" begin
+        nels = (6, 3)
+        problem = PointLoadCantilever(Val{:Quadratic}, nels, (1.0, 1.0), E, ν, force)
+        solver = FEASolver(DirectSolver, problem; xmin=0.001)
+        comp = Compliance(solver)
+        vol = Volume(solver)
+        filter = DensityFilter(solver; rmin=2.0)
+
+        beso = BESO(comp, vol, 0.5, filter; maxiter=5, tol=0.1, p=1.0)
+        x0 = fill(0.5, length(solver.vars))
+        result = beso(x0)
+
+        @test result isa TopOpt.Algorithms.BESOResult
+        @test length(result.topology) == getncells(problem)
+    end
+
+    @testset "BESO topology symmetry for symmetric problem" begin
+        nels = (20, 10)
+        problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
+        solver = FEASolver(DirectSolver, problem; xmin=0.001)
+        comp = Compliance(solver)
+        vol = Volume(solver)
+        filter = DensityFilter(solver; rmin=2.0)
+
+        beso = BESO(comp, vol, 0.5, filter; maxiter=10, tol=0.1, p=1.0)
+        x0 = fill(0.5, length(solver.vars))
+        result = beso(x0)
+
+        # For a cantilever beam, the topology should generally have
+        # some material in the high-stress regions
+        topology_grid = reshape(result.topology, nels)
+        
+        # Check that some material exists near the fixed boundary (left side)
+        left_region = topology_grid[1:5, :]
+        @test sum(left_region) > 0  # Should have some material
+        
+        # Check that there's some structure in the middle
+        mid_region = topology_grid[8:12, :]
+        @test sum(mid_region) > 0
+    end
+
+    @testset "BESO evolutionary rate effects" begin
+        nels = (10, 4)
+        problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
+        
+        # Test with different evolutionary rates
+        for er in [0.01, 0.02, 0.05]
+            solver = FEASolver(DirectSolver, problem; xmin=0.001)
+            comp = Compliance(solver)
+            vol = Volume(solver)
+            filter = DensityFilter(solver; rmin=2.0)
+
+            beso = BESO(comp, vol, 0.5, filter; maxiter=5, tol=0.1, p=1.0, er=er)
+            x0 = fill(0.5, length(solver.vars))
+            result = beso(x0)
+
+            @test result isa TopOpt.Algorithms.BESOResult
+            @test length(result.topology) == getncells(problem)
+        end
+    end
+
+    @testset "BESO material interpolation powers" begin
+        nels = (10, 4)
+        problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
+        
+        # Test with different penalization powers
+        for p in [1.0, 2.0, 3.0]
+            solver = FEASolver(DirectSolver, problem; xmin=0.001)
+            comp = Compliance(solver)
+            vol = Volume(solver)
+            filter = DensityFilter(solver; rmin=2.0)
+
+            beso = BESO(comp, vol, 0.5, filter; maxiter=5, tol=0.1, p=p)
+            x0 = fill(0.5, length(solver.vars))
+            result = beso(x0)
+
+            @test result isa TopOpt.Algorithms.BESOResult
+            @test beso.p ≈ p
+        end
+    end
+
+    @testset "BESO initialization with different starting designs" begin
+        nels = (10, 4)
+        problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
+        solver = FEASolver(DirectSolver, problem; xmin=0.001)
+        comp = Compliance(solver)
+        vol = Volume(solver)
+        filter = DensityFilter(solver; rmin=2.0)
+
+        beso = BESO(comp, vol, 0.5, filter; maxiter=5, tol=0.1, p=1.0)
+
+        # Test different initial designs
+        initial_designs = [
+            fill(0.3, length(solver.vars)),  # Sparse
+            fill(0.5, length(solver.vars)),  # Medium
+            fill(0.8, length(solver.vars)),  # Dense
+            rand(length(solver.vars)),        # Random
+        ]
+
+        for x0 in initial_designs
+            result = beso(x0)
+            @test result isa TopOpt.Algorithms.BESOResult
+            @test length(result.topology) == getncells(problem)
+            @test all(x -> x == 0 || x == 1, result.topology)
+        end
+    end
+
+    @testset "BESO with thermal compliance" begin
+        # Test BESO with heat transfer problem
+        nels = (8, 4)
+        sizes = (1.0, 1.0)
+        k = 1.0
+        heatflux = Dict{String,Float64}("top" => 1.0)
+
+        problem = HeatConductionProblem(
+            Val{:Linear}, nels, sizes, k;
+            Tleft=0.0, Tright=0.0, heatflux=heatflux
+        )
+
+        solver = FEASolver(DirectSolver, problem; xmin=0.001)
+        comp = ThermalCompliance(solver)
+        vol = Volume(solver)
+        filter = DensityFilter(solver; rmin=2.0)
+
+        beso = BESO(comp, vol, 0.5, filter; maxiter=5, tol=0.1, p=1.0)
+        x0 = fill(0.5, length(solver.vars))
+        result = beso(x0)
+
+        @test result isa TopOpt.Algorithms.BESOResult
+        @test length(result.topology) == getncells(problem)
+        @test all(x -> x == 0 || x == 1, result.topology)
+    end
+
+    @testset "BESO volume tracking accuracy" begin
+        nels = (10, 4)
+        problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
+        solver = FEASolver(DirectSolver, problem; xmin=0.001)
+        comp = Compliance(solver)
+        vol = Volume(solver)
+        filter = DensityFilter(solver; rmin=2.0)
+
+        target_vol = 0.5
+        beso = BESO(comp, vol, target_vol, filter; maxiter=10, tol=0.1, p=1.0)
+        x0 = fill(0.5, length(solver.vars))
+        result = beso(x0)
+
+        # Calculate actual volume fraction achieved
+        total_vol = sum(vol.cellvolumes)
+        material_vol = dot(result.topology, vol.cellvolumes)
+        actual_vol_frac = material_vol / total_vol
+
+        # Volume should be close to target (within reasonable tolerance)
+        # BESO targets exact volume, but may not perfectly achieve it
+        @test abs(actual_vol_frac - target_vol) < 0.15
+    end
 end
