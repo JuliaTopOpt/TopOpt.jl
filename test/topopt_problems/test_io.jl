@@ -40,20 +40,16 @@ end
     # Test INP file loading if files exist
     inp_dir = joinpath(@__DIR__, "..", "inp_parser")
     mbb_file = joinpath(inp_dir, "MBB.inp")
-    if isfile(mbb_file)
-        @testset "INP file loading" begin
-            # Test that we can read the INP file
-            content = read(mbb_file, String)
-            @test length(content) > 0
-            @test occursin("*Part", content) || occursin("*Node", content)
-        end
+    @testset "INP file loading" begin
+        # Test that we can read the INP file
+        content = read(mbb_file, String)
+        @test length(content) > 0
+        @test occursin("*Part", content) || occursin("*Node", content)
     end
     testcube_file = joinpath(inp_dir, "testcube.inp")
-    if isfile(testcube_file)
-        @testset "Test cube INP" begin
-            content = read(testcube_file, String)
-            @test length(content) > 0
-        end
+    @testset "Test cube INP" begin
+        content = read(testcube_file, String)
+        @test length(content) > 0
     end
 end
 
