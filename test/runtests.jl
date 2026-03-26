@@ -23,10 +23,6 @@ if GROUP == "All" || GROUP == "Core_Tests_1"
 end
 
 if GROUP == "All" || GROUP == "Core_Tests_2"
-    @safetestset "Algorithms" begin
-        include("Algorithms/test_geso.jl")
-        include("Algorithms/test_beso.jl")
-    end
     @safetestset "Solver" begin
         include("fea/solvers.jl")
         include("fea/test_convergence.jl")
@@ -45,6 +41,10 @@ if GROUP == "All" || GROUP == "Core_Tests_2"
         include("truss_topopt_problems/test_fea.jl")
         include("truss_topopt_problems/test_buckling.jl")
         include("truss_topopt_problems/test_buckling_optimize.jl")
+    end
+    @safetestset "Algorithms" begin
+        include("Algorithms/test_geso.jl")
+        include("Algorithms/test_beso.jl")
     end
     @safetestset "Integration" begin
         include("integration/test_end_to_end.jl")
