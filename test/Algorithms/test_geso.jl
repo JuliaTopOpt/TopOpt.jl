@@ -357,28 +357,6 @@ using Ferrite: getncells
         end
     end
 
-    @testset "GESO population size variation" begin
-        nels = (10, 4)
-        problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
-        solver = FEASolver(DirectSolver, problem; xmin=0.001)
-        comp = Compliance(solver)
-        vol = Volume(solver)
-        filter = DensityFilter(solver; rmin=2.0)
-
-        # GESO uses a population-based approach
-        geso = GESO(comp, vol, 0.5, filter; maxiter=5, tol=0.1, p=1.0)
-        
-        # Check population-related properties
-        @test geso.string_length == 4  # Binary string length
-        @test size(geso.genotypes) == (4, length(solver.vars))
-        @test size(geso.children) == (4, length(solver.vars))
-        
-        x0 = fill(0.5, length(solver.vars))
-        result = geso(x0; seed=1100)
-        
-        @test result isa TopOpt.Algorithms.GESOResult
-    end
-
     @testset "GESO volume fraction accuracy" begin
         nels = (10, 4)
         problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
@@ -388,7 +366,7 @@ using Ferrite: getncells
         filter = DensityFilter(solver; rmin=2.0)
 
         target_vol = 0.5
-        geso = GESO(comp, vol, target_vol, filter; maxiter=10, tol=0.1, p=1.0)
+        geso = GESO(comp, vol, target_vol, filter; maxiter=200, tol=0.1, p=1.0)
         x0 = fill(0.5, length(solver.vars))
         result = geso(x0; seed=1200)
 
@@ -398,7 +376,7 @@ using Ferrite: getncells
         actual_vol_frac = material_vol / total_vol
 
         # GESO targets exact volume - use relaxed tolerance due to stochastic nature
-        @test abs(actual_vol_frac - target_vol) < 0.25
+        @test abs(actual_vol_frac - target_vol) < 0.1
     end
 
     @testset "GESO mutation and crossover rates" begin

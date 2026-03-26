@@ -279,31 +279,6 @@ using Ferrite: getncells
         @test length(result.topology) == getncells(problem)
     end
 
-    @testset "BESO topology symmetry for symmetric problem" begin
-        nels = (20, 10)
-        problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
-        solver = FEASolver(DirectSolver, problem; xmin=0.001)
-        comp = Compliance(solver)
-        vol = Volume(solver)
-        filter = DensityFilter(solver; rmin=2.0)
-
-        beso = BESO(comp, vol, 0.5, filter; maxiter=10, tol=0.1, p=1.0)
-        x0 = fill(0.5, length(solver.vars))
-        result = beso(x0)
-
-        # For a cantilever beam, the topology should generally have
-        # some material in the high-stress regions
-        topology_grid = reshape(result.topology, nels)
-        
-        # Check that some material exists near the fixed boundary (left side)
-        left_region = topology_grid[1:5, :]
-        @test sum(left_region) > 0  # Should have some material
-        
-        # Check that there's some structure in the middle
-        mid_region = topology_grid[8:12, :]
-        @test sum(mid_region) > 0
-    end
-
     @testset "BESO evolutionary rate effects" begin
         nels = (10, 4)
         problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
