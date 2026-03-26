@@ -330,18 +330,6 @@ end
     @test length(problem.varind) <= prod(nels)
 end
 
-@testset "InpStiffness loading" begin
-    # Test loading of INP file stiffness matrices
-    inp_path = joinpath(@__DIR__, "..", "inp_parser", "MBB.inp")
-    
-    if isfile(inp_path)
-        # If INP file exists, test loading
-        @test true  # Placeholder for actual INP loading test
-    else
-        @info "INP file not found, skipping INP stiffness test"
-    end
-end
-
 @testset "Problem type consistency" begin
     # Ensure all problem types have consistent interface
     nels = (10, 10)
