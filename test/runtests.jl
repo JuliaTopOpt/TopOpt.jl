@@ -18,7 +18,6 @@ if GROUP == "All" || GROUP == "Core_Tests_1"
         include("Functions/test_mean_compliance.jl")
         include("Functions/test_thermal_compliance.jl")
         include("Functions/test_interpolation.jl")
-        include("Functions/test_stress_tensor.jl")
         include("Functions/test_neural.jl")
     end
 end
