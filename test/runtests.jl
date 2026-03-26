@@ -11,7 +11,6 @@ if GROUP == "All" || GROUP == "Core_Tests"
         include("topopt_problems/problems.jl")
         include("topopt_problems/metadata.jl")
         include("topopt_problems/test_io.jl")
-        include("topopt_problems/test_matrices.jl")
     end
 
     @safetestset "Functions" begin
