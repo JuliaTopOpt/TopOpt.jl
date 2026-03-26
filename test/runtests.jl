@@ -24,8 +24,8 @@ end
 
 if GROUP == "All" || GROUP == "Core_Tests_2"
     @safetestset "Algorithms" begin
-        include("Algorithms/test_beso.jl")
         include("Algorithms/test_geso.jl")
+        include("Algorithms/test_beso.jl")
     end
     @safetestset "Solver" begin
         include("fea/solvers.jl")
