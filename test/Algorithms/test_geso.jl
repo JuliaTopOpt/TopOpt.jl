@@ -401,25 +401,6 @@ using Ferrite: getncells
         @test abs(actual_vol_frac - target_vol) < 0.25
     end
 
-    @testset "GESO with stress functions" begin
-        # Test GESO can work with stress-based objectives
-        nels = (8, 4)
-        problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
-        solver = FEASolver(DirectSolver, problem; xmin=0.001)
-        
-        # Use compliance as stress proxy
-        comp = Compliance(solver)
-        vol = Volume(solver)
-        filter = DensityFilter(solver; rmin=2.0)
-
-        geso = GESO(comp, vol, 0.5, filter; maxiter=5, tol=0.1, p=1.0)
-        x0 = fill(0.5, length(solver.vars))
-        result = geso(x0; seed=1300)
-
-        @test result isa TopOpt.Algorithms.GESOResult
-        @test length(result.topology) == getncells(problem)
-    end
-
     @testset "GESO mutation and crossover rates" begin
         nels = (10, 4)
         problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)

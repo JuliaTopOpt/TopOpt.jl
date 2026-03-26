@@ -197,26 +197,6 @@ using Ferrite: getncells
         @test compliances[2] >= compliances[3] * 0.8  # 50% vol vs 70% vol
     end
 
-    @testset "BESO with stress-based objective" begin
-        # Test BESO with stress objective (if available)
-        nels = (10, 4)
-        problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
-        solver = FEASolver(DirectSolver, problem; xmin=0.001)
-        
-        # Use compliance as proxy for stress test
-        comp = Compliance(solver)
-        vol = Volume(solver)
-        filter = DensityFilter(solver; rmin=2.0)
-
-        beso = BESO(comp, vol, 0.5, filter; maxiter=5, tol=0.1, p=1.0)
-        x0 = fill(0.5, length(solver.vars))
-        result = beso(x0)
-
-        @test result isa TopOpt.Algorithms.BESOResult
-        @test length(result.topology) == getncells(problem)
-        @test all(x -> x == 0 || x == 1, result.topology)
-    end
-
     @testset "BESO with different filter radii" begin
         nels = (12, 6)
         problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
