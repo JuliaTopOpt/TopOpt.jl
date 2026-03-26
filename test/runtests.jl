@@ -19,7 +19,7 @@ if GROUP == "All" || GROUP == "Core_Tests"
     end
     @safetestset "Algorithms" begin
         include("Algorithms/test_beso.jl")
-        # include("Algorithms/test_geso.jl")
+        include("Algorithms/test_geso.jl")
     end
     @safetestset "Integration" begin
         include("integration/test_end_to_end.jl")
