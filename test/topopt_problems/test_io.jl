@@ -3,7 +3,6 @@ using TopOpt.TopOptProblems
 using Test
 using Ferrite
 using LinearAlgebra
-using JSON
 
 @testset "VTK I/O" begin
     # Create a simple problem
