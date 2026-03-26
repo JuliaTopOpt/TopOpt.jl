@@ -2,17 +2,15 @@ using Test, SafeTestsets
 
 const GROUP = get(ENV, "GROUP", "All")
 
-if GROUP == "All" || GROUP == "Core_Tests"
+if GROUP == "All" || GROUP == "Core_Tests_1"
     @safetestset "InpParser Tests" begin
         include("inp_parser/parser.jl")
     end
-
     @safetestset "TopOptProblems Tests" begin
         include("topopt_problems/problems.jl")
         include("topopt_problems/metadata.jl")
         include("topopt_problems/test_io.jl")
     end
-
     @safetestset "Functions" begin
         include("Functions/test_common_fns.jl")
         include("Functions/test_buckling_fns.jl")
@@ -21,44 +19,36 @@ if GROUP == "All" || GROUP == "Core_Tests"
         include("Functions/test_thermal_compliance.jl")
         include("Functions/test_interpolation.jl")
         include("Functions/test_stress_tensor.jl")
-    end
-
-    @safetestset "Neural Functions" begin
         include("Functions/test_neural.jl")
     end
+end
 
+if GROUP == "All" || GROUP == "Core_Tests_2"
     @safetestset "Algorithms" begin
         include("Algorithms/test_beso.jl")
         include("Algorithms/test_geso.jl")
     end
-
-    @safetestset "Integration" begin
-        include("integration/test_end_to_end.jl")
-    end
-
     @safetestset "Solver" begin
         include("fea/solvers.jl")
         include("fea/test_convergence.jl")
         include("fea/test_matrix_free.jl")
     end
-
     @safetestset "Utilities" begin
         include("Utilities/test_utils.jl")
         include("Utilities/test_penalties.jl")
     end
-
     @safetestset "CheqFilters" begin
         include("CheqFilters/test_filters.jl")
         include("CheqFilters/test_sens_filter.jl")
     end
-end
-
-if GROUP == "All" || GROUP == "Extended_Tests"
-    @safetestset "Truss Problem Tests" begin
+    @safetestset "Truss Problem" begin
         include("truss_topopt_problems/test_problem.jl")
         include("truss_topopt_problems/test_fea.jl")
         include("truss_topopt_problems/test_buckling.jl")
         include("truss_topopt_problems/test_buckling_optimize.jl")
+    end
+    @safetestset "Integration" begin
+        include("integration/test_end_to_end.jl")
     end
 end
 
