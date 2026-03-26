@@ -28,7 +28,8 @@ on density (self-weight). In heat transfer, q is independent of ρ.
 # Usage
 
 ```julia
-problem = HeatConductionProblem(Val{:Linear}, nels, sizes, k, heat_source; Tleft=0.0, Tright=0.0)
+heatflux = Dict{String,Float64}("top" => 100.0)  # heat flux on boundary (W/m²)
+problem = HeatConductionProblem(Val{:Linear}, nels, sizes, k; Tleft=0.0, Tright=0.0, heatflux=heatflux)
 solver = FEASolver(DirectSolver, problem; xmin=0.001)
 comp = ThermalCompliance(solver)
 val = comp(PseudoDensities(ones(length(solver.vars))))

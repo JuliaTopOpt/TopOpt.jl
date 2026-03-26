@@ -55,10 +55,10 @@ TopOpt.jl is a topology optimization framework built on finite element analysis 
 - `assemble.jl`: Ferrite-based finite element assembly
 - `IO/`: INP file (Abaqus format) parser
 
-**Heat Transfer Problems**: The package now supports heat transfer topology optimization
-- `HeatConductionProblem`: 2D/3D steady-state heat conduction with volumetric heat generation
+**Heat Transfer Problems**: The package supports heat transfer topology optimization
+- `HeatConductionProblem`: 2D/3D steady-state heat conduction with surface heat flux (Neumann BC)
 - `ThermalCompliance`: Objective function for thermal compliance (analogous to structural compliance)
-- `MeanTemperature`: Objective function for average temperature minimization
+- Key difference from structural: Heat flux is a surface load (NOT penalized), while body forces in structural mechanics ARE penalized because they depend on material density
 
 **TrussTopOptProblems** (`src/TrussTopOptProblems/`): Defines truss topology optimization problems
 - `problem_types.jl`: `TrussProblem` with truss-specific FEA
@@ -102,8 +102,14 @@ TopOpt.jl is a topology optimization framework built on finite element analysis 
 
 **Physics-Based Function Validation**: Functions in the `Functions` module assert the correct problem type:
 - `Compliance`, `Displacement`, `StressTensor`: Require `StiffnessTopOptProblem` (structural mechanics)
-- `ThermalCompliance`, `MeanTemperature`: Require `HeatTransferTopOptProblem` (heat transfer)
+- `ThermalCompliance`: Requires `HeatTransferTopOptProblem` (heat transfer)
 - `TrussStress`: Requires `TrussProblem` (truss structures)
+
+**Load Vector Assembly Architecture**: The FEA assembly distinguishes between penalized and non-penalized loads:
+- `weights`/`fes`: Penalized by density (e.g., body forces in structural mechanics depend on material density)
+- `dloads`/`fixedload`/`cload`: NOT penalized (e.g., surface traction, point forces, heat flux)
+- For heat transfer: conductivity matrix is penalized, but heat flux (surface load) is NOT penalized
+- This ensures correct physics: external loads are independent of material density distribution
 
 **FEA Solver Abstraction**: All FEA solvers extend `AbstractFEASolver` and provide a common interface. The unified `GenericFEASolver{T,Physics,Solver}` uses two-layered dispatch:
 - Physics layer (`LinearElasticity`, `HeatTransfer`): Determines element matrices and assembly
@@ -131,15 +137,15 @@ All problem types support a common interface:
 ```julia
 using TopOpt
 
-# Create a heat conduction problem
+# Create a heat conduction problem with surface heat flux
 nels = (60, 20)
 sizes = (1.0, 1.0)
 k = 1.0  # thermal conductivity
-heat_source = 1.0  # volumetric heat generation
+heatflux = Dict{String,Float64}("top" => 100.0)  # heat flux on top boundary (W/m²)
 
 problem = HeatConductionProblem(
-    Val{:Linear}, nels, sizes, k, heat_source;
-    Tleft=0.0, Tright=0.0
+    Val{:Linear}, nels, sizes, k;
+    Tleft=100.0, Tright=0.0, heatflux=heatflux
 )
 
 # Create solver (physics automatically inferred from problem type)

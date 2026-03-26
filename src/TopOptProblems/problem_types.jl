@@ -798,7 +798,7 @@ All subtypes must have:
 - `metadata`: Metadata with cell-node-dof relationships
 - `black`, `white`, `varind`: Design variable management
 - `k`: thermal conductivity
-- `heat_source`: volumetric heat generation (can be scalar or function)
+- `heatfluxdict`: surface heat flux on boundaries (Dict{String,Float64})
 """
 abstract type HeatTransferTopOptProblem{dim,T} <: AbstractTopOptProblem end
 
