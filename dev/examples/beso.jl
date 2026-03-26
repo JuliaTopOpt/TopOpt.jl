@@ -7,7 +7,7 @@ f = 1.0; # downward force
 nels = (160, 40)
 problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), E, v, f)
 
-solver = FEASolver(Direct, problem; xmin=0.01, penalty=TopOpt.PowerPenalty(3.0))
+solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=TopOpt.PowerPenalty(3.0))
 
 comp = Compliance(solver)
 volfrac = Volume(solver)

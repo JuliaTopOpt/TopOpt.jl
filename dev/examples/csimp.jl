@@ -26,7 +26,7 @@ rmin = 3.0
 convcriteria = Nonconvex.KKTCriteria()
 x0 = fill(V, TopOpt.getncells(problem))
 penalty = TopOpt.PowerPenalty(1.0)
-solver = FEASolver(Direct, problem; xmin=xmin, penalty=penalty)
+solver = FEASolver(DirectSolver, problem; xmin=xmin, penalty=penalty)
 comp = Compliance(solver)
 filter = if problem isa TopOptProblems.TieBeam
     identity

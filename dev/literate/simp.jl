@@ -31,7 +31,7 @@ rmin = 2.0; # density filter radius
 
 # ### Define a finite element solver
 penalty = TopOpt.PowerPenalty(3.0)
-solver = FEASolver(Direct, problem; xmin=xmin, penalty=penalty)
+solver = FEASolver(DirectSolver, problem; xmin=xmin, penalty=penalty)
 
 # ### Define compliance objective
 comp = TopOpt.Compliance(solver)

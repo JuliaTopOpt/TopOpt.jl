@@ -11,7 +11,7 @@ problem_size = (160, 100); # size of rectangular mesh
 x0 = fill(1.0, prod(problem_size)); # initial design
 problem = PointLoadCantilever(Val{:Linear}, problem_size, (1.0, 1.0), E, v, f);
 
-solver = FEASolver(Direct, problem; xmin=xmin);
+solver = FEASolver(DirectSolver, problem; xmin=xmin);
 cheqfilter = DensityFilter(solver; rmin=rmin); # filter function
 comp = TopOpt.Compliance(solver); # compliance function
 

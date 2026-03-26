@@ -12,7 +12,7 @@ xmin = 1e-6 # minimum density
 rmin = 2.0; # density filter radius
 
 penalty = TopOpt.PowerPenalty(3.0)
-solver = FEASolver(Direct, problem; xmin=xmin, penalty=penalty)
+solver = FEASolver(DirectSolver, problem; xmin=xmin, penalty=penalty)
 
 comp = TopOpt.Compliance(solver)
 filter = DensityFilter(solver; rmin=rmin)
