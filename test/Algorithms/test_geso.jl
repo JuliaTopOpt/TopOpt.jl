@@ -366,7 +366,7 @@ using Ferrite: getncells
         filter = DensityFilter(solver; rmin=2.0)
 
         target_vol = 0.5
-        geso = GESO(comp, vol, target_vol, filter; maxiter=200, tol=0.1, p=1.0)
+        geso = GESO(comp, vol, target_vol, filter; maxiter=1000, tol=0.01, p=1.0)
         x0 = fill(0.5, length(solver.vars))
         result = geso(x0; seed=1200)
 
