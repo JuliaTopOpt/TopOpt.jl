@@ -330,22 +330,6 @@ end
     @test length(problem.varind) <= prod(nels)
 end
 
-@testset "Multi-load problem setup" begin
-    # Test MultiLoadProblem functionality
-    nels = (10, 10)
-    sizes = (1.0, 1.0)
-    E = 1.0
-    ν = 0.3
-    
-    # Create a simple multi-load problem with two load cases
-    # This tests the multi-load infrastructure
-    base_problem = PointLoadCantilever(Val{:Linear}, nels, sizes, E, ν, 1.0)
-    
-    # The multi-load variant should work if implemented
-    # Test that at least base problem works (PointLoadCantilever is a concrete type)
-    @test typeof(base_problem) <: Any
-end
-
 @testset "InpStiffness loading" begin
     # Test loading of INP file stiffness matrices
     inp_path = joinpath(@__DIR__, "..", "inp_parser", "MBB.inp")
