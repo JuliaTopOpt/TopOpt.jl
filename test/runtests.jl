@@ -48,12 +48,15 @@ if GROUP == "All" || GROUP == "Examples_2"
     @safetestset "Global stress example" begin
         include("examples/global_stress.jl")
     end
+end
+
+if GROUP == "All" || GROUP == "Examples_3"
     @safetestset "Local stress example" begin
         include("examples/local_stress.jl")
     end
 end
 
-if GROUP == "All" || GROUP == "Examples_3"
+if GROUP == "All" || GROUP == "Examples_4"
     @safetestset "More examples" begin
         include("examples/test_examples.jl")
     end
