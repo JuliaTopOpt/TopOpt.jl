@@ -28,7 +28,7 @@ struct BESO{
     topology::Vector{T}
     er::T
     maxiter::Int
-    p::T
+    penalty::AbstractPenalty{T}
     sens::Ts
     old_sens::To1
     obj_trace::To2
@@ -50,6 +50,8 @@ function BESO(
     sens_tol=tol / 100,
     k=10,
 )
+    penalty = comp.solver.penalty
+    setpenalty!(penalty, p)
     solver = comp.solver
     T = eltype(solver.vars)
     solver = comp.solver
@@ -72,7 +74,7 @@ function BESO(
         topology,
         er,
         maxiter,
-        p,
+        penalty,
         sens,
         old_sens,
         obj_trace,
@@ -82,7 +84,10 @@ function BESO(
     )
 end
 
-update_penalty!(b::BESO, p::Number) = (b.p = p)
+function Utilities.setpenalty!(b::BESO, p::Number)
+    b.penalty.p = p
+    return b
+end
 
 function (b::BESO)(x0=copy(b.obj.solver.vars))
     T = eltype(x0)
@@ -111,7 +116,8 @@ function (b::BESO)(x0=copy(b.obj.solver.vars))
     # Main loop
     change = T(1)
     iter = 0
-    setpenalty!(solver, b.p)
+    @assert typeof(solver.penalty) === typeof(b.penalty)
+    setpenalty!(solver, b.penalty.p)
     f = x -> b.comp(b.filter(PseudoDensities(x)))
     while (change > tol || true_vol > V) && iter < maxiter
         iter += 1
