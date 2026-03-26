@@ -25,7 +25,7 @@ ins_dir = joinpath(@__DIR__, "instances", "ground_meshes");
         Val{:Linear}, node_points, elements, loads, fixities, mat, crossec
     )
 
-    solver = FEASolver(Direct, problem)
+    solver = FEASolver(DirectSolver, problem)
     solver()
     @test !all(@. isnan(solver.u))
 end
@@ -51,7 +51,7 @@ end
     rmin = 4.0 # density filter radius
 
     penalty = TopOpt.PowerPenalty(1.0) # 1
-    solver = FEASolver(Direct, problem; xmin=xmin, penalty=penalty)
+    solver = FEASolver(DirectSolver, problem; xmin=xmin, penalty=penalty)
     ## call solver to trigger assemble!
     solver()
 
@@ -101,7 +101,7 @@ end # end testset
     rmin = 4.0 # density filter radius
 
     penalty = TopOpt.PowerPenalty(1.0) # 1
-    solver = FEASolver(Direct, problem; xmin=xmin, penalty=penalty)
+    solver = FEASolver(DirectSolver, problem; xmin=xmin, penalty=penalty)
     ## call solver to trigger assemble!
     solver()
 

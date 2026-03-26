@@ -18,7 +18,7 @@ delta_p = 0.01
 p_max = 5.0
 
 penalty = TopOpt.PowerPenalty(p)
-solver = FEASolver(Direct, problem; xmin, penalty)
+solver = FEASolver(DirectSolver, problem; xmin, penalty)
 cheqfilter = DensityFilter(solver; rmin)
 comp = Compliance(solver)
 volfrac = Volume(solver)
@@ -75,7 +75,7 @@ while true
     epoch > maxiter && break
     eps < eps_star && violation < constr_tol && break
     global penalty = TopOpt.PowerPenalty(p)
-    global solver = FEASolver(Direct, problem; xmin, penalty)
+    global solver = FEASolver(DirectSolver, problem; xmin, penalty)
     global cheqfilter = DensityFilter(solver; rmin)
     global comp = Compliance(solver)
     global volfrac = Volume(solver)

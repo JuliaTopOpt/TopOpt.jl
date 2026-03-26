@@ -62,7 +62,7 @@ end
 """
     ElementFEAInfo(sp, quad_order=2, ::Type{Val{mat_type}}=Val{:Static}) where {mat_type}
 
-Constructs an instance of `ElementFEAInfo` from a stiffness problem `sp` using a Gaussian quadrature order of `quad_order`. The element matrix and vector types will be:
+Constructs an instance of `ElementFEAInfo` from a topology optimization problem `sp` using a Gaussian quadrature order of `quad_order`. The element matrix and vector types will be:
 1. `SMatrix` and `SVector` if `mat_type` is `:SMatrix` or `:Static`, the default,
 2. `MMatrix` and `MVector` if `mat_type` is `:MMatrix`, or
 3. `Matrix` and `Vector` otherwise.
@@ -70,7 +70,7 @@ Constructs an instance of `ElementFEAInfo` from a stiffness problem `sp` using a
 The static matrices and vectors are more performant and GPU-compatible therefore they are used by default.
 """
 function ElementFEAInfo(
-    sp, quad_order=2, (::Type{Val{mat_type}})=Val{:Static}
+    sp::AbstractTopOptProblem, quad_order=2, (::Type{Val{mat_type}})=Val{:Static}
 ) where {mat_type}
     Kes, weights, dloads, cellvalues, facevalues = make_Kes_and_fes(
         sp, quad_order, Val{mat_type}
@@ -81,8 +81,7 @@ function ElementFEAInfo(
         bc_dofs=sp.ch.prescribed_dofs,
         dof_cells=sp.metadata.dof_cells,
     )
-    fixedload = Vector(make_cload(sp))
-    assemble_f!(fixedload, sp, dloads)
+    fixedload = _compute_fixedload(sp, dloads, floattype(sp))
     cellvolumes = get_cell_volumes(sp, cellvalues)
     cells = sp.ch.dh.grid.cells
     return ElementFEAInfo(
@@ -98,6 +97,15 @@ function ElementFEAInfo(
         sp.varind,
         cells,
     )
+end
+
+# Default fixed load computation for stiffness problems
+# Body forces (self-weight) are in weights and get penalized during assembly
+# Concentrated loads from make_cload and distributed loads from dloads are NOT penalized
+function _compute_fixedload(sp::AbstractTopOptProblem, dloads, _)
+    fixedload = Vector(make_cload(sp))
+    assemble_f!(fixedload, sp, dloads)
+    return fixedload
 end
 
 """
@@ -139,6 +147,12 @@ function GlobalFEAInfo(sp::StiffnessTopOptProblem)
     f = initialize_f(sp)
     return GlobalFEAInfo(K, f)
 end
+
+function GlobalFEAInfo(sp::HeatTransferTopOptProblem)
+    K = initialize_K(sp)
+    f = initialize_f(sp)
+    return GlobalFEAInfo(K, f)
+end
 function GlobalFEAInfo(
     K::Union{AbstractSparseMatrix,Symmetric{<:Any,<:AbstractSparseMatrix}}, f
 )
@@ -161,12 +175,13 @@ function GlobalFEAInfo(K, f)
 end
 
 """
-    get_cell_volumes(sp::StiffnessTopOptProblem{dim, T}, cellvalues)
+    get_cell_volumes(sp::AbstractTopOptProblem, cellvalues)
 
 Calculates an approximation of the element volumes by approximating the volume integral of 1 over each element using Gaussian quadrature. `cellvalues` is a `Ferrite` struct that facilitates the computation of the integral. To initialize `cellvalues` for an element with index `cell`, `Ferrite.reinit!(cellvalues, cell)` can be called. Calling `Ferrite.getdetJdV(cellvalues, q_point)` then computes the value of the determinant of the Jacobian of the geometric basis functions at the point `q_point` in the reference element. The sum of such values for all integration points is the volume approximation.
 """
-function get_cell_volumes(sp::StiffnessTopOptProblem{dim,T}, cellvalues) where {dim,T}
+function get_cell_volumes(sp::AbstractTopOptProblem, cellvalues)
     dh = sp.ch.dh
+    T = floattype(sp)
     cellvolumes = zeros(T, getncells(dh.grid))
     for (i, cell) in enumerate(CellIterator(dh))
         reinit!(cellvalues, cell)

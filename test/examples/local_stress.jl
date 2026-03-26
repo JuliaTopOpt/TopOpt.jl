@@ -28,7 +28,7 @@ steps = 40 # maximum number of penalty steps, delta_p0 = 0.1
 
 penalty = TopOpt.PowerPenalty(3.0)
 # Define a finite element solver
-solver = FEASolver(Direct, problem; xmin=xmin, penalty=penalty)
+solver = FEASolver(DirectSolver, problem; xmin=xmin, penalty=penalty)
 # Define compliance objective
 stress = TopOpt.von_mises_stress_function(solver)
 filter = DensityFilter(solver; rmin=rmin)
@@ -43,7 +43,7 @@ for p in 1.0:1.0:3.0
     global x, solver, stress, filter, volfrac, obj, constr, alg, options, model, r
     penalty = TopOpt.PowerPenalty(p)
     # Define a finite element solver
-    solver = FEASolver(Direct, problem; xmin=xmin, penalty=penalty)
+    solver = FEASolver(DirectSolver, problem; xmin=xmin, penalty=penalty)
     # Define compliance objective
     stress = TopOpt.von_mises_stress_function(solver)
     filter = DensityFilter(solver; rmin=rmin)

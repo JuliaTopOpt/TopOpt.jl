@@ -14,6 +14,15 @@ if GROUP == "All" || GROUP == "Core_Tests"
         include("Functions/test_common_fns.jl")
         include("Functions/test_buckling_fns.jl")
         include("Functions/test_truss_stress_fns.jl")
+        include("Functions/test_mean_compliance.jl")
+        include("Functions/test_thermal_compliance.jl")
+    end
+    @safetestset "Algorithms" begin
+        include("Algorithms/test_beso.jl")
+        include("Algorithms/test_geso.jl")
+    end
+    @safetestset "Integration" begin
+        include("integration/test_end_to_end.jl")
     end
     @safetestset "Solver" begin
         include("fea/solvers.jl")
@@ -39,12 +48,15 @@ if GROUP == "All" || GROUP == "Examples_2"
     @safetestset "Global stress example" begin
         include("examples/global_stress.jl")
     end
+end
+
+if GROUP == "All" || GROUP == "Examples_3"
     @safetestset "Local stress example" begin
         include("examples/local_stress.jl")
     end
 end
 
-if GROUP == "All" || GROUP == "Examples_3"
+if GROUP == "All" || GROUP == "Examples_4"
     @safetestset "More examples" begin
         include("examples/test_examples.jl")
     end
@@ -56,6 +68,9 @@ if GROUP == "All" || GROUP == "Examples_3"
     end
     @safetestset "Multi-material" begin
         include("examples/multimaterial.jl")
+    end
+    @safetestset "Heat sink example" begin
+        include("examples/heat_sink.jl")
     end
 end
 

@@ -9,33 +9,33 @@ end
 """
 The GESO algorithm, see [LiuYiLiShen2008](@cite).
 """
-struct GESO <: TopOptAlgorithm
+struct GESO{T<:Real,TF<:AbstractCheqFilter} <: TopOptAlgorithm
     comp::Compliance
     vol::Volume
-    vol_limit::Any
-    filter::Any
-    vars::AbstractVector
-    topology::AbstractVector
-    Pcmin::Any
-    Pcmax::Any
-    Pmmin::Any
-    Pmmax::Any
-    Pen::Any
+    vol_limit::T
+    filter::TF
+    vars::AbstractVector{T}
+    topology::AbstractVector{T}
+    Pcmin::T
+    Pcmax::T
+    Pmmin::T
+    Pmmax::T
+    Pen::T
     string_length::Int
-    var_volumes::AbstractVector
-    cum_var_volumes::AbstractVector
+    var_volumes::AbstractVector{T}
+    cum_var_volumes::AbstractVector{T}
     order::AbstractVector{Int}
     genotypes::BitArray{2}
     children::BitArray{2}
     var_black::BitVector
     maxiter::Int
-    penalty::Any
-    sens::AbstractVector
-    old_sens::AbstractVector
-    obj_trace::MVector{10}
-    tol::Any
-    sens_tol::Any
-    result::GESOResult
+    penalty::AbstractPenalty{T}
+    sens::AbstractVector{T}
+    old_sens::AbstractVector{T}
+    obj_trace::MVector{10,T}
+    tol::T
+    sens_tol::T
+    result::GESOResult{T,Vector{T}}
 end
 Base.show(::IO, ::MIME{Symbol("text/plain")}, ::GESO) = println("TopOpt GESO algorithm")
 
@@ -77,18 +77,18 @@ function GESO(
     children = trues(string_length, nvars)
     var_black = trues(nvars)
 
-    return GESO(
+    return GESO{T,typeof(filter)}(
         comp,
         vol,
-        vol_limit,
+        T(vol_limit),
         filter,
         vars,
         topology,
-        Pcmin,
-        Pcmax,
-        Pmmin,
-        Pmmax,
-        Pen,
+        T(Pcmin),
+        T(Pcmax),
+        T(Pmmin),
+        T(Pmmax),
+        T(Pen),
         string_length,
         var_volumes,
         cum_var_volumes,
@@ -101,8 +101,8 @@ function GESO(
         sens,
         old_sens,
         obj_trace,
-        tol,
-        sens_tol,
+        T(tol),
+        T(sens_tol),
         result,
     )
 end

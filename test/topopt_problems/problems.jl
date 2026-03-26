@@ -178,3 +178,108 @@ end
     @test Ferrite.getorder(problem.ch.dh.field_interpolations[1]) == 2
     @test Ferrite.nnodes(grid.cells[1]) == 9
 end
+
+# Heat conduction problem tests
+@testset "Heat conduction problem setup" begin
+    # Create a simple 2D heat conduction problem with surface heat flux
+    nels = (10, 5)
+    sizes = (1.0, 1.0)
+    k = 1.0
+    # Apply heat flux on top boundary (positive = heat into domain)
+    heatflux = Dict{String,Float64}("top" => 1.0)
+
+    problem = HeatConductionProblem(
+        Val{:Linear}, nels, sizes, k;
+        Tleft=0.0, Tright=0.0, heatflux=heatflux
+    )
+
+    @test problem isa HeatConductionProblem
+    @test getk(problem) ≈ 1.0
+    @test Ferrite.getncells(problem) == 50
+end
+
+@testset "Heat transfer element matrices" begin
+    nels = (4, 2)
+    sizes = (1.0, 1.0)
+    k = 1.0
+    heatflux = Dict{String,Float64}("top" => 1.0)
+
+    problem = HeatConductionProblem(
+        Val{:Linear}, nels, sizes, k;
+        Tleft=0.0, Tright=0.0, heatflux=heatflux
+    )
+
+    # Build element FEA info
+    elementinfo = ElementFEAInfo(problem, 2, Val{:Static})
+
+    @test length(elementinfo.Kes) == 8  # 4x2 elements
+    @test length(elementinfo.fes) == 8
+
+    # For linear quad elements, each element has 4 nodes
+    # and heat transfer is scalar field, so Ke is 4x4
+    @test size(elementinfo.Kes[1], 1) == 4
+end
+
+@testset "Heat transfer element properties" begin
+    @testset "Element stiffness matrix symmetry and properties" begin
+        nels = (2, 2)
+        sizes = (1.0, 1.0)
+        k = 1.0
+        heatflux = Dict{String,Float64}("top" => 1.0)
+
+        problem = HeatConductionProblem(
+            Val{:Linear}, nels, sizes, k;
+            Tleft=0.0, Tright=0.0, heatflux=heatflux
+        )
+
+        elementinfo = ElementFEAInfo(problem, 2, Val{:Static})
+
+        # Check number of elements
+        @test length(elementinfo.Kes) == 4
+
+        # Check each element matrix
+        for Ke in elementinfo.Kes
+            # Should be 4x4 for linear quadrilateral
+            @test size(Ke, 1) == 4
+            @test size(Ke, 2) == 4
+
+            # Should be symmetric
+            mat_Ke = Matrix(Ke)
+            @test mat_Ke ≈ mat_Ke' rtol=1e-10
+
+            # Should be positive semi-definite (non-negative eigenvalues)
+            eigs = eigvals(mat_Ke)
+            @test all(eigs .>= -1e-10)
+        end
+
+        # Check that fes is zeros (no body forces in heat transfer)
+        @test length(elementinfo.fes) == 4
+        for fe in elementinfo.fes
+            @test length(fe) == 4
+            # fes should be zeros (no body forces)
+            @test all(fe .== 0)
+        end
+    end
+
+    @testset "Element volumes are positive" begin
+        nels = (4, 4)
+        sizes = (1.0, 1.0)
+        k = 1.0
+        heatflux = Dict{String,Float64}("top" => 1.0)
+
+        problem = HeatConductionProblem(
+            Val{:Linear}, nels, sizes, k;
+            Tleft=0.0, Tright=0.0, heatflux=heatflux
+        )
+
+        elementinfo = ElementFEAInfo(problem, 2, Val{:Static})
+
+        # All cell volumes should be positive
+        @test all(elementinfo.cellvolumes .> 0)
+
+        # Total volume should match domain size
+        total_vol = sum(elementinfo.cellvolumes)
+        expected_vol = nels[1] * sizes[1] * nels[2] * sizes[2]
+        @test isapprox(total_vol, expected_vol; rtol=1e-10)
+    end
+end

@@ -8,6 +8,8 @@ struct StressTensor{T,Tp,Ts,Tc1,Tc2} <: AbstractFunction{T}
 end
 function StressTensor(solver)
     problem = solver.problem
+    # StressTensor is only valid for structural (LinearElasticity) problems
+    @assert problem isa StiffnessTopOptProblem "StressTensor can only be used with StiffnessTopOptProblem (structural mechanics). Got $(typeof(problem))"
     dh = problem.ch.dh
     n = ndofs_per_cell(dh)
     global_dofs = zeros(Int, n)

@@ -18,6 +18,8 @@ end
 Construct the TrussStress function struct.
 """
 function TrussStress(solver::AbstractFEASolver; maxfevals=10^8)
+    # TrussStress is only valid for truss problems
+    @assert solver.problem isa TrussProblem "TrussStress can only be used with TrussProblem. Got $(typeof(solver.problem))"
     T = eltype(solver.u)
     dim = TopOptProblems.getdim(solver.problem)
     dh = solver.problem.ch.dh

@@ -21,7 +21,7 @@ x0 = fill(1.0, ncells) # initial design
 p = 4.0 # penalty
 compliance_threshold = 5.0 # maximum compliance
 
-solver = FEASolver(Direct, problem; xmin=xmin)
+solver = FEASolver(DirectSolver, problem; xmin=xmin)
 comp = TopOpt.Compliance(solver)
 
 function obj(x)

@@ -8,7 +8,7 @@ Base.:*(x::ElementStiffnessMatrix, y) = ElementStiffnessMatrix(x.x * y)
 
 mutable struct ElementK{
     T,
-    Ts<:AbstractDisplacementSolver,
+    Ts<:AbstractFEASolver,
     TK1<:AbstractVector{<:AbstractMatrix{T}},
     TK2<:AbstractVector{<:AbstractMatrix{T}},
     Tp<:AbstractPenalty{T},
@@ -24,7 +24,7 @@ function Base.show(::IO, ::MIME{Symbol("text/plain")}, ::ElementK)
     return println("TopOpt element stiffness matrix construction function")
 end
 
-function ElementK(solver::AbstractDisplacementSolver)
+function ElementK(solver::AbstractFEASolver)
     @unpack elementinfo = solver
     dh = solver.problem.ch.dh
     penalty = getpenalty(solver)

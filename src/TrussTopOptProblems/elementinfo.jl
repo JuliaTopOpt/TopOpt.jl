@@ -1,5 +1,6 @@
-using ..TopOpt: ElementFEAInfo, ElementMatrix
+using ..TopOpt: ElementMatrix
 using ..TopOpt.TopOptProblems: make_cload, convert
+import ..TopOpt: ElementFEAInfo
 
 """
     ElementFEAInfo(sp, quad_order=2, ::Type{Val{mat_type}}=Val{:Static}) where {mat_type}

@@ -1,24 +1,31 @@
 function assemble(
-    problem::StiffnessTopOptProblem{dim,T},
-    elementinfo::ElementFEAInfo{dim,T},
-    vars=ones(T, getncells(getdh(problem).grid)),
-    penalty=PowerPenalty(T(1)),
-    xmin=T(0.001),
-) where {dim,T}
+    problem::AbstractTopOptProblem,
+    elementinfo::ElementFEAInfo,
+    vars=ones(floattype(problem), getncells(getdh(problem).grid)),
+    penalty=PowerPenalty(floattype(problem)),
+    xmin=floattype(problem)(0.001),
+)
+    T = floattype(problem)
+    dim = getdim(problem)
     globalinfo = GlobalFEAInfo(problem)
     assemble!(globalinfo, problem, elementinfo, vars, penalty, xmin)
     return globalinfo
 end
 
+# Assembly for all problem types
+# For structural: fes contains body forces (penalized), fixedload contains concentrated/distributed loads (not penalized)
+# For heat transfer: fes is zeros (no body forces), fixedload contains heat source (not penalized)
 function assemble!(
-    globalinfo::GlobalFEAInfo{T},
-    problem::StiffnessTopOptProblem{dim,T},
-    elementinfo::ElementFEAInfo{dim,T,TK},
-    vars=ones(T, getncells(getdh(problem).grid)),
-    penalty=PowerPenalty(T(1)),
-    xmin=T(0.001);
+    globalinfo::GlobalFEAInfo,
+    problem::AbstractTopOptProblem,
+    elementinfo::ElementFEAInfo,
+    vars=ones(floattype(problem), getncells(getdh(problem).grid)),
+    penalty=PowerPenalty(floattype(problem)),
+    xmin=floattype(problem)(0.001);
     assemble_f=true,
-) where {dim,T,TK}
+)
+    T = floattype(problem)
+    dim = getdim(problem)
     ch = problem.ch
     dh = ch.dh
     K, f = globalinfo.K, globalinfo.f
@@ -81,6 +88,7 @@ function assemble!(
     end
 
     #* apply boundary condition
+    TK = eltype(K)
     _K = TK <: Symmetric ? K.data : K
     apply!(_K, f, ch)
 

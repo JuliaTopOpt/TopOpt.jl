@@ -19,7 +19,7 @@ compliance_threshold = 800 # maximum compliance
 problem = PointLoadCantilever(Val{:Linear}, problem_size, (1.0, 1.0), E, v, f)
 #problem = HalfMBB(Val{:Linear}, problem_size, (1.0, 1.0), E, v, f)
 
-solver = FEASolver(Direct, problem; xmin=xmin)
+solver = FEASolver(DirectSolver, problem; xmin=xmin)
 
 cheqfilter = DensityFilter(solver; rmin=rmin)
 stress = TopOpt.von_mises_stress_function(solver)

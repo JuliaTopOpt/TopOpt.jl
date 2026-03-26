@@ -17,7 +17,7 @@ getdim(::StiffnessTopOptProblem{dim,T}) where {dim,T} = dim
 floattype(::StiffnessTopOptProblem{dim,T}) where {dim,T} = T
 getE(p::StiffnessTopOptProblem) = p.E
 getν(p::StiffnessTopOptProblem) = p.ν
-getgeomorder(p::StiffnessTopOptProblem) = nnodespercell(p) == 9 ? 2 : 1
+getgeomorder(p::StiffnessTopOptProblem) = nnodespercell(p) in (9, 27) ? 2 : 1
 getdensity(::StiffnessTopOptProblem{dim,T}) where {dim,T} = T(0)
 getmetadata(p::StiffnessTopOptProblem) = p.metadata
 getdh(p::StiffnessTopOptProblem) = p.ch.dh
@@ -772,3 +772,203 @@ function RayProblem(
 end
 nnodespercell(p::RayProblem) = nnodespercell(p.rect_grid)
 getcloaddict(p::RayProblem) = p.loads
+
+# ============================================================================
+# Heat Transfer Problem Types
+# ============================================================================
+
+"""
+    abstract type HeatTransferTopOptProblem{dim, T} <: AbstractTopOptProblem end
+
+An abstract heat transfer topology optimization problem for steady-state heat conduction.
+
+Governing equation: -∇·(k(ρ)∇T) = q    in Ω
+                   T = T_D            on Γ_D (Dirichlet BC)
+                   k∇T·n = q_N        on Γ_N (Neumann BC)
+
+SIMP interpolation: k(ρ) = k_min + ρ^p (k_0 - k_min)
+Heat source q is NOT penalized (external input, not a material property).
+
+Mathematical note: For thermal compliance J = Q^T T, the gradient is:
+    dJ/dx_e = -T_e^T Ke T_e · dρ_e/dx_e
+This is the same form as structural compliance because Q doesn't depend on x.
+
+All subtypes must have:
+- `ch`: ConstraintHandler with temperature DOFs (1 DOF per node)
+- `metadata`: Metadata with cell-node-dof relationships
+- `black`, `white`, `varind`: Design variable management
+- `k`: thermal conductivity
+- `heatfluxdict`: surface heat flux on boundaries (Dict{String,Float64})
+"""
+abstract type HeatTransferTopOptProblem{dim,T} <: AbstractTopOptProblem end
+
+# Fallbacks for HeatTransferTopOptProblem
+getdim(::HeatTransferTopOptProblem{dim,T}) where {dim,T} = dim
+floattype(::HeatTransferTopOptProblem{dim,T}) where {dim,T} = T
+getk(p::HeatTransferTopOptProblem) = p.k
+getmetadata(p::HeatTransferTopOptProblem) = p.metadata
+getdh(p::HeatTransferTopOptProblem) = p.ch.dh
+getpressuredict(p::HeatTransferTopOptProblem{dim,T}) where {dim,T} = Dict{String,T}()
+getheatfluxdict(p::HeatTransferTopOptProblem{dim,T}) where {dim,T} = Dict{String,T}()
+getfacesets(p::HeatTransferTopOptProblem) = getdh(p).grid.facesets
+Ferrite.getncells(problem::HeatTransferTopOptProblem) = Ferrite.getncells(getdh(problem).grid)
+getgeomorder(p::HeatTransferTopOptProblem) = nnodespercell(p) in (9, 27) ? 2 : 1
+getcloaddict(p::HeatTransferTopOptProblem{dim,T}) where {dim,T} = Dict{String,Vector{T}}()
+
+"""
+    struct HeatConductionProblem{dim, T, N, M} <: HeatTransferTopOptProblem{dim, T}
+
+```
+  T = T_left                         T = T_right
+  ┌────────────────────────────────────────┐
+  │                                        │
+  │                                        │
+  │          k(ρ)∇²T = 0                   │
+  │         (heat conduction)              │
+  │                                        │
+  │                                        │
+  └────────────────────────────────────────┘
+            ▲ q (heat flux on boundary)
+            │
+  ┌────────────────────────────────────────┐
+  │    ρ = design density (0 to 1)         │
+  │    k(ρ) = penalized conductivity       │
+  │    q = heat flux (NOT penalized)       │
+  └────────────────────────────────────────┘
+```
+
+A steady-state heat conduction problem with:
+- Temperature BCs: T = `T_left` on left boundary, T = `T_right` on right boundary
+- Heat flux BCs: q on specified boundaries (facesets)
+- Objective: minimize thermal compliance J = ∫ q·T dΓ
+
+
+Constructor arguments:
+- `nels`: tuple of number of elements in each dimension
+- `sizes`: tuple of element sizes
+- `k`: thermal conductivity (W/m·K)
+- `Tleft`: temperature on left boundary
+- `Tright`: temperature on right boundary
+- `heatflux`: Dict mapping faceset names to heat flux values (W/m²)
+  - Positive values = heat entering the domain (heat source on boundary)
+  - Negative values = heat leaving the domain (heat sink on boundary)
+
+Note: Heat flux q is NOT penalized in the assembly. Only conductivity k(ρ) is penalized.
+"""
+struct HeatConductionProblem{
+    dim,
+    T,
+    N,
+    M,
+    Tr<:RectilinearGrid{dim, T, N, M},
+    Tc<:ConstraintHandler{<:DofHandler{dim, <:Cell{dim, N, M}, T}, T},
+    Tb<:AbstractVector,
+    Tw<:AbstractVector,
+    Tv<:AbstractVector{Int},
+    Tm<:Metadata,
+    Th<:AbstractDict{String,T},
+} <: HeatTransferTopOptProblem{dim, T}
+    rect_grid::Tr
+    k::T
+    ch::Tc
+    heatfluxdict::Th
+    black::Tb
+    white::Tw
+    varind::Tv
+    metadata::Tm
+end
+
+function Base.show(::IO, ::MIME{Symbol("text/plain")}, ::HeatConductionProblem)
+    return println("TopOpt heat conduction problem")
+end
+
+getheatfluxdict(p::HeatConductionProblem) = p.heatfluxdict
+
+"""
+    HeatConductionProblem(::Type{Val{CellType}}, nels, sizes, k=1.0; Tleft=0.0, Tright=0.0, heatflux=Dict{String,Float64}())
+
+Create a 2D/3D heat conduction problem on a rectangular domain.
+
+Temperature BCs are applied on left (Tleft) and right (Tright) boundaries.
+Heat flux BCs can be applied on any faceset via the `heatflux` argument.
+
+Example:
+```julia
+nels = (60, 20)
+sizes = (1.0, 1.0)
+k = 1.0
+# Apply heat flux on top boundary (faceset "top")
+heatflux = Dict("top" => 100.0)  # 100 W/m² into the domain
+problem = HeatConductionProblem(Val{:Linear}, nels, sizes, k; Tleft=0.0, Tright=0.0, heatflux=heatflux)
+```
+"""
+function HeatConductionProblem(
+    ::Type{Val{CellType}},
+    nels::NTuple{dim, Int},
+    sizes::NTuple{dim},
+    k=1.0;
+    Tleft=0.0,
+    Tright=0.0,
+    heatflux=Dict{String,Float64}(),
+) where {dim, CellType}
+    _T = promote_type(eltype(sizes), typeof(k), typeof(Tleft), typeof(Tright))
+    if _T <: Integer
+        T = Float64
+    else
+        T = _T
+    end
+
+    if CellType === :Linear
+        rect_grid = RectilinearGrid(Val{:Linear}, nels, T.(sizes))
+    else
+        rect_grid = RectilinearGrid(Val{:Quadratic}, nels, T.(sizes))
+    end
+
+    # Add boundary node sets
+    if haskey(rect_grid.grid.nodesets, "left_boundary")
+        pop!(rect_grid.grid.nodesets, "left_boundary")
+    end
+    addnodeset!(rect_grid.grid, "left_boundary", x -> left(rect_grid, x))
+
+    if haskey(rect_grid.grid.nodesets, "right_boundary")
+        pop!(rect_grid.grid.nodesets, "right_boundary")
+    end
+    addnodeset!(rect_grid.grid, "right_boundary", x -> right(rect_grid, x))
+
+    # Create temperature field (scalar, 1 DOF per node)
+    dh = DofHandler(rect_grid.grid)
+    if CellType === :Linear
+        push!(dh, :T, 1)  # Temperature is a scalar field
+    else
+        ip = Lagrange{dim, RefCube, 2}()
+        push!(dh, :T, 1, ip)
+    end
+    close!(dh)
+
+    # Apply temperature boundary conditions
+    ch = ConstraintHandler(dh)
+    dbc_left = Dirichlet(:T, getnodeset(rect_grid.grid, "left_boundary"), (x, t) -> Tleft)
+    dbc_right = Dirichlet(:T, getnodeset(rect_grid.grid, "right_boundary"), (x, t) -> Tright)
+    add!(ch, dbc_left)
+    add!(ch, dbc_right)
+    close!(ch)
+    t = T(0)
+    update!(ch, t)
+
+    metadata = Metadata(dh)
+
+    black, white = find_black_and_white(dh)
+    varind = find_varind(black, white)
+
+    # Convert heatflux dict to proper type
+    heatfluxdict = Dict{String,T}()
+    for (key, val) in heatflux
+        heatfluxdict[key] = T(val)
+    end
+
+    return HeatConductionProblem(
+        rect_grid, T(k), ch, heatfluxdict, black, white, varind, metadata
+    )
+end
+
+nnodespercell(p::HeatConductionProblem) = nnodespercell(p.rect_grid)

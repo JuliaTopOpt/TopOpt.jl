@@ -7,7 +7,7 @@ mutable struct MeanCompliance{T,TC<:Compliance{T},TM,TS,Tg<:AbstractVector{T}} <
 end
 function MeanCompliance(
     problem::MultiLoad,
-    solver::AbstractDisplacementSolver;
+    solver::AbstractFEASolver;
     method=:exact_svd,
     sample_once=true,
     nv=nothing,
@@ -15,6 +15,8 @@ function MeanCompliance(
     sample_method=:hutch,
     kwargs...,
 )
+    # MeanCompliance is only valid for structural (LinearElasticity) problems
+    @assert solver.problem isa StiffnessTopOptProblem "MeanCompliance can only be used with StiffnessTopOptProblem (structural mechanics). Got $(typeof(solver.problem))"
     if method == :exact
         method = ExactMean(problem.F)
     elseif method == :exact_svd

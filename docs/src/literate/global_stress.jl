@@ -35,7 +35,7 @@ convcriteria = Nonconvex.KKTCriteria()
 penalty = TopOpt.PowerPenalty(1.0)
 
 # ### Define a finite element solver
-solver = FEASolver(Direct, problem; xmin=xmin, penalty=penalty)
+solver = FEASolver(DirectSolver, problem; xmin=xmin, penalty=penalty)
 
 # ### Define **stress** objective
 # Notice that gradient is derived automatically by automatic differentiation (Zygote.jl)!

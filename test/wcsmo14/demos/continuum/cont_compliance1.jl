@@ -17,7 +17,7 @@ x0 = fill(V, prod(problem_size)) # initial design
 
 problem = HalfMBB(Val{:Linear}, problem_size, (1.0, 1.0), E, v, f)
 
-solver = FEASolver(Direct, problem; xmin=xmin)
+solver = FEASolver(DirectSolver, problem; xmin=xmin)
 cheqfilter = DensityFilter(solver; rmin=rmin)
 comp = TopOpt.Compliance(solver)
 

@@ -21,7 +21,7 @@ x0 = fill(1.0, ncells) # initial design
 p = 4.0 # penalty
 V = 0.5 # maximum volume fraction
 
-solver = FEASolver(Direct, problem; xmin=xmin)
+solver = FEASolver(DirectSolver, problem; xmin=xmin)
 comp = TopOpt.Compliance(solver)
 
 function obj(x)

@@ -33,7 +33,7 @@ sizes = (1.0, 1.0, 1.0)
 
 # Define a finite element solver
 @timeit to "penalty def" penalty = TopOpt.PowerPenalty(3.0)
-@timeit to "solver def" solver = FEASolver(Direct, problem; xmin=xmin, penalty=penalty);
+@timeit to "solver def" solver = FEASolver(DirectSolver, problem; xmin=xmin, penalty=penalty);
 
 # Define compliance objective
 @timeit to "objective def" begin
