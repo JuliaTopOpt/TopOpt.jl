@@ -17,7 +17,8 @@ export AbstractFEASolver,
     simulate,
     AbstractPhysics,
     LinearElasticity,
-    HeatTransfer
+    HeatTransfer,
+    MatrixFreeOperator
 
 const to = TimerOutput()
 

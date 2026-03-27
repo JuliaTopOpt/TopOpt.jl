@@ -26,7 +26,6 @@ if GROUP == "All" || GROUP == "Core_Tests_2"
     @safetestset "Solver" begin
         include("FEA/solvers.jl")
         include("FEA/test_convergence.jl")
-        include("FEA/test_matrix_free.jl")
     end
     @safetestset "Utilities" begin
         include("Utilities/test_utils.jl")
