@@ -8,8 +8,8 @@ mutable struct Volume{
     fixed_volume::T
     fraction::Bool
 end
-function Base.show(::IO, ::MIME{Symbol("text/plain")}, ::Volume)
-    return println("TopOpt volume (fraction) function")
+function Base.show(io::IO, ::MIME{Symbol("text/plain")}, ::Volume)
+    return println(io, "TopOpt volume (fraction) function")
 end
 Nonconvex.NonconvexCore.getdim(::Volume) = 1
 

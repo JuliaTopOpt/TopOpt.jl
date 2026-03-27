@@ -4,8 +4,8 @@ struct LinearElasticityResult{Tc,Tu}
     comp::Tc
     u::Tu
 end
-function Base.show(::IO, ::MIME{Symbol("text/plain")}, ::LinearElasticityResult)
-    return println("TopOpt linear elasticity result")
+function Base.show(io::IO, ::MIME{Symbol("text/plain")}, ::LinearElasticityResult)
+    return println(io, "TopOpt linear elasticity result")
 end
 
 function simulate(

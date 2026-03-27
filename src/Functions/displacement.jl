@@ -13,8 +13,8 @@ mutable struct Displacement{
     maxfevals::Int
 end
 
-function Base.show(::IO, ::MIME{Symbol("text/plain")}, ::Displacement)
-    return println("TopOpt displacement function")
+function Base.show(io::IO, ::MIME{Symbol("text/plain")}, ::Displacement)
+    return println(io, "TopOpt displacement function")
 end
 
 struct DisplacementResult{T,N,A<:AbstractArray{T,N}} <: AbstractArray{T,N}

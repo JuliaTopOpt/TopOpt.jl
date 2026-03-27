@@ -18,8 +18,8 @@ mutable struct TrussElementKσ{
     global_dofs::Tg
 end
 
-function Base.show(::IO, ::MIME{Symbol("text/plain")}, ::TrussElementKσ)
-    return println("TopOpt element stress stiffness matrix (Kσ_e) construction function")
+function Base.show(io::IO, ::MIME{Symbol("text/plain")}, ::TrussElementKσ)
+    return println(io, "TopOpt element stress stiffness matrix (Kσ_e) construction function")
 end
 
 function TrussElementKσ(

@@ -13,8 +13,8 @@ struct ElementMatrix{T,Tm1<:AbstractMatrix{T},Tm2} <: AbstractMatrix{T}
     meandiag::T
 end
 ElementMatrix(matrix, mask) = ElementMatrix(matrix, mask, sumdiag(matrix) / size(matrix, 1))
-function Base.show(::IO, ::MIME{Symbol("text/plain")}, ::ElementMatrix)
-    return println("TopOpt element matrix")
+function Base.show(io::IO, ::MIME{Symbol("text/plain")}, ::ElementMatrix)
+    return println(io, "TopOpt element matrix")
 end
 
 """
