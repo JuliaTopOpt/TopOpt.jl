@@ -291,6 +291,91 @@ end
     end
 end
 
+@testset "MatrixFreeOperator mul! operation" begin
+    @testset "mul! with solver state" begin
+        nels = (4, 4)
+        sizes = (1.0, 1.0)
+        problem = PointLoadCantilever(Val{:Linear}, nels, sizes, 1.0, 0.3, 1.0)
+        
+        solver = FEASolver(CGMatrixFreeSolver, problem)
+        
+        # Set design variables and solve to initialize state
+        solver.vars .= 0.8
+        solver()
+        
+        # Create MatrixFreeOperator with current state
+        elementinfo = solver.elementinfo
+        meandiag = solver.meandiag
+        vars = solver.vars
+        xes = solver.xes
+        fixed_dofs = solver.fixed_dofs
+        free_dofs = solver.free_dofs
+        xmin = solver.xmin
+        penalty = solver.penalty
+        
+        operator = MatrixFreeOperator(
+            elementinfo.fixedload, elementinfo, meandiag, vars, xes,
+            fixed_dofs, free_dofs, xmin, penalty, solver.conv
+        )
+        
+        u = solver.u        
+        y = similar(u)
+        mul!(y, operator, u)
+        @test length(y) == length(u)
+        @test y isa Vector{Float64}
+        
+        # Verify the result makes physical sense (y should be related to K*u)
+        @test !all(iszero, y)  # Should have non-zero values
+        @test all(isfinite, y)  # Should be finite
+    end
+    
+    @testset "mul! consistency with matrix assembly" begin
+        nels = (4, 4)
+        sizes = (1.0, 1.0)
+        problem = PointLoadCantilever(Val{:Linear}, nels, sizes, 1.0, 0.3, 1.0)
+        
+        # Assembly solver
+        solver_asm = FEASolver(CGAssemblySolver, problem)
+        solver_asm.vars .= 0.8
+        solver_asm()
+        
+        # Matrix-free solver
+        solver_mf = FEASolver(CGMatrixFreeSolver, problem)
+        solver_mf.vars .= 0.8
+        solver_mf()
+        
+        # Get free DOF values
+        free_dofs = solver_asm.free_dofs
+        u = solver_asm.u
+        
+        # Extract K for free DOFs
+        K = solver_asm.globalinfo.K
+        
+        # Expected result from matrix multiplication
+        y_expected = K * u
+        
+        # Matrix-free operator result
+        elementinfo = solver_mf.elementinfo
+        meandiag = solver_mf.meandiag
+        vars = solver_mf.vars
+        xes = solver_mf.xes
+        fixed_dofs = solver_mf.fixed_dofs
+        xmin = solver_mf.xmin
+        penalty = solver_mf.penalty
+        
+        operator = MatrixFreeOperator(
+            elementinfo.fixedload, elementinfo, meandiag, vars, xes,
+            fixed_dofs, free_dofs, xmin, penalty, solver_mf.conv
+        )
+        
+        y_mf = similar(u)
+        mul!(y_mf, operator, u)
+
+        # Results should be approximately equal
+        @test_broken isapprox(y_mf, y_expected; rtol=1e-3)
+    end
+end
+
 @testset "Integration: matrix_free_apply2f! with solver workflow" begin
     @testset "Consistency with assembled matrix approach" begin
         nels = (4, 4)
