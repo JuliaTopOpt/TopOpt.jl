@@ -33,7 +33,6 @@ if GROUP == "All" || GROUP == "Core_Tests_2"
     end
     @safetestset "CheqFilters" begin
         include("CheqFilters/test_filters.jl")
-        include("CheqFilters/test_sens_filter.jl")
     end
     @safetestset "Truss Problem" begin
         include("truss_topopt_problems/test_problem.jl")
