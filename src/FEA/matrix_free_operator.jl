@@ -9,6 +9,7 @@ function Base.show(io::IO, ::MIME{Symbol("text/plain")}, ::MatrixOperator)
     return println(io, "TopOpt matrix linear operator")
 end
 LinearAlgebra.mul!(c, op::MatrixOperator, b) = mul!(c, op.K, b)
+Base.size(op::MatrixOperator) = (size(op.K, 1), size(op, 2))
 Base.size(op::MatrixOperator, i) = size(op.K, i)
 Base.eltype(op::MatrixOperator) = eltype(op.K)
 LinearAlgebra.:*(op::MatrixOperator, b) = mul!(similar(b), op.K, b)
