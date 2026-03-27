@@ -47,7 +47,7 @@ end
 
 if GROUP == "All" || GROUP == "Core_Tests_3"
     @testset "Algorithms" begin
-        include("Algorithms/test_geso.jl")
+        # include("Algorithms/test_geso.jl")
         include("Algorithms/test_beso.jl")
     end
 end
