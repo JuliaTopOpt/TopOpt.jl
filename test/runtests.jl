@@ -46,9 +46,14 @@ if GROUP == "All" || GROUP == "Core_Tests_2"
 end
 
 if GROUP == "All" || GROUP == "Core_Tests_3"
-    @testset "Algorithms" begin
-        # include("Algorithms/test_geso.jl")
+    @safetestset "BESO" begin
         include("Algorithms/test_beso.jl")
+    end
+end
+
+if GROUP == "All" || GROUP == "Core_Tests_4"
+    @safetestset "GESO" begin
+        include("Algorithms/test_geso.jl")
     end
 end
 
