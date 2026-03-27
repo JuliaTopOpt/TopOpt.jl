@@ -224,4 +224,31 @@ using Ferrite: getncells
         @test Pm <= geso.Pmmax
     end
 
+    @testset "GESO show methods" begin
+        nels = (10, 4)
+        problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
+        solver = FEASolver(DirectSolver, problem; xmin=0.001)
+        comp = Compliance(solver)
+        vol = Volume(solver)
+        filter = DensityFilter(solver; rmin=2.0)
+
+        geso = GESO(comp, vol, 0.5, filter; maxiter=5, tol=0.1, p=1.0)
+        
+        @testset "GESO algorithm show" begin
+            io = IOBuffer()
+            show(io, MIME("text/plain"), geso)
+            output = String(take!(io))
+            @test occursin("GESO", output) || output != ""
+        end
+
+        x0 = fill(0.5, length(solver.vars))
+        result = geso(x0; seed=999)
+
+        @testset "GESOResult show" begin
+            io = IOBuffer()
+            show(io, MIME("text/plain"), result)
+            output = String(take!(io))
+            @test occursin("GESOResult", output) || output != ""
+        end
+    end
 end

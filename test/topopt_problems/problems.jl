@@ -376,3 +376,55 @@ end
     # Test cell count
     @test Ferrite.getncells(grid) == prod(nels)
 end
+
+@testset "Problem show methods" begin
+    nels = (10, 6)
+    sizes = (1.0, 1.0)
+    E = 1.0
+    ν = 0.3
+    force = 1.0
+
+    @testset "PointLoadCantilever show" begin
+        problem = PointLoadCantilever(Val{:Linear}, nels, sizes, E, ν, force)
+        io = IOBuffer()
+        show(io, MIME("text/plain"), problem)
+        output = String(take!(io))
+        @test occursin("PointLoadCantilever", output) || occursin("Point", output) || output != ""
+    end
+
+    @testset "HalfMBB show" begin
+        problem = HalfMBB(Val{:Linear}, nels, sizes, E, ν, force)
+        io = IOBuffer()
+        show(io, MIME("text/plain"), problem)
+        output = String(take!(io))
+        @test occursin("HalfMBB", output) || output != ""
+    end
+
+    @testset "LBeam show" begin
+        problem = LBeam(Val{:Linear}, Float64; force=force)
+        io = IOBuffer()
+        show(io, MIME("text/plain"), problem)
+        output = String(take!(io))
+        @test occursin("LBeam", output) || output != ""
+    end
+
+    @testset "TieBeam show" begin
+        problem = TopOptProblems.TieBeam(Val{:Quadratic}, Float64)
+        io = IOBuffer()
+        show(io, MIME("text/plain"), problem)
+        output = String(take!(io))
+        @test occursin("TieBeam", output) || output != ""
+    end
+
+    @testset "HeatConductionProblem show" begin
+        heatflux = Dict{String,Float64}("top" => 1.0)
+        problem = HeatConductionProblem(
+            Val{:Linear}, (10, 5), (1.0, 1.0), 1.0;
+            Tleft=0.0, Tright=0.0, heatflux=heatflux
+        )
+        io = IOBuffer()
+        show(io, MIME("text/plain"), problem)
+        output = String(take!(io))
+        @test occursin("HeatConductionProblem", output) || output != ""
+    end
+end

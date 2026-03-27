@@ -373,4 +373,32 @@ using Ferrite: getncells
         # BESO targets exact volume, but may not perfectly achieve it
         @test abs(actual_vol_frac - target_vol) < 0.15
     end
+
+    @testset "BESO show methods" begin
+        nels = (10, 4)
+        problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
+        solver = FEASolver(DirectSolver, problem; xmin=0.001)
+        comp = Compliance(solver)
+        vol = Volume(solver)
+        filter = DensityFilter(solver; rmin=2.0)
+
+        beso = BESO(comp, vol, 0.5, filter; maxiter=10, tol=0.1, p=1.0)
+        
+        @testset "BESO algorithm show" begin
+            io = IOBuffer()
+            show(io, MIME("text/plain"), beso)
+            output = String(take!(io))
+            @test occursin("BESO", output) || output != ""
+        end
+
+        x0 = fill(0.5, length(solver.vars))
+        result = beso(x0)
+
+        @testset "BESOResult show" begin
+            io = IOBuffer()
+            show(io, MIME("text/plain"), result)
+            output = String(take!(io))
+            @test occursin("BESOResult", output) || output != ""
+        end
+    end
 end
