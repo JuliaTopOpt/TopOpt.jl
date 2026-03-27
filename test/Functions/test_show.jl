@@ -29,7 +29,7 @@ using TopOpt, Test
     end
 
     @testset "Volume show method" begin
-        vol = Volume(solver)
+        vol = TopOpt.Functions.Volume(solver)
         io = IOBuffer()
         show(io, MIME("text/plain"), vol)
         output = String(take!(io))
