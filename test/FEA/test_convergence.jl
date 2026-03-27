@@ -1,6 +1,5 @@
 using TopOpt, Test, LinearAlgebra, Ferrite
 using TopOpt: DefaultCriteria, EnergyCriteria
-using IterativeSolvers: ConvergenceHistory, isconverged
 
 @testset "DefaultCriteria Construction" begin
     # Test basic construction
