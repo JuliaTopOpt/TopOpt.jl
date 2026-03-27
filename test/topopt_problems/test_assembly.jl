@@ -185,8 +185,8 @@ end
             eksig = TrussElementKσ(problem, solver)
 
             # Test with displacement result - wrap in proper types
-            u_result = DisplacementResult(solver.u)
-            x_densities = PseudoDensities(ones(ncells))
+            u_result = TopOpt.Functions.DisplacementResult(solver.u)
+            x_densities = TopOpt.PseudoDensities(ones(ncells))
 
             # Call the evaluator
             Kσ_result = eksig(u_result, x_densities)
