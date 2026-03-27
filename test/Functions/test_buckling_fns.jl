@@ -123,6 +123,44 @@ end
     end
 end
 
+@testset "TrussElementKσ API Test" begin
+    # Test TrussElementKσ with DisplacementResult and PseudoDensities
+    problem_file = joinpath(gm_ins_dir, "tim_2d.json")
+
+    mats = TrussFEAMaterial(1.0, 0.3)
+    crossecs = TrussFEACrossSec(800.0)
+
+    node_points, elements, _, _, fixities, load_cases = load_truss_json(problem_file)
+    loads = load_cases["0"]
+
+    problem = TrussProblem(
+        Val{:Linear}, node_points, elements, loads, fixities, mats, crossecs
+    )
+    solver = FEASolver(DirectSolver, problem)
+    solver()
+
+    # Test TrussElementKσ construction
+    esigk = TrussElementKσ(problem, solver)
+    n_cells = length(solver.vars)
+    n_dofs = length(solver.u)
+
+    # Test with DisplacementResult
+    u_vec = rand(n_dofs)
+    u = TopOpt.Functions.DisplacementResult(u_vec)
+    x = PseudoDensities(ones(n_cells))
+
+    # Call the operator
+    Kσs = esigk(u, x)
+    @test length(Kσs) == n_cells
+    @test all(k -> size(k, 1) == size(k, 2), Kσs)
+
+    # Test buckling (truss problems use different API)
+    # Truss problems don't have get_Kσs, they use TrussElementKσ operator
+    K, G = buckling(problem, solver.globalinfo, solver.elementinfo, x.x; u=solver.u)
+    @test size(K) == size(G)
+    @test size(K, 1) == n_dofs
+end
+
 @testset "apply_boundary" begin
     nels = (2, 2)
     problem = PointLoadCantilever(Val{:Quadratic}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)

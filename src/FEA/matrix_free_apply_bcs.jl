@@ -62,20 +62,16 @@ function update_f!(
                     px = ifelse(
                         black[i],
                         one(T),
-                        ifelse(white[i], xmin; px=density(penalty(vars[varind[i]]), xmin)),
+                        ifelse(white[i], xmin, density(penalty(vars[varind[i]]), xmin)),
                     )
                 else
                     px = ifelse(
                         black[i],
                         one(T),
-                        ifelse(white[i], xmin; px=penalty(density(vars[varind[i]], xmin))),
+                        ifelse(white[i], xmin, penalty(density(vars[varind[i]], xmin))),
                     )
                 end
-                if eltype(Kes) <: Symmetric
-                    Ke = Kes[i].data
-                else
-                    Ke = Kes[i]
-                end
+                Ke = Kes[i].data
                 for row in 1:m
                     f[cell_dofs[row, i]] -= px * v * Ke[row, j]
                 end

@@ -361,11 +361,7 @@ function FEASolver(
 
     # Compute meandiag and xes for matrix-free solvers
     if Solver === CGMatrixFreeSolver
-        if eltype(elementinfo.Kes) <: Symmetric
-            f = x -> sumdiag(rawmatrix(x).data)
-        else
-            f = x -> sumdiag(rawmatrix(x))
-        end
+        f = x -> sumdiag(rawmatrix(x).data)
         meandiag = mapreduce(f, +, elementinfo.Kes; init=zero(T))
         xes = deepcopy(elementinfo.fes)
         fixed_dofs = problem.ch.prescribed_dofs

@@ -239,6 +239,142 @@ end
     end
 end
 
+@testset "MatrixOperator size methods" begin
+    @testset "size(op) returns (m, n)" begin
+        nels = (2, 2)
+        sizes = (1.0, 1.0)
+        problem = PointLoadCantilever(Val{:Linear}, nels, sizes, 1.0, 0.3, 1.0)
+        
+        solver = FEASolver(DirectSolver, problem)
+        K = solver.globalinfo.K
+        f = solver.globalinfo.f
+        
+        operator = MatrixOperator(K, f, TopOpt.FEA.DefaultCriteria())
+        
+        # Test size without dimension argument
+        sz = size(operator)
+        @test sz isa Tuple{Int,Int}
+        @test sz == size(K)
+        @test sz[1] == size(K, 1)
+        @test sz[2] == size(K, 2)
+    end
+    
+    @testset "size(op, i) for i=1,2" begin
+        nels = (2, 2)
+        sizes = (1.0, 1.0)
+        problem = PointLoadCantilever(Val{:Linear}, nels, sizes, 1.0, 0.3, 1.0)
+        
+        solver = FEASolver(DirectSolver, problem)
+        K = solver.globalinfo.K
+        f = solver.globalinfo.f
+        
+        operator = MatrixOperator(K, f, TopOpt.FEA.DefaultCriteria())
+        
+        # Test size with dimension argument
+        @test size(operator, 1) == size(K, 1)
+        @test size(operator, 2) == size(K, 2)
+    end
+    
+    @testset "eltype returns element type of K" begin
+        nels = (2, 2)
+        sizes = (1.0, 1.0)
+        problem = PointLoadCantilever(Val{:Linear}, nels, sizes, 1.0, 0.3, 1.0)
+        
+        solver = FEASolver(DirectSolver, problem)
+        K = solver.globalinfo.K
+        f = solver.globalinfo.f
+        
+        operator = MatrixOperator(K, f, TopOpt.FEA.DefaultCriteria())
+        
+        @test eltype(operator) == eltype(K)
+        @test eltype(operator) <: Real
+    end
+end
+
+@testset "MatrixFreeOperator size methods" begin
+    @testset "size(op) returns (m, n)" begin
+        nels = (2, 2)
+        sizes = (1.0, 1.0)
+        problem = PointLoadCantilever(Val{:Linear}, nels, sizes, 1.0, 0.3, 1.0)
+        
+        solver = FEASolver(CGMatrixFreeSolver, problem)
+        elementinfo = solver.elementinfo
+        meandiag = solver.meandiag
+        vars = solver.vars
+        xes = solver.xes
+        fixed_dofs = solver.fixed_dofs
+        free_dofs = solver.free_dofs
+        xmin = solver.xmin
+        penalty = solver.penalty
+        
+        operator = MatrixFreeOperator(
+            elementinfo.fixedload, elementinfo, meandiag, vars, xes,
+            fixed_dofs, free_dofs, xmin, penalty, solver.conv
+        )
+        
+        # Test size without dimension argument
+        sz = size(operator)
+        @test sz isa Tuple{Int,Int}
+        @test sz[1] == sz[2]  # Should be square
+        @test sz[1] == length(elementinfo.fixedload)
+    end
+    
+    @testset "size(op, i) for i=1,2" begin
+        nels = (2, 2)
+        sizes = (1.0, 1.0)
+        problem = PointLoadCantilever(Val{:Linear}, nels, sizes, 1.0, 0.3, 1.0)
+        
+        solver = FEASolver(CGMatrixFreeSolver, problem)
+        elementinfo = solver.elementinfo
+        meandiag = solver.meandiag
+        vars = solver.vars
+        xes = solver.xes
+        fixed_dofs = solver.fixed_dofs
+        free_dofs = solver.free_dofs
+        xmin = solver.xmin
+        penalty = solver.penalty
+        
+        operator = MatrixFreeOperator(
+            elementinfo.fixedload, elementinfo, meandiag, vars, xes,
+            fixed_dofs, free_dofs, xmin, penalty, solver.conv
+        )
+        
+        ndofs = length(elementinfo.fixedload)
+        
+        # Test size with dimension argument
+        @test size(operator, 1) == ndofs
+        @test size(operator, 2) == ndofs
+        
+        # Invalid dimensions should return 1
+        @test size(operator, 0) == 1
+        @test size(operator, 3) == 1
+    end
+    
+    @testset "eltype returns type parameter T" begin
+        nels = (2, 2)
+        sizes = (1.0, 1.0)
+        problem = PointLoadCantilever(Val{:Linear}, nels, sizes, 1.0, 0.3, 1.0)
+        
+        solver = FEASolver(CGMatrixFreeSolver, problem)
+        elementinfo = solver.elementinfo
+        meandiag = solver.meandiag
+        vars = solver.vars
+        xes = solver.xes
+        fixed_dofs = solver.fixed_dofs
+        free_dofs = solver.free_dofs
+        xmin = solver.xmin
+        penalty = solver.penalty
+        
+        operator = MatrixFreeOperator(
+            elementinfo.fixedload, elementinfo, meandiag, vars, xes,
+            fixed_dofs, free_dofs, xmin, penalty, solver.conv
+        )
+        
+        @test eltype(operator) <: Real
+        @test eltype(operator) == Float64  # Default for this problem
+    end
+end
+
 @testset "MatrixFreeOperator show method" begin
     @testset "MatrixFreeOperator show output" begin
         nels = (2, 2)

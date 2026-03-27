@@ -9,7 +9,7 @@ function Base.show(io::IO, ::MIME{Symbol("text/plain")}, ::MatrixOperator)
     return println(io, "TopOpt matrix linear operator")
 end
 LinearAlgebra.mul!(c, op::MatrixOperator, b) = mul!(c, op.K, b)
-Base.size(op::MatrixOperator, i...) = size(op.K, i...)
+Base.size(op::MatrixOperator, i) = size(op.K, i)
 Base.eltype(op::MatrixOperator) = eltype(op.K)
 LinearAlgebra.:*(op::MatrixOperator, b) = mul!(similar(b), op.K, b)
 
@@ -80,11 +80,7 @@ function mul!(y::TV, A::MatrixFreeOperator, x::TV) where {TV<:AbstractVector}
         for j in 1:dofspercell
             xe = @set xe[j] = x[cell_dofs[j, i]]
         end
-        if eltype(Kes) <: Symmetric
-            xes[i] = px * (bcmatrix(Kes[i]).data * xe)
-        else
-            xes[i] = px * (bcmatrix(Kes[i]) * xe)
-        end
+        xes[i] = px * (bcmatrix(Kes[i]).data * xe)
     end
 
     for i in 1:length(fixed_dofs)

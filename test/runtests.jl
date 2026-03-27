@@ -10,6 +10,8 @@ if GROUP == "All" || GROUP == "Core_Tests_1"
         include("topopt_problems/problems.jl")
         include("topopt_problems/metadata.jl")
         include("topopt_problems/test_io.jl")
+        include("topopt_problems/test_grids.jl")
+        include("topopt_problems/test_assembly.jl")
     end
     @safetestset "Functions" begin
         include("Functions/test_common_fns.jl")
@@ -32,6 +34,7 @@ if GROUP == "All" || GROUP == "Core_Tests_2"
     @safetestset "Utilities" begin
         include("Utilities/test_utils.jl")
         include("Utilities/test_penalties.jl")
+        include("Utilities/test_show.jl")
     end
     @safetestset "CheqFilters" begin
         include("CheqFilters/test_filters.jl")
@@ -51,11 +54,6 @@ end
 if GROUP == "All" || GROUP == "Core_Tests_3"
     @safetestset "BESO" begin
         include("Algorithms/test_beso.jl")
-    end
-end
-
-if GROUP == "All" || GROUP == "Core_Tests_4"
-    @safetestset "GESO" begin
         include("Algorithms/test_geso.jl")
     end
 end

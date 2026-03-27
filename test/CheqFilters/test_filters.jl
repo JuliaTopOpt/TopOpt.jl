@@ -2,6 +2,7 @@ using TopOpt, LinearAlgebra, Test, Statistics
 using TopOpt: DensityFilter, PseudoDensities
 using TopOpt.CheqFilters: SensFilter, FilterMetadata
 import ChainRulesCore
+using NonconvexCore: getdim
 
 @testset "Filter Tests" begin
     @testset "DensityFilter Construction" begin
@@ -15,6 +16,79 @@ import ChainRulesCore
         
         @test df.rmin == rmin
         @test df.metadata isa FilterMetadata
+    end
+    
+    @testset "DensityFilter boolean template constructors" begin
+        nels = (5, 5)
+        problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
+        
+        solver = FEASolver(DirectSolver, problem; xmin=0.001, penalty=PowerPenalty(3.0))
+        
+        rmin = 2.0
+        
+        @testset "DensityFilter{true} constructor" begin
+            df_true = DensityFilter{true}(solver, rmin)
+            
+            @test df_true isa DensityFilter{true}
+            @test df_true.rmin == rmin
+            @test df_true.metadata isa FilterMetadata
+            @test !isempty(df_true.jacobian)  # Jacobian should be computed
+        end
+        
+        @testset "DensityFilter{false} constructor" begin
+            df_false = DensityFilter{false}(solver, rmin)
+            
+            @test df_false isa DensityFilter{false}
+            @test df_false.rmin == rmin
+            @test df_false.metadata isa FilterMetadata
+            @test isempty(df_false.jacobian)  # Jacobian should be empty (0x0 matrix)
+            @test size(df_false.jacobian) == (0, 0)
+        end
+        
+        @testset "Filtering vs non-filtering behavior" begin
+            df_true = DensityFilter{true}(solver, rmin)
+            df_false = DensityFilter{false}(solver, rmin)
+            
+            x = rand(length(solver.vars))
+            
+            # DensityFilter{true} applies filtering
+            result_true = df_true(PseudoDensities(x))
+            @test result_true isa PseudoDensities
+            @test result_true.x != x  # Values should be modified
+            
+            # DensityFilter{false} returns values unchanged
+            result_false = df_false(PseudoDensities(x))
+            @test result_false isa PseudoDensities
+            @test result_false.x ≈ x  # Values should be unchanged
+        end
+        
+        @testset "getdim returns correct dimension" begin
+            df_true = DensityFilter{true}(solver, rmin)
+            df_false = DensityFilter{false}(solver, rmin)
+            
+            # For filtering=true, getdim returns size of jacobian
+            @test getdim(df_true) == size(df_true.jacobian, 1)
+            
+            # For filtering=false, getdim returns 0 (empty jacobian)
+            @test getdim(df_false) == 0
+        end
+        
+        @testset "show methods for boolean template filters" begin
+            df_true = DensityFilter{true}(solver, rmin)
+            df_false = DensityFilter{false}(solver, rmin)
+            
+            io = IOBuffer()
+            
+            # Test show for DensityFilter{true}
+            show(io, MIME"text/plain"(), df_true)
+            output_true = String(take!(io))
+            @test occursin("density filter", lowercase(output_true))
+            
+            # Test show for DensityFilter{false}
+            show(io, MIME"text/plain"(), df_false)
+            output_false = String(take!(io))
+            @test occursin("density filter", lowercase(output_false))
+        end
     end
     
     @testset "SensFilter Construction" begin
