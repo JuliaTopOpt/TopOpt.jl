@@ -153,15 +153,3 @@ function DiagonalEstimation(
     sample_once = sample_method === hadamard! || sample_once
     return DiagonalEstimation(F, V, Y, Q, temp, sample_once, sample_method)
 end
-
-for T in (
-    :ExactMean,
-    :ExactSVDMean,
-    :TraceEstimationMean,
-    :TraceEstimationSVDMean,
-    :ExactDiagonal,
-    :ExactSVDDiagonal,
-    :DiagonalEstimation,
-)
-    @eval baretype(::$T) = $T
-end
