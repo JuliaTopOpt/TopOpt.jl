@@ -26,6 +26,7 @@ if GROUP == "All" || GROUP == "Core_Tests_2"
     @safetestset "Solver" begin
         include("FEA/solvers.jl")
         include("FEA/test_convergence.jl")
+        include("FEA/test_simulate.jl")
     end
     @safetestset "Utilities" begin
         include("Utilities/test_utils.jl")
@@ -39,6 +40,7 @@ if GROUP == "All" || GROUP == "Core_Tests_2"
         include("truss_topopt_problems/test_fea.jl")
         include("truss_topopt_problems/test_buckling.jl")
         include("truss_topopt_problems/test_buckling_optimize.jl")
+        include("truss_topopt_problems/test_simulate_truss.jl")
     end
     @safetestset "Integration" begin
         include("integration/test_end_to_end.jl")

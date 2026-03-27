@@ -14,6 +14,7 @@ function simulate(
     round=true,
     hard=true,
     xmin=0.001,
+    safe=true,
 )
     if round
         if hard
@@ -26,7 +27,7 @@ function simulate(
     end
     vars = solver.vars
     fill_vars!(vars, topology; round=round)
-    solver(Val{true})
+    solver(false, Val{safe})
     comp = dot(solver.u, solver.globalinfo.f)
     return LinearElasticityResult(comp, copy(solver.u))
 end
