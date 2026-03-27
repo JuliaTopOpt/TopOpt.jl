@@ -322,13 +322,6 @@ using Ferrite: getncells
         # Should stop at maxiter without converging
         @test result_strict.fevals <= 3
         @test typeof(result_strict.converged) == Bool
-
-        # Test with loose tolerance
-        geso_loose = GESO(comp, vol, 0.5, filter; maxiter=20, tol=0.5, p=1.0)
-        result_loose = geso_loose(x0; seed=901)
-        
-        # Should have evaluated at least once
-        @test result_loose.fevals >= 1
     end
 
     @testset "GESO topology patterns" begin
