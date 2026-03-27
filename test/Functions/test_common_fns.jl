@@ -3,6 +3,7 @@ using TopOpt,
 const FDM = FiniteDifferences
 using TopOpt: ndofs
 using Ferrite: ndofs_per_cell, getncells
+using NonconvexCore: getdim
 
 Random.seed!(1)
 
@@ -183,6 +184,63 @@ end
             j1 = FDM.jacobian(central_fdm(5, 1), f, u.u)[1]
             j2 = Zygote.jacobian(f, u.u)[1]
             @test norm(j1 - j2) < 1e-7
+        end
+    end
+end
+
+@testset "getdim for Functions" begin
+    nels = (2, 2)
+    problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
+    solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(3.0))
+    
+    @testset "Compliance getdim" begin
+        comp = Compliance(solver)
+        @test Nonconvex.NonconvexCore.getdim(comp) == 1
+    end
+    
+    @testset "Volume getdim" begin
+        vol = Volume(solver)
+        @test Nonconvex.NonconvexCore.getdim(vol) == 1
+    end
+end
+
+@testset "Comprehensive getdim Tests" begin
+    @testset "getdim for basic functions" begin
+        nels = (2, 2)
+        problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
+        solver = FEASolver(DirectSolver, problem; xmin=0.001, penalty=PowerPenalty(3.0))
+        
+        @testset "Volume getdim" begin
+            vol = Volume(solver)
+            @test getdim(vol) == 1
+        end
+        
+        @testset "Compliance getdim" begin
+            comp = Compliance(solver)
+            @test getdim(comp) == 1
+        end
+    end
+    
+    @testset "getdim with different problem types" begin
+        @testset "PointLoadCantilever" begin
+            nels = (2, 2)
+            problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
+            solver = FEASolver(DirectSolver, problem; xmin=0.001)
+            
+            vol = Volume(solver)
+            @test getdim(vol) == 1
+            
+            comp = Compliance(solver)
+            @test getdim(comp) == 1
+        end
+        
+        @testset "InpStiffness problem" begin
+            nels = (2, 2)
+            problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
+            solver = FEASolver(DirectSolver, problem; xmin=0.001)
+            
+            vol = Volume(solver)
+            @test getdim(vol) == 1
         end
     end
 end

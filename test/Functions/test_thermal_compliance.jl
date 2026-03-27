@@ -151,3 +151,45 @@ end
         @test_throws AssertionError Compliance(solver)
     end
 end
+
+@testset "Thermal Compliance - getpenalty and setpenalty!" begin
+    nels = (4, 4)
+    sizes = (1.0, 1.0)
+    problem = HeatConductionProblem(
+        Val{:Linear}, nels, sizes, 1.0;
+        Tleft=0.0, Tright=0.0, heatflux=Dict("top" => 1.0)
+    )
+    solver = FEASolver(DirectSolver, problem; xmin=0.001, penalty=PowerPenalty(3.0))
+    tc = ThermalCompliance(solver)
+    
+    @testset "getpenalty returns current penalty" begin
+        current_penalty = TopOpt.Utilities.getpenalty(tc)
+        @test current_penalty isa PowerPenalty
+        @test current_penalty.p == 3.0
+    end
+    
+    @testset "setpenalty! updates penalty" begin
+        new_penalty = PowerPenalty(2.0)
+        TopOpt.Utilities.setpenalty!(tc, new_penalty)
+        updated_penalty = TopOpt.Utilities.getpenalty(tc)
+        @test updated_penalty.p == 2.0
+    end
+end
+
+@testset "Thermal Compliance - Vector input warning" begin
+    nels = (4, 4)
+    sizes = (1.0, 1.0)
+    problem = HeatConductionProblem(
+        Val{:Linear}, nels, sizes, 1.0;
+        Tleft=0.0, Tright=0.0, heatflux=Dict("top" => 1.0)
+    )
+    solver = FEASolver(DirectSolver, problem; xmin=0.001, penalty=PowerPenalty(3.0))
+    tc = ThermalCompliance(solver)
+    
+    # Create a simple density vector
+    n_vars = length(solver.vars)
+    x = ones(n_vars) * 0.5
+    
+    # Test that vector input produces a warning
+    @test_logs (:warn, r"A vector input was passed in to the thermal compliance function") tc(x)
+end

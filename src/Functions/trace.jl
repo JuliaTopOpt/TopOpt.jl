@@ -99,9 +99,7 @@ function ExactSVDDiagonal(F::SparseMatrixCSC, nE::Int)
     Fc = Matrix(F[rows, :])
     svdfact = svd(Fc)
     threshold = 1e-6
-    @show length(svdfact.S)
     inds = findall(x -> x > threshold, svdfact.S)
-    @show length(inds)
     US_dense = svdfact.U[:, inds] * Diagonal(svdfact.S[inds])
     V = svdfact.V[:, inds]
     I = Int[]

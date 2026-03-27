@@ -23,6 +23,8 @@ if GROUP == "All" || GROUP == "Core_Tests_1"
         include("Functions/test_interpolation.jl")
         include("Functions/test_neural.jl")
         include("Functions/test_show.jl")
+        include("Functions/test_function_utils.jl")
+        include("Functions/test_block_compliance.jl")
     end
 end
 
