@@ -27,6 +27,7 @@ if GROUP == "All" || GROUP == "Core_Tests_2"
         include("FEA/solvers.jl")
         include("FEA/test_convergence.jl")
         include("FEA/test_simulate.jl")
+        include("FEA/misc.jl")
     end
     @safetestset "Utilities" begin
         include("Utilities/test_utils.jl")
