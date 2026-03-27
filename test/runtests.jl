@@ -12,6 +12,7 @@ if GROUP == "All" || GROUP == "Core_Tests_1"
         include("topopt_problems/test_io.jl")
         include("topopt_problems/test_grids.jl")
         include("topopt_problems/test_assembly.jl")
+        include("topopt_problems/test_show.jl")
     end
     @safetestset "Functions" begin
         include("Functions/test_common_fns.jl")
@@ -21,6 +22,7 @@ if GROUP == "All" || GROUP == "Core_Tests_1"
         include("Functions/test_thermal_compliance.jl")
         include("Functions/test_interpolation.jl")
         include("Functions/test_neural.jl")
+        include("Functions/test_show.jl")
     end
 end
 
