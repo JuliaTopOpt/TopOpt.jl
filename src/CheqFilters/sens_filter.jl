@@ -108,7 +108,7 @@ function update_grad!(
     cell_node_weights,
     nodal_grad,
 )
-    @inbounds for i in 1:length(cell_neighbouring_nodes)
+    for i in 1:length(cell_neighbouring_nodes.offsets) - 1
         nodes = cell_neighbouring_nodes[i]
         if length(nodes) == 0
             continue

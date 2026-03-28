@@ -595,7 +595,7 @@ function TieBeam(
     close!(dh)
 
     ch = ConstraintHandler(dh)
-    dbc = Dirichlet(:u, getfaceset(grid, "left"), (x, t) -> T[0, 0], [1, 2])
+    dbc = Dirichlet(:u, getfaceset(grid, "leftfixed"), (x, t) -> T[0, 0], [1, 2])
     add!(ch, dbc)
     close!(ch)
 

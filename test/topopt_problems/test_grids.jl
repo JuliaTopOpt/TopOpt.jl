@@ -129,11 +129,11 @@ end
 
 @testset "TieBeamGrid Construction" begin
     # Linear TieBeamGrid
-    tb_linear = TieBeamGrid(Val{:Linear}, Float64, 1)
+    tb_linear = TieBeamGrid(Val{:Linear}, Float64; refine=1)
     @test tb_linear isa Ferrite.Grid
     
     # Quadratic TieBeamGrid
-    tb_quad = TieBeamGrid(Val{:Quadratic}, Float64, 1)
+    tb_quad = TieBeamGrid(Val{:Quadratic}, Float64; refine=1)
     @test tb_quad isa Ferrite.Grid
     
     # Default type parameter (no refine, defaults to 1)
@@ -151,7 +151,7 @@ end
     # Check that load nodeset exists
     @test haskey(lgrid.nodesets, "load")
     
-    tbgrid = TieBeamGrid(Val{:Linear}, Float64, 1)
+    tbgrid = TieBeamGrid(Val{:Linear}, Float64; refine=1)
     @test haskey(tbgrid.facesets, "leftfixed")
     @test haskey(tbgrid.facesets, "toproller")
     @test haskey(tbgrid.facesets, "rightload")

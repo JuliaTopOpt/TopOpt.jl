@@ -512,7 +512,7 @@ function _QuadraticLGrid(
 end
 
 function TieBeamGrid(
-    ::Type{Val{CellType}}, (::Type{T})=Float64, refine=1
+    ::Type{Val{CellType}}, (::Type{T})=Float64; refine=1
 ) where {T,CellType}
     if CellType === :Linear
         return _LinearTieBeamGrid(T, refine)
