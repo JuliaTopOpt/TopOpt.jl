@@ -1,4 +1,4 @@
-import ..TopOpt: PseudoDensities
+import ..TopOpt: PseudoDensities, PENALTY_BEFORE_INTERPOLATION
 
 abstract type AbstractPenalty{T} end
 abstract type AbstractCPUPenalty{T} <: AbstractPenalty{T} end
