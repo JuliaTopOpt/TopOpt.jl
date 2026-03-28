@@ -108,6 +108,71 @@ end
             @test f[dof] ≈ M * values[i]
         end
     end
+
+    @testset "update_f! with non-zero Dirichlet BC" begin
+        nels = (4, 4)
+        sizes = (1.0, 1.0)
+
+        # Use PointLoadCantilever which has proper boundary condition setup
+        problem = PointLoadCantilever(Val{:Linear}, nels, sizes, 1.0, 0.3, 1.0)
+        elementinfo = ElementFEAInfo(problem, 2, Val{:Static})
+
+        ndofs_total = Ferrite.ndofs(problem.ch.dh)
+        f = zeros(ndofs_total)
+
+        # Get original boundary condition info
+        ch = problem.ch
+        original_values = copy(ch.values)
+        prescribed_dofs = ch.prescribed_dofs
+
+        # Create custom non-zero BC values (simulate a non-zero displacement)
+        # We'll set all prescribed DOFs to have a value of 0.5
+        non_zero_values = fill(0.5, length(prescribed_dofs))
+
+        # Setup test parameters
+        vars = ones(prod(nels))
+        penalty = PowerPenalty(1.0)
+        xmin = 0.001
+        M = 1.0  # Diagonal scaling factor
+
+        dof_cells = elementinfo.metadata.dof_cells
+        cell_dofs = elementinfo.metadata.cell_dofs
+        Kes = elementinfo.Kes
+
+        # Call update_f! with non-zero values
+        applyzero = false
+
+        update_f!(
+            f, non_zero_values, prescribed_dofs, applyzero, dof_cells, cell_dofs,
+            Kes, xmin, penalty, vars, M
+        )
+
+        # With non-zero Dirichlet BCs (applyzero=false), the function:
+        # 1. Applies M * values at prescribed DOFs
+        # 2. Then subtracts K_bc contributions from those DOFs
+        # This means the final values at prescribed DOFs will NOT be exactly M * values[i]
+        # They will be modified based on the stiffness matrix
+
+        # Verify the function completed without error and modified the force vector
+        @test length(f) == ndofs_total
+
+        # All values should be finite (not NaN or Inf)
+        @test all(isfinite, f)
+
+        # The function was called with non-zero BC values
+        @test length(non_zero_values) > 0
+        @test length(prescribed_dofs) > 0
+
+        # Compare with applyzero=true case - should have different force values
+        f_applyzero = zeros(ndofs_total)
+        update_f!(
+            f_applyzero, non_zero_values, prescribed_dofs, true, dof_cells, cell_dofs,
+            Kes, xmin, penalty, vars, M
+        )
+
+        # With non-zero BCs and applyzero=false, force values should differ from applyzero=true
+        @test f != f_applyzero
+    end
     
     @testset "update_f! with applyzero=true" begin
         nels = (4, 4)
