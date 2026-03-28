@@ -22,9 +22,6 @@ const PENALTY_BEFORE_INTERPOLATION = let
     end
 end
 
-export PENALTY_BEFORE_INTERPOLATION, get_ρ_dρ
-
-
 @reexport using Nonconvex, NonconvexMMA, NonconvexSemidefinite, NonconvexPercival
 
 # I: interpolated

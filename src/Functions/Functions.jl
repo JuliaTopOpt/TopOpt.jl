@@ -50,8 +50,7 @@ export Volume,
     FixedElementProjector,
     get_fixed_element_projector,
     get_free_variables,
-    get_free_variable_count,
-    get_ρ_dρ
+    get_free_variable_count
 
 const to = TimerOutput()
 
