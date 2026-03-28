@@ -27,8 +27,7 @@ include("buckling.jl")
 include(joinpath("IO", "IO.jl"))
 using .InputOutput
 
-export RayProblem,
-    PointLoadCantilever,
+export PointLoadCantilever,
     HalfMBB,
     LBeam,
     TieBeam,
