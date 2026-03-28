@@ -12,7 +12,7 @@ julia --project=. -e "using Pkg; Pkg.test()"
 # Run specific test group (GROUP env var)
 julia --project=. -e "ENV[\"GROUP\"]=\"Core_Tests\"; using Pkg; Pkg.test()"
 
-# Available test groups: Core_Tests_1, Core_Tests_2, Examples_1, Examples_2, Examples_3, Examples_4, WCSMO14_1, WCSMO14_2
+# Available test groups: Core_Tests, Examples_1, Examples_2, Examples_3, Examples_4, WCSMO14_1, WCSMO14_2
 ```
 
 ### Test Structure
@@ -77,7 +77,7 @@ TopOpt.jl is a topology optimization framework built on finite element analysis 
 ### Module Structure
 
 **TopOptProblems** (`src/TopOptProblems/`): Defines continuum topology optimization problems
-- `problem_types.jl`: Core problem types (`StiffnessTopOptProblem`, `HeatTransferTopOptProblem`, `HeatConductionProblem`, `PointLoadCantilever`, `HalfMBB`, `LBeam`, `TieBeam`, `RayProblem`, etc.)
+- `problem_types.jl`: Core problem types (`StiffnessTopOptProblem`, `HeatTransferTopOptProblem`, `HeatConductionProblem`, `PointLoadCantilever`, `HalfMBB`, `LBeam`, `TieBeam`, etc.)
 - `grids.jl`: Grid/cell iteration utilities and problem metadata
 - `matrices_and_vectors.jl`: Stiffness/conductivity matrix assembly and load/heat source vector construction
 - `assemble.jl`: Ferrite-based finite element assembly

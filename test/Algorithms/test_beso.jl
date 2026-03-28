@@ -374,6 +374,180 @@ using Ferrite: getncells
         @test abs(actual_vol_frac - target_vol) < 0.15
     end
 
+    @testset "BESO with black elements (fixed solid)" begin
+        nels = (10, 4)
+        problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
+        solver = FEASolver(DirectSolver, problem; xmin=0.001)
+        comp = Compliance(solver)
+        vol = Volume(solver)
+        filter = DensityFilter(solver; rmin=2.0)
+
+        # Fix some elements as solid (black)
+        nel = getncells(problem)
+        black = falses(nel)
+        black[1:5] .= true  # Fix first 5 elements as solid
+
+        beso = BESO(comp, vol, 0.3, filter; maxiter=10, tol=0.1, p=1.0)
+        x0 = fill(0.5, length(solver.vars))
+        result = beso(x0; black=black)
+
+        # Verify black elements remain solid (1)
+        @test all(result.topology[black] .== 1)
+
+        # Verify topology is still binary
+        @test all(x -> x == 0 || x == 1, result.topology)
+
+        # Verify the result is valid
+        @test result isa TopOpt.Algorithms.BESOResult
+        @test length(result.topology) == nel
+    end
+
+    @testset "BESO with white elements (fixed void)" begin
+        nels = (10, 4)
+        problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
+        solver = FEASolver(DirectSolver, problem; xmin=0.001)
+        comp = Compliance(solver)
+        vol = Volume(solver)
+        filter = DensityFilter(solver; rmin=2.0)
+
+        # Fix some elements as void (white)
+        nel = getncells(problem)
+        white = falses(nel)
+        white[end-4:end] .= true  # Fix last 5 elements as void
+
+        beso = BESO(comp, vol, 0.5, filter; maxiter=10, tol=0.1, p=1.0)
+        x0 = fill(0.5, length(solver.vars))
+        result = beso(x0; white=white)
+
+        # Verify white elements remain void (0)
+        @test all(result.topology[white] .== 0)
+
+        # Verify topology is still binary
+        @test all(x -> x == 0 || x == 1, result.topology)
+
+        # Verify the result is valid
+        @test result isa TopOpt.Algorithms.BESOResult
+        @test length(result.topology) == nel
+    end
+
+    @testset "BESO with mixed black and white elements" begin
+        nels = (12, 6)
+        problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
+        solver = FEASolver(DirectSolver, problem; xmin=0.001)
+        comp = Compliance(solver)
+        vol = Volume(solver)
+        filter = DensityFilter(solver; rmin=2.0)
+
+        nel = getncells(problem)
+        
+        # Fix some elements as solid (black) - near the load
+        black = falses(nel)
+        black[1:10] .= true
+        
+        # Fix some elements as void (white) - far from load
+        white = falses(nel)
+        white[end-9:end] .= true
+
+        # Verify black and white don't overlap
+        @test !any(black .& white)
+
+        beso = BESO(comp, vol, 0.4, filter; maxiter=10, tol=0.1, p=1.0)
+        x0 = fill(0.5, length(solver.vars))
+        result = beso(x0; black=black, white=white)
+
+        # Verify black elements remain solid (1)
+        @test all(result.topology[black] .== 1)
+
+        # Verify white elements remain void (0)
+        @test all(result.topology[white] .== 0)
+
+        # Verify topology is still binary
+        @test all(x -> x == 0 || x == 1, result.topology)
+
+        # Verify free elements can be either 0 or 1
+        free = .!(black .| white)
+        @test any(result.topology[free] .== 0)
+        @test any(result.topology[free] .== 1)
+    end
+
+    @testset "BESO black/white element validation" begin
+        nels = (8, 4)
+        problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
+        solver = FEASolver(DirectSolver, problem; xmin=0.001)
+        comp = Compliance(solver)
+        vol = Volume(solver)
+        filter = DensityFilter(solver; rmin=2.0)
+
+        nel = getncells(problem)
+        beso = BESO(comp, vol, 0.5, filter; maxiter=5, tol=0.1, p=1.0)
+
+        # Test with wrong length black vector
+        black_wrong = falses(nel + 5)
+        x0 = fill(0.5, length(solver.vars))
+        @test_throws AssertionError beso(x0; black=black_wrong)
+
+        # Test with wrong length white vector
+        white_wrong = falses(nel + 5)
+        @test_throws AssertionError beso(x0; white=white_wrong)
+
+        # Test with overlapping black and white
+        black_overlap = falses(nel)
+        white_overlap = falses(nel)
+        black_overlap[1:3] .= true
+        white_overlap[1:3] .= true
+        @test_throws AssertionError beso(x0; black=black_overlap, white=white_overlap)
+    end
+
+    @testset "BESO with black elements - different volume fractions" begin
+        nels = (10, 4)
+        problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
+
+        nel = getncells(problem)
+        black = falses(nel)
+        black[1:5] .= true  # Fix 5 elements as solid
+
+        for V_target in [0.3, 0.5, 0.7]
+            solver = FEASolver(DirectSolver, problem; xmin=0.001)
+            comp = Compliance(solver)
+            vol = Volume(solver)
+            filter = DensityFilter(solver; rmin=2.0)
+
+            beso = BESO(comp, vol, V_target, filter; maxiter=10, tol=0.1, p=1.0)
+            x0 = fill(V_target, length(solver.vars))
+            result = beso(x0; black=black)
+
+            # Verify black elements remain solid
+            @test all(result.topology[black] .== 1)
+
+            # Verify topology is valid
+            @test all(x -> x == 0 || x == 1, result.topology)
+        end
+    end
+
+    @testset "BESO with black elements on LBeam" begin
+        # Test BESO with black elements on a different problem type
+        problem = LBeam(Val{:Linear}, Float64; force=force)
+        solver = FEASolver(DirectSolver, problem; xmin=0.001)
+        comp = Compliance(solver)
+        vol = Volume(solver)
+        filter = DensityFilter(solver; rmin=2.0)
+
+        nel = getncells(problem)
+        black = falses(nel)
+        # Fix elements near the corner as solid
+        black[1:min(10, nel)] .= true
+
+        beso = BESO(comp, vol, 0.5, filter; maxiter=10, tol=0.1, p=1.0)
+        x0 = fill(0.5, length(solver.vars))
+        result = beso(x0; black=black)
+
+        # Verify black elements remain solid
+        @test all(result.topology[black] .== 1)
+
+        # Verify topology is valid
+        @test all(x -> x == 0 || x == 1, result.topology)
+    end
+
     @testset "BESO show methods" begin
         nels = (10, 4)
         problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)

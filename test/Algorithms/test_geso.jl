@@ -251,4 +251,144 @@ using Ferrite: getncells
             @test occursin("GESOResult", output) || output != ""
         end
     end
+
+    @testset "GESO with black elements (fixed solid)" begin
+        nels = (10, 4)
+        problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
+        solver = FEASolver(DirectSolver, problem; xmin=0.001)
+        comp = Compliance(solver)
+        vol = Volume(solver)
+        filter = DensityFilter(solver; rmin=2.0)
+
+        nel = getncells(problem)
+        black = falses(nel)
+        black[1:5] .= true
+
+        geso = GESO(comp, vol, 0.3, filter; maxiter=10, tol=0.1, p=1.0)
+        x0 = fill(0.5, length(solver.vars))
+        result = geso(x0; black=black, seed=123)
+
+        @test all(result.topology[black] .== 1)
+        @test all(x -> x == 0 || x == 1, result.topology)
+        @test result isa TopOpt.Algorithms.GESOResult
+        @test length(result.topology) == nel
+    end
+
+    @testset "GESO with white elements (fixed void)" begin
+        nels = (10, 4)
+        problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
+        solver = FEASolver(DirectSolver, problem; xmin=0.001)
+        comp = Compliance(solver)
+        vol = Volume(solver)
+        filter = DensityFilter(solver; rmin=2.0)
+
+        nel = getncells(problem)
+        white = falses(nel)
+        white[end-4:end] .= true
+
+        geso = GESO(comp, vol, 0.5, filter; maxiter=10, tol=0.1, p=1.0)
+        x0 = fill(0.5, length(solver.vars))
+        result = geso(x0; white=white, seed=456)
+
+        @test all(result.topology[white] .== 0)
+        @test all(x -> x == 0 || x == 1, result.topology)
+        @test result isa TopOpt.Algorithms.GESOResult
+        @test length(result.topology) == nel
+    end
+
+    @testset "GESO with mixed black and white elements" begin
+        nels = (12, 6)
+        problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
+        solver = FEASolver(DirectSolver, problem; xmin=0.001)
+        comp = Compliance(solver)
+        vol = Volume(solver)
+        filter = DensityFilter(solver; rmin=2.0)
+
+        nel = getncells(problem)
+        black = falses(nel)
+        black[1:10] .= true
+        white = falses(nel)
+        white[end-9:end] .= true
+
+        @test !any(black .& white)
+
+        geso = GESO(comp, vol, 0.4, filter; maxiter=10, tol=0.1, p=1.0)
+        x0 = fill(0.5, length(solver.vars))
+        result = geso(x0; black=black, white=white, seed=789)
+
+        @test all(result.topology[black] .== 1)
+        @test all(result.topology[white] .== 0)
+        @test all(x -> x == 0 || x == 1, result.topology)
+
+        free = .!(black .| white)
+        @test any(result.topology[free] .== 0)
+        @test any(result.topology[free] .== 1)
+    end
+
+    @testset "GESO black/white element validation" begin
+        nels = (8, 4)
+        problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
+        solver = FEASolver(DirectSolver, problem; xmin=0.001)
+        comp = Compliance(solver)
+        vol = Volume(solver)
+        filter = DensityFilter(solver; rmin=2.0)
+
+        nel = getncells(problem)
+        geso = GESO(comp, vol, 0.5, filter; maxiter=5, tol=0.1, p=1.0)
+        x0 = fill(0.5, length(solver.vars))
+
+        black_wrong = falses(nel + 5)
+        @test_throws AssertionError geso(x0; black=black_wrong, seed=100)
+
+        white_wrong = falses(nel + 5)
+        @test_throws AssertionError geso(x0; white=white_wrong, seed=101)
+
+        black_overlap = falses(nel)
+        white_overlap = falses(nel)
+        black_overlap[1:3] .= true
+        white_overlap[1:3] .= true
+        @test_throws AssertionError geso(x0; black=black_overlap, white=white_overlap, seed=102)
+    end
+
+    @testset "GESO with black elements - different volume fractions" begin
+        nels = (10, 4)
+        problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
+
+        nel = getncells(problem)
+        black = falses(nel)
+        black[1:5] .= true
+
+        for V_target in [0.3, 0.5, 0.7]
+            solver = FEASolver(DirectSolver, problem; xmin=0.001)
+            comp = Compliance(solver)
+            vol = Volume(solver)
+            filter = DensityFilter(solver; rmin=2.0)
+
+            geso = GESO(comp, vol, V_target, filter; maxiter=10, tol=0.1, p=1.0)
+            x0 = fill(V_target, length(solver.vars))
+            result = geso(x0; black=black, seed=200 + Int(100 * V_target))
+
+            @test all(result.topology[black] .== 1)
+            @test all(x -> x == 0 || x == 1, result.topology)
+        end
+    end
+
+    @testset "GESO with black elements on LBeam" begin
+        problem = LBeam(Val{:Linear}, Float64; force=force)
+        solver = FEASolver(DirectSolver, problem; xmin=0.001)
+        comp = Compliance(solver)
+        vol = Volume(solver)
+        filter = DensityFilter(solver; rmin=2.0)
+
+        nel = getncells(problem)
+        black = falses(nel)
+        black[1:min(10, nel)] .= true
+
+        geso = GESO(comp, vol, 0.5, filter; maxiter=10, tol=0.1, p=1.0)
+        x0 = fill(0.5, length(solver.vars))
+        result = geso(x0; black=black, seed=300)
+
+        @test all(result.topology[black] .== 1)
+        @test all(x -> x == 0 || x == 1, result.topology)
+    end
 end

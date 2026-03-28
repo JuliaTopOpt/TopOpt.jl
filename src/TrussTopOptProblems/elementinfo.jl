@@ -40,9 +40,6 @@ function ElementFEAInfo(
         cellvalues,
         facevalues,
         sp.metadata,
-        sp.black,
-        sp.white,
-        sp.varind,
         cells,
     )
 end

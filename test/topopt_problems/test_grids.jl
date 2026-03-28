@@ -13,9 +13,6 @@ using Test
     
     @test grid.nels == nels
     @test grid.sizes == sizes
-    @test length(grid.white_cells) == prod(nels)
-    @test length(grid.black_cells) == prod(nels)
-    @test length(grid.constant_cells) == prod(nels)
     
     # Test corners
     @test grid.corners[1] ≈ Ferrite.Vec{2}((0.0, 0.0))
@@ -28,7 +25,6 @@ using Test
     
     @test grid3d.nels == nels3d
     @test grid3d.sizes == sizes3d
-    @test length(grid3d.white_cells) == prod(nels3d)
 end
 
 @testset "RectilinearGrid Linear vs Quadratic" begin
@@ -133,11 +129,11 @@ end
 
 @testset "TieBeamGrid Construction" begin
     # Linear TieBeamGrid
-    tb_linear = TieBeamGrid(Val{:Linear}, Float64, 1)
+    tb_linear = TieBeamGrid(Val{:Linear}, Float64; refine=1)
     @test tb_linear isa Ferrite.Grid
     
     # Quadratic TieBeamGrid
-    tb_quad = TieBeamGrid(Val{:Quadratic}, Float64, 1)
+    tb_quad = TieBeamGrid(Val{:Quadratic}, Float64; refine=1)
     @test tb_quad isa Ferrite.Grid
     
     # Default type parameter (no refine, defaults to 1)
@@ -155,7 +151,7 @@ end
     # Check that load nodeset exists
     @test haskey(lgrid.nodesets, "load")
     
-    tbgrid = TieBeamGrid(Val{:Linear}, Float64, 1)
+    tbgrid = TieBeamGrid(Val{:Linear}, Float64; refine=1)
     @test haskey(tbgrid.facesets, "leftfixed")
     @test haskey(tbgrid.facesets, "toproller")
     @test haskey(tbgrid.facesets, "rightload")

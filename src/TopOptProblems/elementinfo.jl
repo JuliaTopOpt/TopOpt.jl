@@ -7,9 +7,6 @@
         cellvalues::CellValues{dim, T}
         facevalues::FaceValues{<:Any, T}
         metadata::Metadata
-        black::AbstractVector
-        white::AbstractVector
-        varind::AbstractVector{Int}
         cells
     end
 
@@ -19,9 +16,6 @@ An instance of the `ElementFEAInfo` type stores element information such as:
 - `cellvolumes`: the element volumes,
 - `cellvalues` and `facevalues`: two `Ferrite` types that facilitate cell and face iteration and queries.
 - `metadata`: that stores degree of freedom (dof) to node mapping, dof to cell mapping, etc.
-- `black`: a `BitVector` such that `black[i]` is 1 iff element `i` must be part of any feasible design.
-- `white`: a `BitVector` such that `white[i]` is 1 iff element `i` must never be part of any feasible design.
-- `varind`: a vector such that `varind[i]` gives the decision variable index of element `i`.
 - `cells`: the cell connectivities.
 """
 struct ElementFEAInfo{
@@ -34,9 +28,6 @@ struct ElementFEAInfo{
     Tc2<:CellValues{dim,T,<:Any},
     Tf3<:FaceValues{<:Any,T,<:Any},
     Tm<:Metadata,
-    Tb<:AbstractVector,
-    Tw<:AbstractVector,
-    Tv<:AbstractVector{Int},
     Tc3<:Any,
 }
     Kes::TK
@@ -46,9 +37,6 @@ struct ElementFEAInfo{
     cellvalues::Tc2
     facevalues::Tf3
     metadata::Tm
-    black::Tb
-    white::Tw
-    varind::Tv
     cells::Tc3
 end
 
@@ -92,9 +80,6 @@ function ElementFEAInfo(
         cellvalues,
         facevalues,
         sp.metadata,
-        sp.black,
-        sp.white,
-        sp.varind,
         cells,
     )
 end
@@ -109,32 +94,23 @@ function _compute_fixedload(sp::AbstractTopOptProblem, dloads, _)
 end
 
 """
-    struct GlobalFEAInfo{T, TK<:AbstractMatrix{T}, Tf<:AbstractVector{T}, Tchol}
+    struct GlobalFEAInfo{T, TK<:AbstractMatrix{T}, Tf<:AbstractVector{T}, Tchol, Tqr}
         K::TK
         f::Tf
         cholK::Tchol
+        qrK::Tqr
     end
 
 An instance of `GlobalFEAInfo` hosts the global stiffness matrix `K`, the load vector `f` and the cholesky decomposition of the `K`, `cholK`.
 """
-mutable struct GlobalFEAInfo{T,TK<:AbstractMatrix{T},Tf<:AbstractVector{T},Tc,Tq}
+mutable struct GlobalFEAInfo{T,TK<:AbstractMatrix{T},Tf<:AbstractVector{T},Tchol,Tqr}
     K::TK
     f::Tf
-    cholK::Tc
-    qrK::Tq
+    cholK::Tchol
+    qrK::Tqr
 end
 function Base.show(io::IO, ::MIME{Symbol("text/plain")}, ::GlobalFEAInfo)
     return println(io, "TopOpt global FEA information")
-end
-
-"""
-    GlobalFEAInfo(::Type{T}=Float64) where {T}
-
-Constructs an empty instance of `GlobalFEAInfo` where the field `K` is an empty sparse matrix of element type `T` and the field `f` is an empty dense vector of element type `T`.
-"""
-GlobalFEAInfo((::Type{T})=Float64) where {T} = GlobalFEAInfo{T}()
-function GlobalFEAInfo{T}() where {T}
-    return GlobalFEAInfo(sparse(zeros(T, 0, 0)), zeros(T, 0), cholesky(one(T)), qr(one(T)))
 end
 
 """

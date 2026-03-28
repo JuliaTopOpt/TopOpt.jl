@@ -26,11 +26,9 @@ function SensFilter(
     nnodes = getnnodes(grid)
     nodal_grad = zeros(T, nnodes)
 
-    black = problem.black
-    white = problem.white
-    nel = length(black)
-    nfc = sum(black) + sum(white)
-    last_grad = zeros(T, nel - nfc)
+    nel = getncells(grid)
+    # last_grad stores filtered sensitivities (same length as design variables)
+    last_grad = zeros(T, nel)
 
     cell_weights = zeros(T, nnodes)
 
@@ -51,7 +49,7 @@ function ChainRulesCore.rrule(cf::SensFilter, x::PseudoDensities)
             newΔ = copy(Δ)
         end
         @unpack elementinfo, nodal_grad, cell_weights, metadata = cf
-        @unpack black, white, varind, cellvolumes, cells = elementinfo
+        @unpack cellvolumes, cells = elementinfo
         @unpack cell_neighbouring_nodes, cell_node_weights = metadata
         node_cells = elementinfo.metadata.node_cells
         update_nodal_grad!(
@@ -60,17 +58,11 @@ function ChainRulesCore.rrule(cf::SensFilter, x::PseudoDensities)
             cell_weights,
             cells,
             cellvolumes,
-            black,
-            white,
-            varind,
             newΔ,
         )
         normalize_grad!(nodal_grad, cell_weights)
         update_grad!(
             newΔ,
-            black,
-            white,
-            varind,
             cell_neighbouring_nodes,
             cell_node_weights,
             nodal_grad,
@@ -85,9 +77,6 @@ function update_nodal_grad!(
     cell_weights,
     cells,
     cellvolumes,
-    black,
-    white,
-    varind,
     grad,
 )
     T = eltype(nodal_grad)
@@ -97,13 +86,9 @@ function update_nodal_grad!(
         r = node_cells.offsets[n]:(node_cells.offsets[n + 1] - 1)
         for i in r
             c = node_cells.values[i][1]
-            if black[c] || white[c]
-                continue
-            end
-            ind = varind[c]
             w = cellvolumes[c]
             cell_weights[n] += w
-            nodal_grad[n] += w * grad[ind]
+            nodal_grad[n] += w * grad[c]
         end
     end
     return nodal_grad
@@ -119,24 +104,17 @@ end
 
 function update_grad!(
     grad::AbstractVector,
-    black,
-    white,
-    varind,
     cell_neighbouring_nodes,
     cell_node_weights,
     nodal_grad,
 )
-    @inbounds for i in 1:length(black)
-        if black[i] || white[i]
-            continue
-        end
-        ind = varind[i]
-        nodes = cell_neighbouring_nodes[ind]
+    for i in 1:length(cell_neighbouring_nodes.offsets) - 1
+        nodes = cell_neighbouring_nodes[i]
         if length(nodes) == 0
             continue
         end
-        weights = cell_node_weights[ind]
-        grad[ind] = dot(view(nodal_grad, nodes), weights) / sum(weights)
+        weights = cell_node_weights[i]
+        grad[i] = dot(view(nodal_grad, nodes), weights) / sum(weights)
     end
 
     return nothing

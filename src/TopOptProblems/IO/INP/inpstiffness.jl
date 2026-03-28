@@ -4,9 +4,6 @@ struct InpStiffness{dim, N, TF, TI, TBool, Tch <: ConstraintHandler, GO, TInds <
     inp_content::InpContent{dim, TF, N, TI}
     geom_order::Type{Val{GO}}
     ch::Tch
-    black::TBool
-    white::TBool
-    varind::TInds
     metadata::TMeta
 end
 ```
@@ -17,9 +14,6 @@ end
 - `inp_content`: an instance of [`InpContent`](@ref) which stores all the information from the ``.inp` file.
 - `geom_order`: a field equal to `Val{GO}` where `GO` is an integer representing the order of the finite elements. Linear elements have a `geom_order` of `Val{1}` and quadratic elements have a `geom_order` of `Val{2}`.
 - `metadata`: Metadata having various cell-node-dof relationships
-- `black`: a `BitVector` of length equal to the number of elements where `black[e]` is 1 iff the `e`^th element must be part of the final design
-- `white`:  a `BitVector` of length equal to the number of elements where `white[e]` is 1 iff the `e`^th element must not be part of the final design
-- `varind`: an `AbstractVector{Int}` of length equal to the number of elements where `varind[e]` gives the index of the decision variable corresponding to element `e`. Because some elements can be fixed to be black or white, not every element has a decision variable associated.
 """
 struct InpStiffness{
     dim,N,TF,TI,TBool,Tch<:ConstraintHandler,GO,TInds<:AbstractVector{TI},TMeta<:Metadata
@@ -27,9 +21,6 @@ struct InpStiffness{
     inp_content::InpContent{dim,TF,N,TI}
     geom_order::Type{Val{GO}}
     ch::Tch
-    black::TBool
-    white::TBool
-    varind::TInds
     metadata::TMeta
 end
 
@@ -42,20 +33,21 @@ function InpStiffness(filepath_with_ext::AbstractString; keep_load_cells=false)
     problem = Parser.extract_inp(filepath_with_ext)
     return InpStiffness(problem; keep_load_cells=keep_load_cells)
 end
-function InpStiffness(problem::Parser.InpContent; keep_load_cells=false)
+function InpStiffness(problem::Parser.InpContent)
     ch = Parser.inp_to_ferrite(problem)
-    black, white = find_black_and_white(ch.dh)
     metadata = Metadata(ch.dh)
     geom_order = Ferrite.getorder(ch.dh.field_interpolations[1])
-    if keep_load_cells
-        for k in keys(problem.cloads)
-            for (c, f) in metadata.node_cells[k]
-                black[c] = 1
-            end
+    return InpStiffness(problem, Val{geom_order}, ch, metadata)
+end
+
+function get_load_cells(p::InpStiffness)
+    load_cells = Set{Int}()
+    for k in keys(p.inp_content.cloads)
+        for (c, f) in p.metadata.node_cells[k]
+            push!(load_cells, c)
         end
     end
-    varind = find_varind(black, white)
-    return InpStiffness(problem, Val{geom_order}, ch, black, white, varind, metadata)
+    return load_cells
 end
 
 getE(p::InpStiffness) = p.inp_content.E

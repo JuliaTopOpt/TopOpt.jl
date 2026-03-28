@@ -8,7 +8,7 @@ function matrix_free_apply2f!(
     xmin,
     applyzero::Bool=false,
 ) where {dim,T}
-    @unpack Kes, black, white, varind, metadata = elementinfo
+    @unpack Kes, metadata = elementinfo
     @unpack dof_cells, cell_dofs = metadata
     @unpack ch = problem
     @unpack values, prescribed_dofs = ch
@@ -20,13 +20,10 @@ function matrix_free_apply2f!(
         applyzero,
         dof_cells,
         cell_dofs,
-        black,
-        white,
         Kes,
         xmin,
         penalty,
         vars,
-        varind,
         M,
     )
 
@@ -40,14 +37,11 @@ function update_f!(
     applyzero,
     dof_cells,
     cell_dofs,
-    black,
-    white,
     Kes,
     xmin,
     penalty,
     vars,
-    varind,
-    M,
+        M,
 ) where {T}
     for ind in 1:length(values)
         d = prescribed_dofs[ind]
@@ -59,17 +53,9 @@ function update_f!(
             for idx in r
                 (i, j) = dof_cells.values[idx]
                 if PENALTY_BEFORE_INTERPOLATION
-                    px = ifelse(
-                        black[i],
-                        one(T),
-                        ifelse(white[i], xmin, density(penalty(vars[varind[i]]), xmin)),
-                    )
+                    px = density(penalty(vars[i]), xmin)
                 else
-                    px = ifelse(
-                        black[i],
-                        one(T),
-                        ifelse(white[i], xmin, penalty(density(vars[varind[i]], xmin))),
-                    )
+                    px = penalty(density(vars[i], xmin))
                 end
                 Ke = Kes[i].data
                 for row in 1:m

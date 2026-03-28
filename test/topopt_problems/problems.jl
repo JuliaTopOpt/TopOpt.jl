@@ -16,10 +16,8 @@ force = 1.0
     ncells = 160 * 40
     @test problem.E == E
     @test problem.ν == ν
-    @test problem.black == problem.white == falses(ncells)
     @test problem.force == force
     @test problem.force_dof == 161 * 21 * 2
-    @test problem.varind == 1:ncells
     grid = problem.ch.dh.grid
     @test length(grid.cells) == ncells
     for i in 1:2, j in 1:2
@@ -61,10 +59,8 @@ end
     ncells = 60 * 20
     @test problem.E == E
     @test problem.ν == ν
-    @test problem.black == problem.white == falses(ncells)
     @test problem.force == force
     @test problem.force_dof == (61 * 20 + 2) * 2
-    @test problem.varind == 1:ncells
     grid = problem.ch.dh.grid
     @test length(grid.cells) == ncells
     for i in 1:2, j in 1:2
@@ -106,10 +102,8 @@ end
     ncells = 100 * 50 + 50 * 50
     @test problem.E == E
     @test problem.ν == ν
-    @test problem.black == problem.white == falses(ncells)
     @test problem.force == force
     @test problem.force_dof == (51 * 51 + 50 * 26) * 2
-    @test problem.varind == 1:ncells
     grid = problem.ch.dh.grid
     @test length(grid.cells) == ncells
     corners = [[0.0, 0.0], [100.0, 100.0]]
@@ -138,9 +132,7 @@ end
     ncells = 100
     @test problem.E == 1
     @test problem.ν == 0.3
-    @test problem.black == problem.white == falses(ncells)
     @test problem.force == 1
-    @test problem.varind == 1:ncells
     grid = problem.ch.dh.grid
     @test length(grid.cells) == ncells
     corners = [[0.0, 0.0], [32.0, 7.0]]
@@ -323,11 +315,6 @@ end
     # Test accessor functions
     @test TopOptProblems.getE(problem) == E
     @test TopOptProblems.getν(problem) == ν
-    
-    # Test number of variables (black/white arrays indicate design variables)
-    @test length(problem.black) == prod(nels)
-    @test length(problem.white) == prod(nels)
-    @test length(problem.varind) <= prod(nels)
 end
 
 @testset "Problem type consistency" begin
@@ -346,9 +333,6 @@ end
         # All problems should have required fields
         @test hasfield(typeof(problem), :E)
         @test hasfield(typeof(problem), :ν)
-        @test hasfield(typeof(problem), :black)
-        @test hasfield(typeof(problem), :white)
-        @test hasfield(typeof(problem), :varind)
         
         # All should have a constraint handler
         @test hasfield(typeof(problem), :ch)

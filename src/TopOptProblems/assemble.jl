@@ -15,11 +15,15 @@ end
 # Assembly for all problem types
 # For structural: fes contains body forces (penalized), fixedload contains concentrated/distributed loads (not penalized)
 # For heat transfer: fes is zeros (no body forces), fixedload contains heat source (not penalized)
+# 
+# Note: ρ should be a full density vector (length = nel) with values already accounting for 
+# black (density=1) and white (density=xmin) elements. Use FixedElementProjector to map 
+# free variables to full densities.
 function assemble!(
     globalinfo::GlobalFEAInfo,
     problem::AbstractTopOptProblem,
     elementinfo::ElementFEAInfo,
-    vars=ones(floattype(problem), getncells(getdh(problem).grid)),
+    ρ=ones(floattype(problem), getncells(getdh(problem).grid)),
     penalty=PowerPenalty(floattype(problem)(3.0)),
     xmin=floattype(problem)(0.001);
     assemble_f=true,
@@ -33,9 +37,6 @@ function assemble!(
         f .= elementinfo.fixedload
     end
     Kes, fes = elementinfo.Kes, elementinfo.fes
-    black = problem.black
-    white = problem.white
-    varind = problem.varind
 
     _K = K isa Symmetric ? K.data : K
     _K.nzval .= 0
@@ -52,38 +53,19 @@ function assemble!(
         fe = fes[i]
         _Ke = rawmatrix(Kes[i])
         Ke = _Ke isa Symmetric ? _Ke.data : _Ke
-        if black[i]
-            if assemble_f
-                Ferrite.assemble!(assembler, global_dofs, Ke, fe)
-            else
-                Ferrite.assemble!(assembler, global_dofs, Ke)
-            end
-        elseif white[i]
-            if PENALTY_BEFORE_INTERPOLATION
-                px = xmin
-            else
-                px = penalty(xmin)
-            end
-            Ke = px * Ke
-            if assemble_f
-                fe = px * fe
-                Ferrite.assemble!(assembler, global_dofs, Ke, fe)
-            else
-                Ferrite.assemble!(assembler, global_dofs, Ke)
-            end
+        
+        # Apply density interpolation
+        if PENALTY_BEFORE_INTERPOLATION
+            px = density(penalty(ρ[i]), xmin)
         else
-            if PENALTY_BEFORE_INTERPOLATION
-                px = density(penalty(vars[varind[i]]), xmin)
-            else
-                px = penalty(density(vars[varind[i]], xmin))
-            end
-            Ke = px * Ke
-            if assemble_f
-                fe = px * fe
-                Ferrite.assemble!(assembler, global_dofs, Ke, fe)
-            else
-                Ferrite.assemble!(assembler, global_dofs, Ke)
-            end
+            px = penalty(density(ρ[i], xmin))
+        end
+        Ke = px * Ke
+        if assemble_f
+            fe = px * fe
+            Ferrite.assemble!(assembler, global_dofs, Ke, fe)
+        else
+            Ferrite.assemble!(assembler, global_dofs, Ke)
         end
     end
 
@@ -112,48 +94,34 @@ function assemble_f!(
     f::AbstractVector,
     problem::StiffnessTopOptProblem,
     elementinfo::ElementFEAInfo,
-    vars::AbstractVector,
+    ρ::AbstractVector,
     penalty,
     xmin,
 )
-    black = elementinfo.black
-    white = elementinfo.white
-    varind = elementinfo.varind
     fes = elementinfo.fes
 
     dof_cells = elementinfo.metadata.dof_cells
 
     update_f!(
-        f, fes, elementinfo.fixedload, dof_cells, black, white, penalty, vars, varind, xmin
+        f, fes, elementinfo.fixedload, dof_cells, ρ, penalty, xmin
     )
     return f
 end
 
 function update_f!(
-    f::Vector, fes, fixedload, dof_cells, black, white, penalty, vars, varind, xmin
+    f::Vector, fes, fixedload, dof_cells, ρ, penalty, xmin
 )
     @inbounds for dofidx in 1:length(f)
         f[dofidx] = fixedload[dofidx]
         r = dof_cells.offsets[dofidx]:(dof_cells.offsets[dofidx + 1] - 1)
         for i in r
             cellidx, localidx = dof_cells.values[i]
-            if black[cellidx]
-                f[dofidx] += fes[cellidx][localidx]
-            elseif white[cellidx]
-                if PENALTY_BEFORE_INTERPOLATION
-                    px = xmin
-                else
-                    px = penalty(xmin)
-                end
-                f[dofidx] += px * fes[cellidx][localidx]
+            if PENALTY_BEFORE_INTERPOLATION
+                px = density(penalty(ρ[cellidx]), xmin)
             else
-                if PENALTY_BEFORE_INTERPOLATION
-                    px = density(penalty(vars[varind[cellidx]]), xmin)
-                else
-                    px = penalty(density(vars[varind[cellidx]], xmin))
-                end
-                f[dofidx] += px * fes[cellidx][localidx]
+                px = penalty(density(ρ[cellidx], xmin))
             end
+            f[dofidx] += px * fes[cellidx][localidx]
         end
     end
 

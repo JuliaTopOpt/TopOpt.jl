@@ -1,10 +1,10 @@
 struct ElementStiffnessMatrix{T<:Real,M<:AbstractMatrix{T}} <: AbstractMatrix{T}
     Ke::M
 end
-Base.length(x::ElementStiffnessMatrix) = length(x.x)
-Base.size(x::ElementStiffnessMatrix, i...) = size(x.x, i...)
-Base.getindex(x::ElementStiffnessMatrix, i...) = x.x[i...]
-Base.:*(x::ElementStiffnessMatrix, y) = ElementStiffnessMatrix(x.x * y)
+Base.length(x::ElementStiffnessMatrix) = length(x.Ke)
+Base.size(x::ElementStiffnessMatrix, i...) = size(x.Ke, i...)
+Base.getindex(x::ElementStiffnessMatrix, i...) = x.Ke[i...]
+Base.:*(x::ElementStiffnessMatrix, y) = ElementStiffnessMatrix(x.Ke * y)
 
 mutable struct ElementK{
     T,

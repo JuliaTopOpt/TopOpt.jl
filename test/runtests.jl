@@ -33,6 +33,7 @@ if ACTUAL_GROUP in ("All", "Core_Tests")
     end
     @safetestset "Functions" begin
         include("Functions/test_common_fns.jl")
+        include("Functions/test_fixed_element.jl")
         include("Functions/test_buckling_fns.jl")
         include("Functions/test_truss_stress_fns.jl")
         include("Functions/test_mean_compliance.jl")

@@ -4,7 +4,6 @@ export InpStiffness
 
 using ...TopOptProblems: Metadata, StiffnessTopOptProblem, QuadraticHexahedron
 using Ferrite
-using ....TopOpt.Utilities: find_black_and_white, find_varind
 import ...TopOptProblems:
     nnodespercell,
     getE,

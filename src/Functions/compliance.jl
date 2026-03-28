@@ -26,14 +26,14 @@ end
 function (o::Compliance{T})(x::PseudoDensities) where {T}
     @unpack cell_comp, solver, grad = o
     @unpack elementinfo, u, xmin = solver
-    @unpack metadata, Kes, black, white, varind = elementinfo
+    @unpack metadata, Kes = elementinfo
     @unpack cell_dofs = metadata
 
     penalty = getpenalty(o)
     solver.vars .= x.x
     solver()
     return compute_compliance(
-        cell_comp, grad, cell_dofs, Kes, u, black, white, varind, solver.vars, penalty, xmin
+        cell_comp, grad, cell_dofs, Kes, u, solver.vars, penalty, xmin
     )
 end
 
@@ -44,47 +44,46 @@ function ChainRulesCore.rrule(comp::Compliance, x::PseudoDensities)
 end
 
 """
-    compute_compliance(cell_comp, grad, cell_dofs, Kes, u, black, white, varind, x, penalty, xmin)
+    compute_compliance(cell_comp, grad, cell_dofs, Kes, u, x, penalty, xmin)
 
 Computes structural compliance: J = F^T U = Σ ρ_e * u_e^T Ke u_e
 where ρ_e is the penalized density (material stiffness).
 
 Gradient: dJ/dx_e = -u_e^T Ke u_e * dρ_e/dx_e
 
+Note: x is the full density vector (after projection if using FixedElementProjector).
 Uses the shared compute_element_energy kernel.
 """
 function compute_compliance(
-    cell_comp::Vector{T}, grad, cell_dofs, Kes, u, black, white, varind, x, penalty, xmin
+    cell_comp::Vector{T}, grad, cell_dofs, Kes, u, x, penalty, xmin
 ) where {T}
-    return compute_element_energy(cell_comp, grad, cell_dofs, Kes, u, black, white, varind, x, penalty, xmin)
+    return compute_element_energy(cell_comp, grad, cell_dofs, Kes, u, x, penalty, xmin)
 end
 
 function compute_inner(inner, u1, u2, solver)
     @unpack elementinfo, u, xmin = solver
-    @unpack metadata, Kes, black, white, varind = elementinfo
+    @unpack metadata, Kes = elementinfo
     @unpack cell_dofs = metadata
     penalty = getpenalty(solver)
     return compute_inner(
-        inner, u1, u2, cell_dofs, Kes, black, white, varind, solver.vars, penalty, xmin
+        inner, u1, u2, cell_dofs, Kes, solver.vars, penalty, xmin
     )
 end
 function compute_inner(
-    inner::AbstractVector{T}, u1, u2, cell_dofs, Kes, black, white, varind, x, penalty, xmin
+    inner::AbstractVector{T}, u1, u2, cell_dofs, Kes, x, penalty, xmin
 ) where {T}
     obj = zero(T)
     @inbounds for i in 1:size(cell_dofs, 2)
         inner[i] = zero(T)
         cell_comp = zero(T)
         Ke = rawmatrix(Kes[i])
-        if !black[i] && !white[i]
-            for w in 1:size(Ke, 2)
-                for v in 1:size(Ke, 1)
-                    cell_comp += u1[cell_dofs[v, i]] * Ke[v, w] * u2[cell_dofs[w, i]]
-                end
+        for w in 1:size(Ke, 2)
+            for v in 1:size(Ke, 1)
+                cell_comp += u1[cell_dofs[v, i]] * Ke[v, w] * u2[cell_dofs[w, i]]
             end
-            ρe, dρe = get_ρ_dρ(x[varind[i]], penalty, xmin)
-            inner[varind[i]] = -dρe * cell_comp
         end
+        ρe, dρe = get_ρ_dρ(x[i], penalty, xmin)
+        inner[i] = -dρe * cell_comp
     end
 
     return inner

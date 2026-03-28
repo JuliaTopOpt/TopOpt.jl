@@ -7,7 +7,8 @@ using SparseArrays
 using Ferrite
 
 # Import types needed for TrussElementKσ evaluation
-using TopOpt: DisplacementResult, PseudoDensities
+using TopOpt.Functions: DisplacementResult
+using TopOpt: PseudoDensities
 
 # Test assembly force functions
 @testset "Assembly force functions" begin
@@ -37,23 +38,6 @@ using TopOpt: DisplacementResult, PseudoDensities
 
         @test length(f_out) == ndofs(problem.ch.dh)
         @test any(f_out .!= 0)  # Should have been filled with values
-    end
-
-    # Test assemble_f! with black/white elements
-    @testset "assemble_f! with black/white" begin
-        penalty = PowerPenalty(3.0)
-        vars = ones(Float64, ncells)
-
-        # Create a problem with some black elements
-        black_mask = falses(ncells)
-        white_mask = falses(ncells)
-        black_mask[1:2] .= true  # First two cells are black (solid)
-        white_mask[3:4] .= true  # Next two cells are white (void)
-
-        # The assembly should handle black/white elements correctly
-        f_out = zeros(Float64, ndofs(problem.ch.dh))
-        TopOpt.TopOptProblems.assemble_f!(f_out, problem, elementinfo, vars, penalty, 0.001)
-        @test length(f_out) == ndofs(problem.ch.dh)
     end
 
     # Test assemble_f! with distributed loads
@@ -251,17 +235,6 @@ end
     @testset "Very small densities" begin
         vars = fill(0.001, ncells)
         penalty = PowerPenalty(3.0)
-        f_out = zeros(Float64, ndofs(problem.ch.dh))
-        TopOpt.TopOptProblems.assemble_f!(f_out, problem, elementinfo, vars, penalty, 0.001)
-        @test length(f_out) == ndofs(problem.ch.dh)
-        @test all(isfinite, f_out)
-    end
-
-    @testset "Mixed black/white/design" begin
-        # Test with mixed element types
-        vars = ones(Float64, ncells)
-        penalty = PowerPenalty(3.0)
-
         f_out = zeros(Float64, ndofs(problem.ch.dh))
         TopOpt.TopOptProblems.assemble_f!(f_out, problem, elementinfo, vars, penalty, 0.001)
         @test length(f_out) == ndofs(problem.ch.dh)

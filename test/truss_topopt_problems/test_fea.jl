@@ -39,9 +39,7 @@ ins_dir = joinpath(@__DIR__, "instances", "fea_examples");
     @test getdim(problem) == ndim
     @test Ferrite.getncells(problem) == ncells
     @test getE(problem) == [m.E for m in mats]
-    @test problem.black == problem.white == falses(ncells)
     @test problem.force == loads
-    @test problem.varind == 1:ncells
     grid = problem.ch.dh.grid
     @test length(grid.cells) == ncells
 

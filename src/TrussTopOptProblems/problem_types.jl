@@ -11,18 +11,12 @@ struct TrussProblem{
     Tt<:TrussGrid{xdim,T,N,M},
     Tm1<:Vector{<:TrussFEAMaterial{T}},
     Tc<:ConstraintHandler{<:DofHandler{xdim,<:Ferrite.Cell{xdim,N,M},T},T},
-    Tb<:AbstractVector,
-    Tw<:AbstractVector,
-    Tv<:AbstractVector{Int},
     Tm2<:Metadata,
 } <: StiffnessTopOptProblem{xdim,T}
     truss_grid::Tt # ground truss mesh
     materials::Tm1
     ch::Tc
     force::Dict{Int,SVector{xdim,T}}
-    black::Tb
-    white::Tw
-    varind::Tv # variable dof => free dof, based on black & white
     metadata::Tm2
 end
 # - `force_dof`: dof number at which the force is applied
@@ -132,10 +126,7 @@ function TrussProblem(
     # node_dofs = metadata.node_dofs
     # force_dof = node_dofs[2, fnode]
 
-    black, white = find_black_and_white(dh)
-    varind = find_varind(black, white)
-
-    return TrussProblem(truss_grid, mats, ch, loads, black, white, varind, metadata)
+    return TrussProblem(truss_grid, mats, ch, loads, metadata)
 end
 
 function Base.show(io::Base.IO, mime::MIME"text/plain", sp::TrussProblem)
@@ -143,7 +134,7 @@ function Base.show(io::Base.IO, mime::MIME"text/plain", sp::TrussProblem)
     print(io, "    ")
     Base.show(io, mime, sp.truss_grid)
     println(io, "    point loads: $(length(sp.force))")
-    return println(io, "    active vars: $(sum(sp.varind .!= 0))")
+    return println(io, "    ncells: $(getncells(sp.truss_grid.grid))")
 end
 
 #########################################
@@ -273,8 +264,5 @@ function PointLoadCantileverTruss(
         ploads[node_id] = SVector{dim,T}(dim == 2 ? [0.0, force] : [0.0, 0.0, force])
     end
 
-    black, white = find_black_and_white(dh)
-    varind = find_varind(black, white)
-
-    return TrussProblem(truss_grid, mats, ch, ploads, black, white, varind, metadata)
+    return TrussProblem(truss_grid, mats, ch, ploads, metadata)
 end

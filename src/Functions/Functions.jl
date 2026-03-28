@@ -46,7 +46,12 @@ export Volume,
     MultiMaterialVariables,
     element_densities,
     tounit,
-    ThermalCompliance
+    ThermalCompliance,
+    FixedElementProjector,
+    get_fixed_element_projector,
+    get_free_variables,
+    get_free_variable_count,
+    get_ρ_dρ
 
 const to = TimerOutput()
 
@@ -81,5 +86,8 @@ include("compute_element_energy.jl")
 
 # Thermal compliance for heat transfer problems
 include("thermal_compliance.jl")
+
+# Fixed element projection for black/white handling
+include("fixed_element.jl")
 
 end

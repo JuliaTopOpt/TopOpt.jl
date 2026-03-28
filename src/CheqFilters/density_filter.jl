@@ -15,14 +15,7 @@ function DensityFilter(
 ) where {T,TI<:Integer,TS<:AbstractFEASolver}
     metadata = FilterMetadata(solver, rmin, TI)
     TM = typeof(metadata)
-    problem = solver.problem
-    grid = problem.ch.dh.grid
-    nnodes = getnnodes(grid)
-
-    black = problem.black
-    white = problem.white
-    nel = length(black)
-    nfc = sum(black) + sum(white)
+    
     jacobian = getJacobian(solver, metadata)
     return DensityFilter(metadata, rmin, jacobian)
 end
@@ -42,13 +35,14 @@ end
 
 function getJacobian(solver, metadata::FilterMetadata)
     @unpack elementinfo, problem = solver
-    @unpack black, white, varind, cellvolumes = elementinfo
+    @unpack cellvolumes = elementinfo
     @unpack cell_neighbouring_nodes, cell_node_weights = metadata
     node_cells = elementinfo.metadata.node_cells
 
     T = eltype(cellvolumes)
     grid = problem.ch.dh.grid
     nnodes = getnnodes(grid)
+    nel = length(cellvolumes)
     I = Int[]
     J = Int[]
     V = T[]
@@ -56,41 +50,33 @@ function getJacobian(solver, metadata::FilterMetadata)
         r = node_cells.offsets[n]:(node_cells.offsets[n + 1] - 1)
         for i in r
             c = node_cells.values[i][1]
-            if black[c] || white[c]
-                continue
-            end
-            ind = varind[c]
             w = cellvolumes[c]
             push!(I, n)
-            push!(J, ind)
+            push!(J, c)
             push!(V, w)
         end
     end
-    mat1_transpose = sparse(J, I, V, length(solver.vars), nnodes)
+    mat1_transpose = sparse(J, I, V, nel, nnodes)
     scalecols!(mat1_transpose)
     norm(V) == 0 && throw("Jacobian is all 0s.")
 
     I = Int[]
     J = Int[]
     V = T[]
-    for i in 1:length(black)
-        if black[i] || white[i]
-            continue
-        end
-        ind = varind[i]
-        nodes = cell_neighbouring_nodes[ind]
+    for i in 1:nel
+        nodes = cell_neighbouring_nodes[i]
         if length(nodes) == 0
             continue
         end
-        weights = cell_node_weights[ind]
+        weights = cell_node_weights[i]
         weights_sum = sum(weights)
         for (j, n) in enumerate(nodes)
-            push!(I, ind)
+            push!(I, i)
             push!(J, n)
             push!(V, weights[j] / weights_sum)
         end
     end
-    mat2_transpose = sparse(J, I, V, nnodes, length(solver.vars))
+    mat2_transpose = sparse(J, I, V, nnodes, nel)
     norm(V) == 0 && throw("Jacobian is all 0s.")
     mat_transpose = mat1_transpose * mat2_transpose
     return mat_transpose'

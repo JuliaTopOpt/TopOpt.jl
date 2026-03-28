@@ -59,23 +59,15 @@ function mul!(y::TV, A::MatrixFreeOperator, x::TV) where {TV<:AbstractVector}
     dofspercell = size(A.elementinfo.Kes[1], 1)
     meandiag = A.meandiag
 
-    @unpack Kes, metadata, black, white, varind = A.elementinfo
+    @unpack Kes, metadata = A.elementinfo
     @unpack cell_dofs, dof_cells = metadata
     @unpack penalty, xmin, vars, fixed_dofs, free_dofs, xes = A
 
     for i in 1:nels
         if PENALTY_BEFORE_INTERPOLATION
-            px = ifelse(
-                black[i],
-                one(T),
-                ifelse(white[i], xmin, density(penalty(vars[varind[i]]), xmin)),
-            )
+            px = density(penalty(vars[i]), xmin)
         else
-            px = ifelse(
-                black[i],
-                one(T),
-                ifelse(white[i], xmin, penalty(density(vars[varind[i]], xmin))),
-            )
+            px = penalty(density(vars[i], xmin))
         end
         xe = xes[i]
         for j in 1:dofspercell
