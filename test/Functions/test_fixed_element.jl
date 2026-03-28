@@ -1,6 +1,7 @@
 using Test, ChainRulesCore, Zygote, LinearAlgebra
 using TopOpt.Functions: FixedElementProjector, get_fixed_element_projector, 
                         get_free_variables, get_free_variable_count
+using Zygote: gradient
 
 # Helper function for finite difference gradient check
 function finite_diff_gradient(f, x::AbstractVector{T}, h=T(1e-6)) where T
