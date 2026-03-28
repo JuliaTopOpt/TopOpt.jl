@@ -5,13 +5,13 @@ using TopOpt.FEA: ElementFEAInfo, GlobalFEAInfo, assemble!
 
 # Create a simple mesh and problem for testing
 nels = (2, 2)
-size = (1.0, 1.0)
+sizes = (1.0, 1.0)
 E = 1.0
 ν = 0.3
 f = 1.0
 
 # Create problem
-problem = HalfMBB(Val{:Linear}, nels, size, E, ν, f)
+problem = HalfMBB(Val{:Linear}, nels, sizes, E, ν, f)
 n_dofs = ndofs(problem.ch.dh)
 
 # Create element info and global info needed for operators
