@@ -124,6 +124,9 @@ if ACTUAL_GROUP in ("All", "WCSMO14_1")
     # This was originlly part of https://github.com/JuliaTopOpt/TopOpt.jl_WCSMO21
     @safetestset "Continuum demos" begin
         include("wcsmo14/demos/continuum/cont_compliance1.jl")
+        # cont_compliance2.jl and cont_stress.jl are additional continuum demos
+        # that are not included in regular CI testing to keep test times reasonable.
+        # They can be run manually for extended validation.
         # include("wcsmo14/demos/continuum/cont_compliance2.jl")
         # include("wcsmo14/demos/continuum/cont_stress.jl")
     end
@@ -140,6 +143,10 @@ if ACTUAL_GROUP in ("All", "WCSMO14_2")
         include("wcsmo14/demos/truss/truss_compliance_3d2.jl")
     end
     @safetestset "WCSMO Benchmarks" begin
+        # Benchmark comparison files are excluded from regular CI testing
+        # as they are used for performance benchmarking against other topopt
+        # implementations and can take significant time to run.
+        # They can be run manually for benchmarking purposes.
         # include("wcsmo14/jl_benchmarks/compare_neo99_2D.jl")
         # include("wcsmo14/jl_benchmarks/compare_polytop.jl")
         # include("wcsmo14/jl_benchmarks/compare_top3d.jl")
