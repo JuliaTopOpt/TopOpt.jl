@@ -19,7 +19,7 @@ end
 # Strip the _Opposite_Preference suffix to get the actual test group
 const ACTUAL_GROUP = replace(GROUP, "_Opposite_Preference" => "")
 
-if ACTUAL_GROUP in ("All", "Core_Tests_1")
+if ACTUAL_GROUP in ("All", "Core_Tests")
     @safetestset "InpParser Tests" begin
         include("inp_parser/parser.jl")
     end
@@ -44,9 +44,6 @@ if ACTUAL_GROUP in ("All", "Core_Tests_1")
         include("Functions/test_trace.jl")
         include("Functions/test_block_compliance.jl")
     end
-end
-
-if ACTUAL_GROUP in ("All", "Core_Tests_2")
     @safetestset "Solver" begin
         include("FEA/solvers.jl")
         include("FEA/test_convergence.jl")

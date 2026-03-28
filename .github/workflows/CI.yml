@@ -21,16 +21,14 @@ jobs:
         arch:
           - x64
         group:
-          - Core_Tests_1
-          - Core_Tests_2
+          - Core_Tests
           - Examples_1
           - Examples_2
           - Examples_3
           - Examples_4
           - WCSMO14_1
           - WCSMO14_2
-          - Core_Tests_1_Opposite_Preference
-          - Core_Tests_2_Opposite_Preference
+          - Core_Tests_Opposite_Preference
     steps:
       - uses: actions/checkout@v6
       - uses: julia-actions/setup-julia@v2
