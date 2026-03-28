@@ -59,3 +59,26 @@ raw_inp = INP.Parser.extract_inp(joinpath(@__DIR__, "MBB.inp"))
 @test raw_inp.E == 42000
 # Poisson ratio
 @test raw_inp.ν == 0.2
+
+# Test triangular elements (CPS3)
+raw_inp = INP.Parser.extract_inp(joinpath(@__DIR__, "triangle.inp"))
+@test raw_inp.celltype == "CPS3"
+@test length(raw_inp.node_coords) == 42
+@test length(raw_inp.cells) == 60
+@test raw_inp.cells[1] == (1, 2, 8)
+@test raw_inp.cells[60] == (35, 42, 41)
+@test raw_inp.node_coords[1] == (0.0, 0.0)
+@test raw_inp.node_coords[42] == (60.0, 50.0)
+@test raw_inp.E == 210000.0
+@test raw_inp.ν == 0.3
+@test raw_inp.nodedbcs["fixed_support"] == [(1, 0.0), (2, 0.0)]
+@test raw_inp.cloads[42] == [0.0, -1000.0]
+
+# Test parsed triangular mesh
+triangle = INP.Parser.import_inp(joinpath(@__DIR__, "triangle.inp"))
+dh = triangle.dh
+grid = dh.grid
+@test length(grid.nodes) == 42
+@test length(grid.cells) == 60
+@test Ferrite.nnodes(grid.cells[1]) == 3  # Linear triangle
+@test typeof(grid.cells[1]) <: Ferrite.Cell{2,3,3}  # 2D triangle cell with 3 nodes, 3 edges
