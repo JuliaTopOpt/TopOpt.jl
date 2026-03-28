@@ -97,5 +97,3 @@ using TopOpt, Test
         @test all(isfinite, solver.u)
     end
 end
-
-println("CGAssemblySolver safe=true tests completed successfully!")
