@@ -1,6 +1,6 @@
 using TopOpt, Test, LinearAlgebra, Random, SparseArrays
 import Zygote
-using Ferrite: getncells
+using Ferrite: getncells, Ferrite
 using TopOpt.TopOptProblems.InputOutput.INP: Parser
 
 Random.seed!(42)
@@ -85,7 +85,7 @@ Random.seed!(42)
 
         # Create multiple load cases
         nloads = 3
-        F = spzeros(TopOpt.Ferrite.ndofs(base_problem.ch.dh), nloads)
+        F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
         dense_load_inds = vec(TopOpt.TopOptProblems.get_surface_dofs(base_problem))
 
         Random.seed!(42)
