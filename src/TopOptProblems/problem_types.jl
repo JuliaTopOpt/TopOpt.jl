@@ -186,6 +186,7 @@ O*                               *
 O*                               *
 O*                               *
 O*********************************
+                                 O
 
 
 struct HalfMBB{dim, T, N, M} <: StiffnessTopOptProblem{dim, T}
