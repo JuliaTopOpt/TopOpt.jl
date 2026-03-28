@@ -153,6 +153,130 @@ using Ferrite, Test
         solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(3.0))
         @test !isnothing(solver)
     end
+    
+    @testset "Triangular elements - triangle.inp (CPS3)" begin
+        inp_file = joinpath(@__DIR__, "triangle.inp")
+        
+        # Test InpStiffness constructor from file path
+        problem = InpStiffness(inp_file)
+        
+        # Check problem type
+        @test problem isa InpStiffness
+        @test problem isa StiffnessTopOptProblem{2, Float64}
+        
+        # Check material properties
+        @test getE(problem) == 210000.0
+        @test getν(problem) == 0.3
+        
+        # Check geometry order (CPS3 is linear)
+        @test getgeomorder(problem) == 1
+        
+        # Check nodes per cell (CPS3 has 3 nodes)
+        @test nnodespercell(problem) == 3
+        
+        # Check grid properties
+        grid = problem.ch.dh.grid
+        @test getncells(grid) == 60
+        
+        # Test constraint handler
+        @test problem.ch isa ConstraintHandler
+        
+        # Test metadata
+        @test problem.metadata isa Metadata
+        
+        # Test get_load_cells
+        load_cells = get_load_cells(problem)
+        @test load_cells isa Set{Int}
+        @test length(load_cells) > 0
+        
+        # Test getcloaddict
+        cloads = getcloaddict(problem)
+        @test cloads isa Dict
+        @test haskey(cloads, 42)  # Load applied at node 42
+        @test cloads[42] == [0.0, -1000.0]
+        
+        # Test getfacesets
+        facesets = getfacesets(problem)
+        @test facesets isa Dict
+        
+        # Test getpressuredict
+        dloads = getpressuredict(problem)
+        @test dloads isa Dict
+    end
+    
+    @testset "Full topology optimization with triangular elements" begin
+        inp_file = joinpath(@__DIR__, "triangle.inp")
+        
+        # Create the problem
+        problem = InpStiffness(inp_file)
+        
+        # Volume fraction constraint
+        V = 0.5
+        
+        # Minimum density (to avoid singular stiffness matrix)
+        xmin = 0.001
+        
+        # Filter radius
+        rmin = 5.0
+        
+        # Initial design (uniform density)
+        x0 = fill(V, getncells(problem))
+        
+        # Create solver with power penalty
+        penalty = PowerPenalty(3.0)
+        solver = FEASolver(DirectSolver, problem; xmin=xmin, penalty=penalty)
+        
+        # Define compliance objective
+        comp = Compliance(solver)
+        
+        # Define filter
+        filter = DensityFilter(solver; rmin=rmin)
+        
+        # Objective function: compliance(filter(x))
+        obj = x -> comp(filter(PseudoDensities(x)))
+        
+        # Volume constraint: volfrac(filter(x)) <= V
+        volfrac = Volume(solver)
+        constr = x -> volfrac(filter(PseudoDensities(x))) - V
+        
+        # Set up optimization model
+        model = Model(obj)
+        addvar!(model, zeros(length(x0)), ones(length(x0)))
+        add_ineq_constraint!(model, constr)
+        
+        # Use MMA algorithm
+        alg = MMA87()
+        
+        # Optimization options
+        options = MMAOptions(; tol=Tolerance(; kkt=1e-3), maxiter=100, convcriteria=Nonconvex.KKTCriteria())
+        
+        # Run optimization
+        res = optimize(model, alg, x0; options)
+        
+        # Check that optimization converged
+        @test res.convstate isa NonconvexCore.ConvergenceState
+        
+        # Check final design
+        x_opt = res.minimizer
+        
+        # Verify design variables are within bounds
+        @test all(x -> 0.0 <= x <= 1.0, x_opt)
+        
+        # Verify volume constraint is satisfied (approximately)
+        final_volume = volfrac(filter(PseudoDensities(x_opt)))
+        @test abs(final_volume - V) < 0.05  # Within 5% tolerance
+        
+        # Verify compliance is finite and positive
+        final_compliance = comp(filter(PseudoDensities(x_opt)))
+        @test isfinite(final_compliance)
+        @test final_compliance > 0
+        
+        # Check that some elements have been penalized (not all at V)
+        @test any(x -> x != V, x_opt)
+        
+        println("Triangular element topopt completed successfully!")
+        println("  Final compliance: $(final_compliance)")
+        println("  Final volume fraction: $(final_volume)")
+        println("  Iterations: $(res.iter)")
+    end
 end
-
-println("All InpStiffness tests completed!")

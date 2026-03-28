@@ -1,3 +1,7 @@
+using TopOpt
+using TopOpt.TopOptProblems
+using Test
+
 @testset "Element stiffness matrix" begin
 
     # 1x1 linear quadrilateral cell
@@ -28,7 +32,7 @@
             k[8] k[3] k[2] k[5] k[4] k[7] k[6] k[1]
         ]
 
-    problem = HalfMBB((2, 2), (1.0, 1.0), 1.0, 0.3, 1.0)
+    problem = HalfMBB(Val{:Linear}, (2, 2), (1.0, 1.0), 1.0, 0.3, 1.0)
 
     #@test ElementFEAInfo(problem).Kes[1] ≈ Ke
 end
