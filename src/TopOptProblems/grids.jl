@@ -9,9 +9,6 @@ struct RectilinearGrid{dim, T, N, M, TG<:Ferrite.Grid{dim, <:Ferrite.Cell{dim,N,
     nels::NTuple{dim, Int}
     sizes::NTuple{dim, T}
     corners::NTuple{2, Vec{dim, T}}
-    white_cells::BitVector
-    black_cells::BitVector
-    constant_cells::BitVector
 end
 ```
 
@@ -25,9 +22,6 @@ A type that represents a rectilinear grid with corner points `corners`.
 - `nels`: number of elements in every dimension
 - `sizes`: dimensions of each rectilinear cell
 - `corners`: 2 corner points of the rectilinear grid
-- `white_cells`: cells fixed to be void during optimization
-- `black_cells`: cells fixed to have material during optimization
-- `constant_cells`: cells fixed to be either void or have material during optimization
 """
 struct RectilinearGrid{dim,T,N,M,TG<:Ferrite.Grid{dim,<:Ferrite.Cell{dim,N,M},T}} <:
        AbstractGrid{dim,T}
@@ -35,9 +29,6 @@ struct RectilinearGrid{dim,T,N,M,TG<:Ferrite.Grid{dim,<:Ferrite.Cell{dim,N,M},T}
     nels::NTuple{dim,Int}
     sizes::NTuple{dim,T}
     corners::NTuple{2,Vec{dim,T}}
-    white_cells::BitVector
-    black_cells::BitVector
-    constant_cells::BitVector
 end
 
 """
@@ -80,9 +71,6 @@ function RectilinearGrid(
         nels,
         sizes,
         (corner1, corner2),
-        falses(ncells),
-        falses(ncells),
-        falses(ncells),
     )
 end
 

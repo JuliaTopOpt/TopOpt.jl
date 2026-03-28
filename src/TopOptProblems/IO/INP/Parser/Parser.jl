@@ -1,7 +1,6 @@
 module Parser
 
 using Ferrite, SparseArrays
-using .....TopOpt: find_black_and_white
 
 export extract_inp, InpContent
 

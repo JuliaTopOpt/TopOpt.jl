@@ -64,7 +64,6 @@ using ColorSchemes
     ts = TrussStress(solver)
     σ = ts(PseudoDensities(x))
 
-    @show σ
     # Check the result
     @assert abs(σ[1] - result_stress[1]) < 1e-12
     @assert abs(σ[2] - result_stress[2]) < 1e-12

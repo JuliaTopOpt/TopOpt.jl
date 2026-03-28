@@ -86,7 +86,7 @@ end
         prescribed_dofs = ch.prescribed_dofs
         
         # Setup test parameters
-        vars = ones(length(elementinfo.varind))
+        vars = ones(prod(nels))
         penalty = PowerPenalty(1.0)
         xmin = 0.001
         M = 1.0  # Diagonal scaling factor
@@ -94,16 +94,13 @@ end
         dof_cells = elementinfo.metadata.dof_cells
         cell_dofs = elementinfo.metadata.cell_dofs
         Kes = elementinfo.Kes
-        black = elementinfo.black
-        white = elementinfo.white
-        varind = elementinfo.varind
         
         # Call update_f!
         applyzero = false
         
         update_f!(
             f, values, prescribed_dofs, applyzero, dof_cells, cell_dofs,
-            black, white, Kes, xmin, penalty, vars, varind, M
+            Kes, xmin, penalty, vars, M
         )
         
         # Check that prescribed DOFs have been set
@@ -129,7 +126,7 @@ end
         prescribed_dofs = ch.prescribed_dofs
         
         # Setup test parameters
-        vars = ones(length(elementinfo.varind))
+        vars = ones(prod(nels))
         penalty = PowerPenalty(1.0)
         xmin = 0.001
         M = 1.0
@@ -137,16 +134,13 @@ end
         dof_cells = elementinfo.metadata.dof_cells
         cell_dofs = elementinfo.metadata.cell_dofs
         Kes = elementinfo.Kes
-        black = elementinfo.black
-        white = elementinfo.white
-        varind = elementinfo.varind
         
         # Call update_f! with applyzero=true
         applyzero = true
         
         update_f!(
             f, values, prescribed_dofs, applyzero, dof_cells, cell_dofs,
-            black, white, Kes, xmin, penalty, vars, varind, M
+            Kes, xmin, penalty, vars, M
         )
         
         # With applyzero=true, non-zero boundary values should not contribute
@@ -168,7 +162,7 @@ end
         ndofs_total = ndofs(problem.ch.dh)
         f = zeros(ndofs_total)
         
-        vars = ones(length(elementinfo.varind))
+        vars = ones(prod(nels))
         penalty = PowerPenalty(1.0)
         xmin = 0.001
         M = 1.0
@@ -197,7 +191,7 @@ end
         ndofs_total = ndofs(problem.ch.dh)
         f = zeros(ndofs_total)
         
-        vars = ones(length(elementinfo.varind))
+        vars = ones(prod(nels))
         penalty = PowerPenalty(1.0)
         xmin = 0.001
         M = 1.0
@@ -220,7 +214,7 @@ end
         ndofs_total = ndofs(problem.ch.dh)
         
         # Test with full density
-        vars_full = ones(length(elementinfo.varind))
+        vars_full = ones(prod(nels))
         f_full = zeros(ndofs_total)
         penalty = PowerPenalty(1.0)
         xmin = 0.001
@@ -229,7 +223,7 @@ end
         matrix_free_apply2f!(f_full, elementinfo, M, vars_full, problem, penalty, xmin, false)
         
         # Test with reduced density
-        vars_reduced = fill(0.5, length(elementinfo.varind))
+        vars_reduced = fill(0.5, prod(nels))
         f_reduced = zeros(ndofs_total)
         
         matrix_free_apply2f!(f_reduced, elementinfo, M, vars_reduced, problem, penalty, xmin, false)

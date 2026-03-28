@@ -1,5 +1,5 @@
 using TopOpt, Test, LinearAlgebra, StaticArrays, Ferrite
-using TopOpt: RaggedArray, find_varind, find_black_and_white, compliance, meandiag, density, sumdiag
+using TopOpt: RaggedArray, compliance, meandiag, density, sumdiag
 using TopOpt: @params, @forward_property
 using Ferrite: DofHandler, Grid, getncells
 
@@ -75,63 +75,6 @@ end
     
     ts3 = TestStruct3(1.0)
     @test ts3 isa AbstractTest
-end
-
-@testset "find_varind" begin
-    # Test with mixed black/white cells
-    black = [true, false, false, true, false]
-    white = [false, true, false, false, true]
-    varind = find_varind(black, white)
-    @test varind == [0, 0, 1, 0, 0]
-    
-    # Test with all black
-    black_all = [true, true, true]
-    white_all = [false, false, false]
-    varind_all = find_varind(black_all, white_all)
-    @test all(varind_all .== 0)
-
-    # Test with all white
-    black_none = [false, false, false]
-    white_none = [true, true, true]
-    varind_none = find_varind(black_none, white_none)
-    @test all(varind_none .== 0)
-
-    # Test with no black or white (all design variables)
-    black_free = [false, false, false]
-    white_free = [false, false, false]
-    varind_free = find_varind(black_free, white_free)
-    @test varind_free == [1, 2, 3]
-
-    # Test with different integer type
-    varind_int32 = find_varind(black, white, Int32)
-    @test eltype(varind_int32) == Int32
-end
-
-@testset "find_black_and_white" begin
-    # Use actual TopOptProblems which have properly configured cellsets
-    using TopOpt.TopOptProblems: PointLoadCantilever, HalfMBB
-    
-    # Test with PointLoadCantilever - requires even y elements, no black or white cells by default
-    problem = PointLoadCantilever(Val{:Linear}, (10, 6), (1.0, 1.0), 1.0, 0.3, 1.0)
-    dh = problem.ch.dh
-    
-    black, white = find_black_and_white(dh)
-    @test black == falses(length(black))
-    @test white == falses(length(white))
-    @test length(black) == Ferrite.getncells(dh.grid)
-    @test length(white) == Ferrite.getncells(dh.grid)
-    
-    # Test with HalfMBB - also no black or white by default
-    problem2 = HalfMBB(Val{:Linear}, (10, 5), (1.0, 1.0), 1.0, 0.3, 1.0)
-    dh2 = problem2.ch.dh
-    
-    black2, white2 = find_black_and_white(dh2)
-    @test black2 == falses(length(black2))
-    @test white2 == falses(length(white2))
-    
-    # Verify consistency with problem's black/white fields
-    @test problem.black == black
-    @test problem.white == white
 end
 
 @testset "compliance" begin

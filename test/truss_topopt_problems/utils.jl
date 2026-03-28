@@ -88,10 +88,6 @@ function buckling(
     u=undef,
 ) where {xdim,T}
     dh = problem.ch.dh
-    black = problem.black
-    white = problem.white
-    varind = problem.varind # variable index from cell index
-
     if u === undef
         u = ginfo.K \ ginfo.f
     end
@@ -118,30 +114,18 @@ function buckling(
     TK = eltype(Kσs)
     for (i, cell) in enumerate(celliterator)
         celldofs!(global_dofs, dh, i)
-        Kσ_e = TK isa Symmetric ? Kσs[i].data : Kσs[i]
-        if black[i]
-            Ferrite.assemble!(assembler, global_dofs, Kσ_e)
-        elseif white[i]
-            # if PENALTY_BEFORE_INTERPOLATION
-            px = xmin
-            # else
-            #     px = penalty(xmin)
-            # end
-            Kσ_e = px * Kσ_e
-            Ferrite.assemble!(assembler, global_dofs, Kσ_e)
-        else
-            px = vars[varind[i]]
-            # if PENALTY_BEFORE_INTERPOLATION
-            # px = density(penalty(vars[varind[i]]), xmin)
-            # else
-            # px = penalty(density(vars[varind[i]], xmin))
-            # end
-            Kσ_e = px * Kσ_e
-            Ferrite.assemble!(assembler, global_dofs, Kσ_e)
-        end
+        Kσ_e = Kσs[i]
+        px = vars[i]
+        # if PENALTY_BEFORE_INTERPOLATION
+        #   px = density(penalty(vars[i]), xmin)
+        # else
+        #   px = penalty(density(vars[i], xmin))
+        # end
+        Kσ_e = px * Kσ_e
+        Ferrite.assemble!(assembler, global_dofs, Kσ_e)
     end
 
-    #* apply boundary condition
+    # apply boundary condition
     Kσ = apply_boundary_with_zerodiag!(Kσ, problem.ch)
 
     return ginfo.K, Kσ

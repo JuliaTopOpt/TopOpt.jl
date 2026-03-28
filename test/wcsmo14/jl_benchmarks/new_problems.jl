@@ -12,9 +12,7 @@ using TopOpt.TopOptProblems:
     middley,
     middlez,
     nnodespercell,
-    nfacespercell,
-    find_black_and_white,
-    find_varind
+    nfacespercell
 using TopOpt.Utilities: @params
 
 @params struct NewPointLoadCantilever{dim,T,N,M} <: StiffnessTopOptProblem{dim,T}
@@ -23,9 +21,6 @@ using TopOpt.Utilities: @params
     ν::T
     ch::ConstraintHandler{<:DofHandler{dim,<:Cell{dim,N,M},T},T}
     load_dict::Dict{Int,Vector{T}}
-    black::AbstractVector
-    white::AbstractVector
-    varind::AbstractVector{Int}
     metadata::Metadata
 end
 # force::T
@@ -106,11 +101,8 @@ function NewPointLoadCantilever(
     N = nnodespercell(rect_grid)
     M = nfacespercell(rect_grid)
 
-    black, white = find_black_and_white(dh)
-    varind = find_varind(black, white)
-
     return NewPointLoadCantilever(
-        rect_grid, E, ν, ch, load_dict, black, white, varind, metadata
+        rect_grid, E, ν, ch, load_dict, metadata
     )
 end
 
