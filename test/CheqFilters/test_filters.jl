@@ -1,5 +1,5 @@
 using TopOpt, LinearAlgebra, Test, Statistics
-using TopOpt: DensityFilter, PseudoDensities
+using TopOpt: DensityFilter, PseudoDensities, ProjectedDensityFilter
 using TopOpt.CheqFilters: SensFilter, FilterMetadata
 import ChainRulesCore
 using NonconvexCore: getdim
@@ -18,127 +18,57 @@ using NonconvexCore: getdim
         @test df.metadata isa FilterMetadata
     end
     
-    @testset "DensityFilter boolean template constructors" begin
-        nels = (5, 5)
-        problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
+    nels = (5, 5)
+    problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
+    solver = FEASolver(DirectSolver, problem; xmin=0.001, penalty=PowerPenalty(3.0))
+    rmin = 2.0
+    
+    @testset "getdim returns correct dimension" begin
+        df = DensityFilter(solver, rmin)
         
-        solver = FEASolver(DirectSolver, problem; xmin=0.001, penalty=PowerPenalty(3.0))
-        
-        rmin = 2.0
-        
-        @testset "DensityFilter{true} constructor" begin
-            df_true = DensityFilter{true}(solver, rmin)
-            
-            @test df_true isa DensityFilter{true}
-            @test df_true.rmin == rmin
-            @test df_true.metadata isa FilterMetadata
-            @test !isempty(df_true.jacobian)  # Jacobian should be computed
-        end
-        
-        @testset "DensityFilter{false} constructor" begin
-            df_false = DensityFilter{false}(solver, rmin)
-            
-            @test df_false isa DensityFilter{false}
-            @test df_false.rmin == rmin
-            @test df_false.metadata isa FilterMetadata
-            @test isempty(df_false.jacobian)  # Jacobian should be empty (0x0 matrix)
-            @test size(df_false.jacobian) == (0, 0)
-        end
-        
-        @testset "Filtering vs non-filtering behavior" begin
-            df_true = DensityFilter{true}(solver, rmin)
-            df_false = DensityFilter{false}(solver, rmin)
-            
-            x = rand(length(solver.vars))
-            
-            # DensityFilter{true} applies filtering
-            result_true = df_true(PseudoDensities(x))
-            @test result_true isa PseudoDensities
-            @test result_true.x != x  # Values should be modified
-            
-            # DensityFilter{false} returns values unchanged
-            result_false = df_false(PseudoDensities(x))
-            @test result_false isa PseudoDensities
-            @test result_false.x ≈ x  # Values should be unchanged
-        end
-        
-        @testset "getdim returns correct dimension" begin
-            df_true = DensityFilter{true}(solver, rmin)
-            df_false = DensityFilter{false}(solver, rmin)
-            
-            # For filtering=true, getdim returns size of jacobian
-            @test getdim(df_true) == size(df_true.jacobian, 1)
-            
-            # For filtering=false, getdim returns 0 (empty jacobian)
-            @test getdim(df_false) == 0
-        end
-        
-        @testset "show methods for boolean template filters" begin
-            df_true = DensityFilter{true}(solver, rmin)
-            df_false = DensityFilter{false}(solver, rmin)
-            
-            io = IOBuffer()
-            
-            # Test show for DensityFilter{true}
-            show(io, MIME"text/plain"(), df_true)
-            output_true = String(take!(io))
-            @test occursin("density filter", lowercase(output_true))
-            
-            # Test show for DensityFilter{false}
-            show(io, MIME"text/plain"(), df_false)
-            output_false = String(take!(io))
-            @test occursin("density filter", lowercase(output_false))
-        end
+        # getdim returns size of jacobian
+        @test getdim(df) == size(df.jacobian, 1)
+    end
+    
+    @testset "show method for DensityFilter" begin
+        df = DensityFilter(solver, rmin)
+        io = IOBuffer()
+        show(io, MIME"text/plain"(), df)
+        output = String(take!(io))
+        @test occursin("density filter", lowercase(output))
     end
     
     @testset "SensFilter Construction" begin
-        nels = (5, 5)
-        problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
-        
-        solver = FEASolver(DirectSolver, problem; xmin=0.001, penalty=PowerPenalty(3.0))
-        
-        rmin = 2.0
-        sf = SensFilter(solver; rmin=rmin)
-        
+        sf = SensFilter(solver; rmin=rmin)        
         @test sf.rmin == rmin
         @test sf.metadata isa FilterMetadata
     end
     
+    @testset "SensFilter show method" begin
+        sf = SensFilter(solver; rmin=rmin)
+        io = IOBuffer()
+        # Test show for SensFilter
+        show(io, MIME"text/plain"(), sf)
+        output = String(take!(io))
+        @test occursin("sensitivity filter", lowercase(output))
+    end
+    
     @testset "DensityFilter Application" begin
-        nels = (5, 5)
-        problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
-        
-        solver = FEASolver(DirectSolver, problem; xmin=0.001, penalty=PowerPenalty(3.0))
-        
-        rmin = 2.0
-        df = DensityFilter(solver; rmin=rmin)
-        
+        df = DensityFilter(solver; rmin=rmin)        
         n = length(solver.vars)
         x = ones(n) * 0.5
-        
         result = df(PseudoDensities(x))
-        
         @test result isa PseudoDensities
         @test length(result.x) == n
-        
         @test all(result.x .>= 0.0)
         @test all(result.x .<= 1.0)
     end
     
     @testset "SensFilter Application" begin
-        nels = (5, 5)
-        problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
-        
-        solver = FEASolver(DirectSolver, problem; xmin=0.001, penalty=PowerPenalty(3.0))
-        
-        rmin = 2.0
-        sf = SensFilter(solver; rmin=rmin)
-        
+        sf = SensFilter(solver; rmin=rmin)        
         n = length(solver.vars)
         x = ones(n) * 0.5
-        
         result = sf(PseudoDensities(x))
-        
         @test result isa PseudoDensities
         @test length(result.x) == n
     end
@@ -394,5 +324,195 @@ using NonconvexCore: getdim
         @test result2 isa PseudoDensities
         
         @test result1.x != result2.x
+    end
+    
+    @testset "ProjectedDensityFilter construction" begin
+        nels = (5, 5)
+        problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
+        
+        solver = FEASolver(DirectSolver, problem; xmin=0.001, penalty=PowerPenalty(3.0))
+        
+        rmin = 2.0
+        df = DensityFilter(solver; rmin=rmin)
+        
+        @testset "With no projections" begin
+            pdf = ProjectedDensityFilter(df, nothing, nothing)
+            @test pdf.filter === df
+            @test pdf.preproj === nothing
+            @test pdf.postproj === nothing
+            @test pdf isa ProjectedDensityFilter
+        end
+        
+        @testset "With pre-projection only" begin
+            preproj = x -> x^2
+            pdf = ProjectedDensityFilter(df, preproj, nothing)
+            @test pdf.filter === df
+            @test pdf.preproj === preproj
+            @test pdf.postproj === nothing
+        end
+        
+        @testset "With post-projection only" begin
+            postproj = x -> clamp(x, 0.1, 0.9)
+            pdf = ProjectedDensityFilter(df, nothing, postproj)
+            @test pdf.filter === df
+            @test pdf.preproj === nothing
+            @test pdf.postproj === postproj
+        end
+        
+        @testset "With both pre and post projections" begin
+            preproj = x -> sqrt(x)
+            postproj = x -> clamp(x, 0.0, 1.0)
+            pdf = ProjectedDensityFilter(df, preproj, postproj)
+            @test pdf.filter === df
+            @test pdf.preproj === preproj
+            @test pdf.postproj === postproj
+        end
+    end
+    
+    @testset "ProjectedDensityFilter getdim" begin
+        nels = (5, 5)
+        problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
+        
+        solver = FEASolver(DirectSolver, problem; xmin=0.001, penalty=PowerPenalty(3.0))
+        
+        rmin = 2.0
+        
+        @testset "getdim with DensityFilter" begin
+            df = DensityFilter(solver, rmin)
+            pdf = ProjectedDensityFilter(df, nothing, nothing)
+            
+            # getdim should delegate to the underlying DensityFilter
+            @test getdim(pdf) == getdim(df)
+            @test getdim(pdf) == size(df.jacobian, 1)
+        end
+        
+        @testset "getdim with various projection configurations" begin
+            df = DensityFilter(solver; rmin=rmin)
+            
+            # All configurations should return same dimension
+            pdf_none = ProjectedDensityFilter(df, nothing, nothing)
+            pdf_pre = ProjectedDensityFilter(df, x -> x^2, nothing)
+            pdf_post = ProjectedDensityFilter(df, nothing, x -> clamp(x, 0.1, 0.9))
+            pdf_both = ProjectedDensityFilter(df, x -> x^2, x -> clamp(x, 0.1, 0.9))
+            
+            expected_dim = getdim(df)
+            @test getdim(pdf_none) == expected_dim
+            @test getdim(pdf_pre) == expected_dim
+            @test getdim(pdf_post) == expected_dim
+            @test getdim(pdf_both) == expected_dim
+        end
+    end
+    
+    @testset "ProjectedDensityFilter application" begin
+        nels = (5, 5)
+        problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
+        
+        solver = FEASolver(DirectSolver, problem; xmin=0.001, penalty=PowerPenalty(3.0))
+        
+        rmin = 2.0
+        df = DensityFilter(solver; rmin=rmin)
+        
+        x = rand(length(solver.vars))
+        
+        @testset "No projections - acts like plain DensityFilter" begin
+            pdf = ProjectedDensityFilter(df, nothing, nothing)
+            result = pdf(PseudoDensities(x))
+            
+            # Should produce same result as plain DensityFilter
+            expected = df(PseudoDensities(x))
+            @test result isa PseudoDensities
+            @test result.x ≈ expected.x
+        end
+        
+        @testset "With pre-projection" begin
+            preproj = x -> x^2
+            pdf = ProjectedDensityFilter(df, preproj, nothing)
+            
+            result = pdf(PseudoDensities(x))
+            expected = df(PseudoDensities(preproj.(x)))
+            
+            @test result isa PseudoDensities
+            @test result.x ≈ expected.x
+        end
+        
+        @testset "With post-projection" begin
+            postproj = x -> clamp(x, 0.1, 0.9)
+            pdf = ProjectedDensityFilter(df, nothing, postproj)
+            
+            result = pdf(PseudoDensities(x))
+            expected_raw = df(PseudoDensities(x))
+            expected = postproj.(expected_raw.x)
+            
+            @test result isa PseudoDensities
+            @test result.x ≈ expected
+        end
+        
+        @testset "With both pre and post projections" begin
+            preproj = x -> sqrt(x)
+            postproj = x -> clamp(x, 0.2, 0.8)
+            pdf = ProjectedDensityFilter(df, preproj, postproj)
+            
+            result = pdf(PseudoDensities(x))
+            
+            # Apply preproj, then filter, then postproj
+            pre_x = preproj.(x)
+            filtered = df(PseudoDensities(pre_x))
+            expected = postproj.(filtered.x)
+            
+            @test result isa PseudoDensities
+            @test result.x ≈ expected
+        end
+    end
+    
+    @testset "ProjectedDensityFilter with uniform density" begin
+        nels = (5, 5)
+        problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
+        
+        solver = FEASolver(DirectSolver, problem; xmin=0.001, penalty=PowerPenalty(3.0))
+        
+        rmin = 2.0
+        df = DensityFilter(solver; rmin=rmin)
+        
+        n = length(solver.vars)
+        x_uniform = ones(n) * 0.5
+        
+        @testset "No projection" begin
+            pdf = ProjectedDensityFilter(df, nothing, nothing)
+            result = pdf(PseudoDensities(x_uniform))
+            
+            # Uniform density stays uniform through filter
+            @test all(result.x .≈ 0.5)
+        end
+        
+        @testset "With linear pre-projection" begin
+            # Linear pre-projection of uniform field is still uniform
+            preproj = x -> 2x
+            pdf = ProjectedDensityFilter(df, preproj, nothing)
+            result = pdf(PseudoDensities(x_uniform))
+            
+            @test all(result.x .≈ 1.0)
+        end
+    end
+    
+    @testset "ProjectedDensityFilter output type" begin
+        nels = (5, 5)
+        problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
+        
+        solver = FEASolver(DirectSolver, problem; xmin=0.001, penalty=PowerPenalty(3.0))
+        
+        rmin = 2.0
+        df = DensityFilter(solver; rmin=rmin)
+        
+        x = rand(length(solver.vars))
+        input = PseudoDensities(x)
+        
+        @testset "Returns PseudoDensities with filtered=true" begin
+            pdf = ProjectedDensityFilter(df, nothing, nothing)
+            result = pdf(input)
+            
+            @test result isa PseudoDensities
+            # The third type parameter should be true (filtered)
+            @test typeof(result) <: PseudoDensities{<:Any,<:Any,true}
+        end
     end
 end

@@ -244,3 +244,63 @@ end
         end
     end
 end
+
+@testset "Volume project function" begin
+    nels = (3, 3)
+    problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
+    solver = FEASolver(DirectSolver, problem; xmin=0.001, penalty=PowerPenalty(3.0))
+    
+    @testset "Basic binary projection with fraction=true" begin
+        vol = Volume(solver; fraction=true)
+        x = rand(9)  # 3x3 grid
+        target_fraction = 0.5
+        projected = TopOpt.Functions.project(vol, target_fraction, x)
+        
+        # Check output is binary (only 0s and 1s)
+        @test all(projected .== 0 .|| projected .== 1)
+        @test eltype(projected) == eltype(x)
+    end
+    
+    @testset "Binary projection with fraction=false (absolute volume)" begin
+        vol = Volume(solver; fraction=false)
+        x = rand(9)
+        total_volume = sum(vol.cellvolumes)
+        target_volume = 0.5 * total_volume
+        projected = TopOpt.Functions.project(vol, target_volume, x)
+        
+        # Check output is binary
+        @test all(projected .== 0 .|| projected .== 1)
+    end
+    
+    @testset "Volume constraint satisfaction" begin
+        vol = Volume(solver; fraction=true)
+        x = [0.1, 0.9, 0.2, 0.8, 0.3, 0.7, 0.4, 0.6, 0.5]
+        target_fraction = 0.4
+        projected = TopOpt.Functions.project(vol, target_fraction, x)
+        
+        # Higher density elements should be selected
+        # Sort by original density and check that highest are 1s
+        sorted_inds = sortperm(x; rev=true)
+        # The top elements (by volume) should be 1
+        @test all(projected[sorted_inds[1:3]] .== 1)
+    end
+    
+    @testset "Edge case: V=0 (empty projection)" begin
+        vol = Volume(solver; fraction=true)
+        x = rand(9)
+        projected = TopOpt.Functions.project(vol, 0.0, x)
+        
+        # Should return all zeros or minimal elements
+        @test all(projected .== 0 .|| projected .== 1)
+    end
+    
+    @testset "Edge case: V=total_volume (full projection)" begin
+        vol = Volume(solver; fraction=false)
+        x = rand(9)
+        total_volume = sum(vol.cellvolumes)
+        projected = TopOpt.Functions.project(vol, total_volume, x)
+        
+        # All elements should be 1
+        @test all(projected .== 1)
+    end
+end

@@ -1,7 +1,6 @@
 struct SensFilter{
-    _filtering,T,TV<:AbstractVector{T},TE<:ElementFEAInfo,TM<:FilterMetadata
+    T,TV<:AbstractVector{T},TE<:ElementFEAInfo,TM<:FilterMetadata
 } <: AbstractSensFilter
-    filtering::Val{_filtering}
     elementinfo::TE
     metadata::TM
     rmin::T
@@ -13,17 +12,11 @@ function Base.show(io::IO, ::MIME{Symbol("text/plain")}, ::SensFilter)
     return println(io, "TopOpt sensitivity filter")
 end
 
-SensFilter{true}(args...) = SensFilter(Val(true), args...)
-SensFilter{false}(args...) = SensFilter(Val(false), args...)
-
 function SensFilter(solver::AbstractFEASolver; rmin)
-    return SensFilter(Val(true), solver, rmin)
-end
-function SensFilter(::Val{filtering}, solver::AbstractFEASolver, args...) where {filtering}
-    return SensFilter(Val(filtering), solver, args...)
+    return SensFilter(solver, rmin)
 end
 function SensFilter(
-    ::Val{true}, solver::TS, rmin::T, (::Type{TI})=Int
+    solver::TS, rmin::T, (::Type{TI})=Int
 ) where {T,TI<:Integer,TS<:AbstractFEASolver}
     metadata = FilterMetadata(solver, rmin, TI)
     TM = typeof(metadata)
@@ -42,27 +35,14 @@ function SensFilter(
     cell_weights = zeros(T, nnodes)
 
     return SensFilter(
-        Val(true), elementinfo, metadata, rmin, nodal_grad, last_grad, cell_weights
-    )
-end
-
-function SensFilter(
-    ::Val{false}, solver::TS, rmin::T, (::Type{TI})=Int
-) where {T,TS<:AbstractFEASolver,TI<:Integer}
-    elementinfo = solver.elementinfo
-    metadata = FilterMetadata(T, TI)
-    nodal_grad = T[]
-    last_grad = T[]
-    cell_weights = T[]
-    return SensFilter(
-        Val(false), elementinfo, metadata, rmin, nodal_grad, last_grad, cell_weights
+        elementinfo, metadata, rmin, nodal_grad, last_grad, cell_weights
     )
 end
 
 function (cf::SensFilter)(x::PseudoDensities{I,P}) where {I,P}
     return PseudoDensities{I,P,true}(x.x)
 end
-function ChainRulesCore.rrule(cf::SensFilter{true}, x::PseudoDensities)
+function ChainRulesCore.rrule(cf::SensFilter, x::PseudoDensities)
     return x,
     Δ -> begin
         if hasproperty(Δ, :x)
@@ -70,7 +50,6 @@ function ChainRulesCore.rrule(cf::SensFilter{true}, x::PseudoDensities)
         else
             newΔ = copy(Δ)
         end
-        cf.rmin <= 0 && return (NoTangent(), Tangent{typeof(x)}(; x=newΔ))
         @unpack elementinfo, nodal_grad, cell_weights, metadata = cf
         @unpack black, white, varind, cellvolumes, cells = elementinfo
         @unpack cell_neighbouring_nodes, cell_node_weights = metadata
