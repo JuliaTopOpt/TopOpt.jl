@@ -6,7 +6,7 @@ using WriteVTK
 export save_mesh
 
 function save_mesh(filename::AbstractString, problem::StiffnessTopOptProblem)
-    topology = ones(getncells(TopOptProblems.getdh(problem).grid))
+    topology = ones(Ferrite.getncells(TopOptProblems.getdh(problem).grid))
     vtkfile = WriteVTK.vtk_grid(filename, problem, topology)
     return outfiles = WriteVTK.vtk_save(vtkfile)
 end
@@ -56,7 +56,7 @@ end
 
 # Support for HeatTransferTopOptProblem
 function save_mesh(filename::AbstractString, problem::HeatTransferTopOptProblem)
-    topology = ones(getncells(TopOptProblems.getdh(problem).grid))
+    topology = ones(Ferrite.getncells(TopOptProblems.getdh(problem).grid))
     vtkfile = WriteVTK.vtk_grid(filename, problem, topology)
     return outfiles = WriteVTK.vtk_save(vtkfile)
 end

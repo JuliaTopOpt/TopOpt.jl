@@ -2,7 +2,7 @@ function assemble(
     problem::AbstractTopOptProblem,
     elementinfo::ElementFEAInfo,
     vars=ones(floattype(problem), getncells(getdh(problem).grid)),
-    penalty=PowerPenalty(floattype(problem)),
+    penalty=PowerPenalty(floattype(problem)(3.0)),
     xmin=floattype(problem)(0.001),
 )
     T = floattype(problem)
@@ -20,7 +20,7 @@ function assemble!(
     problem::AbstractTopOptProblem,
     elementinfo::ElementFEAInfo,
     vars=ones(floattype(problem), getncells(getdh(problem).grid)),
-    penalty=PowerPenalty(floattype(problem)),
+    penalty=PowerPenalty(floattype(problem)(3.0)),
     xmin=floattype(problem)(0.001);
     assemble_f=true,
 )

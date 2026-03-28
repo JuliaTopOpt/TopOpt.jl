@@ -5,8 +5,8 @@ struct DensityFilter{_filtering,T,TM<:FilterMetadata,TJ<:AbstractMatrix{T}} <:
     rmin::T
     jacobian::TJ
 end
-function Base.show(::IO, ::MIME{Symbol("text/plain")}, ::DensityFilter)
-    return println("TopOpt density filter")
+function Base.show(io::IO, ::MIME{Symbol("text/plain")}, ::DensityFilter)
+    return println(io, "TopOpt density filter")
 end
 Nonconvex.NonconvexCore.getdim(f::DensityFilter) = size(f.jacobian, 1)
 DensityFilter{true}(args...) = DensityFilter(Val(true), args...)

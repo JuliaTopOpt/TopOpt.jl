@@ -12,7 +12,35 @@ julia --project=. -e "using Pkg; Pkg.test()"
 # Run specific test group (GROUP env var)
 julia --project=. -e "ENV[\"GROUP\"]=\"Core_Tests\"; using Pkg; Pkg.test()"
 
-# Available test groups: Core_Tests, Extended_Tests, Examples_1, Examples_2, Examples_3, WCSMO14_1, WCSMO14_2
+# Available test groups: Core_Tests_1, Core_Tests_2, Examples_1, Examples_2, Examples_3, Examples_4, WCSMO14_1, WCSMO14_2
+```
+
+### Test Structure
+Tests are organized in `test/` directory mirroring source structure:
+- `test/Functions/` - Objective/constraint function tests
+  - `test_function_utils.jl` - Function utilities and base types
+  - `test_trace.jl` - Trace estimation functions
+  - `test_block_compliance.jl` - Block compliance functionality
+  - `test_thermal_compliance.jl` - Thermal compliance tests
+  - `test_common_fns.jl` - Common function tests
+  - `test_show.jl` - Display method tests
+- `test/Algorithms/` - Algorithm tests (BESO, GESO)
+- `test/FEA/` - Finite element analysis tests
+- `test/TopOptProblems/` - Problem definition tests
+- `test/TrussTopOptProblems/` - Truss problem tests
+- `test/CheqFilters/` - Filter tests
+- `test/Utilities/` - Utility tests
+- `test/examples/` - Integration examples
+- `test/integration/` - End-to-end integration tests
+
+### Testing Patterns
+- **SafeTestsets**: All tests use SafeTestsets for isolation
+- **Reproducible seeds**: Random seed 42 for consistent results
+- **Standard problems**: `HalfMBB`, `PointLoadCantilever` for 2D tests
+- **Tolerances**: 1e-5 for most tests, 1e-4 for gradient validations
+- **Gradient validation**: Combine Zygote with FiniteDifferences
+- **Standard setup**: `(2, 2)` elements for 2D, `(2, 2, 2)` for 3D
+- **Material defaults**: E=1.0, ν=0.3, ρ=1.0
 ```
 
 ### Code Formatting

@@ -20,8 +20,8 @@ mutable struct ElementK{
     xmin::T
 end
 
-function Base.show(::IO, ::MIME{Symbol("text/plain")}, ::ElementK)
-    return println("TopOpt element stiffness matrix construction function")
+function Base.show(io::IO, ::MIME{Symbol("text/plain")}, ::ElementK)
+    return println(io, "TopOpt element stiffness matrix construction function")
 end
 
 function ElementK(solver::AbstractFEASolver)

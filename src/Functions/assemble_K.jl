@@ -6,8 +6,8 @@ mutable struct AssembleK{
     global_dofs::Tg # preallocated dof vector for a cell
 end
 
-function Base.show(::IO, ::MIME{Symbol("text/plain")}, ::AssembleK)
-    return println("TopOpt global linear stiffness matrix assembly function")
+function Base.show(io::IO, ::MIME{Symbol("text/plain")}, ::AssembleK)
+    return println(io, "TopOpt global linear stiffness matrix assembly function")
 end
 
 function AssembleK(problem::StiffnessTopOptProblem)

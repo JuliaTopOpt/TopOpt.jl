@@ -5,11 +5,12 @@ struct MatrixOperator{Tconv,TK,Tf} <: AbstractMatrixOperator{Tconv}
     f::Tf
     conv::Tconv
 end
-function Base.show(::IO, ::MIME{Symbol("text/plain")}, ::MatrixOperator)
-    return println("TopOpt matrix linear operator")
+function Base.show(io::IO, ::MIME{Symbol("text/plain")}, ::MatrixOperator)
+    return println(io, "TopOpt matrix linear operator")
 end
 LinearAlgebra.mul!(c, op::MatrixOperator, b) = mul!(c, op.K, b)
-Base.size(op::MatrixOperator, i...) = size(op.K, i...)
+Base.size(op::MatrixOperator) = (size(op.K, 1), size(op, 2))
+Base.size(op::MatrixOperator, i) = size(op.K, i)
 Base.eltype(op::MatrixOperator) = eltype(op.K)
 LinearAlgebra.:*(op::MatrixOperator, b) = mul!(similar(b), op.K, b)
 
@@ -36,8 +37,8 @@ struct MatrixFreeOperator{
     penalty::Tp
     conv::Tconv
 end
-function Base.show(::IO, ::MIME{Symbol("text/plain")}, ::MatrixFreeOperator)
-    return println("TopOpt matrix-free linear operator")
+function Base.show(io::IO, ::MIME{Symbol("text/plain")}, ::MatrixFreeOperator)
+    return println(io, "TopOpt matrix-free linear operator")
 end
 Base.size(op::MatrixFreeOperator) = (size(op, 1), size(op, 2))
 Base.size(op::MatrixFreeOperator, i) = 1 <= i <= 2 ? length(op.elementinfo.fixedload) : 1
@@ -80,11 +81,7 @@ function mul!(y::TV, A::MatrixFreeOperator, x::TV) where {TV<:AbstractVector}
         for j in 1:dofspercell
             xe = @set xe[j] = x[cell_dofs[j, i]]
         end
-        if eltype(Kes) <: Symmetric
-            xes[i] = px * (bcmatrix(Kes[i]).data * xe)
-        else
-            xes[i] = px * (bcmatrix(Kes[i]) * xe)
-        end
+        xes[i] = px * (bcmatrix(Kes[i]).data * xe)
     end
 
     for i in 1:length(fixed_dofs)

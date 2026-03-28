@@ -88,8 +88,8 @@ struct PointLoadCantilever{
     varind::Tv
     metadata::Tm
 end
-function Base.show(::IO, ::MIME{Symbol("text/plain")}, ::PointLoadCantilever)
-    return println("TopOpt point load cantilever beam problem")
+function Base.show(io::IO, ::MIME{Symbol("text/plain")}, ::PointLoadCantilever)
+    return println(io, "TopOpt point load cantilever beam problem")
 end
 
 """
@@ -259,8 +259,8 @@ struct HalfMBB{
     varind::Tv
     metadata::Tm
 end
-function Base.show(::IO, ::MIME{Symbol("text/plain")}, ::HalfMBB)
-    return println("TopOpt half MBB problem")
+function Base.show(io::IO, ::MIME{Symbol("text/plain")}, ::HalfMBB)
+    return println(io, "TopOpt half MBB problem")
 end
 
 """
@@ -434,7 +434,7 @@ struct LBeam{
     varind::Tv
     metadata::Tm
 end
-Base.show(::IO, ::MIME{Symbol("text/plain")}, ::LBeam) = println("TopOpt L-beam problem")
+Base.show(io::IO, ::MIME{Symbol("text/plain")}, ::LBeam) = println(io, "TopOpt L-beam problem")
 
 """
     LBeam(::Type{Val{CellType}}, ::Type{T}=Float64; length = 100, height = 100, upperslab = 50, lowerslab = 50, E = 1.0, ν = 0.3, force = 1.0) where {T, CellType}
@@ -622,8 +622,8 @@ struct TieBeam{
     varind::Tv
     metadata::Tm
 end
-function Base.show(::IO, ::MIME{Symbol("text/plain")}, ::TieBeam)
-    return println("TopOpt tie-beam problem")
+function Base.show(io::IO, ::MIME{Symbol("text/plain")}, ::TieBeam)
+    return println(io, "TopOpt tie-beam problem")
 end
 
 """
@@ -878,8 +878,8 @@ struct HeatConductionProblem{
     metadata::Tm
 end
 
-function Base.show(::IO, ::MIME{Symbol("text/plain")}, ::HeatConductionProblem)
-    return println("TopOpt heat conduction problem")
+function Base.show(io::IO, ::MIME{Symbol("text/plain")}, ::HeatConductionProblem)
+    return println(io, "TopOpt heat conduction problem")
 end
 
 getheatfluxdict(p::HeatConductionProblem) = p.heatfluxdict

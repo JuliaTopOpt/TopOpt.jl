@@ -37,7 +37,7 @@ struct GESO{T<:Real,TF<:AbstractCheqFilter} <: TopOptAlgorithm
     sens_tol::T
     result::GESOResult{T,Vector{T}}
 end
-Base.show(::IO, ::MIME{Symbol("text/plain")}, ::GESO) = println("TopOpt GESO algorithm")
+Base.show(io::IO, ::MIME{Symbol("text/plain")}, ::GESO) = println(io, "TopOpt GESO algorithm")
 
 function GESO(
     comp::Compliance,

@@ -125,3 +125,45 @@ end # end testset
     fig = visualize(problem; topology=result.minimizer)
     Makie.display(fig)
 end # end testset
+
+@testset "TrussProblem show methods" begin
+    ins_dir = joinpath(@__DIR__, "instances", "ground_meshes")
+    problem_file = joinpath(ins_dir, "tim_2d.json")
+    
+    node_points, elements, _, _, fixities, load_cases = load_truss_json(problem_file)
+    loads = load_cases["0"]
+    mat = TrussFEAMaterial(1.0, 0.3)
+    crossec = TrussFEACrossSec(800.0)
+    problem = TrussProblem(
+        Val{:Linear}, node_points, elements, loads, fixities, mat, crossec
+    )
+    
+    @testset "TrussProblem show" begin
+        io = IOBuffer()
+        show(io, MIME("text/plain"), problem)
+        output = String(take!(io))
+        @test output != ""
+    end
+
+    @testset "TrussFEAMaterial show" begin
+        io = IOBuffer()
+        show(io, MIME("text/plain"), mat)
+        output = String(take!(io))
+        @test occursin("TrussFEAMaterial", output) || output != ""
+    end
+
+    @testset "TrussFEACrossSec show" begin
+        io = IOBuffer()
+        show(io, MIME("text/plain"), crossec)
+        output = String(take!(io))
+        @test occursin("TrussFEACrossSec", output) || output != ""
+    end
+
+    @testset "PointLoadCantileverTruss show" begin
+        problem = PointLoadCantileverTruss((6, 4), (1.0, 1.0); k_connect=1)
+        io = IOBuffer()
+        show(io, MIME("text/plain"), problem)
+        output = String(take!(io))
+        @test output != ""
+    end
+end

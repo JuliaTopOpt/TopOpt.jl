@@ -269,17 +269,17 @@ function (s::GenericFEASolver{T,Physics,Solver})(
 end
 
 # Show methods
-function Base.show(::IO, ::MIME{Symbol("text/plain")}, ::GenericFEASolver{T,LinearElasticity,DirectSolver}) where {T}
-    return println("TopOpt direct structural solver (GenericFEASolver)")
+function Base.show(io::IO, ::MIME{Symbol("text/plain")}, ::GenericFEASolver{T,LinearElasticity,DirectSolver}) where {T}
+    return println(io, "TopOpt direct structural solver (GenericFEASolver)")
 end
-function Base.show(::IO, ::MIME{Symbol("text/plain")}, ::GenericFEASolver{T,HeatTransfer,DirectSolver}) where {T}
-    return println("TopOpt direct heat transfer solver (GenericFEASolver)")
+function Base.show(io::IO, ::MIME{Symbol("text/plain")}, ::GenericFEASolver{T,HeatTransfer,DirectSolver}) where {T}
+    return println(io, "TopOpt direct heat transfer solver (GenericFEASolver)")
 end
-function Base.show(::IO, ::MIME{Symbol("text/plain")}, ::GenericFEASolver{T,LinearElasticity,CGAssemblySolver}) where {T}
-    return println("TopOpt CG with assembly structural solver (GenericFEASolver)")
+function Base.show(io::IO, ::MIME{Symbol("text/plain")}, ::GenericFEASolver{T,LinearElasticity,CGAssemblySolver}) where {T}
+    return println(io, "TopOpt CG with assembly structural solver (GenericFEASolver)")
 end
-function Base.show(::IO, ::MIME{Symbol("text/plain")}, ::GenericFEASolver{T,LinearElasticity,CGMatrixFreeSolver}) where {T}
-    return println("TopOpt matrix-free CG structural solver (GenericFEASolver)")
+function Base.show(io::IO, ::MIME{Symbol("text/plain")}, ::GenericFEASolver{T,LinearElasticity,CGMatrixFreeSolver}) where {T}
+    return println(io, "TopOpt matrix-free CG structural solver (GenericFEASolver)")
 end
 
 Utilities.getpenalty(solver::AbstractFEASolver) = solver.penalty
@@ -361,11 +361,7 @@ function FEASolver(
 
     # Compute meandiag and xes for matrix-free solvers
     if Solver === CGMatrixFreeSolver
-        if eltype(elementinfo.Kes) <: Symmetric
-            f = x -> sumdiag(rawmatrix(x).data)
-        else
-            f = x -> sumdiag(rawmatrix(x))
-        end
+        f = x -> sumdiag(rawmatrix(x).data)
         meandiag = mapreduce(f, +, elementinfo.Kes; init=zero(T))
         xes = deepcopy(elementinfo.fes)
         fixed_dofs = problem.ch.prescribed_dofs

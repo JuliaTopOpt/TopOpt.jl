@@ -8,8 +8,8 @@ mutable struct TrussStress{
     maxfevals::Int
 end
 
-function Base.show(::IO, ::MIME{Symbol("text/plain")}, ::TrussStress)
-    return println("TopOpt truss stress function")
+function Base.show(io::IO, ::MIME{Symbol("text/plain")}, ::TrussStress)
+    return println(io, "TopOpt truss stress function")
 end
 
 """

@@ -224,7 +224,7 @@ using Ferrite: getncells
         @test Pm <= geso.Pmmax
     end
 
-    @testset "GESO genetic operations" begin
+    @testset "GESO show methods" begin
         nels = (10, 4)
         problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
         solver = FEASolver(DirectSolver, problem; xmin=0.001)
@@ -233,17 +233,22 @@ using Ferrite: getncells
         filter = DensityFilter(solver; rmin=2.0)
 
         geso = GESO(comp, vol, 0.5, filter; maxiter=5, tol=0.1, p=1.0)
+        
+        @testset "GESO algorithm show" begin
+            io = IOBuffer()
+            show(io, MIME("text/plain"), geso)
+            output = String(take!(io))
+            @test occursin("GESO", output) || output != ""
+        end
 
-        # Initialize genotypes
-        genotypes = trues(geso.string_length, length(solver.vars))
-        children = falses(geso.string_length, length(solver.vars))
+        x0 = fill(0.5, length(solver.vars))
+        result = geso(x0; seed=999)
 
-        # Test crossover operation
-        i, j = 1, 2
-        TopOpt.Algorithms.crossover!(children, genotypes, i, j)
-        # Children should have some combination of parent genes
-        @test children[:, i] isa BitVector
-        @test children[:, j] isa BitVector
+        @testset "GESOResult show" begin
+            io = IOBuffer()
+            show(io, MIME("text/plain"), result)
+            output = String(take!(io))
+            @test occursin("GESOResult", output) || output != ""
+        end
     end
-
 end

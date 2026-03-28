@@ -9,8 +9,8 @@ struct SensFilter{
     last_grad::TV
     cell_weights::TV
 end
-function Base.show(::IO, ::MIME{Symbol("text/plain")}, ::SensFilter)
-    return println("TopOpt sensitivity filter")
+function Base.show(io::IO, ::MIME{Symbol("text/plain")}, ::SensFilter)
+    return println(io, "TopOpt sensitivity filter")
 end
 
 SensFilter{true}(args...) = SensFilter(Val(true), args...)

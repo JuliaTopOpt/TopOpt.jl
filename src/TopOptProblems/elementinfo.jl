@@ -123,8 +123,8 @@ mutable struct GlobalFEAInfo{T,TK<:AbstractMatrix{T},Tf<:AbstractVector{T},Tc,Tq
     cholK::Tc
     qrK::Tq
 end
-function Base.show(::IO, ::MIME{Symbol("text/plain")}, ::GlobalFEAInfo)
-    return println("TopOpt global FEA information")
+function Base.show(io::IO, ::MIME{Symbol("text/plain")}, ::GlobalFEAInfo)
+    return println(io, "TopOpt global FEA information")
 end
 
 """
