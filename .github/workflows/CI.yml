@@ -49,6 +49,8 @@ jobs:
         if: contains(matrix.group, 'Opposite_Preference')
         run: |
           julia --project=. -e '
+            using Pkg
+            Pkg.instantiate()
             using Preferences
             # Set preference for TopOpt (UUID, name tuple format)
             Preferences.set_preferences!(
