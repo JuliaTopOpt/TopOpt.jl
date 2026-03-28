@@ -19,30 +19,6 @@ struct CGMatrixFreeSolver <: AbstractLinearSolver end     # Matrix-free CG
 export AbstractPhysics, LinearElasticity, HeatTransfer
 export AbstractLinearSolver, DirectSolver, CGAssemblySolver, CGMatrixFreeSolver
 
-# Export shared abstractions
-export supports_reuse_fact
-
-# Trait for solver capabilities - factorization-based solvers support reuse
-supports_reuse_fact(::Type{<:AbstractFEASolver}) = false
-
-# Common initialization for direct solvers
-function init_direct_solver(
-    sp::AbstractTopOptProblem,
-    quad_order::Int,
-    xmin::T,
-    penalty::AbstractPenalty{T},
-    prev_penalty::AbstractPenalty{T},
-    qr::Bool,
-) where {T}
-    elementinfo = ElementFEAInfo(sp, quad_order, Val{:Static})
-    globalinfo = GlobalFEAInfo(sp)
-    u = zeros(T, ndofs(sp.ch.dh))
-    lhs = similar(u)
-    rhs = similar(u)
-    vars = fill(one(T), getncells(sp.ch.dh.grid) - sum(sp.black) - sum(sp.white))
-    return elementinfo, globalinfo, u, lhs, rhs, vars
-end
-
 # ============================================================================
 # Unified GenericFEASolver with Two-Layered Dispatch
 # ============================================================================
@@ -91,12 +67,6 @@ mutable struct GenericFEASolver{
 end
 
 export GenericFEASolver
-
-# Physics-specific matrix building dispatch
-# These functions dispatch on physics type to build the correct element matrices
-function build_element_matrices(::Type{LinearElasticity}, problem::StiffnessTopOptProblem{dim,T}, quad_order) where {dim,T}
-    return make_Kes_and_fes(problem, quad_order, Val{:Static})
-end
 
 # Linear solver algorithm dispatch
 # These functions dispatch on the linear solver type to solve the system

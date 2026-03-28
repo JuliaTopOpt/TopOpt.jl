@@ -54,7 +54,7 @@ function (ek::ElementK)(xe::Number, ci::Integer)
     if PENALTY_BEFORE_INTERPOLATION
         px = density(penalty(xe), xmin)
     else
-        px = penalty(density(xe), xmin)
+        px = penalty(density(xe, xmin))
     end
     return px * Kes_0[ci]
 end

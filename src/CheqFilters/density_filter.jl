@@ -1,6 +1,5 @@
-struct DensityFilter{_filtering,T,TM<:FilterMetadata,TJ<:AbstractMatrix{T}} <:
+struct DensityFilter{T,TM<:FilterMetadata,TJ<:AbstractMatrix{T}} <:
        AbstractDensityFilter
-    filtering::Val{_filtering}
     metadata::TM
     rmin::T
     jacobian::TJ
@@ -9,17 +8,10 @@ function Base.show(io::IO, ::MIME{Symbol("text/plain")}, ::DensityFilter)
     return println(io, "TopOpt density filter")
 end
 Nonconvex.NonconvexCore.getdim(f::DensityFilter) = size(f.jacobian, 1)
-DensityFilter{true}(args...) = DensityFilter(Val(true), args...)
-DensityFilter{false}(args...) = DensityFilter(Val(false), args...)
 
-DensityFilter(solver; rmin) = DensityFilter(Val(true), solver, rmin)
+DensityFilter(solver; rmin) = DensityFilter(solver, rmin)
 function DensityFilter(
-    ::Val{filtering}, solver::AbstractFEASolver, args...
-) where {filtering}
-    return DensityFilter(Val(filtering), solver, args...)
-end
-function DensityFilter(
-    ::Val{true}, solver::TS, rmin::T, (::Type{TI})=Int
+    solver::TS, rmin::T, (::Type{TI})=Int
 ) where {T,TI<:Integer,TS<:AbstractFEASolver}
     metadata = FilterMetadata(solver, rmin, TI)
     TM = typeof(metadata)
@@ -32,32 +24,21 @@ function DensityFilter(
     nel = length(black)
     nfc = sum(black) + sum(white)
     jacobian = getJacobian(solver, metadata)
-    return DensityFilter(Val(true), metadata, rmin, jacobian)
+    return DensityFilter(metadata, rmin, jacobian)
 end
 
-function DensityFilter(
-    ::Val{false}, solver::TS, rmin::T, (::Type{TI})=Int
-) where {T,TS<:AbstractFEASolver,TI<:Integer}
-    metadata = FilterMetadata(T, TI)
-    jacobian = zeros(T, 0, 0)
-    return DensityFilter(Val(false), metadata, rmin, jacobian)
-end
-
-function (cf::DensityFilter{true,T})(x::PseudoDensities{I,P}) where {I,P,T}
-    cf.rmin <= 0 && return PseudoDensities{I,P,true}(x.x)
+function (cf::DensityFilter)(x::PseudoDensities{I,P}) where {I,P}
     @unpack jacobian = cf
     out = similar(x.x)
     mul!(out, jacobian, x.x)
     return PseudoDensities{I,P,true}(out)
 end
-function ChainRulesCore.rrule(f::DensityFilter{true}, x::PseudoDensities)
+function ChainRulesCore.rrule(f::DensityFilter, x::PseudoDensities)
     return f(x), Δ -> begin
         _Δ = hasproperty(Δ, :x) ? Δ.x : Δ
         (nothing, Tangent{typeof(x)}(; x=f.jacobian' * _Δ))
     end
 end
-
-(cf::DensityFilter{false})(x) = x
 
 function getJacobian(solver, metadata::FilterMetadata)
     @unpack elementinfo, problem = solver
@@ -142,7 +123,7 @@ function (cf::ProjectedDensityFilter)(x::PseudoDensities{I,P}) where {I,P}
     else
         fx = cf.preproj.(x.x)
     end
-    fx = cf.filter(fx)
+    fx = cf.filter(PseudoDensities{I,P,true}(fx)).x
     if cf.postproj isa Nothing
         out = fx
     else

@@ -2,7 +2,24 @@ using Test, SafeTestsets
 
 const GROUP = get(ENV, "GROUP", "All")
 
-if GROUP == "All" || GROUP == "Core_Tests_1"
+# Check if we're running opposite preference tests
+const OPPOSITE_PREFERENCE = occursin("Opposite_Preference", GROUP)
+
+if OPPOSITE_PREFERENCE
+    using TopOpt
+    # Skip tests if preference is not set to false (i.e., still default/true)
+    if TopOpt.PENALTY_BEFORE_INTERPOLATION != false
+        @info "Skipping tests: PENALTY_BEFORE_INTERPOLATION is not false (current value: $(TopOpt.PENALTY_BEFORE_INTERPOLATION))"
+        exit(0)  # Exit successfully but skip all tests
+    else
+        @info "Running tests with PENALTY_BEFORE_INTERPOLATION = false"
+    end
+end
+
+# Strip the _Opposite_Preference suffix to get the actual test group
+const ACTUAL_GROUP = replace(GROUP, "_Opposite_Preference" => "")
+
+if ACTUAL_GROUP in ("All", "Core_Tests")
     @safetestset "InpParser Tests" begin
         include("inp_parser/parser.jl")
     end
@@ -27,13 +44,11 @@ if GROUP == "All" || GROUP == "Core_Tests_1"
         include("Functions/test_trace.jl")
         include("Functions/test_block_compliance.jl")
     end
-end
-
-if GROUP == "All" || GROUP == "Core_Tests_2"
     @safetestset "Solver" begin
         include("FEA/solvers.jl")
         include("FEA/test_convergence.jl")
         include("FEA/test_simulate.jl")
+        include("FEA/test_cg_energy_criteria.jl")
         include("FEA/misc.jl")
     end
     @safetestset "Utilities" begin
@@ -60,25 +75,25 @@ if GROUP == "All" || GROUP == "Core_Tests_2"
     end
 end
 
-if GROUP == "All" || GROUP == "Examples_1"
+if ACTUAL_GROUP in ("All", "Examples_1")
     @safetestset "CSIMP example" begin
         include("examples/csimp.jl")
     end
 end
 
-if GROUP == "All" || GROUP == "Examples_2"
+if ACTUAL_GROUP in ("All", "Examples_2")
     @safetestset "Global stress example" begin
         include("examples/global_stress.jl")
     end
 end
 
-if GROUP == "All" || GROUP == "Examples_3"
+if ACTUAL_GROUP in ("All", "Examples_3")
     @safetestset "Local stress example" begin
         include("examples/local_stress.jl")
     end
 end
 
-if GROUP == "All" || GROUP == "Examples_4"
+if ACTUAL_GROUP in ("All", "Examples_4")
     @safetestset "More examples" begin
         include("examples/test_examples.jl")
     end
@@ -96,7 +111,7 @@ if GROUP == "All" || GROUP == "Examples_4"
     end
 end
 
-if GROUP == "All" || GROUP == "WCSMO14_1"
+if ACTUAL_GROUP in ("All", "WCSMO14_1")
     # This was originlly part of https://github.com/JuliaTopOpt/TopOpt.jl_WCSMO21
     @safetestset "Continuum demos" begin
         include("wcsmo14/demos/continuum/cont_compliance1.jl")
@@ -105,7 +120,7 @@ if GROUP == "All" || GROUP == "WCSMO14_1"
     end
 end
 
-if GROUP == "All" || GROUP == "WCSMO14_2"
+if ACTUAL_GROUP in ("All", "WCSMO14_2")
     # This was originlly part of https://github.com/JuliaTopOpt/TopOpt.jl_WCSMO21
     @safetestset "Truss 2d demos" begin
         include("wcsmo14/demos/truss/truss_compliance_2d1.jl")

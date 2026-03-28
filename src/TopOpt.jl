@@ -1,7 +1,29 @@
 module TopOpt
 
-const PENALTY_BEFORE_INTERPOLATION = true
-using Reexport, ChainRulesCore
+using Reexport, ChainRulesCore, Preferences
+
+"""
+    PENALTY_BEFORE_INTERPOLATION
+
+Package preference for penalty application order.
+Default is `true` (penalty applied before density interpolation).
+Can be set using `Preferences.jl` with:
+    using Preferences, TopOpt
+    set_preferences!(TopOpt, "penalty_before_interpolation" => true/false)
+
+Note: Changing this preference requires restarting Julia and recompiling the package.
+"""
+const PENALTY_BEFORE_INTERPOLATION = let
+    pref = @load_preference("penalty_before_interpolation", "true")
+    if pref isa Bool
+        pref
+    else
+        parse(Bool, pref)
+    end
+end
+
+export PENALTY_BEFORE_INTERPOLATION
+
 
 @reexport using Nonconvex, NonconvexMMA, NonconvexSemidefinite, NonconvexPercival
 
