@@ -5,7 +5,6 @@ mutable struct Volume{
     cellvolumes::Tc
     grad::Tg
     total_volume::T
-    fixed_volume::T
     fraction::Bool
 end
 function Base.show(io::IO, ::MIME{Symbol("text/plain")}, ::Volume)
@@ -34,49 +33,35 @@ function project(f::Volume, V, x)
 end
 
 function Volume(solver::AbstractFEASolver; fraction=true)
-    problem = solver.problem
-    dh = problem.ch.dh
-    varind = problem.varind
-    black = problem.black
-    white = problem.white
-    vars = solver.vars
-    cellvolumes = solver.elementinfo.cellvolumes
     T = eltype(solver.vars)
-    grad = zeros(T, length(vars))
-    for (i, _) in enumerate(CellIterator(dh))
-        if !(black[i]) && !(white[i])
-            grad[varind[i]] = cellvolumes[i]
-        end
-    end
+    cellvolumes = solver.elementinfo.cellvolumes
+    # Gradient for all elements (full density vector)
+    grad = copy(cellvolumes)
     total_volume = sum(cellvolumes)
-    fixed_volume = dot(black, cellvolumes)
     if fraction
         grad ./= total_volume
     end
-    return Volume(solver, cellvolumes, grad, total_volume, fixed_volume, fraction)
+    return Volume(solver, cellvolumes, grad, total_volume, fraction)
 end
+
 function (v::Volume{T})(x::PseudoDensities) where {T}
-    problem = v.solver.problem
-    varind = problem.varind
-    black = problem.black
-    white = problem.white
-    cellvolumes = v.cellvolumes
-    total_volume = v.total_volume
-    fixed_volume = v.fixed_volume
-    fraction = v.fraction
-    vol = compute_volume(cellvolumes, x, fixed_volume, varind, black, white)
-    return fraction ? vol / total_volume : vol
+    vol = compute_volume(v.cellvolumes, x.x)
+    return v.fraction ? vol / v.total_volume : vol
 end
+
 function ChainRulesCore.rrule(vol::Volume, x::PseudoDensities)
     return vol(x), Δ -> (nothing, Tangent{typeof(x)}(; x=Δ * vol.grad))
 end
 
-function compute_volume(cellvolumes::Vector, x, fixed_volume, varind, black, white)
-    vol = fixed_volume
-    for i in 1:length(cellvolumes)
-        if !(black[i]) && !(white[i])
-            vol += x[varind[i]] * cellvolumes[i]
-        end
-    end
-    return vol
+"""
+    compute_volume(cellvolumes::Vector, x)
+
+Compute volume: V = Σ x_e * V_e where x_e is density and V_e is element volume.
+
+Note: x is the full density vector (after projection if using FixedElementProjector).
+Black/white elements are handled by the projector - this function receives the
+already-projected densities.
+"""
+function compute_volume(cellvolumes::Vector, x)
+    return dot(x, cellvolumes)
 end

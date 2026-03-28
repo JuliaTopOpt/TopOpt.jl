@@ -6,9 +6,6 @@ using Ferrite: Cell
 An abstract stiffness topology optimization problem. All subtypes must have the following fields:
 - `ch`: a `Ferrite.ConstraintHandler` struct
 - `metadata`: Metadata having various cell-node-dof relationships
-- `black`: a `BitVector` of length equal to the number of elements where `black[e]` is 1 iff the `e`^th element must be part of the final design
-- `white`:  a `BitVector` of length equal to the number of elements where `white[e]` is 1 iff the `e`^th element must not be part of the final design
-- `varind`: an `AbstractVector{Int}` of length equal to the number of elements where `varind[e]` gives the index of the decision variable corresponding to element `e`. Because some elements can be fixed to be black or white, not every element has a decision variable associated.
 """
 abstract type StiffnessTopOptProblem{dim,T} <: AbstractTopOptProblem end
 
@@ -42,9 +39,6 @@ struct PointLoadCantilever{dim, T, N, M} <: StiffnessTopOptProblem{dim, T}
     ch::ConstraintHandler{<:DofHandler{dim, <:Cell{dim,N,M}, T}, T}
     force::T
     force_dof::Integer
-    black::AbstractVector
-    white::AbstractVector
-    varind::AbstractVector{Int}
     metadata::Metadata
 end
 ```
@@ -60,9 +54,6 @@ end
 - `force_dof`: dof number at which the force is applied
 - `ch`: a `Ferrite.ConstraintHandler` struct
 - `metadata`: Metadata having various cell-node-dof relationships
-- `black`: a `BitVector` of length equal to the number of elements where `black[e]` is 1 iff the `e`^th element must be part of the final design
-- `white`:  a `BitVector` of length equal to the number of elements where `white[e]` is 1 iff the `e`^th element must not be part of the final design
-- `varind`: an `AbstractVector{Int}` of length equal to the number of elements where `varind[e]` gives the index of the decision variable corresponding to element `e`. Because some elements can be fixed to be black or white, not every element has a decision variable associated.
 """
 struct PointLoadCantilever{
     dim,
@@ -72,9 +63,6 @@ struct PointLoadCantilever{
     Tr<:RectilinearGrid{dim,T,N,M},
     Tc<:ConstraintHandler{<:DofHandler{dim,<:Cell{dim,N,M},T},T},
     Tf<:Integer,
-    Tb<:AbstractVector,
-    Tw<:AbstractVector,
-    Tv<:AbstractVector{Int},
     Tm<:Metadata,
 } <: StiffnessTopOptProblem{dim,T}
     rect_grid::Tr
@@ -83,9 +71,6 @@ struct PointLoadCantilever{
     ch::Tc
     force::T
     force_dof::Tf
-    black::Tb
-    white::Tw
-    varind::Tv
     metadata::Tm
 end
 function Base.show(io::IO, ::MIME{Symbol("text/plain")}, ::PointLoadCantilever)
@@ -186,11 +171,8 @@ function PointLoadCantilever(
     N = nnodespercell(rect_grid)
     M = nfacespercell(rect_grid)
 
-    black, white = find_black_and_white(dh)
-    varind = find_varind(black, white)
-
     return PointLoadCantilever(
-        rect_grid, E, ν, ch, force, force_dof, black, white, varind, metadata
+        rect_grid, E, ν, ch, force, force_dof, metadata
     )
 end
 
@@ -204,7 +186,7 @@ O*                               *
 O*                               *
 O*                               *
 O*********************************
-                                 O
+
 
 struct HalfMBB{dim, T, N, M} <: StiffnessTopOptProblem{dim, T}
     rect_grid::RectilinearGrid{dim, T, N, M}
@@ -213,9 +195,6 @@ struct HalfMBB{dim, T, N, M} <: StiffnessTopOptProblem{dim, T}
     ch::ConstraintHandler{<:DofHandler{dim, <:Cell{dim,N,M}, T}, T}
     force::T
     force_dof::Integer
-    black::AbstractVector
-    white::AbstractVector
-    varind::AbstractVector{Int}
     metadata::Metadata
 end
 ```
@@ -231,9 +210,6 @@ end
 - `force_dof`: dof number at which the force is applied
 - `ch`: a `Ferrite.ConstraintHandler` struct
 - `metadata`: Metadata having various cell-node-dof relationships
-- `black`: a `BitVector` of length equal to the number of elements where `black[e]` is 1 iff the `e`^th element must be part of the final design
-- `white`:  a `BitVector` of length equal to the number of elements where `white[e]` is 1 iff the `e`^th element must not be part of the final design
-- `varind`: an `AbstractVector{Int}` of length equal to the number of elements where `varind[e]` gives the index of the decision variable corresponding to element `e`. Because some elements can be fixed to be black or white, not every element has a decision variable associated.
 """
 struct HalfMBB{
     dim,
@@ -243,9 +219,6 @@ struct HalfMBB{
     Tr<:RectilinearGrid{dim,T,N,M},
     Tc<:ConstraintHandler{<:DofHandler{dim,<:Cell{dim,N,M},T},T},
     Tf<:Integer,
-    Tb<:AbstractVector,
-    Tw<:AbstractVector,
-    Tv<:AbstractVector{Int},
     Tm<:Metadata,
 } <: StiffnessTopOptProblem{dim,T}
     rect_grid::Tr
@@ -254,9 +227,6 @@ struct HalfMBB{
     ch::Tc
     force::T
     force_dof::Tf
-    black::Tb
-    white::Tw
-    varind::Tv
     metadata::Tm
 end
 function Base.show(io::IO, ::MIME{Symbol("text/plain")}, ::HalfMBB)
@@ -359,10 +329,7 @@ function HalfMBB(
     N = nnodespercell(rect_grid)
     M = nfacespercell(rect_grid)
 
-    black, white = find_black_and_white(dh)
-    varind = find_varind(black, white)
-
-    return HalfMBB(rect_grid, E, ν, ch, force, force_dof, black, white, varind, metadata)
+    return HalfMBB(rect_grid, E, ν, ch, force, force_dof, metadata)
 end
 
 nnodespercell(p::Union{PointLoadCantilever,HalfMBB}) = nnodespercell(p.rect_grid)
@@ -393,9 +360,6 @@ struct LBeam{T, N, M} <: StiffnessTopOptProblem{2, T}
     ch::ConstraintHandler{<:DofHandler{2, <:Cell{2,N,M}, T}, T}
     force::T
     force_dof::Integer
-    black::AbstractVector
-    white::AbstractVector
-    varind::AbstractVector{Int}
     metadata::Metadata
 end
 ```
@@ -409,9 +373,6 @@ end
 - `force_dof`: dof number at which the force is applied
 - `ch`: a `Ferrite.ConstraintHandler` struct
 - `metadata`: Metadata having various cell-node-dof relationships
-- `black`: a `BitVector` of length equal to the number of elements where `black[e]` is 1 iff the `e`^th element must be part of the final design
-- `white`:  a `BitVector` of length equal to the number of elements where `white[e]` is 1 iff the `e`^th element must not be part of the final design
-- `varind`: an `AbstractVector{Int}` of length equal to the number of elements where `varind[e]` gives the index of the decision variable corresponding to element `e`. Because some elements can be fixed to be black or white, not every element has a decision variable associated.
 """
 struct LBeam{
     T,
@@ -419,9 +380,6 @@ struct LBeam{
     M,
     Tc<:ConstraintHandler{<:DofHandler{2,<:Cell{2,N,M},T},T},
     Tf<:Integer,
-    Tb<:AbstractVector,
-    Tw<:AbstractVector,
-    Tv<:AbstractVector{Int},
     Tm<:Metadata,
 } <: StiffnessTopOptProblem{2,T}
     E::T
@@ -429,9 +387,6 @@ struct LBeam{
     ch::Tc
     force::T
     force_dof::Tf
-    black::Tb
-    white::Tw
-    varind::Tv
     metadata::Tm
 end
 Base.show(io::IO, ::MIME{Symbol("text/plain")}, ::LBeam) = println(io, "TopOpt L-beam problem")
@@ -505,12 +460,7 @@ function LBeam(
     node_dofs = metadata.node_dofs
     force_dof = node_dofs[2, fnode]
 
-    black, white = find_black_and_white(dh)
-    varind = find_varind(black, white)
-
-    TInds = typeof(varind)
-    TMeta = typeof(metadata)
-    return LBeam(E, ν, ch, force, force_dof, black, white, varind, metadata)
+    return LBeam(E, ν, ch, force, force_dof, metadata)
 end
 
 function boundingbox(nodes::Vector{Node{dim,T}}) where {dim,T}
@@ -584,9 +534,6 @@ struct TieBeam{T, N, M} <: StiffnessTopOptProblem{2, T}
     ν::T
     force::T
     ch::ConstraintHandler{<:DofHandler{2, N, T, M}, T}
-    black::AbstractVector
-    white::AbstractVector
-    varind::AbstractVector{Int}
     metadata::Metadata
 end
 ```
@@ -599,27 +546,18 @@ end
 - `force`: force at the center right of the cantilever beam (positive is downward)
 - `ch`: a `Ferrite.ConstraintHandler` struct
 - `metadata`: Metadata having various cell-node-dof relationships
-- `black`: a `BitVector` of length equal to the number of elements where `black[e]` is 1 iff the `e`^th element must be part of the final design
-- `white`:  a `BitVector` of length equal to the number of elements where `white[e]` is 1 iff the `e`^th element must not be part of the final design
-- `varind`: an `AbstractVector{Int}` of length equal to the number of elements where `varind[e]` gives the index of the decision variable corresponding to element `e`. Because some elements can be fixed to be black or white, not every element has a decision variable associated.
 """
 struct TieBeam{
     T,
     N,
     M,
     Tc<:ConstraintHandler{<:DofHandler{2,<:Cell{2,N,M},T},T},
-    Tb<:AbstractVector,
-    Tw<:AbstractVector,
-    Tv<:AbstractVector{Int},
     Tm<:Metadata,
 } <: StiffnessTopOptProblem{2,T}
     E::T
     ν::T
     force::T
     ch::Tc
-    black::Tb
-    white::Tw
-    varind::Tv
     metadata::Tm
 end
 function Base.show(io::IO, ::MIME{Symbol("text/plain")}, ::TieBeam)
@@ -637,9 +575,15 @@ end
 - `CellType`: can be either `:Linear` or `:Quadratic` to determine the order of the geometric and field basis functions and element type. Only isoparametric elements are supported for now.
 """
 function TieBeam(
-    ::Type{Val{CellType}}, (::Type{T})=Float64, refine=1, force=T(1); E=T(1), ν=T(0.3)
+    ::Type{Val{CellType}},
+    (::Type{T})=Float64;
+    refine=1,
+    force=T(1),
+    E=T(1),
+    ν=T(0.3),
 ) where {T,CellType}
-    grid = TieBeamGrid(Val{CellType}, T, refine)
+    grid = TieBeamGrid(Val{CellType}, T; refine=refine)
+
     dh = DofHandler(grid)
     if CellType === :Linear
         push!(dh, :u, 2)
@@ -650,10 +594,8 @@ function TieBeam(
     close!(dh)
 
     ch = ConstraintHandler(dh)
-    dbc1 = Dirichlet(:u, getfaceset(grid, "leftfixed"), (x, t) -> T[0, 0], [1, 2])
-    add!(ch, dbc1)
-    dbc2 = Dirichlet(:u, getfaceset(grid, "toproller"), (x, t) -> T[0], [2])
-    add!(ch, dbc2)
+    dbc = Dirichlet(:u, getfaceset(grid, "left"), (x, t) -> T[0, 0], [1, 2])
+    add!(ch, dbc)
     close!(ch)
 
     t = T(0)
@@ -661,10 +603,7 @@ function TieBeam(
 
     metadata = Metadata(dh)
 
-    black, white = find_black_and_white(dh)
-    varind = find_varind(black, white)
-
-    return TieBeam(E, ν, force, ch, black, white, varind, metadata)
+    return TieBeam(E, ν, force, ch, metadata)
 end
 
 getdim(::TieBeam) = 2
@@ -697,7 +636,6 @@ This is the same form as structural compliance because Q doesn't depend on x.
 All subtypes must have:
 - `ch`: ConstraintHandler with temperature DOFs (1 DOF per node)
 - `metadata`: Metadata with cell-node-dof relationships
-- `black`, `white`, `varind`: Design variable management
 - `k`: thermal conductivity
 - `heatfluxdict`: surface heat flux on boundaries (Dict{String,Float64})
 """
@@ -763,19 +701,13 @@ struct HeatConductionProblem{
     M,
     Tr<:RectilinearGrid{dim, T, N, M},
     Tc<:ConstraintHandler{<:DofHandler{dim, <:Cell{dim, N, M}, T}, T},
-    Tb<:AbstractVector,
-    Tw<:AbstractVector,
-    Tv<:AbstractVector{Int},
-    Tm<:Metadata,
     Th<:AbstractDict{String,T},
+    Tm<:Metadata,
 } <: HeatTransferTopOptProblem{dim, T}
     rect_grid::Tr
     k::T
     ch::Tc
     heatfluxdict::Th
-    black::Tb
-    white::Tw
-    varind::Tv
     metadata::Tm
 end
 
@@ -858,9 +790,6 @@ function HeatConductionProblem(
 
     metadata = Metadata(dh)
 
-    black, white = find_black_and_white(dh)
-    varind = find_varind(black, white)
-
     # Convert heatflux dict to proper type
     heatfluxdict = Dict{String,T}()
     for (key, val) in heatflux
@@ -868,7 +797,7 @@ function HeatConductionProblem(
     end
 
     return HeatConductionProblem(
-        rect_grid, T(k), ch, heatfluxdict, black, white, varind, metadata
+        rect_grid, T(k), ch, heatfluxdict, metadata
     )
 end
 

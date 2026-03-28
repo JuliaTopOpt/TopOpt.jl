@@ -1,5 +1,5 @@
 """
-    compute_element_energy(cell_energy, grad, cell_dofs, Kes, u, black, white, varind, x, penalty, xmin)
+    compute_element_energy(cell_energy, grad, cell_dofs, Kes, u, x, penalty, xmin)
 
 Shared kernel for computing element energy (compliance/thermal compliance).
 
@@ -10,9 +10,13 @@ Gradient: dJ/dx_e = -dρ_e/dx_e * u_e^T Ke u_e
 
 This function is shared between structural compliance and thermal compliance,
 differing only in the physics interpretation (strain energy vs thermal energy).
+
+Note: x is the full density vector (after projection if using FixedElementProjector).
+Black/white elements are handled by the projector - this function receives the
+already-projected densities.
 """
 function compute_element_energy(
-    cell_energy::Vector{T}, grad, cell_dofs, Kes, u, black, white, varind, x, penalty, xmin
+    cell_energy::Vector{T}, grad, cell_dofs, Kes, u, x, penalty, xmin
 ) where {T}
     obj = zero(T)
     grad .= 0
@@ -25,19 +29,9 @@ function compute_element_energy(
             end
         end
 
-        if black[i]
-            obj += cell_energy[i]
-        elseif white[i]
-            if PENALTY_BEFORE_INTERPOLATION
-                obj += xmin * cell_energy[i]
-            else
-                obj += penalty(xmin) * cell_energy[i]
-            end
-        else
-            ρe, dρe = get_ρ_dρ(x[varind[i]], penalty, xmin)
-            grad[varind[i]] = -dρe * cell_energy[i]
-            obj += ρe * cell_energy[i]
-        end
+        ρe, dρe = get_ρ_dρ(x[i], penalty, xmin)
+        grad[i] = -dρe * cell_energy[i]
+        obj += ρe * cell_energy[i]
     end
 
     return obj

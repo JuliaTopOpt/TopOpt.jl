@@ -70,7 +70,7 @@ function compute_exact_ec(ec, x, grad, F, n)
     @unpack compliance, grad_temp = ec
     @unpack cell_comp, solver = compliance
     @unpack elementinfo, u, xmin = solver
-    @unpack metadata, Kes, black, white, varind = elementinfo
+    @unpack metadata, Kes = elementinfo
     @unpack cell_dofs = metadata
     penalty = getpenalty(compliance)
     T = eltype(grad)
@@ -81,7 +81,7 @@ function compute_exact_ec(ec, x, grad, F, n)
         solver(; assemble_f=false, reuse_fact=(i > 1))
         u = solver.lhs
         obj += compute_compliance(
-            cell_comp, grad_temp, cell_dofs, Kes, u, black, white, varind, x, penalty, xmin
+            cell_comp, grad_temp, cell_dofs, Kes, u, x, penalty, xmin
         )
         grad .+= grad_temp
     end
@@ -98,7 +98,7 @@ function compute_approx_ec(ec, x, grad, F, V, n)
     @unpack compliance, grad_temp = ec
     @unpack cell_comp, solver = compliance
     @unpack elementinfo, u, xmin = solver
-    @unpack metadata, Kes, black, white, varind = elementinfo
+    @unpack metadata, Kes = elementinfo
     @unpack cell_dofs = metadata
     penalty = getpenalty(compliance)
     T = eltype(grad)
@@ -115,9 +115,6 @@ function compute_approx_ec(ec, x, grad, F, V, n)
             cell_dofs,
             Kes,
             invKFv,
-            black,
-            white,
-            varind,
             x,
             penalty,
             xmin,

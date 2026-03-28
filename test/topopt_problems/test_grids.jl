@@ -13,9 +13,6 @@ using Test
     
     @test grid.nels == nels
     @test grid.sizes == sizes
-    @test length(grid.white_cells) == prod(nels)
-    @test length(grid.black_cells) == prod(nels)
-    @test length(grid.constant_cells) == prod(nels)
     
     # Test corners
     @test grid.corners[1] ≈ Ferrite.Vec{2}((0.0, 0.0))
@@ -28,7 +25,6 @@ using Test
     
     @test grid3d.nels == nels3d
     @test grid3d.sizes == sizes3d
-    @test length(grid3d.white_cells) == prod(nels3d)
 end
 
 @testset "RectilinearGrid Linear vs Quadratic" begin

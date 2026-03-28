@@ -4,9 +4,6 @@ const Vec = Ferrite.Vec
 struct TrussGrid{xdim,T,N,M,TG<:Ferrite.Grid{xdim,<:Ferrite.Cell{xdim,N,M},T}} <:
        AbstractGrid{xdim,T}
     grid::TG
-    white_cells::BitVector
-    black_cells::BitVector
-    constant_cells::BitVector
     crosssecs::Vector{TrussFEACrossSec{T}}
 end
 # nels::NTuple{dim, Int} # num of elements in x,y,z direction in the ground mesh, not applicable to truss
@@ -32,7 +29,7 @@ function TrussGrid(
     else
         error("Invalid crossecs: $(crossecs)")
     end
-    return TrussGrid(grid, falses(ncells), falses(ncells), falses(ncells), crosssecs)
+    return TrussGrid(grid, crosssecs)
 end
 
 function TrussGrid(
@@ -50,7 +47,7 @@ function TrussGrid(
     else
         error("Invalid crossecs: $(crossecs)")
     end
-    return TrussGrid(grid, falses(ncells), falses(ncells), falses(ncells), crosssecs)
+    return TrussGrid(grid, crosssecs)
 end
 
 function _LinearTrussGrid(node_points::Matrix{T}, elements::Matrix{iT}) where {T,iT}
@@ -106,12 +103,7 @@ function Base.show(io::Base.IO, mime::MIME"text/plain", tg::TrussGrid)
         io,
         " $(typeof(tg.grid)) with $(getncells(tg.grid)) $(extra_celltypes[eltype(tg.grid.cells)]) cells and $(getnnodes(tg.grid)) nodes",
     )
-    println(io, "")
-    print(io, "\t-")
-    return println(
-        io,
-        " white cells:T|$(sum(tg.white_cells))|, black cells:T|$(sum(tg.black_cells))|, const cells:T|$(sum(tg.constant_cells))|",
-    )
+    return println(io, "")
 end
 
 const extra_celltypes = Dict{DataType,String}(Line2D => "Line2D", Line3D => "Line3D")

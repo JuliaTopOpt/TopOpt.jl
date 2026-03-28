@@ -45,7 +45,6 @@ function FilterMetadata(solver, rmin::T, ::Type{TI}) where {T,TI}
 end
 
 function get_neighbour_info(problem, rmin::T) where {T}
-    @unpack black, white, varind = problem
     dh = problem.ch.dh
     grid = dh.grid
     @unpack node_cells = problem.metadata
@@ -62,9 +61,7 @@ function get_neighbour_info(problem, rmin::T) where {T}
     visited_cells = Set{Int}()
     for cell in CellIterator(dh)
         current_cell_id = cell.current_cellid.x
-        if black[current_cell_id] || white[current_cell_id]
-            continue
-        end
+        
         empty!(cells_to_traverse)
         empty!(visited_cells)
         empty!(neighbouring_nodes)

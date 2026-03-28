@@ -61,8 +61,8 @@ function GESO(
     solver = comp.solver
     T = eltype(solver.vars)
     nel = Ferrite.getncells(solver.problem.ch.dh.grid)
-    @unpack white, black = solver.problem
-    nvars = nel - sum(black) - sum(white)
+    # GESO now works with full design variables
+    nvars = nel
     vars = zeros(T, nvars)
 
     topology = zeros(T, nel)
@@ -70,7 +70,7 @@ function GESO(
     sens = zeros(T, nvars)
     old_sens = zeros(T, nvars)
     obj_trace = zeros(MVector{k,T})
-    var_volumes = vol.cellvolumes[.!black .& .!white]
+    var_volumes = vol.cellvolumes
     cum_var_volumes = zeros(T, nvars)
     order = zeros(Int, nvars)
     genotypes = trues(string_length, nvars)
@@ -141,10 +141,18 @@ function crossover!(children, genotypes, i, j)
     return nothing
 end
 
-function update!(var_black, children, genotypes, Pc, Pm, high_class, mid_class, low_class)
+function update!(var_black, children, genotypes, Pc, Pm, high_class, mid_class, low_class, black=BitVector(), white=BitVector())
     topology_changed = false
     while !topology_changed
+        # Crossover for all classes
         for i in high_class
+            # Skip black and white elements in crossover
+            if !isempty(black) && black[i]
+                continue
+            end
+            if !isempty(white) && white[i]
+                continue
+            end
             r = rand()
             j = i
             if length(high_class) > 1
@@ -167,6 +175,13 @@ function update!(var_black, children, genotypes, Pc, Pm, high_class, mid_class, 
             crossover!(children, genotypes, i, j)
         end
         for i in mid_class
+            # Skip black and white elements in crossover
+            if !isempty(black) && black[i]
+                continue
+            end
+            if !isempty(white) && white[i]
+                continue
+            end
             r = rand()
             j = i
             if length(mid_class) > 1
@@ -189,6 +204,13 @@ function update!(var_black, children, genotypes, Pc, Pm, high_class, mid_class, 
             crossover!(children, genotypes, i, j)
         end
         for i in low_class
+            # Skip black and white elements in crossover
+            if !isempty(black) && black[i]
+                continue
+            end
+            if !isempty(white) && white[i]
+                continue
+            end
             r = rand()
             j = i
             if length(low_class) > 1
@@ -212,7 +234,15 @@ function update!(var_black, children, genotypes, Pc, Pm, high_class, mid_class, 
         end
         genotypes .= children
 
+        # Mutation for all classes
         for i in high_class
+            # Skip black and white elements in mutation
+            if !isempty(black) && black[i]
+                continue
+            end
+            if !isempty(white) && white[i]
+                continue
+            end
             for j in 1:size(genotypes, 1)
                 r = rand()
                 if r < Pm && !genotypes[j, i]
@@ -225,6 +255,13 @@ function update!(var_black, children, genotypes, Pc, Pm, high_class, mid_class, 
             end
         end
         for i in mid_class
+            # Skip black and white elements in mutation
+            if !isempty(black) && black[i]
+                continue
+            end
+            if !isempty(white) && white[i]
+                continue
+            end
             for j in 1:size(genotypes, 1)
                 r = rand()
                 if r < Pm && genotypes[j, i]
@@ -237,6 +274,13 @@ function update!(var_black, children, genotypes, Pc, Pm, high_class, mid_class, 
             end
         end
         for i in low_class
+            # Skip black and white elements in mutation
+            if !isempty(black) && black[i]
+                continue
+            end
+            if !isempty(white) && white[i]
+                continue
+            end
             for j in 1:size(genotypes, 1)
                 r = rand()
                 if r < Pm && genotypes[j, i]
@@ -253,14 +297,13 @@ function update!(var_black, children, genotypes, Pc, Pm, high_class, mid_class, 
     return var_black
 end
 
-function (b::GESO)(x0=copy(b.comp.solver.vars); seed=NaN)
+function (b::GESO)(x0=copy(b.comp.solver.vars); seed=NaN, black=BitVector(), white=BitVector())
     @unpack sens, old_sens, tol, maxiter = b
     @unpack obj_trace, topology, sens_tol, vars = b
     @unpack Pcmin, Pcmax, Pmmin, Pmmax, Pen = b
     @unpack string_length, genotypes, children, var_black = b
     @unpack cum_var_volumes, var_volumes, order = b
-    @unpack varind, black, white = b.comp.solver.problem
-    @unpack total_volume, cellvolumes, fixed_volume = b.vol
+    @unpack total_volume, cellvolumes = b.vol
     T = eltype(x0)
     V = b.vol_limit
     design_volume = V * total_volume
@@ -268,24 +311,47 @@ function (b::GESO)(x0=copy(b.comp.solver.vars); seed=NaN)
     nel = length(x0)
     nvars = length(vars)
 
+    # Validate black and white vectors
+    if !isempty(black)
+        @assert length(black) == nel "black must have length $nel (got $(length(black)))"
+    end
+    if !isempty(white)
+        @assert length(white) == nel "white must have length $nel (got $(length(white)))"
+    end
+    if !isempty(black) && !isempty(white)
+        @assert !any(black .& white) "elements cannot be both black and white"
+    end
+
     # Set seed
     isnan(seed) || Random.seed!(seed)
 
-    # Initialize the topology
+    # Initialize the topology (work with full design variables)
     for i in 1:length(topology)
-        if black[i]
-            topology[i] = 1
-        elseif white[i]
-            topology[i] = 0
-        else
-            topology[i] = round(x0[varind[i]])
-            vars[varind[i]] = topology[i]
+        topology[i] = round(x0[i])
+        vars[i] = topology[i]
+    end
+
+    # Initialize black elements to 1 (solid) and white elements to 0 (void)
+    @inbounds for i in 1:length(topology)
+        if !isempty(black) && black[i]
+            topology[i] = T(1)
+            vars[i] = T(1)
+            var_black[i] = true
+            for j in 1:size(genotypes, 1)
+                genotypes[j, i] = true
+            end
+        elseif !isempty(white) && white[i]
+            topology[i] = T(0)
+            vars[i] = T(0)
+            var_black[i] = false
+            for j in 1:size(genotypes, 1)
+                genotypes[j, i] = false
+            end
         end
     end
 
-    check(x) = x > design_volume - fixed_volume
-    #rrmax = clamp(1 - design_volume/current_volume, 0, 1)
-    current_volume = dot(vars, var_volumes) + fixed_volume
+    check(x) = x > design_volume
+    current_volume = dot(vars, var_volumes)
     vol = current_volume / total_volume
     # Main loop
     change = T(1)
@@ -307,6 +373,8 @@ function (b::GESO)(x0=copy(b.comp.solver.vars); seed=NaN)
         end
 
         # Classify the cells by their sensitivities
+        # Note: black and white elements are included in sensitivity sorting
+        # but will be excluded from mutation via update! function
         sortperm!(order, sens; rev=true)
         accumulate!(+, cum_var_volumes, view(var_volumes, order))
         N1 = findfirst(check, cum_var_volumes) - 1
@@ -320,11 +388,12 @@ function (b::GESO)(x0=copy(b.comp.solver.vars); seed=NaN)
         Prg = get_progress(current_volume, total_volume, design_volume)
         Pc, Pm = get_probs(b, Prg)
         vars .= update!(
-            var_black, children, genotypes, Pc, Pm, high_class, mid_class, low_class
+            var_black, children, genotypes, Pc, Pm, high_class, mid_class, low_class,
+            black, white
         )
 
         # Update crossover and mutation probabilities
-        current_volume = dot(vars, var_volumes) + fixed_volume
+        current_volume = dot(vars, var_volumes)
         vol = current_volume / total_volume
 
         if iter >= 10
@@ -335,13 +404,7 @@ function (b::GESO)(x0=copy(b.comp.solver.vars); seed=NaN)
     end
 
     for i in 1:length(topology)
-        if black[i]
-            topology[i] = 1
-        elseif white[i]
-            topology[i] = 0
-        else
-            topology[i] = vars[varind[i]]
-        end
+        topology[i] = vars[i]
     end
 
     b.result.objval = obj_trace[10]

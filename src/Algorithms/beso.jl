@@ -54,12 +54,11 @@ function BESO(
     setpenalty!(penalty, p)
     solver = comp.solver
     T = eltype(solver.vars)
-    solver = comp.solver
-    topology = zeros(T, Ferrite.getncells(solver.problem.ch.dh.grid))
+    nel = Ferrite.getncells(solver.problem.ch.dh.grid)
+    topology = zeros(T, nel)
     result = BESOResult(topology, T(NaN), T(NaN), false, 0)
-    black = solver.problem.black
-    white = solver.problem.white
-    nvars = length(topology) - sum(black) - sum(white)
+    # BESO now works with full design variables
+    nvars = nel
     vars = zeros(T, nvars)
     sens = zeros(T, nvars)
     old_sens = zeros(T, nvars)
@@ -89,25 +88,42 @@ function Utilities.setpenalty!(b::BESO, p::Number)
     return b
 end
 
-function (b::BESO)(x0=copy(b.obj.solver.vars))
+function (b::BESO)(x0=copy(b.comp.solver.vars); black=BitVector(), white=BitVector())
     T = eltype(x0)
     @unpack sens, old_sens, er, tol, maxiter = b
     @unpack obj_trace, topology, sens_tol, vars = b
     @unpack solver = b.comp
-    @unpack varind, black, white = solver.problem
     @unpack total_volume, cellvolumes = b.vol
     V = b.vol_limit
     k = length(obj_trace)
 
-    # Initialize the topology
+    nel = length(x0)
+
+    # Validate black and white vectors
+    if !isempty(black)
+        @assert length(black) == nel "black must have length $nel (got $(length(black)))"
+    end
+    if !isempty(white)
+        @assert length(white) == nel "white must have length $nel (got $(length(white)))"
+    end
+    if !isempty(black) && !isempty(white)
+        @assert !any(black .& white) "elements cannot be both black and white"
+    end
+
+    # Initialize the topology (work with full design variables)
     for i in 1:length(topology)
-        if black[i]
-            topology[i] = 1
-        elseif white[i]
-            topology[i] = 0
-        else
-            topology[i] = round(x0[varind[i]])
-            vars[varind[i]] = topology[i]
+        topology[i] = round(x0[i])
+        vars[i] = topology[i]
+    end
+
+    # Initialize black elements to 1 (solid) and white elements to 0 (void)
+    @inbounds for i in 1:length(topology)
+        if !isempty(black) && black[i]
+            topology[i] = T(1)
+            vars[i] = T(1)
+        elseif !isempty(white) && white[i]
+            topology[i] = T(0)
+            vars[i] = T(0)
         end
     end
 
@@ -138,10 +154,15 @@ function (b::BESO)(x0=copy(b.obj.solver.vars))
         while (l2 - l1) / l2 > sens_tol
             th = (l1 + l2) / 2
             for i in 1:length(topology)
-                if !black[i] && !white[i]
-                    topology[i] = T(sign(sens[varind[i]] - th) > 0)
-                    vars[varind[i]] = topology[i]
+                # Skip updating black and white elements
+                if !isempty(black) && black[i]
+                    continue
                 end
+                if !isempty(white) && white[i]
+                    continue
+                end
+                topology[i] = T(sign(sens[i] - th) > 0)
+                vars[i] = topology[i]
             end
             if dot(topology, cellvolumes) - vol * total_volume > 0
                 l1 = th

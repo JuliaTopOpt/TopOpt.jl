@@ -324,7 +324,9 @@ function FEASolver(
     u = zeros(T, ndofs(problem.ch.dh))
     lhs = similar(u)
     rhs = similar(u)
-    vars = fill(one(T), getncells(problem.ch.dh.grid) - sum(problem.black) - sum(problem.white))
+    # vars stores the full density vector (length = number of elements)
+    # Use FixedElementProjector to map free variables to this full vector
+    vars = fill(one(T), getncells(problem.ch.dh.grid))
 
     # Build CG state variables for CG-based solvers
     cg_statevars = CGStateVariables{T,typeof(u)}(copy(u), similar(u), similar(u))
