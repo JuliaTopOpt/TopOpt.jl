@@ -1,7 +1,7 @@
 using TopOpt, Test, LinearAlgebra, Random, SparseArrays
 import Zygote
 using Ferrite: getncells
-using TopOpt.TopOptProblems.InputOutput.INP
+using TopOpt.TopOptProblems.InputOutput.INP: Parser
 
 Random.seed!(42)
 
@@ -249,8 +249,8 @@ Random.seed!(42)
         # Test complete workflow with imported triangular mesh
         file_name = joinpath(@__DIR__, "..", "inp_parser", "triangle.inp")
         
-        # Import INP file using INP.Parser
-        inp = INP.Parser.import_inp(file_name)
+        # Import INP file using Parser
+        inp = Parser.import_inp(file_name)
         @test inp.dh.grid isa Ferrite.Grid
 
         # Create problem from INP file
