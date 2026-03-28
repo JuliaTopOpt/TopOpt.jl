@@ -1,5 +1,6 @@
 using TopOpt, Test, LinearAlgebra, Zygote, ForwardDiff
-using TopOpt: PowerPenalty, RationalPenalty, SinhPenalty, HeavisideProjection, SigmoidProjection, ProjectedPenalty, PseudoDensities, setpenalty!
+using TopOpt: PowerPenalty, RationalPenalty, SinhPenalty, HeavisideProjection, SigmoidProjection, ProjectedPenalty, PseudoDensities, setpenalty!, getpenalty, getprevpenalty
+using TopOpt.FEA: HeatTransfer
 
 @testset "PowerPenalty" begin
     # Test construction
@@ -258,4 +259,161 @@ end
     f(x) = ProjectedPenalty(PowerPenalty(2.0), HeavisideProjection(3.0))(x)
     g = Zygote.gradient(f, 0.5)[1]
     @test g isa Real
+end
+
+@testset "getprevpenalty" begin
+    # Create a simple problem for testing
+    nels = (2, 2)
+    sizes = (1.0, 1.0)
+    E = 1.0
+    ν = 0.3
+    force = 1.0
+
+    problem = PointLoadCantilever(Val{:Linear}, nels, sizes, E, ν, force)
+
+    @testset "Initial state - prev_penalty equals penalty" begin
+        # Test with DirectSolver
+        solver = FEASolver(DirectSolver, problem)
+        # Compare p values, not struct equality (they are different objects)
+        @test getprevpenalty(solver).p == getpenalty(solver).p
+        @test getprevpenalty(solver) isa PowerPenalty
+
+        # Test with CGAssemblySolver
+        solver_cg = FEASolver(CGAssemblySolver, problem)
+        @test getprevpenalty(solver_cg).p == getpenalty(solver_cg).p
+
+        # Test with CGMatrixFreeSolver
+        solver_mf = FEASolver(CGMatrixFreeSolver, problem)
+        @test getprevpenalty(solver_mf).p == getpenalty(solver_mf).p
+    end
+
+    @testset "After setpenalty! with number - prev_penalty stores old value" begin
+        solver = FEASolver(DirectSolver, problem)
+        
+        # Get initial penalty
+        initial_penalty = getpenalty(solver)
+        initial_p = initial_penalty.p
+        
+        # Set new penalty value
+        new_p = 3.0
+        setpenalty!(solver, new_p)
+        
+        # Check that prev_penalty stores the old value
+        @test getprevpenalty(solver).p == initial_p
+        @test getpenalty(solver).p == new_p
+        @test getprevpenalty(solver) != getpenalty(solver)
+    end
+
+    @testset "After setpenalty! with AbstractPenalty - prev_penalty stores old penalty object" begin
+        solver = FEASolver(DirectSolver, problem)
+        
+        # Store reference to initial penalty
+        old_penalty = getpenalty(solver)
+        old_p = old_penalty.p
+        
+        # Create and set a new penalty object
+        new_penalty = PowerPenalty(5.0)
+        setpenalty!(solver, new_penalty)
+        
+        # prev_penalty should be a copy of the old penalty, not the same object
+        prev = getprevpenalty(solver)
+        @test prev.p == old_p
+        @test getpenalty(solver) == new_penalty
+        @test getpenalty(solver) !== old_penalty  # Different object
+    end
+
+    @testset "Multiple consecutive setpenalty! calls" begin
+        solver = FEASolver(DirectSolver, problem)
+        
+        # First update
+        setpenalty!(solver, 2.0)
+        prev_after_1 = getprevpenalty(solver).p
+        curr_after_1 = getpenalty(solver).p
+        
+        @test prev_after_1 == 1.0  # Default PowerPenalty has p=1
+        @test curr_after_1 == 2.0
+        
+        # Second update
+        setpenalty!(solver, 3.0)
+        prev_after_2 = getprevpenalty(solver).p
+        curr_after_2 = getpenalty(solver).p
+        
+        @test prev_after_2 == 2.0
+        @test curr_after_2 == 3.0
+    end
+
+    @testset "Immutability - modifying current penalty doesn't affect previous" begin
+        solver = FEASolver(DirectSolver, problem)
+        
+        # Set initial penalty
+        setpenalty!(solver, 2.0)
+        
+        # Store reference to prev_penalty
+        prev_before = getprevpenalty(solver)
+        prev_p_before = prev_before.p
+        
+        # Modify current penalty directly
+        getpenalty(solver).p = 99.0
+        
+        # prev_penalty should be unchanged
+        @test getprevpenalty(solver).p == prev_p_before
+    end
+
+    @testset "Different penalty types" begin
+        # Test with RationalPenalty
+        rp = RationalPenalty(2.0)
+        solver = FEASolver(DirectSolver, problem; penalty=rp)
+        
+        @test getprevpenalty(solver) isa RationalPenalty
+        @test getprevpenalty(solver).p == 2.0
+        
+        setpenalty!(solver, 3.0)
+        @test getprevpenalty(solver).p == 2.0
+        @test getpenalty(solver).p == 3.0
+        
+        # Test with SinhPenalty
+        sp = SinhPenalty(1.5)
+        solver2 = FEASolver(DirectSolver, problem; penalty=sp)
+        
+        @test getprevpenalty(solver2) isa SinhPenalty
+        setpenalty!(solver2, 2.5)
+        @test getprevpenalty(solver2).p == 1.5
+        @test getpenalty(solver2).p == 2.5
+        
+        # Test with ProjectedPenalty
+        pp = ProjectedPenalty(PowerPenalty(2.0), HeavisideProjection(5.0))
+        solver3 = FEASolver(DirectSolver, problem; penalty=pp)
+        
+        @test getprevpenalty(solver3) isa ProjectedPenalty
+        @test getprevpenalty(solver3).p == 2.0
+        
+        setpenalty!(solver3, 4.0)
+        @test getprevpenalty(solver3).p == 2.0
+        @test getpenalty(solver3).p == 4.0
+    end
+
+    @testset "Custom prev_penalty initialization" begin
+        # Create solver with custom prev_penalty
+        custom_prev = PowerPenalty(5.0)
+        solver = FEASolver(DirectSolver, problem; prev_penalty=custom_prev)
+        
+        @test getprevpenalty(solver).p == 5.0
+        # After initialization with custom prev_penalty, it should be different from current
+        @test getprevpenalty(solver) != getpenalty(solver)
+    end
+
+    @testset "Different physics types" begin
+        # LinearElasticity (default from problem type)
+        solver_struct = FEASolver(DirectSolver, problem)
+        @test getprevpenalty(solver_struct).p == getpenalty(solver_struct).p
+        
+        # HeatTransfer (explicit physics type)
+        solver_heat = FEASolver(HeatTransfer, DirectSolver, problem)
+        @test getprevpenalty(solver_heat).p == getpenalty(solver_heat).p
+        
+        # Test setpenalty! with HeatTransfer
+        setpenalty!(solver_heat, 2.0)
+        @test getprevpenalty(solver_heat).p == 1.0
+        @test getpenalty(solver_heat).p == 2.0
+    end
 end
