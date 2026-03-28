@@ -43,6 +43,27 @@ using TopOpt: PowerPenalty, RationalPenalty, SinhPenalty, HeavisideProjection, S
     @test PowerPenalty(3.0)(0.5) ≈ 0.125
 end
 
+@testset "setpenalty! Error Handling" begin
+    # Create a minimal FEASolver for testing
+    # First create a simple problem
+    nels = (2, 2)
+    sizes = (1.0, 1.0)
+    E = 1.0
+    ν = 0.3
+    force = 1.0
+
+    problem = PointLoadCantilever(Val{:Linear}, nels, sizes, E, ν, force)
+
+    # Create a solver using FEASolver with DirectSolver
+    solver = FEASolver(DirectSolver, problem)
+
+    # Test that setpenalty! throws ArgumentError for unsupported types
+    # Note: Numbers are valid (update penalty value), AbstractPenalty is valid (replace penalty)
+    # Invalid types include: strings, arrays, dicts, etc.
+    @test_throws ArgumentError setpenalty!(solver, "string")
+    @test_throws ArgumentError setpenalty!(solver, [1.0, 2.0, 3.0])
+end
+
 @testset "RationalPenalty" begin
     # Test construction
     rp = RationalPenalty(3.0)
