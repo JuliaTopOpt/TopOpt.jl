@@ -12,7 +12,7 @@ julia --project=. -e "using Pkg; Pkg.test()"
 # Run specific test group (GROUP env var)
 julia --project=. -e "ENV[\"GROUP\"]=\"Core_Tests\"; using Pkg; Pkg.test()"
 
-# Available test groups: Core_Tests_1, Core_Tests_2, Core_Tests_3, Examples_1, Examples_2, Examples_3, Examples_4, WCSMO14_1, WCSMO14_2
+# Available test groups: Core_Tests_1, Core_Tests_2, Examples_1, Examples_2, Examples_3, Examples_4, WCSMO14_1, WCSMO14_2
 ```
 
 ### Test Structure

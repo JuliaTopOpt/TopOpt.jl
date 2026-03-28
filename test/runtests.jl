@@ -51,15 +51,12 @@ if GROUP == "All" || GROUP == "Core_Tests_2"
         include("truss_topopt_problems/test_buckling_optimize.jl")
         include("truss_topopt_problems/test_simulate_truss.jl")
     end
-    @safetestset "Integration" begin
-        include("integration/test_end_to_end.jl")
-    end
-end
-
-if GROUP == "All" || GROUP == "Core_Tests_3"
     @safetestset "BESO" begin
         include("Algorithms/test_beso.jl")
         include("Algorithms/test_geso.jl")
+    end
+    @safetestset "Integration" begin
+        include("integration/test_end_to_end.jl")
     end
 end
 
