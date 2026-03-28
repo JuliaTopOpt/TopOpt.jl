@@ -29,6 +29,8 @@ jobs:
           - Examples_4
           - WCSMO14_1
           - WCSMO14_2
+          - Core_Tests_1_Opposite_Preference
+          - Core_Tests_2_Opposite_Preference
     steps:
       - uses: actions/checkout@v6
       - uses: julia-actions/setup-julia@v2
@@ -45,6 +47,21 @@ jobs:
             ${{ runner.os }}-test-${{ env.cache-name }}-
             ${{ runner.os }}-test-
             ${{ runner.os }}-
+      - name: Set preference for opposite preference jobs
+        if: contains(matrix.group, 'Opposite_Preference')
+        run: |
+          julia --project=. -e '
+            using Pkg
+            Pkg.instantiate()
+            using Preferences
+            # Set preference for TopOpt (UUID, name tuple format)
+            Preferences.set_preferences!(
+              (Base.UUID("a6e80f52-281a-4a51-a3c5-60a2513022d0"), "TopOpt"),
+              "penalty_before_interpolation" => "false";
+              force=true
+            )
+            println("Set penalty_before_interpolation to false")
+          '
       - uses: julia-actions/julia-buildpkg@v1
       - uses: julia-actions/julia-runtest@v1
         env:

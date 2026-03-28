@@ -3,7 +3,7 @@ module CheqFilters
 using ..Utilities, Ferrite
 using ..FEA, Statistics
 using ..TopOpt: TopOpt, ElementFEAInfo, PseudoDensities
-import ..TopOpt: PENALTY_BEFORE_INTERPOLATION
+import ..TopOpt: PENALTY_BEFORE_INTERPOLATION, get_ρ_dρ
 using Parameters: @unpack
 using SparseArrays, LinearAlgebra
 using ForwardDiff
