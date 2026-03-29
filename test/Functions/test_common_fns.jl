@@ -48,6 +48,22 @@ end
     end
 end
 
+@testset "Compliance - Vector input warning" begin
+    nels = (2, 2)
+    problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
+    solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(3.0))
+    comp = Compliance(solver)
+    
+    # Create a simple density vector
+    n_vars = length(solver.vars)
+    x = ones(n_vars) * 0.5
+    
+    # Test that vector input produces a warning and returns valid result
+    result = @test_logs (:warn, r"A vector input was passed in to the compliance function") comp(x)
+    @test isfinite(result)
+    @test result > 0
+end
+
 @testset "Displacement" begin
     nels = (2, 2)
     problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)

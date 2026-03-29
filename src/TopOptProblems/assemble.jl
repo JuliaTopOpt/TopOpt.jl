@@ -88,7 +88,7 @@ function assemble_f(
     assemble_f!(f, problem, elementinfo, vars, penalty, xmin)
     return f
 end
-get_f(problem, vars::Array) = zeros(T, ndofs(problem.ch.dh))
+get_f(problem, vars::Array) = zeros(floattype(problem), ndofs(problem.ch.dh))
 
 function assemble_f!(
     f::AbstractVector,
