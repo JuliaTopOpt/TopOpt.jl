@@ -57,7 +57,7 @@ function (f::ElementStressTensor)(u::DisplacementResult; element_dofs=false)
     st = f.stress_tensor
     reinit!(f, f.cellidx)
     if element_dofs
-        return _element_stres_tensor(f, u)
+        return _element_stress_tensor(f, u)
     else
         return _element_stress_tensor(f, DisplacementResult(u.u[copy(st.global_dofs)]))
     end
