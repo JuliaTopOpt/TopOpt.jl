@@ -22,6 +22,7 @@ const ACTUAL_GROUP = replace(GROUP, "_Opposite_Preference" => "")
 if ACTUAL_GROUP in ("All", "Core_Tests")
     @safetestset "InpParser Tests" begin
         include("inp_parser/parser.jl")
+        include("inp_parser/test_inpstiffness.jl")
     end
     @safetestset "TopOptProblems Tests" begin
         include("topopt_problems/problems.jl")
@@ -30,6 +31,7 @@ if ACTUAL_GROUP in ("All", "Core_Tests")
         include("topopt_problems/test_grids.jl")
         include("topopt_problems/test_assembly.jl")
         include("topopt_problems/test_show.jl")
+        include("topopt_problems/element_stiffness_matrix.jl")
     end
     @safetestset "Functions" begin
         include("Functions/test_common_fns.jl")
@@ -50,7 +52,10 @@ if ACTUAL_GROUP in ("All", "Core_Tests")
         include("FEA/test_convergence.jl")
         include("FEA/test_simulate.jl")
         include("FEA/test_cg_energy_criteria.jl")
+        include("FEA/test_operator.jl")
         include("FEA/misc.jl")
+        include("FEA/test_cg_assembly_safe.jl")
+        include("FEA/test_preconditioner.jl")
     end
     @safetestset "Utilities" begin
         include("Utilities/test_utils.jl")
@@ -110,12 +115,18 @@ if ACTUAL_GROUP in ("All", "Examples_4")
     @safetestset "Heat sink example" begin
         include("examples/heat_sink.jl")
     end
+    # Neural2 example is a long-running neural network optimization example with visualization
+    # that requires Images and ImageInTerminal packages. It is not structured as a unit test.
+    # include("examples/neural2.jl")
 end
 
 if ACTUAL_GROUP in ("All", "WCSMO14_1")
     # This was originlly part of https://github.com/JuliaTopOpt/TopOpt.jl_WCSMO21
     @safetestset "Continuum demos" begin
         include("wcsmo14/demos/continuum/cont_compliance1.jl")
+        # cont_compliance2.jl and cont_stress.jl are additional continuum demos
+        # that are not included in regular CI testing to keep test times reasonable.
+        # They can be run manually for extended validation.
         # include("wcsmo14/demos/continuum/cont_compliance2.jl")
         # include("wcsmo14/demos/continuum/cont_stress.jl")
     end
@@ -132,6 +143,10 @@ if ACTUAL_GROUP in ("All", "WCSMO14_2")
         include("wcsmo14/demos/truss/truss_compliance_3d2.jl")
     end
     @safetestset "WCSMO Benchmarks" begin
+        # Benchmark comparison files are excluded from regular CI testing
+        # as they are used for performance benchmarking against other topopt
+        # implementations and can take significant time to run.
+        # They can be run manually for benchmarking purposes.
         # include("wcsmo14/jl_benchmarks/compare_neo99_2D.jl")
         # include("wcsmo14/jl_benchmarks/compare_polytop.jl")
         # include("wcsmo14/jl_benchmarks/compare_top3d.jl")

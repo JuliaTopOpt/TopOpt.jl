@@ -4,7 +4,7 @@ end
 Base.length(x::ElementStiffnessMatrix) = length(x.Ke)
 Base.size(x::ElementStiffnessMatrix, i...) = size(x.Ke, i...)
 Base.getindex(x::ElementStiffnessMatrix, i...) = x.Ke[i...]
-Base.:*(x::ElementStiffnessMatrix, y) = ElementStiffnessMatrix(x.Ke * y)
+Base.:*(x::ElementStiffnessMatrix, y::Number) = ElementStiffnessMatrix(x.Ke * y)
 
 mutable struct ElementK{
     T,

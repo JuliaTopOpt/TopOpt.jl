@@ -46,7 +46,7 @@ In `TopOpt.jl`, you can import a `.inp` file to an instance of the problem struc
 
 ```@docs
 InpStiffness
-InpStiffness(filepath_with_ext::AbstractString; keep_load_cells = false)
+InpStiffness(filepath_with_ext::AbstractString)
 ```
 
 ```@docs

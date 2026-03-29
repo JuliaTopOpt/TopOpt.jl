@@ -1,5 +1,5 @@
 using TopOpt, Test, Random, ForwardDiff
-using TopOpt.Functions: get_ρ, get_ρ_dρ
+using TopOpt.Utilities: get_ρ, get_ρ_dρ
 using TopOpt.Utilities: PowerPenalty, RationalPenalty, SinhPenalty
 
 Random.seed!(42)

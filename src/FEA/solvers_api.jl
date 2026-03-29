@@ -103,7 +103,7 @@ end
 
 # CG with assembled matrix
 function solve_system!(::Type{CGAssemblySolver}, solver::GenericFEASolver{T,Physics,CGAssemblySolver}, K, f, lhs;
-                      safe=false, kwargs...) where {T,Physics}
+                      safe=false, initially_zero=true, kwargs...) where {T,Physics}
     if safe
         m = meandiag(K)
         for i in 1:size(K, 1)
@@ -133,7 +133,7 @@ function solve_system!(::Type{CGAssemblySolver}, solver::GenericFEASolver{T,Phys
             maxiter=cg_max_iter,
             log=false,
             statevars=cg_statevars,
-            initially_zero=false,
+            initially_zero=initially_zero,
         )
     else
         return cg!(
@@ -144,7 +144,7 @@ function solve_system!(::Type{CGAssemblySolver}, solver::GenericFEASolver{T,Phys
             maxiter=cg_max_iter,
             log=false,
             statevars=cg_statevars,
-            initially_zero=false,
+            initially_zero=initially_zero,
             Pl=preconditioner,
         )
     end
@@ -152,10 +152,12 @@ end
 
 # Matrix-free CG
 function solve_system!(::Type{CGMatrixFreeSolver}, solver::GenericFEASolver{T,Physics,CGMatrixFreeSolver}, K, f, lhs;
-                      kwargs...) where {T,Physics}
+                      initially_zero=true, kwargs...) where {T,Physics}
     @unpack cg_max_iter, abstol, cg_statevars = solver
     @unpack preconditioner, preconditioner_initialized = solver
     @unpack elementinfo, meandiag, vars, xmin, fixed_dofs, free_dofs, xes = solver
+
+    _K = K isa Symmetric ? K.data : K
 
     # Build matrix-free operator
     penalty = getpenalty(solver)
@@ -166,7 +168,7 @@ function solve_system!(::Type{CGMatrixFreeSolver}, solver::GenericFEASolver{T,Ph
 
     if !(preconditioner === identity)
         if !preconditioner_initialized[]
-            UpdatePreconditioner!(preconditioner, operator)
+            UpdatePreconditioner!(preconditioner, _K)
             preconditioner_initialized[] = true
         end
     end
@@ -179,7 +181,7 @@ function solve_system!(::Type{CGMatrixFreeSolver}, solver::GenericFEASolver{T,Ph
             maxiter=cg_max_iter,
             log=false,
             statevars=cg_statevars,
-            initially_zero=false,
+            initially_zero=initially_zero,
         )
     else
         return cg!(
@@ -190,7 +192,7 @@ function solve_system!(::Type{CGMatrixFreeSolver}, solver::GenericFEASolver{T,Ph
             maxiter=cg_max_iter,
             log=false,
             statevars=cg_statevars,
-            initially_zero=false,
+            initially_zero=initially_zero,
             Pl=preconditioner,
         )
     end
@@ -208,17 +210,30 @@ function (s::GenericFEASolver{T,Physics,Solver})(
     # Handle matrix RHS by solving for each column
     if ndims(rhs) == 2 && size(rhs, 2) > 1
         # Multiple RHS columns - solve each one
-        if assemble_f
-            # Assemble once
-            assemble!(s.globalinfo, s.problem, s.elementinfo, s.vars, getpenalty(s), s.xmin; assemble_f=true)
-        end
-        # Solve for each column
+        # Assemble stiffness matrix (and force vector if assemble_f=true)
+        assemble!(s.globalinfo, s.problem, s.elementinfo, s.vars, getpenalty(s), s.xmin; assemble_f=assemble_f)
+        
+        # Solve for each column of the matrix RHS
         for j in 1:size(rhs, 2)
-            @views begin
-                rhs_j = Vector(rhs[:, j])  # Convert sparse to dense vector
-                lhs_j = lhs[:, j]
+            # Get the RHS for this column - use the provided matrix columns
+            # Apply boundary conditions to the column
+            rhs_j = copy(rhs[:, j])
+            apply_zero!(rhs_j, s.problem.ch)
+            
+            # Get the view of lhs for this column using @view macro
+            lhs_j = @view lhs[:, j]
+            
+            # Pass initially_zero only for CG solvers
+            if Solver === DirectSolver
+                # Filter out kwargs that DirectSolver doesn't accept
+                filtered_kwargs = filter(p -> p.first ∉ (:initially_zero, :solver), collect(kwargs))
                 solve_system!(Solver, s, s.globalinfo.K, rhs_j, lhs_j;
-                             reuse_fact=(j > 1 || reuse_fact), safe=safe, kwargs...)
+                             reuse_fact=(j > 1 || reuse_fact), safe=safe, filtered_kwargs...)
+            else
+                # For CG solvers, start from zero initial guess for each column
+                lhs_j .= zero(T)
+                solve_system!(Solver, s, s.globalinfo.K, rhs_j, lhs_j;
+                             reuse_fact=(j > 1 || reuse_fact), safe=safe, initially_zero=true, kwargs...)
             end
         end
         return nothing
@@ -248,8 +263,14 @@ end
 function Base.show(io::IO, ::MIME{Symbol("text/plain")}, ::GenericFEASolver{T,LinearElasticity,CGAssemblySolver}) where {T}
     return println(io, "TopOpt CG with assembly structural solver (GenericFEASolver)")
 end
+function Base.show(io::IO, ::MIME{Symbol("text/plain")}, ::GenericFEASolver{T,HeatTransfer,CGAssemblySolver}) where {T}
+    return println(io, "TopOpt CG with assembly heat transfer solver (GenericFEASolver)")
+end
 function Base.show(io::IO, ::MIME{Symbol("text/plain")}, ::GenericFEASolver{T,LinearElasticity,CGMatrixFreeSolver}) where {T}
     return println(io, "TopOpt matrix-free CG structural solver (GenericFEASolver)")
+end
+function Base.show(io::IO, ::MIME{Symbol("text/plain")}, ::GenericFEASolver{T,HeatTransfer,CGMatrixFreeSolver}) where {T}
+    return println(io, "TopOpt matrix-free CG heat transfer solver (GenericFEASolver)")
 end
 
 Utilities.getpenalty(solver::AbstractFEASolver) = solver.penalty
@@ -260,7 +281,7 @@ function Utilities.setpenalty!(solver::AbstractFEASolver, p)
     elseif p isa Number
         setpenalty!(solver.penalty, p)
     else
-        throw("Unsupported penalty value $p.")
+        throw(ArgumentError("Unsupported penalty value $p."))
     end
     return solver
 end

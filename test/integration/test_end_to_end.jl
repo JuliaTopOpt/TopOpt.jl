@@ -1,6 +1,7 @@
 using TopOpt, Test, LinearAlgebra, Random, SparseArrays
 import Zygote
-using Ferrite: getncells
+using Ferrite: getncells, Ferrite
+using TopOpt.TopOptProblems.InputOutput.INP: Parser
 
 Random.seed!(42)
 
@@ -84,7 +85,7 @@ Random.seed!(42)
 
         # Create multiple load cases
         nloads = 3
-        F = spzeros(TopOpt.Ferrite.ndofs(base_problem.ch.dh), nloads)
+        F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
         dense_load_inds = vec(TopOpt.TopOptProblems.get_surface_dofs(base_problem))
 
         Random.seed!(42)
@@ -242,5 +243,68 @@ Random.seed!(42)
 
         # Results should be similar
         @test length(results["DirectSolver"]) > 0
+    end
+
+    @testset "Triangular mesh topology optimization" begin
+        # Test complete workflow with imported triangular mesh
+        file_name = joinpath(@__DIR__, "..", "inp_parser", "triangle.inp")
+        
+        # Import INP file using Parser
+        inp = Parser.import_inp(file_name)
+        @test inp.dh.grid isa Ferrite.Grid
+
+        # Create problem from INP file
+        problem = InpStiffness(file_name)
+        @test problem isa StiffnessTopOptProblem
+
+        # Set up solver with SIMP
+        solver = FEASolver(
+            DirectSolver,
+            problem;
+            xmin=0.001,
+            penalty=PowerPenalty(3.0)
+        )
+
+        # Create compliance and volume functions
+        comp = Compliance(solver)
+        vol = Volume(solver)
+
+        # Set up optimization
+        V = 0.1  # Target 10% volume fraction
+
+        # Initial uniform density
+        x = fill(V, length(solver.vars))
+
+        # Create objective and constraint
+        obj = x -> comp(PseudoDensities(x))
+        constr = x -> vol(PseudoDensities(x)) - V
+
+        # Create optimization model
+        model = Model(obj)
+        addvar!(model, zeros(length(solver.vars)), ones(length(solver.vars)))
+        add_ineq_constraint!(model, constr)
+
+        # Use MMA optimizer
+        alg = MMA87()
+
+        # Solve with tolerance
+        options = MMAOptions(; tol=Tolerance(; kkt=0.01), maxiter=100)
+        res = optimize(model, alg, x; options)
+
+        # Verify results
+        @test length(res.minimizer) == getncells(problem)
+        @test all(0 .<= res.minimizer .<= 1)
+        
+        final_vol = vol(PseudoDensities(res.minimizer))
+        @test abs(final_vol - V) < 0.05  # Volume constraint satisfied
+
+        # Compliance should be finite
+        final_comp = comp(PseudoDensities(res.minimizer))
+        @test isfinite(final_comp)
+        @test final_comp > 0
+
+        # Optimization should have made progress
+        initial_comp = comp(PseudoDensities(fill(V, length(solver.vars))))
+        @test final_comp < initial_comp  # Should improve compliance
     end
 end

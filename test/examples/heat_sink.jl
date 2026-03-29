@@ -81,8 +81,6 @@ println("\nGradient check:")
 println("  Gradient norm: $(norm(grad))")
 println("  All gradients negative (expected): $(all(grad .< 0))")
 
-println("\nHeat sink optimization example completed successfully!")
-
 using Makie
 using CairoMakie
 # alternatively, `using GLMakie`
