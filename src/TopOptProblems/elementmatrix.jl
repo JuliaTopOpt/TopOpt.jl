@@ -106,39 +106,39 @@ function Base.convert(
     end
     return element_Kes
 end
-function Base.convert(
-    ::Type{Vector{<:ElementMatrix}}, Kes::Vector{TM}; bc_dofs, dof_cells
-) where {T,TM<:AbstractMatrix{T}}
-    N = size(Kes[1], 1)
-    fill_matrix = zero(TM)
-    fill_mask = ones(Bool, N)
-    element_Kes = [deepcopy(ElementMatrix(fill_matrix, fill_mask)) for i in 1:length(Kes)]
-    for i in bc_dofs
-        d_cells = dof_cells[i]
-        for c in d_cells
-            (cellid, localdof) = c
-            Ke = element_Kes[cellid]
-            Ke.mask[localdof] = false
-        end
-    end
-    return element_Kes
-end
-function Base.convert(
-    ::Type{Vector{<:ElementMatrix}}, Kes::Vector{Symmetric{T,TM}}; bc_dofs, dof_cells
-) where {T,TM<:AbstractMatrix{T}}
-    N = size(Kes[1], 1)
-    fill_matrix = zero(TM)
-    fill_mask = ones(Bool, N)
-    element_Kes = [
-        Symmetric(deepcopy(ElementMatrix(fill_matrix, fill_mask))) for i in 1:length(Kes)
-    ]
-    for i in bc_dofs
-        d_cells = dof_cells[i]
-        for c in d_cells
-            (cellid, localdof) = c
-            Ke = element_Kes[cellid].data
-            Ke.mask[localdof] = false
-        end
-    end
-    return element_Kes
-end
+# function Base.convert(
+#     ::Type{Vector{<:ElementMatrix}}, Kes::Vector{TM}; bc_dofs, dof_cells
+# ) where {T,TM<:AbstractMatrix{T}}
+#     N = size(Kes[1], 1)
+#     fill_matrix = zero(TM)
+#     fill_mask = ones(Bool, N)
+#     element_Kes = [deepcopy(ElementMatrix(fill_matrix, fill_mask)) for i in 1:length(Kes)]
+#     for i in bc_dofs
+#         d_cells = dof_cells[i]
+#         for c in d_cells
+#             (cellid, localdof) = c
+#             Ke = element_Kes[cellid]
+#             Ke.mask[localdof] = false
+#         end
+#     end
+#     return element_Kes
+# end
+# function Base.convert(
+#     ::Type{Vector{<:ElementMatrix}}, Kes::Vector{Symmetric{T,TM}}; bc_dofs, dof_cells
+# ) where {T,TM<:AbstractMatrix{T}}
+#     N = size(Kes[1], 1)
+#     fill_matrix = zero(TM)
+#     fill_mask = ones(Bool, N)
+#     element_Kes = [
+#         Symmetric(deepcopy(ElementMatrix(fill_matrix, fill_mask))) for i in 1:length(Kes)
+#     ]
+#     for i in bc_dofs
+#         d_cells = dof_cells[i]
+#         for c in d_cells
+#             (cellid, localdof) = c
+#             Ke = element_Kes[cellid].data
+#             Ke.mask[localdof] = false
+#         end
+#     end
+#     return element_Kes
+# end
