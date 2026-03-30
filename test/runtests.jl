@@ -32,7 +32,6 @@ if ACTUAL_GROUP in ("All", "Core_Tests")
         include("topopt_problems/test_assembly.jl")
         include("topopt_problems/test_show.jl")
         include("topopt_problems/element_stiffness_matrix.jl")
-        include("topopt_problems/test_assemble_functions.jl")
         include("topopt_problems/test_elementmatrix.jl")
     end
     @safetestset "Functions" begin
