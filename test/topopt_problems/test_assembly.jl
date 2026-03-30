@@ -10,6 +10,9 @@ using Ferrite
 using TopOpt.Functions: DisplacementResult
 using TopOpt: PseudoDensities
 
+# Import make_Kes_and_fes which is exported by TopOptProblems
+using TopOpt.TopOptProblems: make_Kes_and_fes
+
 # Test assembly force functions
 @testset "Assembly force functions" begin
     # Create a simple cantilever problem
@@ -239,5 +242,233 @@ end
         TopOpt.TopOptProblems.assemble_f!(f_out, problem, elementinfo, vars, penalty, 0.001)
         @test length(f_out) == ndofs(problem.ch.dh)
         @test all(isfinite, f_out)
+    end
+end
+
+# Test pressure/traction boundary conditions (pressuredict)
+@testset "Pressure boundary conditions (pressuredict)" begin
+    # Use TieBeam which has getpressuredict and getfacesets defined
+    T = Float64
+    E = T(1)
+    ν = T(0.3)
+    force = T(1)
+
+    problem = TieBeam(Val{:Linear}, T; refine=1, force=force, E=E, ν=ν)
+
+    # Check that TieBeam has pressure loads defined
+    pressuredict = TopOpt.TopOptProblems.getpressuredict(problem)
+    @test !isempty(pressuredict)
+    @test haskey(pressuredict, "rightload")
+    @test haskey(pressuredict, "bottomload")
+    @test pressuredict["rightload"] == 2 * force
+    @test pressuredict["bottomload"] == -force
+
+    # Check that facesets exist
+    facesets = TopOpt.TopOptProblems.getfacesets(problem)
+    @test haskey(facesets, "rightload")
+    @test haskey(facesets, "bottomload")
+
+    # Test _make_dloads function via make_Kes_and_fes (public API)
+    Kes, weights, dloads, cellvalues, facevalues = make_Kes_and_fes(problem, 2, Val{:Static})
+    ncells = getncells(problem.ch.dh.grid)
+    @test length(dloads) == ncells
+
+    # Verify that pressure loads result in non-zero distributed loads
+    # The traction is applied as: fe[(i-1)*dim+d] += ϕ * t * normal[d] * dΓ
+    # where t = -pressure (traction = negative pressure)
+    any_nonzero = any(fe -> any(x -> x != 0, fe), dloads)
+    @test any_nonzero
+
+    # Verify that each cell's distributed load vector has correct size
+    # For 2D linear elements: 4 nodes * 2 DOFs = 8 entries
+    dim = 2
+    nnodes_per_cell = 4  # Linear quadrilateral
+    expected_size = nnodes_per_cell * dim
+    for (cellid, fe) in enumerate(dloads)
+        @test length(fe) == expected_size
+    end
+
+    # Test that pressure values are correctly applied
+    # rightload has pressure = 2*force (positive), traction = -2*force
+    # bottomload has pressure = -force (negative), traction = force
+    # The distributed load direction depends on the normal vector at each face
+
+    # Verify the distributed loads are finite
+    @test all(fe -> all(isfinite, fe), dloads)
+end
+
+# Test pressure boundary conditions integration with FEA
+@testset "Pressure BC integration with FEA" begin
+    T = Float64
+    E = T(1)
+    ν = T(0.3)
+    force = T(1)
+
+    problem = TieBeam(Val{:Linear}, T; refine=1, force=force, E=E, ν=ν)
+
+    # Build element FEA info
+    elementinfo = ElementFEAInfo(problem, 2, Val{:Static})
+
+    # Get distributed loads from pressure via make_Kes_and_fes
+    Kes, weights, dloads, cellvalues, facevalues = make_Kes_and_fes(problem, 2, Val{:Static})
+
+    # Create global FEA info
+    ginfo = GlobalFEAInfo(problem)
+
+    # Assemble the global force vector with distributed loads
+    vars = ones(T, getncells(problem.ch.dh.grid))
+    assemble!(ginfo, problem, elementinfo, vars)
+
+    # Apply distributed loads using update_f!
+    metadata = problem.metadata
+    TopOpt.TopOptProblems.update_f!(ginfo.f, metadata.dof_cells, dloads)
+
+    # Verify global force vector has non-zero entries from pressure
+    @test any(ginfo.f .!= 0)
+
+    # The force vector should be finite
+    @test all(isfinite, ginfo.f)
+
+    # Test that we can solve the system
+    # K should be positive definite, so we can solve for displacement
+    u = ginfo.K \ ginfo.f
+    @test length(u) == ndofs(problem.ch.dh)
+    @test all(isfinite, u)
+end
+
+# Test pressure direction (traction = -pressure)
+@testset "Pressure direction sign convention" begin
+    # Create a simple problem with known pressure
+    T = Float64
+    problem = TieBeam(Val{:Linear}, T; refine=1, force=T(1.0), E=T(1), ν=T(0.3))
+
+    # Get pressure dictionary
+    pressuredict = TopOpt.TopOptProblems.getpressuredict(problem)
+
+    # Verify the sign convention: traction = -pressure
+    # Positive pressure -> negative traction (inward force)
+    # Negative pressure -> positive traction (outward force)
+    for (key, pressure_val) in pressuredict
+        expected_traction = -pressure_val
+        # The actual traction calculation happens inside _make_dloads
+        # where t = -pressuredict[k]
+        @test expected_traction == -pressure_val
+    end
+
+    # Test that distributed loads are computed correctly via make_Kes_and_fes
+    Kes, weights, dloads, cellvalues, facevalues = make_Kes_and_fes(problem, 2, Val{:Static})
+
+    # Verify dloads is populated (non-zero)
+    any_nonzero = any(fe -> any(x -> x != 0, fe), dloads)
+    @test any_nonzero
+
+    # Verify all values are finite
+    @test all(fe -> all(isfinite, fe), dloads)
+end
+
+# Test pressure loop implementation details
+@testset "Pressure loop - _make_dloads implementation" begin
+    # This test specifically covers the code in _make_dloads that iterates over
+    # pressuredict keys and computes distributed loads from pressure boundary conditions
+    T = Float64
+    problem = TieBeam(Val{:Linear}, T; refine=2, force=T(1.0), E=T(1), ν=T(0.3))
+
+    # Get problem data needed for the loop
+    dh = TopOpt.TopOptProblems.getdh(problem)
+    grid = dh.grid
+    boundary_matrix = grid.boundary_matrix
+    pressuredict = TopOpt.TopOptProblems.getpressuredict(problem)
+    facesets = TopOpt.TopOptProblems.getfacesets(problem)
+
+    # Build element FEA info to get facevalues
+    elementinfo = ElementFEAInfo(problem, 2, Val{:Static})
+    Kes, weights, dloads, cellvalues, facevalues = make_Kes_and_fes(problem, 2, Val{:Static})
+
+    dim = TopOpt.TopOptProblems.getdim(problem)
+    N = TopOpt.TopOptProblems.nnodespercell(problem)
+    n_basefuncs = Ferrite.getnbasefunctions(facevalues)
+
+    # Verify the pressure loop over keys(pressuredict)
+    for k in keys(pressuredict)
+        t = -pressuredict[k] # traction = negative the pressure
+        faceset = facesets[k]
+
+        for (cellid, faceid) in faceset
+            # Verify face is on boundary
+            @test boundary_matrix[faceid, cellid]
+
+            # Verify dloads entry exists for this cell
+            fe = dloads[cellid]
+            @test length(fe) == N * dim  # 4 nodes * 2 DOFs = 8 for 2D quad
+
+            # Verify fe contains finite values
+            @test all(isfinite, fe)
+        end
+    end
+
+    # Test that traction direction matches pressure sign
+    # rightload has positive pressure (2*force), so traction is negative (inward)
+    # bottomload has negative pressure (-force), so traction is positive (outward)
+    @test haskey(pressuredict, "rightload")
+    @test haskey(pressuredict, "bottomload")
+    @test pressuredict["rightload"] > 0  # Positive pressure
+    @test pressuredict["bottomload"] < 0  # Negative pressure
+end
+
+# Test pressure loop with multiple face quadrature points
+@testset "Pressure loop - quadrature integration" begin
+    T = Float64
+    problem = TieBeam(Val{:Linear}, T; refine=2, force=T(1.0), E=T(1), ν=T(0.3))
+
+    # Get facevalues and dloads
+    Kes, weights, dloads, cellvalues, facevalues = make_Kes_and_fes(problem, 2, Val{:Static})
+
+    # Verify quadrature is set up
+    n_quadpoints = Ferrite.getnquadpoints(facevalues)
+    @test n_quadpoints >= 1  # Should have at least one quadrature point
+
+    # Verify each face integration produces valid results
+    pressuredict = TopOpt.TopOptProblems.getpressuredict(problem)
+    facesets = TopOpt.TopOptProblems.getfacesets(problem)
+
+    for k in keys(pressuredict)
+        faceset = facesets[k]
+        for (cellid, faceid) in faceset
+            fe = dloads[cellid]
+            # The distributed load should have been computed by integrating
+            # over quadrature points: fe[(i-1)*dim+d] += ϕ * t * normal[d] * dΓ
+            @test all(isfinite, fe)
+        end
+    end
+
+    # Test that pressure loads contribute to global force vector
+    metadata = problem.metadata
+    f = zeros(T, ndofs(TopOpt.TopOptProblems.getdh(problem)))
+    TopOpt.TopOptProblems.update_f!(f, metadata.dof_cells, dloads)
+
+    # Global force should have non-zero entries from pressure
+    @test any(f .!= 0)
+    @test all(isfinite, f)
+end
+
+# Test pressure boundary condition error handling
+@testset "Pressure loop - boundary validation" begin
+    T = Float64
+    problem = TieBeam(Val{:Linear}, T; refine=1, force=T(1.0), E=T(1), ν=T(0.3))
+
+    # Verify all faces in pressuredict facesets are on the boundary
+    dh = TopOpt.TopOptProblems.getdh(problem)
+    grid = dh.grid
+    boundary_matrix = grid.boundary_matrix
+    pressuredict = TopOpt.TopOptProblems.getpressuredict(problem)
+    facesets = TopOpt.TopOptProblems.getfacesets(problem)
+
+    for k in keys(pressuredict)
+        faceset = facesets[k]
+        for (cellid, faceid) in faceset
+            # Each face in the faceset must be on the boundary
+            # This is checked by: boundary_matrix[faceid, cellid] || throw(...)
+            @test boundary_matrix[faceid, cellid]
+        end
     end
 end

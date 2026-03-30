@@ -126,6 +126,81 @@ end
     @test sum(length, getindex.((grid.facesets,), ["right", "top"])) == 2 * 50
 end
 
+# Half MBB beam with quadratic elements
+@testset "Half MBB beam quadratic elements" begin
+    global E, ν, force
+    nels = (30, 10)
+    sizes = (2.0, 2.0)
+    problem = HalfMBB(Val{:Quadratic}, nels, sizes, E, ν, force)
+    ncells = nels[1] * nels[2]
+    @test problem.E == E
+    @test problem.ν == ν
+    @test problem.force == force
+    grid = problem.ch.dh.grid
+    @test length(grid.cells) == ncells
+    
+    # Quadratic elements have 9 nodes per cell
+    @test Ferrite.nnodes(grid.cells[1]) == 9
+    @test Ferrite.getorder(problem.ch.dh.field_interpolations[1]) == 2
+    
+    for i in 1:2, j in 1:2
+        @test boundingbox(grid)[i][j] ≈ problem.rect_grid.corners[i][j] atol = 1e-8
+    end
+    
+    # Check facesets exist and have correct structure
+    @test haskey(grid.facesets, "bottom")
+    @test haskey(grid.facesets, "right")
+    @test haskey(grid.facesets, "top")
+    @test haskey(grid.facesets, "left")
+    
+    # Verify boundary faces
+    for (c, f) in grid.facesets["bottom"]
+        @test f == 1
+    end
+    for (c, f) in grid.facesets["right"]
+        @test f == 2
+    end
+    for (c, f) in grid.facesets["top"]
+        @test f == 3
+    end
+    for (c, f) in grid.facesets["left"]
+        @test f == 4
+    end
+end
+
+# L-beam with quadratic elements
+@testset "L-beam quadratic elements" begin
+    global E, ν, force
+    problem = LBeam(Val{:Quadratic}, Float64; length=50, height=50, upperslab=25, lowerslab=25, E=E, ν=ν, force=force)
+    ncells = 50 * 25 + 25 * 25
+    @test problem.E == E
+    @test problem.ν == ν
+    @test problem.force == force
+    grid = problem.ch.dh.grid
+    @test length(grid.cells) == ncells
+    
+    # Quadratic elements have 9 nodes per cell
+    @test Ferrite.nnodes(grid.cells[1]) == 9
+    @test Ferrite.getorder(problem.ch.dh.field_interpolations[1]) == 2
+    
+    corners = [[0.0, 0.0], [50.0, 50.0]]
+    for i in 1:2, j in 1:2
+        @test boundingbox(grid)[i][j] ≈ corners[i][j] atol = 1e-8
+    end
+    
+    # Check facesets exist
+    @test haskey(grid.facesets, "right")
+    @test haskey(grid.facesets, "top")
+    
+    # Verify boundary faces
+    for (c, f) in grid.facesets["right"]
+        @test f == 2
+    end
+    for (c, f) in grid.facesets["top"]
+        @test f == 3
+    end
+end
+
 # Tie-beam problem
 @testset "Tie-beam" begin
     problem = TopOptProblems.TieBeam(Val{:Quadratic}, Float64)
@@ -172,7 +247,104 @@ end
     @test Ferrite.nnodes(grid.cells[1]) == 9
 end
 
+# Tie-beam accessor functions
+@testset "Tie-beam accessor functions" begin
+    @testset "getdim(::TieBeam) = 2" begin
+        problem_linear = TopOptProblems.TieBeam(Val{:Linear}, Float64; refine=1)
+        problem_quad = TopOptProblems.TieBeam(Val{:Quadratic}, Float64)
+        
+        @test TopOptProblems.getdim(problem_linear) == 2
+        @test TopOptProblems.getdim(problem_quad) == 2
+    end
+    
+    @testset "nnodespercell(::TieBeam{T,N}) = N" begin
+        problem_linear = TopOptProblems.TieBeam(Val{:Linear}, Float64; refine=1)
+        problem_quad = TopOptProblems.TieBeam(Val{:Quadratic}, Float64)
+        
+        # Linear elements have 4 nodes per cell
+        @test TopOptProblems.nnodespercell(problem_linear) == 4
+        # Quadratic elements have 9 nodes per cell
+        @test TopOptProblems.nnodespercell(problem_quad) == 9
+    end
+    
+    @testset "getpressuredict(::TieBeam)" begin
+        force = 2.5
+        problem = TopOptProblems.TieBeam(Val{:Linear}, Float64; refine=1, force=force)
+        
+        pd = TopOptProblems.getpressuredict(problem)
+        @test pd isa Dict{String,Float64}
+        @test haskey(pd, "rightload")
+        @test haskey(pd, "bottomload")
+        @test pd["rightload"] == 2 * force
+        @test pd["bottomload"] == -force
+    end
+    
+    @testset "getfacesets(::TieBeam)" begin
+        problem = TopOptProblems.TieBeam(Val{:Linear}, Float64; refine=1)
+        
+        facesets = TopOptProblems.getfacesets(problem)
+        @test facesets isa Dict
+        @test haskey(facesets, "bottomload")
+        @test haskey(facesets, "rightload")
+        @test haskey(facesets, "toproller")
+        @test haskey(facesets, "leftfixed")
+    end
+end
+
 # Heat conduction problem tests
+        # HeatTransferTopOptProblem accessor functions
+@testset "HeatTransferTopOptProblem accessor functions" begin
+    @testset "getmetadata(::HeatTransferTopOptProblem)" begin
+        heatflux = Dict{String,Float64}("top" => 1.0)
+        problem = HeatConductionProblem(
+            Val{:Linear}, (10, 5), (1.0, 1.0), 1.0;
+            Tleft=0.0, Tright=0.0, heatflux=heatflux
+        )
+        
+        metadata = TopOptProblems.getmetadata(problem)
+        @test metadata isa TopOpt.TopOptProblems.Metadata
+    end
+    
+    @testset "getpressuredict(::HeatTransferTopOptProblem)" begin
+        heatflux = Dict{String,Float64}("top" => 1.0)
+        problem = HeatConductionProblem(
+            Val{:Linear}, (10, 5), (1.0, 1.0), 1.0;
+            Tleft=0.0, Tright=0.0, heatflux=heatflux
+        )
+        
+        # Returns empty dict for HeatTransferTopOptProblem
+        pd = TopOptProblems.getpressuredict(problem)
+        @test pd isa Dict{String,Float64}
+        @test isempty(pd)
+    end
+    
+    @testset "getheatfluxdict(::HeatTransferTopOptProblem)" begin
+        heatflux = Dict{String,Float64}("top" => 1.0)
+        problem = HeatConductionProblem(
+            Val{:Linear}, (10, 5), (1.0, 1.0), 1.0;
+            Tleft=0.0, Tright=0.0, heatflux=heatflux
+        )
+        
+        # Returns the heatflux dict that was passed in
+        hd = TopOptProblems.getheatfluxdict(problem)
+        @test hd isa Dict{String,Float64}
+        @test hd == heatflux
+    end
+    
+    @testset "getcloaddict(::HeatTransferTopOptProblem)" begin
+        heatflux = Dict{String,Float64}("top" => 1.0)
+        problem = HeatConductionProblem(
+            Val{:Linear}, (10, 5), (1.0, 1.0), 1.0;
+            Tleft=0.0, Tright=0.0, heatflux=heatflux
+        )
+        
+        # Returns empty dict for HeatTransferTopOptProblem
+        cd = TopOptProblems.getcloaddict(problem)
+        @test cd isa Dict{String,Vector{Float64}}
+        @test isempty(cd)
+    end
+end
+
 @testset "Heat conduction problem setup" begin
     # Create a simple 2D heat conduction problem with surface heat flux
     nels = (10, 5)
@@ -189,6 +361,48 @@ end
     @test problem isa HeatConductionProblem
     @test getk(problem) ≈ 1.0
     @test Ferrite.getncells(problem) == 50
+end
+
+@testset "Heat conduction problem with quadratic elements" begin
+    # Create a 2D heat conduction problem with quadratic elements
+    nels = (5, 3)
+    sizes = (1.0, 1.0)
+    k = 2.5
+    heatflux = Dict{String,Float64}("top" => 10.0)
+
+    problem = HeatConductionProblem(
+        Val{:Quadratic}, nels, sizes, k;
+        Tleft=100.0, Tright=0.0, heatflux=heatflux
+    )
+
+    @test problem isa HeatConductionProblem
+    @test problem.k == k
+    @test Ferrite.getncells(problem) == nels[1] * nels[2]
+    
+    # Quadratic elements have 9 nodes per cell
+    grid = problem.ch.dh.grid
+    @test Ferrite.nnodes(grid.cells[1]) == 9
+    @test Ferrite.getorder(problem.ch.dh.field_interpolations[1]) == 2
+    
+    # Check boundary facesets exist
+    @test haskey(grid.facesets, "top")
+    @test haskey(grid.facesets, "bottom")
+    @test haskey(grid.facesets, "left")
+    @test haskey(grid.facesets, "right")
+    
+    # Check heatflux dict is accessible
+    @test TopOptProblems.getheatfluxdict(problem) == heatflux
+    
+    # Note: ElementFEAInfo creation for quadratic heat conduction elements
+    # requires compatible CellValues construction (see Ferrite issue #265)
+    # For now we just verify the problem structure is correct
+    
+    # Test element info can be created with default settings
+    # elementinfo = ElementFEAInfo(problem, 2, Val{:Static})
+    # @test length(elementinfo.Kes) == nels[1] * nels[2]
+    # For quadratic quad elements, each element has 9 nodes
+    # and heat transfer is scalar field, so Ke is 9x9
+    # @test size(elementinfo.Kes[1], 1) == 9
 end
 
 @testset "Heat transfer element matrices" begin
