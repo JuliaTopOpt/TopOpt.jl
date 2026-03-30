@@ -5,7 +5,7 @@ using SparseArrays, Setfield
 using ..TopOpt.Utilities
 using ..TopOpt: PENALTY_BEFORE_INTERPOLATION
 using ..Utilities: @forward_property
-using Distributions: Distributions
+using Distributions: Distributions, Uniform
 
 using VTKDataTypes
 
@@ -37,6 +37,10 @@ export PointLoadCantilever,
     HeatConductionProblem,
     AbstractTopOptProblem,
     getk,
+    getpressuredict,
+    getfacesets,
+    getcloaddict,
+    getdh,
     GlobalFEAInfo,
     ElementFEAInfo,
     YoungsModulus,
