@@ -72,7 +72,7 @@ function Base.convert(
             (cellid, localdof) = c
             Ke = element_Kes[cellid]
             new_Ke = @set Ke.mask[localdof] = false
-            element_Kes[cellid] = Symmetric(new_Ke)
+            element_Kes[cellid] = new_Ke
         end
     end
     for e in 1:length(element_Kes)

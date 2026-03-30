@@ -226,4 +226,129 @@ using LinearAlgebra
         @test bcm[2, 1] ≈ 0.0
         @test bcm[2, 2] ≈ 0.0
     end
+
+    @testset "Non-empty bc_dofs - boundary conditions applied" begin
+        N = 2
+        K1 = @SMatrix [4.0 -1.0; -1.0 4.0]
+        K2 = @SMatrix [5.0 -2.0; -2.0 5.0]
+        Kes = [K1, K2]
+        
+        # DOF 1 is a boundary condition DOF
+        # dof_cells[1] maps DOF 1 to cell 1, local DOF 1
+        bc_dofs = [1]
+        dof_cells = Dict{Int, Vector{Tuple{Int, Int}}}(
+            1 => [(1, 1)]  # DOF 1 -> (cellid=1, localdof=1)
+        )
+        
+        element_Kes = Base.convert(Vector{<:ElementMatrix}, Kes; bc_dofs=bc_dofs, dof_cells=dof_cells)
+        
+        @test length(element_Kes) == 2
+        
+        # Element 1 should have mask[1] = false (BC applied to local DOF 1)
+        @test element_Kes[1].mask[1] == false
+        @test element_Kes[1].mask[2] == true
+        
+        # Element 2 should have all masks true (no BC)
+        @test all(element_Kes[2].mask .== true)
+        
+        # Verify matrices are still set correctly
+        @test element_Kes[1].matrix[1, 1] ≈ 4.0
+        @test element_Kes[2].matrix[2, 2] ≈ 5.0
+        
+        # meandiag should be computed correctly
+        @test element_Kes[1].meandiag ≈ 8.0
+        @test element_Kes[2].meandiag ≈ 10.0
+    end
+
+    @testset "Multiple bc_dofs across multiple elements" begin
+        N = 3
+        K1 = @SMatrix [4.0 -1.0 0.0; -1.0 4.0 -1.0; 0.0 -1.0 4.0]
+        K2 = @SMatrix [5.0 -2.0 0.0; -2.0 5.0 -2.0; 0.0 -2.0 5.0]
+        K3 = @SMatrix [6.0 -3.0 0.0; -3.0 6.0 -3.0; 0.0 -3.0 6.0]
+        Kes = [K1, K2, K3]
+        
+        # Multiple BC DOFs affecting different elements
+        bc_dofs = [1, 2, 5]
+        dof_cells = Dict{Int, Vector{Tuple{Int, Int}}}(
+            1 => [(1, 1)],   # DOF 1 -> cell 1, local DOF 1
+            2 => [(1, 2)],   # DOF 2 -> cell 1, local DOF 2
+            5 => [(2, 2)]    # DOF 5 -> cell 2, local DOF 2
+        )
+        
+        element_Kes = Base.convert(Vector{<:ElementMatrix}, Kes; bc_dofs=bc_dofs, dof_cells=dof_cells)
+        
+        @test length(element_Kes) == 3
+        
+        # Element 1: DOF 1 and 2 have BCs (local DOFs 1 and 2)
+        @test element_Kes[1].mask[1] == false
+        @test element_Kes[1].mask[2] == false
+        @test element_Kes[1].mask[3] == true
+        
+        # Element 2: DOF 5 has BC (local DOF 2)
+        @test element_Kes[2].mask[1] == true
+        @test element_Kes[2].mask[2] == false
+        @test element_Kes[2].mask[3] == true
+        
+        # Element 3: no BCs
+        @test all(element_Kes[3].mask .== true)
+        
+        # Verify bcmatrix for element 1 (rows/cols 1 and 2 should be zeroed)
+        bcm1 = bcmatrix(element_Kes[1])
+        @test bcm1[1, 1] ≈ 0.0  # masked
+        @test bcm1[1, 2] ≈ 0.0  # masked
+        @test bcm1[1, 3] ≈ 0.0  # masked (row 1)
+        @test bcm1[2, 1] ≈ 0.0  # masked
+        @test bcm1[2, 2] ≈ 0.0  # masked
+        @test bcm1[2, 3] ≈ 0.0  # masked (row 2)
+        @test bcm1[3, 1] ≈ 0.0  # masked (col 1)
+        @test bcm1[3, 2] ≈ 0.0  # masked (col 2)
+        @test bcm1[3, 3] ≈ 4.0  # not masked
+        
+        # Verify bcmatrix for element 2 (row/col 2 should be zeroed)
+        bcm2 = bcmatrix(element_Kes[2])
+        @test bcm2[1, 1] ≈ 5.0  # not masked
+        @test bcm2[1, 2] ≈ 0.0  # masked
+        @test bcm2[2, 1] ≈ 0.0  # masked
+        @test bcm2[2, 2] ≈ 0.0  # masked
+        @test bcm2[2, 3] ≈ 0.0  # masked
+        @test bcm2[1, 3] ≈ 0.0  # not masked
+        @test bcm2[3, 1] ≈ 0.0  # not masked
+        @test bcm2[3, 2] ≈ 0.0  # masked
+        @test bcm2[3, 3] ≈ 5.0  # not masked
+        
+        # Element 3: no masking
+        bcm3 = bcmatrix(element_Kes[3])
+        @test bcm3 ≈ K3
+    end
+
+    @testset "Non-empty bc_dofs with Symmetric matrices" begin
+        N = 2
+        K1 = Symmetric(@SMatrix [4.0 -1.0; -1.0 4.0])
+        K2 = Symmetric(@SMatrix [5.0 -2.0; -2.0 5.0])
+        Kes = [K1, K2]
+        
+        bc_dofs = [2]
+        dof_cells = Dict{Int, Vector{Tuple{Int, Int}}}(
+            2 => [(1, 1)]  # DOF 2 -> cell 1, local DOF 1
+        )
+        
+        element_Kes = Base.convert(Vector{<:ElementMatrix}, Kes; bc_dofs=bc_dofs, dof_cells=dof_cells)
+        
+        @test length(element_Kes) == 2
+        @test element_Kes[1] isa Symmetric{T, <:ElementMatrix{T}} where T
+        
+        # Element 1: local DOF 1 has BC
+        @test element_Kes[1].data.mask[1] == false
+        @test element_Kes[1].data.mask[2] == true
+        
+        # Element 2: no BCs
+        @test all(element_Kes[2].data.mask .== true)
+        
+        # Verify bcmatrix for element 1
+        bcm1 = bcmatrix(element_Kes[1])
+        @test bcm1[1, 1] ≈ 0.0  # masked
+        @test bcm1[1, 2] ≈ 0.0  # masked
+        @test bcm1[2, 1] ≈ 0.0  # masked
+        @test bcm1[2, 2] ≈ 4.0  # not masked
+    end
 end
