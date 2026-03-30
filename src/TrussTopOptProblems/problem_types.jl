@@ -38,13 +38,6 @@ function TrussProblem(
     mats=TrussFEAMaterial{T}(1.0, 0.3),
     crosssecs=TrussFEACrossSec{T}(1.0),
 ) where {xdim,T,iT,fT,CellType}
-    # unify number type
-    # _T = promote_type(eltype(sizes), typeof(mats), typeof(ν), typeof(force))
-    # if _T <: Integer
-    #     T = Float64
-    # else
-    #     T = _T
-    # end
     if CellType === :Linear
         truss_grid = TrussGrid(node_points, elements; crosssecs)
         geom_order = 1
