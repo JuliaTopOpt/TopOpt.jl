@@ -222,10 +222,13 @@ function _make_dloads(fes, problem::StiffnessTopOptProblem, facevalues)
     N = nnodespercell(problem)
     T = floattype(problem)
     dloads = deepcopy(fes)
-    eltype(dloads) <: SArray || throw("Expected dloads to be StaticArrays for stiffness problems.")
+    eltype(dloads) <: StaticArray || throw("Expected dloads to be StaticArrays for stiffness problems.")
     for i in 1:length(dloads)
-        dloads[i] = zero(eltype(dloads))
-        # dloads[i] .= 0
+        if eltype(dloads) <: SArray
+            dloads[i] = zero(eltype(dloads))
+        else
+            dloads[i] .= 0
+        end
     end
     pressuredict = getpressuredict(problem)
     dh = getdh(problem)
@@ -248,8 +251,11 @@ function _make_dloads(fes, problem::StiffnessTopOptProblem, facevalues)
                 for i in 1:n_basefuncs
                     ϕ = shape_value(facevalues, q_point, i) # Shape function value
                     for d in 1:dim
-                        fe = @set fe[(i - 1) * dim + d] += ϕ * t * normal[d] * dΓ
-                        # fe[(i - 1) * dim + d] += ϕ * t * normal[d] * dΓ
+                        if fe isa SArray
+                            fe = @set fe[(i - 1) * dim + d] += ϕ * t * normal[d] * dΓ
+                        else
+                            fe[(i - 1) * dim + d] += ϕ * t * normal[d] * dΓ
+                        end
                     end
                 end
             end
