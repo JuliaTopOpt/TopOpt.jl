@@ -202,10 +202,24 @@ end
     end
 
     @testset "getcloaddict default implementation" begin
-        # Create a basic StiffnessTopOptProblem
+        # Test with TieBeam which uses the default StiffnessTopOptProblem fallback:
+        # getcloaddict(p::StiffnessTopOptProblem{dim,T}) where {dim,T} = Dict{String,Vector{T}}()
+        problem = TieBeam(Val{:Linear}, Float64; refine=1, force=1.0, E=1.0, ν=0.3)
+
+        cload_dict = getcloaddict(problem)
+        
+        # The default implementation returns an empty Dict{String,Vector{T}}
+        @test cload_dict isa Dict
+        @test isempty(cload_dict)
+        @test eltype(keys(cload_dict)) == String
+        @test eltype(values(cload_dict)) == Vector{Float64}
+    end
+
+    @testset "getcloaddict with custom implementation" begin
+        # Create a basic StiffnessTopOptProblem with custom getcloaddict
         problem = PointLoadCantilever(Val{:Linear}, nels, sizes, E, ν, force)
 
-        # Test getcloaddict - returns a dict (type varies by implementation)
+        # Test getcloaddict - returns a dict with load info
         cload_dict = getcloaddict(problem)
         # The dict could be empty or have entries, just verify it's a Dict
         @test cload_dict isa Dict

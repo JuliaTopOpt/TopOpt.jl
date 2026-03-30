@@ -1,6 +1,6 @@
 # Tests for RectilinearGrid and other grid types
 using TopOpt.TopOptProblems
-using TopOpt.TopOptProblems: RectilinearGrid, LGrid, TieBeamGrid, nnodespercell, nfacespercell, nnodes, left, right, bottom, top, middlex, middley, middlez, back, front
+using TopOpt.TopOptProblems: RectilinearGrid, RectilinearTopology, LGrid, TieBeamGrid, nnodespercell, nfacespercell, nnodes, left, right, bottom, top, middlex, middley, middlez, back, front
 using Ferrite
 using Test
 
@@ -156,4 +156,35 @@ end
     @test haskey(tbgrid.facesets, "toproller")
     @test haskey(tbgrid.facesets, "rightload")
     @test haskey(tbgrid.facesets, "bottomload")
+end
+
+@testset "RectilinearTopology" begin
+    # Create a problem with known dimensions
+    nels = (10, 6)
+    sizes = (1.0, 1.0)
+    E = 1.0
+    ν = 0.3
+    force = 1.0
+
+    problem = PointLoadCantilever(Val{:Linear}, nels, sizes, E, ν, force)
+
+    # Test 1: Default topology (all ones)
+    topology = RectilinearTopology(problem)
+    @test size(topology) == reverse(nels)
+    @test all(topology .== 1.0)
+
+    # Test 2: Custom topology with zeros
+    custom_topology = zeros(Float64, Ferrite.getncells(problem))
+    topology2 = RectilinearTopology(problem, custom_topology)
+    @test size(topology2) == reverse(nels)
+    @test all(topology2 .== 0.0)
+
+    # Test 3: Custom topology with mixed values
+    mixed_topology = ones(Float64, Ferrite.getncells(problem))
+    mixed_topology[1:div(end, 2)] .= 0.5
+    topology3 = RectilinearTopology(problem, mixed_topology)
+    @test size(topology3) == reverse(nels)
+    @test topology3 isa AbstractMatrix
+    @test any(topology3 .== 0.5)
+    @test any(topology3 .== 1.0)
 end

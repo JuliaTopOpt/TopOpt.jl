@@ -361,6 +361,66 @@ end
     @test Ferrite.getncells(grid) == prod(nels)
 end
 
+@testset "RectilinearTopology" begin
+    using TopOpt.TopOptProblems: RectilinearTopology
+
+    @testset "Default topology (all ones)" begin
+        # Create a simple PointLoadCantilever problem
+        nels = (10, 6)
+        sizes = (1.0, 1.0)
+        E = 1.0
+        ν = 0.3
+        force = 1.0
+
+        problem = PointLoadCantilever(Val{:Linear}, nels, sizes, E, ν, force)
+
+        # Test with default topology (should be all ones)
+        topology = RectilinearTopology(problem)
+        @test size(topology) == (6, 10)
+        @test all(topology .== 1.0)
+    end
+
+    @testset "Custom topology" begin
+        nels = (10, 6)
+        sizes = (1.0, 1.0)
+        E = 1.0
+        ν = 0.3
+        force = 1.0
+
+        problem = PointLoadCantilever(Val{:Linear}, nels, sizes, E, ν, force)
+
+        # Create a custom topology with some zeros
+        custom_topology = ones(Float64, Ferrite.getncells(problem))
+        custom_topology[1:30] .= 0.0  # Set first 30 elements to zero
+
+        topology = RectilinearTopology(problem, custom_topology)
+
+        # Check dimensions match nels (transposed)
+        @test size(topology) == (6, 10)
+
+        # Check that the topology values are mapped correctly
+        # The reshape is transposed, so we check that values are reasonable
+        @test topology isa AbstractMatrix
+        @test eltype(topology) <: Real
+    end
+
+    @testset "Quadratic geometry order" begin
+        # Test with quadratic elements
+        nels = (10, 6)
+        sizes = (1.0, 1.0)
+        E = 1.0
+        ν = 0.3
+        force = 1.0
+
+        # Use HalfMBB which supports quadratic elements in 2D
+        problem = HalfMBB(Val{:Quadratic}, nels, sizes, E, ν, force)
+
+        topology = RectilinearTopology(problem)
+        @test size(topology) == (6, 10)
+        @test all(topology .== 1.0)
+    end
+end
+
 @testset "Problem show methods" begin
     nels = (10, 6)
     sizes = (1.0, 1.0)
