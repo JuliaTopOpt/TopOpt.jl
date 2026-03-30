@@ -15,7 +15,7 @@ using Nonconvex: NonconvexCore, getdim
     println("✓ Nonconvex.NonconvexCore.getdim(::Compliance) = $dim")
     
     # Also test that getdim returns 1 for Volume
-    vol = Volume(solver)
+    vol = TopOpt.Volume(solver)
     vol_dim = getdim(vol)
     @test vol_dim == 1
     println("✓ getdim(::Volume) = $vol_dim")
