@@ -65,6 +65,45 @@ end
     @test_throws ArgumentError setpenalty!(solver, [1.0, 2.0, 3.0])
 end
 
+@testset "setpenalty! on Compliance object" begin
+    # Create a minimal problem and solver
+    nels = (2, 2)
+    sizes = (1.0, 1.0)
+    E = 1.0
+    ν = 0.3
+    force = 1.0
+
+    problem = PointLoadCantilever(Val{:Linear}, nels, sizes, E, ν, force)
+
+    # Create a solver using FEASolver with DirectSolver
+    solver = FEASolver(DirectSolver, problem)
+    
+    # Create a Compliance object with the solver
+    comp = Compliance(solver)
+
+    # Test initial penalty value
+    initial_penalty = getpenalty(comp)
+    @test initial_penalty isa PowerPenalty
+    @test initial_penalty.p == 1.0  # Default penalty value
+    
+    # Store the initial penalty value for comparison
+    initial_p = initial_penalty.p
+
+    # Test setpenalty! on Compliance object with a new penalty value
+    new_p = 3.0
+    setpenalty!(comp, new_p)
+    
+    # Verify the penalty was updated on the Compliance
+    updated_penalty = getpenalty(comp)
+    @test updated_penalty.p == new_p
+    
+    # Verify the penalty was also updated on the underlying solver
+    @test getpenalty(solver).p == new_p
+    
+    # Verify prev_penalty on solver stores the old value
+    @test getprevpenalty(solver).p == initial_p
+end
+
 @testset "RationalPenalty" begin
     # Test construction
     rp = RationalPenalty(3.0)
@@ -259,6 +298,311 @@ end
     f(x) = ProjectedPenalty(PowerPenalty(2.0), HeavisideProjection(3.0))(x)
     g = Zygote.gradient(f, 0.5)[1]
     @test g isa Real
+end
+
+using TopOpt.Utilities: get_ρ, get_ρ_dρ, density
+
+@testset "get_ρ - penalized density computation" begin
+    # Note: PENALTY_BEFORE_INTERPOLATION is a compile-time preference.
+    # The tests below verify the function behaves correctly for the current configuration.
+    # To test the other mode, restart Julia with the preference changed.
+    @info "Testing get_ρ with PENALTY_BEFORE_INTERPOLATION = $(TopOpt.PENALTY_BEFORE_INTERPOLATION)"
+
+    # Test with PowerPenalty
+    @testset "PowerPenalty" begin
+        penalty = PowerPenalty(3.0)
+        xmin = 0.001
+
+        # Test basic computation at x_e = 0.5
+        x_e = 0.5
+        result = get_ρ(x_e, penalty, xmin)
+
+        # Manual computation based on current mode
+        if TopOpt.PENALTY_BEFORE_INTERPOLATION
+            # density(penalty(x_e), xmin)
+            expected = density(penalty(x_e), xmin)
+        else
+            # penalty(density(x_e, xmin))
+            expected = penalty(density(x_e, xmin))
+        end
+        @test result ≈ expected
+
+        # Test edge case: x_e = 0.0
+        result_0 = get_ρ(0.0, penalty, xmin)
+        if TopOpt.PENALTY_BEFORE_INTERPOLATION
+            expected_0 = density(penalty(0.0), xmin)
+        else
+            expected_0 = penalty(density(0.0, xmin))
+        end
+        @test result_0 ≈ expected_0
+
+        # Test edge case: x_e = 1.0
+        result_1 = get_ρ(1.0, penalty, xmin)
+        if TopOpt.PENALTY_BEFORE_INTERPOLATION
+            expected_1 = density(penalty(1.0), xmin)
+        else
+            expected_1 = penalty(density(1.0, xmin))
+        end
+        @test result_1 ≈ expected_1
+
+        # Test with different xmin values
+        for xmin_test in [0.0, 0.001, 0.01, 0.1]
+            result_xmin = get_ρ(0.5, penalty, xmin_test)
+            if TopOpt.PENALTY_BEFORE_INTERPOLATION
+                expected_xmin = density(penalty(0.5), xmin_test)
+            else
+                expected_xmin = penalty(density(0.5, xmin_test))
+            end
+            @test result_xmin ≈ expected_xmin
+        end
+
+        # Test with different penalty values
+        for p in [1.0, 2.0, 3.0, 5.0]
+            penalty_p = PowerPenalty(p)
+            result_p = get_ρ(0.5, penalty_p, xmin)
+            if TopOpt.PENALTY_BEFORE_INTERPOLATION
+                expected_p = density(penalty_p(0.5), xmin)
+            else
+                expected_p = penalty_p(density(0.5, xmin))
+            end
+            @test result_p ≈ expected_p
+        end
+    end
+
+    # Test with RationalPenalty
+    @testset "RationalPenalty" begin
+        penalty = RationalPenalty(3.0)
+        xmin = 0.001
+
+        x_e = 0.5
+        result = get_ρ(x_e, penalty, xmin)
+
+        if TopOpt.PENALTY_BEFORE_INTERPOLATION
+            expected = density(penalty(x_e), xmin)
+        else
+            expected = penalty(density(x_e, xmin))
+        end
+        @test result ≈ expected
+
+        # Test edge cases
+        @test get_ρ(0.0, penalty, xmin) ≈ (TopOpt.PENALTY_BEFORE_INTERPOLATION ? density(penalty(0.0), xmin) : penalty(density(0.0, xmin)))
+        @test get_ρ(1.0, penalty, xmin) ≈ (TopOpt.PENALTY_BEFORE_INTERPOLATION ? density(penalty(1.0), xmin) : penalty(density(1.0, xmin)))
+    end
+
+    # Test with SinhPenalty
+    @testset "SinhPenalty" begin
+        penalty = SinhPenalty(3.0)
+        xmin = 0.001
+
+        x_e = 0.5
+        result = get_ρ(x_e, penalty, xmin)
+
+        if TopOpt.PENALTY_BEFORE_INTERPOLATION
+            expected = density(penalty(x_e), xmin)
+        else
+            expected = penalty(density(x_e, xmin))
+        end
+        @test result ≈ expected
+
+        # Test edge cases
+        @test get_ρ(0.0, penalty, xmin) ≈ (TopOpt.PENALTY_BEFORE_INTERPOLATION ? density(penalty(0.0), xmin) : penalty(density(0.0, xmin)))
+        @test get_ρ(1.0, penalty, xmin) ≈ (TopOpt.PENALTY_BEFORE_INTERPOLATION ? density(penalty(1.0), xmin) : penalty(density(1.0, xmin)))
+    end
+
+    # Test with ProjectedPenalty
+    @testset "ProjectedPenalty" begin
+        base_penalty = PowerPenalty(3.0)
+        proj = HeavisideProjection(5.0)
+        penalty = ProjectedPenalty(base_penalty, proj)
+        xmin = 0.001
+
+        x_e = 0.5
+        result = get_ρ(x_e, penalty, xmin)
+
+        if TopOpt.PENALTY_BEFORE_INTERPOLATION
+            expected = density(penalty(x_e), xmin)
+        else
+            expected = penalty(density(x_e, xmin))
+        end
+        @test result ≈ expected
+
+        # Test with different base penalties
+        rp_base = RationalPenalty(2.0)
+        rp_proj = ProjectedPenalty(rp_base, proj)
+        result_rp = get_ρ(0.5, rp_proj, xmin)
+        if TopOpt.PENALTY_BEFORE_INTERPOLATION
+            expected_rp = density(rp_proj(0.5), xmin)
+        else
+            expected_rp = rp_proj(density(0.5, xmin))
+        end
+        @test result_rp ≈ expected_rp
+    end
+
+    # Test type stability
+    @testset "Type stability" begin
+        penalty = PowerPenalty(3.0)
+        xmin = 0.001
+        x_e = 0.5
+
+        result = get_ρ(x_e, penalty, xmin)
+        @test result isa Float64
+
+        # Test with Float32
+        penalty_f32 = PowerPenalty(3.0f0)
+        xmin_f32 = 0.001f0
+        x_e_f32 = 0.5f0
+
+        result_f32 = get_ρ(x_e_f32, penalty_f32, xmin_f32)
+        @test result_f32 isa Float32
+    end
+
+    # Test mathematical properties
+    @testset "Mathematical properties" begin
+        penalty = PowerPenalty(3.0)
+        xmin = 0.001
+
+        # For any valid input, result should be between xmin and penalty(1.0) (or vice versa)
+        for x_e in [0.0, 0.25, 0.5, 0.75, 1.0]
+            result = get_ρ(x_e, penalty, xmin)
+            # Result should be in reasonable range
+            @test result >= min(xmin, penalty(xmin))
+            @test result <= max(penalty(1.0), 1.0)
+        end
+
+        # Test monotonicity: higher x_e should give higher result (for typical penalties)
+        # Note: This may not hold for all penalty/projection combinations
+        x1, x2 = 0.3, 0.7
+        r1 = get_ρ(x1, penalty, xmin)
+        r2 = get_ρ(x2, penalty, xmin)
+        @test r1 < r2  # PowerPenalty should preserve ordering
+    end
+
+    # Test consistency with manual computation
+    @testset "Consistency with manual computation" begin
+        penalty = PowerPenalty(2.0)
+        xmin = 0.01
+        x_e = 0.6
+
+        ρ_computed = get_ρ(x_e, penalty, xmin)
+
+        # Manual step-by-step computation
+        if TopOpt.PENALTY_BEFORE_INTERPOLATION
+            # First apply penalty, then density interpolation
+            penalized = penalty(x_e)  # x_e^p
+            ρ_manual = density(penalized, xmin)  # penalized * (1 - xmin) + xmin
+        else
+            # First apply density interpolation, then penalty
+            interpolated = density(x_e, xmin)  # x_e * (1 - xmin) + xmin
+            ρ_manual = penalty(interpolated)  # interpolated^p
+        end
+
+        @test ρ_computed ≈ ρ_manual
+    end
+end
+
+@testset "get_ρ_dρ - penalized density with derivative" begin
+    @info "Testing get_ρ_dρ with PENALTY_BEFORE_INTERPOLATION = $(TopOpt.PENALTY_BEFORE_INTERPOLATION)"
+
+    @testset "PowerPenalty derivatives" begin
+        penalty = PowerPenalty(3.0)
+        xmin = 0.001
+
+        # Test at x_e = 0.5
+        x_e = 0.5
+        ρ_val, dρ = get_ρ_dρ(x_e, penalty, xmin)
+
+        # Verify the value matches get_ρ
+        @test ρ_val ≈ get_ρ(x_e, penalty, xmin)
+
+        # Verify derivative using finite differences
+        ε = 1e-8
+        ρ_plus = get_ρ(x_e + ε, penalty, xmin)
+        ρ_minus = get_ρ(x_e - ε, penalty, xmin)
+        fd_derivative = (ρ_plus - ρ_minus) / (2 * ε)
+
+        @test dρ ≈ fd_derivative rtol = 1e-5
+
+        # Test at other points
+        for x_test in [0.1, 0.3, 0.7, 0.9]
+            ρ_val_t, dρ_t = get_ρ_dρ(x_test, penalty, xmin)
+
+            ρ_plus_t = get_ρ(x_test + ε, penalty, xmin)
+            ρ_minus_t = get_ρ(x_test - ε, penalty, xmin)
+            fd_derivative_t = (ρ_plus_t - ρ_minus_t) / (2 * ε)
+
+            @test dρ_t ≈ fd_derivative_t rtol = 1e-5
+        end
+    end
+
+    @testset "RationalPenalty derivatives" begin
+        penalty = RationalPenalty(3.0)
+        xmin = 0.001
+
+        x_e = 0.5
+        ρ_val, dρ = get_ρ_dρ(x_e, penalty, xmin)
+
+        @test ρ_val ≈ get_ρ(x_e, penalty, xmin)
+
+        ε = 1e-8
+        ρ_plus = get_ρ(x_e + ε, penalty, xmin)
+        ρ_minus = get_ρ(x_e - ε, penalty, xmin)
+        fd_derivative = (ρ_plus - ρ_minus) / (2 * ε)
+
+        @test dρ ≈ fd_derivative rtol = 1e-5
+    end
+
+    @testset "SinhPenalty derivatives" begin
+        penalty = SinhPenalty(3.0)
+        xmin = 0.001
+
+        x_e = 0.5
+        ρ_val, dρ = get_ρ_dρ(x_e, penalty, xmin)
+
+        @test ρ_val ≈ get_ρ(x_e, penalty, xmin)
+
+        ε = 1e-8
+        ρ_plus = get_ρ(x_e + ε, penalty, xmin)
+        ρ_minus = get_ρ(x_e - ε, penalty, xmin)
+        fd_derivative = (ρ_plus - ρ_minus) / (2 * ε)
+
+        @test dρ ≈ fd_derivative rtol = 1e-5
+    end
+
+    @testset "ProjectedPenalty derivatives" begin
+        base_penalty = PowerPenalty(3.0)
+        proj = HeavisideProjection(5.0)
+        penalty = ProjectedPenalty(base_penalty, proj)
+        xmin = 0.001
+
+        x_e = 0.5
+        ρ_val, dρ = get_ρ_dρ(x_e, penalty, xmin)
+
+        @test ρ_val ≈ get_ρ(x_e, penalty, xmin)
+
+        ε = 1e-8
+        ρ_plus = get_ρ(x_e + ε, penalty, xmin)
+        ρ_minus = get_ρ(x_e - ε, penalty, xmin)
+        fd_derivative = (ρ_plus - ρ_minus) / (2 * ε)
+
+        @test dρ ≈ fd_derivative rtol = 1e-5
+    end
+
+    @testset "Edge case derivatives" begin
+        penalty = PowerPenalty(3.0)
+        xmin = 0.001
+
+        # Test at boundaries
+        for x_e in [0.0, 1.0]
+            ρ_val, dρ = get_ρ_dρ(x_e, penalty, xmin)
+            @test ρ_val ≈ get_ρ(x_e, penalty, xmin)
+            @test isfinite(dρ)
+        end
+
+        # Test with xmin = 0.0
+        ρ_val, dρ = get_ρ_dρ(0.5, penalty, 0.0)
+        @test ρ_val ≈ get_ρ(0.5, penalty, 0.0)
+        @test isfinite(dρ)
+    end
 end
 
 @testset "getprevpenalty" begin

@@ -53,4 +53,11 @@ using TopOpt, Test
         show(io, MIME("text/plain"), result)
         @test String(take!(io)) == "TopOpt linear elasticity result\n"
     end
+
+    @testset "visualize fallback function" begin
+        # Test that visualize throws an error without Makie loaded
+        err = @test_throws ErrorException visualize([1, 2, 3])
+        @test occursin("visualize", sprint(show, err.value))
+        @test occursin("Makie", sprint(show, err.value))
+    end
 end

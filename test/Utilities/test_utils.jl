@@ -176,3 +176,40 @@ end
     K_test = @SMatrix [5.0 1.0; 2.0 3.0]
     @test sumdiag(K_test) == sum(diag(K_test))
 end
+
+@testset "visualize fallback function" begin
+    # Test that visualize throws informative error when Makie is not loaded
+    err = try
+        visualize(42)
+        nothing
+    catch e
+        e
+    end
+    @test err isa ErrorException
+    @test occursin("visualize", err.msg)
+    @test occursin("Int64", err.msg)
+    @test occursin("Makie", err.msg)
+
+    # Test with different types
+    err_str = try
+        visualize("hello")
+        nothing
+    catch e
+        e
+    end
+    @test err_str isa ErrorException
+    @test occursin("String", err_str.msg)
+
+    # Test with keyword arguments
+    err_kw = try
+        visualize(42; color=:red)
+        nothing
+    catch e
+        e
+    end
+    @test err_kw isa ErrorException
+    @test occursin("Int64", err_kw.msg)
+
+    # Test that visualize is exported
+    @test isdefined(@__MODULE__, :visualize)
+end
