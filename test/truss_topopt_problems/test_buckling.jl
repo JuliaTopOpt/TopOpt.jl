@@ -2,6 +2,7 @@ using Test
 using LinearAlgebra
 using StaticArrays
 using Ferrite
+using SparseArrays
 
 using TopOpt
 using TopOpt.TrussTopOptProblems.TrussTopOptProblems: compute_local_axes
@@ -10,6 +11,39 @@ using TopOpt.TrussTopOptProblems: getA
 using Arpack
 
 include("utils.jl")
+
+@testset "buckling function with displacement argument" begin
+    # Load a simple truss problem
+    fea_ins_dir = joinpath(@__DIR__, "instances", "fea_examples")
+    problem_file = joinpath(fea_ins_dir, "mgz_geom_stiff_ex9.1.json")
+    
+    node_points, elements, mats, crosssecs, fixities, load_cases = load_truss_json(problem_file)
+    loads = load_cases["0"]
+    
+    problem = TrussProblem(Val{:Linear}, node_points, elements, loads, fixities, mats, crosssecs)
+    solver = FEASolver(DirectSolver, problem)
+    solver()
+    
+    # Test buckling with u argument (lines 89-93 in truss_topoptproblems.jl)
+    u = solver.u
+    Ke, Kg = buckling(problem, solver.globalinfo, solver.elementinfo; u=u)
+    
+    # Verify return types and dimensions
+    # The exact type depends on the problem - just check they are valid matrices
+    @test !isnothing(Ke)
+    @test !isnothing(Kg)
+    
+    # Verify that the combined matrix is valid
+    K = Ke + Kg
+    @test size(K, 1) == size(K, 2)
+    
+    # Test buckling without u argument (covers lines 91-92: u === undef branch)
+    Ke2, Kg2 = buckling(problem, solver.globalinfo, solver.elementinfo)
+    @test !isnothing(Ke2)
+    @test !isnothing(Kg2)
+    @test size(Ke2) == size(Ke)
+    @test size(Kg2) == size(Kg)
+end
 
 fea_ins_dir = joinpath(@__DIR__, "instances", "fea_examples");
 gm_ins_dir = joinpath(@__DIR__, "instances", "ground_meshes");
