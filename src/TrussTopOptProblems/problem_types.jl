@@ -179,13 +179,7 @@ function PointLoadCantileverTruss(
 ) where {dim}
     iseven(nels[2]) && (length(nels) < 3 || iseven(nels[3])) ||
         throw("Grid does not have an even number of elements along the y and/or z axes.")
-    _T = promote_type(eltype(sizes), typeof(E), typeof(ν), typeof(force))
-    if _T <: Integer
-        T = Float64
-    else
-        T = _T
-    end
-
+    T = float(promote_type(eltype(sizes), typeof(E), typeof(ν), typeof(force)))
     # only for the convience of getting all the node points
     rect_grid = RectilinearGrid(Val{:Linear}, nels, T.(sizes))
     node_mat = hcat(map(x -> Vector(x.x), rect_grid.grid.nodes)...)

@@ -35,6 +35,7 @@ if ACTUAL_GROUP in ("All", "Core_Tests")
         include("topopt_problems/test_elementmatrix.jl")
         include("topopt_problems/test_assemble_functions.jl")
         include("topopt_problems/test_multiload.jl")
+        include("topopt_problems/test_pressure.jl")
     end
     @safetestset "Functions" begin
         include("Functions/test_common_fns.jl")
@@ -163,5 +164,6 @@ if ACTUAL_GROUP in ("All", "WCSMO14_2")
         # include("wcsmo14/jl_benchmarks/compare_top3d.jl")
         # include("wcsmo14/jl_benchmarks/compare_top3d125.jl")
         # include("wcsmo14/jl_benchmarks/new_problems.jl")
+        # include("wcsmo14/jl_benchmarks/compare_topopt_py.jl")
     end
 end

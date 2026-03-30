@@ -37,12 +37,7 @@ function NewPointLoadCantilever(
     iseven(nels[2]) && (length(nels) < 3 || iseven(nels[3])) ||
         throw("Grid does not have an even number of elements along the y and/or z axes.")
 
-    _T = promote_type(eltype(sizes), typeof(E), typeof(ν), typeof(force))
-    if _T <: Integer
-        T = Float64
-    else
-        T = _T
-    end
+    T = float(promote_type(eltype(sizes), typeof(E), typeof(ν), typeof(force)))
     if CellType === :Linear || dim === 3
         rect_grid = RectilinearGrid(Val{:Linear}, nels, T.(sizes))
     else

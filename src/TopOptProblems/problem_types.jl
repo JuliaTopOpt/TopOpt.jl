@@ -116,12 +116,7 @@ function PointLoadCantilever(
     iseven(nels[2]) && (length(nels) < 3 || iseven(nels[3])) ||
         throw("Grid does not have an even number of elements along the y and/or z axes.")
 
-    _T = promote_type(eltype(sizes), typeof(E), typeof(ν), typeof(force))
-    if _T <: Integer
-        T = Float64
-    else
-        T = _T
-    end
+    T = float(promote_type(eltype(sizes), typeof(E), typeof(ν), typeof(force)))
     if CellType === :Linear || dim === 3
         rect_grid = RectilinearGrid(Val{:Linear}, nels, T.(sizes))
     else
@@ -270,12 +265,7 @@ function HalfMBB(
     ν=0.3,
     force=1.0,
 ) where {dim,CellType}
-    _T = promote_type(eltype(sizes), typeof(E), typeof(ν), typeof(force))
-    if _T <: Integer
-        T = Float64
-    else
-        T = _T
-    end
+    T = float(promote_type(eltype(sizes), typeof(E), typeof(ν), typeof(force)))
     if CellType === :Linear || dim === 3
         rect_grid = RectilinearGrid(Val{:Linear}, nels, T.(sizes))
     else
@@ -745,12 +735,7 @@ function HeatConductionProblem(
     Tright=0.0,
     heatflux=Dict{String,Float64}(),
 ) where {dim, CellType}
-    _T = promote_type(eltype(sizes), typeof(k), typeof(Tleft), typeof(Tright))
-    if _T <: Integer
-        T = Float64
-    else
-        T = _T
-    end
+    T = float(promote_type(eltype(sizes), typeof(k), typeof(Tleft), typeof(Tright)))
 
     if CellType === :Linear
         rect_grid = RectilinearGrid(Val{:Linear}, nels, T.(sizes))

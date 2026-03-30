@@ -82,3 +82,14 @@ grid = dh.grid
 @test length(grid.cells) == 60
 @test Ferrite.nnodes(grid.cells[1]) == 3  # Linear triangle
 @test typeof(grid.cells[1]) <: Ferrite.Cell{2,3,3}  # 2D triangle cell with 3 nodes, 3 edges
+
+# Test inpcelltype function - maps Ferrite cell types to INP cell type strings
+@test INP.Parser.inpcelltype(Ferrite.Triangle) == "CPS3"
+@test INP.Parser.inpcelltype(Ferrite.QuadraticTriangle) == "CPS6"
+@test INP.Parser.inpcelltype(Ferrite.Tetrahedron) == "C3D4"
+@test INP.Parser.inpcelltype(Ferrite.QuadraticTetrahedron) == "C3D10"
+@test INP.Parser.inpcelltype(Ferrite.Quadrilateral) == "CPS4"
+@test INP.Parser.inpcelltype(Ferrite.QuadraticQuadrilateral) == "CPS8"
+@test INP.Parser.inpcelltype(Ferrite.Hexahedron) == "C3D8"
+@test INP.Parser.inpcelltype(Ferrite.QuadraticHexahedron) == "C3D20"
+@test INP.Parser.inpcelltype(Int) == ""  # Unknown type returns empty string

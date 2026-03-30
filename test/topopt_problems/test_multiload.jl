@@ -94,20 +94,6 @@ end
         @test length(unique(dirs)) > 1  # Very unlikely to get identical random directions
     end
 
-    @testset "generate_random_loads" begin
-        problem = PointLoadCantilever(Val{:Linear}, nels, sizes, E, ν, force)
-
-        # Test generating random loads with a distribution
-        # BUG IN SOURCE: generate_random_loads has a bug where it uses push!(FJ, i, i)
-        # which creates mismatched array sizes when dofs has length != 2
-        # For 2D problems with 2 DOFs per node, it happens to work
-        nloads = 5
-        dist = Normal(0.0, 1.0)
-        
-        # This will throw an error due to the bug
-        @test_throws ArgumentError generate_random_loads(problem, nloads, dist)
-    end
-
     @testset "get_node_first_cells" begin
         problem = PointLoadCantilever(Val{:Linear}, nels, sizes, E, ν, force)
         dh = problem.ch.dh
@@ -202,10 +188,24 @@ end
     end
 
     @testset "getcloaddict default implementation" begin
-        # Create a basic StiffnessTopOptProblem
+        # Test with TieBeam which uses the default StiffnessTopOptProblem fallback:
+        # getcloaddict(p::StiffnessTopOptProblem{dim,T}) where {dim,T} = Dict{String,Vector{T}}()
+        problem = TieBeam(Val{:Linear}, Float64; refine=1, force=1.0, E=1.0, ν=0.3)
+
+        cload_dict = getcloaddict(problem)
+        
+        # The default implementation returns an empty Dict{String,Vector{T}}
+        @test cload_dict isa Dict
+        @test isempty(cload_dict)
+        @test eltype(keys(cload_dict)) == String
+        @test eltype(values(cload_dict)) == Vector{Float64}
+    end
+
+    @testset "getcloaddict with custom implementation" begin
+        # Create a basic StiffnessTopOptProblem with custom getcloaddict
         problem = PointLoadCantilever(Val{:Linear}, nels, sizes, E, ν, force)
 
-        # Test getcloaddict - returns a dict (type varies by implementation)
+        # Test getcloaddict - returns a dict with load info
         cload_dict = getcloaddict(problem)
         # The dict could be empty or have entries, just verify it's a Dict
         @test cload_dict isa Dict
@@ -252,6 +252,34 @@ end
         # Test the property forwarding
         @test getE(multiload) == E
         @test getν(multiload) == ν
+    end
+
+    @testset "generate_random_loads" begin
+        problem = PointLoadCantilever(Val{:Linear}, nels, sizes, E, ν, force)
+
+        # Test generating random loads with a distribution
+        nloads = 5
+        dist = Normal(0.0, 1.0)
+        
+        # This should work correctly now (bug has been fixed)
+        F = generate_random_loads(problem, nloads, dist)
+        
+        # Verify the result is a sparse matrix with correct dimensions
+        @test F isa SparseMatrixCSC
+        @test size(F, 2) == nloads
+        # generate_random_loads creates loads only on surface DOFs, not all DOFs
+        @test size(F, 1) <= Ferrite.ndofs(problem.ch.dh)
+        
+        # Each column should have some non-zero entries (loads applied)
+        for i in 1:nloads
+            @test nnz(F[:, i]) > 0
+        end
+        
+        # Test with uniform distribution as well
+        dist2 = Uniform(-1.0, 1.0)
+        F2 = generate_random_loads(problem, 3, dist2)
+        @test F2 isa SparseMatrixCSC
+        @test size(F2, 2) == 3
     end
 
     @testset "Integration test: Full multiload workflow" begin

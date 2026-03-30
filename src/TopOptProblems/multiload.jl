@@ -99,16 +99,28 @@ function generate_random_loads(
 )
     loadrule = () -> direction() .* rand(scalar)
     surface_dofs = get_surface_dofs(problem)
+    
+    # surface_dofs is a flat vector of DOFs after setdiff
+    # Group them by node: n_dofs_per_node DOFs per node
+    n_dofs_per_node = size(problem.metadata.node_dofs, 1)
+    n_surface_nodes = length(surface_dofs) ÷ n_dofs_per_node
+    
+    # Create node start indices in the flat vector
+    node_indices = [
+        (n_dofs_per_node * (i - 1) + 1):(n_dofs_per_node * i) 
+        for i in 1:n_surface_nodes
+    ]
 
     FI = Int[]
     FJ = Int[]
     FV = Float64[]
-    nodeinds = rand(1:size(surface_dofs, 2), N)
+    selected_nodes = rand(1:n_surface_nodes, N)
     for i in 1:N
         load = loadrule()
-        dofs = surface_dofs[:, nodeinds[i]]
+        idx_range = node_indices[selected_nodes[i]]
+        dofs = surface_dofs[idx_range]
         append!(FI, dofs)
-        push!(FJ, i, i)
+        append!(FJ, fill(i, length(dofs)))
         append!(FV, load)
     end
     return sparse(FI, FJ, FV)

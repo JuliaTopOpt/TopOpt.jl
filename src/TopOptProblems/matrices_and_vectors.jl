@@ -159,55 +159,55 @@ function _make_Kes_and_weights(
     end
     return Kes, weights
 end
-# Fallback
-function _make_Kes_and_weights(
-    dh::DofHandler{dim,N,T},
-    ::Type{Tuple{MatrixType,VectorType}},
-    ::Type{Val{n_basefuncs}},
-    ::Type{Val{Kesize}},
-    C,
-    ρ,
-    quadrature_rule,
-    cellvalues,
-) where {dim,N,T,MatrixType,VectorType,n_basefuncs,Kesize}
-    # Calculate element stiffness matrices
-    nel = getncells(dh.grid)
-    body_force = ρ .* g # Force per unit volume
-    Kes = let Kesize = Kesize, nel = nel
-        [Symmetric(zeros(T, Kesize, Kesize), :U) for i in 1:nel]
-    end
-    weights = let Kesize = Kesize, nel = nel
-        [zeros(T, Kesize) for i in 1:nel]
-    end
-    Ke_e = zeros(T, dim, dim)
-    celliterator = CellIterator(dh)
-    for (k, cell) in enumerate(celliterator)
-        reinit!(cellvalues, cell)
-        fe = weights[k]
-        for q_point in 1:getnquadpoints(cellvalues)
-            dΩ = getdetJdV(cellvalues, q_point)
-            for b in 1:n_basefuncs
-                ∇ϕb = shape_gradient(cellvalues, q_point, b)
-                ϕb = shape_value(cellvalues, q_point, b)
-                for d2 in 1:dim
-                    fe[(b - 1) * dim + d2] += ϕb * body_force[d2] * dΩ
-                    for a in 1:n_basefuncs
-                        ∇ϕa = shape_gradient(cellvalues, q_point, a)
-                        Ke_e .= dotdot(∇ϕa, C, ∇ϕb) * dΩ
-                        for d1 in 1:dim
-                            #if dim*(b-1) + d2 >= dim*(a-1) + d1
-                            Kes[k].data[dim * (a - 1) + d1, dim * (b - 1) + d2] += Ke_e[
-                                d1, d2
-                            ]
-                            #end
-                        end
-                    end
-                end
-            end
-        end
-    end
-    return Kes, weights
-end
+# # Fallback
+# function _make_Kes_and_weights(
+#     dh::DofHandler{dim,N,T},
+#     ::Type{Tuple{MatrixType,VectorType}},
+#     ::Type{Val{n_basefuncs}},
+#     ::Type{Val{Kesize}},
+#     C,
+#     ρ,
+#     quadrature_rule,
+#     cellvalues,
+# ) where {dim,N,T,MatrixType,VectorType,n_basefuncs,Kesize}
+#     # Calculate element stiffness matrices
+#     nel = getncells(dh.grid)
+#     body_force = ρ .* g # Force per unit volume
+#     Kes = let Kesize = Kesize, nel = nel
+#         [Symmetric(zeros(T, Kesize, Kesize), :U) for i in 1:nel]
+#     end
+#     weights = let Kesize = Kesize, nel = nel
+#         [zeros(T, Kesize) for i in 1:nel]
+#     end
+#     Ke_e = zeros(T, dim, dim)
+#     celliterator = CellIterator(dh)
+#     for (k, cell) in enumerate(celliterator)
+#         reinit!(cellvalues, cell)
+#         fe = weights[k]
+#         for q_point in 1:getnquadpoints(cellvalues)
+#             dΩ = getdetJdV(cellvalues, q_point)
+#             for b in 1:n_basefuncs
+#                 ∇ϕb = shape_gradient(cellvalues, q_point, b)
+#                 ϕb = shape_value(cellvalues, q_point, b)
+#                 for d2 in 1:dim
+#                     fe[(b - 1) * dim + d2] += ϕb * body_force[d2] * dΩ
+#                     for a in 1:n_basefuncs
+#                         ∇ϕa = shape_gradient(cellvalues, q_point, a)
+#                         Ke_e .= dotdot(∇ϕa, C, ∇ϕb) * dΩ
+#                         for d1 in 1:dim
+#                             #if dim*(b-1) + d2 >= dim*(a-1) + d1
+#                             Kes[k].data[dim * (a - 1) + d1, dim * (b - 1) + d2] += Ke_e[
+#                                 d1, d2
+#                             ]
+#                             #end
+#                         end
+#                     end
+#                 end
+#             end
+#         end
+#     end
+#     return Kes, weights
+# end
 
 """
     _make_dloads(fes, problem, facevalues)
@@ -222,6 +222,7 @@ function _make_dloads(fes, problem::StiffnessTopOptProblem, facevalues)
     N = nnodespercell(problem)
     T = floattype(problem)
     dloads = deepcopy(fes)
+    eltype(dloads) <: StaticArray || throw("Expected dloads to be StaticArrays for stiffness problems.")
     for i in 1:length(dloads)
         if eltype(dloads) <: SArray
             dloads[i] = zero(eltype(dloads))
@@ -378,14 +379,6 @@ For thermal compliance minimization:
 - J = Q^T T (total heat generated × average temperature)
 - dJ/dx_e = -T_e^T Ke T_e · dρ_e/dx_e
 """
-function make_Kes_and_fes(problem::HeatTransferTopOptProblem, quad_order=2)
-    return make_Kes_and_fes(problem, quad_order, Val{:Static})
-end
-
-function make_Kes_and_fes(problem::HeatTransferTopOptProblem, ::Type{Val{mat_type}}) where {mat_type}
-    return make_Kes_and_fes(problem, 2, Val{mat_type})
-end
-
 function make_Kes_and_fes(
     problem::HeatTransferTopOptProblem{dim, T}, quad_order, ::Type{Val{mat_type}}
 ) where {dim, T, mat_type}
@@ -435,6 +428,7 @@ function _make_Kes_and_weights_heat(
     quadrature_rule,
     cellvalues,
 ) where {dim, N, T, MatrixType <: StaticArray, VectorType, n_basefuncs, Kesize}
+    MatrixType <: SizedMatrix && throw("SizedMatrix not supported for heat transfer problems with StaticArrays.")
     nel = getncells(dh.grid)
     Kes = Symmetric{T, MatrixType}[]
     sizehint!(Kes, nel)
@@ -459,45 +453,42 @@ function _make_Kes_and_weights_heat(
                 end
             end
         end
-        if MatrixType <: SizedMatrix
-            push!(Kes, Symmetric(SizedMatrix{Kesize, Kesize, T}(Ke_0)))
-        else
-            push!(Kes, Symmetric(MatrixType(Ke_0)))
-        end
+        # push!(Kes, Symmetric(SizedMatrix{Kesize, Kesize, T}(Ke_0)))
+        push!(Kes, Symmetric(MatrixType(Ke_0)))
     end
     return Kes, weights
 end
 
 # Fallback for non-static arrays
-function _make_Kes_and_weights_heat(
-    dh::DofHandler{dim, N, T},
-    ::Type{Tuple{MatrixType, VectorType}},
-    ::Type{Val{n_basefuncs}},
-    ::Type{Val{Kesize}},
-    k::T,
-    quadrature_rule,
-    cellvalues,
-) where {dim, N, T, MatrixType, VectorType, n_basefuncs, Kesize}
-    nel = getncells(dh.grid)
-    Kes = [Symmetric(zeros(T, Kesize, Kesize), :U) for i in 1:nel]
-    # No body forces in heat transfer - weights should be zeros
-    weights = [zeros(T, Kesize) for i in 1:nel]
-    Ke_e = zero(T)
+# function _make_Kes_and_weights_heat(
+#     dh::DofHandler{dim, N, T},
+#     ::Type{Tuple{MatrixType, VectorType}},
+#     ::Type{Val{n_basefuncs}},
+#     ::Type{Val{Kesize}},
+#     k::T,
+#     quadrature_rule,
+#     cellvalues,
+# ) where {dim, N, T, MatrixType, VectorType, n_basefuncs, Kesize}
+#     nel = getncells(dh.grid)
+#     Kes = [Symmetric(zeros(T, Kesize, Kesize), :U) for i in 1:nel]
+#     # No body forces in heat transfer - weights should be zeros
+#     weights = [zeros(T, Kesize) for i in 1:nel]
+#     Ke_e = zero(T)
 
-    celliterator = CellIterator(dh)
-    for (cell_idx, cell) in enumerate(celliterator)
-        reinit!(cellvalues, cell)
-        for q_point in 1:getnquadpoints(cellvalues)
-            dΩ = getdetJdV(cellvalues, q_point)
-            for b in 1:n_basefuncs
-                ∇ϕb = shape_gradient(cellvalues, q_point, b)
-                for a in 1:n_basefuncs
-                    ∇ϕa = shape_gradient(cellvalues, q_point, a)
-                    Ke_e = k * dot(∇ϕa, ∇ϕb) * dΩ
-                    Kes[cell_idx].data[a, b] += Ke_e
-                end
-            end
-        end
-    end
-    return Kes, weights
-end
+#     celliterator = CellIterator(dh)
+#     for (cell_idx, cell) in enumerate(celliterator)
+#         reinit!(cellvalues, cell)
+#         for q_point in 1:getnquadpoints(cellvalues)
+#             dΩ = getdetJdV(cellvalues, q_point)
+#             for b in 1:n_basefuncs
+#                 ∇ϕb = shape_gradient(cellvalues, q_point, b)
+#                 for a in 1:n_basefuncs
+#                     ∇ϕa = shape_gradient(cellvalues, q_point, a)
+#                     Ke_e = k * dot(∇ϕa, ∇ϕb) * dΩ
+#                     Kes[cell_idx].data[a, b] += Ke_e
+#                 end
+#             end
+#         end
+#     end
+#     return Kes, weights
+# end
