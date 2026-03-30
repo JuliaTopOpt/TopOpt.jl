@@ -254,6 +254,33 @@ end
         @test getν(multiload) == ν
     end
 
+    @testset "generate_random_loads" begin
+        problem = PointLoadCantilever(Val{:Linear}, nels, sizes, E, ν, force)
+
+        # Test generating random loads with a distribution
+        nloads = 5
+        dist = Normal(0.0, 1.0)
+        
+        # This should work correctly now (bug has been fixed)
+        F = generate_random_loads(problem, nloads, dist)
+        
+        # Verify the result is a sparse matrix with correct dimensions
+        @test F isa SparseMatrixCSC
+        @test size(F, 2) == nloads
+        @test size(F, 1) == Ferrite.ndofs(problem.ch.dh)
+        
+        # Each column should have some non-zero entries (loads applied)
+        for i in 1:nloads
+            @test nnz(F[:, i]) > 0
+        end
+        
+        # Test with uniform distribution as well
+        dist2 = Uniform(-1.0, 1.0)
+        F2 = generate_random_loads(problem, 3, dist2)
+        @test F2 isa SparseMatrixCSC
+        @test size(F2, 2) == 3
+    end
+
     @testset "Integration test: Full multiload workflow" begin
         # Create a problem
         problem = PointLoadCantilever(Val{:Linear}, nels, sizes, E, ν, force)
