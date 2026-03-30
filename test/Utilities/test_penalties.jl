@@ -438,8 +438,8 @@ using TopOpt.Utilities: get_ρ, get_ρ_dρ, density
         @test result_rp ≈ expected_rp
     end
 
-    # Test type stability
-    @testset "Type stability" begin
+    # Test output type
+    @testset "Output type" begin
         penalty = PowerPenalty(3.0)
         xmin = 0.001
         x_e = 0.5

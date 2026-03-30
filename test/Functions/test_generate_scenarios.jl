@@ -398,7 +398,7 @@ end
     end
 end
 
-@testset "generate_scenarios - Type Stability" begin
+@testset "generate_scenarios - output type" begin
 
     @testset "Returns correct types" begin
         dof = 1

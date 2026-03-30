@@ -92,7 +92,7 @@ end
     comp2 = compliance(Ke, u_big, dofs_offset)
     @test comp2 ≈ expected
 
-    # Test type stability
+    # Test output type
     Ke_f32 = Float32[2.0 1.0; 1.0 2.0]
     u_f32 = Float32[1.0, 2.0]
     comp_f32 = compliance(Ke_f32, u_f32, dofs)

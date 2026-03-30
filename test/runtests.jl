@@ -32,6 +32,7 @@ if ACTUAL_GROUP in ("All", "Core_Tests")
         include("topopt_problems/test_assembly.jl")
         include("topopt_problems/test_show.jl")
         include("topopt_problems/element_stiffness_matrix.jl")
+        include("topopt_problems/test_elementmatrix.jl")
     end
     @safetestset "Functions" begin
         include("Functions/test_common_fns.jl")
@@ -46,6 +47,13 @@ if ACTUAL_GROUP in ("All", "Core_Tests")
         include("Functions/test_function_utils.jl")
         include("Functions/test_trace.jl")
         include("Functions/test_block_compliance.jl")
+        include("Functions/test_compute_mean_compliance_svd.jl")
+        include("Functions/test_element_stress_tensor.jl")
+        include("Functions/test_generate_scenarios.jl")
+        include("Functions/test_getdim.jl")
+        include("Functions/test_hadamard.jl")
+        include("Functions/test_mean_compliance_branches.jl")
+        include("Functions/test_stress_tensor_rrule.jl")
     end
     @safetestset "Solver" begin
         include("FEA/solvers.jl")
@@ -71,6 +79,7 @@ if ACTUAL_GROUP in ("All", "Core_Tests")
         include("truss_topopt_problems/test_buckling.jl")
         include("truss_topopt_problems/test_buckling_optimize.jl")
         include("truss_topopt_problems/test_simulate_truss.jl")
+        include("truss_topopt_problems/utils.jl")
     end
     @safetestset "BESO" begin
         include("Algorithms/test_beso.jl")

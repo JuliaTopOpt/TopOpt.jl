@@ -258,7 +258,7 @@ end
         @test_throws MethodError TopOpt.Functions.von_mises(σ2)
     end
 
-    @testset "Type stability" begin
+    @testset "Output type" begin
         σ1 = Float32[100.0 0.0; 0.0 0.0]
         result1 = TopOpt.Functions.von_mises(σ1)
         @test typeof(result1) == Float32
