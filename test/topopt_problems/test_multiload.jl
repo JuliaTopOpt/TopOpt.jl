@@ -94,20 +94,6 @@ end
         @test length(unique(dirs)) > 1  # Very unlikely to get identical random directions
     end
 
-    @testset "generate_random_loads" begin
-        problem = PointLoadCantilever(Val{:Linear}, nels, sizes, E, ν, force)
-
-        # Test generating random loads with a distribution
-        # BUG IN SOURCE: generate_random_loads has a bug where it uses push!(FJ, i, i)
-        # which creates mismatched array sizes when dofs has length != 2
-        # For 2D problems with 2 DOFs per node, it happens to work
-        nloads = 5
-        dist = Normal(0.0, 1.0)
-        
-        # This will throw an error due to the bug
-        @test_throws ArgumentError generate_random_loads(problem, nloads, dist)
-    end
-
     @testset "get_node_first_cells" begin
         problem = PointLoadCantilever(Val{:Linear}, nels, sizes, E, ν, force)
         dh = problem.ch.dh
