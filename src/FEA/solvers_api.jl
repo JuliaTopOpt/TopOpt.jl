@@ -212,7 +212,22 @@ function (s::GenericFEASolver{T,Physics,Solver})(
         # Multiple RHS columns - solve each one
         # Assemble stiffness matrix (and force vector if assemble_f=true)
         assemble!(s.globalinfo, s.problem, s.elementinfo, s.vars, getpenalty(s), s.xmin; assemble_f=assemble_f)
+
+        if Physics === HeatTransfer
+            K_conv = assemble_convection_matrix(s.problem)
         
+            # Mutate the pre-allocated matrix in-place so the Ferrite assembler doesn't break
+            K_data = s.globalinfo.K.data
+            for col in 1:size(K_conv, 2)
+                for ptr in K_conv.colptr[col]:(K_conv.colptr[col+1]-1)
+                    row = K_conv.rowval[ptr]
+                    val = K_conv.nzval[ptr]
+                    # Add the convection values directly into the existing memory slots
+                    K_data[row, col] += val
+                end
+            end
+        end
+
         # Solve for each column of the matrix RHS
         for j in 1:size(rhs, 2)
             # Get the RHS for this column - use the provided matrix columns
@@ -241,6 +256,21 @@ function (s::GenericFEASolver{T,Physics,Solver})(
 
     # Single RHS case (original behavior)
     assemble!(s.globalinfo, s.problem, s.elementinfo, s.vars, getpenalty(s), s.xmin; assemble_f=assemble_f)
+
+    if Physics === HeatTransfer
+            K_conv = assemble_convection_matrix(s.problem)
+        
+            # Mutate the pre-allocated matrix in-place so the Ferrite assembler doesn't break
+            K_data = s.globalinfo.K.data
+            for col in 1:size(K_conv, 2)
+                for ptr in K_conv.colptr[col]:(K_conv.colptr[col+1]-1)
+                    row = K_conv.rowval[ptr]
+                    val = K_conv.nzval[ptr]
+                    # Add the convection values directly into the existing memory slots
+                    K_data[row, col] += val
+                end
+            end
+        end
 
     # Apply boundary conditions to rhs if needed (only for vectors)
     if !assemble_f && rhs !== s.globalinfo.f && ndims(rhs) == 1

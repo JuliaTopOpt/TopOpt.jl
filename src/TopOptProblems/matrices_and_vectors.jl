@@ -319,7 +319,38 @@ function _make_dloads(fes, problem::HeatTransferTopOptProblem, facevalues)
             dloads[cellid] = fe
         end
     end
-
+    convectiondict = getconvectiondict(problem)
+    if !isempty(convectiondict)
+        for (faceset_name, (h, T_inf)) in convectiondict
+            faceset = getfacesets(problem)[faceset_name]
+            for (cellid, faceid) in faceset
+                boundary_matrix[faceid, cellid] ||
+                    throw("Face $((cellid, faceid)) not on boundary.")
+                
+                fe = dloads[cellid]
+                getcoordinates!(cell_coords, grid, cellid)
+                reinit!(facevalues, cell_coords, faceid)
+                
+                for q_point in 1:getnquadpoints(facevalues)
+                    dΓ = getdetJdV(facevalues, q_point)
+                    for i in 1:n_basefuncs
+                        ϕ = shape_value(facevalues, q_point, i)
+                        
+                        # Convection load: fe[i] += ∫ ϕi * h * T_inf * dΓ
+                        # (Note: h * T_inf has the same units as heat flux q)
+                        convection_flux = h * T_inf
+                        
+                        if fe isa SArray
+                            fe = @set fe[i] += ϕ * convection_flux * dΓ
+                        else
+                            fe[i] += ϕ * convection_flux * dΓ
+                        end
+                    end
+                end
+                dloads[cellid] = fe
+            end
+        end
+    end
     return dloads
 end
 
@@ -457,6 +488,81 @@ function _make_Kes_and_weights_heat(
         push!(Kes, Symmetric(MatrixType(Ke_0)))
     end
     return Kes, weights
+end
+
+using SparseArrays
+
+"""
+    assemble_convection_matrix(problem::HeatConductionProblem)
+
+Builds the constant global convection matrix for Robin boundary conditions.
+Evaluates the surface integral: ∫ h * N^T * N dΓ
+"""
+function assemble_convection_matrix(problem::HeatConductionProblem{dim, T}) where {dim, T}
+    convectiondict = getconvectiondict(problem)
+    dh = getdh(problem)
+    
+    # If no convection is defined, return an empty sparse matrix
+    if isempty(convectiondict)
+        return spzeros(T, ndofs(dh), ndofs(dh))
+    end
+
+    grid = dh.grid
+    boundary_matrix = grid.boundary_matrix
+    
+    # We need FaceScalarValues to evaluate the surface integrals
+    ip = dh.field_interpolations[1] 
+    qr = Ferrite.QuadratureRule{dim - 1, Ferrite.RefCube}(2) 
+    facevalues = Ferrite.FaceScalarValues(qr, ip)
+    
+    n_basefuncs = getnbasefunctions(facevalues)
+    cell_coords = zeros(Ferrite.Vec{dim,T}, nnodespercell(problem))
+    
+    I = Int[]
+    J = Int[]
+    V = T[]
+    
+    global_dofs = zeros(Int, ndofs_per_cell(dh))
+
+    for (faceset_name, (h, T_inf)) in convectiondict
+        faceset = getfacesets(problem)[faceset_name]
+        
+        for (cellid, faceid) in faceset
+            boundary_matrix[faceid, cellid] || throw("Face not on boundary.")
+            
+            getcoordinates!(cell_coords, grid, cellid)
+            reinit!(facevalues, cell_coords, faceid)
+            celldofs!(global_dofs, dh, cellid)
+            
+            # Creating a local face matrix
+            K_face = zeros(T, n_basefuncs, n_basefuncs)
+            
+            # Integrate: ∫ h * N^T * N dΓ
+            for q_point in 1:getnquadpoints(facevalues)
+                dΓ = getdetJdV(facevalues, q_point)
+                
+                for i in 1:n_basefuncs
+                    ϕ_i = shape_value(facevalues, q_point, i)
+                    for j in 1:n_basefuncs
+                        ϕ_j = shape_value(facevalues, q_point, j)
+                        
+                        K_face[i, j] += ϕ_i * ϕ_j * h * dΓ
+                    end
+                end
+            end
+            
+            # Scatter local face matrix to global I, J, V vectors
+            for i in 1:n_basefuncs
+                for j in 1:n_basefuncs
+                    push!(I, global_dofs[i])
+                    push!(J, global_dofs[j])
+                    push!(V, K_face[i, j])
+                end
+            end
+        end
+    end
+    
+    return sparse(I, J, V, ndofs(dh), ndofs(dh))
 end
 
 # Fallback for non-static arrays

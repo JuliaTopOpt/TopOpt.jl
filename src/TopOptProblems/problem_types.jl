@@ -640,6 +640,7 @@ getmetadata(p::HeatTransferTopOptProblem) = p.metadata
 getdh(p::HeatTransferTopOptProblem) = p.ch.dh
 getpressuredict(p::HeatTransferTopOptProblem{dim,T}) where {dim,T} = Dict{String,T}()
 getheatfluxdict(p::HeatTransferTopOptProblem{dim,T}) where {dim,T} = Dict{String,T}()
+getconvectiondict(p::HeatTransferTopOptProblem{dim,T}) where {dim,T} = Dict{String,Tuple{T,T}}()
 getfacesets(p::HeatTransferTopOptProblem) = getdh(p).grid.facesets
 Ferrite.getncells(problem::HeatTransferTopOptProblem) = Ferrite.getncells(getdh(problem).grid)
 getgeomorder(p::HeatTransferTopOptProblem) = nnodespercell(p) in (9, 27) ? 2 : 1
@@ -693,12 +694,14 @@ struct HeatConductionProblem{
     Tr<:RectilinearGrid{dim, T, N, M},
     Tc<:ConstraintHandler{<:DofHandler{dim, <:Cell{dim, N, M}, T}, T},
     Th<:AbstractDict{String,T},
+    Tconv<:AbstractDict{String,Tuple{T,T}},
     Tm<:Metadata,
 } <: HeatTransferTopOptProblem{dim, T}
     rect_grid::Tr
     k::T
     ch::Tc
     heatfluxdict::Th
+    convectiondict::Tconv
     metadata::Tm
 end
 
@@ -707,6 +710,8 @@ function Base.show(io::IO, ::MIME{Symbol("text/plain")}, ::HeatConductionProblem
 end
 
 getheatfluxdict(p::HeatConductionProblem) = p.heatfluxdict
+
+getconvectiondict(p::HeatConductionProblem) = p.convectiondict
 
 """
     HeatConductionProblem(::Type{Val{CellType}}, nels, sizes, k=1.0; Tleft=0.0, Tright=0.0, heatflux=Dict{String,Float64}())
@@ -734,6 +739,7 @@ function HeatConductionProblem(
     Tleft=0.0,
     Tright=0.0,
     heatflux=Dict{String,Float64}(),
+    convection=Dict{String,Tuple{Float64,Float64}}()
 ) where {dim, CellType}
     T = float(promote_type(eltype(sizes), typeof(k), typeof(Tleft), typeof(Tright)))
 
@@ -781,9 +787,15 @@ function HeatConductionProblem(
     for (key, val) in heatflux
         heatfluxdict[key] = T(val)
     end
+    
+    convectiondict = Dict{String, Tuple{T, T}}()
+    for (key, val) in convection
+        # val[1] is h, val[2] is T_ambient
+        convectiondict[key] = (T(val[1]), T(val[2])) 
+    end
 
     return HeatConductionProblem(
-        rect_grid, T(k), ch, heatfluxdict, metadata
+        rect_grid, T(k), ch, heatfluxdict, convectiondict, metadata
     )
 end
 
