@@ -222,7 +222,8 @@ function _make_dloads(fes, problem::StiffnessTopOptProblem, facevalues)
     N = nnodespercell(problem)
     T = floattype(problem)
     dloads = deepcopy(fes)
-    eltype(dloads) <: StaticArray || throw("Expected dloads to be StaticArrays for stiffness problems.")
+    eltype(dloads) <: StaticArray ||
+        throw("Expected dloads to be StaticArrays for stiffness problems.")
     for i in 1:length(dloads)
         if eltype(dloads) <: SArray
             dloads[i] = zero(eltype(dloads))
@@ -326,20 +327,20 @@ function _make_dloads(fes, problem::HeatTransferTopOptProblem, facevalues)
             for (cellid, faceid) in faceset
                 boundary_matrix[faceid, cellid] ||
                     throw("Face $((cellid, faceid)) not on boundary.")
-                
+
                 fe = dloads[cellid]
                 getcoordinates!(cell_coords, grid, cellid)
                 reinit!(facevalues, cell_coords, faceid)
-                
+
                 for q_point in 1:getnquadpoints(facevalues)
                     dΓ = getdetJdV(facevalues, q_point)
                     for i in 1:n_basefuncs
                         ϕ = shape_value(facevalues, q_point, i)
-                        
+
                         # Convection load: fe[i] += ∫ ϕi * h * T_inf * dΓ
                         # (Note: h * T_inf has the same units as heat flux q)
                         convection_flux = h * T_inf
-                        
+
                         if fe isa SArray
                             fe = @set fe[i] += ϕ * convection_flux * dΓ
                         else
@@ -411,19 +412,19 @@ For thermal compliance minimization:
 - dJ/dx_e = -T_e^T Ke T_e · dρ_e/dx_e
 """
 function make_Kes_and_fes(
-    problem::HeatTransferTopOptProblem{dim, T}, quad_order, ::Type{Val{mat_type}}
-) where {dim, T, mat_type}
+    problem::HeatTransferTopOptProblem{dim,T}, quad_order, ::Type{Val{mat_type}}
+) where {dim,T,mat_type}
     dh = getdh(problem)
     k = getk(problem)
 
     refshape = Ferrite.getrefshape(dh.field_interpolations[1])
 
     # Shape functions for scalar field (temperature)
-    interpolation_space = Lagrange{dim, refshape, 1}()
-    quadrature_rule = QuadratureRule{dim, refshape}(quad_order)
+    interpolation_space = Lagrange{dim,refshape,1}()
+    quadrature_rule = QuadratureRule{dim,refshape}(quad_order)
     cellvalues = CellScalarValues(quadrature_rule, interpolation_space)
     facevalues = FaceScalarValues(
-        QuadratureRule{dim - 1, refshape}(quad_order), interpolation_space
+        QuadratureRule{dim - 1,refshape}(quad_order), interpolation_space
     )
 
     # Calculate element conductivity matrices
@@ -433,7 +434,7 @@ function make_Kes_and_fes(
     MatrixType, VectorType = gettypes(T, Val{mat_type}, Val{Kesize})
     Kes, weights = _make_Kes_and_weights_heat(
         dh,
-        Tuple{MatrixType, VectorType},
+        Tuple{MatrixType,VectorType},
         Val{n_basefuncs},
         Val{Kesize},
         k,
@@ -451,17 +452,18 @@ end
 # No body forces in heat transfer - weights should be zeros
 # Surface heat flux is computed separately via _make_dloads
 function _make_Kes_and_weights_heat(
-    dh::DofHandler{dim, N, T},
-    ::Type{Tuple{MatrixType, VectorType}},
+    dh::DofHandler{dim,N,T},
+    ::Type{Tuple{MatrixType,VectorType}},
     ::Type{Val{n_basefuncs}},
     ::Type{Val{Kesize}},
     k::T,
     quadrature_rule,
     cellvalues,
-) where {dim, N, T, MatrixType <: StaticArray, VectorType, n_basefuncs, Kesize}
-    MatrixType <: SizedMatrix && throw("SizedMatrix not supported for heat transfer problems with StaticArrays.")
+) where {dim,N,T,MatrixType<:StaticArray,VectorType,n_basefuncs,Kesize}
+    MatrixType <: SizedMatrix &&
+        throw("SizedMatrix not supported for heat transfer problems with StaticArrays.")
     nel = getncells(dh.grid)
-    Kes = Symmetric{T, MatrixType}[]
+    Kes = Symmetric{T,MatrixType}[]
     sizehint!(Kes, nel)
     # No body forces in heat transfer - weights should be zeros
     weights = [zeros(VectorType) for i in 1:nel]
@@ -496,12 +498,13 @@ using SparseArrays
     assemble_convection_matrix(problem::HeatConductionProblem)
 
 Builds the constant global convection matrix for Robin boundary conditions.
-Evaluates the surface integral: ∫ h * N^T * N dΓ
+Evaluates the surface integral `∫ h * N^T * N dΓ` over all faces defined in `problem.convectiondict`.
+Returns a sparse matrix of size `(ndofs, ndofs)`.
 """
-function assemble_convection_matrix(problem::HeatConductionProblem{dim, T}) where {dim, T}
+function assemble_convection_matrix(problem::HeatConductionProblem{dim,T}) where {dim,T}
     convectiondict = getconvectiondict(problem)
     dh = getdh(problem)
-    
+
     # If no convection is defined, return an empty sparse matrix
     if isempty(convectiondict)
         return spzeros(T, ndofs(dh), ndofs(dh))
@@ -509,48 +512,48 @@ function assemble_convection_matrix(problem::HeatConductionProblem{dim, T}) wher
 
     grid = dh.grid
     boundary_matrix = grid.boundary_matrix
-    
+
     # We need FaceScalarValues to evaluate the surface integrals
-    ip = dh.field_interpolations[1] 
-    qr = Ferrite.QuadratureRule{dim - 1, Ferrite.RefCube}(2) 
+    ip = dh.field_interpolations[1]
+    qr = Ferrite.QuadratureRule{dim - 1,Ferrite.RefCube}(2)
     facevalues = Ferrite.FaceScalarValues(qr, ip)
-    
+
     n_basefuncs = getnbasefunctions(facevalues)
     cell_coords = zeros(Ferrite.Vec{dim,T}, nnodespercell(problem))
-    
+
     I = Int[]
     J = Int[]
     V = T[]
-    
+
     global_dofs = zeros(Int, ndofs_per_cell(dh))
 
     for (faceset_name, (h, T_inf)) in convectiondict
         faceset = getfacesets(problem)[faceset_name]
-        
+
         for (cellid, faceid) in faceset
             boundary_matrix[faceid, cellid] || throw("Face not on boundary.")
-            
+
             getcoordinates!(cell_coords, grid, cellid)
             reinit!(facevalues, cell_coords, faceid)
             celldofs!(global_dofs, dh, cellid)
-            
+
             # Creating a local face matrix
             K_face = zeros(T, n_basefuncs, n_basefuncs)
-            
+
             # Integrate: ∫ h * N^T * N dΓ
             for q_point in 1:getnquadpoints(facevalues)
                 dΓ = getdetJdV(facevalues, q_point)
-                
+
                 for i in 1:n_basefuncs
                     ϕ_i = shape_value(facevalues, q_point, i)
                     for j in 1:n_basefuncs
                         ϕ_j = shape_value(facevalues, q_point, j)
-                        
+
                         K_face[i, j] += ϕ_i * ϕ_j * h * dΓ
                     end
                 end
             end
-            
+
             # Scatter local face matrix to global I, J, V vectors
             for i in 1:n_basefuncs
                 for j in 1:n_basefuncs
@@ -561,7 +564,7 @@ function assemble_convection_matrix(problem::HeatConductionProblem{dim, T}) wher
             end
         end
     end
-    
+
     return sparse(I, J, V, ndofs(dh), ndofs(dh))
 end
 

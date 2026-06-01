@@ -55,6 +55,8 @@ export PointLoadCantilever,
     bcmatrix,
     save_mesh,
     RandomMagnitude,
-    MultiLoad
+    MultiLoad,
+    getconvectiondict,            # Add your getter
+    assemble_convection_matrix
 
 end # module
