@@ -166,9 +166,7 @@ function PointLoadCantilever(
     N = nnodespercell(rect_grid)
     M = nfacespercell(rect_grid)
 
-    return PointLoadCantilever(
-        rect_grid, E, ν, ch, force, force_dof, metadata
-    )
+    return PointLoadCantilever(rect_grid, E, ν, ch, force, force_dof, metadata)
 end
 
 """
@@ -366,12 +364,7 @@ end
 - `metadata`: Metadata having various cell-node-dof relationships
 """
 struct LBeam{
-    T,
-    N,
-    M,
-    Tc<:ConstraintHandler{<:DofHandler{2,<:Cell{2,N,M},T},T},
-    Tf<:Integer,
-    Tm<:Metadata,
+    T,N,M,Tc<:ConstraintHandler{<:DofHandler{2,<:Cell{2,N,M},T},T},Tf<:Integer,Tm<:Metadata
 } <: StiffnessTopOptProblem{2,T}
     E::T
     ν::T
@@ -380,7 +373,9 @@ struct LBeam{
     force_dof::Tf
     metadata::Tm
 end
-Base.show(io::IO, ::MIME{Symbol("text/plain")}, ::LBeam) = println(io, "TopOpt L-beam problem")
+function Base.show(io::IO, ::MIME{Symbol("text/plain")}, ::LBeam)
+    return println(io, "TopOpt L-beam problem")
+end
 
 """
     LBeam(::Type{Val{CellType}}, ::Type{T}=Float64; length = 100, height = 100, upperslab = 50, lowerslab = 50, E = 1.0, ν = 0.3, force = 1.0) where {T, CellType}
@@ -539,11 +534,7 @@ end
 - `metadata`: Metadata having various cell-node-dof relationships
 """
 struct TieBeam{
-    T,
-    N,
-    M,
-    Tc<:ConstraintHandler{<:DofHandler{2,<:Cell{2,N,M},T},T},
-    Tm<:Metadata,
+    T,N,M,Tc<:ConstraintHandler{<:DofHandler{2,<:Cell{2,N,M},T},T},Tm<:Metadata
 } <: StiffnessTopOptProblem{2,T}
     E::T
     ν::T
@@ -566,12 +557,7 @@ end
 - `CellType`: can be either `:Linear` or `:Quadratic` to determine the order of the geometric and field basis functions and element type. Only isoparametric elements are supported for now.
 """
 function TieBeam(
-    ::Type{Val{CellType}},
-    (::Type{T})=Float64;
-    refine=1,
-    force=T(1),
-    E=T(1),
-    ν=T(0.3),
+    ::Type{Val{CellType}}, (::Type{T})=Float64; refine=1, force=T(1), E=T(1), ν=T(0.3)
 ) where {T,CellType}
     grid = TieBeamGrid(Val{CellType}, T; refine=refine)
 
@@ -640,8 +626,13 @@ getmetadata(p::HeatTransferTopOptProblem) = p.metadata
 getdh(p::HeatTransferTopOptProblem) = p.ch.dh
 getpressuredict(p::HeatTransferTopOptProblem{dim,T}) where {dim,T} = Dict{String,T}()
 getheatfluxdict(p::HeatTransferTopOptProblem{dim,T}) where {dim,T} = Dict{String,T}()
+function getconvectiondict(p::HeatTransferTopOptProblem{dim,T}) where {dim,T}
+    return Dict{String,Tuple{T,T}}()
+end
 getfacesets(p::HeatTransferTopOptProblem) = getdh(p).grid.facesets
-Ferrite.getncells(problem::HeatTransferTopOptProblem) = Ferrite.getncells(getdh(problem).grid)
+function Ferrite.getncells(problem::HeatTransferTopOptProblem)
+    return Ferrite.getncells(getdh(problem).grid)
+end
 getgeomorder(p::HeatTransferTopOptProblem) = nnodespercell(p) in (9, 27) ? 2 : 1
 getcloaddict(p::HeatTransferTopOptProblem{dim,T}) where {dim,T} = Dict{String,Vector{T}}()
 
@@ -690,15 +681,17 @@ struct HeatConductionProblem{
     T,
     N,
     M,
-    Tr<:RectilinearGrid{dim, T, N, M},
-    Tc<:ConstraintHandler{<:DofHandler{dim, <:Cell{dim, N, M}, T}, T},
+    Tr<:RectilinearGrid{dim,T,N,M},
+    Tc<:ConstraintHandler{<:DofHandler{dim,<:Cell{dim,N,M},T},T},
     Th<:AbstractDict{String,T},
+    Tconv<:AbstractDict{String,Tuple{T,T}},
     Tm<:Metadata,
-} <: HeatTransferTopOptProblem{dim, T}
+} <: HeatTransferTopOptProblem{dim,T}
     rect_grid::Tr
     k::T
     ch::Tc
     heatfluxdict::Th
+    convectiondict::Tconv
     metadata::Tm
 end
 
@@ -707,6 +700,8 @@ function Base.show(io::IO, ::MIME{Symbol("text/plain")}, ::HeatConductionProblem
 end
 
 getheatfluxdict(p::HeatConductionProblem) = p.heatfluxdict
+
+getconvectiondict(p::HeatConductionProblem) = p.convectiondict
 
 """
     HeatConductionProblem(::Type{Val{CellType}}, nels, sizes, k=1.0; Tleft=0.0, Tright=0.0, heatflux=Dict{String,Float64}())
@@ -728,13 +723,14 @@ problem = HeatConductionProblem(Val{:Linear}, nels, sizes, k; Tleft=0.0, Tright=
 """
 function HeatConductionProblem(
     ::Type{Val{CellType}},
-    nels::NTuple{dim, Int},
+    nels::NTuple{dim,Int},
     sizes::NTuple{dim},
     k=1.0;
     Tleft=0.0,
     Tright=0.0,
     heatflux=Dict{String,Float64}(),
-) where {dim, CellType}
+    convection=Dict{String,Tuple{Float64,Float64}}(),
+) where {dim,CellType}
     T = float(promote_type(eltype(sizes), typeof(k), typeof(Tleft), typeof(Tright)))
 
     if CellType === :Linear
@@ -759,7 +755,7 @@ function HeatConductionProblem(
     if CellType === :Linear
         push!(dh, :T, 1)  # Temperature is a scalar field
     else
-        ip = Lagrange{dim, RefCube, 2}()
+        ip = Lagrange{dim,RefCube,2}()
         push!(dh, :T, 1, ip)
     end
     close!(dh)
@@ -767,7 +763,9 @@ function HeatConductionProblem(
     # Apply temperature boundary conditions
     ch = ConstraintHandler(dh)
     dbc_left = Dirichlet(:T, getnodeset(rect_grid.grid, "left_boundary"), (x, t) -> Tleft)
-    dbc_right = Dirichlet(:T, getnodeset(rect_grid.grid, "right_boundary"), (x, t) -> Tright)
+    dbc_right = Dirichlet(
+        :T, getnodeset(rect_grid.grid, "right_boundary"), (x, t) -> Tright
+    )
     add!(ch, dbc_left)
     add!(ch, dbc_right)
     close!(ch)
@@ -782,9 +780,126 @@ function HeatConductionProblem(
         heatfluxdict[key] = T(val)
     end
 
+    convectiondict = Dict{String,Tuple{T,T}}()
+    for (key, val) in convection
+        # val[1] is h, val[2] is T_ambient
+        convectiondict[key] = (T(val[1]), T(val[2]))
+    end
+
     return HeatConductionProblem(
-        rect_grid, T(k), ch, heatfluxdict, metadata
+        rect_grid, T(k), ch, heatfluxdict, convectiondict, metadata
     )
 end
 
 nnodespercell(p::HeatConductionProblem) = nnodespercell(p.rect_grid)
+
+"""
+    StokesFlowProblem
+
+A topology optimization problem for incompressible Stokes flow.
+Uses Taylor-Hood mixed elements (Quadratic Velocity, Linear Pressure) to satisfy the LBB condition.
+Flow is penalized in solid regions using the Brinkman penalization method.
+"""
+struct StokesFlowProblem{dim, T, N, M, G, C, Meta} <: AbstractTopOptProblem
+    rect_grid::RectilinearGrid{dim, T, N, M, G}
+    ch::C
+    black::BitVector
+    white::BitVector
+    viscosity::T
+    alpha_max::T
+    metadata::Meta
+end
+
+function StokesFlowProblem(
+    gridinfo::RectilinearGrid{dim, T};
+    viscosity::T = 1.0,
+    alpha_max::T = 1e9,
+    black::AbstractVector = falses(getncells(gridinfo.grid)),
+    white::AbstractVector = falses(getncells(gridinfo.grid)),
+) where {dim, T}
+    
+    # Setting up the Mixed Interpolations (Taylor-Hood)
+    ip_u = Lagrange{dim, RefCube, 1}() # Quadratic Velocity
+    ip_p = Lagrange{dim, RefCube, 1}() # Linear Pressure
+    
+    # Building the MixedDofHandler
+    dh = MixedDofHandler(gridinfo.grid)
+    push!(dh, :u, dim, ip_u)
+    push!(dh, :p, 1, ip_p)
+    close!(dh)
+    
+    # Initializing empty constraints
+    ch = ConstraintHandler(dh)
+    close!(ch)
+    
+    # Initializing empty metadata (Bypass for MixedDofHandler)
+    metadata = Metadata(
+        Matrix{Int}(undef, 0, 0), 
+        RaggedArray(Int[], Tuple{Int,Int}[]), 
+        RaggedArray(Int[], Tuple{Int,Int}[]), 
+        Matrix{Int}(undef, 0, 0)
+    )
+    
+    return StokesFlowProblem(
+        gridinfo, ch, BitVector(black), BitVector(white), 
+        viscosity, alpha_max, metadata
+    )
+end
+
+"""
+    FluidThermalProblem
+
+Fully coupled Advection-Diffusion and Stokes Flow topology optimization problem.
+Tracks Velocity (:u), Pressure (:p), and Temperature (:T) using P1-P1-P1 
+equal-order interpolations with pressure penalty stabilization.
+
+Reference: Brooks, A.N. & Hughes, T.J.R. (1982). "Streamline upwind/Petrov-Galerkin 
+formulations for convection dominated flows". Comput. Methods Appl. Mech. Eng.
+"""
+struct FluidThermalProblem{dim, T, N, M, G, C, Meta} <: AbstractTopOptProblem
+    rect_grid::TopOptProblems.RectilinearGrid{dim, T, N, M, G}
+    ch::C
+    black::BitVector
+    white::BitVector
+    viscosity::T             
+    alpha_max::T             
+    conductivity::T          
+    heat_capacity::T         
+    metadata::Meta
+end
+
+function FluidThermalProblem(
+    gridinfo::TopOptProblems.RectilinearGrid{dim, T};
+    viscosity::T = 1.0,
+    alpha_max::T = 1e9,
+    conductivity::T = 1.0,
+    heat_capacity::T = 1.0,
+    black::AbstractVector = falses(getncells(gridinfo.grid)),
+    white::AbstractVector = falses(getncells(gridinfo.grid)),
+) where {dim, T}
+    
+    ip_u = Lagrange{dim, RefCube, 1}()
+    ip_p = Lagrange{dim, RefCube, 1}()
+    ip_T = Lagrange{dim, RefCube, 1}() 
+    
+    dh = MixedDofHandler(gridinfo.grid)
+    push!(dh, :u, dim, ip_u)
+    push!(dh, :p, 1, ip_p)
+    push!(dh, :T, 1, ip_T)  
+    close!(dh)
+    
+    ch = ConstraintHandler(dh)
+    close!(ch)
+    
+    metadata = TopOptProblems.Metadata(
+        Matrix{Int}(undef, 0, 0), 
+        RaggedArray(Int[], Tuple{Int,Int}[]), 
+        RaggedArray(Int[], Tuple{Int,Int}[]), 
+        Matrix{Int}(undef, 0, 0)
+    )
+    
+    return FluidThermalProblem(
+        gridinfo, ch, BitVector(black), BitVector(white), 
+        viscosity, alpha_max, conductivity, heat_capacity, metadata
+    )
+end
