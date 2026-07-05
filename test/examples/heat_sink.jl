@@ -7,19 +7,30 @@ println("Heat Sink Topology Optimization Example")
 println("=" ^ 50)
 
 # Problem parameters
-nels = (60, 30)  # Mesh resolution
-sizes = (1.0, 1.0)  # Element sizes
+nels = (60, 30, 10)
+# nels = (60, 30)  # Mesh resolution
+sizes = (1.0, 1.0, 1.0)
+# sizes = (1.0, 1.0)  # Element sizes
 k = 1.0  # Thermal conductivity
 # Heat flux on top boundary (W/m²) - heat entering the domain
-heatflux = Dict{String,Float64}("top" => 100.0)
+heatflux = Dict{String,Float64}("bottom" => 100.0)
 V = 0.5  # Volume fraction constraint
+
+convection = Dict{String,Tuple{Float64,Float64}}(
+    "top" => (10.0, 20.0),
+    "left" => (10.0, 20.0),
+    "right" => (10.0, 20.0)
+)
 
 # Create heat conduction problem
 # Temperature is fixed at left and right edges (heat sink fins)
 # Heat flux enters from top boundary
 problem = HeatConductionProblem(
     Val{:Linear}, nels, sizes, k;
-    Tleft=100.0, Tright=0.0, heatflux=heatflux
+    Tleft=100.0, 
+    Tright=0.0, 
+    heatflux=heatflux,
+    convection=convection
 )
 
 println("Created heat conduction problem with $(Ferrite.getncells(problem)) elements")
@@ -82,7 +93,7 @@ println("  Gradient norm: $(norm(grad))")
 println("  All gradients negative (expected): $(all(grad .< 0))")
 
 using Makie
-using CairoMakie
+using WGLMakie
 # alternatively, `using GLMakie`
 fig = visualize(problem; topology=result.minimizer)
 Makie.display(fig)

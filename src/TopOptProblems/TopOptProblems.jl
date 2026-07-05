@@ -46,6 +46,7 @@ export PointLoadCantilever,
     YoungsModulus,
     assemble,
     assemble_f!,
+    assemble_convection_matrix,
     buckling,
     get_Kσs,
     RaggedArray,
@@ -54,6 +55,8 @@ export PointLoadCantilever,
     bcmatrix,
     save_mesh,
     RandomMagnitude,
-    MultiLoad
+    MultiLoad,
+    getconvectiondict,            # Add your getter
+    assemble_convection_matrix
 
 end # module
