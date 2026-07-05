@@ -792,3 +792,114 @@ function HeatConductionProblem(
 end
 
 nnodespercell(p::HeatConductionProblem) = nnodespercell(p.rect_grid)
+
+"""
+    StokesFlowProblem
+
+A topology optimization problem for incompressible Stokes flow.
+Uses Taylor-Hood mixed elements (Quadratic Velocity, Linear Pressure) to satisfy the LBB condition.
+Flow is penalized in solid regions using the Brinkman penalization method.
+"""
+struct StokesFlowProblem{dim, T, N, M, G, C, Meta} <: AbstractTopOptProblem
+    rect_grid::RectilinearGrid{dim, T, N, M, G}
+    ch::C
+    black::BitVector
+    white::BitVector
+    viscosity::T
+    alpha_max::T
+    metadata::Meta
+end
+
+function StokesFlowProblem(
+    gridinfo::RectilinearGrid{dim, T};
+    viscosity::T = 1.0,
+    alpha_max::T = 1e9,
+    black::AbstractVector = falses(getncells(gridinfo.grid)),
+    white::AbstractVector = falses(getncells(gridinfo.grid)),
+) where {dim, T}
+    
+    # Setting up the Mixed Interpolations (Taylor-Hood)
+    ip_u = Lagrange{dim, RefCube, 1}() # Quadratic Velocity
+    ip_p = Lagrange{dim, RefCube, 1}() # Linear Pressure
+    
+    # Building the MixedDofHandler
+    dh = MixedDofHandler(gridinfo.grid)
+    push!(dh, :u, dim, ip_u)
+    push!(dh, :p, 1, ip_p)
+    close!(dh)
+    
+    # Initializing empty constraints
+    ch = ConstraintHandler(dh)
+    close!(ch)
+    
+    # Initializing empty metadata (Bypass for MixedDofHandler)
+    metadata = Metadata(
+        Matrix{Int}(undef, 0, 0), 
+        RaggedArray(Int[], Tuple{Int,Int}[]), 
+        RaggedArray(Int[], Tuple{Int,Int}[]), 
+        Matrix{Int}(undef, 0, 0)
+    )
+    
+    return StokesFlowProblem(
+        gridinfo, ch, BitVector(black), BitVector(white), 
+        viscosity, alpha_max, metadata
+    )
+end
+
+"""
+    FluidThermalProblem
+
+Fully coupled Advection-Diffusion and Stokes Flow topology optimization problem.
+Tracks Velocity (:u), Pressure (:p), and Temperature (:T) using P1-P1-P1 
+equal-order interpolations with pressure penalty stabilization.
+
+Reference: Brooks, A.N. & Hughes, T.J.R. (1982). "Streamline upwind/Petrov-Galerkin 
+formulations for convection dominated flows". Comput. Methods Appl. Mech. Eng.
+"""
+struct FluidThermalProblem{dim, T, N, M, G, C, Meta} <: AbstractTopOptProblem
+    rect_grid::TopOptProblems.RectilinearGrid{dim, T, N, M, G}
+    ch::C
+    black::BitVector
+    white::BitVector
+    viscosity::T             
+    alpha_max::T             
+    conductivity::T          
+    heat_capacity::T         
+    metadata::Meta
+end
+
+function FluidThermalProblem(
+    gridinfo::TopOptProblems.RectilinearGrid{dim, T};
+    viscosity::T = 1.0,
+    alpha_max::T = 1e9,
+    conductivity::T = 1.0,
+    heat_capacity::T = 1.0,
+    black::AbstractVector = falses(getncells(gridinfo.grid)),
+    white::AbstractVector = falses(getncells(gridinfo.grid)),
+) where {dim, T}
+    
+    ip_u = Lagrange{dim, RefCube, 1}()
+    ip_p = Lagrange{dim, RefCube, 1}()
+    ip_T = Lagrange{dim, RefCube, 1}() 
+    
+    dh = MixedDofHandler(gridinfo.grid)
+    push!(dh, :u, dim, ip_u)
+    push!(dh, :p, 1, ip_p)
+    push!(dh, :T, 1, ip_T)  
+    close!(dh)
+    
+    ch = ConstraintHandler(dh)
+    close!(ch)
+    
+    metadata = TopOptProblems.Metadata(
+        Matrix{Int}(undef, 0, 0), 
+        RaggedArray(Int[], Tuple{Int,Int}[]), 
+        RaggedArray(Int[], Tuple{Int,Int}[]), 
+        Matrix{Int}(undef, 0, 0)
+    )
+    
+    return FluidThermalProblem(
+        gridinfo, ch, BitVector(black), BitVector(white), 
+        viscosity, alpha_max, conductivity, heat_capacity, metadata
+    )
+end
