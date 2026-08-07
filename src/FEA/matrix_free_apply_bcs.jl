@@ -11,7 +11,10 @@ function matrix_free_apply2f!(
     @unpack Kes, metadata = elementinfo
     @unpack dof_cells, cell_dofs = metadata
     @unpack ch = problem
-    @unpack values, prescribed_dofs = ch
+    # Ferrite 1.x renamed the prescribed-BC-value field from `values` to
+    # `inhomogeneities` (one entry per prescribed dof).
+    @unpack prescribed_dofs = ch
+    values = ch.inhomogeneities
 
     update_f!(
         f,

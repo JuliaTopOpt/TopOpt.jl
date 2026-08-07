@@ -110,7 +110,7 @@ end
     for i in 1:2, j in 1:2
         @test boundingbox(grid)[i][j] ≈ corners[i][j] atol = 1e-8
     end
-    @test sum(length, values(grid.facetsets)) == 100 * 2 + 50 * 4
+    @test length(grid.facetsets["boundary"]) == 100 * 2 + 50 * 4
     for (c, f) in grid.facetsets["right"]
         @test f == 2
         for n in grid.cells[c].nodes[[2, 3]]
@@ -214,7 +214,7 @@ end
     for i in 1:2, j in 1:2
         @test boundingbox(grid)[i][j] ≈ corners[i][j] atol = 1e-8
     end
-    @test sum(length, values(grid.facetsets)) == 32 * 2 + 3 * 2 + 4 * 2
+    @test length(grid.facetsets["boundary"]) == 32 * 2 + 3 * 2 + 4 * 2
     for (c, f) in grid.facetsets["bottomload"]
         @test f == 1
         for n in grid.cells[c].nodes[[1, 2]]

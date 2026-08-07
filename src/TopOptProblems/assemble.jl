@@ -33,14 +33,20 @@ function assemble!(
     ch = problem.ch
     dh = ch.dh
     K, f = globalinfo.K, globalinfo.f
-    if assemble_f
-        f .= elementinfo.fixedload
-    end
     Kes, fes = elementinfo.Kes, elementinfo.fes
 
     _K = K isa Symmetric ? K.data : K
     _K.nzval .= 0
-    assembler = Ferrite.start_assemble(_K, f)
+    # Ferrite 1.x's `start_assemble(K, f)` zeroes both `K` and `f` by default
+    # (`fillzero=true`). `K` is zeroed explicitly above, and `f` is seeded with
+    # the non-penalized fixed load (concentrated/distributed loads) below, so we
+    # disable `fillzero` to avoid clobbering `f` before the element assembly loop.
+    if assemble_f
+        f .= elementinfo.fixedload
+    else
+        f .= 0
+    end
+    assembler = Ferrite.start_assemble(_K, f; fillzero=false)
 
     global_dofs = zeros(Int, ndofs_per_cell(dh))
     fe = zeros(typeof(fes[1]))

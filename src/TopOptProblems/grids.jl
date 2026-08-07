@@ -312,6 +312,9 @@ function _LinearLGrid(
         end
     end
 
+    facesets["boundary"] = Set{Ferrite.FacetIndex}(
+        Ferrite.FacetIndex(c, f) for (c, f) in boundary
+    )
     return Grid(cells, nodes; facetsets=facesets, nodesets=nodesets)
 end
 
@@ -493,6 +496,9 @@ function _QuadraticLGrid(
         end
     end
 
+    facesets["boundary"] = Set{Ferrite.FacetIndex}(
+        Ferrite.FacetIndex(c, f) for (c, f) in boundary
+    )
     return Grid(cells, nodes; facetsets=facesets, nodesets=nodesets)
 end
 
@@ -625,6 +631,9 @@ function _LinearTieBeamGrid((::Type{T})=Float64, refine=1) where {T}
         end
     end
 
+    facesets["boundary"] = Set{Ferrite.FacetIndex}(
+        Ferrite.FacetIndex(c, f) for (c, f) in boundary
+    )
     return Grid(cells, nodes; facetsets=facesets)
 end
 
@@ -763,5 +772,8 @@ function _QuadraticTieBeamGrid((::Type{T})=Float64, refine=1) where {T}
         end
     end
 
+    facesets["boundary"] = Set{Ferrite.FacetIndex}(
+        Ferrite.FacetIndex(c, f) for (c, f) in boundary
+    )
     return Grid(cells, nodes; facetsets=facesets)
 end

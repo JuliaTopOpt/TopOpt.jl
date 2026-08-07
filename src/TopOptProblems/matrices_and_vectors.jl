@@ -82,11 +82,18 @@ function make_Kes_and_fes(problem, quad_order, ::Type{Val{mat_type}}) where {mat
     g(i, j, k, l) = λ * δ(i, j) * δ(k, l) + μ * (δ(i, k) * δ(j, l) + δ(i, l) * δ(j, k))
     C = SymmetricTensor{4,dim}(g)
 
-    # Shape functions and quadrature rule
+    # Shape functions and quadrature rule.
+    # Ferrite 1.x's `CellValues`/`FacetValues` default the geometric mapping
+    # interpolation to a *linear* Lagrange even for quadratic function spaces,
+    # which mismatches the number of cell nodes for quadratic elements. Since
+    # TopOpt uses isoparametric elements, pass the same interpolation for both
+    # the function and geometric mappings explicitly.
     interpolation_space = Lagrange{refshape,geom_order}()
     quadrature_rule = QuadratureRule{refshape}(quad_order)
-    cellvalues = CellValues(quadrature_rule, interpolation_space)
-    facevalues = FacetValues(FacetQuadratureRule{refshape}(quad_order), interpolation_space)
+    cellvalues = CellValues(quadrature_rule, interpolation_space, interpolation_space)
+    facevalues = FacetValues(
+        FacetQuadratureRule{refshape}(quad_order), interpolation_space, interpolation_space
+    )
 
     # Calculate element stiffness matrices
     n_basefuncs = getnbasefunctions(cellvalues)

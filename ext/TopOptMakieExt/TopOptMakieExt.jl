@@ -369,7 +369,7 @@ function TopOpt.visualize(
             if 3 in dbc.components
                 push!(support_vectors, [0.0, 0.0, 1.0])
             end
-            node_ids = dbc.faces
+            node_ids = dbc.facets
             fixed_nodes = Point3f.(nodes[node_ind].x for node_ind in node_ids)
             # draw one axis for all nodes in the set each time
             for v in support_vectors
@@ -558,7 +558,7 @@ function TopOpt.visualize(
         ch = problem.ch
         for (_, dbc) in enumerate(ch.dbcs)
             support_vectors = []
-            node_ids = dbc.faces
+            node_ids = dbc.facets
             if 1 in dbc.components
                 push!(support_vectors, [1.0, 0.0, 0.0])
             end

@@ -23,7 +23,9 @@ import TopOpt.TopOptProblems: make_Kes_and_fes
 
     # Test getfacesets
     fs = TopOpt.TopOptProblems.getfacesets(problem)
-    @test fs isa Dict{String,Set{Ferrite.FacetIndex}}
+    # Ferrite 1.x stores facetsets as OrderedSet, so check the element type
+    # rather than the concrete set/container type.
+    @test fs isa Dict{String,<:AbstractSet{Ferrite.FacetIndex}}
 
     # Test default values
     @test TopOpt.TopOptProblems.getfacesets(problem) === getdh(problem).grid.facetsets
