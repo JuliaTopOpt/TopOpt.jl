@@ -215,7 +215,7 @@ Assemble distributed loads for boundary (face) loads.
 For structural problems: returns boundary traction/pressure loads.
 For heat transfer problems: returns zeros (no boundary distributed heat sources).
 """
-function _make_dloads(fes, problem::StiffnessTopOptProblem, facevalues)
+function _make_dloads(fes, problem::StiffnessTopOptProblem, facetvalues)
     dim = getdim(problem)
     N = nnodespercell(problem)
     T = floattype(problem)
@@ -232,23 +232,20 @@ function _make_dloads(fes, problem::StiffnessTopOptProblem, facevalues)
     pressuredict = getpressuredict(problem)
     dh = getdh(problem)
     grid = dh.grid
-    boundary_matrix = grid.boundary_matrix
     cell_coords = zeros(Ferrite.Vec{dim,T}, N)
-    n_basefuncs = getnbasefunctions(facevalues)
+    n_basefuncs = getnbasefunctions(facetvalues)
     for k in keys(pressuredict)
         t = -pressuredict[k] # traction = negative the pressure
         faceset = getfacesets(problem)[k]
         for (cellid, faceid) in faceset
-            boundary_matrix[faceid, cellid] ||
-                throw("Face $((cellid, faceid)) not on boundary.")
             fe = dloads[cellid]
             getcoordinates!(cell_coords, grid, cellid)
-            reinit!(facevalues, cell_coords, faceid)
-            for q_point in 1:getnquadpoints(facevalues)
-                dΓ = getdetJdV(facevalues, q_point) # Face area
-                normal = getnormal(facevalues, q_point) # Nomral vector at quad point
+            reinit!(facetvalues, cell_coords, Ferrite.FacetIndex(cellid, faceid))
+            for q_point in 1:getnquadpoints(facetvalues)
+                dΓ = getdetJdV(facetvalues, q_point) # Facet area
+                normal = getnormal(facetvalues, q_point) # Normal vector at quad point
                 for i in 1:n_basefuncs
-                    ϕ = shape_value(facevalues, q_point, i) # Shape function value
+                    ϕ = shape_value(facetvalues, q_point, i) # Shape function value
                     for d in 1:dim
                         if fe isa SArray
                             fe = @set fe[(i - 1) * dim + d] += ϕ * t * normal[d] * dΓ
@@ -268,7 +265,7 @@ end
 # For heat transfer: surface heat flux (Neumann BC)
 # Heat flux q is positive INTO the domain (heat source on boundary)
 # Heat flux is NOT penalized - it's an external boundary condition
-function _make_dloads(fes, problem::HeatTransferTopOptProblem, facevalues)
+function _make_dloads(fes, problem::HeatTransferTopOptProblem, facetvalues)
     dim = getdim(problem)
     N = nnodespercell(problem)
     T = floattype(problem)
@@ -289,24 +286,21 @@ function _make_dloads(fes, problem::HeatTransferTopOptProblem, facevalues)
 
     dh = getdh(problem)
     grid = dh.grid
-    boundary_matrix = grid.boundary_matrix
     cell_coords = zeros(Ferrite.Vec{dim,T}, N)
-    n_basefuncs = getnbasefunctions(facevalues)
+    n_basefuncs = getnbasefunctions(facetvalues)
 
     for (faceset_name, q) in heatfluxdict
         # q is heat flux (W/m²), positive = heat INTO domain
         # For thermal: fe[i] = ∫ ϕi * q dΓ
         faceset = getfacesets(problem)[faceset_name]
         for (cellid, faceid) in faceset
-            boundary_matrix[faceid, cellid] ||
-                throw("Face $((cellid, faceid)) not on boundary.")
             fe = dloads[cellid]
             getcoordinates!(cell_coords, grid, cellid)
-            reinit!(facevalues, cell_coords, faceid)
-            for q_point in 1:getnquadpoints(facevalues)
-                dΓ = getdetJdV(facevalues, q_point)  # Face area
+            reinit!(facetvalues, cell_coords, Ferrite.FacetIndex(cellid, faceid))
+            for q_point in 1:getnquadpoints(facetvalues)
+                dΓ = getdetJdV(facetvalues, q_point)  # Facet area
                 for i in 1:n_basefuncs
-                    ϕ = shape_value(facevalues, q_point, i)  # Shape function value
+                    ϕ = shape_value(facetvalues, q_point, i)  # Shape function value
                     if fe isa SArray
                         # fe is a scalar for heat transfer (temperature DOF)
                         fe = @set fe[i] += ϕ * q * dΓ
@@ -384,14 +378,14 @@ function make_Kes_and_fes(
     dh = getdh(problem)
     k = getk(problem)
 
-    refshape = Ferrite.getrefshape(dh.field_interpolations[1])
+    refshape = Ferrite.getrefshape(dh.subdofhandlers[1].field_interpolations[1].ip)
 
     # Shape functions for scalar field (temperature)
-    interpolation_space = Lagrange{dim,refshape,1}()
-    quadrature_rule = QuadratureRule{dim,refshape}(quad_order)
+    interpolation_space = Lagrange{refshape,1}()
+    quadrature_rule = QuadratureRule{refshape}(quad_order)
     cellvalues = CellScalarValues(quadrature_rule, interpolation_space)
-    facevalues = FaceScalarValues(
-        QuadratureRule{dim - 1,refshape}(quad_order), interpolation_space
+    facetvalues = FacetValues(
+        FacetQuadratureRule{refshape}(quad_order), interpolation_space
     )
 
     # Calculate element conductivity matrices
@@ -410,9 +404,9 @@ function make_Kes_and_fes(
     )
     # No body forces in heat transfer - weights is zeros
     # Surface heat flux is computed via _make_dloads (NOT penalized)
-    dloads = _make_dloads(weights, problem, facevalues)
+    dloads = _make_dloads(weights, problem, facetvalues)
 
-    return Kes, weights, dloads, cellvalues, facevalues
+    return Kes, weights, dloads, cellvalues, facetvalues
 end
 
 # Element conductivity matrices for heat transfer (scalar field)

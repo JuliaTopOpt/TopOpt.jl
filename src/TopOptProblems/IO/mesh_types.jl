@@ -18,7 +18,7 @@ const ferrite_to_vtk = Dict(
 )
 
 """
-Converting a Ferrite grid to a VTKUnstructuredData from [VTKDataTypes](https://github.com/mohamed82008/VTKDataTypes.jl).
+Converting a Ferrite grid to a VTKUnstructuredData from [VTKDataTypes](https://github.com/mohdibntarek/VTKDataTypes.jl).
 """
 function VTKDataTypes.VTKUnstructuredData(
     grid::Ferrite.Grid{dim,<:Ferrite.Cell{dim,N,M},T}
