@@ -52,7 +52,9 @@ mean diagonal of the original matrix.
 function apply_boundary_with_meandiag!(
     K::Union{SparseMatrixCSC,Symmetric}, ch::ConstraintHandler
 )
-    Ferrite.apply!(K, eltype(K)[], ch, false)
+    # applyzero=true skips add_inhomogeneities! on the empty f vector; Ferrite
+    # 1.x otherwise indexes f in add_inhomogeneities_csc! -> BoundsError.
+    Ferrite.apply!(K, eltype(K)[], ch, true)
     return K
 end
 

@@ -7,7 +7,13 @@ using GeometryBasics
 using ColorSchemes
 using GeometryBasics: TriangleFace
 using TopOpt: TopOpt
-using TopOpt.TopOptProblems: getcloaddict, boundingbox, getdim, StiffnessTopOptProblem, HeatTransferTopOptProblem, HeatConductionProblem
+using TopOpt.TopOptProblems:
+    getcloaddict,
+    boundingbox,
+    getdim,
+    StiffnessTopOptProblem,
+    HeatTransferTopOptProblem,
+    HeatConductionProblem
 using TopOpt.TrussTopOptProblems: TrussProblem
 using Ferrite
 
@@ -20,7 +26,10 @@ function Makie.to_vertices(nodes::Vector{<:Ferrite.Node})
     return Point3f.([n.x for n in nodes])
 end
 
-function Makie.to_triangles(cells::AbstractVector{<:Ferrite.Cell})
+function Makie.to_triangles(cells::AbstractVector{<:Ferrite.AbstractCell})
+    # Ferrite 1.x: concrete cell types (Quadrilateral, Hexahedron, ...) are
+    # subtypes of AbstractCell, not the legacy `Cell` alias, so dispatch on
+    # AbstractCell to cover all cell kinds.
     tris = TriangleFace{Int}[]
     for cell in cells
         to_triangle(tris, cell)
