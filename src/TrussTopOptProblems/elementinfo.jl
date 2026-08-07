@@ -32,7 +32,9 @@ function ElementFEAInfo(
 
     cellvolumes = get_cell_volumes(sp, cellvalues)
     cells = sp.ch.dh.grid.cells
-    return ElementFEAInfo(
+    return ElementFEAInfo{
+        TopOpt.TopOptProblems.getdim(sp),TopOpt.TopOptProblems.floattype(sp)
+    }(
         element_Kes,
         weights,
         fixedload,

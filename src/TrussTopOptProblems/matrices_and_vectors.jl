@@ -25,7 +25,9 @@ function make_Kes_and_fes(
     As = getA(problem)
 
     # * Shape functions and quadrature rule
-    refshape = getrefshape(dh.subdofhandlers[1].field_interpolations[1].ip)
+    refshape = Ferrite.getrefshape(
+        _base_interpolation(dh.subdofhandlers[1].field_interpolations[1])
+    )
     # Lagrange{refshape, geom_order}()
     interpolation_space = Lagrange{refshape,1}()
     ξdim = Ferrite.getrefdim(refshape)
@@ -34,9 +36,7 @@ function make_Kes_and_fes(
 
     # * A Line element's faces are not meaningful in truss problems
     # placeholder to make type right
-    facevalues = FacetValues(
-        FacetQuadratureRule{refshape}(quad_order), interpolation_space
-    )
+    facevalues = FacetValues(FacetQuadratureRule{refshape}(quad_order), interpolation_space)
 
     # * Calculate element stiffness matrices
     n_basefuncs = getnbasefunctions(cellvalues)
@@ -97,7 +97,8 @@ function GenericCellScalarValues(
     geom_interpol::Interpolation=func_interpol;
     xdim=Ferrite.getrefdim(shape),
 ) where {T,shape<:Ferrite.AbstractRefShape}
-    @assert Ferrite.getrefdim(getrefshape(func_interpol)) == Ferrite.getrefdim(getrefshape(geom_interpol))
+    @assert Ferrite.getrefdim(getrefshape(func_interpol)) ==
+        Ferrite.getrefdim(getrefshape(geom_interpol))
     @assert getrefshape(func_interpol) == getrefshape(geom_interpol) == shape
     ξdim = Ferrite.getrefdim(shape)
     n_qpoints = length(getweights(quad_rule))

@@ -20,11 +20,10 @@ const ferrite_to_vtk = Dict(
 """
 Converting a Ferrite grid to a VTKUnstructuredData from [VTKDataTypes](https://github.com/mohdibntarek/VTKDataTypes.jl).
 """
-function VTKDataTypes.VTKUnstructuredData(
-    grid::Ferrite.Grid{dim,<:Ferrite.Cell{dim,N,M},T}
-) where {dim,N,M,T}
+function VTKDataTypes.VTKUnstructuredData(grid::Ferrite.Grid{dim,C,T}) where {dim,C,T}
     celltype = ferrite_to_vtk[eltype(grid.cells)]
     celltypes = [celltype for i in 1:length(grid.cells)]
+    N = Ferrite.nnodes(eltype(grid.cells))
     connectivity = copy(reinterpret(NTuple{N,Int}, grid.cells))
     node_coords = copy(reshape(reinterpret(Float64, grid.nodes), dim, length(grid.nodes)))
     return VTKUnstructuredData(node_coords, celltypes, connectivity)

@@ -4,6 +4,7 @@ using Ferrite, StaticArrays, LinearAlgebra
 using SparseArrays
 using ..TopOpt
 using ..TopOpt.Utilities
+using ..TopOpt.TopOptProblems: _base_interpolation
 using Setfield
 import Ferrite: assemble!
 using LinearAlgebra: I, norm

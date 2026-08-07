@@ -149,6 +149,17 @@ function LGrid(
     end
 end
 
+function _generate_2d_nodes!(nodes, nx, ny, LL, LR, UR, UL)
+    for j in 1:ny, i in 1:nx
+        s = (i - 1) / (nx - 1)
+        t = (j - 1) / (ny - 1)
+        x = (1 - s) * (1 - t) * LL[1] + s * (1 - t) * LR[1] + s * t * UR[1] + (1 - s) * t * UL[1]
+        y = (1 - s) * (1 - t) * LL[2] + s * (1 - t) * LR[2] + s * t * UR[2] + (1 - s) * t * UL[2]
+        push!(nodes, Node(Vec{2,typeof(x)}((x, y))))
+    end
+    return nodes
+end
+
 function _LinearLGrid(
     nel1::NTuple{2,Int}, nel2::NTuple{2,Int}, LL::Vec{2,T}, UR::Vec{2,T}, MR::Vec{2,T}
 ) where {T}
@@ -158,9 +169,9 @@ function _LinearLGrid(
     nodes = Node{2,T}[]
     cells = Quadrilateral[]
     boundary = Tuple{Int,Int}[]
-    facesets = Dict{String,Set{Tuple{Int,Int}}}()
-    facesets["right"] = Set{Tuple{Int,Int}}()
-    facesets["top"] = Set{Tuple{Int,Int}}()
+    facesets = Dict{String,Set{Ferrite.FacetIndex}}()
+    facesets["right"] = Set{Ferrite.FacetIndex}()
+    facesets["top"] = Set{Ferrite.FacetIndex}()
     nodesets = Dict{String,Set{Int}}()
     nodesets["load"] = Set{Int}()
 
@@ -174,7 +185,7 @@ function _LinearLGrid(
     _LR = Vec{2,T}((UR[1], LL[2]))
     _UL = Vec{2,T}((LL[1], MR[2]))
     _UR = Vec{2,T}((UR[1], MR[2]))
-    Ferrite._generate_2d_nodes!(nodes, n_nodes_x1, n_nodes_y1, LL, _LR, _UR, _UL)
+    _generate_2d_nodes!(nodes, n_nodes_x1, n_nodes_y1, LL, _LR, _UR, _UL)
 
     node_array1 = reshape(collect(1:n_nodes1), (n_nodes_x1, n_nodes_y1))
     for j in 1:nel_y1, i in 1:nel_x1
@@ -208,7 +219,7 @@ function _LinearLGrid(
     _LL = Vec{2,T}((_LR[1] + offsetstep, _LR[2]))
     _LR = Vec{2,T}((MR[1], LL[2]))
     _UL = Vec{2,T}((_UR[1] + offsetstep, MR[2]))
-    Ferrite._generate_2d_nodes!(nodes, n_nodes_x2, n_nodes_y2, _LL, _LR, MR, _UL)
+    _generate_2d_nodes!(nodes, n_nodes_x2, n_nodes_y2, _LL, _LR, MR, _UL)
 
     node_array2 = reshape(
         collect((indexoffset + 1):(indexoffset + n_nodes2)), (n_nodes_x2, n_nodes_y2)
@@ -227,7 +238,7 @@ function _LinearLGrid(
         j == nel_y2 && push!(boundary, (length(cells), 3))
         if nel_x2 == 1
             push!(boundary, (length(cells), 2))
-            push!(facesets["right"], (length(cells), 2))
+            push!(facesets["right"], Ferrite.FacetIndex(length(cells), 2))
         end
         for i in 1:nel_x2
             push!(
@@ -241,7 +252,7 @@ function _LinearLGrid(
             )
             if i == nel_x2
                 push!(boundary, (length(cells), 2))
-                push!(facesets["right"], (length(cells), 2))
+                push!(facesets["right"], Ferrite.FacetIndex(length(cells), 2))
             end
             j == 1 && push!(boundary, (length(cells), 1))
             j == nel_y2 && push!(boundary, (length(cells), 3))
@@ -263,7 +274,7 @@ function _LinearLGrid(
     _LL = Vec{2,T}((LL[1], MR[2] + offsetstep))
     _LR = Vec{2,T}((UR[1], MR[2] + offsetstep))
     _UL = Vec{2,T}((LL[1], UR[2]))
-    Ferrite._generate_2d_nodes!(nodes, n_nodes_x3, n_nodes_y3, _LL, _LR, UR, _UL)
+    _generate_2d_nodes!(nodes, n_nodes_x3, n_nodes_y3, _LL, _LR, UR, _UL)
 
     # Generate cells
     node_array3 = reshape(
@@ -297,7 +308,7 @@ function _LinearLGrid(
         i == nel_x3 && push!(boundary, (length(cells), 2))
         if j == nel_y3
             push!(boundary, (length(cells), 3))
-            push!(facesets["top"], (length(cells), 3))
+            push!(facesets["top"], Ferrite.FacetIndex(length(cells), 3))
         end
     end
 
@@ -313,9 +324,9 @@ function _QuadraticLGrid(
     nodes = Node{2,T}[]
     cells = QuadraticQuadrilateral[]
     boundary = Tuple{Int,Int}[]
-    facesets = Dict{String,Set{Tuple{Int,Int}}}()
-    facesets["right"] = Set{Tuple{Int,Int}}()
-    facesets["top"] = Set{Tuple{Int,Int}}()
+    facesets = Dict{String,Set{Ferrite.FacetIndex}}()
+    facesets["right"] = Set{Ferrite.FacetIndex}()
+    facesets["top"] = Set{Ferrite.FacetIndex}()
     nodesets = Dict{String,Set{Int}}()
     nodesets["load"] = Set{Int}()
 
@@ -329,7 +340,7 @@ function _QuadraticLGrid(
     _LR = Vec{2,T}((UR[1], LL[2]))
     _UL = Vec{2,T}((LL[1], MR[2]))
     _UR = Vec{2,T}((UR[1], MR[2]))
-    Ferrite._generate_2d_nodes!(nodes, n_nodes_x1, n_nodes_y1, LL, _LR, _UR, _UL)
+    _generate_2d_nodes!(nodes, n_nodes_x1, n_nodes_y1, LL, _LR, _UR, _UL)
 
     node_array1 = reshape(collect(1:n_nodes1), (n_nodes_x1, n_nodes_y1))
     for j in 1:nel_y1, i in 1:nel_x1
@@ -368,7 +379,7 @@ function _QuadraticLGrid(
     _LL = Vec{2,T}((_LR[1] + offsetstep, _LR[2]))
     _LR = Vec{2,T}((MR[1], LL[2]))
     _UL = Vec{2,T}((_UR[1] + offsetstep, MR[2]))
-    Ferrite._generate_2d_nodes!(nodes, n_nodes_x2, n_nodes_y2, _LL, _LR, MR, _UL)
+    _generate_2d_nodes!(nodes, n_nodes_x2, n_nodes_y2, _LL, _LR, MR, _UL)
 
     node_array2 = reshape(
         collect((indexoffset + 1):(indexoffset + n_nodes2)), (n_nodes_x2, n_nodes_y2)
@@ -392,7 +403,7 @@ function _QuadraticLGrid(
         j == nel_y2 && push!(boundary, (length(cells), 3))
         if nel_x2 == 1
             push!(boundary, (length(cells), 2))
-            push!(facesets["right"], (length(cells), 2))
+            push!(facesets["right"], Ferrite.FacetIndex(length(cells), 2))
         end
         for i in 1:nel_x2
             push!(
@@ -411,7 +422,7 @@ function _QuadraticLGrid(
             )
             if i == nel_x2
                 push!(boundary, (length(cells), 2))
-                push!(facesets["right"], (length(cells), 2))
+                push!(facesets["right"], Ferrite.FacetIndex(length(cells), 2))
             end
             j == 1 && push!(boundary, (length(cells), 1))
             j == nel_y2 && push!(boundary, (length(cells), 3))
@@ -433,7 +444,7 @@ function _QuadraticLGrid(
     _LL = Vec{2,T}((LL[1], MR[2] + offsetstep))
     _LR = Vec{2,T}((UR[1], MR[2] + offsetstep))
     _UL = Vec{2,T}((LL[1], UR[2]))
-    Ferrite._generate_2d_nodes!(nodes, n_nodes_x3, n_nodes_y3, _LL, _LR, UR, _UL)
+    _generate_2d_nodes!(nodes, n_nodes_x3, n_nodes_y3, _LL, _LR, UR, _UL)
 
     # Generate cells
     node_array3 = reshape(
@@ -478,7 +489,7 @@ function _QuadraticLGrid(
         i == nel_x3 && push!(boundary, (length(cells), 2))
         if j == nel_y3
             push!(boundary, (length(cells), 3))
-            push!(facesets["top"], (length(cells), 3))
+            push!(facesets["top"], Ferrite.FacetIndex(length(cells), 3))
         end
     end
 
@@ -499,11 +510,11 @@ function _LinearTieBeamGrid((::Type{T})=Float64, refine=1) where {T}
     nodes = Node{2,T}[]
     cells = Quadrilateral[]
     boundary = Tuple{Int,Int}[]
-    facesets = Dict{String,Set{Tuple{Int,Int}}}()
-    facesets["leftfixed"] = Set{Tuple{Int,Int}}()
-    facesets["toproller"] = Set{Tuple{Int,Int}}()
-    facesets["rightload"] = Set{Tuple{Int,Int}}()
-    facesets["bottomload"] = Set{Tuple{Int,Int}}()
+    facesets = Dict{String,Set{Ferrite.FacetIndex}}()
+    facesets["leftfixed"] = Set{Ferrite.FacetIndex}()
+    facesets["toproller"] = Set{Ferrite.FacetIndex}()
+    facesets["rightload"] = Set{Ferrite.FacetIndex}()
+    facesets["bottomload"] = Set{Ferrite.FacetIndex}()
 
     # Lower left rectangle
     nel_x1 = 32 * refine
@@ -516,7 +527,7 @@ function _LinearTieBeamGrid((::Type{T})=Float64, refine=1) where {T}
     LR = Vec{2,T}((T(nel_x1 / refine), T(0)))
     UR = Vec{2,T}((T(nel_x1 / refine), T(nel_y1 / refine)))
     UL = Vec{2,T}((T(0), T(nel_y1 / refine)))
-    Ferrite._generate_2d_nodes!(nodes, n_nodes_x1, n_nodes_y1, LL, LR, UR, UL)
+    _generate_2d_nodes!(nodes, n_nodes_x1, n_nodes_y1, LL, LR, UR, UL)
 
     node_array1 = reshape(collect(1:n_nodes1), (n_nodes_x1, n_nodes_y1))
     for j in 1:nel_y1, i in 1:nel_x1
@@ -532,18 +543,18 @@ function _LinearTieBeamGrid((::Type{T})=Float64, refine=1) where {T}
         if i == 1
             cidx = length(cells)
             push!(boundary, (cidx, 4))
-            push!(facesets["leftfixed"], (cidx, 4))
+            push!(facesets["leftfixed"], Ferrite.FacetIndex(cidx, 4))
         end
         if i == nel_x1
             cidx = length(cells)
             push!(boundary, (cidx, 2))
-            push!(facesets["rightload"], (cidx, 2))
+            push!(facesets["rightload"], Ferrite.FacetIndex(cidx, 2))
         end
         if j == 1
             cidx = length(cells)
             push!(boundary, (cidx, 1))
             if i == 31
-                push!(facesets["bottomload"], (cidx, 1))
+                push!(facesets["bottomload"], Ferrite.FacetIndex(cidx, 1))
             end
         end
         if j == nel_y1 && i != 31
@@ -563,7 +574,7 @@ function _LinearTieBeamGrid((::Type{T})=Float64, refine=1) where {T}
     UR = Vec{2,T}((T(31), nel_y1 / refine + T(4)))
     UL = Vec{2,T}((T(30), nel_y1 / refine + T(4)))
 
-    Ferrite._generate_2d_nodes!(nodes, n_nodes_x2, n_nodes_y2, LL, LR, UR, UL)
+    _generate_2d_nodes!(nodes, n_nodes_x2, n_nodes_y2, LL, LR, UR, UL)
     node_array2 = reshape(
         collect((indexoffset + 1):(indexoffset + n_nodes2)), (n_nodes_x2, n_nodes_y2)
     )
@@ -610,7 +621,7 @@ function _LinearTieBeamGrid((::Type{T})=Float64, refine=1) where {T}
         if j == nel_y2
             cidx = length(cells)
             push!(boundary, (cidx, 3))
-            push!(facesets["toproller"], (cidx, 3))
+            push!(facesets["toproller"], Ferrite.FacetIndex(cidx, 3))
         end
     end
 
@@ -621,11 +632,11 @@ function _QuadraticTieBeamGrid((::Type{T})=Float64, refine=1) where {T}
     nodes = Node{2,T}[]
     cells = QuadraticQuadrilateral[]
     boundary = Tuple{Int,Int}[]
-    facesets = Dict{String,Set{Tuple{Int,Int}}}()
-    facesets["leftfixed"] = Set{Tuple{Int,Int}}()
-    facesets["toproller"] = Set{Tuple{Int,Int}}()
-    facesets["rightload"] = Set{Tuple{Int,Int}}()
-    facesets["bottomload"] = Set{Tuple{Int,Int}}()
+    facesets = Dict{String,Set{Ferrite.FacetIndex}}()
+    facesets["leftfixed"] = Set{Ferrite.FacetIndex}()
+    facesets["toproller"] = Set{Ferrite.FacetIndex}()
+    facesets["rightload"] = Set{Ferrite.FacetIndex}()
+    facesets["bottomload"] = Set{Ferrite.FacetIndex}()
 
     # Lower left rectangle
     nel_x1 = 32 * refine
@@ -638,7 +649,7 @@ function _QuadraticTieBeamGrid((::Type{T})=Float64, refine=1) where {T}
     LR = Vec{2,T}((T(nel_x1 / refine), T(0)))
     UR = Vec{2,T}((T(nel_x1 / refine), T(nel_y1 / refine)))
     UL = Vec{2,T}((T(0), T(nel_y1 / refine)))
-    Ferrite._generate_2d_nodes!(nodes, n_nodes_x1, n_nodes_y1, LL, LR, UR, UL)
+    _generate_2d_nodes!(nodes, n_nodes_x1, n_nodes_y1, LL, LR, UR, UL)
 
     node_array1 = reshape(collect(1:n_nodes1), (n_nodes_x1, n_nodes_y1))
     for j in 1:nel_y1, i in 1:nel_x1
@@ -659,18 +670,18 @@ function _QuadraticTieBeamGrid((::Type{T})=Float64, refine=1) where {T}
         if i == 1
             cidx = length(cells)
             push!(boundary, (cidx, 4))
-            push!(facesets["leftfixed"], (cidx, 4))
+            push!(facesets["leftfixed"], Ferrite.FacetIndex(cidx, 4))
         end
         if i == nel_x1
             cidx = length(cells)
             push!(boundary, (cidx, 2))
-            push!(facesets["rightload"], (cidx, 2))
+            push!(facesets["rightload"], Ferrite.FacetIndex(cidx, 2))
         end
         if j == 1
             cidx = length(cells)
             push!(boundary, (cidx, 1))
             if i == 31
-                push!(facesets["bottomload"], (cidx, 1))
+                push!(facesets["bottomload"], Ferrite.FacetIndex(cidx, 1))
             end
         end
         if j == nel_y1 && i != 31
@@ -690,7 +701,7 @@ function _QuadraticTieBeamGrid((::Type{T})=Float64, refine=1) where {T}
     UR = Vec{2,T}((T(31), nel_y1 / refine + T(4)))
     UL = Vec{2,T}((T(30), nel_y1 / refine + T(4)))
 
-    Ferrite._generate_2d_nodes!(nodes, n_nodes_x2, n_nodes_y2, LL, LR, UR, UL)
+    _generate_2d_nodes!(nodes, n_nodes_x2, n_nodes_y2, LL, LR, UR, UL)
     node_array2 = reshape(
         collect((indexoffset + 1):(indexoffset + n_nodes2)), (n_nodes_x2, n_nodes_y2)
     )
@@ -748,7 +759,7 @@ function _QuadraticTieBeamGrid((::Type{T})=Float64, refine=1) where {T}
         if j == nel_y2
             cidx = length(cells)
             push!(boundary, (cidx, 3))
-            push!(facesets["toproller"], (cidx, 3))
+            push!(facesets["toproller"], Ferrite.FacetIndex(cidx, 3))
         end
     end
 

@@ -150,7 +150,7 @@ function PointLoadCantilever(
 
     ch = ConstraintHandler(dh)
 
-    #dbc = Dirichlet(:u, getfaceset(rect_grid.grid, "fixed_all"), (x,t) -> zeros(T, dim), collect(1:dim))
+    #dbc = Dirichlet(:u, getfacetset(rect_grid.grid, "fixed_all"), (x,t) -> zeros(T, dim), collect(1:dim))
     dbc = Dirichlet(
         :u, getnodeset(rect_grid.grid, "fixed_all"), (x, t) -> zeros(T, dim), collect(1:dim)
     )
@@ -303,7 +303,7 @@ function HalfMBB(
     close!(dh)
 
     ch = ConstraintHandler(dh)
-    #dbc1 = Dirichlet(:u, getfaceset(rect_grid.grid, "fixed_u1"), (x,t)->T[0], [1])
+    #dbc1 = Dirichlet(:u, getfacetset(rect_grid.grid, "fixed_u1"), (x,t)->T[0], [1])
     dbc1 = Dirichlet(:u, getnodeset(rect_grid.grid, "fixed_u1"), (x, t) -> T[0], [1])
     add!(ch, dbc1)
     dbc2 = Dirichlet(:u, getnodeset(rect_grid.grid, "fixed_u2"), (x, t) -> T[0], [2])
@@ -438,7 +438,7 @@ function LBeam(
     close!(dh)
 
     ch = ConstraintHandler(dh)
-    dbc = Dirichlet(:u, getfaceset(grid, "top"), (x, t) -> T[0, 0], [1, 2])
+    dbc = Dirichlet(:u, getfacetset(grid, "top"), (x, t) -> T[0, 0], [1, 2])
     add!(ch, dbc)
     close!(ch)
 
@@ -451,7 +451,11 @@ function LBeam(
     node_dofs = metadata.node_dofs
     force_dof = node_dofs[2, fnode]
 
-    return LBeam(E, ν, ch, force, force_dof, metadata)
+    N = nnodes(eltype(grid.cells))
+    M = Ferrite.nfacets(Ferrite.getrefshape(eltype(grid.cells)))
+    return LBeam{T,N,M,typeof(ch),typeof(force_dof),typeof(metadata)}(
+        E, ν, ch, force, force_dof, metadata
+    )
 end
 
 function boundingbox(nodes::Vector{Node{dim,T}}) where {dim,T}
@@ -577,7 +581,7 @@ function TieBeam(
     close!(dh)
 
     ch = ConstraintHandler(dh)
-    dbc = Dirichlet(:u, getfaceset(grid, "leftfixed"), (x, t) -> T[0, 0], [1, 2])
+    dbc = Dirichlet(:u, getfacetset(grid, "leftfixed"), (x, t) -> T[0, 0], [1, 2])
     add!(ch, dbc)
     close!(ch)
 
@@ -586,7 +590,9 @@ function TieBeam(
 
     metadata = Metadata(dh)
 
-    return TieBeam(E, ν, force, ch, metadata)
+    N = nnodes(eltype(grid.cells))
+    M = Ferrite.nfacets(Ferrite.getrefshape(eltype(grid.cells)))
+    return TieBeam{T,N,M,typeof(ch),typeof(metadata)}(E, ν, force, ch, metadata)
 end
 
 getdim(::TieBeam) = 2

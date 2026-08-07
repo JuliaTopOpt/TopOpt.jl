@@ -109,9 +109,9 @@ function inp_to_ferrite(problem::InpContent)
         components = [vec[i][1] for i in 1:length(vec)]
         dbc = Dirichlet(:u, getnodeset(grid, k), f, components)
         add!(ch, dbc)
-        close!(ch)
-        update!(ch, 0.0)
     end
+    close!(ch)
+    update!(ch, 0.0)
 
     return ch
 end

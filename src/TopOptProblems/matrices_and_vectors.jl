@@ -1,3 +1,8 @@
+# Helper to get the base scalar interpolation whether the stored interpolation is
+# already scalar or a VectorizedInterpolation (e.g. ip^dim for vector fields).
+_base_interpolation(ip::Ferrite.ScalarInterpolation) = ip
+_base_interpolation(ip::Ferrite.VectorizedInterpolation) = ip.ip
+
 function gettypes(
     ::Type{T}, # number type
     ::Type{Val{:Static}}, # matrix type
@@ -49,7 +54,7 @@ function gettypes(
 end
 
 # Common fallbacks for all problem types
-initialize_K(sp::AbstractTopOptProblem) = Symmetric(create_sparsity_pattern(sp.ch.dh))
+initialize_K(sp::AbstractTopOptProblem) = Symmetric(allocate_matrix(sp.ch.dh))
 initialize_f(sp::AbstractTopOptProblem) = zeros(floattype(sp), ndofs(sp.ch.dh))
 
 function make_Kes_and_fes(problem, quad_order=2)
@@ -67,7 +72,9 @@ function make_Kes_and_fes(problem, quad_order, ::Type{Val{mat_type}}) where {mat
     ν = getν(problem)
     ρ = getdensity(problem)
 
-    refshape = Ferrite.getrefshape(dh.subdofhandlers[1].field_interpolations[1].ip)
+    refshape = Ferrite.getrefshape(
+        _base_interpolation(dh.subdofhandlers[1].field_interpolations[1])
+    )
 
     λ = E * ν / ((1 + ν) * (1 - 2 * ν))
     μ = E / (2 * (1 + ν))
@@ -78,7 +85,7 @@ function make_Kes_and_fes(problem, quad_order, ::Type{Val{mat_type}}) where {mat
     # Shape functions and quadrature rule
     interpolation_space = Lagrange{refshape,geom_order}()
     quadrature_rule = QuadratureRule{refshape}(quad_order)
-    cellvalues = CellScalarValues(quadrature_rule, interpolation_space)
+    cellvalues = CellValues(quadrature_rule, interpolation_space)
     facevalues = FacetValues(FacetQuadratureRule{refshape}(quad_order), interpolation_space)
 
     # Calculate element stiffness matrices
@@ -106,15 +113,15 @@ const g = [0.0, 9.81, 0.0] # N/kg or m/s^2
 # Element stiffness matrices are StaticArrays
 # `weights` : a vector of `xdim` vectors, element_id => self-weight load vector
 function _make_Kes_and_weights(
-    dh::DofHandler,
+    dh::DofHandler{dim},
     ::Type{Tuple{MatrixType,VectorType}},
     ::Type{Val{n_basefuncs}},
     ::Type{Val{Kesize}},
-    C,
+    C::SymmetricTensor{4,dim,T},
     ρ,
     quadrature_rule,
-    cellvalues,
-) where {dim,N,T,MatrixType<:StaticArray,VectorType,n_basefuncs,Kesize}
+    cellvalues::CellValues,
+) where {dim,T,MatrixType<:StaticArray,VectorType,n_basefuncs,Kesize}
     # Calculate element stiffness matrices
     nel = getncells(dh.grid)
     body_force = ρ .* g # Force per unit volume
@@ -240,7 +247,7 @@ function _make_dloads(fes, problem::StiffnessTopOptProblem, facetvalues)
         for (cellid, faceid) in faceset
             fe = dloads[cellid]
             getcoordinates!(cell_coords, grid, cellid)
-            reinit!(facetvalues, cell_coords, Ferrite.FacetIndex(cellid, faceid))
+            reinit!(facetvalues, cell_coords, faceid)
             for q_point in 1:getnquadpoints(facetvalues)
                 dΓ = getdetJdV(facetvalues, q_point) # Facet area
                 normal = getnormal(facetvalues, q_point) # Normal vector at quad point
@@ -296,7 +303,7 @@ function _make_dloads(fes, problem::HeatTransferTopOptProblem, facetvalues)
         for (cellid, faceid) in faceset
             fe = dloads[cellid]
             getcoordinates!(cell_coords, grid, cellid)
-            reinit!(facetvalues, cell_coords, Ferrite.FacetIndex(cellid, faceid))
+            reinit!(facetvalues, cell_coords, faceid)
             for q_point in 1:getnquadpoints(facetvalues)
                 dΓ = getdetJdV(facetvalues, q_point)  # Facet area
                 for i in 1:n_basefuncs
@@ -378,12 +385,14 @@ function make_Kes_and_fes(
     dh = getdh(problem)
     k = getk(problem)
 
-    refshape = Ferrite.getrefshape(dh.subdofhandlers[1].field_interpolations[1].ip)
+    refshape = Ferrite.getrefshape(
+        _base_interpolation(dh.subdofhandlers[1].field_interpolations[1])
+    )
 
     # Shape functions for scalar field (temperature)
     interpolation_space = Lagrange{refshape,1}()
     quadrature_rule = QuadratureRule{refshape}(quad_order)
-    cellvalues = CellScalarValues(quadrature_rule, interpolation_space)
+    cellvalues = CellValues(quadrature_rule, interpolation_space)
     facetvalues = FacetValues(
         FacetQuadratureRule{refshape}(quad_order), interpolation_space
     )
@@ -413,14 +422,14 @@ end
 # No body forces in heat transfer - weights should be zeros
 # Surface heat flux is computed separately via _make_dloads
 function _make_Kes_and_weights_heat(
-    dh::DofHandler,
+    dh::DofHandler{dim},
     ::Type{Tuple{MatrixType,VectorType}},
     ::Type{Val{n_basefuncs}},
     ::Type{Val{Kesize}},
     k::T,
     quadrature_rule,
-    cellvalues,
-) where {dim,N,T,MatrixType<:StaticArray,VectorType,n_basefuncs,Kesize}
+    cellvalues::CellValues,
+) where {dim,T,MatrixType<:StaticArray,VectorType,n_basefuncs,Kesize}
     MatrixType <: SizedMatrix &&
         throw("SizedMatrix not supported for heat transfer problems with StaticArrays.")
     nel = getncells(dh.grid)

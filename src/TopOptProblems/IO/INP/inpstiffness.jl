@@ -36,8 +36,12 @@ end
 function InpStiffness(problem::Parser.InpContent{dim,TF,N,TI}) where {dim,TF,N,TI}
     ch = Parser.inp_to_ferrite(problem)
     metadata = Metadata(ch.dh)
-    geom_order = Ferrite.getorder(ch.dh.field_interpolations[1])
-    return InpStiffness{dim,N,TF,TI,typeof(ch),geom_order,Vector{TI},typeof(metadata)}(problem, Val{geom_order}, ch, metadata)
+    geom_order = Ferrite.getorder(
+        _base_interpolation(ch.dh.subdofhandlers[1].field_interpolations[1])
+    )
+    return InpStiffness{dim,N,TF,TI,typeof(ch),geom_order,Vector{TI},typeof(metadata)}(
+        problem, Val{geom_order}, ch, metadata
+    )
 end
 
 function get_load_cells(p::InpStiffness)

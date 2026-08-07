@@ -44,8 +44,8 @@ function NewPointLoadCantilever(
         rect_grid = RectilinearGrid(Val{:Quadratic}, nels, T.(sizes))
     end
 
-    if haskey(rect_grid.grid.facesets, "fixed_all")
-        pop!(rect_grid.grid.facesets, "fixed_all")
+    if haskey(rect_grid.grid.facetsets, "fixed_all")
+        pop!(rect_grid.grid.facetsets, "fixed_all")
     end
     #addfaceset!(rect_grid.grid, "fixed_all", x -> left(rect_grid, x));
     addnodeset!(rect_grid.grid, "fixed_all", x -> left(rect_grid, x))
@@ -78,7 +78,7 @@ function NewPointLoadCantilever(
 
     ch = ConstraintHandler(dh)
 
-    #dbc = Dirichlet(:u, getfaceset(rect_grid.grid, "fixed_all"), (x,t) -> zeros(T, dim), collect(1:dim))
+    #dbc = Dirichlet(:u, getfacetset(rect_grid.grid, "fixed_all"), (x,t) -> zeros(T, dim), collect(1:dim))
     dbc = Dirichlet(
         :u, getnodeset(rect_grid.grid, "fixed_all"), (x, t) -> zeros(T, dim), collect(1:dim)
     )

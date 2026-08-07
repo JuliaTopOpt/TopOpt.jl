@@ -67,10 +67,10 @@ function buckling(problem::StiffnessTopOptProblem{xdim,T}, ginfo, einfo) where {
 
     if Kσ isa Symmetric
         Kσ.data.nzval .= 0
-        assembler = Ferrite.AssemblerSparsityPattern(Kσ.data, T[], Int[], Int[])
+        assembler = Ferrite.start_assemble(Kσ.data)
     else
         Kσ.nzval .= 0
-        assembler = Ferrite.AssemblerSparsityPattern(Kσ, T[], Int[], Int[])
+        assembler = Ferrite.start_assemble(Kσ)
     end
 
     # * assemble global geometric stiffness matrix

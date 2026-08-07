@@ -2,7 +2,7 @@ module INP
 
 export InpStiffness
 
-using ...TopOptProblems: Metadata, StiffnessTopOptProblem
+using ...TopOptProblems: Metadata, StiffnessTopOptProblem, _base_interpolation
 using Ferrite
 import ...TopOptProblems:
     nnodespercell,
