@@ -23,7 +23,9 @@ Converting a Ferrite grid to a VTKUnstructuredData from [VTKDataTypes](https://g
 function VTKDataTypes.VTKUnstructuredData(grid::Ferrite.Grid{dim,C,T}) where {dim,C,T}
     celltype = ferrite_to_vtk[eltype(grid.cells)]
     celltypes = [celltype for i in 1:length(grid.cells)]
-    N = Ferrite.nnodes(eltype(grid.cells))
+    # Ferrite 1.x: `nnodes` is only defined for cell instances, not for the
+    # cell Type, so call it on the first cell instead of `eltype(grid.cells)`.
+    N = Ferrite.nnodes(first(grid.cells))
     connectivity = copy(reinterpret(NTuple{N,Int}, grid.cells))
     node_coords = copy(reshape(reinterpret(Float64, grid.nodes), dim, length(grid.nodes)))
     return VTKUnstructuredData(node_coords, celltypes, connectivity)
