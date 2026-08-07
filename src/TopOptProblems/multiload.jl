@@ -72,20 +72,16 @@ end
 
 function get_surface_dofs(problem::StiffnessTopOptProblem)
     dh = problem.ch.dh
-    boundary_matrix = dh.grid.boundary_matrix
-    interpolation = dh.field_interpolations[1]
-    celliterator = Ferrite.CellIterator(dh)
+    grid = dh.grid
     node_dofs = problem.metadata.node_dofs
 
-    faces, cells, _ = findnz(boundary_matrix)
     surface_node_inds = Int[]
-    for i in 1:length(cells)
-        cellind = cells[i]
-        faceind = faces[i]
-        face = [Ferrite.faces(interpolation)[faceind]...]
-        Ferrite.reinit!(celliterator, cellind)
-        nodeinds = celliterator.nodes[face]
-        append!(surface_node_inds, nodeinds)
+    for (setname, facets) in grid.facetsets
+        for (cellind, faceind) in facets
+            cell = getcells(grid, cellind)
+            face = Ferrite.facets(cell)[faceind]
+            append!(surface_node_inds, collect(face))
+        end
     end
     unique!(surface_node_inds)
     return setdiff(node_dofs[:, surface_node_inds], problem.ch.prescribed_dofs)
@@ -99,16 +95,15 @@ function generate_random_loads(
 )
     loadrule = () -> direction() .* rand(scalar)
     surface_dofs = get_surface_dofs(problem)
-    
+
     # surface_dofs is a flat vector of DOFs after setdiff
     # Group them by node: n_dofs_per_node DOFs per node
     n_dofs_per_node = size(problem.metadata.node_dofs, 1)
     n_surface_nodes = length(surface_dofs) ÷ n_dofs_per_node
-    
+
     # Create node start indices in the flat vector
     node_indices = [
-        (n_dofs_per_node * (i - 1) + 1):(n_dofs_per_node * i) 
-        for i in 1:n_surface_nodes
+        (n_dofs_per_node * (i - 1) + 1):(n_dofs_per_node * i) for i in 1:n_surface_nodes
     ]
 
     FI = Int[]

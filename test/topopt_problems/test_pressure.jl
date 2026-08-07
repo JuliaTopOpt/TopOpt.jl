@@ -23,10 +23,12 @@ import TopOpt.TopOptProblems: make_Kes_and_fes
 
     # Test getfacesets
     fs = TopOpt.TopOptProblems.getfacesets(problem)
-    @test fs isa Dict{String,Set{Tuple{Int,Int}}}
+    # Ferrite 1.x stores facetsets as OrderedSet, so check the element type
+    # rather than the concrete set/container type.
+    @test fs isa Dict{String,<:AbstractSet{Ferrite.FacetIndex}}
 
     # Test default values
-    @test TopOpt.TopOptProblems.getfacesets(problem) === getdh(problem).grid.facesets
+    @test TopOpt.TopOptProblems.getfacesets(problem) === getdh(problem).grid.facetsets
 
     # Create another problem with different force value
     problem2 = TieBeam(Val{:Linear}, Float64; refine=2, force=5.0)
@@ -130,7 +132,7 @@ end
     Kes, weights, dloads, cellvalues, facevalues = make_Kes_and_fes(problem, 2)
 
     # Verify facevalues are properly configured
-    @test facevalues isa FaceScalarValues
+    @test facevalues isa FacetValues
 end
 
 @testset "Pressure loop - boundary validation" begin

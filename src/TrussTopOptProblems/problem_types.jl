@@ -10,7 +10,7 @@ struct TrussProblem{
     M,
     Tt<:TrussGrid{xdim,T,N,M},
     Tm1<:Vector{<:TrussFEAMaterial{T}},
-    Tc<:ConstraintHandler{<:DofHandler{xdim,<:Ferrite.Cell{xdim,N,M},T},T},
+    Tc<:ConstraintHandler{<:DofHandler,T},
     Tm2<:Metadata,
 } <: StiffnessTopOptProblem{xdim,T}
     truss_grid::Tt # ground truss mesh
@@ -87,13 +87,13 @@ function TrussProblem(
     if CellType === :Linear
         # truss linear
         # interpolation_space
-        ip = Lagrange{ξdim,RefCube,geom_order}()
-        push!(dh, :u, xdim, ip)
+        ip = Lagrange{RefLine,geom_order}()
+        add!(dh, :u, ip^xdim)
     else
         # TODO truss 2-order
         @assert false "not implemented"
         # ip = Lagrange{2, RefCube, 2}()
-        # push!(dh, :u, xdim, ip)
+        # add!(dh, :u, ip^xdim)
     end
     close!(dh)
 
@@ -224,8 +224,8 @@ function PointLoadCantileverTruss(
     # * Create displacement field u
     geom_order = 1
     dh = DofHandler(truss_grid.grid)
-    ip = Lagrange{ξdim,RefCube,geom_order}()
-    push!(dh, :u, dim, ip)
+    ip = Lagrange{RefLine,geom_order}()
+    add!(dh, :u, ip^dim)
     close!(dh)
 
     ch = ConstraintHandler(dh)

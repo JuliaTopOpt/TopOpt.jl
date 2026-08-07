@@ -23,32 +23,32 @@ force = 1.0
     for i in 1:2, j in 1:2
         @test boundingbox(grid)[i][j] ≈ problem.rect_grid.corners[i][j] atol = 1e-8
     end
-    @test length(grid.boundary_matrix.nzval) == 2 * 160 + 2 * 40
-    for (c, f) in grid.facesets["bottom"]
+    @test sum(length, values(grid.facetsets)) == 2 * 160 + 2 * 40
+    for (c, f) in grid.facetsets["bottom"]
         @test f == 1
         for n in grid.cells[c].nodes[[1, 2]]
             @test grid.nodes[n].x[2] == 0
         end
     end
-    for (c, f) in grid.facesets["right"]
+    for (c, f) in grid.facetsets["right"]
         @test f == 2
         for n in grid.cells[c].nodes[[2, 3]]
             @test grid.nodes[n].x[1] ≈ 160 atol = 1e-8
         end
     end
-    for (c, f) in grid.facesets["top"]
+    for (c, f) in grid.facetsets["top"]
         @test f == 3
         for n in grid.cells[c].nodes[[3, 4]]
             @test grid.nodes[n].x[2] ≈ 40 atol = 1e-8
         end
     end
-    for (c, f) in grid.facesets["left"]
+    for (c, f) in grid.facetsets["left"]
         @test f == 4
         for n in grid.cells[c].nodes[[1, 4]]
             @test grid.nodes[n].x[1] == 0
         end
     end
-    @test sum(length, getindex.((grid.facesets,), ["bottom", "right", "top", "left"])) ==
+    @test sum(length, getindex.((grid.facetsets,), ["bottom", "right", "top", "left"])) ==
         2 * 160 + 2 * 40
 end
 
@@ -66,32 +66,32 @@ end
     for i in 1:2, j in 1:2
         @test boundingbox(grid)[i][j] ≈ problem.rect_grid.corners[i][j] atol = 1e-8
     end
-    @test length(grid.boundary_matrix.nzval) == 2 * 60 + 2 * 20
-    for (c, f) in grid.facesets["bottom"]
+    @test sum(length, values(grid.facetsets)) == 2 * 60 + 2 * 20
+    for (c, f) in grid.facetsets["bottom"]
         @test f == 1
         for n in grid.cells[c].nodes[[1, 2]]
             @test grid.nodes[n].x[2] == 0
         end
     end
-    for (c, f) in grid.facesets["right"]
+    for (c, f) in grid.facetsets["right"]
         @test f == 2
         for n in grid.cells[c].nodes[[2, 3]]
             @test grid.nodes[n].x[1] ≈ 60 atol = 1e-8
         end
     end
-    for (c, f) in grid.facesets["top"]
+    for (c, f) in grid.facetsets["top"]
         @test f == 3
         for n in grid.cells[c].nodes[[3, 4]]
             @test grid.nodes[n].x[2] ≈ 20 atol = 1e-8
         end
     end
-    for (c, f) in grid.facesets["left"]
+    for (c, f) in grid.facetsets["left"]
         @test f == 4
         for n in grid.cells[c].nodes[[1, 4]]
             @test grid.nodes[n].x[1] == 0
         end
     end
-    @test sum(length, getindex.((grid.facesets,), ["bottom", "right", "top", "left"])) ==
+    @test sum(length, getindex.((grid.facetsets,), ["bottom", "right", "top", "left"])) ==
         2 * 60 + 2 * 20
 end
 
@@ -110,20 +110,20 @@ end
     for i in 1:2, j in 1:2
         @test boundingbox(grid)[i][j] ≈ corners[i][j] atol = 1e-8
     end
-    @test length(grid.boundary_matrix.nzval) == 100 * 2 + 50 * 4
-    for (c, f) in grid.facesets["right"]
+    @test length(grid.facetsets["boundary"]) == 100 * 2 + 50 * 4
+    for (c, f) in grid.facetsets["right"]
         @test f == 2
         for n in grid.cells[c].nodes[[2, 3]]
             @test grid.nodes[n].x[1] ≈ 100 atol = 1e-8
         end
     end
-    for (c, f) in grid.facesets["top"]
+    for (c, f) in grid.facetsets["top"]
         @test f == 3
         for n in grid.cells[c].nodes[[3, 4]]
             @test grid.nodes[n].x[2] ≈ 100 atol = 1e-8
         end
     end
-    @test sum(length, getindex.((grid.facesets,), ["right", "top"])) == 2 * 50
+    @test sum(length, getindex.((grid.facetsets,), ["right", "top"])) == 2 * 50
 end
 
 # Half MBB beam with quadratic elements
@@ -141,29 +141,29 @@ end
     
     # Quadratic elements have 9 nodes per cell
     @test Ferrite.nnodes(grid.cells[1]) == 9
-    @test Ferrite.getorder(problem.ch.dh.field_interpolations[1]) == 2
+    @test Ferrite.getorder(problem.ch.dh.subdofhandlers[1].field_interpolations[1]) == 2
     
     for i in 1:2, j in 1:2
         @test boundingbox(grid)[i][j] ≈ problem.rect_grid.corners[i][j] atol = 1e-8
     end
     
     # Check facesets exist and have correct structure
-    @test haskey(grid.facesets, "bottom")
-    @test haskey(grid.facesets, "right")
-    @test haskey(grid.facesets, "top")
-    @test haskey(grid.facesets, "left")
+    @test haskey(grid.facetsets, "bottom")
+    @test haskey(grid.facetsets, "right")
+    @test haskey(grid.facetsets, "top")
+    @test haskey(grid.facetsets, "left")
     
     # Verify boundary faces
-    for (c, f) in grid.facesets["bottom"]
+    for (c, f) in grid.facetsets["bottom"]
         @test f == 1
     end
-    for (c, f) in grid.facesets["right"]
+    for (c, f) in grid.facetsets["right"]
         @test f == 2
     end
-    for (c, f) in grid.facesets["top"]
+    for (c, f) in grid.facetsets["top"]
         @test f == 3
     end
-    for (c, f) in grid.facesets["left"]
+    for (c, f) in grid.facetsets["left"]
         @test f == 4
     end
 end
@@ -181,7 +181,7 @@ end
     
     # Quadratic elements have 9 nodes per cell
     @test Ferrite.nnodes(grid.cells[1]) == 9
-    @test Ferrite.getorder(problem.ch.dh.field_interpolations[1]) == 2
+    @test Ferrite.getorder(problem.ch.dh.subdofhandlers[1].field_interpolations[1]) == 2
     
     corners = [[0.0, 0.0], [50.0, 50.0]]
     for i in 1:2, j in 1:2
@@ -189,14 +189,14 @@ end
     end
     
     # Check facesets exist
-    @test haskey(grid.facesets, "right")
-    @test haskey(grid.facesets, "top")
+    @test haskey(grid.facetsets, "right")
+    @test haskey(grid.facetsets, "top")
     
     # Verify boundary faces
-    for (c, f) in grid.facesets["right"]
+    for (c, f) in grid.facetsets["right"]
         @test f == 2
     end
-    for (c, f) in grid.facesets["top"]
+    for (c, f) in grid.facetsets["top"]
         @test f == 3
     end
 end
@@ -214,26 +214,26 @@ end
     for i in 1:2, j in 1:2
         @test boundingbox(grid)[i][j] ≈ corners[i][j] atol = 1e-8
     end
-    @test length(grid.boundary_matrix.nzval) == 32 * 2 + 3 * 2 + 4 * 2
-    for (c, f) in grid.facesets["bottomload"]
+    @test length(grid.facetsets["boundary"]) == 32 * 2 + 3 * 2 + 4 * 2
+    for (c, f) in grid.facetsets["bottomload"]
         @test f == 1
         for n in grid.cells[c].nodes[[1, 2]]
             @test grid.nodes[n].x[2] == 0
         end
     end
-    for (c, f) in grid.facesets["rightload"]
+    for (c, f) in grid.facetsets["rightload"]
         @test f == 2
         for n in grid.cells[c].nodes[[2, 3]]
             @test grid.nodes[n].x[1] ≈ 32 atol = 1e-8
         end
     end
-    for (c, f) in grid.facesets["toproller"]
+    for (c, f) in grid.facetsets["toproller"]
         @test f == 3
         for n in grid.cells[c].nodes[[3, 4]]
             @test grid.nodes[n].x[2] ≈ 7 atol = 1e-8
         end
     end
-    for (c, f) in grid.facesets["leftfixed"]
+    for (c, f) in grid.facetsets["leftfixed"]
         @test f == 4
         for n in grid.cells[c].nodes[[1, 4]]
             @test grid.nodes[n].x[1] == 0
@@ -241,9 +241,9 @@ end
     end
     @test sum(
         length,
-        getindex.((grid.facesets,), ["bottomload", "rightload", "toproller", "leftfixed"]),
+        getindex.((grid.facetsets,), ["bottomload", "rightload", "toproller", "leftfixed"]),
     ) == 8
-    @test Ferrite.getorder(problem.ch.dh.field_interpolations[1]) == 2
+    @test Ferrite.getorder(problem.ch.dh.subdofhandlers[1].field_interpolations[1]) == 2
     @test Ferrite.nnodes(grid.cells[1]) == 9
 end
 
@@ -382,13 +382,13 @@ end
     # Quadratic elements have 9 nodes per cell
     grid = problem.ch.dh.grid
     @test Ferrite.nnodes(grid.cells[1]) == 9
-    @test Ferrite.getorder(problem.ch.dh.field_interpolations[1]) == 2
+    @test Ferrite.getorder(problem.ch.dh.subdofhandlers[1].field_interpolations[1]) == 2
     
     # Check boundary facesets exist
-    @test haskey(grid.facesets, "top")
-    @test haskey(grid.facesets, "bottom")
-    @test haskey(grid.facesets, "left")
-    @test haskey(grid.facesets, "right")
+    @test haskey(grid.facetsets, "top")
+    @test haskey(grid.facetsets, "bottom")
+    @test haskey(grid.facetsets, "left")
+    @test haskey(grid.facetsets, "right")
     
     # Check heatflux dict is accessible
     @test TopOptProblems.getheatfluxdict(problem) == heatflux
@@ -505,10 +505,10 @@ end
     
     # Verify boundary condition facesets exist
     grid = problem.ch.dh.grid
-    @test haskey(grid.facesets, "left")
-    @test haskey(grid.facesets, "right")
-    @test haskey(grid.facesets, "top")
-    @test haskey(grid.facesets, "bottom")
+    @test haskey(grid.facetsets, "left")
+    @test haskey(grid.facetsets, "right")
+    @test haskey(grid.facetsets, "top")
+    @test haskey(grid.facetsets, "bottom")
     
     # Verify constraint handler has entries
     ch = problem.ch

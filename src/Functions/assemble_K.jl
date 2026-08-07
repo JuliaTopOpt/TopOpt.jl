@@ -27,10 +27,10 @@ function (ak::AssembleK{T})(Kes::AbstractVector{<:AbstractMatrix{T}}) where {T}
     dh = problem.ch.dh
     if K isa Symmetric
         K.data.nzval .= 0
-        assembler = Ferrite.AssemblerSparsityPattern(K.data, T[], Int[], Int[])
+        assembler = Ferrite.start_assemble(K.data)
     else
         K.nzval .= 0
-        assembler = Ferrite.AssemblerSparsityPattern(K, T[], Int[], Int[])
+        assembler = Ferrite.start_assemble(K)
     end
     Ke = zeros(T, size(Kes[1]))
     TK = eltype(Kes)

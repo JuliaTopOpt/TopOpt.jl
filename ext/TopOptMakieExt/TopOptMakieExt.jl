@@ -7,7 +7,13 @@ using GeometryBasics
 using ColorSchemes
 using GeometryBasics: TriangleFace
 using TopOpt: TopOpt
-using TopOpt.TopOptProblems: getcloaddict, boundingbox, getdim, StiffnessTopOptProblem, HeatTransferTopOptProblem, HeatConductionProblem
+using TopOpt.TopOptProblems:
+    getcloaddict,
+    boundingbox,
+    getdim,
+    StiffnessTopOptProblem,
+    HeatTransferTopOptProblem,
+    HeatConductionProblem
 using TopOpt.TrussTopOptProblems: TrussProblem
 using Ferrite
 
@@ -20,7 +26,10 @@ function Makie.to_vertices(nodes::Vector{<:Ferrite.Node})
     return Point3f.([n.x for n in nodes])
 end
 
-function Makie.to_triangles(cells::AbstractVector{<:Ferrite.Cell})
+function Makie.to_triangles(cells::AbstractVector{<:Ferrite.AbstractCell})
+    # Ferrite 1.x: concrete cell types (Quadrilateral, Hexahedron, ...) are
+    # subtypes of AbstractCell, not the legacy `Cell` alias, so dispatch on
+    # AbstractCell to cover all cell kinds.
     tris = TriangleFace{Int}[]
     for cell in cells
         to_triangle(tris, cell)
@@ -369,7 +378,7 @@ function TopOpt.visualize(
             if 3 in dbc.components
                 push!(support_vectors, [0.0, 0.0, 1.0])
             end
-            node_ids = dbc.faces
+            node_ids = dbc.facets
             fixed_nodes = Point3f.(nodes[node_ind].x for node_ind in node_ids)
             # draw one axis for all nodes in the set each time
             for v in support_vectors
@@ -558,7 +567,7 @@ function TopOpt.visualize(
         ch = problem.ch
         for (_, dbc) in enumerate(ch.dbcs)
             support_vectors = []
-            node_ids = dbc.faces
+            node_ids = dbc.facets
             if 1 in dbc.components
                 push!(support_vectors, [1.0, 0.0, 0.0])
             end

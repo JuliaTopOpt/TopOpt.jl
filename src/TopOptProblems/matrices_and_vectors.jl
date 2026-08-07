@@ -1,3 +1,8 @@
+# Helper to get the base scalar interpolation whether the stored interpolation is
+# already scalar or a VectorizedInterpolation (e.g. ip^dim for vector fields).
+_base_interpolation(ip::Ferrite.ScalarInterpolation) = ip
+_base_interpolation(ip::Ferrite.VectorizedInterpolation) = ip.ip
+
 function gettypes(
     ::Type{T}, # number type
     ::Type{Val{:Static}}, # matrix type
@@ -49,7 +54,7 @@ function gettypes(
 end
 
 # Common fallbacks for all problem types
-initialize_K(sp::AbstractTopOptProblem) = Symmetric(create_sparsity_pattern(sp.ch.dh))
+initialize_K(sp::AbstractTopOptProblem) = Symmetric(allocate_matrix(sp.ch.dh))
 initialize_f(sp::AbstractTopOptProblem) = zeros(floattype(sp), ndofs(sp.ch.dh))
 
 function make_Kes_and_fes(problem, quad_order=2)
@@ -67,7 +72,9 @@ function make_Kes_and_fes(problem, quad_order, ::Type{Val{mat_type}}) where {mat
     ν = getν(problem)
     ρ = getdensity(problem)
 
-    refshape = Ferrite.getrefshape(dh.field_interpolations[1])
+    refshape = Ferrite.getrefshape(
+        _base_interpolation(dh.subdofhandlers[1].field_interpolations[1])
+    )
 
     λ = E * ν / ((1 + ν) * (1 - 2 * ν))
     μ = E / (2 * (1 + ν))
@@ -75,12 +82,17 @@ function make_Kes_and_fes(problem, quad_order, ::Type{Val{mat_type}}) where {mat
     g(i, j, k, l) = λ * δ(i, j) * δ(k, l) + μ * (δ(i, k) * δ(j, l) + δ(i, l) * δ(j, k))
     C = SymmetricTensor{4,dim}(g)
 
-    # Shape functions and quadrature rule
-    interpolation_space = Lagrange{dim,refshape,geom_order}()
-    quadrature_rule = QuadratureRule{dim,refshape}(quad_order)
-    cellvalues = CellScalarValues(quadrature_rule, interpolation_space)
-    facevalues = FaceScalarValues(
-        QuadratureRule{dim - 1,refshape}(quad_order), interpolation_space
+    # Shape functions and quadrature rule.
+    # Ferrite 1.x's `CellValues`/`FacetValues` default the geometric mapping
+    # interpolation to a *linear* Lagrange even for quadratic function spaces,
+    # which mismatches the number of cell nodes for quadratic elements. Since
+    # TopOpt uses isoparametric elements, pass the same interpolation for both
+    # the function and geometric mappings explicitly.
+    interpolation_space = Lagrange{refshape,geom_order}()
+    quadrature_rule = QuadratureRule{refshape}(quad_order)
+    cellvalues = CellValues(quadrature_rule, interpolation_space, interpolation_space)
+    facevalues = FacetValues(
+        FacetQuadratureRule{refshape}(quad_order), interpolation_space, interpolation_space
     )
 
     # Calculate element stiffness matrices
@@ -108,15 +120,15 @@ const g = [0.0, 9.81, 0.0] # N/kg or m/s^2
 # Element stiffness matrices are StaticArrays
 # `weights` : a vector of `xdim` vectors, element_id => self-weight load vector
 function _make_Kes_and_weights(
-    dh::DofHandler{dim,N,T},
+    dh::DofHandler{dim},
     ::Type{Tuple{MatrixType,VectorType}},
     ::Type{Val{n_basefuncs}},
     ::Type{Val{Kesize}},
-    C,
+    C::SymmetricTensor{4,dim,T},
     ρ,
     quadrature_rule,
-    cellvalues,
-) where {dim,N,T,MatrixType<:StaticArray,VectorType,n_basefuncs,Kesize}
+    cellvalues::CellValues,
+) where {dim,T,MatrixType<:StaticArray,VectorType,n_basefuncs,Kesize}
     # Calculate element stiffness matrices
     nel = getncells(dh.grid)
     body_force = ρ .* g # Force per unit volume
@@ -161,7 +173,7 @@ function _make_Kes_and_weights(
 end
 # # Fallback
 # function _make_Kes_and_weights(
-#     dh::DofHandler{dim,N,T},
+#     dh::DofHandler,
 #     ::Type{Tuple{MatrixType,VectorType}},
 #     ::Type{Val{n_basefuncs}},
 #     ::Type{Val{Kesize}},
@@ -217,12 +229,13 @@ Assemble distributed loads for boundary (face) loads.
 For structural problems: returns boundary traction/pressure loads.
 For heat transfer problems: returns zeros (no boundary distributed heat sources).
 """
-function _make_dloads(fes, problem::StiffnessTopOptProblem, facevalues)
+function _make_dloads(fes, problem::StiffnessTopOptProblem, facetvalues)
     dim = getdim(problem)
     N = nnodespercell(problem)
     T = floattype(problem)
     dloads = deepcopy(fes)
-    eltype(dloads) <: StaticArray || throw("Expected dloads to be StaticArrays for stiffness problems.")
+    eltype(dloads) <: StaticArray ||
+        throw("Expected dloads to be StaticArrays for stiffness problems.")
     for i in 1:length(dloads)
         if eltype(dloads) <: SArray
             dloads[i] = zero(eltype(dloads))
@@ -233,23 +246,20 @@ function _make_dloads(fes, problem::StiffnessTopOptProblem, facevalues)
     pressuredict = getpressuredict(problem)
     dh = getdh(problem)
     grid = dh.grid
-    boundary_matrix = grid.boundary_matrix
     cell_coords = zeros(Ferrite.Vec{dim,T}, N)
-    n_basefuncs = getnbasefunctions(facevalues)
+    n_basefuncs = getnbasefunctions(facetvalues)
     for k in keys(pressuredict)
         t = -pressuredict[k] # traction = negative the pressure
         faceset = getfacesets(problem)[k]
         for (cellid, faceid) in faceset
-            boundary_matrix[faceid, cellid] ||
-                throw("Face $((cellid, faceid)) not on boundary.")
             fe = dloads[cellid]
             getcoordinates!(cell_coords, grid, cellid)
-            reinit!(facevalues, cell_coords, faceid)
-            for q_point in 1:getnquadpoints(facevalues)
-                dΓ = getdetJdV(facevalues, q_point) # Face area
-                normal = getnormal(facevalues, q_point) # Nomral vector at quad point
+            reinit!(facetvalues, cell_coords, faceid)
+            for q_point in 1:getnquadpoints(facetvalues)
+                dΓ = getdetJdV(facetvalues, q_point) # Facet area
+                normal = getnormal(facetvalues, q_point) # Normal vector at quad point
                 for i in 1:n_basefuncs
-                    ϕ = shape_value(facevalues, q_point, i) # Shape function value
+                    ϕ = shape_value(facetvalues, q_point, i) # Shape function value
                     for d in 1:dim
                         if fe isa SArray
                             fe = @set fe[(i - 1) * dim + d] += ϕ * t * normal[d] * dΓ
@@ -269,7 +279,7 @@ end
 # For heat transfer: surface heat flux (Neumann BC)
 # Heat flux q is positive INTO the domain (heat source on boundary)
 # Heat flux is NOT penalized - it's an external boundary condition
-function _make_dloads(fes, problem::HeatTransferTopOptProblem, facevalues)
+function _make_dloads(fes, problem::HeatTransferTopOptProblem, facetvalues)
     dim = getdim(problem)
     N = nnodespercell(problem)
     T = floattype(problem)
@@ -290,24 +300,21 @@ function _make_dloads(fes, problem::HeatTransferTopOptProblem, facevalues)
 
     dh = getdh(problem)
     grid = dh.grid
-    boundary_matrix = grid.boundary_matrix
     cell_coords = zeros(Ferrite.Vec{dim,T}, N)
-    n_basefuncs = getnbasefunctions(facevalues)
+    n_basefuncs = getnbasefunctions(facetvalues)
 
     for (faceset_name, q) in heatfluxdict
         # q is heat flux (W/m²), positive = heat INTO domain
         # For thermal: fe[i] = ∫ ϕi * q dΓ
         faceset = getfacesets(problem)[faceset_name]
         for (cellid, faceid) in faceset
-            boundary_matrix[faceid, cellid] ||
-                throw("Face $((cellid, faceid)) not on boundary.")
             fe = dloads[cellid]
             getcoordinates!(cell_coords, grid, cellid)
-            reinit!(facevalues, cell_coords, faceid)
-            for q_point in 1:getnquadpoints(facevalues)
-                dΓ = getdetJdV(facevalues, q_point)  # Face area
+            reinit!(facetvalues, cell_coords, faceid)
+            for q_point in 1:getnquadpoints(facetvalues)
+                dΓ = getdetJdV(facetvalues, q_point)  # Facet area
                 for i in 1:n_basefuncs
-                    ϕ = shape_value(facevalues, q_point, i)  # Shape function value
+                    ϕ = shape_value(facetvalues, q_point, i)  # Shape function value
                     if fe isa SArray
                         # fe is a scalar for heat transfer (temperature DOF)
                         fe = @set fe[i] += ϕ * q * dΓ
@@ -380,19 +387,21 @@ For thermal compliance minimization:
 - dJ/dx_e = -T_e^T Ke T_e · dρ_e/dx_e
 """
 function make_Kes_and_fes(
-    problem::HeatTransferTopOptProblem{dim, T}, quad_order, ::Type{Val{mat_type}}
-) where {dim, T, mat_type}
+    problem::HeatTransferTopOptProblem{dim,T}, quad_order, ::Type{Val{mat_type}}
+) where {dim,T,mat_type}
     dh = getdh(problem)
     k = getk(problem)
 
-    refshape = Ferrite.getrefshape(dh.field_interpolations[1])
+    refshape = Ferrite.getrefshape(
+        _base_interpolation(dh.subdofhandlers[1].field_interpolations[1])
+    )
 
     # Shape functions for scalar field (temperature)
-    interpolation_space = Lagrange{dim, refshape, 1}()
-    quadrature_rule = QuadratureRule{dim, refshape}(quad_order)
-    cellvalues = CellScalarValues(quadrature_rule, interpolation_space)
-    facevalues = FaceScalarValues(
-        QuadratureRule{dim - 1, refshape}(quad_order), interpolation_space
+    interpolation_space = Lagrange{refshape,1}()
+    quadrature_rule = QuadratureRule{refshape}(quad_order)
+    cellvalues = CellValues(quadrature_rule, interpolation_space)
+    facetvalues = FacetValues(
+        FacetQuadratureRule{refshape}(quad_order), interpolation_space
     )
 
     # Calculate element conductivity matrices
@@ -402,7 +411,7 @@ function make_Kes_and_fes(
     MatrixType, VectorType = gettypes(T, Val{mat_type}, Val{Kesize})
     Kes, weights = _make_Kes_and_weights_heat(
         dh,
-        Tuple{MatrixType, VectorType},
+        Tuple{MatrixType,VectorType},
         Val{n_basefuncs},
         Val{Kesize},
         k,
@@ -411,26 +420,27 @@ function make_Kes_and_fes(
     )
     # No body forces in heat transfer - weights is zeros
     # Surface heat flux is computed via _make_dloads (NOT penalized)
-    dloads = _make_dloads(weights, problem, facevalues)
+    dloads = _make_dloads(weights, problem, facetvalues)
 
-    return Kes, weights, dloads, cellvalues, facevalues
+    return Kes, weights, dloads, cellvalues, facetvalues
 end
 
 # Element conductivity matrices for heat transfer (scalar field)
 # No body forces in heat transfer - weights should be zeros
 # Surface heat flux is computed separately via _make_dloads
 function _make_Kes_and_weights_heat(
-    dh::DofHandler{dim, N, T},
-    ::Type{Tuple{MatrixType, VectorType}},
+    dh::DofHandler{dim},
+    ::Type{Tuple{MatrixType,VectorType}},
     ::Type{Val{n_basefuncs}},
     ::Type{Val{Kesize}},
     k::T,
     quadrature_rule,
-    cellvalues,
-) where {dim, N, T, MatrixType <: StaticArray, VectorType, n_basefuncs, Kesize}
-    MatrixType <: SizedMatrix && throw("SizedMatrix not supported for heat transfer problems with StaticArrays.")
+    cellvalues::CellValues,
+) where {dim,T,MatrixType<:StaticArray,VectorType,n_basefuncs,Kesize}
+    MatrixType <: SizedMatrix &&
+        throw("SizedMatrix not supported for heat transfer problems with StaticArrays.")
     nel = getncells(dh.grid)
-    Kes = Symmetric{T, MatrixType}[]
+    Kes = Symmetric{T,MatrixType}[]
     sizehint!(Kes, nel)
     # No body forces in heat transfer - weights should be zeros
     weights = [zeros(VectorType) for i in 1:nel]
@@ -461,7 +471,7 @@ end
 
 # Fallback for non-static arrays
 # function _make_Kes_and_weights_heat(
-#     dh::DofHandler{dim, N, T},
+#     dh::DofHandler,
 #     ::Type{Tuple{MatrixType, VectorType}},
 #     ::Type{Val{n_basefuncs}},
 #     ::Type{Val{Kesize}},

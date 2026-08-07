@@ -36,7 +36,7 @@ struct PointLoadCantilever{dim, T, N, M} <: StiffnessTopOptProblem{dim, T}
     rect_grid::RectilinearGrid{dim, T, N, M}
     E::T
     ν::T
-    ch::ConstraintHandler{<:DofHandler{dim, <:Cell{dim,N,M}, T}, T}
+    ch::ConstraintHandler{<:DofHandler, T}
     force::T
     force_dof::Integer
     metadata::Metadata
@@ -61,7 +61,7 @@ struct PointLoadCantilever{
     N,
     M,
     Tr<:RectilinearGrid{dim,T,N,M},
-    Tc<:ConstraintHandler{<:DofHandler{dim,<:Cell{dim,N,M},T},T},
+    Tc<:ConstraintHandler{<:DofHandler,T},
     Tf<:Integer,
     Tm<:Metadata,
 } <: StiffnessTopOptProblem{dim,T}
@@ -123,8 +123,8 @@ function PointLoadCantilever(
         rect_grid = RectilinearGrid(Val{:Quadratic}, nels, T.(sizes))
     end
 
-    if haskey(rect_grid.grid.facesets, "fixed_all")
-        pop!(rect_grid.grid.facesets, "fixed_all")
+    if haskey(rect_grid.grid.facetsets, "fixed_all")
+        pop!(rect_grid.grid.facetsets, "fixed_all")
     end
     #addfaceset!(rect_grid.grid, "fixed_all", x -> left(rect_grid, x));
     addnodeset!(rect_grid.grid, "fixed_all", x -> left(rect_grid, x))
@@ -138,17 +138,19 @@ function PointLoadCantilever(
 
     # Create displacement field u
     dh = DofHandler(rect_grid.grid)
+    refshape = Ferrite.getrefshape(eltype(rect_grid.grid.cells))
     if CellType === :Linear || dim === 3
-        push!(dh, :u, dim) # Add a displacement field
+        ip = Lagrange{refshape,1}()
+        add!(dh, :u, ip^dim) # Add a displacement field
     else
-        ip = Lagrange{2,RefCube,2}()
-        push!(dh, :u, dim, ip) # Add a displacement field        
+        ip = Lagrange{refshape,2}()
+        add!(dh, :u, ip^dim) # Add a displacement field        
     end
     close!(dh)
 
     ch = ConstraintHandler(dh)
 
-    #dbc = Dirichlet(:u, getfaceset(rect_grid.grid, "fixed_all"), (x,t) -> zeros(T, dim), collect(1:dim))
+    #dbc = Dirichlet(:u, getfacetset(rect_grid.grid, "fixed_all"), (x,t) -> zeros(T, dim), collect(1:dim))
     dbc = Dirichlet(
         :u, getnodeset(rect_grid.grid, "fixed_all"), (x, t) -> zeros(T, dim), collect(1:dim)
     )
@@ -166,9 +168,7 @@ function PointLoadCantilever(
     N = nnodespercell(rect_grid)
     M = nfacespercell(rect_grid)
 
-    return PointLoadCantilever(
-        rect_grid, E, ν, ch, force, force_dof, metadata
-    )
+    return PointLoadCantilever(rect_grid, E, ν, ch, force, force_dof, metadata)
 end
 
 """
@@ -188,7 +188,7 @@ struct HalfMBB{dim, T, N, M} <: StiffnessTopOptProblem{dim, T}
     rect_grid::RectilinearGrid{dim, T, N, M}
     E::T
     ν::T
-    ch::ConstraintHandler{<:DofHandler{dim, <:Cell{dim,N,M}, T}, T}
+    ch::ConstraintHandler{<:DofHandler, T}
     force::T
     force_dof::Integer
     metadata::Metadata
@@ -213,7 +213,7 @@ struct HalfMBB{
     N,
     M,
     Tr<:RectilinearGrid{dim,T,N,M},
-    Tc<:ConstraintHandler{<:DofHandler{dim,<:Cell{dim,N,M},T},T},
+    Tc<:ConstraintHandler{<:DofHandler,T},
     Tf<:Integer,
     Tm<:Metadata,
 } <: StiffnessTopOptProblem{dim,T}
@@ -272,8 +272,8 @@ function HalfMBB(
         rect_grid = RectilinearGrid(Val{:Quadratic}, nels, T.(sizes))
     end
 
-    if haskey(rect_grid.grid.facesets, "fixed_u1")
-        pop!(rect_grid.grid.facesets, "fixed_u1")
+    if haskey(rect_grid.grid.facetsets, "fixed_u1")
+        pop!(rect_grid.grid.facetsets, "fixed_u1")
     end
     #addfaceset!(rect_grid.grid, "fixed_u1", x -> left(rect_grid, x));
     addnodeset!(rect_grid.grid, "fixed_u1", x -> left(rect_grid, x))
@@ -292,16 +292,18 @@ function HalfMBB(
 
     # Create displacement field u
     dh = DofHandler(rect_grid.grid)
+    refshape = Ferrite.getrefshape(eltype(rect_grid.grid.cells))
     if CellType === :Linear || dim === 3
-        push!(dh, :u, dim)
+        ip = Lagrange{refshape,1}()
+        add!(dh, :u, ip^dim)
     else
-        ip = Lagrange{2,RefCube,2}()
-        push!(dh, :u, dim, ip)
+        ip = Lagrange{refshape,2}()
+        add!(dh, :u, ip^dim)
     end
     close!(dh)
 
     ch = ConstraintHandler(dh)
-    #dbc1 = Dirichlet(:u, getfaceset(rect_grid.grid, "fixed_u1"), (x,t)->T[0], [1])
+    #dbc1 = Dirichlet(:u, getfacetset(rect_grid.grid, "fixed_u1"), (x,t)->T[0], [1])
     dbc1 = Dirichlet(:u, getnodeset(rect_grid.grid, "fixed_u1"), (x, t) -> T[0], [1])
     add!(ch, dbc1)
     dbc2 = Dirichlet(:u, getnodeset(rect_grid.grid, "fixed_u2"), (x, t) -> T[0], [2])
@@ -348,7 +350,7 @@ end
 struct LBeam{T, N, M} <: StiffnessTopOptProblem{2, T}
     E::T
     ν::T
-    ch::ConstraintHandler{<:DofHandler{2, <:Cell{2,N,M}, T}, T}
+    ch::ConstraintHandler{<:DofHandler, T}
     force::T
     force_dof::Integer
     metadata::Metadata
@@ -365,14 +367,8 @@ end
 - `ch`: a `Ferrite.ConstraintHandler` struct
 - `metadata`: Metadata having various cell-node-dof relationships
 """
-struct LBeam{
-    T,
-    N,
-    M,
-    Tc<:ConstraintHandler{<:DofHandler{2,<:Cell{2,N,M},T},T},
-    Tf<:Integer,
-    Tm<:Metadata,
-} <: StiffnessTopOptProblem{2,T}
+struct LBeam{T,N,M,Tc<:ConstraintHandler{<:DofHandler,T},Tf<:Integer,Tm<:Metadata} <:
+       StiffnessTopOptProblem{2,T}
     E::T
     ν::T
     ch::Tc
@@ -380,7 +376,9 @@ struct LBeam{
     force_dof::Tf
     metadata::Tm
 end
-Base.show(io::IO, ::MIME{Symbol("text/plain")}, ::LBeam) = println(io, "TopOpt L-beam problem")
+function Base.show(io::IO, ::MIME{Symbol("text/plain")}, ::LBeam)
+    println(io, "TopOpt L-beam problem")
+end
 
 """
     LBeam(::Type{Val{CellType}}, ::Type{T}=Float64; length = 100, height = 100, upperslab = 50, lowerslab = 50, E = 1.0, ν = 0.3, force = 1.0) where {T, CellType}
@@ -429,16 +427,18 @@ function LBeam(
     )
 
     dh = DofHandler(grid)
+    refshape = Ferrite.getrefshape(eltype(grid.cells))
     if CellType === :Linear
-        push!(dh, :u, 2)
+        ip = Lagrange{refshape,1}()
+        add!(dh, :u, ip^2)
     else
-        ip = Lagrange{2,RefCube,2}()
-        push!(dh, :u, 2, ip)
+        ip = Lagrange{refshape,2}()
+        add!(dh, :u, ip^2)
     end
     close!(dh)
 
     ch = ConstraintHandler(dh)
-    dbc = Dirichlet(:u, getfaceset(grid, "top"), (x, t) -> T[0, 0], [1, 2])
+    dbc = Dirichlet(:u, getfacetset(grid, "top"), (x, t) -> T[0, 0], [1, 2])
     add!(ch, dbc)
     close!(ch)
 
@@ -451,7 +451,11 @@ function LBeam(
     node_dofs = metadata.node_dofs
     force_dof = node_dofs[2, fnode]
 
-    return LBeam(E, ν, ch, force, force_dof, metadata)
+    N = nnodes(eltype(grid.cells))
+    M = Ferrite.nfacets(Ferrite.getrefshape(eltype(grid.cells)))
+    return LBeam{T,N,M,typeof(ch),typeof(force_dof),typeof(metadata)}(
+        E, ν, ch, force, force_dof, metadata
+    )
 end
 
 function boundingbox(nodes::Vector{Node{dim,T}}) where {dim,T}
@@ -524,7 +528,7 @@ struct TieBeam{T, N, M} <: StiffnessTopOptProblem{2, T}
     E::T
     ν::T
     force::T
-    ch::ConstraintHandler{<:DofHandler{2, N, T, M}, T}
+    ch::ConstraintHandler{<:DofHandler, T}
     metadata::Metadata
 end
 ```
@@ -538,13 +542,8 @@ end
 - `ch`: a `Ferrite.ConstraintHandler` struct
 - `metadata`: Metadata having various cell-node-dof relationships
 """
-struct TieBeam{
-    T,
-    N,
-    M,
-    Tc<:ConstraintHandler{<:DofHandler{2,<:Cell{2,N,M},T},T},
-    Tm<:Metadata,
-} <: StiffnessTopOptProblem{2,T}
+struct TieBeam{T,N,M,Tc<:ConstraintHandler{<:DofHandler,T},Tm<:Metadata} <:
+       StiffnessTopOptProblem{2,T}
     E::T
     ν::T
     force::T
@@ -566,26 +565,23 @@ end
 - `CellType`: can be either `:Linear` or `:Quadratic` to determine the order of the geometric and field basis functions and element type. Only isoparametric elements are supported for now.
 """
 function TieBeam(
-    ::Type{Val{CellType}},
-    (::Type{T})=Float64;
-    refine=1,
-    force=T(1),
-    E=T(1),
-    ν=T(0.3),
+    ::Type{Val{CellType}}, (::Type{T})=Float64; refine=1, force=T(1), E=T(1), ν=T(0.3)
 ) where {T,CellType}
     grid = TieBeamGrid(Val{CellType}, T; refine=refine)
 
     dh = DofHandler(grid)
+    refshape = Ferrite.getrefshape(eltype(grid.cells))
     if CellType === :Linear
-        push!(dh, :u, 2)
+        ip = Lagrange{refshape,1}()
+        add!(dh, :u, ip^2)
     else
-        ip = Lagrange{2,RefCube,2}()
-        push!(dh, :u, 2, ip)
+        ip = Lagrange{refshape,2}()
+        add!(dh, :u, ip^2)
     end
     close!(dh)
 
     ch = ConstraintHandler(dh)
-    dbc = Dirichlet(:u, getfaceset(grid, "leftfixed"), (x, t) -> T[0, 0], [1, 2])
+    dbc = Dirichlet(:u, getfacetset(grid, "leftfixed"), (x, t) -> T[0, 0], [1, 2])
     add!(ch, dbc)
     close!(ch)
 
@@ -594,7 +590,9 @@ function TieBeam(
 
     metadata = Metadata(dh)
 
-    return TieBeam(E, ν, force, ch, metadata)
+    N = nnodes(eltype(grid.cells))
+    M = Ferrite.nfacets(Ferrite.getrefshape(eltype(grid.cells)))
+    return TieBeam{T,N,M,typeof(ch),typeof(metadata)}(E, ν, force, ch, metadata)
 end
 
 getdim(::TieBeam) = 2
@@ -602,7 +600,7 @@ nnodespercell(::TieBeam{T,N}) where {T,N} = N
 function getpressuredict(p::TieBeam{T}) where {T}
     return Dict{String,T}("rightload" => 2 * p.force, "bottomload" => -p.force)
 end
-getfacesets(p::TieBeam) = getdh(p).grid.facesets
+getfacesets(p::TieBeam) = getdh(p).grid.facetsets
 
 # ============================================================================
 # Heat Transfer Problem Types
@@ -640,8 +638,10 @@ getmetadata(p::HeatTransferTopOptProblem) = p.metadata
 getdh(p::HeatTransferTopOptProblem) = p.ch.dh
 getpressuredict(p::HeatTransferTopOptProblem{dim,T}) where {dim,T} = Dict{String,T}()
 getheatfluxdict(p::HeatTransferTopOptProblem{dim,T}) where {dim,T} = Dict{String,T}()
-getfacesets(p::HeatTransferTopOptProblem) = getdh(p).grid.facesets
-Ferrite.getncells(problem::HeatTransferTopOptProblem) = Ferrite.getncells(getdh(problem).grid)
+getfacesets(p::HeatTransferTopOptProblem) = getdh(p).grid.facetsets
+function Ferrite.getncells(problem::HeatTransferTopOptProblem)
+    Ferrite.getncells(getdh(problem).grid)
+end
 getgeomorder(p::HeatTransferTopOptProblem) = nnodespercell(p) in (9, 27) ? 2 : 1
 getcloaddict(p::HeatTransferTopOptProblem{dim,T}) where {dim,T} = Dict{String,Vector{T}}()
 
@@ -690,11 +690,11 @@ struct HeatConductionProblem{
     T,
     N,
     M,
-    Tr<:RectilinearGrid{dim, T, N, M},
-    Tc<:ConstraintHandler{<:DofHandler{dim, <:Cell{dim, N, M}, T}, T},
+    Tr<:RectilinearGrid{dim,T,N,M},
+    Tc<:ConstraintHandler{<:DofHandler,T},
     Th<:AbstractDict{String,T},
     Tm<:Metadata,
-} <: HeatTransferTopOptProblem{dim, T}
+} <: HeatTransferTopOptProblem{dim,T}
     rect_grid::Tr
     k::T
     ch::Tc
@@ -728,13 +728,13 @@ problem = HeatConductionProblem(Val{:Linear}, nels, sizes, k; Tleft=0.0, Tright=
 """
 function HeatConductionProblem(
     ::Type{Val{CellType}},
-    nels::NTuple{dim, Int},
+    nels::NTuple{dim,Int},
     sizes::NTuple{dim},
     k=1.0;
     Tleft=0.0,
     Tright=0.0,
     heatflux=Dict{String,Float64}(),
-) where {dim, CellType}
+) where {dim,CellType}
     T = float(promote_type(eltype(sizes), typeof(k), typeof(Tleft), typeof(Tright)))
 
     if CellType === :Linear
@@ -756,18 +756,22 @@ function HeatConductionProblem(
 
     # Create temperature field (scalar, 1 DOF per node)
     dh = DofHandler(rect_grid.grid)
+    refshape = Ferrite.getrefshape(eltype(rect_grid.grid.cells))
     if CellType === :Linear
-        push!(dh, :T, 1)  # Temperature is a scalar field
+        ip = Lagrange{refshape,1}()
+        add!(dh, :T, ip)  # Temperature is a scalar field
     else
-        ip = Lagrange{dim, RefCube, 2}()
-        push!(dh, :T, 1, ip)
+        ip = Lagrange{refshape,2}()
+        add!(dh, :T, ip)
     end
     close!(dh)
 
     # Apply temperature boundary conditions
     ch = ConstraintHandler(dh)
     dbc_left = Dirichlet(:T, getnodeset(rect_grid.grid, "left_boundary"), (x, t) -> Tleft)
-    dbc_right = Dirichlet(:T, getnodeset(rect_grid.grid, "right_boundary"), (x, t) -> Tright)
+    dbc_right = Dirichlet(
+        :T, getnodeset(rect_grid.grid, "right_boundary"), (x, t) -> Tright
+    )
     add!(ch, dbc_left)
     add!(ch, dbc_right)
     close!(ch)
@@ -782,9 +786,7 @@ function HeatConductionProblem(
         heatfluxdict[key] = T(val)
     end
 
-    return HeatConductionProblem(
-        rect_grid, T(k), ch, heatfluxdict, metadata
-    )
+    return HeatConductionProblem(rect_grid, T(k), ch, heatfluxdict, metadata)
 end
 
 nnodespercell(p::HeatConductionProblem) = nnodespercell(p.rect_grid)

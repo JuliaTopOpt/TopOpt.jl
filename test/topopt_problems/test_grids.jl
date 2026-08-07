@@ -145,17 +145,17 @@ end
     lgrid = LGrid(Val{:Linear}, Float64, upperslab=30, lowerslab=70)
     
     # Check that expected face sets exist
-    @test haskey(lgrid.facesets, "right")
-    @test haskey(lgrid.facesets, "top")
+    @test haskey(lgrid.facetsets, "right")
+    @test haskey(lgrid.facetsets, "top")
     
     # Check that load nodeset exists
     @test haskey(lgrid.nodesets, "load")
     
     tbgrid = TieBeamGrid(Val{:Linear}, Float64; refine=1)
-    @test haskey(tbgrid.facesets, "leftfixed")
-    @test haskey(tbgrid.facesets, "toproller")
-    @test haskey(tbgrid.facesets, "rightload")
-    @test haskey(tbgrid.facesets, "bottomload")
+    @test haskey(tbgrid.facetsets, "leftfixed")
+    @test haskey(tbgrid.facetsets, "toproller")
+    @test haskey(tbgrid.facetsets, "rightload")
+    @test haskey(tbgrid.facetsets, "bottomload")
 end
 
 @testset "RectilinearTopology" begin

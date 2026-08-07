@@ -61,8 +61,8 @@ function get_neighbour_info(problem, rmin::T) where {T}
     node_weights = T[]
     visited_cells = Set{Int}()
     for cell in CellIterator(dh)
-        current_cell_id = cell.current_cellid.x
-        
+        current_cell_id = cell.cellid
+
         empty!(cells_to_traverse)
         empty!(visited_cells)
         empty!(neighbouring_nodes)

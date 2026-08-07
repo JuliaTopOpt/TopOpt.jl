@@ -1,7 +1,7 @@
 using Base: @propagate_inbounds
 using ..TopOpt.TopOptProblems: getdh, getE, getν, getdensity, gettypes
 using LinearAlgebra: norm
-using Ferrite: getdim, getrefshape, value, getlowerdim
+using Ferrite: getdim, getrefshape, reference_shape_value
 using ChainRulesCore
 
 """
@@ -25,20 +25,18 @@ function make_Kes_and_fes(
     As = getA(problem)
 
     # * Shape functions and quadrature rule
-    interpolation_space = Ferrite.default_interpolation(
-        getcelltype(problem.truss_grid.grid)
+    refshape = Ferrite.getrefshape(
+        _base_interpolation(dh.subdofhandlers[1].field_interpolations[1])
     )
-    # Lagrange{ξdim, refshape, geom_order}()
-    ξdim = getdim(interpolation_space)
-    refshape = getrefshape(dh.field_interpolations[1])
-    quadrature_rule = QuadratureRule{ξdim,refshape}(quad_order)
+    # Lagrange{refshape, geom_order}()
+    interpolation_space = Lagrange{refshape,1}()
+    ξdim = Ferrite.getrefdim(refshape)
+    quadrature_rule = QuadratureRule{refshape}(quad_order)
     cellvalues = GenericCellScalarValues(T, quadrature_rule, interpolation_space; xdim=xdim)
 
     # * A Line element's faces are not meaningful in truss problems
     # placeholder to make type right
-    facevalues = FaceScalarValues(
-        QuadratureRule{ξdim - 1,refshape}(quad_order), interpolation_space
-    )
+    facevalues = FacetValues(FacetQuadratureRule{refshape}(quad_order), interpolation_space)
 
     # * Calculate element stiffness matrices
     n_basefuncs = getnbasefunctions(cellvalues)
@@ -74,7 +72,7 @@ in a truss element (line element with nodes in 2D or 3D), `xdim = 2` or `3` and 
 * `ξdim` : reference domain dimension
 * `xdim` : node coordinate dimension
 """
-struct GenericCellScalarValues{ξdim,xdim,T,refshape} <: CellValues{xdim,T,refshape}
+struct GenericCellScalarValues{ξdim,xdim,T,refshape} <: AbstractCellValues
     N::Matrix{T}
     dNdx::Matrix{Vec{xdim,T}}
     dNdξ::Matrix{Vec{ξdim,T}}
@@ -94,13 +92,15 @@ end
 
 function GenericCellScalarValues(
     ::Type{T},
-    quad_rule::QuadratureRule{ξdim,shape},
+    quad_rule::QuadratureRule{shape},
     func_interpol::Interpolation,
     geom_interpol::Interpolation=func_interpol;
-    xdim=ξdim,
-) where {ξdim,T,shape<:Ferrite.AbstractRefShape}
-    @assert getdim(func_interpol) == getdim(geom_interpol)
+    xdim=Ferrite.getrefdim(shape),
+) where {T,shape<:Ferrite.AbstractRefShape}
+    @assert Ferrite.getrefdim(getrefshape(func_interpol)) ==
+        Ferrite.getrefdim(getrefshape(geom_interpol))
     @assert getrefshape(func_interpol) == getrefshape(geom_interpol) == shape
+    ξdim = Ferrite.getrefdim(shape)
     n_qpoints = length(getweights(quad_rule))
     # * Function interpolation
     n_func_basefuncs = getnbasefunctions(func_interpol)
@@ -114,12 +114,12 @@ function GenericCellScalarValues(
     for (qp, ξ) in enumerate(quad_rule.points)
         for i in 1:n_func_basefuncs
             dNdξ[i, qp], N[i, qp] = Ferrite.gradient(
-                ξ -> value(func_interpol, i, ξ), ξ, :all
+                ξ -> reference_shape_value(func_interpol, ξ, i), ξ, :all
             )
         end
         for i in 1:n_geom_basefuncs
             dMdξ[i, qp], M[i, qp] = Ferrite.gradient(
-                ξ -> value(geom_interpol, i, ξ), ξ, :all
+                ξ -> reference_shape_value(geom_interpol, ξ, i), ξ, :all
             )
         end
     end
@@ -130,13 +130,17 @@ function GenericCellScalarValues(
 end
 
 # common values
-using Ferrite: getnbasefunctions, getngeobasefunctions, getnquadpoints
+using Ferrite: getnbasefunctions, getngeobasefunctions, getnquadpoints, getweights
+Ferrite.getnbasefunctions(cv::GenericCellScalarValues) = size(cv.N, 1)
+Ferrite.getngeobasefunctions(cv::GenericCellScalarValues) = size(cv.M, 1)
+Ferrite.getnquadpoints(cv::GenericCellScalarValues) = length(cv.qr_weights)
 getn_scalarbasefunctions(cv::GenericCellScalarValues) = size(cv.N, 1)
 @propagate_inbounds function shape_gradient(
     cv::GenericCellScalarValues, q_point::Int, base_func::Int
 )
     return cv.dNdx[base_func, q_point]
 end
+Ferrite.getdetJdVs(cv::GenericCellScalarValues) = cv.detJdV
 @propagate_inbounds function getdetJdV(cv::GenericCellScalarValues, q_point::Int)
     return cv.detJdV[q_point]
 end
@@ -167,15 +171,15 @@ end
 `weights` : a vector of `xdim*n_basefuncs` vectors, element_id => self-weight load vector, in truss elements, they are all zeros.
 """
 function _make_Kes_and_weights(
-    dh::DofHandler{xdim,N,T},
+    dh::DofHandler,
     ::Type{Tuple{MatrixType,VectorType}},
     ::Type{Val{n_basefuncs}},
     ::Type{Val{Kesize}},
     Es::Vector{T},
     As::Vector{T},
     quadrature_rule,
-    cellvalues::GenericCellScalarValues,
-) where {xdim,N,T,MatrixType<:StaticArray,VectorType,n_basefuncs,Kesize}
+    cellvalues::GenericCellScalarValues{ξdim,xdim,T,refshape},
+) where {ξdim,xdim,T,refshape,MatrixType<:StaticArray,VectorType,n_basefuncs,Kesize}
     nel = getncells(dh.grid)
     Kes = Symmetric{T,MatrixType}[]
     sizehint!(Kes, nel)
@@ -222,9 +226,8 @@ function _make_Kes_and_weights(
 end
 
 @inline function truss_reinit!(
-    cv::GenericCellScalarValues{ξdim,xdim,T}, ci::CellIterator{xdim,N,T}, crossec::T
-) where {ξdim,xdim,N,T}
-    Ferrite.check_compatible_geointerpolation(cv, ci)
+    cv::GenericCellScalarValues{ξdim,xdim,T}, ci::Ferrite.CellCache, crossec::T
+) where {ξdim,xdim,T}
     return truss_reinit!(cv, ci.coords, crossec)
 end
 

@@ -376,7 +376,7 @@ end
     # Get problem data needed for the loop
     dh = TopOpt.TopOptProblems.getdh(problem)
     grid = dh.grid
-    boundary_matrix = grid.boundary_matrix
+    all_boundary_facets = reduce(union, values(grid.facetsets); init=Set{Ferrite.FacetIndex}())
     pressuredict = TopOpt.TopOptProblems.getpressuredict(problem)
     facesets = TopOpt.TopOptProblems.getfacesets(problem)
 
@@ -395,7 +395,7 @@ end
 
         for (cellid, faceid) in faceset
             # Verify face is on boundary
-            @test boundary_matrix[faceid, cellid]
+            @test Ferrite.FacetIndex(cellid, faceid) in all_boundary_facets
 
             # Verify dloads entry exists for this cell
             fe = dloads[cellid]
@@ -459,7 +459,7 @@ end
     # Verify all faces in pressuredict facesets are on the boundary
     dh = TopOpt.TopOptProblems.getdh(problem)
     grid = dh.grid
-    boundary_matrix = grid.boundary_matrix
+    all_boundary_facets = reduce(union, values(grid.facetsets); init=Set{Ferrite.FacetIndex}())
     pressuredict = TopOpt.TopOptProblems.getpressuredict(problem)
     facesets = TopOpt.TopOptProblems.getfacesets(problem)
 
@@ -468,7 +468,7 @@ end
         for (cellid, faceid) in faceset
             # Each face in the faceset must be on the boundary
             # This is checked by: boundary_matrix[faceid, cellid] || throw(...)
-            @test boundary_matrix[faceid, cellid]
+            @test Ferrite.FacetIndex(cellid, faceid) in all_boundary_facets
         end
     end
 end

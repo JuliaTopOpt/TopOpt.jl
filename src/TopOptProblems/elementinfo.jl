@@ -5,7 +5,7 @@
         fixedload::AbstractVector{T}
         cellvolumes::AbstractVector{T}
         cellvalues::CellValues{dim, T}
-        facevalues::FaceValues{<:Any, T}
+        facevalues::FacetValues{<:Any, T}
         metadata::Metadata
         cells
     end
@@ -25,8 +25,8 @@ struct ElementFEAInfo{
     Tf1<:AbstractVector{<:AbstractVector{T}},
     Tf2<:AbstractVector{T},
     Tc1<:AbstractVector{T},
-    Tc2<:CellValues{dim,T,<:Any},
-    Tf3<:FaceValues{<:Any,T,<:Any},
+    Tc2<:Ferrite.AbstractCellValues,
+    Tf3<:Ferrite.AbstractFacetValues,
     Tm<:Metadata,
     Tc3<:Any,
 }
@@ -38,6 +38,21 @@ struct ElementFEAInfo{
     facevalues::Tf3
     metadata::Tm
     cells::Tc3
+end
+
+function ElementFEAInfo{dim,T}(
+    Kes::TK,
+    fes::Tf1,
+    fixedload::Tf2,
+    cellvolumes::Tc1,
+    cellvalues::Tc2,
+    facevalues::Tf3,
+    metadata::Tm,
+    cells::Tc3,
+) where {dim,T,TK,Tf1,Tf2,Tc1,Tc2,Tf3,Tm,Tc3}
+    return ElementFEAInfo{dim,T,TK,Tf1,Tf2,Tc1,Tc2,Tf3,Tm,Tc3}(
+        Kes, fes, fixedload, cellvolumes, cellvalues, facevalues, metadata, cells
+    )
 end
 
 function Base.show(io::Base.IO, ::MIME"text/plain", efeainfo::ElementFEAInfo)
@@ -72,7 +87,7 @@ function ElementFEAInfo(
     fixedload = _compute_fixedload(sp, dloads, floattype(sp))
     cellvolumes = get_cell_volumes(sp, cellvalues)
     cells = sp.ch.dh.grid.cells
-    return ElementFEAInfo(
+    return ElementFEAInfo{getdim(sp),floattype(sp)}(
         element_Kes,
         weights,
         fixedload,

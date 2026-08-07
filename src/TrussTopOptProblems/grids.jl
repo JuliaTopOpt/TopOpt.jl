@@ -1,10 +1,19 @@
 using ..TopOpt.TopOptProblems: AbstractGrid
 const Vec = Ferrite.Vec
 
-struct TrussGrid{xdim,T,N,M,TG<:Ferrite.Grid{xdim,<:Ferrite.Cell{xdim,N,M},T}} <:
+struct TrussGrid{xdim,T,N,M,TG<:Ferrite.Grid{xdim,<:Ferrite.AbstractCell,T}} <:
        AbstractGrid{xdim,T}
     grid::TG
     crosssecs::Vector{TrussFEACrossSec{T}}
+end
+
+function TrussGrid(
+    grid::Ferrite.Grid{xdim,C,T}, crosssecs::Vector{TrussFEACrossSec{T}}
+) where {xdim,C,T}
+    cell = first(grid.cells)
+    N = Ferrite.nnodes(cell)
+    M = Ferrite.nfacets(cell)
+    return TrussGrid{xdim,T,N,M,typeof(grid)}(grid, crosssecs)
 end
 # nels::NTuple{dim, Int} # num of elements in x,y,z direction in the ground mesh, not applicable to truss
 # sizes::NTuple{dim, T}  # length of the ground mesh in x,y,z direction, not applicaiton to truss
@@ -12,8 +21,7 @@ end
 
 nnodespercell(::TrussGrid{xdim,T,N,M}) where {xdim,T,N,M} = N
 nfacespercell(::TrussGrid{xdim,T,N,M}) where {xdim,T,N,M} = M
-nnodes(cell::Type{Ferrite.Cell{xdim,N,M}}) where {xdim,N,M} = N
-nnodes(cell::Ferrite.Cell) = nnodes(typeof(cell))
+nnodes(cell::Ferrite.AbstractCell) = Ferrite.nnodes(cell)
 Ferrite.getncells(tg::TrussGrid) = Ferrite.getncells(tg.grid)
 
 function TrussGrid(
@@ -57,7 +65,7 @@ function _LinearTrussGrid(node_points::Matrix{T}, elements::Matrix{iT}) where {T
     # * Generate cells, Line2d or Line3d
     @assert xdim ∈ [2, 3]
     @assert nconnect == 2
-    CellType = xdim == 2 ? Line2D : Line3D
+    CellType = Line
     cells = Vector{CellType}(undef, n_elems)
     for e_ind in 1:n_elems
         cells[e_ind] = CellType((elements[:, e_ind]...,))
@@ -79,7 +87,7 @@ function _LinearTrussGrid(
 
     # * Generate cells, Line2d or Line3d
     @assert xdim ∈ [2, 3]
-    CellType = xdim == 2 ? Line2D : Line3D
+    CellType = Line
     cells = Vector{CellType}(undef, length(elements))
     for (e_ind, element) in elements
         cells[e_ind] = CellType((element...,))
@@ -106,4 +114,4 @@ function Base.show(io::Base.IO, mime::MIME"text/plain", tg::TrussGrid)
     return println(io, "")
 end
 
-const extra_celltypes = Dict{DataType,String}(Line2D => "Line2D", Line3D => "Line3D")
+const extra_celltypes = Dict{DataType,String}(Line => "Line")

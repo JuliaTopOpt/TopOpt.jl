@@ -1,7 +1,6 @@
 using GeometryBasics: GeometryBasics
 using GeometryTypes: GeometryTypes
-using ..TopOptProblems:
-    getdh, AbstractTopOptProblem, StiffnessTopOptProblem, QuadraticHexahedron
+using ..TopOptProblems: getdh, AbstractTopOptProblem, StiffnessTopOptProblem
 using Ferrite, VTKDataTypes
 
 """
@@ -15,17 +14,18 @@ const ferrite_to_vtk = Dict(
     Tetrahedron => 10,
     QuadraticTetrahedron => 24,
     Hexahedron => 12,
-    QuadraticHexahedron => 25,
+    SerendipityQuadraticHexahedron => 25,
 )
 
 """
-Converting a Ferrite grid to a VTKUnstructuredData from [VTKDataTypes](https://github.com/mohamed82008/VTKDataTypes.jl).
+Converting a Ferrite grid to a VTKUnstructuredData from [VTKDataTypes](https://github.com/mohdibntarek/VTKDataTypes.jl).
 """
-function VTKDataTypes.VTKUnstructuredData(
-    grid::Ferrite.Grid{dim,<:Ferrite.Cell{dim,N,M},T}
-) where {dim,N,M,T}
+function VTKDataTypes.VTKUnstructuredData(grid::Ferrite.Grid{dim,C,T}) where {dim,C,T}
     celltype = ferrite_to_vtk[eltype(grid.cells)]
     celltypes = [celltype for i in 1:length(grid.cells)]
+    # Ferrite 1.x: `nnodes` is only defined for cell instances, not for the
+    # cell Type, so call it on the first cell instead of `eltype(grid.cells)`.
+    N = Ferrite.nnodes(first(grid.cells))
     connectivity = copy(reinterpret(NTuple{N,Int}, grid.cells))
     node_coords = copy(reshape(reinterpret(Float64, grid.nodes), dim, length(grid.nodes)))
     return VTKUnstructuredData(node_coords, celltypes, connectivity)
@@ -47,9 +47,11 @@ Do not want to spend more time on this now...
 ```
 function GeometryBasics.Mesh(glmesh::GeometryTypes.GLNormalVertexcolorMesh)
     newverts = collect(reinterpret(GeometryBasics.Point{3,Float32}, glmesh.vertices))
-    newfaces = collect(reinterpret(
-        GeometryBasics.NgonFace{3,GeometryBasics.OffsetInteger{-1,UInt32}}, glmesh.faces
-    ))
+    newfaces = collect(
+        reinterpret(
+            GeometryBasics.NgonFace{3,GeometryBasics.OffsetInteger{-1,UInt32}}, glmesh.faces
+        ),
+    )
     newnormals = collect(reinterpret(GeometryBasics.Vec{3,Float32}, glmesh.normals))
     newcolors = collect(reinterpret(GeometryBasics.Vec{4,Float32}, glmesh.color))
     return GeometryBasics.MetaMesh(newverts, newfaces; normals=newnormals, color=newcolors)

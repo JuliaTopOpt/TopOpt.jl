@@ -21,10 +21,10 @@
     #Ferrite.Node{2,Float64}([2.0, 2.0])
 
     #Cells
-    #Ferrite.Cell{2,4,4}((1, 2, 5, 4))
-    #Ferrite.Cell{2,4,4}((2, 3, 6, 5))
-    #Ferrite.Cell{2,4,4}((4, 5, 8, 7))
-    #Ferrite.Cell{2,4,4}((5, 6, 9, 8))
+    #Ferrite.Quadrilateral((1, 2, 5, 4))
+    #Ferrite.Quadrilateral((2, 3, 6, 5))
+    #Ferrite.Quadrilateral((4, 5, 8, 7))
+    #Ferrite.Quadrilateral((5, 6, 9, 8))
 
     # 7   8   9              
     #  x--x--x      x--x--x
@@ -69,10 +69,10 @@
     end
 
     cells = [
-        Ferrite.Cell{2,4,4}((1, 2, 5, 4)),
-        Ferrite.Cell{2,4,4}((2, 3, 6, 5)),
-        Ferrite.Cell{2,4,4}((4, 5, 8, 7)),
-        Ferrite.Cell{2,4,4}((5, 6, 9, 8)),
+        Ferrite.Quadrilateral((1, 2, 5, 4)),
+        Ferrite.Quadrilateral((2, 3, 6, 5)),
+        Ferrite.Quadrilateral((4, 5, 8, 7)),
+        Ferrite.Quadrilateral((5, 6, 9, 8)),
     ]
     @test problem.ch.dh.grid.cells == cells
 

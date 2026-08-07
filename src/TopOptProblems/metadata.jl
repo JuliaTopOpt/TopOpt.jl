@@ -24,7 +24,7 @@ struct Metadata{Tc,Td,Tn1,Tn2}
     node_dofs::Tn2
 end
 
-function Metadata(dh::DofHandler{dim}) where {dim}
+function Metadata(dh::DofHandler) where {dim}
     cell_dofs = get_cell_dofs_matrix(dh)
     dof_cells = get_dof_cells_matrix(dh, cell_dofs)
     #node_first_cells = get_node_first_cells(dh)
@@ -38,12 +38,13 @@ end
 Returns a `ndof_per_cell` x `ncells` matrix that maps `[localdofidx, cellidx]` into nof index
 """
 function get_cell_dofs_matrix(dh)
-    cell_dofs = zeros(Int, ndofs_per_cell(dh), getncells(dh.grid))
-    for i in 1:size(cell_dofs, 2)
-        r = dh.cell_dofs_offset[i]:(dh.cell_dofs_offset[i + 1] - 1)
-        for j in 1:length(r)
-            cell_dofs[j, i] = dh.cell_dofs[r[j]]
-        end
+    n_dpc = ndofs_per_cell(dh)
+    n_cells = getncells(dh.grid)
+    cell_dofs = zeros(Int, n_dpc, n_cells)
+    _celldofs = zeros(Int, n_dpc)
+    for i in 1:n_cells
+        celldofs!(_celldofs, dh, i)
+        cell_dofs[:, i] .= _celldofs
     end
     return cell_dofs
 end
@@ -107,37 +108,36 @@ function get_node_cells(dh)
     return RaggedArray(node_cells_vecofvecs)
 end
 
-node_field_offset(dh, f) = sum(view(dh.field_dims, 1:(f - 1)))
-
 """
 Returns
 =======
 - A `ndofspernode x nnodes` Matrix that maps `[localdofidx, node_idx]` into dof indices
 """
 function get_node_dofs(dh::DofHandler)
-    ndofspernode = sum(dh.field_dims)
-    nfields = length(dh.field_dims)
     nnodes = getnnodes(dh.grid)
-    interpol_points = ndofs_per_cell(dh)
-    _celldofs = fill(0, ndofs_per_cell(dh))
+    sdh = dh.subdofhandlers[1]
+    ndofspernode = sum(Ferrite.n_components(interp) for interp in sdh.field_interpolations)
+    nfields = length(sdh.field_names)
+    n_dpc = ndofs_per_cell(dh)
+    _celldofs = zeros(Int, n_dpc)
     node_dofs = zeros(Int, ndofspernode, nnodes)
     visited = falses(nnodes)
-    for field in 1:nfields
-        field_dim = dh.field_dims[field]
-        node_offset = node_field_offset(dh, field)
-        offset = Ferrite.field_offset(dh, dh.field_names[field])
-        for (cellidx, cell) in enumerate(dh.grid.cells)
-            celldofs!(_celldofs, dh, cellidx) # update the dofs for this cell
-            for idx in 1:min(interpol_points, length(cell.nodes))
-                node = cell.nodes[idx]
+    for (cellidx, cell) in enumerate(dh.grid.cells)
+        celldofs!(_celldofs, dh, cellidx)
+        local_dof = 1
+        for field_idx in 1:nfields
+            interp = sdh.field_interpolations[field_idx]
+            field_dim = Ferrite.n_components(interp)
+            n_basefuncs = div(Ferrite.getnbasefunctions(interp), field_dim)
+            for basefunc in 1:n_basefuncs
+                node = cell.nodes[basefunc]
                 if !visited[node]
-                    noderange =
-                        (offset + (idx - 1) * field_dim + 1):(offset + idx * field_dim) # the dofs in this node
-                    for i in 1:field_dim
-                        node_dofs[node_offset + i, node] = _celldofs[noderange[i]]
+                    for comp in 1:field_dim
+                        node_dofs[comp, node] = _celldofs[local_dof + (comp - 1)]
                     end
                     visited[node] = true
                 end
+                local_dof += field_dim
             end
         end
     end

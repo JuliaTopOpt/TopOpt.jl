@@ -100,17 +100,20 @@ function buckling(
 
     if Kσ isa Symmetric
         Kσ.data.nzval .= 0
-        assembler = Ferrite.AssemblerSparsityPattern(Kσ.data, T[], Int[], Int[])
+        # Ferrite 1.x replaced AssemblerSparsityPattern with start_assemble.
+        # Kσ is zeroed explicitly above, so disable fillzero to preserve that.
+        assembler = Ferrite.start_assemble(Kσ.data; fillzero=false)
     else
         Kσ.nzval .= 0
-        assembler = Ferrite.AssemblerSparsityPattern(Kσ, T[], Int[], Int[])
+        assembler = Ferrite.start_assemble(Kσ; fillzero=false)
     end
 
     # * assemble global geometric stiffness matrix
     global_dofs = zeros(Int, ndofs_per_cell(dh))
     Kσ_e = zeros(T, size(Kσs[1]))
-    celliteratortype = CellIterator{typeof(dh).parameters...}
-    celliterator::celliteratortype = CellIterator(dh)
+    # Ferrite 1.x changed CellIterator's type parameters, so construct it
+    # directly without a manual type annotation.
+    celliterator = CellIterator(dh)
     TK = eltype(Kσs)
     for (i, cell) in enumerate(celliterator)
         celldofs!(global_dofs, dh, i)

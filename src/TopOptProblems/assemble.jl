@@ -33,14 +33,20 @@ function assemble!(
     ch = problem.ch
     dh = ch.dh
     K, f = globalinfo.K, globalinfo.f
-    if assemble_f
-        f .= elementinfo.fixedload
-    end
     Kes, fes = elementinfo.Kes, elementinfo.fes
 
     _K = K isa Symmetric ? K.data : K
     _K.nzval .= 0
-    assembler = Ferrite.AssemblerSparsityPattern(_K, f, Int[], Int[])
+    # Ferrite 1.x's `start_assemble(K, f)` zeroes both `K` and `f` by default
+    # (`fillzero=true`). `K` is zeroed explicitly above, and `f` is seeded with
+    # the non-penalized fixed load (concentrated/distributed loads) below, so we
+    # disable `fillzero` to avoid clobbering `f` before the element assembly loop.
+    if assemble_f
+        f .= elementinfo.fixedload
+    else
+        f .= 0
+    end
+    assembler = Ferrite.start_assemble(_K, f; fillzero=false)
 
     global_dofs = zeros(Int, ndofs_per_cell(dh))
     fe = zeros(typeof(fes[1]))
@@ -53,7 +59,7 @@ function assemble!(
         fe = fes[i]
         _Ke = rawmatrix(Kes[i])
         Ke = _Ke isa Symmetric ? _Ke.data : _Ke
-        
+
         # Apply density interpolation
         if PENALTY_BEFORE_INTERPOLATION
             px = density(penalty(ρ[i]), xmin)
@@ -102,15 +108,11 @@ function assemble_f!(
 
     dof_cells = elementinfo.metadata.dof_cells
 
-    update_f!(
-        f, fes, elementinfo.fixedload, dof_cells, ρ, penalty, xmin
-    )
+    update_f!(f, fes, elementinfo.fixedload, dof_cells, ρ, penalty, xmin)
     return f
 end
 
-function update_f!(
-    f::Vector, fes, fixedload, dof_cells, ρ, penalty, xmin
-)
+function update_f!(f::Vector, fes, fixedload, dof_cells, ρ, penalty, xmin)
     @inbounds for dofidx in 1:length(f)
         f[dofidx] = fixedload[dofidx]
         r = dof_cells.offsets[dofidx]:(dof_cells.offsets[dofidx + 1] - 1)

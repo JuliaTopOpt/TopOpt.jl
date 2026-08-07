@@ -1,6 +1,7 @@
 module VTK
 
-using ...TopOptProblems: TopOptProblems, StiffnessTopOptProblem, HeatTransferTopOptProblem, Ferrite
+using ...TopOptProblems:
+    TopOptProblems, StiffnessTopOptProblem, HeatTransferTopOptProblem, Ferrite
 using WriteVTK
 
 export save_mesh
@@ -23,23 +24,25 @@ function save_mesh(filename::AbstractString, problem, vars::AbstractVector)
     return outfiles = WriteVTK.vtk_save(vtkfile)
 end
 function WriteVTK.vtk_grid(
-    filename::AbstractString,
-    problem::StiffnessTopOptProblem{dim,T},
-    ρ::AbstractVector{T},
+    filename::AbstractString, problem::StiffnessTopOptProblem{dim,T}, ρ::AbstractVector{T}
 ) where {dim,T}
     grid = problem.ch.dh.grid
     nel = length(TopOptProblems.getdh(problem).grid.cells)
 
     # ρ should be a full density vector (length = nel)
     if length(ρ) != nel
-        throw(ArgumentError("Density vector ρ must have length equal to number of cells ($nel)"))
+        throw(
+            ArgumentError(
+                "Density vector ρ must have length equal to number of cells ($nel)"
+            ),
+        )
     end
 
     celltype = Ferrite.cell_to_vtkcell(Ferrite.getcelltype(grid))
-    cls = Ferrite.MeshCell[]
+    cls = WriteVTK.MeshCell[]
     for (i, cell) in enumerate(Ferrite.CellIterator(grid))
         if ρ[i] >= 0.5
-            push!(cls, Ferrite.MeshCell(celltype, copy(Ferrite.getnodes(cell))))
+            push!(cls, WriteVTK.MeshCell(celltype, copy(Ferrite.getnodes(cell))))
         end
     end
     coords = reshape(reinterpret(T, Ferrite.getnodes(grid)), (dim, Ferrite.getnnodes(grid)))
@@ -63,14 +66,18 @@ function WriteVTK.vtk_grid(
 
     # ρ should be a full density vector (length = nel)
     if length(ρ) != nel
-        throw(ArgumentError("Density vector ρ must have length equal to number of cells ($nel)"))
+        throw(
+            ArgumentError(
+                "Density vector ρ must have length equal to number of cells ($nel)"
+            ),
+        )
     end
 
     celltype = Ferrite.cell_to_vtkcell(Ferrite.getcelltype(grid))
-    cls = Ferrite.MeshCell[]
+    cls = WriteVTK.MeshCell[]
     for (i, cell) in enumerate(Ferrite.CellIterator(grid))
         if ρ[i] >= 0.5
-            push!(cls, Ferrite.MeshCell(celltype, copy(Ferrite.getnodes(cell))))
+            push!(cls, WriteVTK.MeshCell(celltype, copy(Ferrite.getnodes(cell))))
         end
     end
     coords = reshape(reinterpret(T, Ferrite.getnodes(grid)), (dim, Ferrite.getnnodes(grid)))

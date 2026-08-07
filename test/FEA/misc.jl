@@ -82,7 +82,7 @@ end
         
         # Get boundary condition info
         ch = problem.ch
-        values = ch.values
+        values = ch.inhomogeneities
         prescribed_dofs = ch.prescribed_dofs
         
         # Setup test parameters
@@ -122,7 +122,7 @@ end
 
         # Get original boundary condition info
         ch = problem.ch
-        original_values = copy(ch.values)
+        original_values = copy(ch.inhomogeneities)
         prescribed_dofs = ch.prescribed_dofs
 
         # Create custom non-zero BC values (simulate a non-zero displacement)
@@ -187,7 +187,7 @@ end
         
         # Get boundary condition info
         ch = problem.ch
-        values = ch.values
+        values = ch.inhomogeneities
         prescribed_dofs = ch.prescribed_dofs
         
         # Setup test parameters
@@ -242,7 +242,7 @@ end
         # Prescribed DOFs should have values set
         ch = problem.ch
         for (i, dof) in enumerate(ch.prescribed_dofs)
-            @test f[dof] ≈ M * ch.values[i]
+            @test f[dof] ≈ M * ch.inhomogeneities[i]
         end
     end
     
