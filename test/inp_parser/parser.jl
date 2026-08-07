@@ -6,13 +6,11 @@ dh = cube.dh
 grid = dh.grid
 cells = grid.cells
 nodes = grid.nodes
-getdim(::Ferrite.Cell{N}) where {N} = N
-
-@test dh.field_dims == [3]
-@test getdim(cells[1]) == 3 # 3D cells
+@test Ferrite.getspatialdim(grid) == 3 # 3D grid
 @test Ferrite.nfaces(cells[1]) == 4 # Tetrahedron
+@test Ferrite.nfacets(cells[1]) == 4 # Facets in Ferrite 1.x
 @test Ferrite.nnodes(cells[1]) == 10 # Quadratic tetrahedron
-@test length(grid.boundary_matrix.nzval) == 16
+@test haskey(grid.facetsets, "DLOAD_SET_1")
 
 raw_inp = INP.Parser.extract_inp(joinpath(@__DIR__, "testcube.inp"))
 @test raw_inp.celltype == "C3D10"
@@ -81,7 +79,10 @@ grid = dh.grid
 @test length(grid.nodes) == 42
 @test length(grid.cells) == 60
 @test Ferrite.nnodes(grid.cells[1]) == 3  # Linear triangle
-@test typeof(grid.cells[1]) <: Ferrite.Cell{2,3,3}  # 2D triangle cell with 3 nodes, 3 edges
+@test typeof(grid.cells[1]) <: Ferrite.AbstractCell  # 2D triangle cell
+@test Ferrite.getrefshape(typeof(grid.cells[1])) == Ferrite.RefTriangle
+@test Ferrite.nnodes(grid.cells[1]) == 3
+@test Ferrite.nfacets(grid.cells[1]) == 3
 
 # Test inpcelltype function - maps Ferrite cell types to INP cell type strings
 @test INP.Parser.inpcelltype(Ferrite.Triangle) == "CPS3"
@@ -91,5 +92,30 @@ grid = dh.grid
 @test INP.Parser.inpcelltype(Ferrite.Quadrilateral) == "CPS4"
 @test INP.Parser.inpcelltype(Ferrite.QuadraticQuadrilateral) == "CPS8"
 @test INP.Parser.inpcelltype(Ferrite.Hexahedron) == "C3D8"
-@test INP.Parser.inpcelltype(Ferrite.QuadraticHexahedron) == "C3D20"
+@test INP.Parser.inpcelltype(Ferrite.SerendipityQuadraticHexahedron) == "C3D20"
 @test INP.Parser.inpcelltype(Int) == ""  # Unknown type returns empty string
+
+# Test C3D20 serendipity quadratic hexahedron parsing and conversion
+raw_c3d20 = INP.Parser.extract_inp(joinpath(@__DIR__, "c3d20cube.inp"))
+@test raw_c3d20.celltype == "C3D20"
+@test raw_c3d20.cells[1] ==
+    (1, 3, 8, 6, 13, 15, 20, 18, 2, 5, 7, 4, 14, 17, 19, 16, 9, 10, 12, 11)
+@test raw_c3d20.E == 1000.0
+@test raw_c3d20.ν == 0.3
+@test raw_c3d20.nodedbcs["FixedBase"] == [(1, 0.0), (2, 0.0), (3, 0.0)]
+@test raw_c3d20.cloads[19] == [0.0, -1.0, 0.0]
+
+# Test imported C3D20 grid matches Ferrite's native SerendipityQuadraticHexahedron
+c3d20 = INP.Parser.import_inp(joinpath(@__DIR__, "c3d20cube.inp"))
+dh_c3d20 = c3d20.dh
+grid_c3d20 = dh_c3d20.grid
+@test length(grid_c3d20.nodes) == 20
+@test length(grid_c3d20.cells) == 1
+@test typeof(grid_c3d20.cells[1]) <: Ferrite.SerendipityQuadraticHexahedron
+@test Ferrite.nnodes(grid_c3d20.cells[1]) == 20
+@test Ferrite.nfacets(grid_c3d20.cells[1]) == 6
+
+# Build a reference grid directly from Ferrite and compare coordinates/connectivity
+ref_grid = Ferrite.generate_grid(Ferrite.SerendipityQuadraticHexahedron, (1, 1, 1))
+@test [n.x for n in grid_c3d20.nodes] == [n.x for n in ref_grid.nodes]
+@test grid_c3d20.cells[1].nodes == ref_grid.cells[1].nodes

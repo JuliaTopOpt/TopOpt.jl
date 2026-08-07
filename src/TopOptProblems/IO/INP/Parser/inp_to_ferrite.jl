@@ -13,7 +13,7 @@ function inpcelltype(::Type{CT}) where {CT}
         return "CPS8"
     elseif CT === Hexahedron
         return "C3D8"
-    elseif CT === Ferrite.QuadraticHexahedron
+    elseif CT === SerendipityQuadraticHexahedron
         return "C3D20"
     else
         return ""
@@ -31,13 +31,13 @@ function inp_to_ferrite(problem::InpContent)
         # Linear triangle
         celltype = Triangle
         geom_order = 1
-        refshape = RefTetrahedron
+        refshape = RefTriangle
         dim = 2
     elseif _celltype == "CPS6"
         # Quadratic triangle
         celltype = QuadraticTriangle
         geom_order = 2
-        refshape = RefTetrahedron
+        refshape = RefTriangle
         dim = 2
     elseif _celltype == "C3D4"
         # Linear tetrahedron
@@ -55,25 +55,25 @@ function inp_to_ferrite(problem::InpContent)
         # Linear quadrilateral
         celltype = Quadrilateral
         geom_order = 1
-        refshape = RefCube
+        refshape = RefQuadrilateral
         dim = 2
     elseif _celltype == "CPS8" || _celltype == "CPS8R"
         # Quadratic quadrilateral
         celltype = QuadraticQuadrilateral
         geom_order = 2
-        refshape = RefCube
+        refshape = RefQuadrilateral
         dim = 2
     elseif _celltype == "C3D8" || _celltype == "C3D8R"
         # Linear hexahedron
         celltype = Hexahedron
         geom_order = 1
-        refshape = RefCube
+        refshape = RefHexahedron
         dim = 3
     elseif _celltype == "C3D20" || _celltype == "C3D20R"
-        # Quadratic hexahedron
-        celltype = QuadraticHexahedron
+        # Quadratic hexahedron (20-node serendipity)
+        celltype = SerendipityQuadraticHexahedron
         geom_order = 2
-        refshape = RefCube
+        refshape = RefHexahedron
         dim = 3
         #elseif _celltype == "C3D6"
         # Linear wedge
@@ -93,15 +93,13 @@ function inp_to_ferrite(problem::InpContent)
         grid.nodesets[k] = Set(problem.nodesets[k])
     end
     for k in keys(problem.facesets)
-        grid.facesets[k] = Set(problem.facesets[k])
+        grid.facetsets[k] = Set(FacetIndex.(problem.facesets[k]))
     end
-    # Define boundary faces
-    grid.boundary_matrix = extract_boundary_matrix(grid)
 
     dh = DofHandler(grid)
     # Isoparametric
-    field_interpolation = Lagrange{dim,refshape,geom_order}()
-    push!(dh, :u, dim, field_interpolation)
+    field_interpolation = Lagrange{refshape,geom_order}()
+    add!(dh, :u, field_interpolation^dim)
     close!(dh)
 
     ch = ConstraintHandler(dh)

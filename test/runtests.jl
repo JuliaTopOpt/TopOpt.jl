@@ -20,6 +20,9 @@ end
 const ACTUAL_GROUP = replace(GROUP, "_Opposite_Preference" => "")
 
 if ACTUAL_GROUP in ("All", "Core_Tests")
+    @safetestset "Ferrite Upgrade Behavior" begin
+        include("ferrite_upgrade_behavior.jl")
+    end
     @safetestset "InpParser Tests" begin
         include("inp_parser/parser.jl")
         include("inp_parser/test_inpstiffness.jl")

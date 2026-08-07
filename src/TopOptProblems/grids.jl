@@ -23,8 +23,7 @@ A type that represents a rectilinear grid with corner points `corners`.
 - `sizes`: dimensions of each rectilinear cell
 - `corners`: 2 corner points of the rectilinear grid
 """
-struct RectilinearGrid{dim,T,N,M,TG<:Ferrite.Grid{dim,<:Ferrite.Cell{dim,N,M},T}} <:
-       AbstractGrid{dim,T}
+struct RectilinearGrid{dim,T,N,M,TG<:Ferrite.AbstractGrid{dim}} <: AbstractGrid{dim,T}
     grid::TG
     nels::NTuple{dim,Int}
     sizes::NTuple{dim,T}
@@ -64,14 +63,9 @@ function RectilinearGrid(
     grid = generate_grid(geoshape, nels, corner1, corner2)
 
     N = nnodes(geoshape)
-    M = Ferrite.nfaces(geoshape)
+    M = Ferrite.nfacets(Ferrite.getrefshape(geoshape))
     ncells = prod(nels)
-    return RectilinearGrid(
-        grid,
-        nels,
-        sizes,
-        (corner1, corner2),
-    )
+    return RectilinearGrid{dim,T,N,M,typeof(grid)}(grid, nels, sizes, (corner1, corner2))
 end
 
 nnodespercell(::RectilinearGrid{dim,T,N,M}) where {dim,T,N,M} = N
@@ -93,8 +87,8 @@ function middlez(rectgrid::RectilinearGrid, x)
     return x[3] ≈ (rectgrid.corners[1][3] + rectgrid.corners[2][3]) / 2
 end
 
-nnodes(cell::Type{Ferrite.Cell{dim,N,M}}) where {dim,N,M} = N
-nnodes(cell::Ferrite.Cell) = nnodes(typeof(cell))
+nnodes(cell::Type{<:Ferrite.AbstractCell}) = length(Base.fieldtypes(cell)[1].parameters)
+nnodes(cell::Ferrite.AbstractCell) = length(cell.nodes)
 
 """
     LGrid(::Type{Val{CellType}}, ::Type{T}; length = 100, height = 100, upperslab = 50, lowerslab = 50) where {T, CellType}
@@ -307,11 +301,7 @@ function _LinearLGrid(
         end
     end
 
-    boundary_matrix = Ferrite.boundaries_to_sparse(boundary)
-
-    return Grid(
-        cells, nodes; facesets=facesets, nodesets=nodesets, boundary_matrix=boundary_matrix
-    )
+    return Grid(cells, nodes; facetsets=facesets, nodesets=nodesets)
 end
 
 function _QuadraticLGrid(
@@ -492,11 +482,7 @@ function _QuadraticLGrid(
         end
     end
 
-    boundary_matrix = Ferrite.boundaries_to_sparse(boundary)
-
-    return Grid(
-        cells, nodes; facesets=facesets, nodesets=nodesets, boundary_matrix=boundary_matrix
-    )
+    return Grid(cells, nodes; facetsets=facesets, nodesets=nodesets)
 end
 
 function TieBeamGrid(
@@ -628,8 +614,7 @@ function _LinearTieBeamGrid((::Type{T})=Float64, refine=1) where {T}
         end
     end
 
-    boundary_matrix = Ferrite.boundaries_to_sparse(boundary)
-    return Grid(cells, nodes; facesets=facesets, boundary_matrix=boundary_matrix)
+    return Grid(cells, nodes; facetsets=facesets)
 end
 
 function _QuadraticTieBeamGrid((::Type{T})=Float64, refine=1) where {T}
@@ -767,6 +752,5 @@ function _QuadraticTieBeamGrid((::Type{T})=Float64, refine=1) where {T}
         end
     end
 
-    boundary_matrix = Ferrite.boundaries_to_sparse(boundary)
-    return Grid(cells, nodes; facesets=facesets, boundary_matrix=boundary_matrix)
+    return Grid(cells, nodes; facetsets=facesets)
 end

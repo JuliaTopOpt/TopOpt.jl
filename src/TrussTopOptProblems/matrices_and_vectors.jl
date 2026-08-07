@@ -1,7 +1,7 @@
 using Base: @propagate_inbounds
 using ..TopOpt.TopOptProblems: getdh, getE, getν, getdensity, gettypes
 using LinearAlgebra: norm
-using Ferrite: getdim, getrefshape, value, getlowerdim
+using Ferrite: getdim, getrefshape, value
 using ChainRulesCore
 
 """
@@ -74,7 +74,7 @@ in a truss element (line element with nodes in 2D or 3D), `xdim = 2` or `3` and 
 * `ξdim` : reference domain dimension
 * `xdim` : node coordinate dimension
 """
-struct GenericCellScalarValues{ξdim,xdim,T,refshape} <: CellValues{xdim,T,refshape}
+struct GenericCellScalarValues{ξdim,xdim,T,refshape} <: AbstractCellValues
     N::Matrix{T}
     dNdx::Matrix{Vec{xdim,T}}
     dNdξ::Matrix{Vec{ξdim,T}}
@@ -167,7 +167,7 @@ end
 `weights` : a vector of `xdim*n_basefuncs` vectors, element_id => self-weight load vector, in truss elements, they are all zeros.
 """
 function _make_Kes_and_weights(
-    dh::DofHandler{xdim,N,T},
+    dh::DofHandler,
     ::Type{Tuple{MatrixType,VectorType}},
     ::Type{Val{n_basefuncs}},
     ::Type{Val{Kesize}},
@@ -222,9 +222,8 @@ function _make_Kes_and_weights(
 end
 
 @inline function truss_reinit!(
-    cv::GenericCellScalarValues{ξdim,xdim,T}, ci::CellIterator{xdim,N,T}, crossec::T
-) where {ξdim,xdim,N,T}
-    Ferrite.check_compatible_geointerpolation(cv, ci)
+    cv::GenericCellScalarValues{ξdim,xdim,T}, ci::CellIterator, crossec::T
+) where {ξdim,xdim,T}
     return truss_reinit!(cv, ci.coords, crossec)
 end
 

@@ -76,8 +76,7 @@ function buckling(problem::StiffnessTopOptProblem{xdim,T}, ginfo, einfo) where {
     # * assemble global geometric stiffness matrix
     global_dofs = zeros(Int, ndofs_per_cell(dh))
     Kσ_e = zeros(T, size(Kσs[1]))
-    celliteratortype = CellIterator{typeof(dh).parameters...}
-    _celliterator::celliteratortype = CellIterator(dh)
+    _celliterator = CellIterator(dh)
     TK = eltype(Kσs)
     for (i, cell) in enumerate(_celliterator)
         celldofs!(global_dofs, dh, i)

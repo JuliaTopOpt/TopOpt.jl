@@ -67,7 +67,7 @@ function make_Kes_and_fes(problem, quad_order, ::Type{Val{mat_type}}) where {mat
     ν = getν(problem)
     ρ = getdensity(problem)
 
-    refshape = Ferrite.getrefshape(dh.field_interpolations[1])
+    refshape = Ferrite.getrefshape(dh.subdofhandlers[1].field_interpolations[1].ip)
 
     λ = E * ν / ((1 + ν) * (1 - 2 * ν))
     μ = E / (2 * (1 + ν))
@@ -76,12 +76,10 @@ function make_Kes_and_fes(problem, quad_order, ::Type{Val{mat_type}}) where {mat
     C = SymmetricTensor{4,dim}(g)
 
     # Shape functions and quadrature rule
-    interpolation_space = Lagrange{dim,refshape,geom_order}()
-    quadrature_rule = QuadratureRule{dim,refshape}(quad_order)
+    interpolation_space = Lagrange{refshape,geom_order}()
+    quadrature_rule = QuadratureRule{refshape}(quad_order)
     cellvalues = CellScalarValues(quadrature_rule, interpolation_space)
-    facevalues = FaceScalarValues(
-        QuadratureRule{dim - 1,refshape}(quad_order), interpolation_space
-    )
+    facevalues = FacetValues(FacetQuadratureRule{refshape}(quad_order), interpolation_space)
 
     # Calculate element stiffness matrices
     n_basefuncs = getnbasefunctions(cellvalues)
@@ -108,7 +106,7 @@ const g = [0.0, 9.81, 0.0] # N/kg or m/s^2
 # Element stiffness matrices are StaticArrays
 # `weights` : a vector of `xdim` vectors, element_id => self-weight load vector
 function _make_Kes_and_weights(
-    dh::DofHandler{dim,N,T},
+    dh::DofHandler,
     ::Type{Tuple{MatrixType,VectorType}},
     ::Type{Val{n_basefuncs}},
     ::Type{Val{Kesize}},
@@ -161,7 +159,7 @@ function _make_Kes_and_weights(
 end
 # # Fallback
 # function _make_Kes_and_weights(
-#     dh::DofHandler{dim,N,T},
+#     dh::DofHandler,
 #     ::Type{Tuple{MatrixType,VectorType}},
 #     ::Type{Val{n_basefuncs}},
 #     ::Type{Val{Kesize}},
@@ -222,7 +220,8 @@ function _make_dloads(fes, problem::StiffnessTopOptProblem, facevalues)
     N = nnodespercell(problem)
     T = floattype(problem)
     dloads = deepcopy(fes)
-    eltype(dloads) <: StaticArray || throw("Expected dloads to be StaticArrays for stiffness problems.")
+    eltype(dloads) <: StaticArray ||
+        throw("Expected dloads to be StaticArrays for stiffness problems.")
     for i in 1:length(dloads)
         if eltype(dloads) <: SArray
             dloads[i] = zero(eltype(dloads))
@@ -380,19 +379,19 @@ For thermal compliance minimization:
 - dJ/dx_e = -T_e^T Ke T_e · dρ_e/dx_e
 """
 function make_Kes_and_fes(
-    problem::HeatTransferTopOptProblem{dim, T}, quad_order, ::Type{Val{mat_type}}
-) where {dim, T, mat_type}
+    problem::HeatTransferTopOptProblem{dim,T}, quad_order, ::Type{Val{mat_type}}
+) where {dim,T,mat_type}
     dh = getdh(problem)
     k = getk(problem)
 
     refshape = Ferrite.getrefshape(dh.field_interpolations[1])
 
     # Shape functions for scalar field (temperature)
-    interpolation_space = Lagrange{dim, refshape, 1}()
-    quadrature_rule = QuadratureRule{dim, refshape}(quad_order)
+    interpolation_space = Lagrange{dim,refshape,1}()
+    quadrature_rule = QuadratureRule{dim,refshape}(quad_order)
     cellvalues = CellScalarValues(quadrature_rule, interpolation_space)
     facevalues = FaceScalarValues(
-        QuadratureRule{dim - 1, refshape}(quad_order), interpolation_space
+        QuadratureRule{dim - 1,refshape}(quad_order), interpolation_space
     )
 
     # Calculate element conductivity matrices
@@ -402,7 +401,7 @@ function make_Kes_and_fes(
     MatrixType, VectorType = gettypes(T, Val{mat_type}, Val{Kesize})
     Kes, weights = _make_Kes_and_weights_heat(
         dh,
-        Tuple{MatrixType, VectorType},
+        Tuple{MatrixType,VectorType},
         Val{n_basefuncs},
         Val{Kesize},
         k,
@@ -420,17 +419,18 @@ end
 # No body forces in heat transfer - weights should be zeros
 # Surface heat flux is computed separately via _make_dloads
 function _make_Kes_and_weights_heat(
-    dh::DofHandler{dim, N, T},
-    ::Type{Tuple{MatrixType, VectorType}},
+    dh::DofHandler,
+    ::Type{Tuple{MatrixType,VectorType}},
     ::Type{Val{n_basefuncs}},
     ::Type{Val{Kesize}},
     k::T,
     quadrature_rule,
     cellvalues,
-) where {dim, N, T, MatrixType <: StaticArray, VectorType, n_basefuncs, Kesize}
-    MatrixType <: SizedMatrix && throw("SizedMatrix not supported for heat transfer problems with StaticArrays.")
+) where {dim,N,T,MatrixType<:StaticArray,VectorType,n_basefuncs,Kesize}
+    MatrixType <: SizedMatrix &&
+        throw("SizedMatrix not supported for heat transfer problems with StaticArrays.")
     nel = getncells(dh.grid)
-    Kes = Symmetric{T, MatrixType}[]
+    Kes = Symmetric{T,MatrixType}[]
     sizehint!(Kes, nel)
     # No body forces in heat transfer - weights should be zeros
     weights = [zeros(VectorType) for i in 1:nel]
@@ -461,7 +461,7 @@ end
 
 # Fallback for non-static arrays
 # function _make_Kes_and_weights_heat(
-#     dh::DofHandler{dim, N, T},
+#     dh::DofHandler,
 #     ::Type{Tuple{MatrixType, VectorType}},
 #     ::Type{Val{n_basefuncs}},
 #     ::Type{Val{Kesize}},

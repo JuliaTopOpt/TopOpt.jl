@@ -5,7 +5,7 @@
         fixedload::AbstractVector{T}
         cellvolumes::AbstractVector{T}
         cellvalues::CellValues{dim, T}
-        facevalues::FaceValues{<:Any, T}
+        facevalues::FacetValues{<:Any, T}
         metadata::Metadata
         cells
     end
@@ -26,7 +26,7 @@ struct ElementFEAInfo{
     Tf2<:AbstractVector{T},
     Tc1<:AbstractVector{T},
     Tc2<:CellValues{dim,T,<:Any},
-    Tf3<:FaceValues{<:Any,T,<:Any},
+    Tf3<:FacetValues{<:Any,T,<:Any},
     Tm<:Metadata,
     Tc3<:Any,
 }
