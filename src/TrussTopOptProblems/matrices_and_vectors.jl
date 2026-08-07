@@ -139,6 +139,7 @@ getn_scalarbasefunctions(cv::GenericCellScalarValues) = size(cv.N, 1)
 )
     return cv.dNdx[base_func, q_point]
 end
+Ferrite.getdetJdVs(cv::GenericCellScalarValues) = cv.detJdV
 @propagate_inbounds function getdetJdV(cv::GenericCellScalarValues, q_point::Int)
     return cv.detJdV[q_point]
 end
