@@ -11,7 +11,6 @@ using Parameters: @unpack
 using TimerOutputs, Ferrite, StaticArrays, StatsFuns
 using SparseArrays, Statistics, ChainRulesCore, Zygote
 using Nonconvex: Nonconvex
-using Flux
 using AbstractDifferentiation: AbstractDifferentiation
 const AD = AbstractDifferentiation
 
@@ -40,6 +39,8 @@ export Volume,
     PredictFunction,
     NNParams,
     Coordinates,
+    AbstractMLModel,
+    getcentroids,
     StressTensor,
     ElementStressTensor,
     MaterialInterpolation,

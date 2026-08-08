@@ -1,4 +1,5 @@
 using TopOpt, Zygote, ChainRulesCore
+using Flux
 Nonconvex.@load Ipopt
 
 E = 1.0 # Young’s modulus

@@ -14,39 +14,12 @@ end
 
 abstract type AbstractMLModel end
 
-# in -- params --> out -> filter -> compliance === loss
-# params -- in --> out -> filter -> compliance === loss
-
 struct NeuralNetwork{Tm,Ti1,Tp,Ti2,Tc} <: AbstractMLModel
     model::Tm
     init_params::Ti1
     params_to_out::Tp
     in_to_out::Ti2
     centroids::Tc
-end
-function NeuralNetwork(nn_model, input_coords::AbstractVector{<:AbstractVector{<:Real}})
-    f = x -> nn_model(x)[1]
-    @assert all(0 .<= f.(input_coords) .<= 1)
-    p, re = Flux.destructure(nn_model)
-    return NeuralNetwork(
-        nn_model,
-        Float64.(p),
-        p -> getindex.(re(p).(input_coords), 1),
-        nn_model,
-        input_coords,
-    )
-end
-function NeuralNetwork(nn_model, problem::AbstractTopOptProblem; scale=true)
-    centroids = getcentroids(problem)
-    if scale
-        m, s = mean(centroids), std(centroids)
-        scentroids = map(centroids) do c
-            (c .- m) ./ s
-        end
-    else
-        scentroids = centroids
-    end
-    return NeuralNetwork(nn_model, scentroids)
 end
 
 struct PredictFunction{Tm<:AbstractMLModel} <: Function
