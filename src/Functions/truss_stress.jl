@@ -107,8 +107,7 @@ function ChainRulesCore.rrule(ts::TrussStress{T}, x::PseudoDensities) where {T}
         adj_rhs = zeros(T, length(u.u))
         for e in 1:length(x.x)
             celldofs!(global_dofs, dh, e)
-            Ke = bcmatrix(Kes[e])
-            # (R_e · Ke_e) row 1, dotted with u_e gives σ; the gradient w.r.t. u is (R_e · Ke_e)[1, :]'
+            Ke = rawmatrix(Kes[e])
             grad_u = (transf_matrices[e] * Ke)[1, :] / As[e]
             adj_rhs[global_dofs] .-= Δ[e] .* grad_u
         end
@@ -128,11 +127,8 @@ function ChainRulesCore.rrule(ts::TrussStress{T}, x::PseudoDensities) where {T}
             _, dρ_dx = get_ρ_dρ(x.x[j], penalty, xmin)
             celldofs!(global_dofs, dh, j)
             Ke_0_u = rawmatrix(Kes[j]) * u.u[global_dofs]
-            # Direct term (e=j only)
-            direct = -Δ[j] * (transf_matrices[j] * Ke_0_u)[1] / As[j] * dρ_dx
-            # Adjoint term: λ' · du/dx_j = -dρ/dx · λ'_j · Ke_0_j · u_j
             adjoint = -dρ_dx * dot(Ke_0_u, λ[global_dofs])
-            Δx[j] = direct + adjoint
+            Δx[j] = adjoint
         end
 
         return NoTangent(), Tangent{typeof(x)}(; x=Δx)

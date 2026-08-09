@@ -245,7 +245,7 @@ end
         end
         
         # Compare with finite differences for a specific direction
-        Δ_test = randn(dim, dim)
+        Δ_test = randn(out_dim, out_dim)
         
         # Define scalar function for FD: sum(kernel output .* Δ_test)
         f_scalar = u_vec -> sum(kernel(DisplacementResult(collect(u_vec))) .* Δ_test)
@@ -311,8 +311,9 @@ end
         @test v_rrule ≈ v_direct
         
         # Test pullback for each output component
-        for i in 1:dim, j in 1:dim
-            Δ = zeros(dim, dim)
+        out_dim = size(v_rrule, 1)
+        for i in 1:out_dim, j in 1:out_dim
+            Δ = zeros(out_dim, out_dim)
             Δ[i, j] = 1.0
             
             grads = pullback(Δ)

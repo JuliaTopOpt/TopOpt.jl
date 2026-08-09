@@ -1,4 +1,4 @@
-using TopOpt, Zygote, FiniteDifferences, LinearAlgebra, Test, Random
+using TopOpt, Zygote, FiniteDifferences, LinearAlgebra, Test, Random, ChainRulesCore
 const FDM = FiniteDifferences
 
 Random.seed!(42)
