@@ -60,6 +60,7 @@ if ACTUAL_GROUP in ("All", "Core_Tests")
         include("Functions/test_hadamard.jl")
         include("Functions/test_mean_compliance_branches.jl")
         include("Functions/test_stress_tensor_rrule.jl")
+        include("Functions/test_truss_stress_rrule.jl")
     end
     @safetestset "Solver" begin
         include("FEA/solvers.jl")
@@ -96,43 +97,95 @@ if ACTUAL_GROUP in ("All", "Core_Tests")
     end
 end
 
+const LITERATE_DIR = joinpath(@__DIR__, "../docs/src/literate")
+
 if ACTUAL_GROUP in ("All", "Examples_1")
     @safetestset "CSIMP example" begin
-        include("examples/csimp.jl")
+        mktempdir() do dir
+            cd(dir) do
+                include(joinpath(Main.LITERATE_DIR, "csimp.jl"))
+            end
+        end
     end
 end
 
 if ACTUAL_GROUP in ("All", "Examples_2")
     @safetestset "Global stress example" begin
-        include("examples/global_stress.jl")
+        mktempdir() do dir
+            cd(dir) do
+                include(joinpath(Main.LITERATE_DIR, "global_stress.jl"))
+            end
+        end
     end
 end
 
 if ACTUAL_GROUP in ("All", "Examples_3")
     @safetestset "Local stress example" begin
-        include("examples/local_stress.jl")
+        mktempdir() do dir
+            cd(dir) do
+                include(joinpath(Main.LITERATE_DIR, "local_stress.jl"))
+            end
+        end
     end
 end
 
 if ACTUAL_GROUP in ("All", "Examples_4")
-    @safetestset "More examples" begin
-        include("examples/test_examples.jl")
+    @safetestset "SIMP example" begin
+        mktempdir() do dir
+            cd(dir) do
+                include(joinpath(Main.LITERATE_DIR, "simp.jl"))
+            end
+        end
+    end
+    @safetestset "BESO example" begin
+        mktempdir() do dir
+            cd(dir) do
+                include(joinpath(Main.LITERATE_DIR, "beso.jl"))
+            end
+        end
+    end
+    @safetestset "GESO example" begin
+        mktempdir() do dir
+            cd(dir) do
+                include(joinpath(Main.LITERATE_DIR, "geso.jl"))
+            end
+        end
     end
     @safetestset "Neural network example" begin
-        include("examples/neural.jl")
+        mktempdir() do dir
+            cd(dir) do
+                include(joinpath(Main.LITERATE_DIR, "neural.jl"))
+            end
+        end
+    end
+    @safetestset "Neural network (Adam) example" begin
+        mktempdir() do dir
+            cd(dir) do
+                include(joinpath(Main.LITERATE_DIR, "neural2.jl"))
+            end
+        end
     end
     @safetestset "Integer nonlinear programming for truss optimization example" begin
-        include("examples/mixed_integer_truss/truss_compliance_2d1.jl")
+        mktempdir() do dir
+            cd(dir) do
+                include(joinpath(Main.LITERATE_DIR, "mixed_integer_truss.jl"))
+            end
+        end
     end
     @safetestset "Multi-material" begin
-        include("examples/multimaterial.jl")
+        mktempdir() do dir
+            cd(dir) do
+                include(joinpath(Main.LITERATE_DIR, "multimaterial.jl"))
+            end
+        end
     end
     @safetestset "Heat sink example" begin
-        include("examples/heat_sink.jl")
+        mktempdir() do dir
+            cd(dir) do
+                include(joinpath(Main.LITERATE_DIR, "heat_sink.jl"))
+            end
+        end
     end
-    # Neural2 example is a long-running neural network optimization example with visualization
-    # that requires Images and ImageInTerminal packages. It is not structured as a unit test.
-    # include("examples/neural2.jl")
 end
 
 if ACTUAL_GROUP in ("All", "WCSMO14_1")

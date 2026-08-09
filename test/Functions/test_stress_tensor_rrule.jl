@@ -207,10 +207,12 @@ end
         
         # Check output type
         @test v isa Matrix
-        @test size(v) == (dim, dim)
+        # 2D plane strain returns 3×3 tensor
+        expected_dim = dim == 2 ? 3 : dim
+        @test size(v) == (expected_dim, expected_dim)
         
         # Test pullback with a random tangent
-        Δ = randn(dim, dim)
+        Δ = randn(expected_dim, expected_dim)
         grads = pullback(Δ)
         
         # Should return (NoTangent(), Tangent)
@@ -229,9 +231,12 @@ end
         # Compute rrule output
         v, pullback = ChainRulesCore.rrule(kernel, u_element)
         
+        # 2D plane strain returns 3×3, 3D returns 3×3
+        out_dim = dim == 2 ? 3 : dim
+        
         # Test with different tangents
         for _ in 1:5
-            Δ = randn(dim, dim)
+            Δ = randn(out_dim, out_dim)
             grads = pullback(Δ)
             
             # The gradient should be a vector matching the displacement size (2 for 2D)
@@ -276,11 +281,12 @@ end
                 
                 v, pullback = ChainRulesCore.rrule(kernel_test, u_element)
                 
-                @test size(v) == (dim, dim)
+                expected_dim = dim == 2 ? 3 : dim
+                @test size(v) == (expected_dim, expected_dim)
                 @test all(isfinite, v)
                 
                 # Test pullback
-                Δ = randn(dim, dim)
+                Δ = randn(expected_dim, expected_dim)
                 grads = pullback(Δ)
                 
                 @test grads[1] isa ChainRulesCore.NoTangent

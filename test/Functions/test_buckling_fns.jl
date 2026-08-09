@@ -98,6 +98,9 @@ end
 
     # * check geometric stiffness matrix consistency
     Kσs_0 = get_truss_Kσs(problem, u, solver.elementinfo.cellvalues)
+    # The solver's penalty and xmin are used by TrussElementKσ to scale Kσ
+    penalty = TopOpt.getpenalty(solver)
+    xmin = solver.xmin
 
     for _ in 1:3
         vs = [rand(T, k, k) for i in 1:N]
@@ -111,7 +114,9 @@ end
 
         Kσs_1 = esigk(TopOpt.Functions.DisplacementResult(u), PseudoDensities(x))
         for (ci, (k1, k0)) in enumerate(zip(Kσs_1, Kσs_0))
-            @test k1 ≈ k0 * x[ci]
+            # TrussElementKσ now applies the penalty: ρ = density(penalty(x), xmin)
+            ρ_e = TopOpt.Utilities.density(penalty(x[ci]), xmin)
+            @test k1 ≈ k0 * ρ_e
         end
 
         val1, grad1 = NonconvexCore.value_gradient(f, x)
@@ -156,7 +161,7 @@ end
 
     # Test buckling (truss problems use different API)
     # Truss problems don't have get_Kσs, they use TrussElementKσ operator
-    K, G = buckling(problem, solver.globalinfo, solver.elementinfo, x.x; u=solver.u)
+    K, G = buckling(problem, solver.globalinfo, solver.elementinfo, x.x, solver.xmin; u=solver.u)
     @test size(K) == size(G)
     @test size(K, 1) == n_dofs
 end
@@ -268,7 +273,7 @@ end
 
         solver.vars = x
         solver()
-        K, G = buckling(problem, solver.globalinfo, solver.elementinfo, x; u=solver.u)
+        K, G = buckling(problem, solver.globalinfo, solver.elementinfo, x, solver.xmin; u=solver.u)
         @test K + G ≈ buckling_matrix_constr(x)
 
         val1, grad1 = NonconvexCore.value_gradient(f, x)

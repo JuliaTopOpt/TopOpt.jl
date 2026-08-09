@@ -48,7 +48,9 @@ end
             # Check result is a matrix (stress tensor)
             @test isa(result, AbstractMatrix)
             dim = TopOptProblems.getdim(problem)
-            @test size(result) == (dim, dim)
+            # 2D plane strain returns full 3×3 tensor (includes σzz)
+            expected_dim = dim == 2 ? 3 : dim
+            @test size(result) == (expected_dim, expected_dim)
             
             # Check all values are finite
             @test all(isfinite, result)
@@ -73,7 +75,8 @@ end
             # Check result is a matrix (stress tensor)
             @test isa(result, AbstractMatrix)
             dim = TopOptProblems.getdim(problem)
-            @test size(result) == (dim, dim)
+            expected_dim = dim == 2 ? 3 : dim
+            @test size(result) == (expected_dim, expected_dim)
             
             # Check all values are finite
             @test all(isfinite, result)
@@ -111,7 +114,8 @@ end
         
         # For a symmetric stress tensor in linear elasticity
         dim = TopOptProblems.getdim(problem)
-        @test size(result) == (dim, dim)
+        expected_dim = dim == 2 ? 3 : dim
+        @test size(result) == (expected_dim, expected_dim)
         
         # All diagonal elements should be real
         for i in 1:dim
@@ -191,37 +195,67 @@ end
     end
 end
 
-@testset "von_mises function tests" begin
-    @testset "2D stress tensors" begin
-        σ1 = [100.0 0.0; 0.0 0.0]
-        @test TopOpt.Functions.von_mises(σ1) ≈ 100.0 atol = 1e-10
-        @test TopOpt.Functions.von_mises(σ1) ≈ von_mises_reference_2d(100.0, 0.0, 0.0)
+@testset "2D plane strain σzz is nonzero" begin
+    # The StressTensor kernel uses 3D (plane strain) constitutive law.
+    # For a 2D problem, σzz = λ*(εxx + εyy) ≠ 0, so the returned tensor must
+    # be 3×3 with a nonzero σzz entry. The old code returned 2×2 and used
+    # the plane-stress von Mises formula, which incorrectly assumed σzz=0.
+    nels = (2, 2)
+    problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
+    solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(3.0))
+    st = StressTensor(solver)
+    dp = Displacement(solver)
 
-        σ2 = [0.0 0.0; 0.0 100.0]
-        @test TopOpt.Functions.von_mises(σ2) ≈ 100.0 atol = 1e-10
-        @test TopOpt.Functions.von_mises(σ2) ≈ von_mises_reference_2d(0.0, 100.0, 0.0)
+    x = fill(0.5, prod(nels))
+    u = dp(PseudoDensities(x))
 
-        σ3 = [100.0 0.0; 0.0 100.0]
-        @test TopOpt.Functions.von_mises(σ3) ≈ 100.0 atol = 1e-10
-        @test TopOpt.Functions.von_mises(σ3) ≈ von_mises_reference_2d(100.0, 100.0, 0.0)
+    est = st[1]
+    σ = est(u; element_dofs=false)
 
-        σ4 = [0.0 50.0; 50.0 0.0]
+    # Must be 3×3 for a 2D problem
+    @test size(σ) == (3, 3)
+
+    # σzz must be present and generally nonzero for plane strain
+    @test isfinite(σ[3, 3])
+
+    # Off-diagonal 2D shear components should be in the 1,2 position
+    @test isfinite(σ[1, 2])
+
+    # The 2D-only shear components (σyz, σzx) should be zero
+    @test σ[2, 3] ≈ 0.0 atol = 1e-15
+    @test σ[3, 1] ≈ 0.0 atol = 1e-15
+
+    # Compute von Mises and compare against the 3D formula
+    σvm = TopOpt.Functions.von_mises(σ)
+    σvm_ref = von_mises_reference_3d(σ)
+    @test σvm ≈ σvm_ref atol = 1e-10
+
+    # Verify the old plane-stress formula would give a WRONG answer
+    # (i.e., it differs from the correct 3D formula when σzz ≠ 0)
+    if abs(σ[3, 3]) > 1e-8
+        σvm_planestress = sqrt(σ[1, 1]^2 - σ[1, 1] * σ[2, 2] + σ[2, 2]^2 + 3 * σ[1, 2]^2)
+        @test σvm != σvm_planestress
+    end
+end
+        # 2D problems now return 3×3 tensors with the plane-strain σzz included.
+        # These tests use full 3×3 tensors and compare against the 3D reference.
+        σ1 = [100.0 0.0 0.0; 0.0 0.0 0.0; 0.0 0.0 0.0]
+        @test TopOpt.Functions.von_mises(σ1) ≈ von_mises_reference_3d(σ1)
+
+        σ2 = [0.0 0.0 0.0; 0.0 100.0 0.0; 0.0 0.0 0.0]
+        @test TopOpt.Functions.von_mises(σ2) ≈ von_mises_reference_3d(σ2)
+
+        σ3 = [100.0 0.0 0.0; 0.0 100.0 0.0; 0.0 0.0 50.0]
+        @test TopOpt.Functions.von_mises(σ3) ≈ von_mises_reference_3d(σ3)
+
+        σ4 = [0.0 50.0 0.0; 50.0 0.0 0.0; 0.0 0.0 0.0]
         @test TopOpt.Functions.von_mises(σ4) ≈ sqrt(3) * 50.0 atol = 1e-10
-        @test TopOpt.Functions.von_mises(σ4) ≈ von_mises_reference_2d(0.0, 0.0, 50.0)
 
-        σ5 = [100.0 50.0; 50.0 50.0]
-        expected = sqrt(100^2 - 100 * 50 + 50^2 + 3 * 50^2)
-        @test TopOpt.Functions.von_mises(σ5) ≈ expected atol = 1e-10
-        @test TopOpt.Functions.von_mises(σ5) ≈ von_mises_reference_2d(100.0, 50.0, 50.0)
+        σ5 = [100.0 50.0 0.0; 50.0 50.0 0.0; 0.0 0.0 0.0]
+        @test TopOpt.Functions.von_mises(σ5) ≈ von_mises_reference_3d(σ5)
 
-        σ6 = [0.0 0.0; 0.0 0.0]
+        σ6 = [0.0 0.0 0.0; 0.0 0.0 0.0; 0.0 0.0 0.0]
         @test TopOpt.Functions.von_mises(σ6) ≈ 0.0 atol = 1e-10
-
-        σ7 = [-50.0 30.0; 30.0 -30.0]
-        @test TopOpt.Functions.von_mises(σ7) ≈ von_mises_reference_2d(-50.0, -30.0, 30.0)
-
-        σ8 = [100 0; 0 50]
-        @test TopOpt.Functions.von_mises(σ8) ≈ sqrt(100^2 - 100 * 50 + 50^2) atol = 1e-10
     end
 
     @testset "3D stress tensors" begin
@@ -251,26 +285,30 @@ end
     end
 
     @testset "Error handling" begin
+        # 2×2 and 4×4 are not supported; only 3×3 (plane strain 2D or full 3D)
         σ1 = [100.0 0.0 0.0 0.0; 0.0 100.0 0.0 0.0; 0.0 0.0 100.0 0.0; 0.0 0.0 0.0 100.0]
         @test_throws ArgumentError TopOpt.Functions.von_mises(σ1)
 
-        σ2 = [100.0]
-        @test_throws MethodError TopOpt.Functions.von_mises(σ2)
+        σ2 = [100.0 0.0; 0.0 0.0]
+        @test_throws ArgumentError TopOpt.Functions.von_mises(σ2)
+
+        σ3 = [100.0]
+        @test_throws MethodError TopOpt.Functions.von_mises(σ3)
     end
 
     @testset "Output type" begin
-        σ1 = Float32[100.0 0.0; 0.0 0.0]
+        σ1 = Float32[100.0 0.0 0.0; 0.0 0.0 0.0; 0.0 0.0 0.0]
         result1 = TopOpt.Functions.von_mises(σ1)
         @test typeof(result1) == Float32
 
-        σ2 = Float64[100.0 0.0; 0.0 0.0]
+        σ2 = Float64[100.0 0.0 0.0; 0.0 0.0 0.0; 0.0 0.0 0.0]
         result2 = TopOpt.Functions.von_mises(σ2)
         @test typeof(result2) == Float64
 
-        σ3 = [1e-10 0.0; 0.0 0.0]
+        σ3 = [1e-10 0.0 0.0; 0.0 0.0 0.0; 0.0 0.0 0.0]
         @test TopOpt.Functions.von_mises(σ3) ≈ 1e-10 atol = 1e-20
 
-        σ4 = [1e10 0.0; 0.0 0.0]
+        σ4 = [1e10 0.0 0.0; 0.0 0.0 0.0; 0.0 0.0 0.0]
         @test TopOpt.Functions.von_mises(σ4) ≈ 1e10 atol = 1e-2
     end
 
@@ -278,9 +316,6 @@ end
         σ_base = [100.0 50.0 30.0; 50.0 80.0 20.0; 30.0 20.0 60.0]
         σ_transpose = σ_base'
         @test TopOpt.Functions.von_mises(σ_base) ≈ TopOpt.Functions.von_mises(σ_transpose)
-
-        σ_2d = [100.0 50.0; 50.0 80.0]
-        @test TopOpt.Functions.von_mises(σ_2d) ≈ TopOpt.Functions.von_mises(σ_2d')
     end
 end
 
