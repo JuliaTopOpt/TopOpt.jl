@@ -1,3 +1,11 @@
+"""
+    StressTensor(solver::AbstractFEASolver)
+
+Element-wise microscopic stress tensor. Computes the symmetric stress tensor
+for each element from the nodal displacements using the base Young's modulus.
+Call as `σ = σf(u)` where `u` is the displacement vector (e.g. from
+`Displacement`). Returns a vector of symmetric matrices, one per element.
+"""
 struct StressTensor{T,Tp,Ts,Tc1,Tc2} <: AbstractFunction{T}
     problem::Tp
     solver::Ts
@@ -35,6 +43,12 @@ function (f::StressTensor)(dofs::DisplacementResult)
     end
 end
 
+"""
+    ElementStressTensor(solver::AbstractFEASolver)
+
+Element stress tensor operator that also stores per-element metadata for use
+in stress-constrained optimization and ML applications.
+"""
 struct ElementStressTensor{T,Ts<:StressTensor{T},Tc1,Tc2} <: AbstractFunction{T}
     stress_tensor::Ts
     cell::Tc1
@@ -104,18 +118,35 @@ struct ElementStressTensorKernel{T,Tc} <: AbstractFunction{T}
     dim::Int
 end
 function (f::ElementStressTensorKernel)(u::DisplacementResult)
-    @unpack E, ν, q_point, a, cellvalues = f
+    @unpack E, ν, q_point, a, cellvalues, dim = f
     ∇ϕ = Vector(shape_gradient(cellvalues, q_point, a))
     ϵ = (u.u .* ∇ϕ' .+ ∇ϕ .* u.u') ./ 2
-    c1 = E * ν / ((1 + ν) * (1 - 2 * ν)) * sum(diag(ϵ))
-    c2 = E / (1 + ν)
-    return c1 * I + c2 * ϵ
+    # 3D isotropic (plane strain) constitutive law, consistent with the
+    # stiffness matrix assembly:
+    #   σ_ij = λ * ε_kk * δ_ij + 2μ * ε_ij
+    #   λ = E*ν/((1+ν)*(1-2ν)),  2μ = E/(1+ν)
+    λ = E * ν / ((1 + ν) * (1 - 2 * ν))
+    two_mu = E / (1 + ν)
+    if dim == 2
+        # Plane strain: σzz = λ*(εxx + εyy) ≠ 0, so we must return the full
+        # 3×3 tensor for the von Mises formula to be correct.
+        tr_ϵ = ϵ[1, 1] + ϵ[2, 2]
+        σ = zeros(eltype(u.u), 3, 3)
+        σ[1, 1] = λ * tr_ϵ + two_mu * ϵ[1, 1]
+        σ[2, 2] = λ * tr_ϵ + two_mu * ϵ[2, 2]
+        σ[3, 3] = λ * tr_ϵ
+        σ[1, 2] = σ[2, 1] = two_mu * ϵ[1, 2]
+        return σ
+    else
+        return λ * sum(diag(ϵ)) * I + two_mu * ϵ
+    end
 end
 function ChainRulesCore.rrule(f::ElementStressTensorKernel, u::DisplacementResult)
     v, (∇,) = AD.value_and_jacobian(
         AD.ForwardDiffBackend(), u -> vec(f(DisplacementResult(u))), u.u
     )
-    return reshape(v, f.dim, f.dim), Δ -> (NoTangent(), Tangent{typeof(u)}(; u=∇' * vec(Δ)))
+    out_dim = f.dim == 2 ? 3 : f.dim
+    return reshape(v, out_dim, out_dim), Δ -> (NoTangent(), Tangent{typeof(u)}(; u=∇' * vec(Δ)))
 end
 
 function tensor_kernel(f::StressTensor, quad, basef)
@@ -133,18 +164,26 @@ function tensor_kernel(f::ElementStressTensor, quad, basef)
 end
 
 function von_mises(σ::AbstractMatrix)
-    if size(σ, 1) == 2
-        t1 = σ[1, 1]^2 - σ[1, 1] * σ[2, 2] + σ[2, 2]^2
-        t2 = 3 * σ[1, 2]^2
-    elseif size(σ, 1) == 3
+    if size(σ, 1) == 3
         t1 = ((σ[1, 1] - σ[2, 2])^2 + (σ[2, 2] - σ[3, 3])^2 + (σ[3, 3] - σ[1, 1])^2) / 2
         t2 = 3 * (σ[1, 2]^2 + σ[2, 3]^2 + σ[3, 1]^2)
     else
-        throw(ArgumentError("Unsupported stress tensor type."))
+        throw(ArgumentError("Unsupported stress tensor type. Expected 3×3 (plane strain 2D or full 3D)."))
     end
     return sqrt(t1 + t2)
 end
 
+"""
+    von_mises_stress_function(solver::AbstractFEASolver)
+
+Return a function that computes the element-wise microscopic von Mises stress
+from the design. Applies the penalty and interpolation, solves the FEA system,
+and computes the von Mises stress for each element using the base Young's
+modulus.
+
+Call as `σv = σvf(PseudoDensities(x))`. Returns a vector of von Mises stress
+values, one per element.
+"""
 function von_mises_stress_function(solver::AbstractFEASolver)
     st = StressTensor(solver)
     dp = Displacement(solver)

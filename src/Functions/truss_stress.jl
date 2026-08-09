@@ -1,3 +1,11 @@
+"""
+    TrussStress(problem, solver)
+
+Element-wise macroscopic axial stress for truss problems. Computes the axial
+stress in each truss member from nodal displacements and the penalized design.
+Call as `σ = σf(u, ρ)` where `u` is the displacement vector and `ρ` is the
+penalized/interpolated design.
+"""
 mutable struct TrussStress{
     T,Ts<:AbstractVector{T},Tu<:Displacement,Tt<:AbstractVector{<:AbstractMatrix{T}}
 } <: AbstractFunction{T}
@@ -65,34 +73,64 @@ function (ts::TrussStress{T})(x::PseudoDensities) where {T}
     return copy(σ)
 end
 
-# TODO complete
-# """
-# rrule for autodiff.
+"""
+    rrule for TrussStress
 
-# du/dxe = -K^-1 * dK/dxe * u
-# d(u)/d(x_e) = - K^-1 * d(K)/d(x_e) * u
-#             = - K^-1 * (Σ_ei d(ρ_ei)/d(x_e) * K_ei) * u
-#             = - K^-1 * [d(ρ_e)/d(x_e) * K_e * u]
-# d(u)/d(x_e)' * Δ = -d(ρ_e)/d(x_e) * u' * K_e * (K^-1 * Δ)
-# """
-# function ChainRulesCore.rrule(dp::TrussStress, x)
-#     @unpack dudx_tmp, solver, global_dofs = dp
-#     @unpack penalty, problem, u, xmin = solver
-#     dh = getdh(problem)
-#     @unpack Kes = solver.elementinfo
-#     # Forward-pass
-#     # Cholesky factorisation
-#     u = dp(x)
-#     return u, Δ -> begin # v
-#         solver.rhs .= Δ
-#         solver(reuse_fact = true, assemble_f = false)
-#         dudx_tmp .= 0
-#         for e in 1:length(x)
-#             _, dρe = get_ρ_dρ(x[e], penalty, xmin)
-#             celldofs!(global_dofs, dh, e)
-#             Keu = bcmatrix(Kes[e]) * u[global_dofs]
-#             dudx_tmp[e] = -dρe * dot(Keu, solver.lhs[global_dofs])
-#         end
-#         return nothing, dudx_tmp # J1' * v, J2' * v
-#     end
-# end
+Adjoint-based differentiation. The stress σ_e = -(R_e · Ke_e · u_e)[1] / A_e
+depends on x through both the penalized stiffness Ke_e = ρ(x)_e · Ke_0_e and the
+displacement u = K⁻¹f. The pullback solves one adjoint system per evaluation.
+"""
+function ChainRulesCore.rrule(ts::TrussStress{T}, x::PseudoDensities) where {T}
+    @unpack σ, transf_matrices, u_fn = ts
+    @unpack global_dofs, solver = u_fn
+    @unpack penalty, problem, xmin = solver
+    dh = getdh(problem)
+    As = getA(problem)
+    @unpack Kes = solver.elementinfo
+
+    # Forward pass
+    σ_val = ts(x)
+    u = u_fn(x)  # DisplacementResult — factorization is now cached in solver
+
+    function pullback_fn(Δ)
+        Δx = zeros(T, length(x.x))
+
+        # Build the adjoint RHS from dσ_e/du for all elements.
+        # σ_e = -(R_e · Ke_e · u_e)[1] / A_e
+        # dσ_e/du[global_dofs] = -(R_e · Ke_e)[1, :] / A_e
+        adj_rhs = zeros(T, length(u.u))
+        for e in 1:length(x.x)
+            celldofs!(global_dofs, dh, e)
+            Ke = bcmatrix(Kes[e])
+            # (R_e · Ke_e) row 1, dotted with u_e gives σ; the gradient w.r.t. u is (R_e · Ke_e)[1, :]'
+            grad_u = (transf_matrices[e] * Ke)[1, :] / As[e]
+            adj_rhs[global_dofs] .-= Δ[e] .* grad_u
+        end
+
+        # Solve the adjoint system K * λ = adj_rhs (reuse factorization)
+        solver.rhs .= adj_rhs
+        solver(; reuse_fact=true, assemble_f=false)
+        λ = solver.lhs
+
+        # Gradient assembly:
+        # dσ_e/dx_j has two parts:
+        #   1. Direct (only for e=j): -(R_e · Ke_0_e · u_e)[1] / A_e * dρ/dx
+        #   2. Through u: Σ_e Δ_e * (dσ_e/du · du/dx_j)
+        #      du/dx_j = -K⁻¹ · dρ/dx · Ke_0_j · u
+        #      => adjoint term = -dρ/dx * dot(Ke_0_j · u_j, λ_j)
+        for j in 1:length(x.x)
+            _, dρ_dx = get_ρ_dρ(x.x[j], penalty, xmin)
+            celldofs!(global_dofs, dh, j)
+            Ke_0_u = rawmatrix(Kes[j]) * u.u[global_dofs]
+            # Direct term (e=j only)
+            direct = -Δ[j] * (transf_matrices[j] * Ke_0_u)[1] / As[j] * dρ_dx
+            # Adjoint term: λ' · du/dx_j = -dρ/dx · λ'_j · Ke_0_j · u_j
+            adjoint = -dρ_dx * dot(Ke_0_u, λ[global_dofs])
+            Δx[j] = direct + adjoint
+        end
+
+        return NoTangent(), Tangent{typeof(x)}(; x=Δx)
+    end
+
+    return σ_val, pullback_fn
+end

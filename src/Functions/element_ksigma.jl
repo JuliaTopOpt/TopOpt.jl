@@ -1,6 +1,17 @@
 using TopOpt.TopOptProblems: getE
 using TopOpt.TrussTopOptProblems: truss_reinit!
+using ..TopOpt: PENALTY_BEFORE_INTERPOLATION
+using ..Utilities: density, get_ρ_dρ, getpenalty
 
+"""
+    TrussElementKσ(problem, solver)
+
+Element-wise stress/geometric stiffness matrices for truss domains. Used in
+buckling-constrained truss optimization.
+
+Call as `Kσs = Kσsf(u, ρ)` where `u` is the displacement vector and `ρ` is the
+penalized/interpolated design. Returns a vector of symmetric matrices.
+"""
 mutable struct TrussElementKσ{
     T,
     Tp<:TrussProblem,
@@ -9,6 +20,7 @@ mutable struct TrussElementKσ{
     Td<:AbstractVector{<:AbstractMatrix{T}},
     TL<:AbstractVector{T},
     Tg<:AbstractVector{<:Integer},
+    Tpen<:AbstractPenalty{T},
 } <: AbstractFunction{T}
     problem::Tp
     Kσes::TK
@@ -16,6 +28,8 @@ mutable struct TrussElementKσ{
     δmat_s::Td
     L_s::TL
     global_dofs::Tg
+    penalty::Tpen
+    xmin::T
 end
 
 function Base.show(io::IO, ::MIME{Symbol("text/plain")}, ::TrussElementKσ)
@@ -65,7 +79,9 @@ function TrussElementKσ(
 
         push!(Kσes, zeros(T, ndof_pc, ndof_pc))
     end
-    return TrussElementKσ(problem, Kσes, EALγ_s, δmat_s, L_s, global_dofs)
+    penalty = getpenalty(solver)
+    xmin = solver.xmin
+    return TrussElementKσ(problem, Kσes, EALγ_s, δmat_s, L_s, global_dofs, penalty, xmin)
 end
 
 """
@@ -92,13 +108,15 @@ function (eksig::TrussElementKσ)(u_e::AbstractVector, x_e::Number, ci::Integer)
 end
 
 function (eksig::TrussElementKσ)(u::DisplacementResult, x::PseudoDensities)
-    @unpack problem, Kσes, global_dofs = eksig
+    @unpack problem, Kσes, global_dofs, penalty, xmin = eksig
     dh = problem.ch.dh
     @assert getncells(dh.grid) == length(x.x)
     @assert ndofs(dh) == length(u.u)
     for ci in 1:length(x.x)
         celldofs!(global_dofs, dh, ci)
-        Kσes[ci] = eksig(u.u[global_dofs], x.x[ci], ci)
+        # Apply the same penalty/interpolation as ElementK and the stiffness assembly
+        ρ_e, _ = get_ρ_dρ(x.x[ci], penalty, xmin)
+        Kσes[ci] = eksig(u.u[global_dofs], ρ_e, ci)
     end
     return copy(Kσes)
 end
@@ -106,7 +124,7 @@ end
 function ChainRulesCore.rrule(
     eksig::TrussElementKσ{T}, u::DisplacementResult, x::PseudoDensities
 ) where {T}
-    @unpack problem, Kσes, global_dofs = eksig
+    @unpack problem, Kσes, global_dofs, penalty, xmin = eksig
     dh = problem.ch.dh
     Kσes = eksig(u, x)
     function pullback_fn(Δ)
@@ -114,15 +132,18 @@ function ChainRulesCore.rrule(
         Δx = zeros(T, size(x.x))
         for ci in 1:length(x.x)
             celldofs!(global_dofs, dh, ci)
-            function vec_eksig_fn(ux_vec)
-                u_e = ux_vec[1:(end - 1)]
-                x_e = ux_vec[end]
-                return vec(eksig(u_e, x_e, ci))
+            # Jacobian with respect to (u_e, ρ_e)
+            function vec_eksig_fn(uρ_vec)
+                u_e = uρ_vec[1:(end - 1)]
+                ρ_e = uρ_vec[end]
+                return vec(eksig(u_e, ρ_e, ci))
             end
-            jac_cell = ForwardDiff.jacobian(vec_eksig_fn, [u.u[global_dofs]; x.x[ci]])
+            ρ_e, dρ_dx = get_ρ_dρ(x.x[ci], penalty, xmin)
+            jac_cell = ForwardDiff.jacobian(vec_eksig_fn, [u.u[global_dofs]; ρ_e])
             jtv = jac_cell' * vec(Δ[ci])
             Δu[global_dofs] += jtv[1:(end - 1)]
-            Δx[ci] = jtv[end]
+            # Chain rule: d(Kσ)/d(x) = d(Kσ)/d(ρ) * d(ρ)/d(x)
+            Δx[ci] = jtv[end] * dρ_dx
         end
         return Tangent{typeof(eksig)}(;
             problem=NoTangent(),
@@ -131,6 +152,8 @@ function ChainRulesCore.rrule(
             δmat_s=NoTangent(),
             L_s=NoTangent(),
             global_dofs=NoTangent(),
+            penalty=NoTangent(),
+            xmin=NoTangent(),
         ),
         Tangent{typeof(u)}(; u=Δu),
         Tangent{typeof(x)}(; x=Δx)
