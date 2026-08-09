@@ -98,7 +98,7 @@ jobs:
           julia --project=docs -e '
             using Pkg
             Pkg.instantiate()
-            Pkg.develop(PackageSpec(paths=pwd()))'
+            Pkg.develop(PackageSpec(path=pwd()))'
       - name: Generate example shard
         env:
           DOCS_EXAMPLE_INDEX: ${{ matrix.shard }}
@@ -129,7 +129,7 @@ jobs:
           julia --project=docs -e '
             using Pkg
             Pkg.instantiate()
-            Pkg.develop(PackageSpec(paths=pwd()))'
+            Pkg.develop(PackageSpec(path=pwd()))'
       - name: Download example shards
         uses: actions/download-artifact@v4
         with:
