@@ -118,7 +118,7 @@ end
     
     # Test getcloaddict - should return empty dict for heat transfer
     cld = getcloaddict(problem)
-    @test cld isa Dict{String,Vector{Float64}}
+    @test cld isa Dict{Int,Vector{Float64}}
     @test isempty(cld)
     println("✓ getcloaddict(::HeatConductionProblem) returns empty Dict")
     
