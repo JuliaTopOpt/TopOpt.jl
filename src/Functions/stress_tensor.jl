@@ -5,6 +5,12 @@ Element-wise microscopic stress tensor. Computes the symmetric stress tensor
 for each element from the nodal displacements using the base Young's modulus.
 Call as `σ = σf(u)` where `u` is the displacement vector (e.g. from
 `Displacement`). Returns a vector of symmetric matrices, one per element.
+
+For 2D problems the stress is computed with the plane-strain constitutive
+law (σzz = λ·(εxx + εyy) ≠ 0), consistent with the stiffness matrix assembly.
+The returned tensor is 3×3 for 2D problems and 3×3 for 3D problems. See
+[Bathe1996](@cite) §4.2 for the plane-strain formulation and
+[DuysinxBendsøe1998](@cite) for stress-constrained topology optimization.
 """
 struct StressTensor{T,Tp,Ts,Tc1,Tc2} <: AbstractFunction{T}
     problem::Tp
@@ -163,6 +169,24 @@ function tensor_kernel(f::ElementStressTensor, quad, basef)
     return tensor_kernel(f.stress_tensor, quad, basef)
 end
 
+"""
+    von_mises(σ::AbstractMatrix)
+
+Compute the von Mises equivalent stress from a 3×3 symmetric stress tensor.
+For 2D problems, the stress tensor from `StressTensor` / `ElementStressTensorKernel`
+includes the plane-strain out-of-plane component `σzz = λ·(εxx + εyy)`, so
+the full 3D von Mises formula is used:
+
+```
+σ_vm = sqrt(½[(σxx-σyy)² + (σyy-σzz)² + (σzz-σxx)²] + 3(σxy² + σyz² + σzx²))
+```
+
+This is consistent with the plane-strain constitutive law used in the
+stiffness matrix assembly. Using the plane-stress von Mises formula (which
+assumes `σzz = 0`) with a plane-strain stress tensor would overestimate the
+von Mises stress by up to ~33% for typical Poisson's ratios. See
+[Bathe1996](@cite) §4.2 and [DuysinxBendsøe1998](@cite).
+"""
 function von_mises(σ::AbstractMatrix)
     if size(σ, 1) == 3
         t1 = ((σ[1, 1] - σ[2, 2])^2 + (σ[2, 2] - σ[3, 3])^2 + (σ[3, 3] - σ[1, 1])^2) / 2

@@ -5,6 +5,12 @@ Element-wise macroscopic axial stress for truss problems. Computes the axial
 stress in each truss member from nodal displacements and the penalized design.
 Call as `σ = σf(u, ρ)` where `u` is the displacement vector and `ρ` is the
 penalized/interpolated design.
+
+The axial stress is computed as `σ_e = -(R_e · Ke_e · u_e)[1] / A_e`, where
+`R_e` is the local-to-global transformation matrix, `Ke_e` is the element
+stiffness matrix, and `A_e` is the cross-sectional area. Compressive stress
+is negative, tensile stress is positive. See [Gavin2014](@cite) for the
+truss finite element formulation.
 """
 mutable struct TrussStress{
     T,Ts<:AbstractVector{T},Tu<:Displacement,Tt<:AbstractVector{<:AbstractMatrix{T}}

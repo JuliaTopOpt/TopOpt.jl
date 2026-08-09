@@ -12,6 +12,12 @@ problem `sp`. Each element's Kσ is scaled by the penalized density
 `ρ = penalty(density(vars[e], xmin))` (or `density(penalty(vars[e]), xmin)`
 depending on `PENALTY_BEFORE_INTERPOLATION`), consistent with the stiffness
 assembly. Used by `buckling`.
+
+The stress is computed using the 3D isotropic constitutive law (plane
+strain for 2D problems), with Lamé constants
+`λ = Eν/((1+ν)(1-2ν))` and `2μ = E/(1+ν)`, matching the stiffness matrix
+assembly. See [Bathe1996](@cite) §4.2 for the plane-strain formulation
+and [CookMalkusPlesha1989](@cite) §13 for the geometric stiffness matrix.
 """
 function get_Kσs(
     sp::StiffnessTopOptProblem{xdim,TT},
@@ -89,6 +95,9 @@ optimization `problem` from the global FEA info `ginfo` and element FEA info
 `einfo`. Returns `(K, Kσ)`, the elastic and geometric stiffness matrices. Each
 element's geometric stiffness is scaled by the penalized density `ρ(vars[e])`,
 consistent with the stiffness assembly in `assemble!`.
+
+See [Bathe1996](@cite) §9.3 for linearized buckling analysis and
+[CookMalkusPlesha1989](@cite) §13 for the geometric stiffness assembly.
 """
 function buckling(
     problem::StiffnessTopOptProblem{xdim,T},

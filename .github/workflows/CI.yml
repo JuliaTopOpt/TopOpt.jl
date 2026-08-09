@@ -95,15 +95,11 @@ jobs:
         with:
           version: ${{ matrix.version }}
       - uses: julia-actions/cache@v2
-        env:
-          cache-name: cache-docs
         with:
-          path: ~/.julia/artifacts
-          key: ${{ runner.os }}-docs-${{ env.cache-name }}-${{ hashFiles('docs/Project.toml', 'Project.toml') }}
-          restore-keys: |
-            ${{ runner.os }}-docs-${{ env.cache-name }}-
-            ${{ runner.os }}-docs-
-            ${{ runner.os }}-
+          cache-name: docs
+          cache-artifacts: true
+          cache-packages: true
+          cache-compiled: true
       - name: Install dependencies
         run: |
           julia --project=docs -e '
@@ -137,15 +133,11 @@ jobs:
         with:
           version: ${{ matrix.version }}
       - uses: julia-actions/cache@v2
-        env:
-          cache-name: cache-docs
         with:
-          path: ~/.julia/artifacts
-          key: ${{ runner.os }}-docs-${{ env.cache-name }}-${{ hashFiles('docs/Project.toml', 'Project.toml') }}
-          restore-keys: |
-            ${{ runner.os }}-docs-${{ env.cache-name }}-
-            ${{ runner.os }}-docs-
-            ${{ runner.os }}-
+          cache-name: docs
+          cache-artifacts: true
+          cache-packages: true
+          cache-compiled: true
       - name: Install dependencies
         run: |
           julia --project=docs -e '

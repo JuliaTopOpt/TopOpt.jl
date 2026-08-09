@@ -87,18 +87,17 @@ end
 """
     (eksig::TrussElementKσ)(u_e::AbstractVector, x_e::Number, ci::Integer)
 
-Compute the stress (geometric) stiffness matrix for **truss element* index `ci` (axial bar element, no bending or torsion),
-with nodal deformation `u_e` and density `x`.
-    
-See Matrix formulation defined in eq (3) and (4) in https://people.duke.edu/~hpgavin/cee421/truss-finite-def.pdf.
-This matrix formulation is equivalent to the one used in 
+Compute the stress (geometric) stiffness matrix for **truss element** index
+`ci` (axial bar element, no bending or torsion), with nodal deformation `u_e`
+and penalized density `x_e`.
 
-    M. Kočvara, “On the modelling and solving of the truss design problem with global stability constraints,” Struct Multidisc Optim, vol. 23, no. 3, pp. 189–203, Apr. 2002, doi: 10/br35mf.
+The matrix formulation is defined in eqs. (3) and (4) of
+[Gavin2014](@cite), and is equivalent to the one used in [Kocvara2002](@cite).
 
-Note:
-Bar axial force is computed using first-order approx. 
-A better approx would be: EA/L * (u3-u1 + 1/(2*L0)*(u4-u2)^2) = EA/L * (γ'*u + 1/2*(δ'*u)^2)
-see: https://people.duke.edu/~hpgavin/cee421/truss-finite-def.pdf
+Note: bar axial force is computed using a first-order approximation.
+A better approximation would be:
+`EA/L * (u3-u1 + 1/(2*L0)*(u4-u2)^2) = EA/L * (γ'*u + 1/2*(δ'*u)^2)`;
+see [Gavin2014](@cite).
 """
 function (eksig::TrussElementKσ)(u_e::AbstractVector, x_e::Number, ci::Integer)
     @unpack EALγ_s, δmat_s, L_s = eksig
