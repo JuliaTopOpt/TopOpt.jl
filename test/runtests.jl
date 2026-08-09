@@ -171,12 +171,15 @@ if ACTUAL_GROUP in ("All", "Examples_6")
     @safetestset "Global stress example" begin
         @Main.run_example "global_stress.jl"
     end
+end
+
+if ACTUAL_GROUP in ("All", "Examples_7")
     @safetestset "Local stress example" begin
         @Main.run_example "local_stress.jl"
     end
 end
 
-if ACTUAL_GROUP in ("All", "Examples_7")
+if ACTUAL_GROUP in ("All", "Examples_8")
     @safetestset "Heat sink example" begin
         @Main.run_example "heat_sink.jl"
     end
@@ -185,7 +188,7 @@ if ACTUAL_GROUP in ("All", "Examples_7")
     end
 end
 
-if ACTUAL_GROUP in ("All", "Examples_8")
+if ACTUAL_GROUP in ("All", "Examples_9")
     @safetestset "Mixed-integer truss example" begin
         @Main.run_example "mixed_integer_truss.jl"
     end
@@ -194,7 +197,7 @@ if ACTUAL_GROUP in ("All", "Examples_8")
     end
 end
 
-if ACTUAL_GROUP in ("All", "Examples_9")
+if ACTUAL_GROUP in ("All", "Examples_10")
     @safetestset "Neural network (Adam) example" begin
         @Main.run_example "neural2.jl"
     end

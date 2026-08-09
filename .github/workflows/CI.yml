@@ -31,6 +31,7 @@ jobs:
           - Examples_7
           - Examples_8
           - Examples_9
+          - Examples_10
           - WCSMO14_1
           - WCSMO14_2
           - Core_Tests_Opposite_Preference
