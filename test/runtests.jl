@@ -99,9 +99,24 @@ end
 
 const LITERATE_DIR = joinpath(@__DIR__, "../docs/src/literate")
 
-# Helper to run a literate example in a temp dir
+# Output directory for generated Literate docs. When running in CI, this is
+# uploaded as an artifact and downloaded by the docs build job, avoiding the
+# need for a separate docs-examples generation stage.
+const DOCS_OUTPUT_DIR = get(ENV, "DOCS_OUTPUT_DIR",
+    joinpath(@__DIR__, "..", "docs", "src", "examples"))
+
+# Include generate.jl for its generate_example helper (the top-level shard
+# generation is guarded and won't run when included).
+include(joinpath(@__DIR__, "..", "docs", "generate.jl"))
+using .Main: generate_example, copy_static_images
+
+# Helper to run a literate example in a temp dir AND generate its Literate
+# markdown/notebook output for the docs build.
 macro run_example(name)
     return esc(quote
+        # Generate Literate output (markdown + notebook + script)
+        generate_example($name, Main.LITERATE_DIR, Main.DOCS_OUTPUT_DIR)
+        # Run the example as a test in an isolated temp dir
         mktempdir() do dir
             cd(dir) do
                 include(joinpath(Main.LITERATE_DIR, $name))
