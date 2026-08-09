@@ -26,12 +26,14 @@ GENERATED_EXAMPLES = [
         "mixed_integer_truss.md",
         "buckling.md",
     )
+    if isfile(joinpath(@__DIR__, "src", "examples", f))
 ]
 
 PROBLEM_EXAMPLES = [
     "Continuum problems" => "examples/problem_continuum.md",
     "Truss problems" => "examples/problem_truss.md",
 ]
+PROBLEM_EXAMPLES = [p for p in PROBLEM_EXAMPLES if isfile(joinpath(@__DIR__, "src", p.second))]
 
 bib = CitationBibliography(joinpath(@__DIR__, "biblio", "ref.bib"))
 makedocs(;

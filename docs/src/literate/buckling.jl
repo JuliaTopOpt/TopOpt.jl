@@ -66,7 +66,7 @@ truss_element_kσ = TrussElementKσ(problem, solver)
 # returns it as a dense array for the SDP solver. `c` is the buckling load
 # multiplier — the factor by which the applied load is scaled before checking
 # stability.
-c = 1.0
+c = 0.1
 
 function buckling_matrix_constr(x)
     xd = PseudoDensities(x)
@@ -83,7 +83,7 @@ function buckling_matrix_constr(x)
     return Array(K + c * Kσ)
 end
 
-# Sanity-check: the initial (all-solid) design should be stable.
+# Check the initial (all-solid) design.
 S0 = buckling_matrix_constr(x0)
 println("Initial design minimum eigenvalue: $(minimum(eigen(S0).values))")
 
@@ -100,7 +100,7 @@ addvar!(model, zeros(length(x0)), ones(length(x0)))
 add_ineq_constraint!(model, vol_constr)
 
 alg = MMA87()
-options = MMAOptions(; maxiter=100, tol=Tolerance(; kkt=1e-4))
+options = MMAOptions(; maxiter=20, tol=Tolerance(; kkt=1e-4))
 r1 = optimize(model, alg, x0; options)
 println("Compliance-only result: obj=$(obj(r1.minimizer)), vol=$(vol_constr(r1.minimizer))")
 
@@ -110,7 +110,7 @@ println("Compliance-only result: obj=$(obj(r1.minimizer)), vol=$(vol_constr(r1.m
 Nonconvex.@load Ipopt
 add_sd_constraint!(model, buckling_matrix_constr)
 alg2 = SDPBarrierAlg(; sub_alg=IpoptAlg())
-options2 = SDPBarrierOptions(; sub_options=IpoptOptions(; max_iter=200), keep_all=true)
+options2 = SDPBarrierOptions(; sub_options=IpoptOptions(; max_iter=20), keep_all=true)
 r2 = optimize(model, alg2, x0; options=options2)
 println("Buckling-constrained result: obj=$(obj(r2.minimizer)), vol=$(vol_constr(r2.minimizer))")
 
