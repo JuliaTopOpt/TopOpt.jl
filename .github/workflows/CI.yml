@@ -8,33 +8,8 @@ on:
       - master
     tags: '*'
 jobs:
-  precompile:
-    name: Precompile dependencies
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-      - uses: julia-actions/setup-julia@v2
-        with:
-          version: '1'
-          arch: x64
-      - uses: julia-actions/cache@v2
-        with:
-          cache-name: test
-          cache-artifacts: true
-          cache-packages: true
-          cache-compiled: true
-      - name: Instantiate and precompile test environment
-        run: |
-          julia --project=test -e '
-            using Pkg
-            Pkg.develop(PackageSpec(path="."))
-            Pkg.instantiate()
-            Pkg.precompile()
-          '
-          julia --project=test -e 'using TopOpt'
   test:
     name: ${{matrix.group}} - Julia ${{ matrix.version }} - ${{ matrix.os }}
-    needs: precompile
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -71,14 +46,13 @@ jobs:
           cache-artifacts: true
           cache-packages: true
           cache-compiled: true
+      - name: Instantiate test environment
+        run: julia --project=test -e 'using Pkg; Pkg.develop(PackageSpec(path=".")); Pkg.instantiate(); Pkg.precompile()'
       - name: Set preference for opposite preference jobs
         if: contains(matrix.group, 'Opposite_Preference')
         run: |
-          julia --project=. -e '
-            using Pkg
-            Pkg.instantiate()
+          julia --project=test -e '
             using Preferences
-            # Set preference for TopOpt (UUID, name tuple format)
             Preferences.set_preferences!(
               (Base.UUID("a6e80f52-281a-4a51-a3c5-60a2513022d0"), "TopOpt"),
               "penalty_before_interpolation" => "false";
@@ -86,11 +60,11 @@ jobs:
             )
             println("Set penalty_before_interpolation to false")
           '
-      - uses: julia-actions/julia-buildpkg@v1
-      - uses: julia-actions/julia-runtest@v1
+      - name: Run tests
         env:
           GROUP: ${{ matrix.group }}
           DOCS_OUTPUT_DIR: ${{ contains(matrix.group, 'Examples') && format('{0}/docs-generated', runner.temp) || '' }}
+        run: julia --project=test --color=yes --check-bounds=yes --depwarn=yes -e 'using Pkg; Pkg.test(coverage=true)'
       - name: Upload generated docs examples
         if: contains(matrix.group, 'Examples')
         uses: actions/upload-artifact@v4
