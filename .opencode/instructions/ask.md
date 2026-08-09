@@ -1,7 +1,7 @@
-# Ask mode rules
+# Explanation guidance
 
-These rules apply when providing explanations, documentation, or answers to
-technical questions about this repository.
+Guidance for providing explanations, documentation, or answers to technical
+questions about this repository.
 
 ## Stance
 
@@ -20,9 +20,9 @@ technical questions about this repository.
   full architecture reference) and the root `AGENTS.md` (project context and
   conventions).
 - For Julia-specific questions (indexing, `@inbounds`, style), consult
-  `.roo/rules-code/AGENTS.md`.
-- For debugging questions, consult `.roo/rules-debug/AGENTS.md`.
-- For design questions, consult `.roo/rules-architect/AGENTS.md`.
+  `code.md`.
+- For debugging questions, consult `debug.md`.
+- For design questions, consult `architect.md`.
 
 ## Key concepts in TopOpt.jl
 

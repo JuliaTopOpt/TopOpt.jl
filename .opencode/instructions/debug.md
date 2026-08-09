@@ -1,7 +1,7 @@
-# Debug mode rules
+# Debugging guidance
 
-These rules apply when troubleshooting issues, investigating errors, or
-diagnosing problems in this repository.
+Guidance for troubleshooting issues, investigating errors, or diagnosing
+problems in this repository.
 
 ## Fail-fast first
 

@@ -1,7 +1,7 @@
-# Code mode rules
+# Code guidance
 
-These rules apply when writing, modifying, or refactoring code in this
-repository. They adapt guidance from
+Guidance for writing, modifying, or refactoring code in this repository.
+It adapts guidance from
 [timholy/claude_config](https://github.com/timholy/claude_config) to TopOpt.jl.
 
 ## Code comments

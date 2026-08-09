@@ -6,21 +6,21 @@ build/test commands, dependencies, usage examples) lives in the **Memory Bank**
 (`memory-bank/`, git-ignored) — read those files for project specifics and keep
 them up to date as the project evolves.
 
-## Mode-specific rules
+## Topic-specific guidance
 
-Zoo Code loads mode-specific rules from `.roo/rules-<mode>/AGENTS.md`. These
-files extend the guidance here with rules tailored to each mode:
+opencode loads the topic-specific guidance files listed in `opencode.jsonc`
+under `instructions`. They extend the guidance here with rules tailored to
+specific kinds of work:
 
-- [`.roo/rules-code/AGENTS.md`](.roo/rules-code/AGENTS.md) — Code mode: code
+- [`.opencode/instructions/code.md`](.opencode/instructions/code.md) — code
   comments discipline, Julia generic indexing, `@inbounds` policy, and
   TopOpt.jl-specific coding notes.
-- [`.roo/rules-debug/AGENTS.md`](.roo/rules-debug/AGENTS.md) — Debug mode:
+- [`.opencode/instructions/debug.md`](.opencode/instructions/debug.md) —
   fail-fast guards, Revise/MCP usage, systematic debugging approach, and
   graphical display during debugging.
-- [`.roo/rules-architect/AGENTS.md`](.roo/rules-architect/AGENTS.md) —
-  Architect mode: project scope, key architectural decisions, and design
-  principles.
-- [`.roo/rules-ask/AGENTS.md`](.roo/rules-ask/AGENTS.md) — Ask mode:
+- [`.opencode/instructions/architect.md`](.opencode/instructions/architect.md)
+  — project scope, key architectural decisions, and design principles.
+- [`.opencode/instructions/ask.md`](.opencode/instructions/ask.md) —
   explanation stance, how to answer, and key TopOpt.jl concepts.
 
 ## Stance
@@ -171,7 +171,7 @@ Check what's available first:
   reader who has only the repository: state what *is* true about the code now,
   not its history, its motivation, or the plan it came from. Re-read the diff's
   comments before proposing a commit. Full guidance and examples:
-  `.roo/rules-code/AGENTS.md` (Code comments).
+  `.opencode/instructions/code.md` (Code comments).
 - Commit subject lines should ideally be shorter than lines in the body (aim
   for ≤ 50, up to 72 OK) due to formatting on GitHub.
 - Changes motivated by GitHub issues or PRs should include a comment with the

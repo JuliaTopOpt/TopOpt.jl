@@ -1,7 +1,7 @@
-# Architect mode rules
+# Architecture guidance
 
-These rules apply when planning, designing, or strategizing before
-implementation in this repository.
+Guidance for planning, designing, or strategizing before implementation in
+this repository.
 
 ## Project scope
 
@@ -50,9 +50,8 @@ optimization algorithms via the Nonconvex.jl ecosystem.
   remain differentiable via Zygote. New solvers should extend
   `AbstractFEASolver` and follow the physics/solver dispatch pattern.
 - Prefer **unconstrained type parameters** in `struct` constructors (see
-  `.roo/rules-code/AGENTS.md` for the full cascade pattern). Do not over-constrain
-  method signatures — annotate only as specifically as the implementation
-  requires.
+  `code.md` for the full cascade pattern). Do not over-constrain method
+  signatures — annotate only as specifically as the implementation requires.
 - When adding new packages to the local project, also update the `[compat]`
   section of `Project.toml` to bound the version of the new dependency. After
   editing `Project.toml`, run `Pkg.resolve()`.
