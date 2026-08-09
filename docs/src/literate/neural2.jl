@@ -122,7 +122,7 @@ while true
     Flux.Optimise.apply!(clip_alg, w, Δ)
     Flux.Optimise.apply!(alg, w, Δ)
     global w = w - Δ
-    violation = constr(w)
+    global violation = constr(w)
     global alpha = min(alpha_max, alpha + delta_alpha)
     global p = min(p_max, p + delta_p)
     global epoch += 1
