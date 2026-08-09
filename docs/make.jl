@@ -4,12 +4,21 @@ using DocumenterCitations
 # Load packages to avoid precompilation output in the docs
 # import ...
 
-# Generate examples
-include("generate.jl")
+# Generate examples (unless a sharded CI build pre-generated them)
+if get(ENV, "DOCS_SKIP_GENERATE", "false") != "true"
+    include("generate.jl")
+end
 
 GENERATED_EXAMPLES = [
-    joinpath("examples", f) for
-    f in ("simp.md", "beso.md", "geso.md", "csimp.md", "global_stress.md", "TOBS.md", "heat_tree.md")
+    joinpath("examples", f) for f in (
+        "simp.md",
+        "beso.md",
+        "geso.md",
+        "csimp.md",
+        "global_stress.md",
+        "TOBS.md",
+        "heat_tree.md",
+    )
 ]
 
 bib = CitationBibliography(joinpath(@__DIR__, "biblio", "ref.bib"))

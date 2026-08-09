@@ -74,38 +74,71 @@ jobs:
   # https://github.com/JuliaPlots/GLMakie.jl/blob/master/.github/workflows/ci.yml
   # example for no-Makie-involving docs build
   # https://github.com/TuringLang/Turing.jl/blob/master/.github/workflows/Documentation.yml
-  docs:
+  #
+  # The docs build is split into two stages so example generation runs in
+  # parallel across a matrix of shards, then a single deploy job merges the
+  # generated artifacts and runs makedocs/deploydocs.
+  docs-examples:
+    name: docs examples (${{ matrix.shard }}/${{ matrix.total }})
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
-        version: ['1',]
-        os: ['ubuntu-latest',]
+        version: ['1']
+        os: ['ubuntu-latest']
+        total: [6]
+        shard: [1, 2, 3, 4, 5, 6]
     steps:
       - uses: actions/checkout@v6
       - uses: julia-actions/setup-julia@v2
         with:
           version: ${{ matrix.version }}
-      # - uses: actions/cache@v1
-      #   env:
-      #     cache-name: cache-artifacts
-      #   with:
-      #     path: ~/.julia/artifacts
-      #     key: ${{ runner.os }}-test-${{ env.cache-name }}-${{ hashFiles('**/Project.toml') }}
-      #     restore-keys: |
-      #       ${{ runner.os }}-test-${{ env.cache-name }}-
-      #       ${{ runner.os }}-test-
-      #       ${{ runner.os }}-
-      # - run: sudo apt-get update && sudo apt-get install -y xorg-dev mesa-utils xvfb libgl1 freeglut3-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libxext-dev
-      # - run: DISPLAY=:0 xvfb-run -s '-screen 0 1024x768x24' julia --project=docs -e 'using Pkg; Pkg.develop(PackageSpec(path=pwd())); Pkg.instantiate()'
       - name: Install dependencies
         run: |
           julia --project=docs -e '
             using Pkg
             Pkg.instantiate()
-            Pkg.develop(PackageSpec(path=pwd()))'
+            Pkg.develop(PackageSpec(paths=pwd()))'
+      - name: Generate example shard
+        env:
+          DOCS_EXAMPLE_INDEX: ${{ matrix.shard }}
+          DOCS_EXAMPLE_TOTAL: ${{ matrix.total }}
+        run: julia --project=docs --color=yes -e 'include("docs/generate.jl")'
+      - name: Upload generated examples
+        uses: actions/upload-artifact@v4
+        with:
+          name: docs-examples-${{ matrix.shard }}
+          path: docs/src/examples/
+          if-no-files-found: error
+          retention-days: 1
+  docs:
+    name: docs (build & deploy)
+    needs: docs-examples
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        version: ['1']
+        os: ['ubuntu-latest']
+    steps:
+      - uses: actions/checkout@v6
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: ${{ matrix.version }}
+      - name: Install dependencies
+        run: |
+          julia --project=docs -e '
+            using Pkg
+            Pkg.instantiate()
+            Pkg.develop(PackageSpec(paths=pwd()))'
+      - name: Download example shards
+        uses: actions/download-artifact@v4
+        with:
+          pattern: docs-examples-*
+          merge-multiple: true
+          path: docs/src/examples
       - name: Build and deploy
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DOCUMENTER_KEY: ${{ secrets.DOCUMENTER_KEY }}
+          DOCS_SKIP_GENERATE: 'true'
         run: julia --project=docs --color=yes docs/make.jl
-        # run: DISPLAY=:0 xvfb-run -s '-screen 0 1024x768x24' julia --project=docs --color=yes docs/make.jl
