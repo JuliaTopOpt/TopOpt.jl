@@ -337,10 +337,11 @@ end
             Val{:Linear}, (10, 5), (1.0, 1.0), 1.0;
             Tleft=0.0, Tright=0.0, heatflux=heatflux
         )
-        
-        # Returns empty dict for HeatTransferTopOptProblem
+
+        # Returns an empty Dict{Int,Vector{Float64}} (node index => heat value)
+        # for a problem with no point heat sources configured.
         cd = TopOptProblems.getcloaddict(problem)
-        @test cd isa Dict{String,Vector{Float64}}
+        @test cd isa Dict{Int,Vector{Float64}}
         @test isempty(cd)
     end
 end
@@ -361,6 +362,95 @@ end
     @test problem isa HeatConductionProblem
     @test getk(problem) ≈ 1.0
     @test Ferrite.getncells(problem) == 50
+end
+
+@testset "Heat conduction problem with point heat source (cload)" begin
+    # A concentrated heat source at a node is the point-source analogue of the
+    # distributed heatflux; it is the setup that produces the branching
+    # "conductivity tree" layout in the literature.
+    nels = (8, 4)
+    nx, ny = nels
+    # Node index of the top-center node (x-major node ordering).
+    center_x = div(nx, 2) + 1
+    top_center = center_x + ny * (nx + 1)
+
+    problem = HeatConductionProblem(
+        Val{:Linear}, nels, (1.0, 1.0), 1.0;
+        Tleft=0.0, Tright=0.0,
+        heatflux=Dict{String,Float64}(),
+        cload=Dict(top_center => 1.0),
+    )
+
+    @test problem isa HeatConductionProblem
+    cd = TopOptProblems.getcloaddict(problem)
+    @test cd isa Dict{Int,<:Vector}
+    @test haskey(cd, top_center)
+    @test cd[top_center] == [1.0]
+
+    # The point source must show up in the assembled non-penalized load Q.
+    solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(3.0))
+    Q = solver.elementinfo.fixedload
+    @test count(!=(0), Q) > 0
+    # The injected heat should land on the top-center DOF, which is the first
+    # DOF of the top-center node.
+    node_dofs = problem.metadata.node_dofs
+    @test Q[node_dofs[1, top_center]] ≈ 1.0
+
+    # Default (no cload) keeps the zero load, preserving old behavior.
+    problem_empty = HeatConductionProblem(
+        Val{:Linear}, nels, (1.0, 1.0), 1.0;
+        Tleft=0.0, Tright=0.0, heatflux=Dict{String,Float64}(),
+    )
+    @test isempty(TopOptProblems.getcloaddict(problem_empty))
+    solver_empty = FEASolver(DirectSolver, problem_empty; xmin=0.01)
+    @test all(==(0), solver_empty.elementinfo.fixedload)
+end
+
+@testset "Heat conduction problem with point Dirichlet BC (Tfix)" begin
+    # Tfix pins the temperature at individual nodes — a point cold sink —
+    # which is the setup for the classic branching conductivity tree.
+    nels = (8, 4)
+    nx, ny = nels
+    center_bottom = div(nx, 2) + 1
+
+    problem = HeatConductionProblem(
+        Val{:Linear}, nels, (1.0, 1.0), 1.0;
+        Tleft=nothing, Tright=nothing, Ttop=nothing, Tbottom=nothing,
+        Tfix=Dict(center_bottom => 0.0),
+    )
+
+    # Only the one fixed node should be prescribed.
+    ch = problem.ch
+    @test length(ch.prescribed_dofs) == 1
+    node_dofs = problem.metadata.node_dofs
+    @test ch.prescribed_dofs[1] == node_dofs[1, center_bottom]
+    @test ch.inhomogeneities[1] ≈ 0.0
+
+    # Multiple fixed nodes with distinct temperatures.
+    problem2 = HeatConductionProblem(
+        Val{:Linear}, nels, (1.0, 1.0), 1.0;
+        Tleft=nothing, Tright=nothing, Ttop=nothing, Tbottom=nothing,
+        Tfix=Dict(1 => 100.0, center_bottom => 0.0),
+    )
+    @test length(problem2.ch.prescribed_dofs) == 2
+    @test Set(problem2.ch.inhomogeneities) == Set([100.0, 0.0])
+end
+
+@testset "HeatTree convenience constructor" begin
+    # Classic heat-conduction topopt benchmark: flux on top, cold bottom,
+    # insulated sides.
+    problem = HeatTree(Val{:Linear}, (8, 4), (1.0, 1.0), 1.0; q=2.0)
+    @test problem isa HeatConductionProblem
+    @test TopOptProblems.getheatfluxdict(problem) == Dict("top" => 2.0)
+    # Only the bottom boundary is prescribed (9 nodes for 8 bottom elements).
+    @test length(problem.ch.prescribed_dofs) == 9
+    @test all(==(0), problem.ch.inhomogeneities)
+    # The problem solves.
+    solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(3.0))
+    solver.vars .= 1.0
+    solver()
+    @test all(isfinite, solver.u)
+    @test maximum(solver.u) > 0
 end
 
 @testset "Heat conduction problem with quadratic elements" begin
@@ -392,17 +482,15 @@ end
     
     # Check heatflux dict is accessible
     @test TopOptProblems.getheatfluxdict(problem) == heatflux
-    
-    # Note: ElementFEAInfo creation for quadratic heat conduction elements
-    # requires compatible CellValues construction (see Ferrite issue #265)
-    # For now we just verify the problem structure is correct
-    
-    # Test element info can be created with default settings
-    # elementinfo = ElementFEAInfo(problem, 2, Val{:Static})
-    # @test length(elementinfo.Kes) == nels[1] * nels[2]
-    # For quadratic quad elements, each element has 9 nodes
-    # and heat transfer is scalar field, so Ke is 9x9
-    # @test size(elementinfo.Kes[1], 1) == 9
+
+    # ElementFEAInfo now builds for quadratic heat conduction elements (the
+    # cellvalues interpolation is taken from the DofHandler instead of being
+    # hardcoded to linear Lagrange).
+    elementinfo = ElementFEAInfo(problem, 2, Val{:Static})
+    @test length(elementinfo.Kes) == nels[1] * nels[2]
+    # Quadratic quad: 9 nodes, scalar temperature field -> 9x9 Ke.
+    @test size(elementinfo.Kes[1], 1) == 9
+    @test size(elementinfo.Kes[1], 2) == 9
 end
 
 @testset "Heat transfer element matrices" begin

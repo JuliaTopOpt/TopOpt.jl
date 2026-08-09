@@ -356,13 +356,29 @@ function make_cload(problem::StiffnessTopOptProblem)
     return sparsevec(inds, vals, ndofs(dh))
 end
 
-# For heat transfer: concentrated heat sources (point sources)
-# Returns zero vector by default (no point heat sources)
+# For heat transfer: concentrated heat sources (point sources).
+# `getcloaddict` returns `Dict{node_index => [heat_source_value]}` (a 1-element
+# vector, matching the structural format). The temperature DOF of node `n` is
+# `node_dofs[1, n]` because the temperature field is scalar (1 DOF per node).
+# Point heat sources are NOT penalized — they are external inputs.
 function make_cload(problem::HeatTransferTopOptProblem)
     T = floattype(problem)
     dh = getdh(problem)
-    # No concentrated heat sources by default
-    return sparsevec(Int[], T[], ndofs(dh))
+    metadata = getmetadata(problem)
+    node_dofs = metadata.node_dofs
+    cloads = getcloaddict(problem)
+    inds = Int[]
+    vals = T[]
+    for nodeidx in keys(cloads)
+        for (_, value) in enumerate(cloads[nodeidx])
+            if value != 0
+                dof = node_dofs[1, nodeidx]
+                push!(inds, dof)
+                push!(vals, value)
+            end
+        end
+    end
+    return sparsevec(inds, vals, ndofs(dh))
 end
 
 # ============================================================================
@@ -392,16 +408,18 @@ function make_Kes_and_fes(
     dh = getdh(problem)
     k = getk(problem)
 
-    refshape = Ferrite.getrefshape(
-        _base_interpolation(dh.subdofhandlers[1].field_interpolations[1])
-    )
-
-    # Shape functions for scalar field (temperature)
-    interpolation_space = Lagrange{refshape,1}()
+    # Shape functions for the scalar temperature field. Use the interpolation
+    # actually stored on the DofHandler so quadratic problems build quadratic
+    # cell/facet values (hardcoding order 1 breaks Val{:Quadratic} problems).
+    # Pass the interpolation as both function and geometric mapping because
+    # TopOpt uses isoparametric elements; Ferrite defaults the geometric
+    # mapping to linear Lagrange, which mismatches quadratic cell nodes.
+    interpolation_space = _base_interpolation(dh.subdofhandlers[1].field_interpolations[1])
+    refshape = Ferrite.getrefshape(interpolation_space)
     quadrature_rule = QuadratureRule{refshape}(quad_order)
-    cellvalues = CellValues(quadrature_rule, interpolation_space)
+    cellvalues = CellValues(quadrature_rule, interpolation_space, interpolation_space)
     facetvalues = FacetValues(
-        FacetQuadratureRule{refshape}(quad_order), interpolation_space
+        FacetQuadratureRule{refshape}(quad_order), interpolation_space, interpolation_space
     )
 
     # Calculate element conductivity matrices

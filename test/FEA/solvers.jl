@@ -280,7 +280,7 @@ using TopOpt, Test, LinearAlgebra, Ferrite
         end
     end
 
-    @testset "Heat Transfer - Solver Consistency" begin
+    @testset "Heat Transfer - Solver Consistency (homogeneous Dirichlet)" begin
         nels = (4, 4)
         sizes = (1.0, 1.0)
         k = 1.0
@@ -310,5 +310,51 @@ using TopOpt, Test, LinearAlgebra, Ferrite
         # Compare results
         @test solver_assembly.u ≈ solver_direct.u rtol=1e-4
         @test solver_matrixfree.u ≈ solver_direct.u rtol=1e-4
+    end
+
+    @testset "Heat Transfer - Solver Consistency (inhomogeneous Dirichlet)" begin
+        # Cross-check the solver types that support inhomogeneous Dirichlet
+        # against the Direct reference. CGMatrixFreeSolver is excluded: its
+        # matrix-free meandiag does not match Ferrite's apply! meandiag, so
+        # prescribed DOFs are solved to wrong values with nonzero BCs; the
+        # constructor fails fast on that combination (tested separately).
+        nels = (4, 4)
+        problem = HeatConductionProblem(
+            Val{:Linear}, nels, (1.0, 1.0), 1.0;
+            Tleft=100.0, Tright=0.0, heatflux=Dict("top" => 1.0)
+        )
+
+        solver_direct = FEASolver(DirectSolver, problem)
+        solver_assembly = FEASolver(CGAssemblySolver, problem; abstol=1e-9, cg_max_iter=2000)
+
+        x0 = fill(0.7, length(solver_direct.vars))
+        for s in (solver_direct, solver_assembly)
+            s.vars .= x0
+            s()
+        end
+
+        @test solver_assembly.u ≈ solver_direct.u rtol=1e-3
+
+        # Prescribed DOFs should carry the Dirichlet values.
+        pdofs = problem.ch.prescribed_dofs
+        inhom = problem.ch.inhomogeneities
+        @test solver_direct.u[pdofs] ≈ inhom atol=1e-8
+        @test solver_assembly.u[pdofs] ≈ inhom atol=1e-4
+    end
+
+    @testset "CGMatrixFreeSolver rejects inhomogeneous Dirichlet" begin
+        # Fail-fast guard: the matrix-free meandiag mismatch would silently
+        # corrupt prescribed DOFs, so the constructor throws instead.
+        problem = HeatConductionProblem(
+            Val{:Linear}, (4, 4), (1.0, 1.0), 1.0;
+            Tleft=100.0, Tright=0.0, heatflux=Dict("top" => 1.0)
+        )
+        @test_throws ArgumentError FEASolver(CGMatrixFreeSolver, problem)
+        # Homogeneous Dirichlet is still supported.
+        problem_homog = HeatConductionProblem(
+            Val{:Linear}, (4, 4), (1.0, 1.0), 1.0;
+            Tleft=0.0, Tright=0.0, heatflux=Dict("top" => 1.0)
+        )
+        @test FEASolver(CGMatrixFreeSolver, problem_homog) isa TopOpt.FEA.GenericFEASolver
     end
 end

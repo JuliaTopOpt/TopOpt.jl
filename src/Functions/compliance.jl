@@ -11,8 +11,20 @@ Nonconvex.NonconvexCore.getdim(::Compliance) = 1
 getsolver(c::Compliance) = c.solver
 
 function Compliance(solver::AbstractFEASolver)
-    # Compliance is only valid for structural (LinearElasticity) problems
-    @assert solver.problem isa StiffnessTopOptProblem "Compliance can only be used with StiffnessTopOptProblem (structural mechanics). Got $(typeof(solver.problem))"
+    solver.problem isa StiffnessTopOptProblem ||
+        throw(ArgumentError("Compliance can only be used with StiffnessTopOptProblem (structural mechanics). Got $(typeof(solver.problem))"))
+    # The closed-form compliance gradient `dJ/dx_e = -dρ_e/dx_e · u_e^T Ke u_e`
+    # is only valid for homogeneous Dirichlet BCs. Fail fast on inhomogeneous
+    # prescribed displacements rather than silently returning a wrong answer.
+    ch = solver.problem.ch
+    if any(!=(0), ch.inhomogeneities)
+        throw(ArgumentError(
+            "Compliance assumes homogeneous Dirichlet BCs (prescribed displacement = 0), " *
+            "but this problem has nonzero prescribed displacements. The closed-form " *
+            "compliance gradient is wrong in that case; use an adjoint-based objective " *
+            "or remove the inhomogeneous Dirichlet BCs."
+        ))
+    end
     T = eltype(solver.vars)
     cell_comp = zeros(T, getncells(solver.problem.ch.dh.grid))
     grad = copy(cell_comp)

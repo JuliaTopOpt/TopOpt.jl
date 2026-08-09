@@ -6,6 +6,8 @@ using ..TopOptProblems: initialize_K, getdh
 using ..FEA, ..CheqFilters
 using ..Utilities, ForwardDiff, LinearAlgebra
 using ..TrussTopOptProblems: getA, compute_local_axes
+using IterativeSolvers: cg!
+using Preconditioners: UpdatePreconditioner!
 
 using Parameters: @unpack
 using TimerOutputs, Ferrite, StaticArrays, StatsFuns

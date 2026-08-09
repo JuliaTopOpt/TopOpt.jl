@@ -123,6 +123,14 @@ function solve_system!(::Type{CGAssemblySolver}, solver::GenericFEASolver{T,Phys
             preconditioner_initialized[] = true
         end
     end
+    # `initially_zero=true` tells IterativeSolvers' cg! that `iszero(lhs)` so
+    # it can skip one matvec when forming the initial residual. The caller
+    # reuses `solver.u` as `lhs`, which holds the previous solution, so the
+    # assumption is violated and CG silently accumulates the new solution on
+    # top of the old one. Zero `lhs` to honor the contract.
+    if initially_zero
+        fill!(lhs, zero(T))
+    end
     op = MatrixOperator(_K, f, solver.conv)
     if preconditioner === identity
         return cg!(
@@ -171,6 +179,12 @@ function solve_system!(::Type{CGMatrixFreeSolver}, solver::GenericFEASolver{T,Ph
             UpdatePreconditioner!(preconditioner, _K)
             preconditioner_initialized[] = true
         end
+    end
+    # See CGAssemblySolver: honor the `initially_zero=true` contract by zeroing
+    # `lhs` (which is `solver.u` reused across solves) before cg! accumulates
+    # into it.
+    if initially_zero
+        fill!(lhs, zero(T))
     end
     if preconditioner === identity
         return cg!(
@@ -354,6 +368,22 @@ function FEASolver(
 
     # Compute meandiag and xes for matrix-free solvers
     if Solver === CGMatrixFreeSolver
+        # The matrix-free operator approximates the prescribed-DOF diagonal
+        # with a `meandiag` summed over element contributions, which does not
+        # match the `meandiag` Ferrite's `apply!` uses to seed the RHS on
+        # prescribed DOFs. For homogeneous Dirichlet BCs the RHS is zero there
+        # so the mismatch is invisible; for inhomogeneous BCs the prescribed
+        # DOFs come out wrong. Fail fast rather than silently returning a
+        # corrupted solution.
+        if any(!=(0), problem.ch.inhomogeneities)
+            throw(ArgumentError(
+                "CGMatrixFreeSolver does not yet support inhomogeneous Dirichlet " *
+                "BCs (nonzero prescribed values): the matrix-free meandiag does " *
+                "not match Ferrite's apply! meandiag, so prescribed DOFs are " *
+                "solved to wrong values. Use DirectSolver or CGAssemblySolver " *
+                "for problems with nonzero prescribed temperatures/displacements."
+            ))
+        end
         f = x -> sumdiag(rawmatrix(x).data)
         meandiag = mapreduce(f, +, elementinfo.Kes; init=zero(T))
         xes = deepcopy(elementinfo.fes)
