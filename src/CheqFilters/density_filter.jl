@@ -3,10 +3,13 @@
 
 Density chequerboard filter with radius `rmin`. Produces a filtered design
 where each element's density is a weighted average of neighboring densities
-within `rmin`. Call as `y = flt(PseudoDensities(x))`.
+within `rmin`, using the BESO filter weighting scheme
+`w = max(rmin - dist, 0)` from [HuangXie2010](@cite). Implemented as a
+differentiable linear operator (sparse Jacobian). Call as
+`y = flt(PseudoDensities(x))`.
 
-See [BendsoeSigmund2003](@cite) §3.4 and [Bruns2005](@cite) for the density
-filter formulation.
+See also [BendsoeSigmund2003](@cite) §3.4 for general background on density
+filtering.
 """
 struct DensityFilter{T,TM<:FilterMetadata,TJ<:AbstractMatrix{T}} <:
        AbstractDensityFilter
