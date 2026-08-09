@@ -81,18 +81,29 @@ jobs:
   docs-examples:
     name: docs examples (${{ matrix.shard }}/${{ matrix.total }})
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
         version: ['1']
         os: ['ubuntu-latest']
-        total: [6]
-        shard: [1, 2, 3, 4, 5, 6]
+        total: [9]
+        shard: [1, 2, 3, 4, 5, 6, 7, 8, 9]
     steps:
       - uses: actions/checkout@v6
       - uses: julia-actions/setup-julia@v2
         with:
           version: ${{ matrix.version }}
+      - uses: julia-actions/cache@v2
+        env:
+          cache-name: cache-docs
+        with:
+          path: ~/.julia/artifacts
+          key: ${{ runner.os }}-docs-${{ env.cache-name }}-${{ hashFiles('docs/Project.toml', 'Project.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-docs-${{ env.cache-name }}-
+            ${{ runner.os }}-docs-
+            ${{ runner.os }}-
       - name: Install dependencies
         run: |
           julia --project=docs -e '
@@ -115,6 +126,7 @@ jobs:
     name: docs (build & deploy)
     needs: docs-examples
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
     strategy:
       matrix:
         version: ['1']
@@ -124,6 +136,16 @@ jobs:
       - uses: julia-actions/setup-julia@v2
         with:
           version: ${{ matrix.version }}
+      - uses: julia-actions/cache@v2
+        env:
+          cache-name: cache-docs
+        with:
+          path: ~/.julia/artifacts
+          key: ${{ runner.os }}-docs-${{ env.cache-name }}-${{ hashFiles('docs/Project.toml', 'Project.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-docs-${{ env.cache-name }}-
+            ${{ runner.os }}-docs-
+            ${{ runner.os }}-
       - name: Install dependencies
         run: |
           julia --project=docs -e '

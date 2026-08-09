@@ -13,9 +13,28 @@ const TOTAL = parse(Int, get(ENV, "DOCS_EXAMPLE_TOTAL", "1"))
 @assert INDEX >= 1 && TOTAL >= 1
 @assert INDEX <= TOTAL "DOCS_EXAMPLE_INDEX ($INDEX) must be <= DOCS_EXAMPLE_TOTAL ($TOTAL)"
 
-jl_files = sort(filter(f -> endswith(f, ".jl"), readdir(EXAMPLE_DIR)))
-my_files = [f for (i, f) in enumerate(jl_files) if (i - 1) % TOTAL == INDEX - 1]
-@info "Generating examples" INDEX TOTAL total_files = length(jl_files) my_files = my_files
+# Manual shard assignment so the division is explicit and balanced.
+# Each entry is the list of .jl files that shard generates (in order).
+# When DOCS_EXAMPLE_TOTAL == 1 (e.g. local runs), a single shard builds all
+# examples.
+const SHARDS = (
+    ["beso.jl", "geso.jl"],
+    ["problem_continuum.jl"],
+    ["problem_truss.jl"],
+    ["csimp.jl", "simp.jl"],
+    ["TOBS.jl", "heat_tree.jl"],
+    ["global_stress.jl", "local_stress.jl"],
+    ["heat_sink.jl", "multimaterial.jl"],
+    ["mixed_integer_truss.jl", "neural.jl"],
+    ["neural2.jl", "buckling.jl"],
+)
+if TOTAL == 1
+    my_files = reduce(vcat, collect(SHARDS))
+else
+    @assert TOTAL == length(SHARDS) "DOCS_EXAMPLE_TOTAL ($TOTAL) must equal 1 or the number of manual shards ($(length(SHARDS)))"
+    my_files = SHARDS[INDEX]
+end
+@info "Generating examples" INDEX TOTAL total_files = length(my_files) my_files = my_files
 
 for example in my_files
     input = abspath(joinpath(EXAMPLE_DIR, example))

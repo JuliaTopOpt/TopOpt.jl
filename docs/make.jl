@@ -16,32 +16,45 @@ GENERATED_EXAMPLES = [
         "geso.md",
         "csimp.md",
         "global_stress.md",
+        "local_stress.md",
         "TOBS.md",
         "heat_tree.md",
+        "heat_sink.md",
+        "multimaterial.md",
+        "neural.md",
+        "neural2.md",
+        "mixed_integer_truss.md",
+        "buckling.md",
     )
+]
+
+PROBLEM_EXAMPLES = [
+    "Continuum problems" => "examples/problem_continuum.md",
+    "Truss problems" => "examples/problem_truss.md",
 ]
 
 bib = CitationBibliography(joinpath(@__DIR__, "biblio", "ref.bib"))
 makedocs(;
     sitename="TopOpt.jl",
     format=Documenter.HTML(; prettyurls=get(ENV, "CI", nothing) == "true"),
-    # doctest = false,
-    warnonly=true,
     plugins=[bib],
     pages=[
         "Home" => "index.md",
-        "Problem types" => "examples/problem.md",
+        "Problem types" => PROBLEM_EXAMPLES,
         "Functions" => "functions.md",
         "Examples" => GENERATED_EXAMPLES,
-        "API Reference" => ["reference/TopOptProblems.md", "reference/Algorithms.md"],
+        "API Reference" => [
+            "reference/TopOptProblems.md",
+            "reference/TrussTopOptProblems.md",
+            "reference/FEA.md",
+            "reference/CheqFilters.md",
+            "reference/Functions.md",
+            "reference/Utilities.md",
+            "reference/Algorithms.md",
+        ],
         "Bibliography" => "bibliography.md",
     ],
 )
-
-# # make sure there are no *.vtu files left around from the build
-# cd(joinpath(@__DIR__, "build", "examples")) do
-#     foreach(file -> endswith(file, ".vtu") && rm(file), readdir())
-# end
 
 if get(ENV, "CI", nothing) == "true"
     deploydocs(; repo="github.com/JuliaTopOpt/TopOpt.jl.git", push_preview=true)
