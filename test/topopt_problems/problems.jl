@@ -406,6 +406,36 @@ end
     @test all(==(0), solver_empty.elementinfo.fixedload)
 end
 
+@testset "Heat conduction problem with point Dirichlet BC (Tfix)" begin
+    # Tfix pins the temperature at individual nodes — a point cold sink —
+    # which is the setup for the classic branching conductivity tree.
+    nels = (8, 4)
+    nx, ny = nels
+    center_bottom = div(nx, 2) + 1
+
+    problem = HeatConductionProblem(
+        Val{:Linear}, nels, (1.0, 1.0), 1.0;
+        Tleft=nothing, Tright=nothing, Ttop=nothing, Tbottom=nothing,
+        Tfix=Dict(center_bottom => 0.0),
+    )
+
+    # Only the one fixed node should be prescribed.
+    ch = problem.ch
+    @test length(ch.prescribed_dofs) == 1
+    node_dofs = problem.metadata.node_dofs
+    @test ch.prescribed_dofs[1] == node_dofs[1, center_bottom]
+    @test ch.inhomogeneities[1] ≈ 0.0
+
+    # Multiple fixed nodes with distinct temperatures.
+    problem2 = HeatConductionProblem(
+        Val{:Linear}, nels, (1.0, 1.0), 1.0;
+        Tleft=nothing, Tright=nothing, Ttop=nothing, Tbottom=nothing,
+        Tfix=Dict(1 => 100.0, center_bottom => 0.0),
+    )
+    @test length(problem2.ch.prescribed_dofs) == 2
+    @test Set(problem2.ch.inhomogeneities) == Set([100.0, 0.0])
+end
+
 @testset "Heat conduction problem with quadratic elements" begin
     # Create a 2D heat conduction problem with quadratic elements
     nels = (5, 3)

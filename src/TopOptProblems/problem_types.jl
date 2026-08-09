@@ -686,6 +686,9 @@ Constructor arguments:
   Positive values inject heat at that node; negative values remove heat.
   This is the point-source analogue of the distributed `heatflux` and is the
   setup that produces the classic branching "conductivity tree" topology.
+- `Tfix`: Dict mapping a node index to a prescribed temperature (K), applied
+  as a point Dirichlet BC. Use it to pin the temperature at individual nodes
+  (e.g. a point cold sink) instead of along a whole boundary face.
 
 Note: Heat flux q and concentrated heat sources are NOT penalized in the
 assembly. Only conductivity k(ρ) is penalized.
@@ -719,7 +722,7 @@ getheatfluxdict(p::HeatConductionProblem) = p.heatfluxdict
 getcloaddict(p::HeatConductionProblem) = Dict(node => [v] for (node, v) in p.cloaddict)
 
 """
-    HeatConductionProblem(::Type{Val{CellType}}, nels, sizes, k=1.0; Tleft=0.0, Tright=0.0, Ttop=nothing, Tbottom=nothing, heatflux=Dict{String,Float64}(), cload=Dict{Int,Float64}())
+    HeatConductionProblem(::Type{Val{CellType}}, nels, sizes, k=1.0; Tleft=0.0, Tright=0.0, Ttop=nothing, Tbottom=nothing, heatflux=Dict{String,Float64}(), cload=Dict{Int,Float64}(), Tfix=Dict{Int,Float64}())
 
 Create a 2D/3D heat conduction problem on a rectangular domain.
 
@@ -727,6 +730,7 @@ Temperature (Dirichlet) BCs default to `0.0` on the left and right
 boundaries; pass `Tleft`/`Tright` to set them, or `nothing` to leave a
 side free (no Dirichlet BC there). `Ttop` and `Tbottom` default to
 `nothing` (free); set them to apply temperature BCs on the top/bottom.
+`Tfix` applies point Dirichlet BCs at individual nodes.
 
 Heat flux BCs can be applied on any faceset via the `heatflux` argument.
 Point heat sources can be applied at nodes via the `cload` argument.
@@ -745,6 +749,14 @@ nx, ny = nels
 center_top_node = div(nx, 2) + 1 + ny * (nx + 1)
 cload = Dict(center_top_node => 1.0)
 problem = HeatConductionProblem(Val{:Linear}, nels, sizes, k; Tleft=nothing, Tright=nothing, Tbottom=0.0, cload=cload)
+
+# Point source top-center, point sink bottom-center (branching tree):
+center_bottom_node = div(nx, 2) + 1
+problem = HeatConductionProblem(Val{:Linear}, nels, sizes, k;
+    Tleft=nothing, Tright=nothing, Ttop=nothing, Tbottom=nothing,
+    cload=Dict(center_top_node => 1.0),
+    Tfix=Dict(center_bottom_node => 0.0),
+)
 ```
 """
 function HeatConductionProblem(
@@ -758,11 +770,16 @@ function HeatConductionProblem(
     Tbottom=nothing,
     heatflux=Dict{String,Float64}(),
     cload=Dict{Int,Float64}(),
+    Tfix=Dict{Int,Float64}(),
 ) where {dim,CellType}
     # Promote the numeric BC values (skipping `nothing`) to pick the element
     # type, defaulting to Float64 when all BCs are `nothing`.
     bc_vals = [v for v in (Tleft, Tright, Ttop, Tbottom) if v !== nothing]
-    T = float(promote_type(eltype(sizes), typeof(k), map(typeof, bc_vals)..., Float64))
+    T = float(promote_type(
+        eltype(sizes), typeof(k), map(typeof, bc_vals)...,
+        map(typeof, values(cload))..., map(typeof, values(Tfix))...,
+        Float64,
+    ))
 
     if CellType === :Linear
         rect_grid = RectilinearGrid(Val{:Linear}, nels, T.(sizes))
@@ -817,6 +834,17 @@ function HeatConductionProblem(
     end
     if Tbottom !== nothing
         add!(ch, Dirichlet(:T, getnodeset(rect_grid.grid, "bottom_boundary"), (x, t) -> T(Tbottom)))
+    end
+    if !isempty(Tfix)
+        # Prescribe the temperature at individual nodes (point Dirichlet BCs).
+        fix_nodes = collect(keys(Tfix))
+        # Ferrite's Dirichlet applies a single value to a node set; since each
+        # fixed node can carry a different temperature, add one Dirichlet per
+        # distinct value.
+        for val in unique(values(Tfix))
+            nodes = [n for n in fix_nodes if Tfix[n] == val]
+            add!(ch, Dirichlet(:T, Set(nodes), (x, t) -> T(val)))
+        end
     end
     close!(ch)
     t = T(0)
