@@ -118,3 +118,18 @@ All the following functions are defined in a differentiable way and you can use 
   p0 = nn_model.init_params
   ```
   - **Usage example**: `x = train_func(p)`
+
+## Fixed element projection
+  - **Function name**: `get_fixed_element_projector`
+  - **Description**: Builds a `FixedElementProjector` that maps a reduced vector of free design variables to a full element density vector, with black (solid, density = 1) and white (void, density = 0) elements held fixed. This lets you exclude fixed elements from the optimization variables while keeping the full density vector that the solver and objective functions expect. The projector is differentiable (a `ChainRulesCore.rrule` propagates gradients only through the free elements), so it composes with the other functions on this page.
+  - **Input(s)**: A problem (e.g. `PointLoadCantilever`, `HalfMBB`) or an element count `nel::Int`, followed by `black_cells` and `white_cells` — vectors of element indices to fix solid and void.
+  - **Output**: A `FixedElementProjector` `p` such that `ρ = p(x_free)` returns the full density vector.
+  - **Constructor example**:
+  ```
+  projector = get_fixed_element_projector(problem, black_cells, white_cells)
+  ```
+  - **Usage example**:
+  ```
+  x_free = fill(0.5, get_free_variable_count(projector))
+  ρ = projector(x_free)
+  ```

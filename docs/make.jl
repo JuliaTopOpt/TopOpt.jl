@@ -8,8 +8,15 @@ using DocumenterCitations
 include("generate.jl")
 
 GENERATED_EXAMPLES = [
-    joinpath("examples", f) for
-    f in ("simp.md", "beso.md", "geso.md", "csimp.md", "global_stress.md", "TOBS.md", "heat_tree.md")
+    joinpath("examples", f) for f in (
+        "simp.md",
+        "beso.md",
+        "geso.md",
+        "csimp.md",
+        "global_stress.md",
+        "TOBS.md",
+        "heat_tree.md",
+    )
 ]
 
 bib = CitationBibliography(joinpath(@__DIR__, "biblio", "ref.bib"))
@@ -24,7 +31,11 @@ makedocs(;
         "Problem types" => "examples/problem.md",
         "Functions" => "functions.md",
         "Examples" => GENERATED_EXAMPLES,
-        "API Reference" => ["reference/TopOptProblems.md", "reference/Algorithms.md"],
+        "API Reference" => [
+            "reference/TopOptProblems.md",
+            "reference/Algorithms.md",
+            "reference/Functions.md",
+        ],
         "Bibliography" => "bibliography.md",
     ],
 )
