@@ -99,92 +99,77 @@ end
 
 const LITERATE_DIR = joinpath(@__DIR__, "../docs/src/literate")
 
-if ACTUAL_GROUP in ("All", "Examples_1")
-    @safetestset "CSIMP example" begin
+# Helper to run a literate example in a temp dir
+macro run_example(name)
+    return esc(quote
         mktempdir() do dir
             cd(dir) do
-                include(joinpath(Main.LITERATE_DIR, "csimp.jl"))
+                include(joinpath(Main.LITERATE_DIR, $name))
             end
         end
+    end)
+end
+
+# 16 examples balanced across 4 groups (~4 each), grouped by domain:
+# 1 = compliance/classic, 2 = stress, 3 = heat/truss, 4 = advanced
+
+if ACTUAL_GROUP in ("All", "Examples_1")
+    @safetestset "SIMP example" begin
+        @Main.run_example "simp.jl"
+    end
+    @safetestset "CSIMP example" begin
+        @Main.run_example "csimp.jl"
+    end
+    @safetestset "BESO example" begin
+        @Main.run_example "beso.jl"
+    end
+    @safetestset "GESO example" begin
+        @Main.run_example "geso.jl"
     end
 end
 
 if ACTUAL_GROUP in ("All", "Examples_2")
     @safetestset "Global stress example" begin
-        mktempdir() do dir
-            cd(dir) do
-                include(joinpath(Main.LITERATE_DIR, "global_stress.jl"))
-            end
-        end
+        @Main.run_example "global_stress.jl"
+    end
+    @safetestset "Local stress example" begin
+        @Main.run_example "local_stress.jl"
+    end
+    @safetestset "TOBS example" begin
+        @Main.run_example "TOBS.jl"
+    end
+    @safetestset "Buckling example" begin
+        @Main.run_example "buckling.jl"
     end
 end
 
 if ACTUAL_GROUP in ("All", "Examples_3")
-    @safetestset "Local stress example" begin
-        mktempdir() do dir
-            cd(dir) do
-                include(joinpath(Main.LITERATE_DIR, "local_stress.jl"))
-            end
-        end
+    @safetestset "Heat tree example" begin
+        @Main.run_example "heat_tree.jl"
+    end
+    @safetestset "Heat sink example" begin
+        @Main.run_example "heat_sink.jl"
+    end
+    @safetestset "Mixed-integer truss example" begin
+        @Main.run_example "mixed_integer_truss.jl"
+    end
+    @safetestset "Problem types (continuum)" begin
+        @Main.run_example "problem_continuum.jl"
     end
 end
 
 if ACTUAL_GROUP in ("All", "Examples_4")
-    @safetestset "SIMP example" begin
-        mktempdir() do dir
-            cd(dir) do
-                include(joinpath(Main.LITERATE_DIR, "simp.jl"))
-            end
-        end
-    end
-    @safetestset "BESO example" begin
-        mktempdir() do dir
-            cd(dir) do
-                include(joinpath(Main.LITERATE_DIR, "beso.jl"))
-            end
-        end
-    end
-    @safetestset "GESO example" begin
-        mktempdir() do dir
-            cd(dir) do
-                include(joinpath(Main.LITERATE_DIR, "geso.jl"))
-            end
-        end
+    @safetestset "Multi-material example" begin
+        @Main.run_example "multimaterial.jl"
     end
     @safetestset "Neural network example" begin
-        mktempdir() do dir
-            cd(dir) do
-                include(joinpath(Main.LITERATE_DIR, "neural.jl"))
-            end
-        end
+        @Main.run_example "neural.jl"
     end
     @safetestset "Neural network (Adam) example" begin
-        mktempdir() do dir
-            cd(dir) do
-                include(joinpath(Main.LITERATE_DIR, "neural2.jl"))
-            end
-        end
+        @Main.run_example "neural2.jl"
     end
-    @safetestset "Integer nonlinear programming for truss optimization example" begin
-        mktempdir() do dir
-            cd(dir) do
-                include(joinpath(Main.LITERATE_DIR, "mixed_integer_truss.jl"))
-            end
-        end
-    end
-    @safetestset "Multi-material" begin
-        mktempdir() do dir
-            cd(dir) do
-                include(joinpath(Main.LITERATE_DIR, "multimaterial.jl"))
-            end
-        end
-    end
-    @safetestset "Heat sink example" begin
-        mktempdir() do dir
-            cd(dir) do
-                include(joinpath(Main.LITERATE_DIR, "heat_sink.jl"))
-            end
-        end
+    @safetestset "Problem types (truss)" begin
+        @Main.run_example "problem_truss.jl"
     end
 end
 
