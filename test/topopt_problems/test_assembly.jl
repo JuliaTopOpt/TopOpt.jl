@@ -196,7 +196,7 @@ end
 
     # Load a simple truss problem
     ins_dir = joinpath(@__DIR__, "..", "truss_topopt_problems", "instances", "fea_examples")
-    file_name = "buckling_2d_nodal_instab.json"
+    file_name = "mgz_geom_stiff_ex9.1.json"
     problem_file = joinpath(ins_dir, file_name)
 
     if isfile(problem_file)
