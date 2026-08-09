@@ -16,8 +16,9 @@ technical questions about this repository.
 
 - Ground explanations in the actual source. Reference files and line numbers
   when describing behavior.
-- For architecture questions, consult `CLAUDE.md` (the full architecture
-  reference) and the root `AGENTS.md` (project context and conventions).
+- For architecture questions, consult `memory-bank/systemPatterns.md` (the
+  full architecture reference) and the root `AGENTS.md` (project context and
+  conventions).
 - For Julia-specific questions (indexing, `@inbounds`, style), consult
   `.roo/rules-code/AGENTS.md`.
 - For debugging questions, consult `.roo/rules-debug/AGENTS.md`.

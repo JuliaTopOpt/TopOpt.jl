@@ -12,8 +12,10 @@ optimization algorithms via the Nonconvex.jl ecosystem.
 
 - **Language**: Julia (≥ 1.9). The LTS release is currently 1.10; prefer lower
   bounds in `[compat]` compatible with the LTS where possible.
-- See `CLAUDE.md` for the full architecture reference: module structure, key
-  design patterns, common problem API, dependencies, and usage examples.
+- See `memory-bank/systemPatterns.md` for the full architecture reference:
+  module structure, key design patterns, common problem API, dependencies, and
+  usage examples. `memory-bank/` is git-ignored and kept up to date as the
+  project evolves.
 
 ## Key architectural decisions
 
