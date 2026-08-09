@@ -16,5 +16,6 @@ Manifest.toml
 
 examples/benchmark/iterations
 memory-bank/
-IMPROVEMENTS_SUMMARY.mdlbracket_stress_opt.png
+IMPROVEMENTS_SUMMARY.md
+lbracket_stress_opt.png
 lbracket_stress_opt_densities.csv
