@@ -115,7 +115,7 @@ using .Main: generate_example, copy_static_images
 macro run_example(name)
     return esc(quote
         # Generate Literate output (markdown + notebook + script)
-        generate_example($name, Main.LITERATE_DIR, Main.DOCS_OUTPUT_DIR)
+        Main.generate_example($name, Main.LITERATE_DIR, Main.DOCS_OUTPUT_DIR)
         # Run the example as a test in an isolated temp dir
         mktempdir() do dir
             cd(dir) do
