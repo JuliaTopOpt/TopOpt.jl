@@ -436,6 +436,23 @@ end
     @test Set(problem2.ch.inhomogeneities) == Set([100.0, 0.0])
 end
 
+@testset "HeatTree convenience constructor" begin
+    # Classic heat-conduction topopt benchmark: flux on top, cold bottom,
+    # insulated sides.
+    problem = HeatTree(Val{:Linear}, (8, 4), (1.0, 1.0), 1.0; q=2.0)
+    @test problem isa HeatConductionProblem
+    @test TopOptProblems.getheatfluxdict(problem) == Dict("top" => 2.0)
+    # Only the bottom boundary is prescribed (9 nodes for 8 bottom elements).
+    @test length(problem.ch.prescribed_dofs) == 9
+    @test all(==(0), problem.ch.inhomogeneities)
+    # The problem solves.
+    solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(3.0))
+    solver.vars .= 1.0
+    solver()
+    @test all(isfinite, solver.u)
+    @test maximum(solver.u) > 0
+end
+
 @testset "Heat conduction problem with quadratic elements" begin
     # Create a 2D heat conduction problem with quadratic elements
     nels = (5, 3)

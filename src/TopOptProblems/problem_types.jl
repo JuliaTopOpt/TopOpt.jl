@@ -868,3 +868,33 @@ function HeatConductionProblem(
 end
 
 nnodespercell(p::HeatConductionProblem) = nnodespercell(p.rect_grid)
+
+"""
+    HeatTree(::Type{Val{CellType}}, nels, sizes, k=1.0; q=1.0)
+
+Convenience constructor for the classic heat-conduction topology-optimization
+benchmark (Bendsøe & Sigmund, *Topology Optimization*, §1.3, Fig. 1.4):
+distributed heat flux `q` enters through the full top edge, the full bottom
+edge is held at `T = 0` (cold sink), and the left/right sides are insulated
+(free). Minimizing thermal compliance with this setup produces the branching
+"conductivity tree" — a root structure at the cold bottom that branches and
+tapers toward the hot top.
+
+Arguments:
+- `nels`: tuple of number of elements per dimension
+- `sizes`: tuple of element sizes
+- `k`: thermal conductivity
+- `q`: heat flux on the top boundary (W/m², positive = into the domain)
+"""
+function HeatTree(
+    ::Type{Val{CellType}}, nels::NTuple{dim,Int}, sizes::NTuple{dim}, k=1.0; q=1.0
+) where {dim,CellType}
+    return HeatConductionProblem(
+        Val{CellType}, nels, sizes, k;
+        Tleft=nothing,
+        Tright=nothing,
+        Ttop=nothing,
+        Tbottom=0.0,
+        heatflux=Dict("top" => q),
+    )
+end
