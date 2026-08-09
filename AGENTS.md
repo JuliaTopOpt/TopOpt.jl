@@ -162,6 +162,11 @@ Check what's available first:
 - Do not post comments on GitHub without getting explicit approval for the
   exact text. GitHub is also a social media environment; do not represent the
   maintainer without consent.
+- Any post made on the maintainer's behalf (GitHub issue, PR, comment, review,
+  or other public message) must disclose that it was prepared with assistance
+  from AI and name the model and the harness/tool that produced it (e.g.
+  "Prepared with assistance from GLM-5.2 via opencode"). Do not present
+  AI-assisted text as the maintainer's own unaided writing.
 - Comments, docstrings, and commit messages must stand on their own for a
   reader who has only the repository: state what *is* true about the code now,
   not its history, its motivation, or the plan it came from. Re-read the diff's

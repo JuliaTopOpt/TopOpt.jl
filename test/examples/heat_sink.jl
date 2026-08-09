@@ -79,10 +79,20 @@ println("  Mean density: $(sum(x_opt) / length(x_opt))")
 grad = Zygote.gradient(f, x_opt)[1]
 println("\nGradient check:")
 println("  Gradient norm: $(norm(grad))")
-println("  All gradients negative (expected): $(all(grad .< 0))")
+println("  All gradients finite: $(all(isfinite, grad))")
 
-using Makie
-using CairoMakie
-# alternatively, `using GLMakie`
-fig = visualize(problem; topology=result.minimizer)
-Makie.display(fig)
+# The objective is the thermal compliance J = Q^T T (the work done by the
+# boundary heat flux against the temperature field), not the Dirichlet strain
+# energy T^T K T. With Tleft=100 the two differ; the optimization minimizes
+# J = Q^T T, which rewards conducting heat to the cold (Tright=0) boundary.
+
+# Visualize only when a display is available; skip in headless CI.
+if get(ENV, "DISPLAY", "") != "" && get(ENV, "CI", "") == ""
+    using Makie
+    using CairoMakie
+    # alternatively, `using GLMakie`
+    fig = visualize(problem; topology=result.minimizer)
+    Makie.display(fig)
+else
+    println("\nSkipping visualization (no display or running in CI).")
+end
