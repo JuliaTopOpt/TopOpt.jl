@@ -8,15 +8,13 @@ CurrentModule = TopOpt.TopOptProblems
 
 ## Problem types
 
-### Abstract type
+### Structural problems
 
 `StiffnessTopOptProblem` is an abstract type that a number of linear elasticity, quasi-static, topology optimization problems subtype.
 
 ```@docs
 StiffnessTopOptProblem
 ```
-
-### Test problems
 
 The following types are all concrete subtypes of `StiffnessTopOptProblem`. `PointLoadCantilever` is a cantilever beam problem with a point load as shown below. `HalfMBB` is the half Messerschmitt-Bölkow-Blohm (MBB) beam problem commonly used in topology optimization literature. `LBeam` and `TieBeam` are the common L-beam and tie-beam test problem used in topology optimization literature. The `PointLoadCantilever` and `HalfMBB` problems can be either 2D or 3D depending on the type of the inputs to the constructor. If the number of elements and sizes of elements are 2-tuples, the problem constructed will be 2D. And if they are 3-tuples, the problem constructed will be 3D. For the 3D versions, the point loads are applied at approximately the mid-depth point. The `TieBeam` and `LBeam` problems are always 2D.
 
@@ -42,7 +40,7 @@ TieBeam(::Type{Val{CellType}}, ::Type{T} = Float64, refine = 1, force = T(1); E 
 
 ### Reading INP Files
 
-In `TopOpt.jl`, you can import a `.inp` file to an instance of the problem struct `InpStiffness`. This can be used to construct problems with arbitrary unstructured ground meshes, complex boundary condition domains and load specifications. The `.inp` file can be exported from a number of common finite element software such as: FreeCAD or ABAQUS.
+In `TopOpt.jl`, you can import a `.inp` file to an instance of the problem struct `InpStiffness`. This can be used to construct problems with arbitrary unstructured meshes, complex boundary condition domains and load specifications. The `.inp` file can be exported from a number of common finite element software such as: FreeCAD or ABAQUS.
 
 ```@docs
 InpStiffness
@@ -51,6 +49,31 @@ InpStiffness(filepath_with_ext::AbstractString)
 
 ```@docs
 IO.INP.Parser.InpContent
+```
+
+### Heat transfer problems
+
+`HeatTransferTopOptProblem` is an abstract type for heat-conduction topology
+optimization. Its concrete subtypes are `HeatConductionProblem` (rectilinear
+grid) and `HeatTree` (tree-shaped grid).
+
+```@docs
+HeatTransferTopOptProblem
+```
+
+```@docs
+HeatConductionProblem
+```
+
+```@docs
+HeatTree
+```
+
+## Multi-load problems
+
+```@docs
+MultiLoad
+RandomMagnitude
 ```
 
 ## Grids

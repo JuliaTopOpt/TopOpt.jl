@@ -66,6 +66,27 @@ All the following functions are defined in a differentiable way and you can use 
   - **Constructor example**: `σvf = von_mises_stress_function(solver)`
   - **Usage example**: `σv = σvf(x)`
 
+## Buckling-constrained optimization
+
+The following functions are building blocks for buckling-constrained topology
+optimization. The workflow is:
+
+1. Use `Displacement` to solve for `u` under the current design.
+2. Use `ElementK` to compute per-element stiffness matrices `Kes` from the
+   design, then `AssembleK` to assemble them into the global stiffness matrix
+   `K`. Apply Dirichlet BCs with `apply_boundary_with_meandiag!` (preserves
+   non-singularity).
+3. Use `TrussElementKσ` (truss) or `get_Kσs` (continuum) to compute per-element
+   geometric stiffness matrices `Kσs` from `u` and the design, then `AssembleK`
+   to assemble them into `Kσ`. Apply Dirichlet BCs with
+   `apply_boundary_with_zerodiag!`.
+4. Form the combined matrix `K + c·Kσ` and enforce it as a semidefinite
+   constraint (`K + c·Kσ ≽ 0`) via `Nonconvex.add_sd_constraint!` with
+   `SDPBarrierAlg`. `c` is the buckling load multiplier.
+
+See the [buckling example](@ref buckling-plain-program) for a complete
+end-to-end demonstration.
+
 ## Element stiffness matrices
   - **Function name**: `ElementK`
   - **Description**: A function which computes the element stiffness matrices from the input design variables. The function applies the penalty and interpolation on inputs followed by computing the element stiffness matrices using a quadrature approximation of the discretized integral. This function is useful in buckling-constrained optimization.
@@ -118,3 +139,66 @@ All the following functions are defined in a differentiable way and you can use 
   p0 = nn_model.init_params
   ```
   - **Usage example**: `x = train_func(p)`
+
+## Thermal compliance
+  - **Function name**: `ThermalCompliance`
+  - **Description**: Thermal compliance function for heat-conduction problems. Applies the penalty and interpolation, solves the heat-transfer FEA system, and calculates the thermal compliance `J = Qᵀ T`. Used as the objective in heat-sink and heat-tree topology optimization.
+  - **Input(s)**: Filtered and optionally projected design `x::PseudoDensities`
+  - **Output**: Thermal compliance value `J::Real`
+  - **Constructor example**: `comp = ThermalCompliance(solver)`
+  - **Usage example**: `J = comp(PseudoDensities(x))`
+
+## Multi-load mean compliance
+  - **Function name**: `MeanCompliance`
+  - **Description**: Mean compliance over multiple load cases. Wraps `Compliance` for each load case and returns the average. Useful when a structure must be optimized against several load scenarios.
+  - **Input(s)**: Filtered and optionally projected design `x::PseudoDensities`
+  - **Output**: Mean compliance value `::Real`
+  - **Constructor example**: `meancomp = MeanCompliance(solver, scenarios)`
+  - **Usage example**: `J = meancomp(PseudoDensities(x))`
+
+## Block compliance
+  - **Function name**: `BlockCompliance`
+  - **Description**: Per-load-case compliance vector for multi-load problems. Returns a vector of compliance values, one per load case, instead of the scalar mean. Useful when each load case has its own constraint.
+  - **Input(s)**: Filtered and optionally projected design `x::PseudoDensities`
+  - **Output**: Vector of compliance values `::Vector{<:Real}`
+  - **Constructor example**: `blockcomp = BlockCompliance(solver, scenarios)`
+  - **Usage example**: `J = blockcomp(PseudoDensities(x))`
+
+## Truss macroscopic stress
+  - **Function name**: `TrussStress`
+  - **Description**: Element-wise macroscopic stress for truss problems. Computes the axial stress in each truss member from the nodal displacements and the (penalized, interpolated) design.
+  - **Input(s)**: (1) Nodal displacements `u::Vector{<:Real}`, (2) filtered/penalized design `ρ::PseudoDensities`
+  - **Output**: Element-wise axial stresses `σ::Vector{<:Real}`
+  - **Constructor example**: `σf = TrussStress(problem, solver)`
+  - **Usage example**: `σ = σf(u, PseudoDensities(x))`
+
+## Material interpolation
+  - **Function name**: `MaterialInterpolation`
+  - **Description**: Maps a softmax over per-material decision variables to a physical material property (e.g. Young's modulus or density). Used in multi-material topology optimization where each cell may be one of several candidate materials (plus void).
+  - **Input(s)**: Per-cell, per-material decision variables `y::Vector{<:Real}` (length `ncells * (nmats - 1)`)
+  - **Output**: `PseudoDensities` of the interpolated material property
+  - **Constructor example**: `interp = MaterialInterpolation(Es, penalty)`
+  - **Usage example**: `_E = interp(MultiMaterialVariables(y, nmats))`
+
+## Multi-material variables
+  - **Function name**: `MultiMaterialVariables`
+  - **Description**: Wraps the raw per-cell, per-material decision variables and exposes them in a form `MaterialInterpolation` can consume. Use `tounit` to convert the result to unit-sum densities (softmax).
+  - **Input(s)**: `y::Vector{<:Real}`, `nmats::Int`
+  - **Output**: A `MultiMaterialVariables` wrapper
+  - **Constructor example**: `mv = MultiMaterialVariables(y, nmats)`
+  - **Usage example**: `x = tounit(mv)`
+
+## Fixed element projection
+  - **Function name**: `get_fixed_element_projector`
+  - **Description**: Builds a `FixedElementProjector` that maps a reduced vector of free design variables to a full element density vector, with black (solid, density = 1) and white (void, density = 0) elements held fixed. This lets you exclude fixed elements from the optimization variables while keeping the full density vector that the solver and objective functions expect. The projector is differentiable (a `ChainRulesCore.rrule` propagates gradients only through the free elements), so it composes with the other functions on this page.
+  - **Input(s)**: A problem (e.g. `PointLoadCantilever`, `HalfMBB`) or an element count `nel::Int`, followed by `black_cells` and `white_cells` — vectors of element indices to fix solid and void.
+  - **Output**: A `FixedElementProjector` `p` such that `ρ = p(x_free)` returns the full density vector.
+  - **Constructor example**:
+  ```
+  projector = get_fixed_element_projector(problem, black_cells, white_cells)
+  ```
+  - **Usage example**:
+  ```
+  x_free = fill(0.5, get_free_variable_count(projector))
+  ρ = projector(x_free)
+  ```
