@@ -83,7 +83,7 @@ proj = HeavisideProjection(0.0)
 # ### Termination criteria
 eps = Inf          # current fraction of "intermediate" densities (0.05 < x < 0.95)
 eps_star = 0.05    # target intermediate-density fraction
-maxiter = 100
+maxiter = 20
 epoch = 1
 constr_tol = 0.01
 violation = Inf
