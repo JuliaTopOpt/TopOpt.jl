@@ -110,16 +110,10 @@ macro run_example(name)
     end)
 end
 
-# 16 examples balanced across 4 groups (~4 each), grouped by domain:
-# 1 = compliance/classic, 2 = stress, 3 = heat/truss, 4 = advanced
+# Test groups mirror the docs shard assignment in docs/generate.jl so that
+# the same grouping is used for both test execution and doc generation.
 
 if ACTUAL_GROUP in ("All", "Examples_1")
-    @safetestset "SIMP example" begin
-        @Main.run_example "simp.jl"
-    end
-    @safetestset "CSIMP example" begin
-        @Main.run_example "csimp.jl"
-    end
     @safetestset "BESO example" begin
         @Main.run_example "beso.jl"
     end
@@ -129,47 +123,68 @@ if ACTUAL_GROUP in ("All", "Examples_1")
 end
 
 if ACTUAL_GROUP in ("All", "Examples_2")
+    @safetestset "Problem types (continuum)" begin
+        @Main.run_example "problem_continuum.jl"
+    end
+end
+
+if ACTUAL_GROUP in ("All", "Examples_3")
+    @safetestset "Problem types (truss)" begin
+        @Main.run_example "problem_truss.jl"
+    end
+end
+
+if ACTUAL_GROUP in ("All", "Examples_4")
+    @safetestset "CSIMP example" begin
+        @Main.run_example "csimp.jl"
+    end
+    @safetestset "SIMP example" begin
+        @Main.run_example "simp.jl"
+    end
+end
+
+if ACTUAL_GROUP in ("All", "Examples_5")
+    @safetestset "TOBS example" begin
+        @Main.run_example "TOBS.jl"
+    end
+    @safetestset "Heat tree example" begin
+        @Main.run_example "heat_tree.jl"
+    end
+end
+
+if ACTUAL_GROUP in ("All", "Examples_6")
     @safetestset "Global stress example" begin
         @Main.run_example "global_stress.jl"
     end
     @safetestset "Local stress example" begin
         @Main.run_example "local_stress.jl"
     end
-    @safetestset "TOBS example" begin
-        @Main.run_example "TOBS.jl"
-    end
-    @safetestset "Buckling example" begin
-        @Main.run_example "buckling.jl"
-    end
 end
 
-if ACTUAL_GROUP in ("All", "Examples_3")
-    @safetestset "Heat tree example" begin
-        @Main.run_example "heat_tree.jl"
-    end
+if ACTUAL_GROUP in ("All", "Examples_7")
     @safetestset "Heat sink example" begin
         @Main.run_example "heat_sink.jl"
     end
-    @safetestset "Mixed-integer truss example" begin
-        @Main.run_example "mixed_integer_truss.jl"
-    end
-    @safetestset "Problem types (continuum)" begin
-        @Main.run_example "problem_continuum.jl"
+    @safetestset "Multi-material example" begin
+        @Main.run_example "multimaterial.jl"
     end
 end
 
-if ACTUAL_GROUP in ("All", "Examples_4")
-    @safetestset "Multi-material example" begin
-        @Main.run_example "multimaterial.jl"
+if ACTUAL_GROUP in ("All", "Examples_8")
+    @safetestset "Mixed-integer truss example" begin
+        @Main.run_example "mixed_integer_truss.jl"
     end
     @safetestset "Neural network example" begin
         @Main.run_example "neural.jl"
     end
+end
+
+if ACTUAL_GROUP in ("All", "Examples_9")
     @safetestset "Neural network (Adam) example" begin
         @Main.run_example "neural2.jl"
     end
-    @safetestset "Problem types (truss)" begin
-        @Main.run_example "problem_truss.jl"
+    @safetestset "Buckling example" begin
+        @Main.run_example "buckling.jl"
     end
 end
 

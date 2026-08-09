@@ -26,6 +26,11 @@ jobs:
           - Examples_2
           - Examples_3
           - Examples_4
+          - Examples_5
+          - Examples_6
+          - Examples_7
+          - Examples_8
+          - Examples_9
           - WCSMO14_1
           - WCSMO14_2
           - Core_Tests_Opposite_Preference
