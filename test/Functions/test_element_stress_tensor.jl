@@ -237,6 +237,8 @@ end
         @test σvm != σvm_planestress
     end
 end
+
+@testset "von Mises with 3×3 tensors" begin
         # 2D problems now return 3×3 tensors with the plane-strain σzz included.
         # These tests use full 3×3 tensors and compare against the 3D reference.
         σ1 = [100.0 0.0 0.0; 0.0 0.0 0.0; 0.0 0.0 0.0]
@@ -256,7 +258,6 @@ end
 
         σ6 = [0.0 0.0 0.0; 0.0 0.0 0.0; 0.0 0.0 0.0]
         @test TopOpt.Functions.von_mises(σ6) ≈ 0.0 atol = 1e-10
-    end
 
     @testset "3D stress tensors" begin
         σ1 = [100.0 0.0 0.0; 0.0 0.0 0.0; 0.0 0.0 0.0]
