@@ -8,6 +8,10 @@ is the filtered, optionally projected design. The closed-form gradient
 `dJ/dx_e = -u_eᵀ K_e u_e · dρ_e/dx_e` is propagated via a `ChainRulesCore.rrule`.
 
 Only valid for `StiffnessTopOptProblem` with homogeneous Dirichlet BCs.
+
+See [BendsoeSigmund2003](@cite) §2.1 for compliance minimization and
+[BendsoeSigmund1999](@cite) for the SIMP interpolation used in the stiffness
+assembly.
 """
 mutable struct Compliance{
     T,TS<:AbstractFEASolver,TC<:AbstractVector{T},TG<:AbstractVector{T}

@@ -3,7 +3,12 @@
 
 Sensitivity chequerboard filter with radius `rmin`. Smooths the objective
 gradient by weighting each element's sensitivity with the sensitivities of
-neighboring elements within `rmin`. Call as `y = flt(x)`.
+neighboring elements within `rmin`, using the filter scheme from
+[HuangXie2010](@cite) (BESO): the weight is `max(rmin - dist, 0)` where
+`dist` is the distance from the element centroid to the neighboring node.
+
+Call as `y = flt(x)`. See also [BendsoeSigmund2003](@cite) §3.4 for general
+background on sensitivity filtering.
 """
 struct SensFilter{
     T,TV<:AbstractVector{T},TE<:ElementFEAInfo,TM<:FilterMetadata

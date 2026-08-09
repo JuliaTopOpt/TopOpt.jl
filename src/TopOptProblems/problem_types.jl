@@ -622,6 +622,9 @@ Mathematical note: For thermal compliance J = Q^T T, the gradient is:
     dJ/dx_e = -T_e^T Ke T_e · dρ_e/dx_e
 This is the same form as structural compliance because Q doesn't depend on x.
 
+See [BendsoeSigmund2003](@cite) §1.3 and §4.1 for thermal topology
+optimization, and [Iga2009](@cite) for SIMP-based heat conduction.
+
 All subtypes must have:
 - `ch`: ConstraintHandler with temperature DOFs (1 DOF per node)
 - `metadata`: Metadata with cell-node-dof relationships
@@ -873,7 +876,7 @@ nnodespercell(p::HeatConductionProblem) = nnodespercell(p.rect_grid)
     HeatTree(::Type{Val{CellType}}, nels, sizes, k=1.0; q=1.0)
 
 Convenience constructor for the classic heat-conduction topology-optimization
-benchmark (Bendsøe & Sigmund, *Topology Optimization*, §1.3, Fig. 1.4):
+benchmark ([BendsoeSigmund2003](@cite) §1.3, Fig. 1.4):
 distributed heat flux `q` enters through the full top edge, the full bottom
 edge is held at `T = 0` (cold sink), and the left/right sides are insulated
 (free). Minimizing thermal compliance with this setup produces the branching

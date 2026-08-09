@@ -28,6 +28,10 @@ where `Q_cond` is `Q` zeroed on prescribed DOFs, then
 that the adjoint state `λ` is not `-T` when the Dirichlet values are nonzero
 (because the Dirichlet lift `K(ρ) v` enters the forward residual).
 
+See [BendsoeSigmund2003](@cite) §1.3 and §4.1 for thermal topology
+optimization, and [Iga2009](@cite) for SIMP-based heat conduction
+optimization.
+
 # Usage
 
 ```julia

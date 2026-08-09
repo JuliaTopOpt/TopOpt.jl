@@ -6,6 +6,9 @@ Differentiable volume (or volume fraction) function. When `fraction=true`
 `V = Σ x_e * cellvolume_e`.
 
 Construct with `Volume(solver)`. Call as `vol(PseudoDensities(x))`.
+
+The volume constraint is the standard resource constraint in SIMP topology
+optimization; see [BendsoeSigmund2003](@cite) §2.1.
 """
 mutable struct Volume{
     T,Ts<:AbstractFEASolver,Tc<:AbstractVector{T},Tg<:AbstractVector{T}

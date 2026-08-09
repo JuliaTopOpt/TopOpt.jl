@@ -6,6 +6,10 @@ the displacement vector `u`. Useful for displacement-constrained optimization
 and as input to stress functions.
 
 Construct with `Displacement(solver)`. Call as `u = disp(PseudoDensities(x))`.
+
+The adjoint-based gradient solves `K λ = Δ` (reusing the factorization) and
+computes `du/dx_e = -dρ_e/dx_e · u_eᵀ K_e λ`. See [BendsoeSigmund2003](@cite)
+§2.1 for the adjoint method in topology optimization.
 """
 mutable struct Displacement{
     T,
