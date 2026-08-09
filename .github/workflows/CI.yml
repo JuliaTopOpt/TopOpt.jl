@@ -64,7 +64,7 @@ jobs:
         env:
           GROUP: ${{ matrix.group }}
           DOCS_OUTPUT_DIR: ${{ contains(matrix.group, 'Examples') && format('{0}/docs-generated', runner.temp) || '' }}
-        run: julia --project=test --color=yes --check-bounds=yes --depwarn=yes -e 'using Pkg; Pkg.test(coverage=true)'
+        run: julia --project=test --color=yes --check-bounds=yes --depwarn=yes --code-coverage=@. -e 'include("test/runtests.jl")'
       - name: Upload generated docs examples
         if: contains(matrix.group, 'Examples')
         uses: actions/upload-artifact@v4
