@@ -39,7 +39,7 @@ constr(x) = sum(cheqfilter(PseudoDensities(x))) / length(x) - V; # volume fracti
 m = Model(obj); # create optimization model
 addvar!(m, zeros(length(x0)), ones(length(x0))); # setup optimization variables
 Nonconvex.add_ineq_constraint!(m, constr); # setup volume inequality constraint
-options = TOBSOptions(); # optimization options with default values
+options = TOBSOptions(; maxiter=20); # optimization options
 TopOpt.setpenalty!(solver, p);
 
 # Perform TOBS optimization

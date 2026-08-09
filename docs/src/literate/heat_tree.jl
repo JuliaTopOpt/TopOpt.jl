@@ -42,7 +42,7 @@ add_ineq_constraint!(model, constr)
 alg = MMA87()
 
 # ### Optimize
-options = MMAOptions(; tol=Tolerance(; kkt=1e-4), maxiter=200)
+options = MMAOptions(; tol=Tolerance(; kkt=1e-4), maxiter=30)
 res = optimize(model, alg, x0; options)
 
 @show obj(res.minimizer)

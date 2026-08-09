@@ -57,7 +57,7 @@ constr = x -> norm(stress(filter(PseudoDensities(x))), 5) - threshold
 N = length(solver.vars)
 x0 = fill(0.5, N)
 
-options = MMAOptions(; maxiter=2000, tol=Nonconvex.Tolerance(; kkt=1e-4), convcriteria)
+options = MMAOptions(; maxiter=50, tol=Nonconvex.Tolerance(; kkt=1e-4), convcriteria)
 model = Model(obj)
 addvar!(model, zeros(N), ones(N))
 add_ineq_constraint!(model, constr)

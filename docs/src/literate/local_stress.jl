@@ -31,7 +31,7 @@ constr = x -> begin
     return (s .- thr) / length(s)
 end
 alg = PercivalAlg()
-options = PercivalOptions()
+options = PercivalOptions(; maxiter=20)
 model = Model(obj)
 addvar!(model, zeros(N), ones(N))
 add_ineq_constraint!(model, constr)
