@@ -82,7 +82,7 @@ problem = TieBeam(Val{order})
 
 # Instead of defining a problem type programmatically, one can also use CAD/CAE software to define a 2D/3D problem domain using a graphical user interface and then export a .inp file from the CAD/CAE software. The .inp file can then be read into TopOpt.jl using:
 
-filename = "../data/problem.inp" # path to inp file
+filename = joinpath(@__DIR__, "..", "data", "problem.inp") # path to inp file
 problem = InpStiffness(filename);
 
 # For example, the following problem with fixed load, distributed loads and tetrahedral elements was defined usign FreeCAD and imported into TopOpt.jl to perform topology optimization. More information on how to specify the supports and loads in FreeCAD can be found in the webpage of FreeCAD's [FEM Workbench](https://wiki.freecad.org/FEM_Workbench).

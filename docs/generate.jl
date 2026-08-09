@@ -33,7 +33,7 @@ function generate_example(example_file::AbstractString, example_dir::AbstractStr
     code = strip(read(script, String))
     mdpost(str) = replace(str, "@__CODE__" => code)
     Literate.markdown(input, output_dir; postprocess=mdpost)
-    Literate.notebook(input, output_dir; execute=true)
+    Literate.notebook(input, output_dir; execute=false)
     # Clean up .vtu files
     cd(output_dir) do
         foreach(file -> endswith(file, ".vtu") && rm(file; force=true), readdir())

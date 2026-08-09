@@ -5,9 +5,11 @@
 # ## Truss problems
 # ### 2D and 3D truss problem from json file
 
+using TopOpt
+
 # Data for constructing a 2D/3D truss problems can be imported from a json file:
 
-path_to_file = "../data/tim_2d.json" # path to json file
+path_to_file = joinpath(@__DIR__, "..", "data", "tim_2d.json") # path to json file
 mats = TrussFEAMaterial(10.0, 0.3) # Young’s modulus and Poisson’s ratio
 crossecs = TrussFEACrossSec(800.0) # Cross-sectional area
 node_points, elements, _, _, fixities, load_cases = load_truss_json(path_to_file)
