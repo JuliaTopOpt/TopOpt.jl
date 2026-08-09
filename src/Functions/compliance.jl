@@ -1,3 +1,14 @@
+"""
+    Compliance(solver::AbstractFEASolver)
+
+Differentiable structural compliance objective `J = Fᵀ U = Σ ρ_e u_eᵀ K_e u_e`.
+
+Construct with `Compliance(solver)`. Call as `comp(PseudoDensities(x))` where `x`
+is the filtered, optionally projected design. The closed-form gradient
+`dJ/dx_e = -u_eᵀ K_e u_e · dρ_e/dx_e` is propagated via a `ChainRulesCore.rrule`.
+
+Only valid for `StiffnessTopOptProblem` with homogeneous Dirichlet BCs.
+"""
 mutable struct Compliance{
     T,TS<:AbstractFEASolver,TC<:AbstractVector{T},TG<:AbstractVector{T}
 } <: AbstractFunction{T}

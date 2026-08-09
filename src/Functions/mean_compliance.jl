@@ -1,3 +1,10 @@
+"""
+    MeanCompliance(solver, scenarios)
+
+Mean compliance over multiple load cases. Returns the average of the
+per-scenario compliance values. `scenarios` is typically produced by
+`generate_scenarios`.
+"""
 mutable struct MeanCompliance{T,TC<:Compliance{T},TM,TS,Tg<:AbstractVector{T}} <:
                AbstractFunction{T}
     compliance::TC

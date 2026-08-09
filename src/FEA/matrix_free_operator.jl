@@ -1,5 +1,10 @@
 abstract type AbstractMatrixOperator{Tconv} end
 
+"""
+    MatrixOperator
+
+Linear operator wrapping an assembled matrix for use with IterativeSolvers' `cg!`.
+"""
 struct MatrixOperator{Tconv,TK,Tf} <: AbstractMatrixOperator{Tconv}
     K::TK
     f::Tf
@@ -14,6 +19,12 @@ Base.size(op::MatrixOperator, i) = size(op.K, i)
 Base.eltype(op::MatrixOperator) = eltype(op.K)
 LinearAlgebra.:*(op::MatrixOperator, b) = mul!(similar(b), op.K, b)
 
+"""
+    MatrixFreeOperator
+
+Linear operator that applies the global stiffness matrix without assembling
+it, by looping over element matrices. Used by `CGMatrixFreeSolver`.
+"""
 struct MatrixFreeOperator{
     Tconv,
     T,

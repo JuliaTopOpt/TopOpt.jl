@@ -11,12 +11,22 @@ using LinearAlgebra: I, norm
 using NearestNeighbors
 
 abstract type AbstractFEAMaterial end
+"""
+    TrussFEAMaterial(E, ν)
+
+Material container for truss FEA: Young's modulus `E` and Poisson's ratio `ν`.
+"""
 struct TrussFEAMaterial{T} <: AbstractFEAMaterial
     E::T # Young's modulus
     ν::T # Poisson's ratio
 end
 
 abstract type AbstractFEACrossSec end
+"""
+    TrussFEACrossSec(A)
+
+Cross-section container for truss FEA with area `A`.
+"""
 struct TrussFEACrossSec{T} <: AbstractFEACrossSec
     A::T # cross section area
 end

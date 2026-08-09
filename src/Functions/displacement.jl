@@ -1,3 +1,12 @@
+"""
+    Displacement(solver::AbstractFEASolver)
+
+Differentiable nodal displacement function. Solves the FEA system and returns
+the displacement vector `u`. Useful for displacement-constrained optimization
+and as input to stress functions.
+
+Construct with `Displacement(solver)`. Call as `u = disp(PseudoDensities(x))`.
+"""
 mutable struct Displacement{
     T,
     Tu<:AbstractVector{T},

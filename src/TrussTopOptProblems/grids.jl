@@ -1,6 +1,12 @@
 using ..TopOpt.TopOptProblems: AbstractGrid
 const Vec = Ferrite.Vec
 
+"""
+    TrussGrid(node_points, elements)
+
+Ferrite grid for truss problems, built from node coordinates and element
+connectivity.
+"""
 struct TrussGrid{xdim,T,N,M,TG<:Ferrite.Grid{xdim,<:Ferrite.AbstractCell,T}} <:
        AbstractGrid{xdim,T}
     grid::TG

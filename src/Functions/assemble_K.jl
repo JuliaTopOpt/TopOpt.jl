@@ -1,3 +1,12 @@
+"""
+    AssembleK(problem)
+
+Assemble element-wise matrices into a global sparse matrix. Useful in
+buckling-constrained optimization.
+
+Call as `K = assemble(Kes)` where `Kes` is a vector of element matrices.
+Returns a `SparseMatrixCSC`.
+"""
 mutable struct AssembleK{
     T,Tp<:StiffnessTopOptProblem,TK<:AbstractMatrix{T},Tg<:AbstractVector{<:Integer}
 } <: AbstractFunction{T}

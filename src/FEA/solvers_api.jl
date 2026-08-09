@@ -1,3 +1,8 @@
+"""
+    SolverResult
+
+Abstract type for the result returned by an FEA solver.
+"""
 abstract type SolverResult end
 
 # ============================================================================
@@ -5,14 +10,59 @@ abstract type SolverResult end
 # ============================================================================
 
 # Physics types - dispatch to different element matrix/assembly functions
+"""
+    AbstractPhysics
+
+Abstract type for the physics model dispatched on by `GenericFEASolver`.
+Subtypes: `LinearElasticity` (structural mechanics, `dim` DOFs/node) and
+`HeatTransfer` (heat conduction, 1 DOF/node).
+"""
 abstract type AbstractPhysics end
+"""
+    LinearElasticity
+
+Physics tag for structural-mechanics problems. Selects linear-elasticity
+element matrices and assembly (dim DOFs per node).
+"""
 struct LinearElasticity <: AbstractPhysics end      # Structural mechanics (dim DOFs/node)
+"""
+    HeatTransfer
+
+Physics tag for heat-conduction problems. Selects heat-transfer element
+matrices and assembly (1 DOF per node).
+"""
 struct HeatTransfer <: AbstractPhysics end          # Heat conduction (1 DOF/node)
 
 # Linear solver algorithm types
+"""
+    AbstractLinearSolver
+
+Abstract type for the linear-system algorithm used inside `GenericFEASolver`.
+Subtypes: `DirectSolver` (factorization), `CGAssemblySolver` (CG with an
+assembled sparse matrix), `CGMatrixFreeSolver` (matrix-free CG).
+"""
 abstract type AbstractLinearSolver end
+"""
+    DirectSolver
+
+Direct linear solver using Cholesky (or QR) factorization. The most robust
+option for small to medium problems.
+"""
 struct DirectSolver <: AbstractLinearSolver end           # Factorization-based (Cholesky/QR)
+"""
+    CGAssemblySolver
+
+Conjugate-gradient solver with an assembled sparse matrix. Suitable for larger
+problems where a factorization is too expensive in memory.
+"""
 struct CGAssemblySolver <: AbstractLinearSolver end       # CG with assembled matrix
+"""
+    CGMatrixFreeSolver
+
+Matrix-free conjugate-gradient solver. Avoids assembling the global stiffness
+matrix entirely, applying element matrices on the fly. Does not yet support
+inhomogeneous Dirichlet BCs.
+"""
 struct CGMatrixFreeSolver <: AbstractLinearSolver end     # Matrix-free CG
 
 # Export new abstractions
@@ -27,6 +77,12 @@ export AbstractLinearSolver, DirectSolver, CGAssemblySolver, CGMatrixFreeSolver
 const CGSV{T,V} = CGStateVariables{T,V}
 
 # Unified solver type with orthogonal physics and linear solver parameters
+"""
+    GenericFEASolver
+
+Unified FEA solver with orthogonal physics and linear-solver dispatch. Use the
+`FEASolver` factory constructor instead of constructing this directly.
+"""
 mutable struct GenericFEASolver{
     T,
     Physics<:AbstractPhysics,
@@ -328,6 +384,15 @@ physics_type(::HeatTransferTopOptProblem) = HeatTransfer
 # ============================================================================
 
 # New unified constructor with physics and solver type parameters
+"""
+    FEASolver(Physics, Solver, problem; kwargs...) -> GenericFEASolver
+    FEASolver(Solver, problem; kwargs...) -> GenericFEASolver
+
+Factory constructor for the unified FEA solver. The second form infers the
+physics type from the problem type. Keyword arguments: `quad_order`, `xmin`,
+`penalty`, `prev_penalty`, `qr`, `cg_max_iter`, `abstol`, `preconditioner`,
+`conv`.
+"""
 function FEASolver(
     ::Type{Physics},
     ::Type{Solver},

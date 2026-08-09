@@ -6,6 +6,16 @@ Base.size(x::ElementStiffnessMatrix, i...) = size(x.Ke, i...)
 Base.getindex(x::ElementStiffnessMatrix, i...) = x.Ke[i...]
 Base.:*(x::ElementStiffnessMatrix, y::Number) = ElementStiffnessMatrix(x.Ke * y)
 
+"""
+    ElementK(solver::AbstractFEASolver)
+
+Element-wise stiffness matrices from the input design variables. Applies the
+penalty and interpolation, then computes each element stiffness matrix via
+quadrature. Useful in buckling-constrained optimization.
+
+Call as `Kes = kesf(PseudoDensities(x))`. Returns a vector of symmetric
+matrices, one per element.
+"""
 mutable struct ElementK{
     T,
     Ts<:AbstractFEASolver,

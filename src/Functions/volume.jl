@@ -1,3 +1,12 @@
+"""
+    Volume(solver::AbstractFEASolver; fraction=true)
+
+Differentiable volume (or volume fraction) function. When `fraction=true`
+(default) returns `V/total_volume`; otherwise returns the absolute volume
+`V = Σ x_e * cellvolume_e`.
+
+Construct with `Volume(solver)`. Call as `vol(PseudoDensities(x))`.
+"""
 mutable struct Volume{
     T,Ts<:AbstractFEASolver,Tc<:AbstractVector{T},Tg<:AbstractVector{T}
 } <: AbstractFunction{T}

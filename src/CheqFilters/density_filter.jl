@@ -1,3 +1,10 @@
+"""
+    DensityFilter(solver; rmin)
+
+Density chequerboard filter with radius `rmin`. Produces a filtered design
+where each element's density is a weighted average of neighboring densities
+within `rmin`. Call as `y = flt(PseudoDensities(x))`.
+"""
 struct DensityFilter{T,TM<:FilterMetadata,TJ<:AbstractMatrix{T}} <:
        AbstractDensityFilter
     metadata::TM
@@ -95,6 +102,12 @@ function scalecols!(A::SparseMatrixCSC)
     return A
 end
 
+"""
+    ProjectedDensityFilter
+
+Density filter followed by a projection (e.g. Heaviside) to push the design
+toward 0/1. Useful for producing near-binary designs.
+"""
 struct ProjectedDensityFilter{TF<:DensityFilter,TP1,TP2} <: AbstractDensityFilter
     filter::TF
     preproj::TP1

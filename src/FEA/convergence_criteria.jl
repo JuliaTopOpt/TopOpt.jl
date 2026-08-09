@@ -1,5 +1,22 @@
+"""
+    ConvergenceCriteria
+
+Abstract type for CG convergence criteria. Subtypes: `DefaultCriteria`,
+`EnergyCriteria`.
+"""
 abstract type ConvergenceCriteria end
+"""
+    DefaultCriteria
+
+Default CG convergence criterion based on the residual norm.
+"""
 struct DefaultCriteria <: ConvergenceCriteria end
+"""
+    EnergyCriteria
+
+Energy-based CG convergence criterion, checking the relative energy norm.
+Useful for stiff systems where the residual norm is a poor indicator.
+"""
 mutable struct EnergyCriteria{T} <: ConvergenceCriteria
     energy::T
 end

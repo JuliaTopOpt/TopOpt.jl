@@ -1,3 +1,10 @@
+"""
+    SensFilter(solver; rmin)
+
+Sensitivity chequerboard filter with radius `rmin`. Smooths the objective
+gradient by weighting each element's sensitivity with the sensitivities of
+neighboring elements within `rmin`. Call as `y = flt(x)`.
+"""
 struct SensFilter{
     T,TV<:AbstractVector{T},TE<:ElementFEAInfo,TM<:FilterMetadata
 } <: AbstractSensFilter
