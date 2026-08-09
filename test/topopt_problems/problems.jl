@@ -337,10 +337,11 @@ end
             Val{:Linear}, (10, 5), (1.0, 1.0), 1.0;
             Tleft=0.0, Tright=0.0, heatflux=heatflux
         )
-        
-        # Returns empty dict for HeatTransferTopOptProblem
+
+        # Returns an empty Dict{Int,Vector{Float64}} (node index => heat value)
+        # for a problem with no point heat sources configured.
         cd = TopOptProblems.getcloaddict(problem)
-        @test cd isa Dict{String,Vector{Float64}}
+        @test cd isa Dict{Int,Vector{Float64}}
         @test isempty(cd)
     end
 end
@@ -361,6 +362,48 @@ end
     @test problem isa HeatConductionProblem
     @test getk(problem) ≈ 1.0
     @test Ferrite.getncells(problem) == 50
+end
+
+@testset "Heat conduction problem with point heat source (cload)" begin
+    # A concentrated heat source at a node is the point-source analogue of the
+    # distributed heatflux; it is the setup that produces the branching
+    # "conductivity tree" layout in the literature.
+    nels = (8, 4)
+    nx, ny = nels
+    # Node index of the top-center node (x-major node ordering).
+    center_x = div(nx, 2) + 1
+    top_center = center_x + ny * (nx + 1)
+
+    problem = HeatConductionProblem(
+        Val{:Linear}, nels, (1.0, 1.0), 1.0;
+        Tleft=0.0, Tright=0.0,
+        heatflux=Dict{String,Float64}(),
+        cload=Dict(top_center => 1.0),
+    )
+
+    @test problem isa HeatConductionProblem
+    cd = TopOptProblems.getcloaddict(problem)
+    @test cd isa Dict{Int,<:Vector}
+    @test haskey(cd, top_center)
+    @test cd[top_center] == [1.0]
+
+    # The point source must show up in the assembled non-penalized load Q.
+    solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(3.0))
+    Q = solver.elementinfo.fixedload
+    @test count(!=(0), Q) > 0
+    # The injected heat should land on the top-center DOF, which is the first
+    # DOF of the top-center node.
+    node_dofs = problem.metadata.node_dofs
+    @test Q[node_dofs[1, top_center]] ≈ 1.0
+
+    # Default (no cload) keeps the zero load, preserving old behavior.
+    problem_empty = HeatConductionProblem(
+        Val{:Linear}, nels, (1.0, 1.0), 1.0;
+        Tleft=0.0, Tright=0.0, heatflux=Dict{String,Float64}(),
+    )
+    @test isempty(TopOptProblems.getcloaddict(problem_empty))
+    solver_empty = FEASolver(DirectSolver, problem_empty; xmin=0.01)
+    @test all(==(0), solver_empty.elementinfo.fixedload)
 end
 
 @testset "Heat conduction problem with quadratic elements" begin

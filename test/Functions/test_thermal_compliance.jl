@@ -128,6 +128,29 @@ end
         g = Zygote.gradient(x -> comp(PseudoDensities(x)), ones(16))[1]
         @test norm(g) < 1e-8
     end
+
+    @testset "Point heat source (cload) produces a nonzero objective and correct gradient" begin
+        # A concentrated heat source at a node is an external input, so it
+        # enters Q (non-penalized) and the Q^T T objective and its adjoint
+        # gradient apply unchanged.
+        nels = (8, 4)
+        nx, ny = nels
+        center_x = div(nx, 2) + 1
+        top_center = center_x + ny * (nx + 1)
+        problem = HeatConductionProblem(
+            Val{:Linear}, nels, (1.0, 1.0), 1.0;
+            Tleft=0.0, Tright=0.0,
+            heatflux=Dict{String,Float64}(),
+            cload=Dict(top_center => 1.0),
+        )
+        solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(3.0))
+        comp = ThermalCompliance(solver)
+        f = x -> comp(PseudoDensities(x))
+        x = clamp.(rand(prod(nels)), 0.2, 1.0)
+        val, gz, fd = f(x), Zygote.gradient(f, x)[1], FDM.grad(FDM.central_fdm(5, 1), f, x)[1]
+        @test val > 0
+        @test isapprox(gz, fd; rtol=1e-5, atol=1e-8)
+    end
 end
 
 @testset "Thermal Compliance - Physical Validation" begin
