@@ -1,5 +1,5 @@
 # using Revise
-using TopOpt, LinearAlgebra, StatsFuns
+using TopOpt, LinearAlgebra, StatsFuns, Test
 using StatsFuns: logsumexp
 
 E = 1.0 # Young’s modulus
@@ -45,6 +45,12 @@ end
 
 maximum(stress(filter(PseudoDensities(x0))))
 maximum(stress(filter(PseudoDensities(x))))
+
+# ### Verify the result
+# The optimized design's peak von Mises stress should not exceed the
+# threshold by more than 1%.
+s = stress(filter(PseudoDensities(x)))
+@test (maximum(s) - thr) / thr < 0.01
 
 # ### (Optional) Visualize the result using Makie.jl
 # Need to run `using Pkg; Pkg.add("Makie")` first and either `Pkg.add("CairoMakie")` or `Pkg.add("GLMakie")`
