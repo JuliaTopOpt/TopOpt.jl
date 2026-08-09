@@ -392,16 +392,18 @@ function make_Kes_and_fes(
     dh = getdh(problem)
     k = getk(problem)
 
-    refshape = Ferrite.getrefshape(
-        _base_interpolation(dh.subdofhandlers[1].field_interpolations[1])
-    )
-
-    # Shape functions for scalar field (temperature)
-    interpolation_space = Lagrange{refshape,1}()
+    # Shape functions for the scalar temperature field. Use the interpolation
+    # actually stored on the DofHandler so quadratic problems build quadratic
+    # cell/facet values (hardcoding order 1 breaks Val{:Quadratic} problems).
+    # Pass the interpolation as both function and geometric mapping because
+    # TopOpt uses isoparametric elements; Ferrite defaults the geometric
+    # mapping to linear Lagrange, which mismatches quadratic cell nodes.
+    interpolation_space = _base_interpolation(dh.subdofhandlers[1].field_interpolations[1])
+    refshape = Ferrite.getrefshape(interpolation_space)
     quadrature_rule = QuadratureRule{refshape}(quad_order)
-    cellvalues = CellValues(quadrature_rule, interpolation_space)
+    cellvalues = CellValues(quadrature_rule, interpolation_space, interpolation_space)
     facetvalues = FacetValues(
-        FacetQuadratureRule{refshape}(quad_order), interpolation_space
+        FacetQuadratureRule{refshape}(quad_order), interpolation_space, interpolation_space
     )
 
     # Calculate element conductivity matrices

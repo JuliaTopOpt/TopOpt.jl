@@ -392,17 +392,15 @@ end
     
     # Check heatflux dict is accessible
     @test TopOptProblems.getheatfluxdict(problem) == heatflux
-    
-    # Note: ElementFEAInfo creation for quadratic heat conduction elements
-    # requires compatible CellValues construction (see Ferrite issue #265)
-    # For now we just verify the problem structure is correct
-    
-    # Test element info can be created with default settings
-    # elementinfo = ElementFEAInfo(problem, 2, Val{:Static})
-    # @test length(elementinfo.Kes) == nels[1] * nels[2]
-    # For quadratic quad elements, each element has 9 nodes
-    # and heat transfer is scalar field, so Ke is 9x9
-    # @test size(elementinfo.Kes[1], 1) == 9
+
+    # ElementFEAInfo now builds for quadratic heat conduction elements (the
+    # cellvalues interpolation is taken from the DofHandler instead of being
+    # hardcoded to linear Lagrange).
+    elementinfo = ElementFEAInfo(problem, 2, Val{:Static})
+    @test length(elementinfo.Kes) == nels[1] * nels[2]
+    # Quadratic quad: 9 nodes, scalar temperature field -> 9x9 Ke.
+    @test size(elementinfo.Kes[1], 1) == 9
+    @test size(elementinfo.Kes[1], 2) == 9
 end
 
 @testset "Heat transfer element matrices" begin
