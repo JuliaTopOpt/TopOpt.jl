@@ -33,7 +33,7 @@ jobs:
             ~/.julia/packages
             ~/.julia/artifacts
             ~/.julia/registries
-          key: ${{ matrix.cache-name }}-${{ hashFiles('test/Project.toml', 'test/Manifest.toml', 'Project.toml') }}
+          key: ${{ matrix.cache-name }}-${{ hashFiles('test/Project.toml', 'Project.toml') }}
       - name: Instantiate and precompile test environment
         run: julia --project=test -e 'using Pkg; Pkg.develop(PackageSpec(path=".")); Pkg.instantiate(); Pkg.precompile()'
       - name: Set opposite preference and recompile TopOpt
@@ -57,8 +57,8 @@ jobs:
             ~/.julia/packages
             ~/.julia/artifacts
             ~/.julia/registries
-          key: ${{ matrix.cache-name }}-${{ hashFiles('test/Project.toml', 'test/Manifest.toml', 'Project.toml') }}
-  test:
+          key: ${{ matrix.cache-name }}-${{ hashFiles('test/Project.toml', 'Project.toml') }}
+   test:
     name: ${{matrix.group}} - Julia ${{ matrix.version }} - ${{ matrix.os }}
     needs: precompile
     runs-on: ${{ matrix.os }}
@@ -100,8 +100,9 @@ jobs:
             ~/.julia/packages
             ~/.julia/artifacts
             ~/.julia/registries
-          key: ${{ contains(matrix.group, 'Opposite_Preference') && 'test-opposite' || 'test' }}-${{ hashFiles('test/Project.toml', 'test/Manifest.toml', 'Project.toml') }}
-      - name: Instantiate test environment
+          key: ${{ contains(matrix.group, 'Opposite_Preference') && 'test-opposite' || 'test' }}-${{ hashFiles('test/Project.toml', 'Project.toml') }}
+          restore-keys: |
+            ${{ contains(matrix.group, 'Opposite_Preference') && 'test-opposite' || 'test' }}-
         run: julia --project=test -e 'using Pkg; Pkg.develop(PackageSpec(path=".")); Pkg.instantiate(); Pkg.precompile()'
       - name: Set preference for opposite preference jobs
         if: contains(matrix.group, 'Opposite_Preference')
@@ -155,7 +156,7 @@ jobs:
             ~/.julia/packages
             ~/.julia/artifacts
             ~/.julia/registries
-          key: test-${{ hashFiles('test/Project.toml', 'test/Manifest.toml', 'Project.toml') }}
+          key: test-${{ hashFiles('test/Project.toml', 'Project.toml') }}
       - name: Install dependencies
         run: |
           julia --project=docs -e '
