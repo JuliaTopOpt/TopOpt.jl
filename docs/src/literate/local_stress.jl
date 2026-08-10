@@ -30,8 +30,8 @@ constr = x -> begin
     s = stress(filter(PseudoDensities(x)))
     return (s .- thr) / length(s)
 end
-alg = PercivalAlg()
-options = PercivalOptions(; maxiter=10)
+alg = MMA87()
+options = MMAOptions(; maxiter=20)
 model = Model(obj)
 addvar!(model, zeros(N), ones(N))
 add_ineq_constraint!(model, constr)
