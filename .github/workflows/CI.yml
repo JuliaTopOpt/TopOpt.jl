@@ -48,7 +48,7 @@ jobs:
         if: steps.restore.outputs.cache-hit != 'true'
         run: julia --project=test -e 'using Pkg; Pkg.precompile()'
       - name: Print cache hit status
-        run: echo "Precompile cache hit: ${{ steps.restore.outputs.cache-hit }}"
+        run: echo "Precompile cache hit ${{ steps.restore.outputs.cache-hit }}"
       - name: Set opposite preference and recompile TopOpt
         if: matrix.prefs == 'opposite' && steps.restore.outputs.cache-hit != 'true'
         run: |
@@ -129,7 +129,7 @@ jobs:
         if: steps.restore.outputs.cache-hit != 'true'
         run: julia --project=test -e 'using Pkg; Pkg.precompile()'
       - name: Print cache hit status
-        run: echo "Cache hit: ${{ steps.restore.outputs.cache-hit }}"
+        run: echo "Cache hit ${{ steps.restore.outputs.cache-hit }}"
       - name: Set preference for opposite preference jobs
         if: contains(matrix.group, 'Opposite_Preference')
         run: |
