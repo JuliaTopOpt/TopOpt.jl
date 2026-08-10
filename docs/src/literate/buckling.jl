@@ -65,8 +65,9 @@ truss_element_kσ = TrussElementKσ(problem, solver)
 # The buckling constraint constructs the combined matrix `K + c·Kσ` and
 # returns it as a dense array for the SDP solver. `c` is the buckling load
 # multiplier — the factor by which the applied load is scaled before checking
-# stability.
-c = 0.1
+# stability. It must be chosen below the critical buckling load factor of the
+# initial design so that `K + c·Kσ` is positive definite at `x0`.
+c = 0.0001
 
 function buckling_matrix_constr(x)
     xd = PseudoDensities(x)
