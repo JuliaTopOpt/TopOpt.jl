@@ -8,8 +8,45 @@ on:
       - master
     tags: '*'
 jobs:
+  precompile:
+    name: Precompile
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - cache-name: test
+            prefs: ''
+          - cache-name: test-opposite
+            prefs: 'penalty_before_interpolation=false'
+    steps:
+      - uses: actions/checkout@v6
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: '1'
+          arch: x64
+      - uses: julia-actions/cache@v2
+        with:
+          cache-name: ${{ matrix.cache-name }}
+          cache-artifacts: true
+          cache-packages: true
+          cache-compiled: true
+      - name: Instantiate and precompile test environment
+        run: julia --project=test -e 'using Pkg; Pkg.develop(PackageSpec(path=".")); Pkg.instantiate(); Pkg.precompile()'
+      - name: Set opposite preference and recompile TopOpt
+        if: matrix.prefs != ''
+        run: |
+          julia --project=test -e '
+            using Preferences
+            Preferences.set_preferences!(
+              (Base.UUID("a6e80f52-281a-4a51-a3c5-60a2513022d0"), "TopOpt"),
+              "penalty_before_interpolation" => "false";
+              force=true
+            )
+          '
+          julia --project=test -e 'using TopOpt'
   test:
     name: ${{matrix.group}} - Julia ${{ matrix.version }} - ${{ matrix.os }}
+    needs: precompile
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -43,7 +80,7 @@ jobs:
           arch: ${{ matrix.arch }}
       - uses: julia-actions/cache@v2
         with:
-          cache-name: test
+          cache-name: ${{ contains(matrix.group, 'Opposite_Preference') && 'test-opposite' || 'test' }}
           cache-artifacts: true
           cache-packages: true
           cache-compiled: true
