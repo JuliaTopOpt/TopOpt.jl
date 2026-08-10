@@ -40,6 +40,7 @@ makedocs(;
     sitename="TopOpt.jl",
     format=Documenter.HTML(; prettyurls=get(ENV, "CI", nothing) == "true"),
     plugins=[bib],
+    warnonly=true,
     pages=[
         "Home" => "index.md",
         "Problem types" => PROBLEM_EXAMPLES,
