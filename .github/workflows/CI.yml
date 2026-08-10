@@ -9,7 +9,7 @@ on:
     tags: '*'
 jobs:
   precompile:
-    name: Precompile
+    name: Precompile (${{ matrix.cache-name }})
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -17,7 +17,7 @@ jobs:
           - cache-name: test
             prefs: ''
           - cache-name: test-opposite
-            prefs: 'penalty_before_interpolation=false'
+            prefs: 'opposite'
     steps:
       - uses: actions/checkout@v6
       - uses: julia-actions/setup-julia@v2
@@ -33,7 +33,7 @@ jobs:
       - name: Instantiate and precompile test environment
         run: julia --project=test -e 'using Pkg; Pkg.develop(PackageSpec(path=".")); Pkg.instantiate(); Pkg.precompile()'
       - name: Set opposite preference and recompile TopOpt
-        if: matrix.prefs != ''
+        if: matrix.prefs == 'opposite'
         run: |
           julia --project=test -e '
             using Preferences
@@ -44,6 +44,15 @@ jobs:
             )
           '
           julia --project=test -e 'using TopOpt'
+      - name: Upload compiled environment
+        uses: actions/upload-artifact@v4
+        with:
+          name: compiled-${{ matrix.cache-name }}
+          path: |
+            ~/.julia/compiled
+            ~/.julia/packages
+            ~/.julia/artifacts
+          retention-days: 1
   test:
     name: ${{matrix.group}} - Julia ${{ matrix.version }} - ${{ matrix.os }}
     needs: precompile
@@ -78,12 +87,11 @@ jobs:
         with:
           version: ${{ matrix.version }}
           arch: ${{ matrix.arch }}
-      - uses: julia-actions/cache@v2
+      - name: Download compiled environment
+        uses: actions/download-artifact@v4
         with:
-          cache-name: ${{ contains(matrix.group, 'Opposite_Preference') && 'test-opposite' || 'test' }}
-          cache-artifacts: true
-          cache-packages: true
-          cache-compiled: true
+          name: compiled-${{ contains(matrix.group, 'Opposite_Preference') && 'test-opposite' || 'test' }}
+          path: ~/.julia
       - name: Instantiate test environment
         run: julia --project=test -e 'using Pkg; Pkg.develop(PackageSpec(path=".")); Pkg.instantiate(); Pkg.precompile()'
       - name: Set preference for opposite preference jobs
@@ -130,12 +138,11 @@ jobs:
       - uses: julia-actions/setup-julia@v2
         with:
           version: '1'
-      - uses: julia-actions/cache@v2
+      - name: Download compiled environment
+        uses: actions/download-artifact@v4
         with:
-          cache-name: test
-          cache-artifacts: true
-          cache-packages: true
-          cache-compiled: true
+          name: compiled-test
+          path: ~/.julia
       - name: Install dependencies
         run: |
           julia --project=docs -e '
