@@ -8,72 +8,8 @@ on:
       - master
     tags: '*'
 jobs:
-  precompile:
-    name: Precompile (${{ matrix.cache-name }})
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        include:
-          - cache-name: test
-            prefs: ''
-          - cache-name: test-opposite
-            prefs: 'opposite'
-    steps:
-      - uses: actions/checkout@v6
-      - uses: julia-actions/setup-julia@v2
-        with:
-          version: '1'
-          arch: x64
-      - name: Instantiate test environment
-        run: julia --project=test -e 'using Pkg; Pkg.develop(PackageSpec(path=".")); Pkg.instantiate()'
-      - name: Compute cache key
-        id: key
-        run: |
-          KEY="${{ matrix.cache-name }}-$(sha256sum test/Manifest.toml | cut -c1-16)"
-          echo "key=$KEY" >> $GITHUB_OUTPUT
-          echo "Cache key: $KEY"
-      - name: Restore depot cache
-        id: restore
-        uses: actions/cache/restore@v4
-        with:
-          path: |
-            ~/.julia/compiled
-            ~/.julia/packages
-            ~/.julia/artifacts
-            ~/.julia/registries
-          key: ${{ steps.key.outputs.key }}
-          restore-keys: |
-            ${{ matrix.cache-name }}-
-      - name: Precompile
-        if: steps.restore.outputs.cache-hit != 'true'
-        run: julia --project=test -e 'using Pkg; Pkg.precompile()'
-      - name: Print cache hit status
-        run: echo "Precompile cache hit ${{ steps.restore.outputs.cache-hit }}"
-      - name: Set opposite preference and recompile TopOpt
-        if: matrix.prefs == 'opposite' && steps.restore.outputs.cache-hit != 'true'
-        run: |
-          julia --project=test -e '
-            using Preferences
-            Preferences.set_preferences!(
-              (Base.UUID("a6e80f52-281a-4a51-a3c5-60a2513022d0"), "TopOpt"),
-              "penalty_before_interpolation" => "false";
-              force=true
-            )
-          '
-          julia --project=test -e 'using TopOpt'
-      - name: Save depot cache
-        if: steps.restore.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
-        with:
-          path: |
-            ~/.julia/compiled
-            ~/.julia/packages
-            ~/.julia/artifacts
-            ~/.julia/registries
-          key: ${{ steps.key.outputs.key }}
   test:
     name: ${{matrix.group}} - Julia ${{ matrix.version }} - ${{ matrix.os }}
-    needs: precompile
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -105,35 +41,19 @@ jobs:
         with:
           version: ${{ matrix.version }}
           arch: ${{ matrix.arch }}
-      - name: Instantiate test environment
-        run: julia --project=test -e 'using Pkg; Pkg.develop(PackageSpec(path=".")); Pkg.instantiate()'
-      - name: Compute cache key
-        id: key
-        run: |
-          KEY="${{ contains(matrix.group, 'Opposite_Preference') && 'test-opposite' || 'test' }}-$(sha256sum test/Manifest.toml | cut -c1-16)"
-          echo "key=$KEY" >> $GITHUB_OUTPUT
-          echo "Cache key: $KEY"
-      - name: Restore depot cache
-        id: restore
-        uses: actions/cache/restore@v4
+      - uses: julia-actions/cache@v2
         with:
-          path: |
-            ~/.julia/compiled
-            ~/.julia/packages
-            ~/.julia/artifacts
-            ~/.julia/registries
-          key: ${{ steps.key.outputs.key }}
-          restore-keys: |
-            ${{ contains(matrix.group, 'Opposite_Preference') && 'test-opposite' || 'test' }}-
-      - name: Precompile (skipped on cache hit)
-        if: steps.restore.outputs.cache-hit != 'true'
-        run: julia --project=test -e 'using Pkg; Pkg.precompile()'
-      - name: Print cache hit status
-        run: echo "Cache hit ${{ steps.restore.outputs.cache-hit }}"
+          cache-name: ${{ contains(matrix.group, 'Opposite_Preference') && 'test-opposite' || 'test' }}
+          cache-artifacts: true
+          cache-packages: true
+          cache-compiled: true
       - name: Set preference for opposite preference jobs
         if: contains(matrix.group, 'Opposite_Preference')
         run: |
           julia --project=test -e '
+            using Pkg
+            Pkg.develop(PackageSpec(path="."))
+            Pkg.instantiate()
             using Preferences
             Preferences.set_preferences!(
               (Base.UUID("a6e80f52-281a-4a51-a3c5-60a2513022d0"), "TopOpt"),
@@ -142,6 +62,8 @@ jobs:
             )
             println("Set penalty_before_interpolation to false")
           '
+      - name: Instantiate test environment
+        run: julia --project=test -e 'using Pkg; Pkg.develop(PackageSpec(path=".")); Pkg.instantiate(); Pkg.precompile()'
       - name: Run tests
         env:
           GROUP: ${{ matrix.group }}
@@ -171,24 +93,19 @@ jobs:
       - uses: julia-actions/setup-julia@v2
         with:
           version: '1'
-      - name: Instantiate docs environment
-        run: julia --project=docs -e 'using Pkg; Pkg.develop(PackageSpec(path=pwd())); Pkg.instantiate()'
-      - name: Compute cache key
-        id: key
-        run: echo "key=test-$(sha256sum docs/Manifest.toml | cut -c1-16)" >> $GITHUB_OUTPUT
-      - name: Restore depot cache
-        uses: actions/cache/restore@v4
+      - uses: julia-actions/cache@v2
         with:
-          path: |
-            ~/.julia/compiled
-            ~/.julia/packages
-            ~/.julia/artifacts
-            ~/.julia/registries
-          key: ${{ steps.key.outputs.key }}
-          restore-keys: |
-            test-
+          cache-name: test
+          cache-artifacts: true
+          cache-packages: true
+          cache-compiled: true
       - name: Install dependencies
-        run: julia --project=docs -e 'using Pkg; Pkg.precompile()'
+        run: |
+          julia --project=docs -e '
+            using Pkg
+            Pkg.develop(PackageSpec(path=pwd()))
+            Pkg.instantiate()
+            Pkg.precompile()'
       - name: Download generated examples
         uses: actions/download-artifact@v4
         with:
