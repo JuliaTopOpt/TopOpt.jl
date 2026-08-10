@@ -71,13 +71,10 @@ c = 0.0001
 
 function buckling_matrix_constr(x)
     xd = PseudoDensities(x)
-    # Solve for displacements under the current design
     u = dp(xd)
-    # Element stiffness matrices -> global stiffness matrix
     Kes = element_k(xd)
     K = assemble_k(Kes)
     K = apply_boundary_with_meandiag!(K, ch)
-    # Element geometric stiffness matrices -> global Kσ
     Kσs = truss_element_kσ(u, xd)
     Kσ = assemble_k(Kσs)
     Kσ = apply_boundary_with_zerodiag!(Kσ, ch)
