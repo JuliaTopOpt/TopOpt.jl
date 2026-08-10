@@ -31,17 +31,15 @@ constr = x -> begin
     return (s .- thr) / length(s)
 end
 alg = PercivalAlg()
-options = PercivalOptions(; maxiter=15)
+options = PercivalOptions(; maxiter=20)
 model = Model(obj)
 addvar!(model, zeros(N), ones(N))
 add_ineq_constraint!(model, constr)
 
 x = copy(x0)
-for p in [1.0, 2.0, 3.0]
-    TopOpt.setpenalty!(solver, p)
-    global r = optimize(model, alg, x; options)
-    global x = r.minimizer
-end
+TopOpt.setpenalty!(solver, 3.0)
+r = optimize(model, alg, x; options)
+x = r.minimizer
 
 maximum(stress(filter(PseudoDensities(x0))))
 maximum(stress(filter(PseudoDensities(x))))
