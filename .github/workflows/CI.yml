@@ -95,7 +95,7 @@ jobs:
           version: '1'
       - uses: julia-actions/cache@v2
         with:
-          cache-name: docs
+          cache-name: test
           cache-artifacts: true
           cache-packages: true
           cache-compiled: true
@@ -104,7 +104,8 @@ jobs:
           julia --project=docs -e '
             using Pkg
             Pkg.develop(PackageSpec(path=pwd()))
-            Pkg.instantiate()'
+            Pkg.instantiate()
+            Pkg.precompile()'
       - name: Download generated examples
         uses: actions/download-artifact@v4
         with:
