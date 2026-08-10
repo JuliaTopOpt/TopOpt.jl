@@ -7,7 +7,7 @@
 # ## Commented Program
 #
 # What follows is a program spliced with comments.
-#md # The full program, without comments, can be found in the next [section](@ref csimp-plain-program).
+#md # The full program, without comments, can be found in the next.
 
 using TopOpt
 
@@ -87,7 +87,7 @@ fig = visualize(
 )
 Makie.display(fig)
 
-#md # ## [Plain Program](@id csimp-plain-program)
+#md # ## Plain Program
 #md #
 #md # Below follows a version of the program without any comments.
 #md # The file is also available here: [csimp.jl](csimp.jl)

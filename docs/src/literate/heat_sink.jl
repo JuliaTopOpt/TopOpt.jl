@@ -11,7 +11,7 @@
 # `T = 100` and the right edge at `T = 0` (the heat-sink fins), and the
 # remaining boundaries are insulated. The optimizer redistributes a fixed
 # volume of high-conductivity material to dissipate the heat most efficiently.
-#md # The full program, without comments, can be found in the next [section](@ref heat-sink-plain-program).
+#md # The full program, without comments, can be found in the next.
 
 using TopOpt, Ferrite, LinearAlgebra, Zygote
 
@@ -90,7 +90,7 @@ using CairoMakie
 fig = visualize(problem; topology=result.minimizer)
 Makie.display(fig)
 
-#md # ## [Plain Program](@id heat-sink-plain-program)
+#md # ## Plain Program
 #md #
 #md # Below follows a version of the program without any comments.
 #md # The file is also available here: [heat_sink.jl](heat_sink.jl)

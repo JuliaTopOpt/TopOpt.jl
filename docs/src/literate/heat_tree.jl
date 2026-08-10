@@ -11,7 +11,7 @@
 # `T = 0`, and the sides are insulated. The optimal layout is the classic
 # branching "conductivity tree" (Bendsøe & Sigmund, *Topology Optimization*,
 # §1.3).
-#md # The full program, without comments, can be found in the next [section](@ref heat_tree-plain-program).
+#md # The full program, without comments, can be found in the next.
 
 using TopOpt
 
@@ -56,7 +56,7 @@ using CairoMakie
 fig = visualize(problem; topology=res.minimizer)
 Makie.display(fig)
 
-#md # ## [Plain Program](@id heat_tree-plain-program)
+#md # ## Plain Program
 #md #
 #md # Below follows a version of the program without any comments.
 #md # The file is also available here: [heat_tree.jl](heat_tree.jl)

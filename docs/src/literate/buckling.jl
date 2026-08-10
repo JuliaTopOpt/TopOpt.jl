@@ -16,7 +16,7 @@
 # `AssembleK`, `TrussElementKσ`, `apply_boundary_with_zerodiag!`, and
 # `apply_boundary_with_meandiag!`, which are documented in the
 # [Functions](@ref) page.
-#md # The full program, without comments, can be found in the next [section](@id buckling-plain-program).
+#md # The full program, without comments, can be found in the next [section].
 
 using TopOpt, LinearAlgebra, Zygote
 using Nonconvex, NonconvexSemidefinite
@@ -122,7 +122,7 @@ ev2 = eigen(S2).values
 println("Compliance-only min eigenvalue: $(minimum(ev1))")
 println("Buckling-constrained min eigenvalue: $(minimum(ev2))")
 
-#md # ## [Plain Program](@id buckling-plain-program)
+#md # ## Plain Program
 #md #
 #md # Below follows a version of the program without any comments.
 #md # The file is also available here: [buckling.jl](buckling.jl)

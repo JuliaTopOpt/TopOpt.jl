@@ -66,7 +66,7 @@ fig = visualize(
 )
 Makie.display(fig)
 
-#md # ## [Plain Program](@id local-stress-plain-program)
+#md # ## Plain Program
 #md #
 #md # Below follows a version of the program without any comments.
 #md # The file is also available here: [local-stress.jl](local_stress.jl)

@@ -11,7 +11,7 @@
 # design). The mixed-integer nonlinear program is handled by
 # [Juniper.jl](https://github.com/lanl-ANS/Juniper.jl) with IPOPT as the
 # continuous relaxation solver, accessed through `Nonconvex.jl`.
-#md # The full program, without comments, can be found in the next [section](@id mixed-integer-truss-plain-program).
+#md # The full program, without comments, can be found in the next [section].
 
 using TopOpt, LinearAlgebra, StatsFuns
 using Makie
@@ -21,7 +21,7 @@ using CairoMakie
 Nonconvex.@load Juniper
 
 # ### Load the truss geometry from JSON
-# The same `tim_2d.json` file used by the [problem types](@ref problem) page
+# The same `tim_2d.json` file used by the problem types page
 # defines the node coordinates, element connectivity, supports, and load
 # cases for a 2-D truss.
 ndim = 2
@@ -71,7 +71,7 @@ TopOpt.setpenalty!(solver, p)
 fig = visualize(problem; solver.u, topology=r.minimizer, default_exagg_scale=0.0)
 Makie.display(fig)
 
-#md # ## [Plain Program](@id mixed-integer-truss-plain-program)
+#md # ## Plain Program
 #md #
 #md # Below follows a version of the program without any comments.
 #md # The file is also available here: [mixed_integer_truss.jl](mixed_integer_truss.jl)

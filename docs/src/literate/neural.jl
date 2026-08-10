@@ -13,7 +13,7 @@
 # volume constraint using a sequence of IPOPT subproblems: first a
 # feasibility restoration step, then an augmented-Lagrangian-style loop that
 # increases the penalty on constraint violation.
-#md # The full program, without comments, can be found in the next [section](@id neural-plain-program).
+#md # The full program, without comments, can be found in the next [section].
 
 using TopOpt, Zygote, ChainRulesCore
 using Flux
@@ -58,7 +58,7 @@ constr = p -> volfrac(filter(tf(p))) - V
 # Start with a feasibility problem: minimize `(constr + 0.1)²` to drive the
 # design toward the volume constraint before optimizing compliance.
 alg = IpoptAlg()
-options = IpoptOptions(; max_iter=200)
+options = IpoptOptions(; max_iter=20)
 model1 = Model()
 nparams = length(p0)
 addvar!(model1, fill(-100.0, nparams), fill(100.0, nparams))
@@ -97,7 +97,7 @@ using CairoMakie
 topology = filter(tf(res2.minimizer))
 visualize(problem; topology)
 
-#md # ## [Plain Program](@id neural-plain-program)
+#md # ## Plain Program
 #md #
 #md # Below follows a version of the program without any comments.
 #md # The file is also available here: [neural.jl](neural.jl)

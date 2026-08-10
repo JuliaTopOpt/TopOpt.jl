@@ -7,7 +7,7 @@
 # ## Commented Program
 #
 # What follows is a program spliced with comments.
-#md # The full program, without comments, can be found in the next [section](@ref simp-plain-program).
+#md # The full program, without comments, can be found in the next.
 
 using TopOpt
 
@@ -76,7 +76,7 @@ using Makie, GeometryBasics
 result_mesh = GeometryBasics.Mesh(problem, r.minimizer);
 Makie.mesh(result_mesh)
 
-#md # ## [Plain Program](@id simp-plain-program)
+#md # ## Plain Program
 #md #
 #md # Below follows a version of the program without any comments.
 #md # The file is also available here: [simp.jl](simp.jl)

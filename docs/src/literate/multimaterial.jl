@@ -11,7 +11,7 @@
 # `nmats - 1` decision variables; `MaterialInterpolation` maps the
 # resulting densities to the corresponding Young's moduli (for compliance)
 # and physical densities (for the mass constraint).
-#md # The full program, without comments, can be found in the next [section](@id multimaterial-plain-program).
+#md # The full program, without comments, can be found in the next [section].
 
 using TopOpt, Zygote, Test
 
@@ -92,7 +92,7 @@ println("Non-void fraction: $(sum(x[:, 2:3]) / size(x, 1))")
 @test constr(y) < 1e-6
 @test all(x -> isapprox(x, 1), sum(x; dims=2))
 
-#md # ## [Plain Program](@id multimaterial-plain-program)
+#md # ## Plain Program
 #md #
 #md # Below follows a version of the program without any comments.
 #md # The file is also available here: [multimaterial.jl](multimaterial.jl)

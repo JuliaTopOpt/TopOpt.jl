@@ -6,14 +6,14 @@
 #-
 # ## Commented Program
 #
-# Like the [neural example](@ref neural-plain-program), this script
+# Like the [neural example], this script
 # parametrizes the design with a feed-forward network from `Flux.jl`. The
 # difference is the optimizer: instead of IPOPT, the network weights are
 # updated with `Flux.Optimise.Adam` inside a continuation loop that
 # progressively stiffens the SIMP penalty `p` and the constraint-aggregation
 # weight `α`. The loop terminates when the design is sufficiently binary
 # (`eps < eps_star`) and the volume violation is below tolerance.
-#md # The full program, without comments, can be found in the next [section](@id neural2-plain-program).
+#md # The full program, without comments, can be found in the next [section].
 
 using TopOpt, Zygote, Flux
 
@@ -48,7 +48,7 @@ delta_alpha = 0.05
 alpha_max = 100
 
 # ### Neural-network parametrization
-# A deeper MLP than in the [`neural`](@ref neural-plain-program) example: six
+# A deeper MLP than in the [`neural`] example: six
 # hidden layers followed by `softmax` and a slice that picks the first
 # component as the cell density.
 m = 20
@@ -145,7 +145,7 @@ using CairoMakie
 fig = visualize(problem; topology=cheqfilter(nn(NNParams(w))).x)
 Makie.display(fig)
 
-#md # ## [Plain Program](@id neural2-plain-program)
+#md # ## Plain Program
 #md #
 #md # Below follows a version of the program without any comments.
 #md # The file is also available here: [neural2.jl](neural2.jl)
