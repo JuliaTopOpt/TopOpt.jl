@@ -24,10 +24,26 @@ jobs:
         with:
           version: '1'
           arch: x64
-      - name: Instantiate and precompile test environment
-        run: julia --project=test -e 'using Pkg; Pkg.develop(PackageSpec(path=".")); Pkg.instantiate(); Pkg.precompile()'
+      - name: Instantiate test environment
+        run: julia --project=test -e 'using Pkg; Pkg.develop(PackageSpec(path=".")); Pkg.instantiate()'
+      - name: Compute cache key
+        id: key
+        run: echo "key=${{ matrix.cache-name }}-$(sha256sum test/Manifest.toml | cut -c1-16)" >> $GITHUB_OUTPUT
+      - name: Restore depot cache
+        id: restore
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            ~/.julia/compiled
+            ~/.julia/packages
+            ~/.julia/artifacts
+            ~/.julia/registries
+          key: ${{ steps.key.outputs.key }}
+      - name: Precompile
+        if: steps.restore.outputs.cache-hit != 'true'
+        run: julia --project=test -e 'using Pkg; Pkg.precompile()'
       - name: Set opposite preference and recompile TopOpt
-        if: matrix.prefs == 'opposite'
+        if: matrix.prefs == 'opposite' && steps.restore.outputs.cache-hit != 'true'
         run: |
           julia --project=test -e '
             using Preferences
@@ -38,14 +54,16 @@ jobs:
             )
           '
           julia --project=test -e 'using TopOpt'
-      - name: Pack Julia depot
-        run: tar czf /tmp/depot.tar.gz -C ~ .julia
-      - name: Upload depot
-        uses: actions/upload-artifact@v4
+      - name: Save depot cache
+        if: steps.restore.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
         with:
-          name: depot-${{ matrix.cache-name }}
-          path: /tmp/depot.tar.gz
-          retention-days: 1
+          path: |
+            ~/.julia/compiled
+            ~/.julia/packages
+            ~/.julia/artifacts
+            ~/.julia/registries
+          key: ${{ steps.key.outputs.key }}
   test:
     name: ${{matrix.group}} - Julia ${{ matrix.version }} - ${{ matrix.os }}
     needs: precompile
@@ -80,15 +98,22 @@ jobs:
         with:
           version: ${{ matrix.version }}
           arch: ${{ matrix.arch }}
-      - name: Download depot
-        uses: actions/download-artifact@v4
-        with:
-          name: depot-${{ contains(matrix.group, 'Opposite_Preference') && 'test-opposite' || 'test' }}
-          path: /tmp
-      - name: Unpack Julia depot
-        run: tar xzf /tmp/depot.tar.gz -C ~
       - name: Instantiate test environment
-        run: julia --project=test -e 'using Pkg; Pkg.develop(PackageSpec(path=".")); Pkg.instantiate(); Pkg.precompile()'
+        run: julia --project=test -e 'using Pkg; Pkg.develop(PackageSpec(path=".")); Pkg.instantiate()'
+      - name: Compute cache key
+        id: key
+        run: echo "key=${{ contains(matrix.group, 'Opposite_Preference') && 'test-opposite' || 'test' }}-$(sha256sum test/Manifest.toml | cut -c1-16)" >> $GITHUB_OUTPUT
+      - name: Restore depot cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            ~/.julia/compiled
+            ~/.julia/packages
+            ~/.julia/artifacts
+            ~/.julia/registries
+          key: ${{ steps.key.outputs.key }}
+      - name: Precompile (skipped on cache hit)
+        run: julia --project=test -e 'using Pkg; Pkg.precompile()'
       - name: Set preference for opposite preference jobs
         if: contains(matrix.group, 'Opposite_Preference')
         run: |
@@ -130,20 +155,24 @@ jobs:
       - uses: julia-actions/setup-julia@v2
         with:
           version: '1'
-      - name: Download depot
-        uses: actions/download-artifact@v4
+      - name: Instantiate docs environment
+        run: julia --project=docs -e 'using Pkg; Pkg.develop(PackageSpec(path=pwd())); Pkg.instantiate()'
+      - name: Compute cache key
+        id: key
+        run: echo "key=test-$(sha256sum docs/Manifest.toml | cut -c1-16)" >> $GITHUB_OUTPUT
+      - name: Restore depot cache
+        uses: actions/cache/restore@v4
         with:
-          name: depot-test
-          path: /tmp
-      - name: Unpack Julia depot
-        run: tar xzf /tmp/depot.tar.gz -C ~
+          path: |
+            ~/.julia/compiled
+            ~/.julia/packages
+            ~/.julia/artifacts
+            ~/.julia/registries
+          key: ${{ steps.key.outputs.key }}
+          restore-keys: |
+            test-
       - name: Install dependencies
-        run: |
-          julia --project=docs -e '
-            using Pkg
-            Pkg.develop(PackageSpec(path=pwd()))
-            Pkg.instantiate()
-            Pkg.precompile()'
+        run: julia --project=docs -e 'using Pkg; Pkg.precompile()'
       - name: Download generated examples
         uses: actions/download-artifact@v4
         with:
