@@ -28,7 +28,10 @@ jobs:
         run: julia --project=test -e 'using Pkg; Pkg.develop(PackageSpec(path=".")); Pkg.instantiate()'
       - name: Compute cache key
         id: key
-        run: echo "key=${{ matrix.cache-name }}-$(sha256sum test/Manifest.toml | cut -c1-16)" >> $GITHUB_OUTPUT
+        run: |
+          KEY="${{ matrix.cache-name }}-$(sha256sum test/Manifest.toml | cut -c1-16)"
+          echo "key=$KEY" >> $GITHUB_OUTPUT
+          echo "Cache key: $KEY"
       - name: Restore depot cache
         id: restore
         uses: actions/cache/restore@v4
@@ -39,9 +42,13 @@ jobs:
             ~/.julia/artifacts
             ~/.julia/registries
           key: ${{ steps.key.outputs.key }}
+          restore-keys: |
+            ${{ matrix.cache-name }}-
       - name: Precompile
         if: steps.restore.outputs.cache-hit != 'true'
         run: julia --project=test -e 'using Pkg; Pkg.precompile()'
+      - name: Print cache hit status
+        run: echo "Precompile cache hit: ${{ steps.restore.outputs.cache-hit }}"
       - name: Set opposite preference and recompile TopOpt
         if: matrix.prefs == 'opposite' && steps.restore.outputs.cache-hit != 'true'
         run: |
@@ -102,8 +109,12 @@ jobs:
         run: julia --project=test -e 'using Pkg; Pkg.develop(PackageSpec(path=".")); Pkg.instantiate()'
       - name: Compute cache key
         id: key
-        run: echo "key=${{ contains(matrix.group, 'Opposite_Preference') && 'test-opposite' || 'test' }}-$(sha256sum test/Manifest.toml | cut -c1-16)" >> $GITHUB_OUTPUT
+        run: |
+          KEY="${{ contains(matrix.group, 'Opposite_Preference') && 'test-opposite' || 'test' }}-$(sha256sum test/Manifest.toml | cut -c1-16)"
+          echo "key=$KEY" >> $GITHUB_OUTPUT
+          echo "Cache key: $KEY"
       - name: Restore depot cache
+        id: restore
         uses: actions/cache/restore@v4
         with:
           path: |
@@ -112,8 +123,13 @@ jobs:
             ~/.julia/artifacts
             ~/.julia/registries
           key: ${{ steps.key.outputs.key }}
+          restore-keys: |
+            ${{ contains(matrix.group, 'Opposite_Preference') && 'test-opposite' || 'test' }}-
       - name: Precompile (skipped on cache hit)
+        if: steps.restore.outputs.cache-hit != 'true'
         run: julia --project=test -e 'using Pkg; Pkg.precompile()'
+      - name: Print cache hit status
+        run: echo "Cache hit: ${{ steps.restore.outputs.cache-hit }}"
       - name: Set preference for opposite preference jobs
         if: contains(matrix.group, 'Opposite_Preference')
         run: |
