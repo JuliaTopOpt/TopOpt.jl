@@ -24,12 +24,16 @@ jobs:
         with:
           version: '1'
           arch: x64
-      - uses: julia-actions/cache@v2
+      - name: Restore Julia depot cache
+        id: cache-restore
+        uses: actions/cache/restore@v4
         with:
-          cache-name: ${{ matrix.cache-name }}
-          cache-artifacts: true
-          cache-packages: true
-          cache-compiled: true
+          path: |
+            ~/.julia/compiled
+            ~/.julia/packages
+            ~/.julia/artifacts
+            ~/.julia/registries
+          key: ${{ matrix.cache-name }}-${{ hashFiles('test/Project.toml', 'test/Manifest.toml', 'Project.toml') }}
       - name: Instantiate and precompile test environment
         run: julia --project=test -e 'using Pkg; Pkg.develop(PackageSpec(path=".")); Pkg.instantiate(); Pkg.precompile()'
       - name: Set opposite preference and recompile TopOpt
@@ -44,15 +48,16 @@ jobs:
             )
           '
           julia --project=test -e 'using TopOpt'
-      - name: Upload compiled environment
-        uses: actions/upload-artifact@v4
+      - name: Save Julia depot cache
+        if: steps.cache-restore.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
         with:
-          name: compiled-${{ matrix.cache-name }}
           path: |
             ~/.julia/compiled
             ~/.julia/packages
             ~/.julia/artifacts
-          retention-days: 1
+            ~/.julia/registries
+          key: ${{ matrix.cache-name }}-${{ hashFiles('test/Project.toml', 'test/Manifest.toml', 'Project.toml') }}
   test:
     name: ${{matrix.group}} - Julia ${{ matrix.version }} - ${{ matrix.os }}
     needs: precompile
@@ -87,11 +92,15 @@ jobs:
         with:
           version: ${{ matrix.version }}
           arch: ${{ matrix.arch }}
-      - name: Download compiled environment
-        uses: actions/download-artifact@v4
+      - name: Restore Julia depot cache
+        uses: actions/cache/restore@v4
         with:
-          name: compiled-${{ contains(matrix.group, 'Opposite_Preference') && 'test-opposite' || 'test' }}
-          path: ~/.julia
+          path: |
+            ~/.julia/compiled
+            ~/.julia/packages
+            ~/.julia/artifacts
+            ~/.julia/registries
+          key: ${{ contains(matrix.group, 'Opposite_Preference') && 'test-opposite' || 'test' }}-${{ hashFiles('test/Project.toml', 'test/Manifest.toml', 'Project.toml') }}
       - name: Instantiate test environment
         run: julia --project=test -e 'using Pkg; Pkg.develop(PackageSpec(path=".")); Pkg.instantiate(); Pkg.precompile()'
       - name: Set preference for opposite preference jobs
@@ -138,11 +147,15 @@ jobs:
       - uses: julia-actions/setup-julia@v2
         with:
           version: '1'
-      - name: Download compiled environment
-        uses: actions/download-artifact@v4
+      - name: Restore Julia depot cache
+        uses: actions/cache/restore@v4
         with:
-          name: compiled-test
-          path: ~/.julia
+          path: |
+            ~/.julia/compiled
+            ~/.julia/packages
+            ~/.julia/artifacts
+            ~/.julia/registries
+          key: test-${{ hashFiles('test/Project.toml', 'test/Manifest.toml', 'Project.toml') }}
       - name: Install dependencies
         run: |
           julia --project=docs -e '
