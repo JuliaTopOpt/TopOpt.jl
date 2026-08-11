@@ -10,7 +10,7 @@ Construct with `Volume(solver)`. Call as `vol(PseudoDensities(x))`.
 The volume constraint is the standard resource constraint in SIMP topology
 optimization; see [BendsoeSigmund2003](@cite) §2.1.
 """
-mutable struct Volume{
+mutable struct VolumeFun{
     T,Ts<:AbstractFEASolver,Tc<:AbstractVector{T},Tg<:AbstractVector{T}
 } <: AbstractFunction{T}
     solver::Ts
@@ -19,12 +19,12 @@ mutable struct Volume{
     total_volume::T
     fraction::Bool
 end
-function Base.show(io::IO, ::MIME{Symbol("text/plain")}, ::Volume)
+function Base.show(io::IO, ::MIME{Symbol("text/plain")}, ::VolumeFun)
     return println(io, "TopOpt volume (fraction) function")
 end
-Nonconvex.NonconvexCore.getdim(::Volume) = 1
+Nonconvex.NonconvexCore.getdim(::VolumeFun) = 1
 
-function project(f::Volume, V, x)
+function project(f::VolumeFun, V, x)
     cellvolumes = f.cellvolumes
     if f.fraction
         V = V * f.total_volume
@@ -44,7 +44,7 @@ function project(f::Volume, V, x)
     return x
 end
 
-function Volume(solver::AbstractFEASolver; fraction=true)
+function VolumeFun(solver::AbstractFEASolver; fraction=true)
     T = eltype(solver.vars)
     cellvolumes = solver.elementinfo.cellvolumes
     # Gradient for all elements (full density vector)
@@ -53,15 +53,15 @@ function Volume(solver::AbstractFEASolver; fraction=true)
     if fraction
         grad ./= total_volume
     end
-    return Volume(solver, cellvolumes, grad, total_volume, fraction)
+    return VolumeFun(solver, cellvolumes, grad, total_volume, fraction)
 end
 
-function (v::Volume{T})(x::PseudoDensities) where {T}
+function (v::VolumeFun{T})(x::PseudoDensities) where {T}
     vol = compute_volume(v.cellvolumes, x.x)
     return v.fraction ? vol / v.total_volume : vol
 end
 
-function ChainRulesCore.rrule(vol::Volume, x::PseudoDensities)
+function ChainRulesCore.rrule(vol::VolumeFun, x::PseudoDensities)
     return vol(x),
     Δ -> (nothing, Tangent{typeof(x)}(; x=ChainRulesCore.unthunk(Δ) * vol.grad))
 end

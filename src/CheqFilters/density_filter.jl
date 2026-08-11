@@ -11,34 +11,34 @@ differentiable linear operator (sparse Jacobian). Call as
 See also [BendsoeSigmund2003](@cite) §3.4 for general background on density
 filtering.
 """
-struct DensityFilter{T,TM<:FilterMetadata,TJ<:AbstractMatrix{T}} <: AbstractDensityFilter
+struct DensityFilterFun{T,TM<:FilterMetadata,TJ<:AbstractMatrix{T}} <: AbstractDensityFilter
     metadata::TM
     rmin::T
     jacobian::TJ
 end
-function Base.show(io::IO, ::MIME{Symbol("text/plain")}, ::DensityFilter)
+function Base.show(io::IO, ::MIME{Symbol("text/plain")}, ::DensityFilterFun)
     return println(io, "TopOpt density filter")
 end
-Nonconvex.NonconvexCore.getdim(f::DensityFilter) = size(f.jacobian, 1)
+Nonconvex.NonconvexCore.getdim(f::DensityFilterFun) = size(f.jacobian, 1)
 
-DensityFilter(solver; rmin) = DensityFilter(solver, rmin)
-function DensityFilter(
+DensityFilterFun(solver; rmin) = DensityFilterFun(solver, rmin)
+function DensityFilterFun(
     solver::TS, rmin::T, (::Type{TI})=Int
 ) where {T,TI<:Integer,TS<:AbstractFEASolver}
     metadata = FilterMetadata(solver, rmin, TI)
     TM = typeof(metadata)
 
     jacobian = getJacobian(solver, metadata)
-    return DensityFilter(metadata, rmin, jacobian)
+    return DensityFilterFun(metadata, rmin, jacobian)
 end
 
-function (cf::DensityFilter)(x::PseudoDensities{I,P}) where {I,P}
+function (cf::DensityFilterFun)(x::PseudoDensities{I,P}) where {I,P}
     @unpack jacobian = cf
     out = similar(x.x)
     mul!(out, jacobian, x.x)
     return PseudoDensities{I,P,true}(out)
 end
-function ChainRulesCore.rrule(f::DensityFilter, x::PseudoDensities)
+function ChainRulesCore.rrule(f::DensityFilterFun, x::PseudoDensities)
     return f(x), Δ -> begin
         _Δ = ChainRulesCore.unthunk(Δ)
         _Δ = hasproperty(_Δ, :x) ? _Δ.x : _Δ
@@ -115,15 +115,15 @@ Density filter followed by a projection (e.g. Heaviside) to push the design
 toward 0/1. Useful for producing near-binary designs. See
 [BendsoeSigmund2003](@cite) §3.5 for projection-based filtering.
 """
-struct ProjectedDensityFilter{TF<:DensityFilter,TP1,TP2} <: AbstractDensityFilter
+struct ProjectedDensityFilterFun{TF<:DensityFilterFun,TP1,TP2} <: AbstractDensityFilter
     filter::TF
     preproj::TP1
     postproj::TP2
 end
-function Nonconvex.NonconvexCore.getdim(f::ProjectedDensityFilter)
+function Nonconvex.NonconvexCore.getdim(f::ProjectedDensityFilterFun)
     return Nonconvex.NonconvexCore.getdim(f.filter)
 end
-function (cf::ProjectedDensityFilter)(x::PseudoDensities{I,P}) where {I,P}
+function (cf::ProjectedDensityFilterFun)(x::PseudoDensities{I,P}) where {I,P}
     if cf.preproj isa Nothing
         fx = x.x
     else

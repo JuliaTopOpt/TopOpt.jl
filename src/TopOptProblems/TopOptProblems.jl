@@ -54,6 +54,7 @@ export PointLoadCantilever,
     bcmatrix,
     save_mesh,
     RandomMagnitude,
+    RandomMagnitudeFun,
     MultiLoad
 
 end # module

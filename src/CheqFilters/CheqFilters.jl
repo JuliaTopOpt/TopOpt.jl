@@ -12,9 +12,9 @@ using Nonconvex: Nonconvex
 using ChainRulesCore
 
 export AbstractCheqFilter,
-    SensFilter,
-    DensityFilter,
-    ProjectedDensityFilter,
+    SensFilterFun,
+    DensityFilterFun,
+    ProjectedDensityFilterFun,
     AbstractSensFilter,
     AbstractDensityFilter
 
@@ -119,5 +119,13 @@ end
 
 include("sens_filter.jl")
 include("density_filter.jl")
+
+# Backward-compatible non-suffixed aliases. The canonical names use a `Fun`
+# suffix to avoid collisions with Makie (e.g. Makie.Volume vs TopOpt.VolumeFun).
+const DensityFilter = DensityFilterFun
+const SensFilter = SensFilterFun
+const ProjectedDensityFilter = ProjectedDensityFilterFun
+export DensityFilter, SensFilter, ProjectedDensityFilter,
+    DensityFilterFun, SensFilterFun, ProjectedDensityFilterFun
 
 end

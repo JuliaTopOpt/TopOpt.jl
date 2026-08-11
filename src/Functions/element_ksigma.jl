@@ -12,7 +12,7 @@ buckling-constrained truss optimization.
 Call as `Kσs = Kσsf(u, ρ)` where `u` is the displacement vector and `ρ` is the
 penalized/interpolated design. Returns a vector of symmetric matrices.
 """
-mutable struct TrussElementKσ{
+mutable struct TrussElementKσFun{
     T,
     Tp<:TrussProblem,
     TK<:AbstractVector{<:AbstractMatrix{T}},
@@ -32,13 +32,13 @@ mutable struct TrussElementKσ{
     xmin::T
 end
 
-function Base.show(io::IO, ::MIME{Symbol("text/plain")}, ::TrussElementKσ)
+function Base.show(io::IO, ::MIME{Symbol("text/plain")}, ::TrussElementKσFun)
     return println(
         io, "TopOpt element stress stiffness matrix (Kσ_e) construction function"
     )
 end
 
-function TrussElementKσ(
+function TrussElementKσFun(
     problem::TrussProblem{xdim,T}, solver::AbstractFEASolver
 ) where {xdim,T}
     Es = getE(problem)
@@ -87,7 +87,7 @@ function TrussElementKσ(
 end
 
 """
-    (eksig::TrussElementKσ)(u_e::AbstractVector, x_e::Number, ci::Integer)
+    (eksig::TrussElementKσFun)(u_e::AbstractVector, x_e::Number, ci::Integer)
 
 Compute the stress (geometric) stiffness matrix for **truss element** index
 `ci` (axial bar element, no bending or torsion), with nodal deformation `u_e`
@@ -101,14 +101,14 @@ A better approximation would be:
 `EA/L * (u3-u1 + 1/(2*L0)*(u4-u2)^2) = EA/L * (γ'*u + 1/2*(δ'*u)^2)`;
 see [Gavin2014](@cite).
 """
-function (eksig::TrussElementKσ)(u_e::AbstractVector, x_e::Number, ci::Integer)
+function (eksig::TrussElementKσFun)(u_e::AbstractVector, x_e::Number, ci::Integer)
     @unpack EALγ_s, δmat_s, L_s = eksig
     # x_e scales the cross section
     q_cell = x_e * EALγ_s[ci]' * u_e
     return q_cell / L_s[ci] * δmat_s[ci]
 end
 
-function (eksig::TrussElementKσ)(u::DisplacementResult, x::PseudoDensities)
+function (eksig::TrussElementKσFun)(u::DisplacementResult, x::PseudoDensities)
     @unpack problem, Kσes, global_dofs, penalty, xmin = eksig
     dh = problem.ch.dh
     @assert getncells(dh.grid) == length(x.x)
@@ -123,7 +123,7 @@ function (eksig::TrussElementKσ)(u::DisplacementResult, x::PseudoDensities)
 end
 
 function ChainRulesCore.rrule(
-    eksig::TrussElementKσ{T}, u::DisplacementResult, x::PseudoDensities
+    eksig::TrussElementKσFun{T}, u::DisplacementResult, x::PseudoDensities
 ) where {T}
     @unpack problem, Kσes, global_dofs, penalty, xmin = eksig
     dh = problem.ch.dh

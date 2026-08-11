@@ -5,14 +5,14 @@ Mean compliance over multiple load cases. Returns the average of the
 per-scenario compliance values. `scenarios` is typically produced by
 `generate_scenarios`.
 """
-mutable struct MeanCompliance{T,TC<:Compliance{T},TM,TS,Tg<:AbstractVector{T}} <:
+mutable struct MeanComplianceFun{T,TC<:ComplianceFun{T},TM,TS,Tg<:AbstractVector{T}} <:
                AbstractFunction{T}
     compliance::TC
     method::TM
     F::TS
     grad_temp::Tg
 end
-function MeanCompliance(
+function MeanComplianceFun(
     problem::MultiLoad,
     solver::AbstractFEASolver;
     method=:exact_svd,
@@ -23,7 +23,7 @@ function MeanCompliance(
     kwargs...,
 )
     # MeanCompliance is only valid for structural (LinearElasticity) problems
-    @assert solver.problem isa StiffnessTopOptProblem "MeanCompliance can only be used with StiffnessTopOptProblem (structural mechanics). Got $(typeof(solver.problem))"
+    @assert solver.problem isa StiffnessTopOptProblem "MeanComplianceFun can only be used with StiffnessTopOptProblem (structural mechanics). Got $(typeof(solver.problem))"
     if method == :exact
         method = ExactMean(problem.F)
     elseif method == :exact_svd
@@ -55,23 +55,23 @@ function MeanCompliance(
             )
         end
     end
-    comp = Compliance(solver)
-    return MeanCompliance(comp, method, problem.F, similar(comp.grad))
+    comp = ComplianceFun(solver)
+    return MeanComplianceFun(comp, method, problem.F, similar(comp.grad))
 end
 
-function (ec::MeanCompliance{T})(x::PseudoDensities) where {T}
+function (ec::MeanComplianceFun{T})(x::PseudoDensities) where {T}
     solver = ec.compliance.solver
     penalty = getpenalty(ec)
     copyto!(solver.vars, x.x)
     setpenalty!(solver, penalty.p)
     return compute_mean_compliance(ec, ec.method, solver.vars, ec.grad)
 end
-function ChainRulesCore.rrule(ec::MeanCompliance, x::PseudoDensities)
+function ChainRulesCore.rrule(ec::MeanComplianceFun, x::PseudoDensities)
     return ec(x),
     Δ -> (nothing, Tangent{typeof(x)}(; x=ChainRulesCore.unthunk(Δ) * ec.grad))
 end
 
-function compute_mean_compliance(ec::MeanCompliance, ::ExactMean, x, grad)
+function compute_mean_compliance(ec::MeanComplianceFun, ::ExactMean, x, grad)
     return compute_exact_ec(ec, x, grad, ec.F, size(ec.F, 2))
 end
 function compute_exact_ec(ec, x, grad, F, n)
@@ -96,7 +96,7 @@ function compute_exact_ec(ec, x, grad, F, n)
     return obj
 end
 
-function compute_mean_compliance(ec::MeanCompliance, ap::TraceEstimationMean, x, grad)
+function compute_mean_compliance(ec::MeanComplianceFun, ap::TraceEstimationMean, x, grad)
     return compute_approx_ec(ec, x, grad, ap.F, ap.V, size(ap.F, 2))
 end
 function compute_approx_ec(ec, x, grad, F, V, n)
@@ -125,16 +125,16 @@ function compute_approx_ec(ec, x, grad, F, V, n)
     return obj
 end
 
-function compute_mean_compliance(ec::MeanCompliance, ex::ExactSVDMean, x, grad)
+function compute_mean_compliance(ec::MeanComplianceFun, ex::ExactSVDMean, x, grad)
     return compute_exact_ec(ec, x, grad, ex.US, ex.n)
 end
 
-function compute_mean_compliance(ec::MeanCompliance, ax::TraceEstimationSVDMean, x, grad)
+function compute_mean_compliance(ec::MeanComplianceFun, ax::TraceEstimationSVDMean, x, grad)
     return compute_approx_ec(ec, x, grad, ax.US, ax.V, ax.n)
 end
 
-Utilities.getpenalty(c::MeanCompliance) = getpenalty(getsolver(c.compliance))
-@forward_property MeanCompliance compliance
+Utilities.getpenalty(c::MeanComplianceFun) = getpenalty(getsolver(c.compliance))
+@forward_property MeanComplianceFun compliance
 
 hutch_rand!(x::Array) = x .= rand.(Ref(-1.0:2.0:1.0))
 function hadamard3!(V)
@@ -188,4 +188,4 @@ function generate_scenarios(dof::Int, size::Tuple{Int,Int}, f, perturb=() -> (ra
     J = 1:nscenarios
     return sparse(I, J, V, ndofs, nscenarios)
 end
-Nonconvex.NonconvexCore.getdim(f::MeanCompliance) = 1
+Nonconvex.NonconvexCore.getdim(f::MeanComplianceFun) = 1

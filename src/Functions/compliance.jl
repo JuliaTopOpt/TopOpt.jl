@@ -13,22 +13,22 @@ See [BendsoeSigmund2003](@cite) §2.1 for compliance minimization and
 [BendsoeSigmund1999](@cite) for the SIMP interpolation used in the stiffness
 assembly.
 """
-mutable struct Compliance{
+mutable struct ComplianceFun{
     T,TS<:AbstractFEASolver,TC<:AbstractVector{T},TG<:AbstractVector{T}
 } <: AbstractFunction{T}
     solver::TS
     cell_comp::TC
     grad::TG
 end
-Utilities.getpenalty(c::Compliance) = getpenalty(getsolver(c))
-Utilities.setpenalty!(c::Compliance, p) = setpenalty!(getsolver(c), p)
-Nonconvex.NonconvexCore.getdim(::Compliance) = 1
-getsolver(c::Compliance) = c.solver
+Utilities.getpenalty(c::ComplianceFun) = getpenalty(getsolver(c))
+Utilities.setpenalty!(c::ComplianceFun, p) = setpenalty!(getsolver(c), p)
+Nonconvex.NonconvexCore.getdim(::ComplianceFun) = 1
+getsolver(c::ComplianceFun) = c.solver
 
-function Compliance(solver::AbstractFEASolver)
+function ComplianceFun(solver::AbstractFEASolver)
     solver.problem isa StiffnessTopOptProblem || throw(
         ArgumentError(
-            "Compliance can only be used with StiffnessTopOptProblem (structural mechanics). Got $(typeof(solver.problem))",
+            "ComplianceFun can only be used with StiffnessTopOptProblem (structural mechanics). Got $(typeof(solver.problem))",
         ),
     )
     # The closed-form compliance gradient `dJ/dx_e = -dρ_e/dx_e · u_e^T Ke u_e`
@@ -38,7 +38,7 @@ function Compliance(solver::AbstractFEASolver)
     if any(!=(0), ch.inhomogeneities)
         throw(
             ArgumentError(
-                "Compliance assumes homogeneous Dirichlet BCs (prescribed displacement = 0), " *
+                "ComplianceFun assumes homogeneous Dirichlet BCs (prescribed displacement = 0), " *
                 "but this problem has nonzero prescribed displacements. The closed-form " *
                 "compliance gradient is wrong in that case; use an adjoint-based objective " *
                 "or remove the inhomogeneous Dirichlet BCs.",
@@ -48,14 +48,14 @@ function Compliance(solver::AbstractFEASolver)
     T = eltype(solver.vars)
     cell_comp = zeros(T, getncells(solver.problem.ch.dh.grid))
     grad = copy(cell_comp)
-    return Compliance(solver, cell_comp, grad)
+    return ComplianceFun(solver, cell_comp, grad)
 end
 
-function (o::Compliance)(x::AbstractVector)
+function (o::ComplianceFun)(x::AbstractVector)
     @warn "A vector input was passed in to the compliance function. It will be assumed to be the filtered, unpenalised and uninterpolated pseudo-densities. Please use the `PseudoDensities` constructor to wrap the input vector to avoid ambiguity."
     return o(PseudoDensities(x))
 end
-function (o::Compliance{T})(x::PseudoDensities) where {T}
+function (o::ComplianceFun{T})(x::PseudoDensities) where {T}
     @unpack cell_comp, solver, grad = o
     @unpack elementinfo, u, xmin = solver
     @unpack metadata, Kes = elementinfo
@@ -69,7 +69,7 @@ function (o::Compliance{T})(x::PseudoDensities) where {T}
     )
 end
 
-function ChainRulesCore.rrule(comp::Compliance, x::PseudoDensities)
+function ChainRulesCore.rrule(comp::ComplianceFun, x::PseudoDensities)
     out = comp(x)
     out_grad = copy(comp.grad)
     return out, Δ -> (nothing, Tangent{typeof(x)}(; x=out_grad * ChainRulesCore.unthunk(Δ)))

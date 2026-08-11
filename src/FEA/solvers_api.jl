@@ -501,7 +501,7 @@ function FEASolver(
 ) where {Physics<:AbstractPhysics,Solver<:AbstractLinearSolver}
     T = TopOptProblems.floattype(problem)
     _xmin = xmin === nothing ? T(1) / 1000 : T(xmin)
-    _penalty = penalty === nothing ? PowerPenalty{T}(1) : penalty
+    _penalty = penalty === nothing ? PowerPenaltyFun{T}(1) : penalty
     _prev_penalty = prev_penalty === nothing ? deepcopy(_penalty) : prev_penalty
     _abstol = abstol === nothing ? T(1e-7) : T(abstol)
 

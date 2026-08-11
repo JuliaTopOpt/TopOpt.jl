@@ -11,8 +11,8 @@ The BESO algorithm, see [HuangXie2010](@cite).
 """
 struct BESO{
     T,
-    Tc<:Compliance,
-    Tv1<:Volume,
+    Tc<:ComplianceFun,
+    Tv1<:VolumeFun,
     Tv2,
     Tf,
     Ts<:AbstractVector{T},
@@ -41,8 +41,8 @@ function Base.show(io::IO, ::MIME{Symbol("text/plain")}, ::BESO)
 end
 
 function BESO(
-    comp::Compliance,
-    vol::Volume,
+    comp::ComplianceFun,
+    vol::VolumeFun,
     vol_limit,
     filter;
     maxiter=200,

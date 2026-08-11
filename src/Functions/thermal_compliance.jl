@@ -1,5 +1,5 @@
 """
-    ThermalCompliance{T, TS<:AbstractFEASolver, TC<:AbstractVector{T}, TG<:AbstractVector{T}}
+    ThermalComplianceFun{T, TS<:AbstractFEASolver, TC<:AbstractVector{T}, TG<:AbstractVector{T}}
 
 Thermal compliance objective function for heat transfer topology optimization.
 
@@ -42,7 +42,7 @@ comp = ThermalCompliance(solver)
 val = comp(PseudoDensities(ones(length(solver.vars))))
 ```
 """
-mutable struct ThermalCompliance{
+mutable struct ThermalComplianceFun{
     T,TS<:AbstractFEASolver,TC<:AbstractVector{T},TG<:AbstractVector{T}
 } <: AbstractFunction{T}
     solver::TS
@@ -53,18 +53,18 @@ mutable struct ThermalCompliance{
     adjoint_sol::TC
 end
 
-Utilities.getpenalty(tc::ThermalCompliance) = getpenalty(getsolver(tc))
-function Utilities.setpenalty!(tc::ThermalCompliance, p)
+Utilities.getpenalty(tc::ThermalComplianceFun) = getpenalty(getsolver(tc))
+function Utilities.setpenalty!(tc::ThermalComplianceFun, p)
     return setpenalty!(getsolver(tc), p)
 end
-Nonconvex.NonconvexCore.getdim(::ThermalCompliance) = 1
+Nonconvex.NonconvexCore.getdim(::ThermalComplianceFun) = 1
 
-getsolver(tc::ThermalCompliance) = tc.solver
+getsolver(tc::ThermalComplianceFun) = tc.solver
 
-function ThermalCompliance(solver::AbstractFEASolver)
+function ThermalComplianceFun(solver::AbstractFEASolver)
     solver.problem isa HeatTransferTopOptProblem || throw(
         ArgumentError(
-            "ThermalCompliance can only be used with HeatTransferTopOptProblem. Got $(typeof(solver.problem))",
+            "ThermalComplianceFun can only be used with HeatTransferTopOptProblem. Got $(typeof(solver.problem))",
         ),
     )
     T = eltype(solver.vars)
@@ -74,22 +74,22 @@ function ThermalCompliance(solver::AbstractFEASolver)
     n = ndofs(solver.problem.ch.dh)
     adjoint_rhs = zeros(T, n)
     adjoint_sol = zeros(T, n)
-    return ThermalCompliance(solver, cell_comp, grad, adjoint_rhs, adjoint_sol)
+    return ThermalComplianceFun(solver, cell_comp, grad, adjoint_rhs, adjoint_sol)
 end
 
-function (tc::ThermalCompliance)(x::AbstractVector)
+function (tc::ThermalComplianceFun)(x::AbstractVector)
     @warn "A vector input was passed in to the thermal compliance function. It will be assumed to be the filtered, unpenalised and uninterpolated pseudo-densities. Please use the `PseudoDensities` constructor to wrap the input vector to avoid ambiguity."
     return tc(PseudoDensities(x))
 end
 
-function (tc::ThermalCompliance{T})(x::PseudoDensities) where {T}
+function (tc::ThermalComplianceFun{T})(x::PseudoDensities) where {T}
     solver = getsolver(tc)
     solver.vars .= x.x
     solver()
     return compute_thermal_compliance!(tc, solver)
 end
 
-function ChainRulesCore.rrule(tc::ThermalCompliance, x::PseudoDensities)
+function ChainRulesCore.rrule(tc::ThermalComplianceFun, x::PseudoDensities)
     out = tc(x)
     out_grad = copy(tc.grad)
     return out, Δ -> (nothing, Tangent{typeof(x)}(; x=out_grad * ChainRulesCore.unthunk(Δ)))
@@ -267,4 +267,4 @@ function solve_adjoint!(
     return nothing
 end
 
-export ThermalCompliance
+export ThermalComplianceFun

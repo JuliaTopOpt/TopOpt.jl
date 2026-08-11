@@ -9,16 +9,16 @@ end
 Wraps the raw per-cell, per-material decision variables `y` (length
 `ncells * (nmats - 1)`) for use with `MaterialInterpolation`.
 """
-struct MultiMaterialVariables{M<:AbstractMatrix}
+struct MultiMaterialVariablesFun{M<:AbstractMatrix}
     x::M
 end
-function MultiMaterialVariables(x::AbstractVector, nmats::Int)
+function MultiMaterialVariablesFun(x::AbstractVector, nmats::Int)
     d, r = divrem(length(x), nmats - 1)
     assert_eq(r, 0)
-    return MultiMaterialVariables(reshape(x, d, nmats - 1))
+    return MultiMaterialVariablesFun(reshape(x, d, nmats - 1))
 end
 """
-    element_densities(mv::MultiMaterialVariables)
+    element_densities(mv::MultiMaterialVariablesFun)
 
 Extract the per-element density vector from multi-material variables.
 """
@@ -26,7 +26,7 @@ function element_densities(x::PseudoDensities, densities::AbstractVector)
     return x.x * densities
 end
 
-function Base.sum(x::MultiMaterialVariables; dims)
+function Base.sum(x::MultiMaterialVariablesFun; dims)
     return sum(x.x; dims)
 end
 
@@ -38,31 +38,31 @@ property (e.g. Young's modulus or density). `values` is a vector of material
 property values (length `nmats`, including void as the first entry). `penalty`
 is applied to the softmax output.
 """
-struct MaterialInterpolation{T,P}
+struct MaterialInterpolationFun{T,P}
     Es::Vector{T}
     penalty::P
 end
-function (f::MaterialInterpolation)(x::PseudoDensities)
+function (f::MaterialInterpolationFun)(x::PseudoDensities)
     assert_eq(size(x.x, 2), length(f.Es))
     y = map(f.penalty, x.x) * f.Es
     return PseudoDensities(y)
 end
-function (f::MaterialInterpolation)(x::MultiMaterialVariables)
+function (f::MaterialInterpolationFun)(x::MultiMaterialVariablesFun)
     assert_eq(size(x.x, 2), length(f.Es) - 1)
     return f(tounit(x))
 end
 
-function Utilities.setpenalty!(interp::MaterialInterpolation, p::Real)
+function Utilities.setpenalty!(interp::MaterialInterpolationFun, p::Real)
     return Utilities.setpenalty!(interp.penalty, p)
 end
 
 """
-    tounit(mv::MultiMaterialVariables)
+    tounit(mv::MultiMaterialVariablesFun)
 
 Convert `MultiMaterialVariables` to unit-sum densities via softmax, so the
 per-cell material fractions sum to 1.
 """
-tounit(x::MultiMaterialVariables) = PseudoDensities(tounit(x.x))
+tounit(x::MultiMaterialVariablesFun) = PseudoDensities(tounit(x.x))
 
 function tounit(x::AbstractVector)
     n = length(x) + 1

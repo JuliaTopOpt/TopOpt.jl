@@ -10,9 +10,9 @@ Usage example:
 ```
 using Distributions, LinearAlgebra, TopOpt
 
-f1 = RandomMagnitude([0, -1], Uniform(0.5, 1.5))
-f2 = RandomMagnitude(normalize([1, -1]), Uniform(0.5, 1.5))
-f3 = RandomMagnitude(normalize([-1, -1]), Uniform(0.5, 1.5))
+f1 = RandomMagnitudeFun([0, -1], Uniform(0.5, 1.5))
+f2 = RandomMagnitudeFun(normalize([1, -1]), Uniform(0.5, 1.5))
+f3 = RandomMagnitudeFun(normalize([-1, -1]), Uniform(0.5, 1.5))
 
 base_problem = PointLoadCantilever(Val{:Linear}, (160, 40), (1.0, 1.0), 1.0, 0.3, 1.0)
 problem = MultiLoad(base_problem, [(160, 20) => f1, (80, 40) => f2, (120, 0) => f3], 10000)
@@ -71,11 +71,13 @@ end
 
 Random load-magnitude sampler used inside `MultiLoad`.
 """
-struct RandomMagnitude{Tf,Tdist} <: Function
+struct RandomMagnitudeFun{Tf,Tdist} <: Function
     f::Tf
     dist::Tdist
 end
-(rm::RandomMagnitude)() = rm.f .* rand(rm.dist)
+(rm::RandomMagnitudeFun)() = rm.f .* rand(rm.dist)
+
+const RandomMagnitude = RandomMagnitudeFun
 
 function random_direction()
     theta = rand() * 2 * π

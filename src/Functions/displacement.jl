@@ -11,7 +11,7 @@ The adjoint-based gradient solves `K λ = Δ` (reusing the factorization) and
 computes `du/dx_e = -dρ_e/dx_e · u_eᵀ K_e λ`. See [BendsoeSigmund2003](@cite)
 §2.1 for the adjoint method in topology optimization.
 """
-mutable struct Displacement{
+mutable struct DisplacementFun{
     T,
     Tu<:AbstractVector{T},
     Td<:AbstractVector,
@@ -26,7 +26,7 @@ mutable struct Displacement{
     maxfevals::Int
 end
 
-function Base.show(io::IO, ::MIME{Symbol("text/plain")}, ::Displacement)
+function Base.show(io::IO, ::MIME{Symbol("text/plain")}, ::DisplacementFun)
     return println(io, "TopOpt displacement function")
 end
 
@@ -45,9 +45,9 @@ LinearAlgebra.dot(u::DisplacementResult, weights::AbstractArray) = dot(u.u, weig
 
 Construct the Displacement function struct.
 """
-function Displacement(solver::AbstractFEASolver; maxfevals=10^8)
+function DisplacementFun(solver::AbstractFEASolver; maxfevals=10^8)
     # Displacement is only valid for structural (LinearElasticity) problems
-    @assert solver.problem isa StiffnessTopOptProblem "Displacement can only be used with StiffnessTopOptProblem (structural mechanics). Got $(typeof(solver.problem))"
+    @assert solver.problem isa StiffnessTopOptProblem "DisplacementFun can only be used with StiffnessTopOptProblem (structural mechanics). Got $(typeof(solver.problem))"
     T = eltype(solver.u)
     dh = solver.problem.ch.dh
     k = ndofs_per_cell(dh)
@@ -55,7 +55,7 @@ function Displacement(solver::AbstractFEASolver; maxfevals=10^8)
     total_ndof = ndofs(dh)
     u = zeros(T, total_ndof)
     dudx_tmp = zeros(T, length(solver.vars))
-    return Displacement(u, dudx_tmp, solver, global_dofs, 0, maxfevals)
+    return DisplacementFun(u, dudx_tmp, solver, global_dofs, 0, maxfevals)
 end
 
 """
@@ -65,7 +65,7 @@ end
 # Returns
 displacement vector `u`
 """
-function (dp::Displacement{T})(x::PseudoDensities) where {T}
+function (dp::DisplacementFun{T})(x::PseudoDensities) where {T}
     @unpack solver, global_dofs = dp
     @unpack penalty, problem, xmin = solver
     dp.fevals += 1
@@ -86,7 +86,7 @@ d(u)/d(x_e)' * Δ = -d(ρ_e)/d(x_e) * u' * K_e * (K^-1 * Δ)
 
 where d(u)/d(x) ∈ (nDof x nCell); d(u)/d(x)^T * Δ = (nCell x nDof) * (nDof x 1) -> nCell x 1
 """
-function ChainRulesCore.rrule(dp::Displacement, x::PseudoDensities)
+function ChainRulesCore.rrule(dp::DisplacementFun, x::PseudoDensities)
     @unpack dudx_tmp, solver, global_dofs = dp
     @unpack penalty, problem, u, xmin = solver
     dh = getdh(problem)

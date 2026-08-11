@@ -7,7 +7,7 @@ buckling-constrained optimization.
 Call as `K = assemble(Kes)` where `Kes` is a vector of element matrices.
 Returns a `SparseMatrixCSC`.
 """
-mutable struct AssembleK{
+mutable struct AssembleKFun{
     T,Tp<:StiffnessTopOptProblem,TK<:AbstractMatrix{T},Tg<:AbstractVector{<:Integer}
 } <: AbstractFunction{T}
     problem::Tp
@@ -15,15 +15,15 @@ mutable struct AssembleK{
     global_dofs::Tg # preallocated dof vector for a cell
 end
 
-function Base.show(io::IO, ::MIME{Symbol("text/plain")}, ::AssembleK)
+function Base.show(io::IO, ::MIME{Symbol("text/plain")}, ::AssembleKFun)
     return println(io, "TopOpt global linear stiffness matrix assembly function")
 end
 
-function AssembleK(problem::StiffnessTopOptProblem)
+function AssembleKFun(problem::StiffnessTopOptProblem)
     dh = problem.ch.dh
     k = ndofs_per_cell(dh)
     global_dofs = zeros(Int, k)
-    return AssembleK(problem, initialize_K(problem), global_dofs)
+    return AssembleKFun(problem, initialize_K(problem), global_dofs)
 end
 
 """
@@ -31,7 +31,7 @@ end
 
 Forward-pass function call.
 """
-function (ak::AssembleK{T})(Kes::AbstractVector{<:AbstractMatrix{T}}) where {T}
+function (ak::AssembleKFun{T})(Kes::AbstractVector{<:AbstractMatrix{T}}) where {T}
     @unpack problem, K, global_dofs = ak
     dh = problem.ch.dh
     if K isa Symmetric
@@ -52,7 +52,7 @@ function (ak::AssembleK{T})(Kes::AbstractVector{<:AbstractMatrix{T}}) where {T}
 end
 
 """
-    ChainRulesCore.rrule(ak::AssembleK{T}, Kes)
+    ChainRulesCore.rrule(ak::AssembleKFun{T}, Kes)
 
 `rrule` for autodiff. 
     
@@ -79,7 +79,7 @@ which can be shortened as:
     dg/dK_e = Delta[global_dofs, global_dofs]
 """
 function ChainRulesCore.rrule(
-    ak::AssembleK{T}, Kes::AbstractVector{<:AbstractMatrix{T}}
+    ak::AssembleKFun{T}, Kes::AbstractVector{<:AbstractMatrix{T}}
 ) where {T}
     @unpack problem, K, global_dofs = ak
     dh = problem.ch.dh
