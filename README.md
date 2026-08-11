@@ -9,7 +9,7 @@
 [![Documentation](https://img.shields.io/badge/doc-latest-blue.svg)](https://juliatopopt.github.io/TopOpt.jl/dev)
 [![codecov](https://codecov.io/gh/juliatopopt/TopOpt.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/juliatopopt/TopOpt.jl)
 
-`TopOpt` is a topology optimization package written in [Julia](https://github.com/JuliaLang/julia). To learn more and see some examples, visit the [documentation](https://juliatopopt.github.io/TopOpt.jl/dev). Numerous examples can also be found in the `test/examples` and `test/wcsmo14` directories.
+`TopOpt` is a topology optimization package written in [Julia](https://github.com/JuliaLang/julia). To learn more and see some examples, visit the [documentation](https://juliatopopt.github.io/TopOpt.jl/dev) and the [tutorials](https://juliatopopt.github.io/TopOpt.jl/dev/tutorials/). Numerous examples can also be found in the `test/examples` and `test/wcsmo14` directories.
 
 ## Installation
 
@@ -45,9 +45,7 @@ using TopOpt, Makie, GLMakie
 
 ## Features available
 
-All the following features are available in TopOpt.jl but the documentation is currently lacking! Feel free to open an issue to ask about how to use specific features.
-
-### Optimizaton domains
+### Optimization domains
 
 - 2D and 3D truss domains
 - 2D and 3D continuum domains
@@ -99,6 +97,24 @@ We use [Nonconvex.jl](https://github.com/JuliaNonconvex/Nonconvex.jl) for the op
 - End-to-end topology optimization from INP file to VTK file
 - Interactive visualization of designs and deformation using [Makie.jl](https://makie.juliaplots.org/stable/)
 - Interactive visualization of designs using Dash apps and [DashVtk](https://github.com/JuliaTopOpt/DashVtk_Examples/tree/main/src/TopOptDemo)
+
+## Tutorials
+
+The [tutorials](https://juliatopopt.github.io/TopOpt.jl/dev/tutorials/) cover a wide range of topics with complete, commented examples:
+
+- **SIMP** — basic compliance minimization
+- **BESO / GESO** — evolutionary optimization methods
+- **CSIMP** — continuation SIMP
+- **TOBS** — topology optimization for binary structures
+- **Global / local stress constraints** — stress-constrained design
+- **Heat sink / heat tree** — heat conduction problems
+- **Truss** — truss topology optimization
+- **Buckling** — buckling-constrained optimization
+- **Multi-material** — multi-material design parameterisation
+- **Neural network** — neural-network-based parameterization
+- **Mixed-integer truss** — discrete truss design
+
+See the full list and run the notebooks at [TopOpt Tutorials](https://juliatopopt.github.io/TopOpt.jl/dev/tutorials/).
 
 ## Citation
 
