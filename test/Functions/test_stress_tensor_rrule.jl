@@ -169,7 +169,7 @@ end
     end
 end
 
-@testset "ElementStressTensorKernel rrule" begin
+@testset "ElementStressTensorKernelFun rrule" begin
     nels = (2, 2)
     problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
     solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(3.0))
@@ -181,11 +181,11 @@ end
     x = clamp.(rand(prod(nels)), 0.1, 1.0)
     u = dp(PseudoDensities(x))
 
-    # Create an ElementStressTensorKernel
+    # Create an ElementStressTensorKernelFun
     est = st[1]
     reinit!(est, 1)
 
-    # Get tensor_kernel to create ElementStressTensorKernel
+    # Get tensor_kernel to create ElementStressTensorKernelFun
     # Access the internal structure to get the kernel
     # tensor_kernel is called in _element_stress_tensor for each quad point and basis function
     cellvalues = st.cellvalues
@@ -193,8 +193,8 @@ end
     n_quad = Ferrite.getnquadpoints(cellvalues)
     dim = TopOpt.TopOptProblems.getdim(problem)
 
-    # Create an ElementStressTensorKernel manually (similar to tensor_kernel function)
-    kernel = TopOpt.Functions.ElementStressTensorKernel(
+    # Create an ElementStressTensorKernelFun manually (similar to tensor_kernel function)
+    kernel = TopOpt.Functions.ElementStressTensorKernelFun(
         problem.E,
         problem.ν,
         1,  # q_point
@@ -274,7 +274,7 @@ end
         # Test different combinations of quad points and basis functions
         for q_point in 1:min(2, n_quad)
             for a in 1:min(2, n_basefuncs)
-                kernel_test = TopOpt.Functions.ElementStressTensorKernel(
+                kernel_test = TopOpt.Functions.ElementStressTensorKernelFun(
                     problem.E, problem.ν, q_point, a, cellvalues, dim
                 )
 
