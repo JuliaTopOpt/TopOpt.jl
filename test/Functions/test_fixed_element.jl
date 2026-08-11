@@ -201,7 +201,7 @@ end
 end
 
 @testset "get_fixed_element_projector (by problem)" begin
-    using TopOpt, TopOpt.TopOptProblems
+    using TopOpt, TopOptProblems
 
     @testset "PointLoadCantilever" begin
         # Create a 2D cantilever problem
@@ -391,7 +391,7 @@ end
 
 @testset "End-to-end integration" begin
     @testset "With problem" begin
-        using TopOpt, TopOpt.TopOptProblems
+        using TopOpt, TopOptProblems
 
         # Create a simple problem
         nels = (10, 10)
@@ -455,7 +455,7 @@ end
 end
 
 @testset "ComplianceFun minimization with fixed elements" begin
-    using TopOpt, TopOpt.TopOptProblems, Nonconvex, LinearAlgebra
+    using TopOpt, TopOptProblems, Nonconvex, LinearAlgebra
 
     # Create a cantilever problem
     nels = (20, 10)

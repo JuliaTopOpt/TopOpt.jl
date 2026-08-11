@@ -21,7 +21,7 @@ using TopOpt.FEA: simulate
         )
 
         # Full material topology
-        topology = ones(TopOpt.TrussTopOptProblems.getncells(problem))
+        topology = ones(TrussTopOptProblems.getncells(problem))
 
         result = simulate(problem, topology)
 
@@ -41,7 +41,7 @@ using TopOpt.FEA: simulate
             Val{:Linear}, node_points, elements, loads, fixities, mats, crosssecs
         )
 
-        topology = ones(TopOpt.TrussTopOptProblems.getncells(problem))
+        topology = ones(TrussTopOptProblems.getncells(problem))
         # Remove some elements
         topology[1:2] .= 0.0
 

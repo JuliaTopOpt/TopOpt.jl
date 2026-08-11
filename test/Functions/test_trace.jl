@@ -32,7 +32,7 @@ Random.seed!(42)
 
         # Verify structure is correct
         @test size(em.F) == (n, m)
-        @test em isa TopOpt.Functions.AbstractExactMeanMethod
+        @test em isa Functions.AbstractExactMeanMethod
     end
 
     @testset "ExactSVDMean preserves trace via SVD" begin
@@ -313,7 +313,7 @@ end
 
         # Create a simple fixed load pattern at known dofs
         nloads = 2
-        ndofs = TopOpt.Ferrite.ndofs(base_problem.ch.dh)
+        ndofs = Ferrite.ndofs(base_problem.ch.dh)
         F = spzeros(ndofs, nloads)
 
         # Get some fixed dof indices
@@ -372,7 +372,7 @@ end
         base_problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
 
         nloads = 2
-        ndofs = TopOpt.Ferrite.ndofs(base_problem.ch.dh)
+        ndofs = Ferrite.ndofs(base_problem.ch.dh)
         F = spzeros(ndofs, nloads)
 
         # Get fixed and free dofs

@@ -19,7 +19,7 @@ Random.seed!(42)
         base_problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
 
         # Create multi-load problem with single load
-        F = spzeros(TopOpt.Ferrite.ndofs(base_problem.ch.dh), 1)
+        F = spzeros(Ferrite.ndofs(base_problem.ch.dh), 1)
         F[end, 1] = 1.0
         problem = MultiLoad(base_problem, F)
 
@@ -54,26 +54,26 @@ Random.seed!(42)
         nels = (4, 4)
         base_problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
 
-        F = spzeros(TopOpt.Ferrite.ndofs(base_problem.ch.dh), 1)
+        F = spzeros(Ferrite.ndofs(base_problem.ch.dh), 1)
         F[end, 1] = 1.0
         problem = MultiLoad(base_problem, F)
 
         solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(3.0))
         bc = BlockComplianceFun(problem, solver; nv=1)
 
-        current_penalty = TopOpt.Utilities.getpenalty(bc)
+        current_penalty = Utilities.getpenalty(bc)
         @test current_penalty isa PowerPenaltyFun
         @test current_penalty.p == 3.0
 
         # Test getsolver forwarding
-        @test TopOpt.Utilities.getsolver(bc.compliance) isa TopOpt.FEA.GenericFEASolver
+        @test Utilities.getsolver(bc.compliance) isa FEA.GenericFEASolver
     end
 
     @testset "Evaluation produces finite positive results" begin
         nels = (4, 4)
         base_problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
 
-        F = spzeros(TopOpt.Ferrite.ndofs(base_problem.ch.dh), 1)
+        F = spzeros(Ferrite.ndofs(base_problem.ch.dh), 1)
         F[end, 1] = 1.0
         problem = MultiLoad(base_problem, F)
 
@@ -103,8 +103,8 @@ end
 
         # Create 3 load cases
         nloads = 3
-        F = spzeros(TopOpt.Ferrite.ndofs(base_problem.ch.dh), nloads)
-        right_dofs = TopOpt.TopOptProblems.get_surface_dofs(base_problem)
+        F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
+        right_dofs = TopOptProblems.get_surface_dofs(base_problem)
 
         # Load case 1: force at top
         F[right_dofs[1], 1] = 1.0
@@ -136,8 +136,8 @@ end
 
         # Create 2 load cases
         nloads = 2
-        F = spzeros(TopOpt.Ferrite.ndofs(base_problem.ch.dh), nloads)
-        right_dofs = TopOpt.TopOptProblems.get_surface_dofs(base_problem)
+        F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
+        right_dofs = TopOptProblems.get_surface_dofs(base_problem)
 
         F[right_dofs[1], 1] = 1.0
         F[right_dofs[end], 2] = 0.5
@@ -160,8 +160,8 @@ end
         base_problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
 
         nloads = 3
-        F = spzeros(TopOpt.Ferrite.ndofs(base_problem.ch.dh), nloads)
-        right_dofs = TopOpt.TopOptProblems.get_surface_dofs(base_problem)
+        F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
+        right_dofs = TopOptProblems.get_surface_dofs(base_problem)
 
         for i in 1:nloads
             F[right_dofs[i * length(right_dofs) ÷ (nloads + 1)], i] = 1.0
@@ -189,8 +189,8 @@ end
         base_problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
 
         nloads = 3
-        F = spzeros(TopOpt.Ferrite.ndofs(base_problem.ch.dh), nloads)
-        right_dofs = TopOpt.TopOptProblems.get_surface_dofs(base_problem)
+        F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
+        right_dofs = TopOptProblems.get_surface_dofs(base_problem)
 
         for i in 1:nloads
             F[right_dofs[i * length(right_dofs) ÷ (nloads + 1)], i] = 1.0
@@ -219,8 +219,8 @@ end
         base_problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
 
         nloads = 2
-        F = spzeros(TopOpt.Ferrite.ndofs(base_problem.ch.dh), nloads)
-        right_dofs = TopOpt.TopOptProblems.get_surface_dofs(base_problem)
+        F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
+        right_dofs = TopOptProblems.get_surface_dofs(base_problem)
 
         F[right_dofs[1], 1] = 1.0
         F[right_dofs[end], 2] = 1.0
@@ -260,8 +260,8 @@ end
         base_problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
 
         nloads = 2
-        F = spzeros(TopOpt.Ferrite.ndofs(base_problem.ch.dh), nloads)
-        right_dofs = TopOpt.TopOptProblems.get_surface_dofs(base_problem)
+        F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
+        right_dofs = TopOptProblems.get_surface_dofs(base_problem)
 
         F[right_dofs[1], 1] = 1.0
         F[right_dofs[end], 2] = 1.0
@@ -295,8 +295,8 @@ end
         base_problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
 
         nloads = 2
-        F = spzeros(TopOpt.Ferrite.ndofs(base_problem.ch.dh), nloads)
-        right_dofs = TopOpt.TopOptProblems.get_surface_dofs(base_problem)
+        F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
+        right_dofs = TopOptProblems.get_surface_dofs(base_problem)
 
         F[right_dofs[1], 1] = 1.0
         F[right_dofs[end], 2] = 0.5
@@ -327,8 +327,8 @@ end
         base_problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
 
         nloads = 2
-        F = spzeros(TopOpt.Ferrite.ndofs(base_problem.ch.dh), nloads)
-        right_dofs = TopOpt.TopOptProblems.get_surface_dofs(base_problem)
+        F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
+        right_dofs = TopOptProblems.get_surface_dofs(base_problem)
 
         F[right_dofs[1], 1] = 1.0
         F[right_dofs[end], 2] = 0.5
@@ -359,8 +359,8 @@ end
         base_problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
 
         nloads = 2
-        F = spzeros(TopOpt.Ferrite.ndofs(base_problem.ch.dh), nloads)
-        right_dofs = TopOpt.TopOptProblems.get_surface_dofs(base_problem)
+        F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
+        right_dofs = TopOptProblems.get_surface_dofs(base_problem)
 
         F[right_dofs[1], 1] = 1.0
         F[right_dofs[end], 2] = 0.5
@@ -398,8 +398,8 @@ end
         base_problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
 
         nloads = 3
-        F = spzeros(TopOpt.Ferrite.ndofs(base_problem.ch.dh), nloads)
-        right_dofs = TopOpt.TopOptProblems.get_surface_dofs(base_problem)
+        F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
+        right_dofs = TopOptProblems.get_surface_dofs(base_problem)
 
         for i in 1:nloads
             F[right_dofs[i * length(right_dofs) ÷ (nloads + 1)], i] = 1.0
@@ -435,8 +435,8 @@ end
         base_problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
 
         nloads = 2
-        F = spzeros(TopOpt.Ferrite.ndofs(base_problem.ch.dh), nloads)
-        right_dofs = TopOpt.TopOptProblems.get_surface_dofs(base_problem)
+        F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
+        right_dofs = TopOptProblems.get_surface_dofs(base_problem)
 
         F[right_dofs[1], 1] = 1.0
         F[right_dofs[end], 2] = 1.0
@@ -469,8 +469,8 @@ end
         base_problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
 
         nloads = 2
-        F = spzeros(TopOpt.Ferrite.ndofs(base_problem.ch.dh), nloads)
-        right_dofs = TopOpt.TopOptProblems.get_surface_dofs(base_problem)
+        F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
+        right_dofs = TopOptProblems.get_surface_dofs(base_problem)
 
         F[right_dofs[1], 1] = 1.0
         F[right_dofs[end], 2] = 1.0
@@ -505,8 +505,8 @@ end
         base_problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
 
         nloads = 3
-        F = spzeros(TopOpt.Ferrite.ndofs(base_problem.ch.dh), nloads)
-        right_dofs = TopOpt.TopOptProblems.get_surface_dofs(base_problem)
+        F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
+        right_dofs = TopOptProblems.get_surface_dofs(base_problem)
 
         for i in 1:nloads
             F[right_dofs[i * length(right_dofs) ÷ (nloads + 1)], i] = 1.0
@@ -535,8 +535,8 @@ end
         base_problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
 
         nloads = 2
-        F = spzeros(TopOpt.Ferrite.ndofs(base_problem.ch.dh), nloads)
-        dofs = TopOpt.Ferrite.ndofs(base_problem.ch.dh)
+        F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
+        dofs = Ferrite.ndofs(base_problem.ch.dh)
 
         # Apply loads at different locations
         F[dofs - 5, 1] = 1.0
@@ -560,8 +560,8 @@ end
         base_problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
 
         nloads = 2
-        F = spzeros(TopOpt.Ferrite.ndofs(base_problem.ch.dh), nloads)
-        right_dofs = TopOpt.TopOptProblems.get_surface_dofs(base_problem)
+        F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
+        right_dofs = TopOptProblems.get_surface_dofs(base_problem)
 
         F[right_dofs[1], 1] = 1.0
         F[right_dofs[end], 2] = 0.5
@@ -589,7 +589,7 @@ end
         nels = (4, 4)
         base_problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
 
-        F = spzeros(TopOpt.Ferrite.ndofs(base_problem.ch.dh), 1)
+        F = spzeros(Ferrite.ndofs(base_problem.ch.dh), 1)
         F[end, 1] = 1.0
         problem = MultiLoad(base_problem, F)
 
@@ -615,7 +615,7 @@ end
         nels = (4, 4)
         base_problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
 
-        F = spzeros(TopOpt.Ferrite.ndofs(base_problem.ch.dh), 1)
+        F = spzeros(Ferrite.ndofs(base_problem.ch.dh), 1)
         F[end, 1] = 1.0
         problem = MultiLoad(base_problem, F)
 
@@ -640,8 +640,8 @@ end
         base_problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
 
         nloads = 2
-        F = spzeros(TopOpt.Ferrite.ndofs(base_problem.ch.dh), nloads)
-        right_dofs = TopOpt.TopOptProblems.get_surface_dofs(base_problem)
+        F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
+        right_dofs = TopOptProblems.get_surface_dofs(base_problem)
 
         F[right_dofs[1], 1] = 1.0
         F[right_dofs[end], 2] = 0.5

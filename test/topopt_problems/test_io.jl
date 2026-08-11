@@ -9,13 +9,13 @@ using LinearAlgebra
     problem = PointLoadCantilever(Val{:Linear}, (10, 6), (1.0, 1.0), 1.0, 0.3, 1.0)
 
     # Test save_mesh function exists
-    @test isdefined(TopOpt.TopOptProblems.InputOutput, :save_mesh)
+    @test isdefined(TopOptProblems.InputOutput, :save_mesh)
 
     # Create temporary file for VTK output
     mktempdir() do tmpdir
         vtk_path = joinpath(tmpdir, "test_output")
         # Test VTK saving with default densities
-        @test_nowarn TopOpt.TopOptProblems.InputOutput.save_mesh(vtk_path, problem)
+        @test_nowarn TopOptProblems.InputOutput.save_mesh(vtk_path, problem)
         # Verify files were created - check for .vtu or .pvtu files
         vtk_files = filter(
             f ->
@@ -25,7 +25,7 @@ using LinearAlgebra
         @test length(vtk_files) > 0
         # Test with custom densities
         densities = fill(0.5, getncells(problem.ch.dh.grid))
-        @test_nowarn TopOpt.TopOptProblems.InputOutput.save_mesh(
+        @test_nowarn TopOptProblems.InputOutput.save_mesh(
             vtk_path * "_custom", problem, densities
         )
     end
@@ -67,7 +67,7 @@ end
             densities = fill(0.7, getncells(problem.ch.dh.grid))
 
             # Test save_mesh with densities
-            @test_nowarn TopOpt.TopOptProblems.InputOutput.save_mesh(
+            @test_nowarn TopOptProblems.InputOutput.save_mesh(
                 vtk_path, problem, densities
             )
 
@@ -87,7 +87,7 @@ end
             )
             vtk_path = joinpath(tmpdir, "test_3d")
 
-            @test_nowarn TopOpt.TopOptProblems.InputOutput.save_mesh(vtk_path, problem_3d)
+            @test_nowarn TopOptProblems.InputOutput.save_mesh(vtk_path, problem_3d)
 
             files = readdir(tmpdir)
             @test any(f -> occursin("test_3d", f), files)
@@ -103,12 +103,12 @@ end
             vtk_path = joinpath(tmpdir, "test_heat")
 
             # Heat problems should also be exportable
-            @test_nowarn TopOpt.TopOptProblems.InputOutput.save_mesh(vtk_path, problem)
+            @test_nowarn TopOptProblems.InputOutput.save_mesh(vtk_path, problem)
 
             # Test with custom densities
             densities = fill(0.6, getncells(problem.ch.dh.grid))
             vtk_path2 = joinpath(tmpdir, "test_heat_densities")
-            @test_nowarn TopOpt.TopOptProblems.InputOutput.save_mesh(
+            @test_nowarn TopOptProblems.InputOutput.save_mesh(
                 vtk_path2, problem, densities
             )
 
@@ -123,7 +123,7 @@ end
             densities = rand(Float64, getncells(problem.ch.dh.grid))
 
             # Save with density data
-            @test_nowarn TopOpt.TopOptProblems.InputOutput.save_mesh(
+            @test_nowarn TopOptProblems.InputOutput.save_mesh(
                 vtk_path, problem, densities
             )
         end

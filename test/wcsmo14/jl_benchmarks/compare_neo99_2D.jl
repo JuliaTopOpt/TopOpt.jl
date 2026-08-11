@@ -26,7 +26,7 @@ sizes = (1.0, 1.0)
 @timeit to "problem def" problem = HalfMBB(Val{:Linear}, nels, sizes, E, v, f);
 
 # Define a finite element solver
-@timeit to "penalty def" penalty = TopOpt.PowerPenaltyFun(3.0)
+@timeit to "penalty def" penalty = PowerPenaltyFun(3.0)
 @timeit to "solver def" solver = FEASolver(
     DirectSolver, problem; xmin=xmin, penalty=penalty
 );
@@ -41,7 +41,7 @@ end
 
 # Define volume constraint
 @timeit to "constraint def" begin
-    volfrac = TopOpt.VolumeFun(solver)
+    volfrac = VolumeFun(solver)
     constr = x -> volfrac(filter(PseudoDensities(x))) - V
 end
 

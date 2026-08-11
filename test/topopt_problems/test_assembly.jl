@@ -37,7 +37,7 @@ using TopOpt.TopOptProblems: make_Kes_and_fes
         f_out = zeros(Float64, ndofs(problem.ch.dh))
 
         # Call inplace version
-        TopOpt.TopOptProblems.assemble_f!(f_out, problem, elementinfo, vars, penalty, 0.001)
+        TopOptProblems.assemble_f!(f_out, problem, elementinfo, vars, penalty, 0.001)
 
         @test length(f_out) == ndofs(problem.ch.dh)
         @test any(f_out .!= 0)  # Should have been filled with values
@@ -53,7 +53,7 @@ using TopOpt.TopOptProblems: make_Kes_and_fes
         dloads = [rand(Float64, 8) for _ in 1:ncells]
 
         f = zeros(Float64, ndofs(problem.ch.dh))
-        TopOpt.TopOptProblems.assemble_f!(f, problem, dloads)
+        TopOptProblems.assemble_f!(f, problem, dloads)
 
         @test length(f) == ndofs(problem.ch.dh)
     end
@@ -70,7 +70,7 @@ using TopOpt.TopOptProblems: make_Kes_and_fes
         f = zeros(Float64, ndofs(problem.ch.dh))
 
         # Call update_f! (2-argument version)
-        TopOpt.TopOptProblems.update_f!(f, dof_cells, dloads)
+        TopOptProblems.update_f!(f, dof_cells, dloads)
 
         # Since dloads is all zeros, f should remain zero
         @test all(f .== 0)
@@ -104,7 +104,7 @@ end
         u = ginfo.K \ ginfo.f
         penalty = PowerPenaltyFun(1.0)
         xmin_val = 1e-3
-        Kσs = TopOpt.TopOptProblems.get_Kσs(
+        Kσs = TopOptProblems.get_Kσs(
             problem, u, elementinfo.cellvalues, vars, penalty, xmin_val
         )
 
@@ -119,10 +119,10 @@ end
 
         # Verify density scaling: Kσ should scale with penalized density
         vars_half = fill(0.5, ncells)
-        Kσs_half = TopOpt.TopOptProblems.get_Kσs(
+        Kσs_half = TopOptProblems.get_Kσs(
             problem, u, elementinfo.cellvalues, vars_half, penalty, xmin_val
         )
-        ρ_half = TopOpt.Utilities.density(penalty(0.5), xmin_val)
+        ρ_half = Utilities.density(penalty(0.5), xmin_val)
         for ci in 1:ncells
             # With density=1 (ones), ρ=1; with density=0.5, ρ=density(0.5^1, xmin)
             # Kσ should scale linearly with ρ since Kσ_e = ρ_e * Kσ_0_e
@@ -156,7 +156,7 @@ end
         u = ginfo.K \ ginfo.f
         penalty = PowerPenaltyFun(1.0)
         xmin_val = 1e-3
-        Kσs = TopOpt.TopOptProblems.get_Kσs(
+        Kσs = TopOptProblems.get_Kσs(
             problem, u, elementinfo.cellvalues, vars, penalty, xmin_val
         )
 
@@ -224,7 +224,7 @@ end
         @testset "TrussElementKσ construction" begin
             eksig = TrussElementKσ(problem, solver)
 
-            @test eksig isa TopOpt.Functions.TrussElementKσ
+            @test eksig isa Functions.TrussElementKσ
             @test hasfield(typeof(eksig), :problem)
             @test hasfield(typeof(eksig), :Kσes)
             @test hasfield(typeof(eksig), :EALγ_s)
@@ -234,8 +234,8 @@ end
             eksig = TrussElementKσ(problem, solver)
 
             # Test with displacement result - wrap in proper types
-            u_result = TopOpt.Functions.DisplacementResult(solver.u)
-            x_densities = TopOpt.PseudoDensities(ones(ncells))
+            u_result = Functions.DisplacementResult(solver.u)
+            x_densities = PseudoDensities(ones(ncells))
 
             # Call the evaluator
             Kσ_result = eksig(u_result, x_densities)
@@ -245,11 +245,11 @@ end
 
             # Verify penalty is applied: with x=0.5, Kσ should be scaled by
             # ρ = density(penalty(0.5), xmin), not by 0.5 directly
-            x_half = TopOpt.PseudoDensities(fill(0.5, ncells))
+            x_half = PseudoDensities(fill(0.5, ncells))
             Kσ_half = eksig(u_result, x_half)
-            penalty = TopOpt.getpenalty(solver)
+            penalty = getpenalty(solver)
             xmin = solver.xmin
-            ρ_half = TopOpt.Utilities.density(penalty(0.5), xmin)
+            ρ_half = Utilities.density(penalty(0.5), xmin)
             for ci in 1:ncells
                 @test Kσ_half[ci] ≈ ρ_half * Kσ_result[ci] atol = 1e-10
             end
@@ -283,7 +283,7 @@ end
         vars = fill(0.5, ncells)
         penalty = PowerPenaltyFun(3.0)
         f_out = zeros(Float64, ndofs(problem.ch.dh))
-        TopOpt.TopOptProblems.assemble_f!(f_out, problem, elementinfo, vars, penalty, 0.001)
+        TopOptProblems.assemble_f!(f_out, problem, elementinfo, vars, penalty, 0.001)
         @test length(f_out) == ndofs(problem.ch.dh)
     end
 
@@ -291,7 +291,7 @@ end
         vars = fill(0.5, ncells)
         penalty = RationalPenaltyFun(3.0)
         f_out = zeros(Float64, ndofs(problem.ch.dh))
-        TopOpt.TopOptProblems.assemble_f!(f_out, problem, elementinfo, vars, penalty, 0.001)
+        TopOptProblems.assemble_f!(f_out, problem, elementinfo, vars, penalty, 0.001)
         @test length(f_out) == ndofs(problem.ch.dh)
     end
 end
@@ -312,7 +312,7 @@ end
         vars = fill(0.001, ncells)
         penalty = PowerPenaltyFun(3.0)
         f_out = zeros(Float64, ndofs(problem.ch.dh))
-        TopOpt.TopOptProblems.assemble_f!(f_out, problem, elementinfo, vars, penalty, 0.001)
+        TopOptProblems.assemble_f!(f_out, problem, elementinfo, vars, penalty, 0.001)
         @test length(f_out) == ndofs(problem.ch.dh)
         @test all(isfinite, f_out)
     end
@@ -329,7 +329,7 @@ end
     problem = TieBeam(Val{:Linear}, T; refine=1, force=force, E=E, ν=ν)
 
     # Check that TieBeam has pressure loads defined
-    pressuredict = TopOpt.TopOptProblems.getpressuredict(problem)
+    pressuredict = TopOptProblems.getpressuredict(problem)
     @test !isempty(pressuredict)
     @test haskey(pressuredict, "rightload")
     @test haskey(pressuredict, "bottomload")
@@ -337,7 +337,7 @@ end
     @test pressuredict["bottomload"] == -force
 
     # Check that facesets exist
-    facesets = TopOpt.TopOptProblems.getfacesets(problem)
+    facesets = TopOptProblems.getfacesets(problem)
     @test haskey(facesets, "rightload")
     @test haskey(facesets, "bottomload")
 
@@ -398,7 +398,7 @@ end
 
     # Apply distributed loads using update_f!
     metadata = problem.metadata
-    TopOpt.TopOptProblems.update_f!(ginfo.f, metadata.dof_cells, dloads)
+    TopOptProblems.update_f!(ginfo.f, metadata.dof_cells, dloads)
 
     # Verify global force vector has non-zero entries from pressure
     @test any(ginfo.f .!= 0)
@@ -420,7 +420,7 @@ end
     problem = TieBeam(Val{:Linear}, T; refine=1, force=T(1.0), E=T(1), ν=T(0.3))
 
     # Get pressure dictionary
-    pressuredict = TopOpt.TopOptProblems.getpressuredict(problem)
+    pressuredict = TopOptProblems.getpressuredict(problem)
 
     # Verify the sign convention: traction = -pressure
     # Positive pressure -> negative traction (inward force)
@@ -453,13 +453,13 @@ end
     problem = TieBeam(Val{:Linear}, T; refine=2, force=T(1.0), E=T(1), ν=T(0.3))
 
     # Get problem data needed for the loop
-    dh = TopOpt.TopOptProblems.getdh(problem)
+    dh = TopOptProblems.getdh(problem)
     grid = dh.grid
     all_boundary_facets = reduce(
         union, values(grid.facetsets); init=Set{Ferrite.FacetIndex}()
     )
-    pressuredict = TopOpt.TopOptProblems.getpressuredict(problem)
-    facesets = TopOpt.TopOptProblems.getfacesets(problem)
+    pressuredict = TopOptProblems.getpressuredict(problem)
+    facesets = TopOptProblems.getfacesets(problem)
 
     # Build element FEA info to get facevalues
     elementinfo = ElementFEAInfo(problem, 2, Val{:Static})
@@ -467,8 +467,8 @@ end
         problem, 2, Val{:Static}
     )
 
-    dim = TopOpt.TopOptProblems.getdim(problem)
-    N = TopOpt.TopOptProblems.nnodespercell(problem)
+    dim = TopOptProblems.getdim(problem)
+    N = TopOptProblems.nnodespercell(problem)
     n_basefuncs = Ferrite.getnbasefunctions(facevalues)
 
     # Verify the pressure loop over keys(pressuredict)
@@ -513,8 +513,8 @@ end
     @test n_quadpoints >= 1  # Should have at least one quadrature point
 
     # Verify each face integration produces valid results
-    pressuredict = TopOpt.TopOptProblems.getpressuredict(problem)
-    facesets = TopOpt.TopOptProblems.getfacesets(problem)
+    pressuredict = TopOptProblems.getpressuredict(problem)
+    facesets = TopOptProblems.getfacesets(problem)
 
     for k in keys(pressuredict)
         faceset = facesets[k]
@@ -528,8 +528,8 @@ end
 
     # Test that pressure loads contribute to global force vector
     metadata = problem.metadata
-    f = zeros(T, ndofs(TopOpt.TopOptProblems.getdh(problem)))
-    TopOpt.TopOptProblems.update_f!(f, metadata.dof_cells, dloads)
+    f = zeros(T, ndofs(TopOptProblems.getdh(problem)))
+    TopOptProblems.update_f!(f, metadata.dof_cells, dloads)
 
     # Global force should have non-zero entries from pressure
     @test any(f .!= 0)
@@ -542,13 +542,13 @@ end
     problem = TieBeam(Val{:Linear}, T; refine=1, force=T(1.0), E=T(1), ν=T(0.3))
 
     # Verify all faces in pressuredict facesets are on the boundary
-    dh = TopOpt.TopOptProblems.getdh(problem)
+    dh = TopOptProblems.getdh(problem)
     grid = dh.grid
     all_boundary_facets = reduce(
         union, values(grid.facetsets); init=Set{Ferrite.FacetIndex}()
     )
-    pressuredict = TopOpt.TopOptProblems.getpressuredict(problem)
-    facesets = TopOpt.TopOptProblems.getfacesets(problem)
+    pressuredict = TopOptProblems.getpressuredict(problem)
+    facesets = TopOptProblems.getfacesets(problem)
 
     for k in keys(pressuredict)
         faceset = facesets[k]

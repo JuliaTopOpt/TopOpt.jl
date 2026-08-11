@@ -22,9 +22,9 @@ p = 4.0 # penalty
 V = 0.5 # maximum volume fraction
 
 solver = FEASolver(DirectSolver, problem; xmin=xmin)
-comp = TopOpt.ComplianceFun(solver)
+comp = ComplianceFun(solver)
 
-ts = TopOpt.TrussStressFun(solver)
+ts = TrussStressFun(solver)
 ts(PseudoDensities(x0))
 
 function obj(x)

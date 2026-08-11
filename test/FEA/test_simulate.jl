@@ -9,7 +9,7 @@ using TopOpt.FEA: simulate
 
         result = simulate(problem, topology)
 
-        @test result isa TopOpt.FEA.LinearElasticityResult
+        @test result isa FEA.LinearElasticityResult
         @test result.comp > 0
         @test length(result.u) > 0
     end
@@ -65,7 +65,7 @@ using TopOpt.FEA: simulate
         # With round=false, intermediate densities should be preserved
         result_continuous = simulate(problem, topology_continuous; round=false)
 
-        @test result_continuous isa TopOpt.FEA.LinearElasticityResult
+        @test result_continuous isa FEA.LinearElasticityResult
         @test result_continuous.comp > 0
         @test length(result_continuous.u) > 0
 
@@ -95,8 +95,8 @@ using TopOpt.FEA: simulate
         # Round=true: 0.3 -> 0, 0.7 -> 1
         result_round = simulate(problem, topology_mixed; round=true)
 
-        @test result_no_round isa TopOpt.FEA.LinearElasticityResult
-        @test result_round isa TopOpt.FEA.LinearElasticityResult
+        @test result_no_round isa FEA.LinearElasticityResult
+        @test result_round isa FEA.LinearElasticityResult
 
         # Results should differ because material distribution is different
         @test result_no_round.comp != result_round.comp
@@ -114,7 +114,7 @@ using TopOpt.FEA: simulate
             topology = fill(density, ncells)
             result = simulate(problem, topology; round=false)
 
-            @test result isa TopOpt.FEA.LinearElasticityResult
+            @test result isa FEA.LinearElasticityResult
             @test result.comp > 0
             @test all(isfinite, result.u)
 

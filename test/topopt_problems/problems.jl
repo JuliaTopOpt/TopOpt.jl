@@ -311,7 +311,7 @@ end
         )
 
         metadata = TopOptProblems.getmetadata(problem)
-        @test metadata isa TopOpt.TopOptProblems.Metadata
+        @test metadata isa TopOptProblems.Metadata
     end
 
     @testset "getpressuredict(::HeatTransferTopOptProblem)" begin

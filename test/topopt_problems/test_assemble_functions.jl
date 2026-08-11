@@ -28,7 +28,7 @@ using Ferrite
 
         # Test that get_f creates a zero vector of correct size
         vars = ones(Float64, getncells(problem.ch.dh.grid))
-        f = TopOpt.TopOptProblems.get_f(problem, vars)
+        f = TopOptProblems.get_f(problem, vars)
 
         @test length(f) == ndofs(problem.ch.dh)
         @test all(f .== 0)

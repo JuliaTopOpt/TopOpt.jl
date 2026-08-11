@@ -143,9 +143,9 @@ end
     nels = (2, 2)
     nloads = 10
     base_problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
-    dense_load_inds = vec(TopOpt.TopOptProblems.get_surface_dofs(base_problem))
+    dense_load_inds = vec(TopOptProblems.get_surface_dofs(base_problem))
     dense_rank = 3
-    F = spzeros(TopOpt.Ferrite.ndofs(base_problem.ch.dh), nloads)
+    F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
     Fsize = size(F)
     for i in 1:dense_rank
         F +=
@@ -192,13 +192,13 @@ end
             # test element stress tensors
             map(1:4) do i
                 est = st[i]
-                f = u -> vec(est(TopOpt.Functions.DisplacementResult(u)))
+                f = u -> vec(est(Functions.DisplacementResult(u)))
                 j1 = FDM.jacobian(central_fdm(5, 1), f, u.u)[1]
                 j2 = Zygote.jacobian(f, u)[1]
                 @test norm(j1 - j2) < 1e-7
             end
             # test all stress tensors
-            f = u -> reduce(vcat, vec.(st(TopOpt.Functions.DisplacementResult(u))))
+            f = u -> reduce(vcat, vec.(st(Functions.DisplacementResult(u))))
             j1 = FDM.jacobian(central_fdm(5, 1), f, u.u)[1]
             j2 = Zygote.jacobian(f, u.u)[1]
             @test norm(j1 - j2) < 1e-7
@@ -272,7 +272,7 @@ end
         vol = VolumeFun(solver; fraction=true)
         x = rand(9)  # 3x3 grid
         target_fraction = 0.5
-        projected = TopOpt.Functions.project(vol, target_fraction, x)
+        projected = Functions.project(vol, target_fraction, x)
 
         # Check output is binary (only 0s and 1s)
         @test all(projected .== 0 .|| projected .== 1)
@@ -284,7 +284,7 @@ end
         x = rand(9)
         total_volume = sum(vol.cellvolumes)
         target_volume = 0.5 * total_volume
-        projected = TopOpt.Functions.project(vol, target_volume, x)
+        projected = Functions.project(vol, target_volume, x)
 
         # Check output is binary
         @test all(projected .== 0 .|| projected .== 1)
@@ -294,7 +294,7 @@ end
         vol = VolumeFun(solver; fraction=true)
         x = [0.1, 0.9, 0.2, 0.8, 0.3, 0.7, 0.4, 0.6, 0.5]
         target_fraction = 0.4
-        projected = TopOpt.Functions.project(vol, target_fraction, x)
+        projected = Functions.project(vol, target_fraction, x)
 
         # Higher density elements should be selected
         # Sort by original density and check that highest are 1s
@@ -306,7 +306,7 @@ end
     @testset "Edge case: V=0 (empty projection)" begin
         vol = VolumeFun(solver; fraction=true)
         x = rand(9)
-        projected = TopOpt.Functions.project(vol, 0.0, x)
+        projected = Functions.project(vol, 0.0, x)
 
         # Should return all zeros or minimal elements
         @test all(projected .== 0 .|| projected .== 1)
@@ -316,7 +316,7 @@ end
         vol = VolumeFun(solver; fraction=false)
         x = rand(9)
         total_volume = sum(vol.cellvolumes)
-        projected = TopOpt.Functions.project(vol, total_volume, x)
+        projected = Functions.project(vol, total_volume, x)
 
         # All elements should be 1
         @test all(projected .== 1)

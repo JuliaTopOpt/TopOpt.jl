@@ -226,7 +226,7 @@ end
     @test σ[3, 1] ≈ 0.0 atol = 1e-15
 
     # Compute von Mises and compare against the 3D formula
-    σvm = TopOpt.Functions.von_mises(σ)
+    σvm = Functions.von_mises(σ)
     σvm_ref = von_mises_reference_3d(σ)
     @test σvm ≈ σvm_ref atol = 1e-10
 
@@ -242,81 +242,81 @@ end
     # 2D problems now return 3×3 tensors with the plane-strain σzz included.
     # These tests use full 3×3 tensors and compare against the 3D reference.
     σ1 = [100.0 0.0 0.0; 0.0 0.0 0.0; 0.0 0.0 0.0]
-    @test TopOpt.Functions.von_mises(σ1) ≈ von_mises_reference_3d(σ1)
+    @test Functions.von_mises(σ1) ≈ von_mises_reference_3d(σ1)
 
     σ2 = [0.0 0.0 0.0; 0.0 100.0 0.0; 0.0 0.0 0.0]
-    @test TopOpt.Functions.von_mises(σ2) ≈ von_mises_reference_3d(σ2)
+    @test Functions.von_mises(σ2) ≈ von_mises_reference_3d(σ2)
 
     σ3 = [100.0 0.0 0.0; 0.0 100.0 0.0; 0.0 0.0 50.0]
-    @test TopOpt.Functions.von_mises(σ3) ≈ von_mises_reference_3d(σ3)
+    @test Functions.von_mises(σ3) ≈ von_mises_reference_3d(σ3)
 
     σ4 = [0.0 50.0 0.0; 50.0 0.0 0.0; 0.0 0.0 0.0]
-    @test TopOpt.Functions.von_mises(σ4) ≈ sqrt(3) * 50.0 atol = 1e-10
+    @test Functions.von_mises(σ4) ≈ sqrt(3) * 50.0 atol = 1e-10
 
     σ5 = [100.0 50.0 0.0; 50.0 50.0 0.0; 0.0 0.0 0.0]
-    @test TopOpt.Functions.von_mises(σ5) ≈ von_mises_reference_3d(σ5)
+    @test Functions.von_mises(σ5) ≈ von_mises_reference_3d(σ5)
 
     σ6 = [0.0 0.0 0.0; 0.0 0.0 0.0; 0.0 0.0 0.0]
-    @test TopOpt.Functions.von_mises(σ6) ≈ 0.0 atol = 1e-10
+    @test Functions.von_mises(σ6) ≈ 0.0 atol = 1e-10
 
     @testset "3D stress tensors" begin
         σ1 = [100.0 0.0 0.0; 0.0 0.0 0.0; 0.0 0.0 0.0]
-        @test TopOpt.Functions.von_mises(σ1) ≈ 100.0 atol = 1e-10
-        @test TopOpt.Functions.von_mises(σ1) ≈ von_mises_reference_3d(σ1)
+        @test Functions.von_mises(σ1) ≈ 100.0 atol = 1e-10
+        @test Functions.von_mises(σ1) ≈ von_mises_reference_3d(σ1)
 
         σ2 = [100.0 0.0 0.0; 0.0 100.0 0.0; 0.0 0.0 100.0]
-        @test TopOpt.Functions.von_mises(σ2) ≈ 0.0 atol = 1e-10  # Hydrostatic stress has zero von Mises
+        @test Functions.von_mises(σ2) ≈ 0.0 atol = 1e-10  # Hydrostatic stress has zero von Mises
 
         σ3 = [0.0 50.0 0.0; 50.0 0.0 0.0; 0.0 0.0 0.0]
         expected = sqrt(3) * 50.0
-        @test TopOpt.Functions.von_mises(σ3) ≈ expected atol = 1e-10
-        @test TopOpt.Functions.von_mises(σ3) ≈ von_mises_reference_3d(σ3)
+        @test Functions.von_mises(σ3) ≈ expected atol = 1e-10
+        @test Functions.von_mises(σ3) ≈ von_mises_reference_3d(σ3)
 
         σ4 = [100.0 30.0 20.0; 30.0 50.0 10.0; 20.0 10.0 25.0]
-        @test TopOpt.Functions.von_mises(σ4) ≈ von_mises_reference_3d(σ4)
+        @test Functions.von_mises(σ4) ≈ von_mises_reference_3d(σ4)
 
         σ5 = [0.0 0.0 0.0; 0.0 0.0 0.0; 0.0 0.0 0.0]
-        @test TopOpt.Functions.von_mises(σ5) ≈ 0.0 atol = 1e-10
+        @test Functions.von_mises(σ5) ≈ 0.0 atol = 1e-10
 
         σ6 = [0.0 0.0 0.0; 0.0 0.0 40.0; 0.0 40.0 0.0]
-        @test TopOpt.Functions.von_mises(σ6) ≈ sqrt(3) * 40.0 atol = 1e-10
+        @test Functions.von_mises(σ6) ≈ sqrt(3) * 40.0 atol = 1e-10
 
         σ7 = [0.0 0.0 60.0; 0.0 0.0 0.0; 60.0 0.0 0.0]
-        @test TopOpt.Functions.von_mises(σ7) ≈ sqrt(3) * 60.0 atol = 1e-10
+        @test Functions.von_mises(σ7) ≈ sqrt(3) * 60.0 atol = 1e-10
     end
 
     @testset "Error handling" begin
         # 2×2 and 4×4 are not supported; only 3×3 (plane strain 2D or full 3D)
         σ1 = [100.0 0.0 0.0 0.0; 0.0 100.0 0.0 0.0; 0.0 0.0 100.0 0.0; 0.0 0.0 0.0 100.0]
-        @test_throws ArgumentError TopOpt.Functions.von_mises(σ1)
+        @test_throws ArgumentError Functions.von_mises(σ1)
 
         σ2 = [100.0 0.0; 0.0 0.0]
-        @test_throws ArgumentError TopOpt.Functions.von_mises(σ2)
+        @test_throws ArgumentError Functions.von_mises(σ2)
 
         σ3 = [100.0]
-        @test_throws MethodError TopOpt.Functions.von_mises(σ3)
+        @test_throws MethodError Functions.von_mises(σ3)
     end
 
     @testset "Output type" begin
         σ1 = Float32[100.0 0.0 0.0; 0.0 0.0 0.0; 0.0 0.0 0.0]
-        result1 = TopOpt.Functions.von_mises(σ1)
+        result1 = Functions.von_mises(σ1)
         @test typeof(result1) == Float32
 
         σ2 = Float64[100.0 0.0 0.0; 0.0 0.0 0.0; 0.0 0.0 0.0]
-        result2 = TopOpt.Functions.von_mises(σ2)
+        result2 = Functions.von_mises(σ2)
         @test typeof(result2) == Float64
 
         σ3 = [1e-10 0.0 0.0; 0.0 0.0 0.0; 0.0 0.0 0.0]
-        @test TopOpt.Functions.von_mises(σ3) ≈ 1e-10 atol = 1e-20
+        @test Functions.von_mises(σ3) ≈ 1e-10 atol = 1e-20
 
         σ4 = [1e10 0.0 0.0; 0.0 0.0 0.0; 0.0 0.0 0.0]
-        @test TopOpt.Functions.von_mises(σ4) ≈ 1e10 atol = 1e-2
+        @test Functions.von_mises(σ4) ≈ 1e10 atol = 1e-2
     end
 
     @testset "Symmetry preservation" begin
         σ_base = [100.0 50.0 30.0; 50.0 80.0 20.0; 30.0 20.0 60.0]
         σ_transpose = σ_base'
-        @test TopOpt.Functions.von_mises(σ_base) ≈ TopOpt.Functions.von_mises(σ_transpose)
+        @test Functions.von_mises(σ_base) ≈ Functions.von_mises(σ_transpose)
     end
 end
 

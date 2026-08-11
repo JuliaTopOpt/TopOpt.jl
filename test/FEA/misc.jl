@@ -349,7 +349,7 @@ end
         K = solver.globalinfo.K
         f = solver.globalinfo.f
 
-        operator = MatrixOperator(K, f, TopOpt.FEA.DefaultCriteria())
+        operator = MatrixOperator(K, f, FEA.DefaultCriteria())
 
         # Test size without dimension argument
         sz = size(operator)
@@ -368,7 +368,7 @@ end
         K = solver.globalinfo.K
         f = solver.globalinfo.f
 
-        operator = MatrixOperator(K, f, TopOpt.FEA.DefaultCriteria())
+        operator = MatrixOperator(K, f, FEA.DefaultCriteria())
 
         # Test size with dimension argument
         @test size(operator, 1) == size(K, 1)
@@ -384,7 +384,7 @@ end
         K = solver.globalinfo.K
         f = solver.globalinfo.f
 
-        operator = MatrixOperator(K, f, TopOpt.FEA.DefaultCriteria())
+        operator = MatrixOperator(K, f, FEA.DefaultCriteria())
 
         @test eltype(operator) == eltype(K)
         @test eltype(operator) <: Real
@@ -548,7 +548,7 @@ end
         K = solver.globalinfo.K
         f = solver.globalinfo.f
 
-        operator = MatrixOperator(K, f, TopOpt.FEA.DefaultCriteria())
+        operator = MatrixOperator(K, f, FEA.DefaultCriteria())
 
         # Test show method
         io = IOBuffer()

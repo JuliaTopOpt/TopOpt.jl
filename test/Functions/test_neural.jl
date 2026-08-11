@@ -22,7 +22,7 @@ using TopOpt:
         # Test NeuralNetworkFun constructor with coordinates
         ml = NeuralNetworkFun(nn, coords)
 
-        @test typeof(ml) <: TopOpt.AbstractMLModel
+        @test typeof(ml) <: AbstractMLModel
         @test typeof(ml.model) <: Flux.Chain
         @test length(ml.init_params) > 0
         @test length(ml.centroids) == 3
@@ -40,7 +40,7 @@ using TopOpt:
         # Test NeuralNetworkFun constructor with problem and scale=true (default)
         ml = NeuralNetworkFun(nn, problem; scale=true)
 
-        @test typeof(ml) <: TopOpt.AbstractMLModel
+        @test typeof(ml) <: AbstractMLModel
         @test typeof(ml.model) <: Flux.Chain
         @test length(ml.init_params) > 0
         @test length(ml.centroids) > 0
@@ -49,7 +49,7 @@ using TopOpt:
 
         # Test with scale=false
         ml_noscale = NeuralNetworkFun(nn, problem; scale=false)
-        @test typeof(ml_noscale) <: TopOpt.AbstractMLModel
+        @test typeof(ml_noscale) <: AbstractMLModel
         @test length(ml_noscale.centroids) == length(ml.centroids)
 
         # Test getcentroids function directly
@@ -75,7 +75,7 @@ using TopOpt:
         # Test calling PredictFunctionFun with coordinates
         input_coords = [0.0, 0.0]
         result = pred_fn(input_coords)
-        @test typeof(result) <: TopOpt.PseudoDensities
+        @test typeof(result) <: PseudoDensities
 
         # Test TrainFunctionFun
         train_fn = TrainFunctionFun(ml)
@@ -84,7 +84,7 @@ using TopOpt:
         # Test calling TrainFunctionFun with params
         params = ml.init_params
         result_train = train_fn(params)
-        @test typeof(result_train) <: TopOpt.PseudoDensities
+        @test typeof(result_train) <: PseudoDensities
     end
 
     @testset "NeuralNetworkFun callable methods" begin
@@ -100,17 +100,17 @@ using TopOpt:
         # Test calling with Coordinates (line 49)
         coord = Coordinates([0.0, 0.0])
         result = ml(coord)
-        @test typeof(result) <: TopOpt.PseudoDensities
+        @test typeof(result) <: PseudoDensities
 
         # Test calling with vector of Coordinates
         coords_vec = [Coordinates([0.0, 0.0]), Coordinates([0.5, 0.5])]
         results = ml(coords_vec)
         @test length(results) == 2
-        @test all(r -> typeof(r) <: TopOpt.PseudoDensities, results)
+        @test all(r -> typeof(r) <: PseudoDensities, results)
 
         # Test calling with NNParams
         params = NNParams(ml.init_params)
         result_params = ml(params)
-        @test typeof(result_params) <: TopOpt.PseudoDensities
+        @test typeof(result_params) <: PseudoDensities
     end
 end

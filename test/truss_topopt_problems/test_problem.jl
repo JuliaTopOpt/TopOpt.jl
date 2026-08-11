@@ -50,15 +50,15 @@ end
     xmin = 0.001 # minimum density
     rmin = 4.0 # density filter radius
 
-    penalty = TopOpt.PowerPenaltyFun(1.0) # 1
+    penalty = PowerPenaltyFun(1.0) # 1
     solver = FEASolver(DirectSolver, problem; xmin=xmin, penalty=penalty)
     ## call solver to trigger assemble!
     solver()
 
     # * ComplianceFun
-    comp = TopOpt.ComplianceFun(solver)
+    comp = ComplianceFun(solver)
     obj = x -> comp(PseudoDensities(x))
-    volfrac = TopOpt.VolumeFun(solver)
+    volfrac = VolumeFun(solver)
     constr = x -> volfrac(PseudoDensities(x)) - V
 
     options = MMAOptions(; maxiter=3000, tol=Nonconvex.Tolerance(; kkt=0.001))
@@ -100,15 +100,15 @@ end # end testset
     xmin = 0.001 # minimum density
     rmin = 4.0 # density filter radius
 
-    penalty = TopOpt.PowerPenaltyFun(1.0) # 1
+    penalty = PowerPenaltyFun(1.0) # 1
     solver = FEASolver(DirectSolver, problem; xmin=xmin, penalty=penalty)
     ## call solver to trigger assemble!
     solver()
 
     # * ComplianceFun
-    comp = TopOpt.ComplianceFun(solver)
+    comp = ComplianceFun(solver)
     obj = x -> comp(PseudoDensities(x))
-    volfrac = TopOpt.VolumeFun(solver)
+    volfrac = VolumeFun(solver)
     constr = x -> volfrac(PseudoDensities(x)) - V
 
     options = MMAOptions(; maxiter=3000, tol=Nonconvex.Tolerance(; kkt=0.001))

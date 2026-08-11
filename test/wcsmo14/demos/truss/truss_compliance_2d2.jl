@@ -22,7 +22,7 @@ p = 4.0 # penalty
 compliance_threshold = 5.0 # maximum compliance
 
 solver = FEASolver(DirectSolver, problem; xmin=xmin)
-comp = TopOpt.ComplianceFun(solver)
+comp = ComplianceFun(solver)
 
 function obj(x)
     # minimize volume

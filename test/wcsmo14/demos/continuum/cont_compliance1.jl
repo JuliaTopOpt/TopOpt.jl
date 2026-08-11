@@ -19,7 +19,7 @@ problem = HalfMBB(Val{:Linear}, problem_size, (1.0, 1.0), E, v, f)
 
 solver = FEASolver(DirectSolver, problem; xmin=xmin)
 cheqfilter = DensityFilterFun(solver; rmin=rmin)
-comp = TopOpt.ComplianceFun(solver)
+comp = ComplianceFun(solver)
 
 function obj(x)
     # minimize compliance

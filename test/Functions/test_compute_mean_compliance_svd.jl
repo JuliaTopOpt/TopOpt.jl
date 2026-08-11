@@ -17,8 +17,8 @@ Random.seed!(42)
 
         # Create multiple load cases
         nloads = 3
-        F = spzeros(TopOpt.Ferrite.ndofs(base_problem.ch.dh), nloads)
-        dense_load_inds = vec(TopOpt.TopOptProblems.get_surface_dofs(base_problem))
+        F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
+        dense_load_inds = vec(TopOptProblems.get_surface_dofs(base_problem))
         for i in 1:nloads
             dofs = dense_load_inds[rand(1:length(dense_load_inds), 2)]
             F[dofs, i] .= randn(2)
@@ -60,8 +60,8 @@ Random.seed!(42)
         base_problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
 
         nloads = 3
-        F = spzeros(TopOpt.Ferrite.ndofs(base_problem.ch.dh), nloads)
-        dense_load_inds = vec(TopOpt.TopOptProblems.get_surface_dofs(base_problem))
+        F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
+        dense_load_inds = vec(TopOptProblems.get_surface_dofs(base_problem))
         for i in 1:nloads
             dofs = dense_load_inds[rand(1:length(dense_load_inds), 2)]
             F[dofs, i] .= randn(2)
@@ -98,8 +98,8 @@ Random.seed!(42)
         base_problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
 
         nloads = 3
-        F = spzeros(TopOpt.Ferrite.ndofs(base_problem.ch.dh), nloads)
-        dense_load_inds = vec(TopOpt.TopOptProblems.get_surface_dofs(base_problem))
+        F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
+        dense_load_inds = vec(TopOptProblems.get_surface_dofs(base_problem))
         for i in 1:nloads
             dofs = dense_load_inds[rand(1:length(dense_load_inds), 2)]
             F[dofs, i] .= randn(2)
@@ -133,8 +133,8 @@ Random.seed!(42)
         base_problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
 
         nloads = 3
-        F = spzeros(TopOpt.Ferrite.ndofs(base_problem.ch.dh), nloads)
-        dense_load_inds = vec(TopOpt.TopOptProblems.get_surface_dofs(base_problem))
+        F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
+        dense_load_inds = vec(TopOptProblems.get_surface_dofs(base_problem))
         for i in 1:nloads
             dofs = dense_load_inds[rand(1:length(dense_load_inds), 2)]
             F[dofs, i] .= randn(2)
@@ -171,8 +171,8 @@ Random.seed!(42)
         base_problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
 
         nloads = 3
-        F = spzeros(TopOpt.Ferrite.ndofs(base_problem.ch.dh), nloads)
-        dense_load_inds = vec(TopOpt.TopOptProblems.get_surface_dofs(base_problem))
+        F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
+        dense_load_inds = vec(TopOptProblems.get_surface_dofs(base_problem))
         for i in 1:nloads
             dofs = dense_load_inds[rand(1:length(dense_load_inds), 2)]
             F[dofs, i] .= randn(2)
@@ -206,8 +206,8 @@ Random.seed!(42)
         base_problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
 
         nloads = 3
-        F = spzeros(TopOpt.Ferrite.ndofs(base_problem.ch.dh), nloads)
-        dense_load_inds = vec(TopOpt.TopOptProblems.get_surface_dofs(base_problem))
+        F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
+        dense_load_inds = vec(TopOptProblems.get_surface_dofs(base_problem))
         for i in 1:nloads
             dofs = dense_load_inds[rand(1:length(dense_load_inds), 2)]
             F[dofs, i] .= randn(2)
@@ -243,8 +243,8 @@ Random.seed!(42)
         base_problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
 
         nloads = 3
-        F = spzeros(TopOpt.Ferrite.ndofs(base_problem.ch.dh), nloads)
-        dense_load_inds = vec(TopOpt.TopOptProblems.get_surface_dofs(base_problem))
+        F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
+        dense_load_inds = vec(TopOptProblems.get_surface_dofs(base_problem))
         for i in 1:nloads
             dofs = dense_load_inds[rand(1:length(dense_load_inds), 2)]
             F[dofs, i] .= randn(2)
@@ -258,7 +258,7 @@ Random.seed!(42)
 
         # Verify structure
         @test ax.n == nloads
-        @test size(ax.US, 1) == TopOpt.Ferrite.ndofs(base_problem.ch.dh)
+        @test size(ax.US, 1) == Ferrite.ndofs(base_problem.ch.dh)
         @test size(ax.V, 2) == 5  # nv samples
 
         # US should be sparse (from SVD)
@@ -284,8 +284,8 @@ Random.seed!(42)
         base_problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
 
         nloads = 3
-        F = spzeros(TopOpt.Ferrite.ndofs(base_problem.ch.dh), nloads)
-        dense_load_inds = vec(TopOpt.TopOptProblems.get_surface_dofs(base_problem))
+        F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
+        dense_load_inds = vec(TopOptProblems.get_surface_dofs(base_problem))
         for i in 1:nloads
             dofs = dense_load_inds[rand(1:length(dense_load_inds), 2)]
             F[dofs, i] .= randn(2)
@@ -320,8 +320,8 @@ Random.seed!(42)
         base_problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
 
         nloads = 3
-        F = spzeros(TopOpt.Ferrite.ndofs(base_problem.ch.dh), nloads)
-        dense_load_inds = vec(TopOpt.TopOptProblems.get_surface_dofs(base_problem))
+        F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
+        dense_load_inds = vec(TopOptProblems.get_surface_dofs(base_problem))
         for i in 1:nloads
             dofs = dense_load_inds[rand(1:length(dense_load_inds), 2)]
             F[dofs, i] .= randn(2)

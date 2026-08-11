@@ -1,6 +1,6 @@
 using Ferrite
 using Ferrite: getnbasefunctions, CellIterator
-using TopOpt.TrussTopOptProblems.TrussTopOptProblems: compute_local_axes, getE, getA
+using TopOpt.TrussTopOptProblems: compute_local_axes, getE, getA
 using TopOpt.TrussTopOptProblems: truss_reinit!
 
 """
@@ -93,7 +93,7 @@ function buckling(
     end
     Kσs = get_truss_Kσs(problem, u, einfo.cellvalues)
     # TODO replace
-    # assemble_k = TopOpt.AssembleKFun(problem)
+    # assemble_k = AssembleKFun(problem)
     # Kσ = assemble_k(Kσs)
 
     Kσ = deepcopy(ginfo.K)

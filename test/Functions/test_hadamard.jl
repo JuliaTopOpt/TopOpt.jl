@@ -3,7 +3,7 @@ using Test
 using LinearAlgebra
 using TopOpt
 
-# Import the hadamard functions from TopOpt.Functions
+# Import the hadamard functions from Functions
 # hadamard! is exported from TopOpt, but hadamard2! and hadamard3! are internal
 import TopOpt: hadamard!
 using TopOpt.Functions: hadamard2!, hadamard3!

@@ -194,7 +194,7 @@ end
     dim = TopOptProblems.getdim(problem)
 
     # Create an ElementStressTensorKernel manually (similar to tensor_kernel function)
-    kernel = TopOpt.Functions.ElementStressTensorKernel(
+    kernel = Functions.ElementStressTensorKernel(
         problem.E,
         problem.ν,
         1,  # q_point
@@ -274,7 +274,7 @@ end
         # Test different combinations of quad points and basis functions
         for q_point in 1:min(2, n_quad)
             for a in 1:min(2, n_basefuncs)
-                kernel_test = TopOpt.Functions.ElementStressTensorKernel(
+                kernel_test = Functions.ElementStressTensorKernel(
                     problem.E, problem.ν, q_point, a, cellvalues, dim
                 )
 

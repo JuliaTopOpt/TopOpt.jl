@@ -18,7 +18,7 @@ using TopOpt.TopOptProblems:
     println("✓ NonconvexCore.getdim(::ComplianceFun) = $dim")
 
     # Also test that getdim returns 1 for VolumeFun
-    vol = TopOpt.VolumeFun(solver)
+    vol = VolumeFun(solver)
     vol_dim = NonconvexCore.getdim(vol)
     @test vol_dim == 1
     println("✓ NonconvexCore.getdim(::VolumeFun) = $vol_dim")
@@ -106,7 +106,7 @@ end
 
     # Test getmetadata
     metadata = getmetadata(problem)
-    @test metadata isa TopOpt.TopOptProblems.Metadata
+    @test metadata isa TopOptProblems.Metadata
     println("✓ getmetadata(::HeatConductionProblem) returns Metadata")
 
     # Test getpressuredict - should return empty dict for heat transfer

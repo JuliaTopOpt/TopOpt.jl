@@ -240,7 +240,7 @@ end
 
     @testset "MultiLoad type" begin
         # Test that MultiLoad is exported and can be referenced
-        @test isdefined(TopOpt.TopOptProblems, :MultiLoad)
+        @test isdefined(TopOptProblems, :MultiLoad)
 
         # Create a basic problem
         problem = PointLoadCantilever(Val{:Linear}, nels, sizes, E, ν, force)

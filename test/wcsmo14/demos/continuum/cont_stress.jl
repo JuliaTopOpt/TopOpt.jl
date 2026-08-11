@@ -22,8 +22,8 @@ problem = PointLoadCantilever(Val{:Linear}, problem_size, (1.0, 1.0), E, v, f)
 solver = FEASolver(DirectSolver, problem; xmin=xmin)
 
 cheqfilter = DensityFilterFun(solver; rmin=rmin)
-stress = TopOpt.von_mises_stress_function(solver)
-comp = TopOpt.ComplianceFun(solver)
+stress = von_mises_stress_function(solver)
+comp = ComplianceFun(solver)
 
 function obj(x)
     # minimize volume
