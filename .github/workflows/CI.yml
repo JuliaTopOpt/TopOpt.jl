@@ -108,8 +108,8 @@ jobs:
         run: |
           julia --project=docs/tutorials -e '
             using Pkg
-            Pkg.develop(PackageSpec(path="."))
             Pkg.instantiate()
+            Pkg.add(PackageSpec(path="."))
             Pkg.precompile()'
       - name: Render tutorial with Quarto
         working-directory: docs/tutorials
