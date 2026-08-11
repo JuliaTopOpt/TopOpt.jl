@@ -18,13 +18,15 @@ using TopOpt, Test
         solver_cg = FEASolver(CGAssemblySolver, problem)
         io = IOBuffer()
         show(io, MIME("text/plain"), solver_cg)
-        @test String(take!(io)) == "TopOpt CG with assembly structural solver (GenericFEASolver)\n"
+        @test String(take!(io)) ==
+            "TopOpt CG with assembly structural solver (GenericFEASolver)\n"
 
         # Matrix-free CG solver
         solver_mf = FEASolver(CGMatrixFreeSolver, problem)
         io = IOBuffer()
         show(io, MIME("text/plain"), solver_mf)
-        @test String(take!(io)) == "TopOpt matrix-free CG structural solver (GenericFEASolver)\n"
+        @test String(take!(io)) ==
+            "TopOpt matrix-free CG structural solver (GenericFEASolver)\n"
     end
 
     @testset "MatrixOperator show method" begin
@@ -33,7 +35,9 @@ using TopOpt, Test
         # The show method should not error
         io = IOBuffer()
         # Test that MatrixOperator show doesn't throw
-        op = TopOpt.FEA.MatrixOperator(solver.globalinfo.K, solver.globalinfo.f, DefaultCriteria())
+        op = TopOpt.FEA.MatrixOperator(
+            solver.globalinfo.K, solver.globalinfo.f, DefaultCriteria()
+        )
         show(io, MIME("text/plain"), op)
         @test String(take!(io)) == "TopOpt matrix linear operator\n"
     end
@@ -44,7 +48,8 @@ using TopOpt, Test
         # Test that MatrixFreeOperator show doesn't throw
         # Access the operator through solver
         show(io, MIME("text/plain"), solver)
-        @test String(take!(io)) == "TopOpt matrix-free CG structural solver (GenericFEASolver)\n"
+        @test String(take!(io)) ==
+            "TopOpt matrix-free CG structural solver (GenericFEASolver)\n"
     end
 
     @testset "LinearElasticityResult show method" begin

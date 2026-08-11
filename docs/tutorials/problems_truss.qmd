@@ -1,0 +1,127 @@
+---
+title: "Truss Problem Types"
+toc: true
+---
+
+## Description
+
+Truss topology optimization finds optimal layouts of bar elements. Design
+variables are cross-sectional areas (0 = remove bar, A_max = full bar).
+This tutorial covers loading truss problems from JSON files and programmatic
+definition.
+
+## Setup
+
+```{julia}
+#| output: false
+using TopOpt
+```
+
+## Loading Truss from JSON
+
+Truss data (nodes, connectivity, materials, supports, loads) is stored in
+JSON files:
+
+```{julia}
+#| output: false
+path_to_file = joinpath(@__DIR__, "tim_2d.json")
+mats = TrussFEAMaterial(10.0, 0.3)    # Young's modulus, Poisson's ratio
+crossecs = TrussFEACrossSec(800.0)    # Cross-sectional area
+node_points, elements, _, _, fixities, load_cases = load_truss_json(path_to_file)
+loads = load_cases["0"]
+problem = TrussProblem(Val{:Linear}, node_points, elements, loads, fixities, mats, crossecs)
+```
+
+The `load_truss_json` function parses all required data structures.
+
+## JSON File Structure
+
+```json
+{
+  "dimension": 2,
+  "node_num": 10,
+  "element_num": 20,
+  "nodes": [
+    {"node_ind": 0, "points": [0.0, 0.0]},
+    {"node_ind": 1, "points": [1.0, 0.0]}
+  ],
+  "elements": [
+    {"end_node_inds": [0, 1], "elem_tag": "steel_set1"}
+  ],
+  "supports": [
+    {"node_ind": 0, "condition": [true, true]}
+  ],
+  "loadcases": {
+    "0": {
+      "lc_ind": 0,
+      "ploads": [
+        {"node_ind": 5, "force": [0.0, -1.0], "loadcase": 0}
+      ]
+    }
+  },
+  "materials": [
+    {"name": "steel", "elem_tags": ["steel_set1"], "E": 210e9}
+  ],
+  "cross_secs": [
+    {"name": "beam", "elem_tags": ["steel_set1"], "A": 0.01}
+  ]
+}
+```
+
+**Critical:** All indices are **zero-based** (Python convention), not
+Julia's one-based indexing. The parser handles conversion.
+
+## Required JSON Fields
+
+- `"dimension"`: model dimension (2 or 3)
+- `"node_num"`: total number of nodes
+- `"element_num"`: total number of elements
+- `"nodes"`: list of `{node_ind, points}` dictionaries
+- `"elements"`: list of `{end_node_inds, elem_tag}` dictionaries
+- `"supports"`: list of `{node_ind, condition}` dictionaries
+- `"loadcases"`: dictionary mapping load case indices to load dictionaries
+- `"materials"`: list of `{name, elem_tags, E, density}` dictionaries
+- `"cross_secs"`: list of `{name, elem_tags, A}` dictionaries
+
+## Optional JSON Fields
+
+- `"unit"`: units string (e.g., "meter", "mm")
+- `"model_type"`: "truss"
+- `"generate_time"`: generation timestamp
+- `"TO_model_type"`: "ground_mesh"
+- `"model_name"`: model name
+- `"_info"`: additional information
+
+## Programmatic Truss Definition
+
+For simple trusses, define directly:
+
+```{julia}
+#| output: false
+# 2D cantilever truss
+node_points = [
+    [0.0, 0.0],   # node 1: fixed
+    [0.0, 1.0],   # node 2: fixed
+    [1.0, 1.0],   # node 3
+    [1.0, 0.0],   # node 4: load applied
+]
+
+elements = [
+    [1, 2], [1, 3], [1, 4],
+    [2, 3], [2, 4],
+    [3, 4]
+]
+
+mats = fill(TrussFEAMaterial(1.0, 0.3), length(elements))
+crosssecs = fill(TrussFEACrossSec(1.0), length(elements))
+
+# Fix DOFs at nodes 1 and 2 (x and y)
+fixities = [1, 2, 3, 4]
+
+# Downward force at node 4 (DOF 8 = y-direction)
+loads = Dict(8 => -1.0)
+
+problem = TrussProblem(Val{:Linear}, node_points, elements, loads, fixities, mats, crosssecs)
+```
+
+For 3D trusses, use 3-element coordinate vectors and 3 DOFs per node.

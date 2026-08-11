@@ -1,5 +1,5 @@
 using TopOpt, Test, LinearAlgebra, Random, SparseArrays
-import Zygote
+using Zygote: Zygote
 using Ferrite: getncells, Ferrite
 using TopOpt.TopOptProblems.InputOutput.INP: Parser
 
@@ -130,8 +130,7 @@ Random.seed!(42)
         heatflux = Dict{String,Float64}("top" => 1.0)
 
         problem = HeatConductionProblem(
-            Val{:Linear}, nels, sizes, k;
-            Tleft=0.0, Tright=0.0, heatflux=heatflux
+            Val{:Linear}, nels, sizes, k; Tleft=0.0, Tright=0.0, heatflux=heatflux
         )
 
         solver = FEASolver(DirectSolver, problem; xmin=0.001, penalty=PowerPenalty(2.0))
@@ -205,7 +204,10 @@ Random.seed!(42)
     @testset "Different problem types compatibility" begin
         # Test that all problem types work with the same interface
         problems = [
-            ("PointLoadCantilever", () -> PointLoadCantilever(Val{:Linear}, (8, 4), (1.0, 1.0), E, ν, force)),
+            (
+                "PointLoadCantilever",
+                () -> PointLoadCantilever(Val{:Linear}, (8, 4), (1.0, 1.0), E, ν, force),
+            ),
             ("HalfMBB", () -> HalfMBB(Val{:Linear}, (8, 4), (1.0, 1.0), E, ν, force)),
             ("LBeam", () -> LBeam(Val{:Linear}, Float64; force=force)),
         ]
@@ -248,7 +250,7 @@ Random.seed!(42)
     @testset "Triangular mesh topology optimization" begin
         # Test complete workflow with imported triangular mesh
         file_name = joinpath(@__DIR__, "..", "inp_parser", "triangle.inp")
-        
+
         # Import INP file using Parser
         inp = Parser.import_inp(file_name)
         @test inp.dh.grid isa Ferrite.Grid
@@ -258,12 +260,7 @@ Random.seed!(42)
         @test problem isa StiffnessTopOptProblem
 
         # Set up solver with SIMP
-        solver = FEASolver(
-            DirectSolver,
-            problem;
-            xmin=0.001,
-            penalty=PowerPenalty(3.0)
-        )
+        solver = FEASolver(DirectSolver, problem; xmin=0.001, penalty=PowerPenalty(3.0))
 
         # Create compliance and volume functions
         comp = Compliance(solver)
@@ -294,7 +291,7 @@ Random.seed!(42)
         # Verify results
         @test length(res.minimizer) == getncells(problem)
         @test all(0 .<= res.minimizer .<= 1)
-        
+
         final_vol = vol(PseudoDensities(res.minimizer))
         @test abs(final_vol - V) < 0.05  # Volume constraint satisfied
 

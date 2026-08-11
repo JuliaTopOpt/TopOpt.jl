@@ -1,0 +1,191 @@
+/* === Documenter.jl-style overrides for Quarto === */
+
+/* Fonts: match Documenter (Lato + JuliaMono) */
+@import url('https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css');
+@import url('https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css');
+
+:root {
+  --qdb-bg: #ffffff;
+  --qdb-surface: #ffffff;
+  --qdb-surface-alt: #f5f6f7;
+  --qdb-border: #dbdbdb;
+  --qdb-text: #222222;
+  --qdb-text-muted: #6b6b6b;
+  --qdb-primary: #2e63b8;
+  --qdb-primary-strong: #1f4f80;
+  --qdb-radius: 0px;
+  --qdb-radius-sm: 0px;
+  --qdb-shadow: none;
+  --qdb-shadow-sm: none;
+  --qdb-code-bg: rgba(0, 0, 0, 0.05);
+  --qdb-code-text: #222222;
+  --doc-max-width: 50rem;
+  --doc-sidebar-width: 18rem;
+  --doc-font-sans: 'Lato Medium', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --doc-font-mono: 'JuliaMono', 'SFMono-Regular', 'Menlo', 'Consolas', monospace;
+}
+
+/* Dark mode variables */
+body.quarto-dark,
+.quarto-dark body {
+  --qdb-bg: #1d1f21;
+  --qdb-surface: #1d1f21;
+  --qdb-surface-alt: #2a2d30;
+  --qdb-border: #3a3d40;
+  --qdb-text: #e6e6e6;
+  --qdb-text-muted: #999;
+  --qdb-primary: #1abc9c;
+  --qdb-primary-strong: #16a085;
+  --qdb-code-bg: rgba(255, 255, 255, 0.05);
+  --qdb-code-text: #e6e6e6;
+}
+
+/* === Global typography === */
+body {
+  font-family: var(--doc-font-sans) !important;
+  font-size: 16px !important;
+  background: var(--qdb-bg) !important;
+  color: var(--qdb-text) !important;
+}
+
+code, pre, pre code {
+  font-family: var(--doc-font-mono) !important;
+  font-variant-ligatures: no-contextual !important;
+}
+
+/* === Navbar: flat, light, hairline border === */
+.navbar, .navbar-dark, .navbar-light {
+  background: var(--qdb-bg) !important;
+  backdrop-filter: none !important;
+  box-shadow: none !important;
+  border-bottom: 1px solid var(--qdb-border) !important;
+}
+.navbar .navbar-brand,
+.navbar .nav-link {
+  color: var(--qdb-text) !important;
+  font-weight: 500 !important;
+}
+.navbar .nav-link:hover,
+.navbar .nav-link:focus {
+  color: var(--qdb-primary) !important;
+}
+
+/* === Hide right TOC sidebar === */
+#quarto-toc,
+nav[role="doc-toc"],
+.quarto-toc-nav,
+.col-12.col-md-3.toc {
+  display: none !important;
+}
+
+/* === Flatten content: no card, no shadow, no radius === */
+.page-columns .content-block,
+.page-columns .content {
+  background: var(--qdb-surface) !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  padding: 1rem !important;
+  max-width: var(--doc-max-width) !important;
+}
+
+/* === Sidebar: flat, Documenter-style === */
+.sidebar,
+#quarto-sidebar {
+  background: var(--qdb-surface-alt) !important;
+  border-right: 1px solid var(--qdb-border) !important;
+  font-size: 0.95rem !important;
+}
+.sidebar .sidebar-item-container.active,
+.sidebar .sidebar-item > .active {
+  background: transparent !important;
+  border-radius: 0 !important;
+}
+.sidebar .sidebar-item-container.active a,
+.sidebar .sidebar-item > .active > a {
+  color: var(--qdb-primary) !important;
+  font-weight: 500 !important;
+  border-left: 3px solid var(--qdb-primary) !important;
+}
+.sidebar .sidebar-item a:hover {
+  background: rgba(0, 0, 0, 0.04) !important;
+  border-radius: 0 !important;
+}
+body.quarto-dark .sidebar .sidebar-item a:hover {
+  background: rgba(255, 255, 255, 0.04) !important;
+}
+
+/* === Code blocks: light bg, small radius, hairline border === */
+pre {
+  background: var(--qdb-code-bg) !important;
+  color: var(--qdb-code-text) !important;
+  border: 1px solid var(--qdb-border) !important;
+  border-radius: 4px !important;
+  box-shadow: none !important;
+}
+pre code {
+  background: transparent !important;
+}
+
+/* Inline code */
+code:not(pre code) {
+  background: var(--qdb-code-bg) !important;
+  color: var(--qdb-code-text) !important;
+  padding: 0.1em 0.3em !important;
+  border-radius: 3px !important;
+  font-size: 0.9em !important;
+}
+
+/* === Links === */
+a {
+  color: var(--qdb-primary) !important;
+  text-decoration: none !important;
+}
+a:hover {
+  color: var(--qdb-primary-strong) !important;
+  text-decoration: underline !important;
+}
+
+/* === Headings === */
+h1, h2, h3, h4, h5, h6 {
+  color: var(--qdb-text) !important;
+  font-weight: 600 !important;
+}
+
+/* === Tables: simple, hairline borders === */
+table {
+  border-radius: 0 !important;
+  border: 1px solid var(--qdb-border) !important;
+}
+table th {
+  border-bottom: 1px solid var(--qdb-border) !important;
+}
+
+/* === Footer: flat === */
+.page-footer {
+  background: var(--qdb-surface) !important;
+  border-top: 1px solid var(--qdb-border) !important;
+  padding: 1rem 0 !important;
+}
+
+/* === Hide Quarto ornament components === */
+.hero-banner,
+.hero-image,
+.feature-card,
+.gallery-card,
+.carousel,
+.get-started,
+.about-quarto {
+  display: none !important;
+}
+
+/* === Callout/admonition boxes: Documenter-style === */
+.callout {
+  border: 2px solid var(--qdb-border) !important;
+  border-radius: 4px !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+.callout-header {
+  font-weight: 600 !important;
+}

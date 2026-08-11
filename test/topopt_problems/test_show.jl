@@ -9,7 +9,7 @@ using TopOpt, Test, LinearAlgebra
         ν = 0.3
         force = 1.0
         problem = HalfMBB(Val{:Linear}, nels, sizes, E, ν, force)
-        
+
         io = IOBuffer()
         show(io, MIME("text/plain"), problem)
         output = String(take!(io))
@@ -23,7 +23,7 @@ using TopOpt, Test, LinearAlgebra
         nels = (2, 2)
         sizes = (1.0, 1.0)
         problem = HalfMBB(Val{:Linear}, nels, sizes, 1.0, 0.3, 1.0)
-        
+
         einfo = ElementFEAInfo(problem)
         # Kes is wrapped in Symmetric, need to unwrap to get ElementMatrix
         em = parent(einfo.Kes[1])
@@ -38,7 +38,7 @@ using TopOpt, Test, LinearAlgebra
         nels = (2, 2)
         sizes = (1.0, 1.0)
         problem = HalfMBB(Val{:Linear}, nels, sizes, 1.0, 0.3, 1.0)
-        
+
         einfo = ElementFEAInfo(problem)
         io = IOBuffer()
         show(io, MIME("text/plain"), einfo)
@@ -59,7 +59,7 @@ using TopOpt, Test, LinearAlgebra
         nels = (2, 2)
         sizes = (1.0, 1.0)
         problem = HalfMBB(Val{:Linear}, nels, sizes, 1.0, 0.3, 1.0)
-        
+
         ginfo = GlobalFEAInfo(problem)
         io = IOBuffer()
         show(io, MIME("text/plain"), ginfo)
@@ -73,10 +73,10 @@ using TopOpt, Test, LinearAlgebra
         K = rand(n, n)
         K = K' * K  # Make it symmetric positive definite for cholesky
         f = rand(n)
-        
+
         # Construct GlobalFEAInfo using the (K, f) constructor
         ginfo = GlobalFEAInfo(K, f)
-        
+
         # Verify the struct is created with proper fields
         @test ginfo.K === K
         @test ginfo.f === f

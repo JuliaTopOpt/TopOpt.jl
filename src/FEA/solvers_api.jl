@@ -128,8 +128,15 @@ export GenericFEASolver
 # These functions dispatch on the linear solver type to solve the system
 
 # Direct solver (factorization-based)
-function solve_system!(::Type{DirectSolver}, solver::GenericFEASolver{T,Physics,DirectSolver}, K, f, lhs;
-                     reuse_fact=false, safe=false) where {T,Physics}
+function solve_system!(
+    ::Type{DirectSolver},
+    solver::GenericFEASolver{T,Physics,DirectSolver},
+    K,
+    f,
+    lhs;
+    reuse_fact=false,
+    safe=false,
+) where {T,Physics}
     if safe
         m = meandiag(K)
         for i in 1:size(K, 1)
@@ -158,8 +165,16 @@ function solve_system!(::Type{DirectSolver}, solver::GenericFEASolver{T,Physics,
 end
 
 # CG with assembled matrix
-function solve_system!(::Type{CGAssemblySolver}, solver::GenericFEASolver{T,Physics,CGAssemblySolver}, K, f, lhs;
-                      safe=false, initially_zero=true, kwargs...) where {T,Physics}
+function solve_system!(
+    ::Type{CGAssemblySolver},
+    solver::GenericFEASolver{T,Physics,CGAssemblySolver},
+    K,
+    f,
+    lhs;
+    safe=false,
+    initially_zero=true,
+    kwargs...,
+) where {T,Physics}
     if safe
         m = meandiag(K)
         for i in 1:size(K, 1)
@@ -215,8 +230,15 @@ function solve_system!(::Type{CGAssemblySolver}, solver::GenericFEASolver{T,Phys
 end
 
 # Matrix-free CG
-function solve_system!(::Type{CGMatrixFreeSolver}, solver::GenericFEASolver{T,Physics,CGMatrixFreeSolver}, K, f, lhs;
-                      initially_zero=true, kwargs...) where {T,Physics}
+function solve_system!(
+    ::Type{CGMatrixFreeSolver},
+    solver::GenericFEASolver{T,Physics,CGMatrixFreeSolver},
+    K,
+    f,
+    lhs;
+    initially_zero=true,
+    kwargs...,
+) where {T,Physics}
     @unpack cg_max_iter, abstol, cg_statevars = solver
     @unpack preconditioner, preconditioner_initialized = solver
     @unpack elementinfo, meandiag, vars, xmin, fixed_dofs, free_dofs, xes = solver
@@ -226,8 +248,16 @@ function solve_system!(::Type{CGMatrixFreeSolver}, solver::GenericFEASolver{T,Ph
     # Build matrix-free operator
     penalty = getpenalty(solver)
     operator = MatrixFreeOperator(
-        f, elementinfo, meandiag, vars, xes,
-        fixed_dofs, free_dofs, xmin, penalty, solver.conv
+        f,
+        elementinfo,
+        meandiag,
+        vars,
+        xes,
+        fixed_dofs,
+        free_dofs,
+        xmin,
+        penalty,
+        solver.conv,
     )
 
     if !(preconditioner === identity)
@@ -275,42 +305,77 @@ function (s::GenericFEASolver{T,Physics,Solver})(
     assemble_f=true,
     rhs=assemble_f ? s.globalinfo.f : s.rhs,
     lhs=assemble_f ? s.u : s.lhs,
-    kwargs...
+    kwargs...,
 ) where {T,Physics,Solver,safe}
     # Handle matrix RHS by solving for each column
     if ndims(rhs) == 2 && size(rhs, 2) > 1
         # Multiple RHS columns - solve each one
         # Assemble stiffness matrix (and force vector if assemble_f=true)
-        assemble!(s.globalinfo, s.problem, s.elementinfo, s.vars, getpenalty(s), s.xmin; assemble_f=assemble_f)
-        
+        assemble!(
+            s.globalinfo,
+            s.problem,
+            s.elementinfo,
+            s.vars,
+            getpenalty(s),
+            s.xmin;
+            assemble_f=assemble_f,
+        )
+
         # Solve for each column of the matrix RHS
         for j in 1:size(rhs, 2)
             # Get the RHS for this column - use the provided matrix columns
             # Apply boundary conditions to the column
             rhs_j = copy(rhs[:, j])
             apply_zero!(rhs_j, s.problem.ch)
-            
+
             # Get the view of lhs for this column using @view macro
             lhs_j = @view lhs[:, j]
-            
+
             # Pass initially_zero only for CG solvers
             if Solver === DirectSolver
                 # Filter out kwargs that DirectSolver doesn't accept
-                filtered_kwargs = filter(p -> p.first ∉ (:initially_zero, :solver), collect(kwargs))
-                solve_system!(Solver, s, s.globalinfo.K, rhs_j, lhs_j;
-                             reuse_fact=(j > 1 || reuse_fact), safe=safe, filtered_kwargs...)
+                filtered_kwargs = filter(
+                    p -> p.first ∉ (:initially_zero, :solver), collect(kwargs)
+                )
+                solve_system!(
+                    Solver,
+                    s,
+                    s.globalinfo.K,
+                    rhs_j,
+                    lhs_j;
+                    reuse_fact=(j > 1 || reuse_fact),
+                    safe=safe,
+                    filtered_kwargs...,
+                )
             else
                 # For CG solvers, start from zero initial guess for each column
                 lhs_j .= zero(T)
-                solve_system!(Solver, s, s.globalinfo.K, rhs_j, lhs_j;
-                             reuse_fact=(j > 1 || reuse_fact), safe=safe, initially_zero=true, kwargs...)
+                solve_system!(
+                    Solver,
+                    s,
+                    s.globalinfo.K,
+                    rhs_j,
+                    lhs_j;
+                    reuse_fact=(j > 1 || reuse_fact),
+                    safe=safe,
+                    initially_zero=true,
+                    kwargs...,
+                )
             end
         end
         return nothing
     end
 
     # Single RHS case (original behavior)
-    assemble!(s.globalinfo, s.problem, s.elementinfo, s.vars, getpenalty(s), s.xmin; assemble_f=assemble_f)
+    assemble!(
+        s.globalinfo,
+        s.problem,
+        s.elementinfo,
+        s.vars,
+        getpenalty(s),
+        s.xmin;
+        assemble_f=assemble_f,
+    )
 
     # Apply boundary conditions to rhs if needed (only for vectors)
     if !assemble_f && rhs !== s.globalinfo.f && ndims(rhs) == 1
@@ -319,27 +384,51 @@ function (s::GenericFEASolver{T,Physics,Solver})(
     end
 
     # Solve system (physics-independent, solver-algorithm dependent)
-    solve_system!(Solver, s, s.globalinfo.K, rhs, lhs; reuse_fact=reuse_fact, safe=safe, kwargs...)
+    solve_system!(
+        Solver, s, s.globalinfo.K, rhs, lhs; reuse_fact=reuse_fact, safe=safe, kwargs...
+    )
     return nothing
 end
 
 # Show methods
-function Base.show(io::IO, ::MIME{Symbol("text/plain")}, ::GenericFEASolver{T,LinearElasticity,DirectSolver}) where {T}
+function Base.show(
+    io::IO,
+    ::MIME{Symbol("text/plain")},
+    ::GenericFEASolver{T,LinearElasticity,DirectSolver},
+) where {T}
     return println(io, "TopOpt direct structural solver (GenericFEASolver)")
 end
-function Base.show(io::IO, ::MIME{Symbol("text/plain")}, ::GenericFEASolver{T,HeatTransfer,DirectSolver}) where {T}
+function Base.show(
+    io::IO, ::MIME{Symbol("text/plain")}, ::GenericFEASolver{T,HeatTransfer,DirectSolver}
+) where {T}
     return println(io, "TopOpt direct heat transfer solver (GenericFEASolver)")
 end
-function Base.show(io::IO, ::MIME{Symbol("text/plain")}, ::GenericFEASolver{T,LinearElasticity,CGAssemblySolver}) where {T}
+function Base.show(
+    io::IO,
+    ::MIME{Symbol("text/plain")},
+    ::GenericFEASolver{T,LinearElasticity,CGAssemblySolver},
+) where {T}
     return println(io, "TopOpt CG with assembly structural solver (GenericFEASolver)")
 end
-function Base.show(io::IO, ::MIME{Symbol("text/plain")}, ::GenericFEASolver{T,HeatTransfer,CGAssemblySolver}) where {T}
+function Base.show(
+    io::IO,
+    ::MIME{Symbol("text/plain")},
+    ::GenericFEASolver{T,HeatTransfer,CGAssemblySolver},
+) where {T}
     return println(io, "TopOpt CG with assembly heat transfer solver (GenericFEASolver)")
 end
-function Base.show(io::IO, ::MIME{Symbol("text/plain")}, ::GenericFEASolver{T,LinearElasticity,CGMatrixFreeSolver}) where {T}
+function Base.show(
+    io::IO,
+    ::MIME{Symbol("text/plain")},
+    ::GenericFEASolver{T,LinearElasticity,CGMatrixFreeSolver},
+) where {T}
     return println(io, "TopOpt matrix-free CG structural solver (GenericFEASolver)")
 end
-function Base.show(io::IO, ::MIME{Symbol("text/plain")}, ::GenericFEASolver{T,HeatTransfer,CGMatrixFreeSolver}) where {T}
+function Base.show(
+    io::IO,
+    ::MIME{Symbol("text/plain")},
+    ::GenericFEASolver{T,HeatTransfer,CGMatrixFreeSolver},
+) where {T}
     return println(io, "TopOpt matrix-free CG heat transfer solver (GenericFEASolver)")
 end
 
@@ -408,10 +497,10 @@ function FEASolver(
     preconditioner=identity,
     # Matrix-free options
     conv=DefaultCriteria(),
-    kwargs...
+    kwargs...,
 ) where {Physics<:AbstractPhysics,Solver<:AbstractLinearSolver}
     T = TopOptProblems.floattype(problem)
-    _xmin = xmin === nothing ? T(1)/1000 : T(xmin)
+    _xmin = xmin === nothing ? T(1) / 1000 : T(xmin)
     _penalty = penalty === nothing ? PowerPenalty{T}(1) : penalty
     _prev_penalty = prev_penalty === nothing ? deepcopy(_penalty) : prev_penalty
     _abstol = abstol === nothing ? T(1e-7) : T(abstol)
@@ -441,13 +530,15 @@ function FEASolver(
         # DOFs come out wrong. Fail fast rather than silently returning a
         # corrupted solution.
         if any(!=(0), problem.ch.inhomogeneities)
-            throw(ArgumentError(
-                "CGMatrixFreeSolver does not yet support inhomogeneous Dirichlet " *
-                "BCs (nonzero prescribed values): the matrix-free meandiag does " *
-                "not match Ferrite's apply! meandiag, so prescribed DOFs are " *
-                "solved to wrong values. Use DirectSolver or CGAssemblySolver " *
-                "for problems with nonzero prescribed temperatures/displacements."
-            ))
+            throw(
+                ArgumentError(
+                    "CGMatrixFreeSolver does not yet support inhomogeneous Dirichlet " *
+                    "BCs (nonzero prescribed values): the matrix-free meandiag does " *
+                    "not match Ferrite's apply! meandiag, so prescribed DOFs are " *
+                    "solved to wrong values. Use DirectSolver or CGAssemblySolver " *
+                    "for problems with nonzero prescribed temperatures/displacements.",
+                ),
+            )
         end
         f = x -> sumdiag(rawmatrix(x).data)
         meandiag = mapreduce(f, +, elementinfo.Kes; init=zero(T))
@@ -461,13 +552,41 @@ function FEASolver(
         free_dofs = Int[]
     end
 
-    return GenericFEASolver{T,Physics,Solver,typeof(_penalty),typeof(problem),
-                            typeof(globalinfo),typeof(elementinfo),typeof(u),
-                            typeof(cg_max_iter),typeof(cg_statevars),typeof(preconditioner),typeof(conv)}(
-        problem, globalinfo, elementinfo, u, lhs, rhs, vars,
-        _penalty, _prev_penalty, _xmin, qr,
-        cg_max_iter, _abstol, cg_statevars, preconditioner, Ref(false), conv,
-        meandiag, fixed_dofs, free_dofs, xes
+    return GenericFEASolver{
+        T,
+        Physics,
+        Solver,
+        typeof(_penalty),
+        typeof(problem),
+        typeof(globalinfo),
+        typeof(elementinfo),
+        typeof(u),
+        typeof(cg_max_iter),
+        typeof(cg_statevars),
+        typeof(preconditioner),
+        typeof(conv),
+    }(
+        problem,
+        globalinfo,
+        elementinfo,
+        u,
+        lhs,
+        rhs,
+        vars,
+        _penalty,
+        _prev_penalty,
+        _xmin,
+        qr,
+        cg_max_iter,
+        _abstol,
+        cg_statevars,
+        preconditioner,
+        Ref(false),
+        conv,
+        meandiag,
+        fixed_dofs,
+        free_dofs,
+        xes,
     )
 end
 

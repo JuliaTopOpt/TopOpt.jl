@@ -8,9 +8,19 @@ using LinearAlgebra
 using Distributions
 
 # Import internal functions for testing
-using TopOpt.TopOptProblems: find_nearest_dofs, RandomMagnitude, random_direction,
-    generate_random_loads, get_surface_dofs, get_node_first_cells, get_node_dofs,
-    get_node_cells, getcloaddict, getfacesets, getE, getν
+using TopOpt.TopOptProblems:
+    find_nearest_dofs,
+    RandomMagnitude,
+    random_direction,
+    generate_random_loads,
+    get_surface_dofs,
+    get_node_first_cells,
+    get_node_dofs,
+    get_node_cells,
+    getcloaddict,
+    getfacesets,
+    getE,
+    getν
 
 # Helper function to get node coordinates for testing
 function get_node_coords(problem, node_idx)
@@ -160,7 +170,7 @@ end
         # Each entry should be a vector of (cell_id, local_node_id) tuples
         for node_idx in 1:nnodes
             cells_for_node = node_cells[node_idx]
-            @test cells_for_node isa AbstractVector{<:Tuple{<:Integer, <:Integer}}
+            @test cells_for_node isa AbstractVector{<:Tuple{<:Integer,<:Integer}}
             for (cell_id, local_node_id) in cells_for_node
                 @test cell_id > 0
                 @test local_node_id > 0
@@ -193,7 +203,7 @@ end
         problem = TieBeam(Val{:Linear}, Float64; refine=1, force=1.0, E=1.0, ν=0.3)
 
         cload_dict = getcloaddict(problem)
-        
+
         # The default implementation returns an empty Dict{String,Vector{T}}
         @test cload_dict isa Dict
         @test isempty(cload_dict)
@@ -222,7 +232,7 @@ end
 
         # Test getfacesets
         facesets = getfacesets(problem)
-        @test facesets isa Dict{String, Tuple{Int, Float64}}
+        @test facesets isa Dict{String,Tuple{Int,Float64}}
 
         # May be empty depending on implementation
         @test true  # Just verify it runs without error
@@ -260,21 +270,21 @@ end
         # Test generating random loads with a distribution
         nloads = 5
         dist = Normal(0.0, 1.0)
-        
+
         # This should work correctly now (bug has been fixed)
         F = generate_random_loads(problem, nloads, dist)
-        
+
         # Verify the result is a sparse matrix with correct dimensions
         @test F isa SparseMatrixCSC
         @test size(F, 2) == nloads
         # generate_random_loads creates loads only on surface DOFs, not all DOFs
         @test size(F, 1) <= Ferrite.ndofs(problem.ch.dh)
-        
+
         # Each column should have some non-zero entries (loads applied)
         for i in 1:nloads
             @test nnz(F[:, i]) > 0
         end
-        
+
         # Test with uniform distribution as well
         dist2 = Uniform(-1.0, 1.0)
         F2 = generate_random_loads(problem, 3, dist2)

@@ -44,7 +44,7 @@ function update_f!(
     xmin,
     penalty,
     vars,
-        M,
+    M,
 ) where {T}
     for ind in 1:length(values)
         d = prescribed_dofs[ind]

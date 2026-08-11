@@ -104,7 +104,9 @@ end
         u = ginfo.K \ ginfo.f
         penalty = PowerPenalty(1.0)
         xmin_val = 1e-3
-        Kσs = TopOpt.TopOptProblems.get_Kσs(problem, u, elementinfo.cellvalues, vars, penalty, xmin_val)
+        Kσs = TopOpt.TopOptProblems.get_Kσs(
+            problem, u, elementinfo.cellvalues, vars, penalty, xmin_val
+        )
 
         ncells = getncells(problem.ch.dh.grid)
         @test length(Kσs) == ncells
@@ -117,7 +119,9 @@ end
 
         # Verify density scaling: Kσ should scale with penalized density
         vars_half = fill(0.5, ncells)
-        Kσs_half = TopOpt.TopOptProblems.get_Kσs(problem, u, elementinfo.cellvalues, vars_half, penalty, xmin_val)
+        Kσs_half = TopOpt.TopOptProblems.get_Kσs(
+            problem, u, elementinfo.cellvalues, vars_half, penalty, xmin_val
+        )
         ρ_half = TopOpt.Utilities.density(penalty(0.5), xmin_val)
         for ci in 1:ncells
             # With density=1 (ones), ρ=1; with density=0.5, ρ=density(0.5^1, xmin)
@@ -152,7 +156,9 @@ end
         u = ginfo.K \ ginfo.f
         penalty = PowerPenalty(1.0)
         xmin_val = 1e-3
-        Kσs = TopOpt.TopOptProblems.get_Kσs(problem, u, elementinfo.cellvalues, vars, penalty, xmin_val)
+        Kσs = TopOpt.TopOptProblems.get_Kσs(
+            problem, u, elementinfo.cellvalues, vars, penalty, xmin_val
+        )
 
         # Compute reference Kσs manually with the correct 3D Lamé constants
         E_val = 1.0
@@ -336,7 +342,9 @@ end
     @test haskey(facesets, "bottomload")
 
     # Test _make_dloads function via make_Kes_and_fes (public API)
-    Kes, weights, dloads, cellvalues, facevalues = make_Kes_and_fes(problem, 2, Val{:Static})
+    Kes, weights, dloads, cellvalues, facevalues = make_Kes_and_fes(
+        problem, 2, Val{:Static}
+    )
     ncells = getncells(problem.ch.dh.grid)
     @test length(dloads) == ncells
 
@@ -377,7 +385,9 @@ end
     elementinfo = ElementFEAInfo(problem, 2, Val{:Static})
 
     # Get distributed loads from pressure via make_Kes_and_fes
-    Kes, weights, dloads, cellvalues, facevalues = make_Kes_and_fes(problem, 2, Val{:Static})
+    Kes, weights, dloads, cellvalues, facevalues = make_Kes_and_fes(
+        problem, 2, Val{:Static}
+    )
 
     # Create global FEA info
     ginfo = GlobalFEAInfo(problem)
@@ -423,7 +433,9 @@ end
     end
 
     # Test that distributed loads are computed correctly via make_Kes_and_fes
-    Kes, weights, dloads, cellvalues, facevalues = make_Kes_and_fes(problem, 2, Val{:Static})
+    Kes, weights, dloads, cellvalues, facevalues = make_Kes_and_fes(
+        problem, 2, Val{:Static}
+    )
 
     # Verify dloads is populated (non-zero)
     any_nonzero = any(fe -> any(x -> x != 0, fe), dloads)
@@ -443,13 +455,17 @@ end
     # Get problem data needed for the loop
     dh = TopOpt.TopOptProblems.getdh(problem)
     grid = dh.grid
-    all_boundary_facets = reduce(union, values(grid.facetsets); init=Set{Ferrite.FacetIndex}())
+    all_boundary_facets = reduce(
+        union, values(grid.facetsets); init=Set{Ferrite.FacetIndex}()
+    )
     pressuredict = TopOpt.TopOptProblems.getpressuredict(problem)
     facesets = TopOpt.TopOptProblems.getfacesets(problem)
 
     # Build element FEA info to get facevalues
     elementinfo = ElementFEAInfo(problem, 2, Val{:Static})
-    Kes, weights, dloads, cellvalues, facevalues = make_Kes_and_fes(problem, 2, Val{:Static})
+    Kes, weights, dloads, cellvalues, facevalues = make_Kes_and_fes(
+        problem, 2, Val{:Static}
+    )
 
     dim = TopOpt.TopOptProblems.getdim(problem)
     N = TopOpt.TopOptProblems.nnodespercell(problem)
@@ -488,7 +504,9 @@ end
     problem = TieBeam(Val{:Linear}, T; refine=2, force=T(1.0), E=T(1), ν=T(0.3))
 
     # Get facevalues and dloads
-    Kes, weights, dloads, cellvalues, facevalues = make_Kes_and_fes(problem, 2, Val{:Static})
+    Kes, weights, dloads, cellvalues, facevalues = make_Kes_and_fes(
+        problem, 2, Val{:Static}
+    )
 
     # Verify quadrature is set up
     n_quadpoints = Ferrite.getnquadpoints(facevalues)
@@ -526,7 +544,9 @@ end
     # Verify all faces in pressuredict facesets are on the boundary
     dh = TopOpt.TopOptProblems.getdh(problem)
     grid = dh.grid
-    all_boundary_facets = reduce(union, values(grid.facetsets); init=Set{Ferrite.FacetIndex}())
+    all_boundary_facets = reduce(
+        union, values(grid.facetsets); init=Set{Ferrite.FacetIndex}()
+    )
     pressuredict = TopOpt.TopOptProblems.getpressuredict(problem)
     facesets = TopOpt.TopOptProblems.getfacesets(problem)
 

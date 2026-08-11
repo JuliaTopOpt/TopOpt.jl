@@ -1,0 +1,119 @@
+---
+title: "Heat Conduction: Conductivity Tree Benchmark"
+toc: true
+---
+
+## Description
+
+This tutorial demonstrates heat conduction topology optimization using the
+classic "conductivity tree" benchmark from Bendsøe & Sigmund's *Topology
+Optimization* textbook (§1.3). The problem minimizes thermal compliance
+(temperature work) subject to a volume constraint.
+
+The setup: distributed heat flux enters the top edge, the bottom edge is
+held at T = 0 (heat sink), and the sides are insulated. The optimal design
+forms a branching tree structure that efficiently conducts heat from the
+top to the bottom boundary — analogous to structural force flow paths.
+
+## Setup
+
+```{julia}
+#| output: false
+using TopOpt
+```
+
+## Define the Problem
+
+The `HeatTree` problem sets up the standard benchmark with heat flux on top
+and fixed temperature at the bottom:
+
+```{julia}
+#| output: false
+nels = (80, 40)  # 80×40 rectangular mesh
+k = 1.0          # thermal conductivity
+q = 1.0          # heat flux on top boundary
+problem = HeatTree(Val{:Linear}, nels, (1.0, 1.0), k; q=q)
+```
+
+The boundary conditions:
+- **Top edge**: Distributed heat flux q (Neumann BC)
+- **Bottom edge**: Fixed temperature T = 0 (Dirichlet BC)
+- **Left/Right edges**: Insulated (zero heat flux)
+
+## Parameter Settings
+
+```{julia}
+#| output: false
+V = 0.3       # volume fraction (30% high-conductivity material)
+xmin = 1e-3   # minimum density
+rmin = 2.0    # density filter radius
+
+x0 = fill(V, TopOpt.getncells(problem))  # start from uniform 30% density
+solver = FEASolver(DirectSolver, problem; xmin=xmin, penalty=PowerPenalty(3.0))
+comp = ThermalCompliance(solver)
+filter = DensityFilter(solver; rmin=rmin)
+```
+
+The 30% volume constraint forces the optimizer to strategically place high-
+conductivity material for maximum heat dissipation.
+
+## Objective and Constraint
+
+```{julia}
+#| output: false
+obj = x -> comp(filter(PseudoDensities(x)))  # thermal compliance
+volfrac = Volume(solver)
+constr = x -> volfrac(filter(PseudoDensities(x))) - V  # volume constraint
+```
+
+Thermal compliance measures the work done by the heat flux against the
+temperature field: `J = QᵀT`. Minimizing it drives heat efficiently toward
+the cold boundary.
+
+## Optimization Setup
+
+```{julia}
+#| output: false
+model = Model(obj)
+addvar!(model, zeros(length(x0)), ones(length(x0)))
+add_ineq_constraint!(model, constr)
+alg = MMA87()
+options = MMAOptions(; tol=Tolerance(; kkt=1e-4), maxiter=30)
+```
+
+## Run Optimization
+
+```{julia}
+#| output: true
+res = optimize(model, alg, x0; options=options)
+```
+
+The MMA87 optimizer iteratively updates the density field to minimize
+thermal compliance while satisfying the volume constraint.
+
+## Results
+
+```{julia}
+#| output: true
+@show obj(res.minimizer)
+@show constr(res.minimizer)
+```
+
+The final design should show the characteristic branching "tree" pattern
+that efficiently conducts heat from the top to the bottom boundary.
+
+## Visualization
+
+```{julia}
+#| label: fig-heat-tree
+#| fig-cap: "Conductivity tree: optimal heat conduction paths from top flux to bottom sink"
+using Makie
+using CairoMakie
+fig = visualize(problem; topology=res.minimizer)
+Makie.display(fig)
+```
+
+The visualization reveals the tree-like structure — high-conductivity
+material forms branching paths similar to how structural members carry
+loads in compliance minimization. This analogy between heat conduction
+and structural mechanics is a fundamental insight in topology optimization.

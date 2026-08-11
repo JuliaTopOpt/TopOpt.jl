@@ -10,9 +10,8 @@ neighboring elements within `rmin`, using the filter scheme from
 Call as `y = flt(x)`. See also [BendsoeSigmund2003](@cite) §3.4 for general
 background on sensitivity filtering.
 """
-struct SensFilter{
-    T,TV<:AbstractVector{T},TE<:ElementFEAInfo,TM<:FilterMetadata
-} <: AbstractSensFilter
+struct SensFilter{T,TV<:AbstractVector{T},TE<:ElementFEAInfo,TM<:FilterMetadata} <:
+       AbstractSensFilter
     elementinfo::TE
     metadata::TM
     rmin::T
@@ -44,9 +43,7 @@ function SensFilter(
 
     cell_weights = zeros(T, nnodes)
 
-    return SensFilter(
-        elementinfo, metadata, rmin, nodal_grad, last_grad, cell_weights
-    )
+    return SensFilter(elementinfo, metadata, rmin, nodal_grad, last_grad, cell_weights)
 end
 
 function (cf::SensFilter)(x::PseudoDensities{I,P}) where {I,P}
@@ -64,32 +61,15 @@ function ChainRulesCore.rrule(cf::SensFilter, x::PseudoDensities)
         @unpack cellvolumes, cells = elementinfo
         @unpack cell_neighbouring_nodes, cell_node_weights = metadata
         node_cells = elementinfo.metadata.node_cells
-        update_nodal_grad!(
-            nodal_grad,
-            node_cells,
-            cell_weights,
-            cells,
-            cellvolumes,
-            newΔ,
-        )
+        update_nodal_grad!(nodal_grad, node_cells, cell_weights, cells, cellvolumes, newΔ)
         normalize_grad!(nodal_grad, cell_weights)
-        update_grad!(
-            newΔ,
-            cell_neighbouring_nodes,
-            cell_node_weights,
-            nodal_grad,
-        )
+        update_grad!(newΔ, cell_neighbouring_nodes, cell_node_weights, nodal_grad)
         return (NoTangent(), Tangent{typeof(x)}(; x=newΔ))
     end
 end
 
 function update_nodal_grad!(
-    nodal_grad::AbstractVector,
-    node_cells,
-    cell_weights,
-    cells,
-    cellvolumes,
-    grad,
+    nodal_grad::AbstractVector, node_cells, cell_weights, cells, cellvolumes, grad
 )
     T = eltype(nodal_grad)
     for n in 1:length(nodal_grad)
@@ -115,12 +95,9 @@ function normalize_grad!(nodal_grad::AbstractVector, cell_weights)
 end
 
 function update_grad!(
-    grad::AbstractVector,
-    cell_neighbouring_nodes,
-    cell_node_weights,
-    nodal_grad,
+    grad::AbstractVector, cell_neighbouring_nodes, cell_node_weights, nodal_grad
 )
-    for i in 1:length(cell_neighbouring_nodes.offsets) - 1
+    for i in 1:(length(cell_neighbouring_nodes.offsets) - 1)
         nodes = cell_neighbouring_nodes[i]
         if length(nodes) == 0
             continue

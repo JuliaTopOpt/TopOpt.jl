@@ -1,0 +1,162 @@
+---
+title: "SIMP: Solid Isotropic Material with Penalization"
+toc: true
+---
+
+## Description
+
+The SIMP (Solid Isotropic Material with Penalization) method is the most widely
+used approach in topology optimization. It parametrizes the design as a
+continuous density field (0 = void, 1 = solid) and uses gradient-based
+optimization to find the optimal material distribution.
+
+This tutorial solves a 3D cantilever beam problem: a beam fixed at one end with
+a point load at the free end. We minimize compliance (maximize stiffness)
+subject to using only 30% of the available material volume. The problem
+demonstrates:
+- 3D finite element modeling with hexahedral elements
+- Density filtering for smooth, mesh-independent designs
+- Nonconvex.jl integration for constrained optimization with MMA87
+
+## Setup
+
+Load TopOpt, which builds on Ferrite.jl for FEA and Nonconvex.jl for
+optimization:
+
+```{julia}
+#| output: false
+using TopOpt
+```
+
+## Define the 3D cantilever problem
+
+We create a 3D point-load cantilever with 30×10×10 hexahedral elements. The
+boundary conditions are:
+- Fixed support (all DOFs constrained) on the left face
+- Downward point load at the center of the right face
+
+```{julia}
+#| output: false
+E = 1.0 # Young's modulus (normalized)
+v = 0.3 # Poisson's ratio
+f = 1.0 # downward force magnitude
+
+nels = (30, 10, 10)  # 30 elements in x, 10 in y, 10 in z
+problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0, 1.0), E, v, f)
+```
+
+The `Val{:Linear}` specifies linear (trilinear) hexahedral elements. The problem
+object contains the 3D mesh, Dirichlet boundary conditions on the fixed face,
+and the point load definition.
+
+## Parameter settings
+
+We target a 30% volume fraction with a density filter radius of 2.0 elements to
+ensure smooth transitions and prevent checkerboarding:
+
+```{julia}
+#| output: false
+V = 0.3       # target volume fraction (30% of domain)
+xmin = 1e-6   # minimum density (prevents singular stiffness matrix)
+rmin = 2.0    # filter radius in element units
+```
+
+## Define the finite element solver
+
+The `FEASolver` handles stiffness matrix assembly and linear system solution.
+We use a direct solver for robustness. The power-law penalty raises element
+densities to the power of 3.0, strongly penalizing intermediate densities and
+pushing the solution toward 0/1 (void/solid):
+
+```{julia}
+penalty = TopOpt.PowerPenalty(3.0)  # ρ³ penalty
+solver = FEASolver(DirectSolver, problem; xmin=xmin, penalty=penalty)
+```
+
+The penalized element stiffness is: `Kₑ(ρ) = ρ³ · Kₑ₀`, where `Kₑ₀` is the
+stiffness of a solid element.
+
+## Define the filtered compliance objective
+
+The objective is compliance (strain energy): `f(x) = uᵀKu`. We wrap it with a
+density filter to ensure smooth designs and avoid mesh-dependent solutions. The
+filter computes weighted averages of neighboring element densities:
+
+```{julia}
+comp = TopOpt.Compliance(solver)           # f(x) = uᵀKu
+filter = DensityFilter(solver; rmin=rmin)  # smooths density field
+obj = x -> comp(filter(PseudoDensities(x)))  # compose: filter → compliance
+```
+
+The `DensityFilter` applies a convolution with a hat kernel over elements within
+the filter radius. This ensures that small changes in design variables produce
+smooth changes in the filtered densities, enabling gradient-based optimization.
+
+## Define the volume constraint
+
+The volume constraint limits total material usage to 30% of the domain:
+
+```{julia}
+volfrac = TopOpt.Volume(solver)  # g(x) = Σ(ρᵢ·Vᵢ) / V_total
+constr = x -> volfrac(filter(PseudoDensities(x))) - V  # g(x) ≤ 0
+```
+
+The constraint function returns `volume_fraction - 0.3`, which must be ≤ 0. The
+filter is applied to the densities before computing the volume to ensure
+consistent smoothing.
+
+## Set up and run the MMA87 optimizer
+
+We use the Method of Moving Asymptotes (MMA87), a gradient-based optimizer well-suited
+for topology optimization. The problem is set up using Nonconvex.jl's modeling API:
+
+```{julia}
+x0 = fill(V, length(solver.vars))  # start from uniform 30% density
+model = Model(obj)                  # minimize objective
+addvar!(model, zeros(length(x0)), ones(length(x0)))  # box: 0 ≤ x ≤ 1
+add_ineq_constraint!(model, constr)  # g(x) ≤ 0
+alg = MMA87()                       # Method of Moving Asymptotes
+convcriteria = Nonconvex.KKTCriteria()  # KKT conditions for convergence
+options = MMAOptions(;
+    maxiter=200, 
+    tol=Nonconvex.Tolerance(; x=1e-3, f=1e-3, kkt=0.001)
+)
+r = optimize(model, alg, x0; options)
+```
+
+The optimizer iterates:
+1. Evaluate objective and constraint at current design
+2. Compute gradients via automatic differentiation (Zygote.jl)
+3. Build convex MMA approximation
+4. Solve subproblem to get search direction
+5. Update design with move limits
+6. Check KKT convergence criteria
+
+```{julia}
+@show obj(r.minimizer)  # print final compliance
+```
+
+The optimization typically converges in 40-60 iterations for this problem,
+achieving a final compliance around 39-40 (normalized units).
+
+## Visualize the result
+
+```{julia}
+#| eval: false
+#| label: fig-simp
+#| fig-cap: "SIMP optimization result: 3D cantilever with 30% volume fraction"
+using Makie
+using CairoMakie
+fig = visualize(
+    problem;
+    topology=r.minimizer,
+    default_exagg_scale=0.07,  # exaggerate displacements for visibility
+    scale_range=10.0,          # color scale range
+    vector_arrowsize=0.5,      # arrow size for load vectors
+)
+Makie.display(fig)
+```
+
+The visualization shows the optimized 3D structure — typically an L-shaped or
+curved truss-like form that efficiently transfers the load from the free end to
+the fixed support while using only 30% of the material volume.

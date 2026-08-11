@@ -153,8 +153,16 @@ function _generate_2d_nodes!(nodes, nx, ny, LL, LR, UR, UL)
     for j in 1:ny, i in 1:nx
         s = (i - 1) / (nx - 1)
         t = (j - 1) / (ny - 1)
-        x = (1 - s) * (1 - t) * LL[1] + s * (1 - t) * LR[1] + s * t * UR[1] + (1 - s) * t * UL[1]
-        y = (1 - s) * (1 - t) * LL[2] + s * (1 - t) * LR[2] + s * t * UR[2] + (1 - s) * t * UL[2]
+        x =
+            (1 - s) * (1 - t) * LL[1] +
+            s * (1 - t) * LR[1] +
+            s * t * UR[1] +
+            (1 - s) * t * UL[1]
+        y =
+            (1 - s) * (1 - t) * LL[2] +
+            s * (1 - t) * LR[2] +
+            s * t * UR[2] +
+            (1 - s) * t * UL[2]
         push!(nodes, Node(Vec{2,typeof(x)}((x, y))))
     end
     return nodes

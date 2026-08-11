@@ -42,10 +42,7 @@ end
 
     # Create test matrices of different sizes
     test_matrices = [
-        rand(3, 3),
-        rand(8, 8),
-        [1.0 2.0; 3.0 4.0],
-        [1.0 2.0 3.0; 4.0 5.0 6.0; 7.0 8.0 9.0],
+        rand(3, 3), rand(8, 8), [1.0 2.0; 3.0 4.0], [1.0 2.0 3.0; 4.0 5.0 6.0; 7.0 8.0 9.0]
     ]
 
     @testset "length" begin

@@ -19,3 +19,7 @@ memory-bank/
 IMPROVEMENTS_SUMMARY.md
 lbracket_stress_opt.png
 lbracket_stress_opt_densities.csv
+
+# Quarto render artifacts
+docs/tutorials/*_files/
+docs/tutorials/_site/

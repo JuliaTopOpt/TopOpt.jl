@@ -1,0 +1,138 @@
+---
+title: "Continuum Problem Types"
+toc: true
+---
+
+## Description
+
+TopOpt.jl provides standard continuum topology optimization problem domains
+for testing and comparing algorithms. This tutorial covers 2D and 3D problems
+including cantilever beams, MBB beams, L-beams, tie-beams, and INP file import.
+
+Continuum problems model structures as continuous solid domains discretized
+into finite elements. Design variables are element densities (0 = void, 1 = solid).
+
+## Setup
+
+```{julia}
+#| output: false
+using TopOpt
+```
+
+## 2D and 3D Point Load Cantilever
+
+The point load cantilever is a standard benchmark: a beam fixed at one end
+with a point load at the free end.
+
+```{julia}
+#| output: false
+E = 1.0     # Young's modulus in MPa
+ν = 0.3     # Poisson's ratio
+f = 1.0     # downward force in N (negative is upward)
+nels = (160, 40)        # 2D: 160×40 elements
+elsizes = (1.0, 1.0)    # element size in mm
+order = :Linear         # shape function order
+problem_2d = PointLoadCantilever(Val{order}, nels, elsizes, E, ν, f)
+```
+
+The `Val{order}` specifies shape function order:
+- `:Linear` — bilinear (2D) or trilinear (3D) elements
+- `:Quadratic` — biquadratic (2D) or triquadratic (3D) elements
+
+For 3D problems:
+
+```{julia}
+#| output: false
+nels_3d = (160, 40, 40)     # 3D: 160×40×40 elements
+elsizes_3d = (1.0, 1.0, 2.0) # element size in mm
+problem_3d = PointLoadCantilever(Val{order}, nels_3d, elsizes_3d, E, ν, f)
+```
+
+## 2D and 3D Half MBB Beam
+
+The Half MBB (Messerschmitt–Bölkow–Blohm) beam is a simply-supported beam
+with a central point load. Only half the beam is modeled (symmetry):
+
+```{julia}
+#| output: false
+nels = (60, 20)
+elsizes = (1.0, 1.0)
+order = :Quadratic
+problem = HalfMBB(Val{order}, nels, elsizes, E, ν, f)
+```
+
+Boundary conditions:
+- **Left edge**: roller support (vertical displacement fixed)
+- **Bottom right**: pin support (both DOFs fixed)
+- **Top center**: downward point load
+
+The 3D variant uses 3-tuples for `nels` and `elsizes`.
+
+## 2D L-Beam Problem
+
+The L-beam shows stress concentration effects at the re-entrant corner:
+
+```{julia}
+#| output: false
+order = :Quadratic
+problem = LBeam(
+    Val{order};
+    length=100,
+    height=100,
+    upperslab=50,
+    lowerslab=50,
+    E=1.0,
+    ν=0.3,
+    force=1.0
+)
+```
+
+Geometry:
+
+```
+        upperslab   
+       ............
+       .          .
+       .          .
+       .          . 
+height .          .                     
+       .          ......................
+       .                               .
+       .                               . lowerslab
+       .                               .
+       .................................
+                    length
+```
+
+The load is applied at the midpoint of the "lowerslab" vertical edge.
+
+## 2D Tie-Beam Problem
+
+The tie-beam has distributed loading on specified elements:
+
+```{julia}
+#| output: false
+order = :Quadratic
+problem = TieBeam(Val{order})
+```
+
+- Fixed supports at both ends
+- Distributed downward load on specified elements
+- 2D only
+
+## Reading INP (Abaqus) Files
+
+For complex geometries, import from `.inp` (Abaqus) files:
+
+```{julia}
+#| eval: false
+filename = joinpath(@__DIR__, "problem.inp")
+problem = InpStiffness(filename)
+```
+
+Workflow:
+1. Define geometry in CAD software (FreeCAD, SolidWorks)
+2. Mesh and export as `.inp` format
+3. Import into TopOpt.jl for optimization
+
+The `.inp` file contains nodes, elements, materials, BCs, and loads.

@@ -129,7 +129,7 @@ end # end testset
 @testset "TrussProblem show methods" begin
     ins_dir = joinpath(@__DIR__, "instances", "ground_meshes")
     problem_file = joinpath(ins_dir, "tim_2d.json")
-    
+
     node_points, elements, _, _, fixities, load_cases = load_truss_json(problem_file)
     loads = load_cases["0"]
     mat = TrussFEAMaterial(1.0, 0.3)
@@ -137,7 +137,7 @@ end # end testset
     problem = TrussProblem(
         Val{:Linear}, node_points, elements, loads, fixities, mat, crossec
     )
-    
+
     @testset "TrussProblem show" begin
         io = IOBuffer()
         show(io, MIME("text/plain"), problem)

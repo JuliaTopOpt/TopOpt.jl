@@ -33,7 +33,9 @@ mutable struct TrussElementKσ{
 end
 
 function Base.show(io::IO, ::MIME{Symbol("text/plain")}, ::TrussElementKσ)
-    return println(io, "TopOpt element stress stiffness matrix (Kσ_e) construction function")
+    return println(
+        io, "TopOpt element stress stiffness matrix (Kσ_e) construction function"
+    )
 end
 
 function TrussElementKσ(

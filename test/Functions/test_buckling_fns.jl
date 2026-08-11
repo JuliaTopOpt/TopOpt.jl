@@ -161,7 +161,9 @@ end
 
     # Test buckling (truss problems use different API)
     # Truss problems don't have get_Kσs, they use TrussElementKσ operator
-    K, G = buckling(problem, solver.globalinfo, solver.elementinfo, x.x, solver.xmin; u=solver.u)
+    K, G = buckling(
+        problem, solver.globalinfo, solver.elementinfo, x.x, solver.xmin; u=solver.u
+    )
     @test size(K) == size(G)
     @test size(K, 1) == n_dofs
 end
@@ -273,7 +275,9 @@ end
 
         solver.vars = x
         solver()
-        K, G = buckling(problem, solver.globalinfo, solver.elementinfo, x, solver.xmin; u=solver.u)
+        K, G = buckling(
+            problem, solver.globalinfo, solver.elementinfo, x, solver.xmin; u=solver.u
+        )
         @test K + G ≈ buckling_matrix_constr(x)
 
         val1, grad1 = NonconvexCore.value_gradient(f, x)

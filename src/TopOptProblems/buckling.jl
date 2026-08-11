@@ -25,7 +25,7 @@ function get_Kσs(
     cellvalues,
     vars=ones(TT, getncells(sp.ch.dh.grid)),
     penalty=PowerPenalty{TT}(1),
-    xmin=TT(1 // 1000),
+    xmin=TT(1//1000),
 ) where {xdim,TT}
     E = getE(sp)
     ν = getν(sp)

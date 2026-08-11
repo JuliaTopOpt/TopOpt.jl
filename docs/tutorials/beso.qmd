@@ -1,0 +1,122 @@
+---
+title: "BESO: Bi-directional Evolutionary Structural Optimization"
+toc: true
+---
+
+## Description
+
+The BESO (Bi-directional Evolutionary Structural Optimization) method is an
+iterative algorithm that evolves a structure by removing inefficient material
+and adding material where it's most effective. Unlike SIMP which uses continuous
+densities, BESO works with discrete 0/1 (void/solid) elements, making it
+intuitive and computationally efficient.
+
+This tutorial solves the classic HalfMBB beam problem: a simply-supported beam
+with a central point load. The goal is to minimize compliance (maximize
+stiffness) subject to a 50% volume constraint.
+
+## Setup
+
+First, load the TopOpt package which provides all the building blocks for
+topology optimization:
+
+```{julia}
+#| output: false
+using TopOpt
+```
+
+## Define the problem
+
+We set up a 2D HalfMBB (half Messerschmitt-Bölkow-Blohm) beam — a standard
+benchmark in topology optimization. The problem is defined on a rectilinear grid
+with 160×40 elements. Due to symmetry, we only model half the beam with:
+- A roller support on the left edge (vertical displacement fixed)
+- A pin support on the bottom right corner
+- A downward point load at the top center
+
+```{julia}
+#| output: false
+E = 1.0 # Young's modulus (normalized)
+v = 0.3 # Poisson's ratio
+f = 1.0 # downward force magnitude
+
+nels = (160, 40)  # 160 elements in x, 40 in y
+problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), E, v, f)
+```
+
+The `Val{:Linear}` specifies linear (bilinear) quadrilateral elements. The
+problem object contains the finite element mesh, boundary conditions, and load
+definition.
+
+## Define the FEA solver and apply material penalization
+
+The `FEASolver` assembles the global stiffness matrix and solves the equilibrium
+equations `K·u = f` for displacements. We use a direct solver for robustness.
+The power-law penalty with exponent 3.0 penalizes intermediate densities,
+driving the design toward black/white (solid/void) solutions:
+
+```{julia}
+#| output: false
+solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=TopOpt.PowerPenalty(3.0))
+```
+
+- `xmin=0.01` prevents numerical singularity by keeping a minimum stiffness
+- `penalty=PowerPenalty(3.0)` applies the SIMP-style penalty ρ³ to element
+  stiffnesses
+
+## Define the compliance objective and volume constraint
+
+BESO requires:
+1. **Objective**: Compliance (strain energy) to minimize — lower compliance means
+   stiffer structure
+2. **Constraint**: Volume fraction ≤ 50%
+3. **Filter**: Sensitivity filter with radius 4.0 elements to prevent
+   checkerboarding and ensure mesh independence
+
+```{julia}
+#| output: false
+comp = Compliance(solver)           # f(x) = uᵀKu (strain energy)
+volfrac = Volume(solver)            # g(x) = ΣρᵢVᵢ / V_total
+sensfilter = SensFilter(solver; rmin=4.0)  # mesh-independent filtering
+beso = BESO(comp, volfrac, 0.5, sensfilter)  # target volume = 50%
+```
+
+The sensitivity filter smooths the elemental sensitivities (∂f/∂ρᵢ) by averaging
+over neighboring elements within the filter radius, preventing artificially high
+sensitivities in small features.
+
+## Run the BESO optimization
+
+The BESO algorithm iterates:
+1. Solve FEA: `K·u = f`
+2. Compute elemental sensitivities (compliance derivatives)
+3. Filter sensitivities
+4. Remove elements with lowest sensitivity (inefficient material)
+5. Add elements with highest sensitivity (efficient locations)
+6. Check convergence: volume change < tolerance
+
+```{julia}
+#| output: true
+x0 = ones(length(solver.vars))  # start from fully solid design
+result = beso(x0)
+```
+
+The result contains the final topology (0/1 vector), objective value, and
+convergence history. BESO typically converges in 50-100 iterations for this
+problem size.
+
+## Visualize the result
+
+```{julia}
+#| eval: false
+#| label: fig-beso
+#| fig-cap: "BESO optimization result showing the evolved beam structure"
+using Makie
+using CairoMakie
+fig = visualize(problem; topology=result.topology)
+Makie.display(fig)
+```
+
+The visualization shows the final material distribution — a truss-like structure
+that efficiently transfers the load from the center to the supports while using
+only 50% of the available material volume.

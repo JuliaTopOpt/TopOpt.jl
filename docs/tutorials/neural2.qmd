@@ -1,0 +1,164 @@
+---
+title: "Neural Network Topology Optimization with Adam Optimizer"
+toc: true
+---
+
+## Description
+
+This tutorial demonstrates neural network-parametrized topology optimization
+using Flux.jl's Adam optimizer. Unlike the IPOPT-based approach, this method
+uses first-order gradient descent with adaptive learning rates. A continuation
+strategy progressively increases the SIMP penalty (1→5) and constraint
+aggregation weight (0.1→100) to converge to binary designs.
+
+The network uses 6 hidden layers (deeper than the IPOPT example) with softmax
+output for material fraction parametrization.
+
+## Setup
+
+```{julia}
+#| output: false
+using TopOpt, Zygote, Flux
+```
+
+## Problem Definition
+
+```{julia}
+#| output: false
+E = 1.0 # Young's modulus
+v = 0.3 # Poisson's ratio
+f = 1.0 # downward force
+els = (160, 40)
+
+problem = PointLoadCantilever(Val{:Linear}, els, (1.0, 1.0), E, v, f)
+
+V = 0.5       # volume fraction
+xmin = 1e-6   # minimum density
+rmin = 3.0    # filter radius
+
+# Continuation parameters
+p = 1.0           # initial SIMP penalty
+delta_p = 0.01    # penalty increment per epoch
+p_max = 5.0       # maximum penalty
+
+alpha = 0.1       # initial constraint weight
+delta_alpha = 0.05
+alpha_max = 100   # maximum constraint weight
+```
+
+## Neural Network
+
+```{julia}
+#| output: false
+# 6-layer MLP with softmax output
+m = 20
+act = leakyrelu
+nn = NeuralNetwork(
+    Chain(
+        Dense(2, m, act; init=Flux.glorot_normal),
+        Dense(m, m, act; init=Flux.glorot_normal),
+        Dense(m, m, act; init=Flux.glorot_normal),
+        Dense(m, m, act; init=Flux.glorot_normal),
+        Dense(m, m, act; init=Flux.glorot_normal),
+        Dense(m, m, act; init=Flux.glorot_normal),
+        softmax,
+        x -> [x[1]],
+    ),
+    problem;
+    scale=true,
+)
+w0 = nn.init_params
+
+# Normalize initial compliance
+C0 = comp(cheqfilter(PseudoDensities(fill(V, TopOpt.getncells(problem)))))
+```
+
+## Optimizer Setup
+
+```{julia}
+#| output: false
+alg = Flux.Optimise.Adam(0.1)
+clip_alg = Flux.Optimise.ClipValue(1.0)
+w = copy(w0)
+
+# Heaviside projection for binary designs
+proj = HeavisideProjection(0.0)
+
+# Termination criteria
+eps = Inf
+eps_star = 0.05    # target binary fraction
+maxiter = 20
+constr_tol = 0.01
+```
+
+## Density Functions
+
+```{julia}
+#| output: false
+function todensities(w; filter=true)
+    if filter
+        PseudoDensities(proj.(cheqfilter(nn(NNParams(w))).x))
+    else
+        PseudoDensities(proj.(nn(NNParams(w)).x))
+    end
+end
+```
+
+## Optimization Loop
+
+```{julia}
+#| output: true
+epoch = 1
+while true
+    epoch > maxiter && break
+    eps < eps_star && break
+    
+    # Update penalty and constraint weight
+    global p = min(p + delta_p, p_max)
+    global alpha = min(alpha + delta_alpha, alpha_max)
+    
+    # Rebuild solver with current penalty
+    global penalty = TopOpt.PowerPenalty(p)
+    global solver = FEASolver(DirectSolver, problem; xmin, penalty)
+    global cheqfilter = DensityFilter(solver; rmin)
+    global comp = Compliance(solver)
+    global volfrac = Volume(solver)
+    
+    obj = w -> comp(todensities(w; filter=true)) / C0
+    constr = w -> volfrac(todensities(w; filter=false)) / V - 1
+    combined_obj = w -> obj(w) + alpha * constr(w)^2
+    
+    # Adam step
+    Δ = Zygote.gradient(combined_obj, w)[1]
+    Flux.Optimise.update!(alg, w, Δ)
+    
+    # Check convergence
+    x = nn(NNParams(w)).x
+    eps = sum(0.05 .< x .< 0.95) / length(x)
+    violation = abs(constr(w))
+    
+    println("Epoch $epoch: p=$p, α=$alpha, obj=$(obj(w)), constr=$(constr(w)), eps=$eps")
+    epoch += 1
+end
+```
+
+## Results
+
+```{julia}
+#| output: true
+@show obj(w)
+@show constr(w)
+@show eps
+```
+
+## Visualization
+
+```{julia}
+#| label: fig-neural2
+#| fig-cap: "Adam-optimized neural network design (6-layer MLP)"
+using Makie
+using CairoMakie
+topology = todensities(w; filter=true)
+fig = visualize(problem; topology=topology)
+Makie.display(fig)
+```

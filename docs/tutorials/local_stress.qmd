@@ -1,0 +1,127 @@
+---
+title: "Local Stress: Element-Wise Constraints with Percival Solver"
+toc: true
+---
+
+## Description
+
+This tutorial demonstrates local stress constraints in topology optimization.
+Unlike global stress aggregation (p-norm), local constraints enforce stress
+limits at every element individually. This provides stricter stress control
+but requires handling thousands of constraints efficiently.
+
+We use Percival.jl, a specialized solver for large-scale constrained
+optimization, with continuation SIMP (penalty 1.0 → 3.0) to converge to
+stress-constrained designs.
+
+## Setup
+
+```{julia}
+#| output: false
+using TopOpt, LinearAlgebra, StatsFuns
+using StatsFuns: logsumexp
+```
+
+## Define the Problem
+
+```{julia}
+#| output: false
+E = 1.0 # Young's modulus
+v = 0.3 # Poisson's ratio
+f = 1.0 # downward force
+rmin = 3.0 # filter radius
+
+problem = PointLoadCantilever(Val{:Linear}, (160, 40), (1.0, 1.0), E, v, f)
+```
+
+A fine 160×40 mesh (6,400 elements) tests the solver's ability to handle
+many local stress constraints.
+
+## Parameter Settings
+
+```{julia}
+#| output: false
+V = 0.5        # volume fraction
+xmin = 0.0001  # minimum density
+
+x0 = fill(0.5, 160 * 40)  # initial design
+N = length(x0)
+penalty = TopOpt.PowerPenalty(1.0)  # start with no penalization
+
+solver = FEASolver(DirectSolver, problem; xmin=xmin, penalty=penalty)
+stress = TopOpt.von_mises_stress_function(solver)
+filter = DensityFilter(solver; rmin=rmin)
+volfrac = TopOpt.Volume(solver)
+```
+
+## Local Stress Constraints
+
+```{julia}
+#| output: false
+obj = x -> volfrac(filter(PseudoDensities(x))) - V  # volume constraint as objective
+thr = 150  # stress threshold
+
+# Local constraints: (σᵢ - thr)/N ≤ 0 for each element
+constr = x -> begin
+    s = stress(filter(PseudoDensities(x)))
+    return (s .- thr) / length(s)
+end
+```
+
+Each element's von Mises stress must satisfy the threshold. The constraint
+function returns a vector (one constraint per element), which Percival
+handles efficiently using interior-point methods.
+
+## Optimization with Continuation
+
+```{julia}
+#| output: true
+alg = PercivalAlg()
+options = PercivalOptions(; max_iter=10, subsolver_max_eval=50)
+model = Model(obj)
+addvar!(model, zeros(N), ones(N))
+add_ineq_constraint!(model, constr)
+
+x = copy(x0)
+for p in [1.0, 3.0]
+    TopOpt.setpenalty!(solver, p)
+    global r = optimize(model, alg, x; options=options)
+    global x = r.minimizer
+    println("Penalty $p: obj=$(obj(x)), max_stress=$(maximum(stress(filter(PseudoDensities(x)))))")
+end
+```
+
+The continuation strategy (penalty 1.0 → 3.0) helps converge to feasible
+designs by first solving a relaxed problem.
+
+## Verify Results
+
+```{julia}
+#| output: true
+@show maximum(stress(filter(PseudoDensities(x0))))  # initial max stress
+@show maximum(stress(filter(PseudoDensities(x))))   # final max stress
+
+# Verify peak stress doesn't exceed threshold by more than 5%
+s = stress(filter(PseudoDensities(x)))
+println("Stress constraint satisfied: $((maximum(s) - thr) / thr < 0.05)")
+```
+
+## Visualization
+
+```{julia}
+#| label: fig-local-stress
+#| fig-cap: "Local stress-constrained design with element-wise stress limits (threshold=150)"
+using Makie
+using CairoMakie
+fig = visualize(
+    problem;
+    topology=r.minimizer,
+    default_exagg_scale=0.07,
+    scale_range=10.0,
+    vector_arrowsize=0.5,
+)
+Makie.display(fig)
+```
+
+The optimized design shows smooth stress distributions without concentration
+points, demonstrating effective local stress control.

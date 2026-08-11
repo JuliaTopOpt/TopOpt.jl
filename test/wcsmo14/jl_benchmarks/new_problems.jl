@@ -6,13 +6,7 @@ using Ferrite
 using TopOpt
 using TopOpt.TopOptProblems: RectilinearGrid, Metadata
 using TopOpt.TopOptProblems:
-    left,
-    right,
-    bottom,
-    middley,
-    middlez,
-    nnodespercell,
-    nfacespercell
+    left, right, bottom, middley, middlez, nnodespercell, nfacespercell
 using TopOpt.Utilities: @params
 
 @params struct NewPointLoadCantilever{dim,T,N,M} <: StiffnessTopOptProblem{dim,T}
@@ -96,9 +90,7 @@ function NewPointLoadCantilever(
     N = nnodespercell(rect_grid)
     M = nfacespercell(rect_grid)
 
-    return NewPointLoadCantilever(
-        rect_grid, E, ν, ch, load_dict, metadata
-    )
+    return NewPointLoadCantilever(rect_grid, E, ν, ch, load_dict, metadata)
 end
 
 # used in FEA to determine default quad order

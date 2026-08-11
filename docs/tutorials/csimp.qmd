@@ -1,0 +1,156 @@
+---
+title: "Continuation SIMP: Penalty Ramp Optimization"
+toc: true
+---
+
+## Description
+
+Continuation SIMP (Solid Isotropic Material with Penalization) is a strategy
+to improve convergence in topology optimization by gradually increasing the
+penalty exponent from 1.0 (no penalization) to higher values (typically 3-5).
+This approach helps the optimizer escape local minima by first solving a
+relaxed convex problem, then progressively driving toward 0/1 (void/solid)
+designs.
+
+This tutorial demonstrates continuation SIMP on multiple benchmark problems
+including 3D cantilever, 2D cantilever, Half MBB beam, L-beam, and tie-beam.
+The penalty ramps from 1.0 to 5.0 over 4 steps, with exponentially decaying
+convergence tolerances to ensure each subproblem is solved accurately.
+
+## Setup
+
+```{julia}
+#| output: false
+using TopOpt
+```
+
+## Define the Problem
+
+We test continuation SIMP on multiple benchmark problems. Select one by
+changing the index `i`:
+
+```{julia}
+#| output: false
+E = 1.0 # Young's modulus
+v = 0.3 # Poisson's ratio
+f = 1.0 # downward force
+
+problems = Any[
+    PointLoadCantilever(Val{:Linear}, (60, 20, 20), (1.0, 1.0, 1.0), E, v, f),  # 3D cantilever
+    PointLoadCantilever(Val{:Linear}, (160, 40), (1.0, 1.0), E, v, f),          # 2D cantilever
+    HalfMBB(Val{:Linear}, (60, 20), (1.0, 1.0), E, v, f),                       # Half MBB
+    LBeam(Val{:Linear}, Float64; force=f),                                      # L-beam
+    TieBeam(Val{:Quadratic}, Float64),                                          # Tie-beam
+]
+problem_names = [
+    "3d cantilever beam", "cantilever beam", "half MBB beam", "L-beam", "tie-beam"
+]
+
+i = 2  # Change to select different problem (1-5)
+println(problem_names[i])
+problem = problems[i]
+```
+
+The problems range from simple 2D cantilevers to complex 3D structures and
+problems with stress concentrations (L-beam).
+
+## Parameter Settings
+
+```{julia}
+#| output: false
+V = 0.5        # volume fraction constraint (50% material usage)
+xmin = 0.001   # minimum density (prevents singular stiffness)
+rmin = 3.0     # density filter radius
+
+x0 = fill(V, TopOpt.getncells(problem))  # start from uniform design
+penalty = TopOpt.PowerPenalty(1.0)       # start with no penalization
+solver = FEASolver(DirectSolver, problem; xmin=xmin, penalty=penalty)
+comp = Compliance(solver)
+
+# TieBeam doesn't need filtering (already stable)
+filter = if problem isa TopOptProblems.TieBeam
+    identity
+else
+    DensityFilter(solver; rmin=rmin)
+end
+
+obj = x -> comp(filter(PseudoDensities(x)))
+volfrac = Volume(solver)
+constr = x -> volfrac(filter(PseudoDensities(x))) - V
+
+model = Model(obj)
+addvar!(model, zeros(length(x0)), ones(length(x0)))
+add_ineq_constraint!(model, constr)
+alg = MMA87()
+```
+
+## Continuation Strategy
+
+The continuation method solves a sequence of subproblems with increasing
+penalty exponents. We use 4 steps from penalty 1.0 to 5.0, with tolerances
+that decay exponentially from 10⁻² to 10⁻⁴:
+
+```{julia}
+#| output: false
+nsteps = 4
+ps = range(1.0, 5.0; length=nsteps + 1)  # [1.0, 2.0, 3.0, 4.0, 5.0]
+tols = exp10.(range(-2, -4; length=nsteps + 1))  # [1e-2, 3.16e-3, 1e-3, 3.16e-4, 1e-4]
+
+x = x0
+convcriteria = Nonconvex.KKTCriteria()
+```
+
+## Optimization Loop
+
+Each iteration:
+1. Set penalty exponent `p`
+2. Set convergence tolerance `tol`
+3. Solve subproblem with MMA87
+4. Use solution as initial guess for next iteration
+
+```{julia}
+#| output: true
+for j in 1:(nsteps + 1)
+    global convcriteria
+    p = ps[j]
+    tol = tols[j]
+    TopOpt.setpenalty!(solver, p)
+    options = MMAOptions(; tol=Tolerance(; kkt=tol), maxiter=1000, convcriteria)
+    res = optimize(model, alg, x; options)
+    global x = res.minimizer
+    println("Step $j: penalty=$p, tol=$tol, obj=$(obj(x))")
+end
+```
+
+## Results
+
+```{julia}
+#| output: true
+@show obj(x)
+@show constr(x)
+```
+
+The final design should satisfy the volume constraint (constr ≤ 0) with
+minimized compliance. The continuation strategy typically produces cleaner
+0/1 designs compared to fixed-penalty optimization.
+
+## Visualization
+
+```{julia}
+#| label: fig-csimp
+#| fig-cap: "Continuation SIMP optimization result with penalty ramp from 1.0 to 5.0"
+using Makie
+using CairoMakie
+fig = visualize(
+    problem;
+    topology=x,
+    default_exagg_scale=0.07,
+    scale_range=10.0,
+    vector_arrowsize=0.5,
+)
+Makie.display(fig)
+```
+
+The visualization shows the final material distribution after the full
+continuation cycle. Intermediate densities should be minimal due to the
+high final penalty (5.0).

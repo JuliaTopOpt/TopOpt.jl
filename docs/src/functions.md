@@ -84,7 +84,7 @@ optimization. The workflow is:
    constraint (`K + c·Kσ ≽ 0`) via `Nonconvex.add_sd_constraint!` with
    `SDPBarrierAlg`. `c` is the buckling load multiplier.
 
-See the [buckling example](@ref buckling-plain-program) for a complete
+See the buckling example for a complete
 end-to-end demonstration.
 
 ## Element stiffness matrices

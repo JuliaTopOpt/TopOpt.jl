@@ -11,8 +11,7 @@ differentiable linear operator (sparse Jacobian). Call as
 See also [BendsoeSigmund2003](@cite) §3.4 for general background on density
 filtering.
 """
-struct DensityFilter{T,TM<:FilterMetadata,TJ<:AbstractMatrix{T}} <:
-       AbstractDensityFilter
+struct DensityFilter{T,TM<:FilterMetadata,TJ<:AbstractMatrix{T}} <: AbstractDensityFilter
     metadata::TM
     rmin::T
     jacobian::TJ
@@ -28,7 +27,7 @@ function DensityFilter(
 ) where {T,TI<:Integer,TS<:AbstractFEASolver}
     metadata = FilterMetadata(solver, rmin, TI)
     TM = typeof(metadata)
-    
+
     jacobian = getJacobian(solver, metadata)
     return DensityFilter(metadata, rmin, jacobian)
 end

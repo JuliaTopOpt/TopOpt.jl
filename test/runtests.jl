@@ -97,129 +97,17 @@ if ACTUAL_GROUP in ("All", "Core_Tests")
     end
 end
 
-const LITERATE_DIR = joinpath(@__DIR__, "../docs/src/literate")
-
-# Output directory for generated Literate docs. When running in CI, this is
-# uploaded as an artifact and downloaded by the docs build job, avoiding the
-# need for a separate docs-examples generation stage.
-const DOCS_OUTPUT_DIR = get(ENV, "DOCS_OUTPUT_DIR",
-    joinpath(@__DIR__, "..", "docs", "src", "examples"))
-
-# Include generate.jl for its generate_example helper (the top-level shard
-# generation is guarded and won't run when included).
-include(joinpath(@__DIR__, "..", "docs", "generate.jl"))
-using .Main: generate_example, copy_static_images
-
-# Helper to run a literate example in a temp dir AND generate its Literate
-# markdown/notebook output for the docs build.
-macro run_example(name)
-    return esc(quote
-        # Generate Literate output (markdown + notebook + script)
-        Main.generate_example($name, Main.LITERATE_DIR, Main.DOCS_OUTPUT_DIR)
-        # Run the example as a test in an isolated temp dir
-        mktempdir() do dir
-            cd(dir) do
-                include(joinpath(Main.LITERATE_DIR, $name))
-            end
-        end
-    end)
-end
-
-# Test groups mirror the docs shard assignment in docs/generate.jl so that
-# the same grouping is used for both test execution and doc generation.
-
-if ACTUAL_GROUP in ("All", "Examples_1")
-    @safetestset "BESO example" begin
-        @Main.run_example "beso.jl"
-    end
-    @safetestset "GESO example" begin
-        @Main.run_example "geso.jl"
-    end
-end
-
-if ACTUAL_GROUP in ("All", "Examples_2")
-    @safetestset "Problem types (continuum)" begin
-        @Main.run_example "problem_continuum.jl"
-    end
-end
-
-if ACTUAL_GROUP in ("All", "Examples_3")
-    @safetestset "Problem types (truss)" begin
-        @Main.run_example "problem_truss.jl"
-    end
-end
-
-if ACTUAL_GROUP in ("All", "Examples_4")
-    @safetestset "CSIMP example" begin
-        @Main.run_example "csimp.jl"
-    end
-    @safetestset "SIMP example" begin
-        @Main.run_example "simp.jl"
-    end
-end
-
-if ACTUAL_GROUP in ("All", "Examples_5")
-    @safetestset "TOBS example" begin
-        @Main.run_example "TOBS.jl"
-    end
-    @safetestset "Heat tree example" begin
-        @Main.run_example "heat_tree.jl"
-    end
-end
-
-if ACTUAL_GROUP in ("All", "Examples_6")
-    @safetestset "Global stress example" begin
-        @Main.run_example "global_stress.jl"
-    end
-end
-
-if ACTUAL_GROUP in ("All", "Examples_7")
-    @safetestset "Local stress example" begin
-        @Main.run_example "local_stress.jl"
-    end
-end
-
-if ACTUAL_GROUP in ("All", "Examples_8")
-    @safetestset "Heat sink example" begin
-        @Main.run_example "heat_sink.jl"
-    end
-    @safetestset "Multi-material example" begin
-        @Main.run_example "multimaterial.jl"
-    end
-end
-
-if ACTUAL_GROUP in ("All", "Examples_9")
-    @safetestset "Mixed-integer truss example" begin
-        @Main.run_example "mixed_integer_truss.jl"
-    end
-    @safetestset "Neural network example" begin
-        @Main.run_example "neural.jl"
-    end
-end
-
-if ACTUAL_GROUP in ("All", "Examples_10")
-    @safetestset "Neural network (Adam) example" begin
-        @Main.run_example "neural2.jl"
-    end
-    @safetestset "Buckling example" begin
-        @Main.run_example "buckling.jl"
-    end
-end
+# Tutorial tests are now run via Quarto render in CI (tutorials job)
+# Each .qmd file is executed during rendering, catching any execution errors.
+# No separate test runner needed - Quarto render serves as the test.
 
 if ACTUAL_GROUP in ("All", "WCSMO14_1")
-    # This was originlly part of https://github.com/JuliaTopOpt/TopOpt.jl_WCSMO21
     @safetestset "Continuum demos" begin
         include("wcsmo14/demos/continuum/cont_compliance1.jl")
-        # cont_compliance2.jl and cont_stress.jl are additional continuum demos
-        # that are not included in regular CI testing to keep test times reasonable.
-        # They can be run manually for extended validation.
-        # include("wcsmo14/demos/continuum/cont_compliance2.jl")
-        # include("wcsmo14/demos/continuum/cont_stress.jl")
     end
 end
 
 if ACTUAL_GROUP in ("All", "WCSMO14_2")
-    # This was originlly part of https://github.com/JuliaTopOpt/TopOpt.jl_WCSMO21
     @safetestset "Truss 2d demos" begin
         include("wcsmo14/demos/truss/truss_compliance_2d1.jl")
         include("wcsmo14/demos/truss/truss_compliance_2d2.jl")
@@ -227,17 +115,5 @@ if ACTUAL_GROUP in ("All", "WCSMO14_2")
     @safetestset "Truss 3d demos" begin
         include("wcsmo14/demos/truss/truss_compliance_3d1.jl")
         include("wcsmo14/demos/truss/truss_compliance_3d2.jl")
-    end
-    @safetestset "WCSMO Benchmarks" begin
-        # Benchmark comparison files are excluded from regular CI testing
-        # as they are used for performance benchmarking against other topopt
-        # implementations and can take significant time to run.
-        # They can be run manually for benchmarking purposes.
-        # include("wcsmo14/jl_benchmarks/compare_neo99_2D.jl")
-        # include("wcsmo14/jl_benchmarks/compare_polytop.jl")
-        # include("wcsmo14/jl_benchmarks/compare_top3d.jl")
-        # include("wcsmo14/jl_benchmarks/compare_top3d125.jl")
-        # include("wcsmo14/jl_benchmarks/new_problems.jl")
-        # include("wcsmo14/jl_benchmarks/compare_topopt_py.jl")
     end
 end

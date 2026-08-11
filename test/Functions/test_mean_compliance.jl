@@ -8,7 +8,6 @@ _mean(x) = sum(x) / length(x)
 Random.seed!(42)
 
 @testset "MeanCompliance - Analytical Validation" begin
-
     @testset "MeanCompliance produces finite positive values" begin
         # Basic sanity check: MeanCompliance should return positive finite values
         E = 1.0
@@ -26,7 +25,9 @@ Random.seed!(42)
         end
 
         problem_ml = MultiLoad(base_problem, F)
-        solver_ml = FEASolver(DirectSolver, problem_ml; xmin=0.01, penalty=PowerPenalty(1.0))
+        solver_ml = FEASolver(
+            DirectSolver, problem_ml; xmin=0.01, penalty=PowerPenalty(1.0)
+        )
         mc = MeanCompliance(problem_ml, solver_ml; method=:exact)
 
         x = fill(0.5, length(solver_ml.vars))
@@ -94,7 +95,9 @@ Random.seed!(42)
         end
 
         problem_ref = MultiLoad(base_problem, F_ref)
-        solver_ref = FEASolver(DirectSolver, problem_ref; xmin=0.01, penalty=PowerPenalty(1.0))
+        solver_ref = FEASolver(
+            DirectSolver, problem_ref; xmin=0.01, penalty=PowerPenalty(1.0)
+        )
         mc_ref = MeanCompliance(problem_ref, solver_ref; method=:exact)
 
         x = fill(0.5, length(solver_ref.vars))
@@ -104,7 +107,9 @@ Random.seed!(42)
         scale_factor = 2.0
         F_scaled = scale_factor .* F_ref
         problem_scaled = MultiLoad(base_problem, F_scaled)
-        solver_scaled = FEASolver(DirectSolver, problem_scaled; xmin=0.01, penalty=PowerPenalty(1.0))
+        solver_scaled = FEASolver(
+            DirectSolver, problem_scaled; xmin=0.01, penalty=PowerPenalty(1.0)
+        )
         mc_scaled = MeanCompliance(problem_scaled, solver_scaled; method=:exact)
 
         C_scaled = mc_scaled(PseudoDensities(x))
@@ -149,13 +154,12 @@ Random.seed!(42)
 
         # Compliance should decrease with increasing volume fraction
         for i in 2:length(compliances)
-            @test compliances[i] < compliances[i-1]
+            @test compliances[i] < compliances[i - 1]
         end
     end
 end
 
 @testset "MeanCompliance - Method Accuracy" begin
-
     @testset "Exact methods produce consistent results" begin
         # All exact methods should give very similar results
         E = 1.0
@@ -176,7 +180,9 @@ end
         problem = MultiLoad(base_problem, F)
 
         # Test both exact methods
-        solver_exact = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(2.0))
+        solver_exact = FEASolver(
+            DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(2.0)
+        )
         mc_exact = MeanCompliance(problem, solver_exact; method=:exact)
 
         solver_svd = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(2.0))
@@ -212,7 +218,9 @@ end
         problem = MultiLoad(base_problem, F)
 
         # Reference exact solution
-        solver_exact = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(2.0))
+        solver_exact = FEASolver(
+            DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(2.0)
+        )
         mc_exact = MeanCompliance(problem, solver_exact; method=:exact)
 
         x = fill(0.5, length(solver_exact.vars))
@@ -223,7 +231,9 @@ end
         errors = Float64[]
 
         for nv in sample_counts
-            solver_trace = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(2.0))
+            solver_trace = FEASolver(
+                DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(2.0)
+            )
             mc_trace = MeanCompliance(problem, solver_trace; method=:trace, nv=nv)
             C_trace = mc_trace(PseudoDensities(x))
 
@@ -281,7 +291,6 @@ end
 end
 
 @testset "MeanCompliance - Gradient Verification" begin
-
     @testset "Zygote vs FiniteDifferences consistency" begin
         # Gradient should match between automatic and finite difference
         E = 1.0
@@ -344,10 +353,14 @@ end
 
         problem = MultiLoad(base_problem, F)
 
-        solver_exact = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(2.0))
+        solver_exact = FEASolver(
+            DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(2.0)
+        )
         mc_exact = MeanCompliance(problem, solver_exact; method=:exact)
 
-        solver_trace = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(2.0))
+        solver_trace = FEASolver(
+            DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(2.0)
+        )
         mc_trace = MeanCompliance(problem, solver_trace; method=:trace, nv=20)
 
         x = fill(0.5, length(solver_exact.vars))
@@ -400,7 +413,6 @@ end
 end
 
 @testset "MeanCompliance - System Properties" begin
-
     @testset "Compliance is positive definite" begin
         # Mean compliance must always be positive for valid configurations
         E = 1.0
@@ -457,7 +469,9 @@ end
 
         for sample_method in [:hutch, :hadamard]
             solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(2.0))
-            mc = MeanCompliance(problem, solver; method=:trace, nv=15, sample_method=sample_method)
+            mc = MeanCompliance(
+                problem, solver; method=:trace, nv=15, sample_method=sample_method
+            )
 
             x = fill(0.5, length(solver.vars))
             C = mc(PseudoDensities(x))
@@ -493,7 +507,9 @@ end
         for i in 1:nloads
             F_single = F[:, i:i]
             problem_single = MultiLoad(base_problem, F_single)
-            solver_single = FEASolver(DirectSolver, problem_single; xmin=0.01, penalty=PowerPenalty(2.0))
+            solver_single = FEASolver(
+                DirectSolver, problem_single; xmin=0.01, penalty=PowerPenalty(2.0)
+            )
             comp = Compliance(solver_single)
             C_single = comp(PseudoDensities(x))
             @test C_single > 0
@@ -502,7 +518,9 @@ end
 
         # Multi-load compliance should also be positive
         problem_ml = MultiLoad(base_problem, F)
-        solver_ml = FEASolver(DirectSolver, problem_ml; xmin=0.01, penalty=PowerPenalty(2.0))
+        solver_ml = FEASolver(
+            DirectSolver, problem_ml; xmin=0.01, penalty=PowerPenalty(2.0)
+        )
         mc = MeanCompliance(problem_ml, solver_ml; method=:exact)
         C_mean = mc(PseudoDensities(x))
         @test C_mean > 0
@@ -511,7 +529,6 @@ end
 end
 
 @testset "MeanCompliance - Integration with Filter" begin
-
     @testset "DensityFilter with mean compliance chain rule" begin
         # Test that gradient chain rule works through filter
         E = 1.0
@@ -554,7 +571,6 @@ end
 end
 
 @testset "MeanCompliance - Error Handling" begin
-
     @testset "Construction validation" begin
         E = 1.0
         ν = 0.3
@@ -584,7 +600,6 @@ end
 end
 
 @testset "MeanCompliance - Helper Functions" begin
-
     @testset "hutch_rand! produces valid Rademacher samples" begin
         # Hutchinson estimator uses Rademacher random variables (±1)
         for n in [10, 20, 30]
@@ -616,7 +631,7 @@ end
 
                 # Columns should be orthogonal
                 for i in 1:m
-                    for j in i+1:m
+                    for j in (i + 1):m
                         dot_prod = dot(V[:, i], V[:, j])
                         @test abs(dot_prod) < 1e-10
                     end

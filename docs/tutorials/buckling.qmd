@@ -1,0 +1,194 @@
+---
+title: "Buckling-Constrained Truss Optimization with SDP Constraints"
+toc: true
+---
+
+## Description
+
+This tutorial demonstrates buckling-constrained topology optimization on a
+truss structure. The goal is to minimize compliance while ensuring the
+combined stiffness matrix `K + c·Kσ` remains positive semidefinite — i.e.,
+the structure does not buckle under the applied load scaled by buckling
+factor `c`.
+
+We use differentiable building blocks (`ElementK`, `AssembleK`,
+`TrussElementKσ`, `apply_boundary_with_zerodiag!`, `apply_boundary_with_meandiag!`)
+and enforce the PSD constraint via semidefinite programming (SDP) using
+NonconvexSemidefinite.jl with an IPM barrier method.
+
+## Setup
+
+```{julia}
+#| output: false
+using TopOpt, LinearAlgebra, Zygote
+using Nonconvex, NonconvexSemidefinite
+Nonconvex.@load Ipopt
+```
+
+## Load Truss Geometry
+
+```{julia}
+#| output: false
+ndim = 2
+node_points, elements, mats, crosssecs, fixities, load_cases = load_truss_json(
+    joinpath(@__DIR__, "tim_$(ndim)d.json")
+)
+ndim, nnodes, ncells = length(node_points[1]), length(node_points), length(elements)
+loads = load_cases["0"]
+problem = TrussProblem(
+    Val{:Linear}, node_points, elements, loads, fixities, mats, crosssecs
+)
+```
+
+## Parameter Settings
+
+```{julia}
+#| output: false
+xmin = 0.0001   # minimum density
+p = 1.0         # SIMP penalty exponent
+V = 0.5         # volume fraction
+x0 = fill(1.0, ncells)  # initial design (all solid)
+```
+
+## FEA Solver and Buckling Helpers
+
+```{julia}
+#| output: false
+solver = FEASolver(DirectSolver, problem; xmin=xmin)
+ch = problem.ch
+
+comp = TopOpt.Compliance(solver)
+dp = TopOpt.Displacement(solver)
+assemble_k = TopOpt.AssembleK(problem)
+element_k = ElementK(solver)
+truss_element_kσ = TrussElementKσ(problem, solver)
+```
+
+Five differentiable building blocks:
+1. **Compliance** — objective to minimize
+2. **Displacement** — solves `K·u = f` for displacements
+3. **ElementK** — per-element stiffness matrices
+4. **AssembleK** — assembles global sparse matrix
+5. **TrussElementKσ** — geometric (stress) stiffness matrices
+
+## Buckling Constraint Function
+
+```{julia}
+#| output: false
+c = 0.0001  # buckling load multiplier (below critical load)
+
+function buckling_matrix_constr(x)
+    xd = PseudoDensities(x)
+    u = dp(xd)
+    Kes = element_k(xd)
+    K = assemble_k(Kes)
+    K = apply_boundary_with_meandiag!(K, ch)
+    Kσs = truss_element_kσ(u, xd)
+    Kσ = assemble_k(Kσs)
+    Kσ = apply_boundary_with_zerodiag!(Kσ, ch)
+    return Array(K + c * Kσ)
+end
+```
+
+The constraint returns the combined matrix `K + c·Kσ` which must be PSD
+(all eigenvalues ≥ 0).
+
+## Check Initial Design
+
+```{julia}
+#| output: true
+S0 = buckling_matrix_constr(x0)
+println("Initial design minimum eigenvalue: $(minimum(eigen(S0).values))")
+```
+
+The initial all-solid design should have positive eigenvalues (stable).
+
+## Volume Constraint
+
+```{julia}
+#| output: false
+vol_constr(x) = sum(x) / length(x) - V
+```
+
+## Compliance-Only Optimization (Baseline)
+
+```{julia}
+#| output: true
+obj = x -> comp(PseudoDensities(x))
+
+model = Model(obj)
+addvar!(model, zeros(length(x0)), ones(length(x0)))
+add_ineq_constraint!(model, vol_constr)
+
+alg = MMA87()
+options = MMAOptions(; maxiter=20, tol=Tolerance(; kkt=1e-4))
+r1 = optimize(model, alg, x0; options=options)
+
+println("Compliance-only result:")
+println("  obj = $(obj(r1.minimizer))")
+println("  vol = $(vol_constr(r1.minimizer))")
+```
+
+This baseline ignores buckling — the result may be unstable.
+
+## Add Buckling SDP Constraint
+
+```{julia}
+#| output: true
+# Add semidefinite constraint: K + c·Kσ ≽ 0
+add_sd_constraint!(model, buckling_matrix_constr)
+
+alg2 = SDPBarrierAlg(; sub_alg=IpoptAlg())
+options2 = SDPBarrierOptions(; 
+    sub_options=IpoptOptions(; max_iter=20),
+    keep_all=true
+)
+r2 = optimize(model, alg2, x0; options=options2)
+
+println("Buckling-constrained result:")
+println("  obj = $(obj(r2.minimizer))")
+println("  vol = $(vol_constr(r2.minimizer))")
+```
+
+The `SDPBarrierAlg` uses an interior-point method with log-barrier for PSD
+constraints. IPOPT solves the continuous subproblems.
+
+## Check Stability
+
+```{julia}
+#| output: true
+S1 = buckling_matrix_constr(r1.minimizer)
+S2 = buckling_matrix_constr(r2.minimizer)
+
+ev1 = eigen(S1).values
+ev2 = eigen(S2).values
+
+println("Compliance-only min eigenvalue: $(minimum(ev1))")
+println("Buckling-constrained min eigenvalue: $(minimum(ev2))")
+println("Design is stable: $(minimum(ev2) ≥ -1e-6)")
+```
+
+The buckling-constrained design should have non-negative eigenvalues
+(stable under load), while the compliance-only design may have negative
+eigenvalues (unstable).
+
+## Visualization
+
+```{julia}
+#| label: fig-buckling
+#| fig-cap: "Buckling-constrained truss design (top) vs compliance-only (bottom)"
+using Makie
+using CairoMakie
+
+fig = Figure(size=(800, 400))
+ax1 = Axis(fig[1, 1], title="Compliance-only (may buckle)")
+ax2 = Axis(fig[1, 2], title="Buckling-constrained (stable)")
+
+visualize!(ax1, problem; solver.u, topology=r1.minimizer, default_exagg_scale=0.0)
+visualize!(ax2, problem; solver.u, topology=r2.minimizer, default_exagg_scale=0.0)
+
+Makie.display(fig)
+```
+
+The buckling-constrained design typically shows thicker compression
+members and more stable load paths compared to the compliance-only design.

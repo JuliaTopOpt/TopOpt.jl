@@ -1,0 +1,125 @@
+---
+title: "TOBS: Topological Optimization of Binary Structures"
+toc: true
+---
+
+## Description
+
+TOBS (Topological Optimization of Binary Structures) is a heuristic algorithm
+for binary topology optimization. Unlike SIMP which uses continuous densities,
+TOBS directly optimizes 0/1 (void/solid) designs by linearizing the objective
+and constraints, then solving a binary nonlinear program. The default solver
+is Cbc.jl (COIN-OR Branch and Cut), which determines which binary variables
+must be flipped in each iteration.
+
+This tutorial demonstrates TOBS on a 2D cantilever beam with 160×100 elements
+(16,000 design variables). The algorithm efficiently handles the combinatorial
+challenge of binary optimization through sequential linearization and branch-
+and-cut solving.
+
+## Setup
+
+```{julia}
+#| output: false
+using NonconvexTOBS, TopOpt
+```
+
+## Problem Definition
+
+We use a large 2D cantilever beam to demonstrate TOBS scalability:
+
+```{julia}
+#| output: false
+E = 1.0 # Young's modulus
+v = 0.3 # Poisson's ratio
+f = 1.0 # downward force
+rmin = 6.0 # filter radius
+xmin = 0.001 # minimum density
+V = 0.5 # maximum volume fraction
+p = 3.0 # topological optimization penalty
+
+problem_size = (160, 100)  # 16,000 elements
+x0 = fill(1.0, prod(problem_size))  # start from fully solid design
+problem = PointLoadCantilever(Val{:Linear}, problem_size, (1.0, 1.0), E, v, f)
+```
+
+The large mesh (160×100) tests TOBS ability to handle high-dimensional binary
+optimization problems.
+
+## FEA Solver and Filter
+
+```{julia}
+#| output: false
+solver = FEASolver(DirectSolver, problem; xmin=xmin)
+cheqfilter = DensityFilter(solver; rmin=rmin)  # mesh-independent filtering
+comp = TopOpt.Compliance(solver)
+```
+
+The density filter ensures smooth designs and prevents checkerboarding,
+critical for binary optimization where small features can cause numerical
+instability.
+
+## Objective and Constraint
+
+```{julia}
+#| output: false
+obj(x) = comp(cheqfilter(PseudoDensities(x)))  # compliance objective
+constr(x) = sum(cheqfilter(PseudoDensities(x))) / length(x) - V  # volume constraint
+```
+
+The objective minimizes compliance (strain energy) while the constraint limits
+material usage to 50% of the domain volume.
+
+## Optimization Setup
+
+```{julia}
+#| output: false
+m = Model(obj)
+addvar!(m, zeros(length(x0)), ones(length(x0)))  # bounds: 0 ≤ xᵢ ≤ 1
+Nonconvex.add_ineq_constraint!(m, constr)
+options = TOBSOptions(; maxiter=20)  # TOBS-specific options
+TopOpt.setpenalty!(solver, p)
+```
+
+TOBS uses binary variables (0 or 1) with bound constraints. The penalty
+exponent p=3.0 penalizes intermediate densities in the FEA solution.
+
+## Run TOBS Optimization
+
+```{julia}
+#| output: true
+@time r = Nonconvex.optimize(m, TOBSAlg(), x0; options=options)
+```
+
+The TOBS algorithm iterates:
+1. Linearize objective and constraints around current design
+2. Solve binary subproblem with Cbc.jl
+3. Determine which variables to flip (0→1 or 1→0)
+4. Update design and repeat
+
+## Results
+
+```{julia}
+#| output: true
+@show obj(r.minimizer)
+@show constr(r.minimizer)
+```
+
+The final design should be nearly binary (values close to 0 or 1) with
+satisfied volume constraint. TOBS typically produces crisp black/white
+designs without intermediate densities.
+
+## Visualization
+
+```{julia}
+#| label: fig-tobs
+#| fig-cap: "TOBS optimization result showing binary (0/1) material distribution"
+using Makie
+using CairoMakie
+topology = r.minimizer
+fig = visualize(problem; topology=topology)
+Makie.display(fig)
+```
+
+The visualization shows the final binary structure — TOBS naturally produces
+clean 0/1 designs without the gray regions common in SIMP results.

@@ -152,7 +152,8 @@ function ChainRulesCore.rrule(f::ElementStressTensorKernel, u::DisplacementResul
         AD.ForwardDiffBackend(), u -> vec(f(DisplacementResult(u))), u.u
     )
     out_dim = f.dim == 2 ? 3 : f.dim
-    return reshape(v, out_dim, out_dim), Δ -> (NoTangent(), Tangent{typeof(u)}(; u=∇' * vec(Δ)))
+    return reshape(v, out_dim, out_dim),
+    Δ -> (NoTangent(), Tangent{typeof(u)}(; u=∇' * vec(Δ)))
 end
 
 function tensor_kernel(f::StressTensor, quad, basef)
@@ -192,7 +193,11 @@ function von_mises(σ::AbstractMatrix)
         t1 = ((σ[1, 1] - σ[2, 2])^2 + (σ[2, 2] - σ[3, 3])^2 + (σ[3, 3] - σ[1, 1])^2) / 2
         t2 = 3 * (σ[1, 2]^2 + σ[2, 3]^2 + σ[3, 1]^2)
     else
-        throw(ArgumentError("Unsupported stress tensor type. Expected 3×3 (plane strain 2D or full 3D)."))
+        throw(
+            ArgumentError(
+                "Unsupported stress tensor type. Expected 3×3 (plane strain 2D or full 3D)."
+            ),
+        )
     end
     return sqrt(t1 + t2)
 end
