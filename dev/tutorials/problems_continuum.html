@@ -4154,7 +4154,11 @@ vertical-align: -.125em;
 <span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>order <span class="op">=</span> <span class="op">:</span>Linear         <span class="co"># shape function order</span></span>
 <span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>problem_2d <span class="op">=</span> <span class="fu">PointLoadCantilever</span>(<span class="dt">Val</span>{order}, nels, elsizes, E, ν, f)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<p>The <code>Val{order}</code> specifies shape function order: - <code>:Linear</code> — bilinear (2D) or trilinear (3D) elements - <code>:Quadratic</code> — biquadratic (2D) or triquadratic (3D) elements</p>
+<p>The <code>Val{order}</code> specifies shape function order:</p>
+<ul>
+<li><code>:Linear</code> — bilinear (2D) or trilinear (3D) elements</li>
+<li><code>:Quadratic</code> — biquadratic (2D) or triquadratic (3D) elements</li>
+</ul>
 <p>For 3D problems:</p>
 <div id="6" class="cell" data-execution_count="1">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>nels_3d <span class="op">=</span> (<span class="fl">160</span>, <span class="fl">40</span>, <span class="fl">40</span>)     <span class="co"># 3D: 160×40×40 elements</span></span>
@@ -4171,7 +4175,12 @@ vertical-align: -.125em;
 <span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>order <span class="op">=</span> <span class="op">:</span>Quadratic</span>
 <span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>problem <span class="op">=</span> <span class="fu">HalfMBB</span>(<span class="dt">Val</span>{order}, nels, elsizes, E, ν, f)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<p>Boundary conditions: - <strong>Left edge</strong>: roller support (vertical displacement fixed) - <strong>Bottom right</strong>: pin support (both DOFs fixed) - <strong>Top center</strong>: downward point load</p>
+<p>Boundary conditions:</p>
+<ul>
+<li><strong>Left edge</strong>: roller support (vertical displacement fixed)</li>
+<li><strong>Bottom right</strong>: pin support (both DOFs fixed)</li>
+<li><strong>Top center</strong>: downward point load</li>
+</ul>
 <p>The 3D variant uses 3-tuples for <code>nels</code> and <code>elsizes</code>.</p>
 </section>
 <section id="d-l-beam-problem" class="level2">
@@ -4225,7 +4234,12 @@ height .          .
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>filename <span class="op">=</span> <span class="fu">joinpath</span>(<span class="pp">@__DIR__</span>, <span class="st">&quot;problem.inp&quot;</span>)</span>
 <span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>problem <span class="op">=</span> <span class="fu">InpStiffness</span>(filename)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<p>Workflow: 1. Define geometry in CAD software (FreeCAD, SolidWorks) 2. Mesh and export as <code>.inp</code> format 3. Import into TopOpt.jl for optimization</p>
+<p>Workflow:</p>
+<ol type="1">
+<li>Define geometry in CAD software (FreeCAD, SolidWorks)</li>
+<li>Mesh and export as <code>.inp</code> format</li>
+<li>Import into TopOpt.jl for optimization</li>
+</ol>
 <p>The <code>.inp</code> file contains nodes, elements, materials, BCs, and loads.</p>
 
 

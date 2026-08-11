@@ -4182,8 +4182,8 @@ var requirejs,require,define;(function(global,setTimeout){var req,s,head,baseEle
 <h2 class="anchored" data-anchor-id="fea-solver-and-filter">FEA Solver and Filter</h2>
 <div id="6" class="cell" data-execution_count="1">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>solver <span class="op">=</span> <span class="fu">FEASolver</span>(DirectSolver, problem; xmin<span class="op">=</span>xmin)</span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>cheqfilter <span class="op">=</span> <span class="fu">DensityFilter</span>(solver; rmin<span class="op">=</span>rmin)  <span class="co"># mesh-independent filtering</span></span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>comp <span class="op">=</span> TopOpt.<span class="fu">Compliance</span>(solver)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>cheqfilter <span class="op">=</span> <span class="fu">DensityFilterFun</span>(solver; rmin<span class="op">=</span>rmin)  <span class="co"># mesh-independent filtering</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>comp <span class="op">=</span> <span class="fu">ComplianceFun</span>(solver)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>The density filter ensures smooth designs and prevents checkerboarding, critical for binary optimization where small features can cause numerical instability.</p>
 </section>
@@ -4201,8 +4201,12 @@ var requirejs,require,define;(function(global,setTimeout){var req,s,head,baseEle
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>m <span class="op">=</span> <span class="fu">Model</span>(obj)</span>
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="fu">addvar!</span>(m, <span class="fu">zeros</span>(<span class="fu">length</span>(x0)), <span class="fu">ones</span>(<span class="fu">length</span>(x0)))  <span class="co"># bounds: 0 ≤ xᵢ ≤ 1</span></span>
 <span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>Nonconvex.<span class="fu">add_ineq_constraint!</span>(m, constr)</span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>options <span class="op">=</span> <span class="fu">TOBSOptions</span>(; maxiter<span class="op">=</span><span class="fl">20</span>)  <span class="co"># TOBS-specific options</span></span>
-<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>TopOpt.<span class="fu">setpenalty!</span>(solver, p)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="co"># TOBS starts internally from the all-solid design and flips at most</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="co"># `movelimit * numVars` variables per iteration, so reaching the 50%</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="co"># volume target from 100% solid needs enough iterations to remove half</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="co"># the material.</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>options <span class="op">=</span> <span class="fu">TOBSOptions</span>(; maxiter<span class="op">=</span><span class="fl">200</span>, movelimit<span class="op">=</span><span class="fl">0.1</span>)</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a><span class="fu">setpenalty!</span>(solver, p)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>TOBS uses binary variables (0 or 1) with bound constraints. The penalty exponent p=3.0 penalizes intermediate densities in the FEA solution.</p>
 </section>
@@ -4250,7 +4254,367 @@ var requirejs,require,define;(function(global,setTimeout){var req,s,head,baseEle
 <span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
 <span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
 <span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
-115.376955 seconds (77.19 M allocations: 4.356 GiB, 2.41% gc time, 18.77% compilation time: 14% of which was recompilation)
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+<span class="ansi-yellow-fg ansi-bold">┌ </span><span class="ansi-yellow-fg ansi-bold">Warning: </span>Subproblem is infeasible. Temporarily relaxing the subproblem.
+<span class="ansi-yellow-fg ansi-bold">└ </span><span class="ansi-bright-black-fg">@ NonconvexTOBS ~/.julia/packages/NonconvexTOBS/TY7uB/src/NonconvexTOBS.jl:133</span>
+1053.593984 seconds (371.60 M allocations: 23.716 GiB, 2.05% gc time, 1.86% compilation time: 14% of which was recompilation)
 </pre>
 </div>
 </div>
@@ -4258,7 +4622,13 @@ var requirejs,require,define;(function(global,setTimeout){var req,s,head,baseEle
 <pre><code>NonconvexTOBS.TOBSResult{Vector{Float64}, Float64, Float64}([1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0  …  1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0], 21.70424968263241, 1.0)</code></pre>
 </div>
 </div>
-<p>The TOBS algorithm iterates: 1. Linearize objective and constraints around current design 2. Solve binary subproblem with Cbc.jl 3. Determine which variables to flip (0→1 or 1→0) 4. Update design and repeat</p>
+<p>The TOBS algorithm iterates:</p>
+<ol type="1">
+<li>Linearize objective and constraints around current design</li>
+<li>Solve binary subproblem with Cbc.jl</li>
+<li>Determine which variables to flip (0→1 or 1→0)</li>
+<li>Update design and repeat</li>
+</ol>
 </section>
 <section id="results" class="level2">
 <h2 class="anchored" data-anchor-id="results">Results</h2>
@@ -4284,11 +4654,11 @@ constr(r.minimizer) = 0.5</code></pre>
 <div class="cell-output cell-output-stdout">
 <div class="ansi-escaped-output">
 <pre><span class="ansi-green-fg ansi-bold">Precompiling</span> packages...
-   6722.5 ms<span class="ansi-green-fg">  ✓ </span>QuartoNotebookWorkerMakieExt<span class="ansi-bright-black-fg"> (serial)</span>
+   6525.9 ms<span class="ansi-green-fg">  ✓ </span>QuartoNotebookWorkerMakieExt<span class="ansi-bright-black-fg"> (serial)</span>
   1 dependency successfully precompiled in 7 seconds
 <span class="ansi-green-fg ansi-bold">Precompiling</span> packages...
-   5507.1 ms<span class="ansi-green-fg">  ✓ </span>QuartoNotebookWorkerCairoMakieExt<span class="ansi-bright-black-fg"> (serial)</span>
-  1 dependency successfully precompiled in 6 seconds
+   5358.4 ms<span class="ansi-green-fg">  ✓ </span>QuartoNotebookWorkerCairoMakieExt<span class="ansi-bright-black-fg"> (serial)</span>
+  1 dependency successfully precompiled in 5 seconds
 </pre>
 </div>
 </div>
