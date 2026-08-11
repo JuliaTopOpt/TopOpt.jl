@@ -33,7 +33,7 @@ apply_zero!(b, problem.ch)
     fixed_dofs = problem.ch.prescribed_dofs
     free_dofs = setdiff(1:n_dofs, fixed_dofs)
     xmin = 0.001
-    penalty = PowerPenalty{T}(3.0)
+    penalty = PowerPenaltyFun{T}(3.0)
     conv = DefaultCriteria()
 
     # Get force vector from globalinfo
@@ -59,7 +59,7 @@ end
 
 @testset "MatrixOperator * operator" begin
     # Assemble the global stiffness matrix
-    assemble!(globalinfo, problem, elementinfo, x, PowerPenalty{Float64}(3.0), 0.001)
+    assemble!(globalinfo, problem, elementinfo, x, PowerPenaltyFun{Float64}(3.0), 0.001)
 
     # Get the assembled matrix
     K = globalinfo.K

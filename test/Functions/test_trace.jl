@@ -302,7 +302,7 @@ Random.seed!(42)
 end
 
 @testset "Trace Estimation - Integration with TopOpt" begin
-    @testset "ExactMean and TraceEstimationMean in MeanCompliance context" begin
+    @testset "ExactMean and TraceEstimationMean in MeanComplianceFun context" begin
         # Use a fixed load to avoid boundary condition issues
         E = 1.0
         ν = 0.3
@@ -335,12 +335,12 @@ end
         em = ExactMean(F)
         @test em.F === F
 
-        # MeanCompliance with exact method
+        # MeanComplianceFun with exact method
         problem_ml = MultiLoad(base_problem, F)
         solver_exact = FEASolver(
-            DirectSolver, problem_ml; xmin=0.01, penalty=PowerPenalty(1.0)
+            DirectSolver, problem_ml; xmin=0.01, penalty=PowerPenaltyFun(1.0)
         )
-        mc_exact = MeanCompliance(problem_ml, solver_exact; method=:exact)
+        mc_exact = MeanComplianceFun(problem_ml, solver_exact; method=:exact)
 
         x = fill(0.5, length(solver_exact.vars))
         C_exact = mc_exact(PseudoDensities(x))
@@ -348,11 +348,11 @@ end
         @test C_exact > 0 || C_exact == 0  # Allow zero for some configurations
         @test isfinite(C_exact)
 
-        # MeanCompliance with trace estimation method
+        # MeanComplianceFun with trace estimation method
         solver_trace = FEASolver(
-            DirectSolver, problem_ml; xmin=0.01, penalty=PowerPenalty(1.0)
+            DirectSolver, problem_ml; xmin=0.01, penalty=PowerPenaltyFun(1.0)
         )
-        mc_trace = MeanCompliance(problem_ml, solver_trace; method=:trace, nv=10)
+        mc_trace = MeanComplianceFun(problem_ml, solver_trace; method=:trace, nv=10)
 
         C_trace = mc_trace(PseudoDensities(x))
 
@@ -362,7 +362,7 @@ end
 
     @testset "ExactDiagonal and DiagonalEstimation in context" begin
         # Test the types directly with minimal integration test
-        # Just verify BlockCompliance can be created with these types
+        # Just verify BlockComplianceFun can be created with these types
 
         E = 1.0
         ν = 0.3
@@ -386,11 +386,11 @@ end
 
         problem_ml = MultiLoad(base_problem, F)
         solver_ml = FEASolver(
-            DirectSolver, problem_ml; xmin=0.01, penalty=PowerPenalty(1.0)
+            DirectSolver, problem_ml; xmin=0.01, penalty=PowerPenaltyFun(1.0)
         )
 
-        # Test BlockCompliance can be created with exact method
-        bc_exact = BlockCompliance(problem_ml, solver_ml; method=:exact)
+        # Test BlockComplianceFun can be created with exact method
+        bc_exact = BlockComplianceFun(problem_ml, solver_ml; method=:exact)
 
         x = fill(0.5, length(solver_ml.vars))
         block_vals_exact = bc_exact(PseudoDensities(x))
@@ -398,8 +398,8 @@ end
         # Should return array with correct length
         @test length(block_vals_exact) == nloads
 
-        # Test BlockCompliance can be created with approximate method
-        bc_approx = BlockCompliance(problem_ml, solver_ml; method=:approx, nv=5)
+        # Test BlockComplianceFun can be created with approximate method
+        bc_approx = BlockComplianceFun(problem_ml, solver_ml; method=:approx, nv=5)
         block_vals_approx = bc_approx(PseudoDensities(x))
 
         @test length(block_vals_approx) == nloads

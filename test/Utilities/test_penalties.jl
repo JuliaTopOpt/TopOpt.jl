@@ -1,20 +1,20 @@
 using TopOpt, Test, LinearAlgebra, Zygote, ForwardDiff
 using TopOpt:
-    PowerPenalty,
-    RationalPenalty,
-    SinhPenalty,
-    HeavisideProjection,
-    SigmoidProjection,
-    ProjectedPenalty,
+    PowerPenaltyFun,
+    RationalPenaltyFun,
+    SinhPenaltyFun,
+    HeavisideProjectionFun,
+    SigmoidProjectionFun,
+    ProjectedPenaltyFun,
     PseudoDensities,
     setpenalty!,
     getpenalty,
     getprevpenalty
 using TopOpt.FEA: HeatTransfer
 
-@testset "PowerPenalty" begin
+@testset "PowerPenaltyFun" begin
     # Test construction
-    pp = PowerPenalty(3.0)
+    pp = PowerPenaltyFun(3.0)
     @test pp.p == 3.0
 
     # Test application to scalar values
@@ -29,12 +29,12 @@ using TopOpt.FEA: HeatTransfer
     @test result isa PseudoDensities
 
     # Test derivative with ForwardDiff
-    f(x) = PowerPenalty(3.0)(x)
+    f(x) = PowerPenaltyFun(3.0)(x)
     @test ForwardDiff.derivative(f, 0.5) ≈ 3.0 * 0.5^2
     @test ForwardDiff.derivative(f, 0.0) ≈ 0.0
 
     # Test derivative with Zygote
-    g = x -> PowerPenalty(2.0)(x)
+    g = x -> PowerPenaltyFun(2.0)(x)
     @test Zygote.gradient(g, 0.5)[1] ≈ 2.0 * 0.5
 
     # Test copy
@@ -44,14 +44,14 @@ using TopOpt.FEA: HeatTransfer
     @test pp.p == 3.0  # Original unchanged
 
     # Test setpenalty!
-    pp2 = PowerPenalty(2.0)
+    pp2 = PowerPenaltyFun(2.0)
     setpenalty!(pp2, 3.5)
     @test pp2.p == 3.5
 
     # Test different penalty values
-    @test PowerPenalty(1.0)(0.5) ≈ 0.5
-    @test PowerPenalty(2.0)(0.5) ≈ 0.25
-    @test PowerPenalty(3.0)(0.5) ≈ 0.125
+    @test PowerPenaltyFun(1.0)(0.5) ≈ 0.5
+    @test PowerPenaltyFun(2.0)(0.5) ≈ 0.25
+    @test PowerPenaltyFun(3.0)(0.5) ≈ 0.125
 end
 
 @testset "setpenalty! Error Handling" begin
@@ -75,7 +75,7 @@ end
     @test_throws ArgumentError setpenalty!(solver, [1.0, 2.0, 3.0])
 end
 
-@testset "setpenalty! on Compliance object" begin
+@testset "setpenalty! on ComplianceFun object" begin
     # Create a minimal problem and solver
     nels = (2, 2)
     sizes = (1.0, 1.0)
@@ -88,22 +88,22 @@ end
     # Create a solver using FEASolver with DirectSolver
     solver = FEASolver(DirectSolver, problem)
 
-    # Create a Compliance object with the solver
-    comp = Compliance(solver)
+    # Create a ComplianceFun object with the solver
+    comp = ComplianceFun(solver)
 
     # Test initial penalty value
     initial_penalty = getpenalty(comp)
-    @test initial_penalty isa PowerPenalty
+    @test initial_penalty isa PowerPenaltyFun
     @test initial_penalty.p == 1.0  # Default penalty value
 
     # Store the initial penalty value for comparison
     initial_p = initial_penalty.p
 
-    # Test setpenalty! on Compliance object with a new penalty value
+    # Test setpenalty! on ComplianceFun object with a new penalty value
     new_p = 3.0
     setpenalty!(comp, new_p)
 
-    # Verify the penalty was updated on the Compliance
+    # Verify the penalty was updated on the ComplianceFun
     updated_penalty = getpenalty(comp)
     @test updated_penalty.p == new_p
 
@@ -114,9 +114,9 @@ end
     @test getprevpenalty(solver).p == initial_p
 end
 
-@testset "RationalPenalty" begin
+@testset "RationalPenaltyFun" begin
     # Test construction
-    rp = RationalPenalty(3.0)
+    rp = RationalPenaltyFun(3.0)
     @test rp.p == 3.0
 
     # Test application to scalar values
@@ -132,7 +132,7 @@ end
     @test result.x ≈ expected
 
     # Test derivative with ForwardDiff
-    f(x) = RationalPenalty(3.0)(x)
+    f(x) = RationalPenaltyFun(3.0)(x)
     df = ForwardDiff.derivative(f, 0.5)
     # Analytical derivative: (1 + p) / (1 + p(1-x))^2
     expected_df = (1.0 + 3.0) / (1.0 + 3.0 * (1.0 - 0.5))^2
@@ -147,9 +147,9 @@ end
     @test rp.p == 4.0
 end
 
-@testset "SinhPenalty" begin
+@testset "SinhPenaltyFun" begin
     # Test construction
-    sp = SinhPenalty(3.0)
+    sp = SinhPenaltyFun(3.0)
     @test sp.p == 3.0
 
     # Test application to scalar values
@@ -166,7 +166,7 @@ end
     @test result.x ≈ expected
 
     # Test derivative with ForwardDiff
-    f(x) = SinhPenalty(3.0)(x)
+    f(x) = SinhPenaltyFun(3.0)(x)
     df = ForwardDiff.derivative(f, 0.5)
     # Analytical derivative: p * cosh(p*x) / sinh(p)
     expected_df = 3.0 * cosh(3.0 * 0.5) / sinh(3.0)
@@ -179,9 +179,9 @@ end
     @test sp.p == 2.0
 end
 
-@testset "HeavisideProjection" begin
+@testset "HeavisideProjectionFun" begin
     # Test construction
-    hp = HeavisideProjection(5.0)
+    hp = HeavisideProjectionFun(5.0)
     @test hp.β == 5.0
 
     # Test projection function
@@ -201,7 +201,7 @@ end
     @test result_arr ≈ [hp(0.1), hp(0.5), hp(0.9)]
 
     # Test derivative with ForwardDiff
-    f(x) = HeavisideProjection(5.0)(x)
+    f(x) = HeavisideProjectionFun(5.0)(x)
     df = ForwardDiff.derivative(f, 0.5)
     # At x = 0.5, derivative should be relatively large
     @test df > 0.0
@@ -215,14 +215,14 @@ end
     @test hp_copy.β == hp.β
 
     # Test with different β values
-    hp2 = HeavisideProjection(3.0)
+    hp2 = HeavisideProjectionFun(3.0)
     @test hp2.β == 3.0
     @test hp2(0.5) ≈ 1 - exp(-3.0 * 0.5) + 0.5 * exp(-3.0)
 end
 
-@testset "SigmoidProjection" begin
+@testset "SigmoidProjectionFun" begin
     # Test construction
-    sp = SigmoidProjection(4.0)
+    sp = SigmoidProjectionFun(4.0)
     @test sp.β == 4.0
 
     # Test projection function
@@ -242,7 +242,7 @@ end
     @test result_arr ≈ [sp(0.2), sp(0.5), sp(0.8)]
 
     # Test derivative with ForwardDiff
-    f(x) = SigmoidProjection(4.0)(x)
+    f(x) = SigmoidProjectionFun(4.0)(x)
     df = ForwardDiff.derivative(f, 0.5)
     # Just verify derivative is positive and finite
     @test df > 0.0
@@ -257,16 +257,16 @@ end
     @test sp_copy.β == sp.β
 
     # Test with different β values
-    sp2 = SigmoidProjection(2.0)
+    sp2 = SigmoidProjectionFun(2.0)
     @test sp2.β == 2.0
     @test sp2(0.5) ≈ 1 / (1 + exp((2.0 + 1) * (-0.5 + 0.5)))
 end
 
-@testset "ProjectedPenalty" begin
+@testset "ProjectedPenaltyFun" begin
     # Test construction
-    pp = PowerPenalty(3.0)
-    proj = HeavisideProjection(5.0)
-    pp_proj = ProjectedPenalty(pp, proj)
+    pp = PowerPenaltyFun(3.0)
+    proj = HeavisideProjectionFun(5.0)
+    pp_proj = ProjectedPenaltyFun(pp, proj)
 
     @test pp_proj.penalty == pp
     @test pp_proj.proj == proj
@@ -283,7 +283,7 @@ end
     @test result.x ≈ expected_values
 
     # Test property forwarding
-    @test pp_proj.p == 3.0  # Forwarded from PowerPenalty
+    @test pp_proj.p == 3.0  # Forwarded from PowerPenaltyFun
 
     # Test copy
     pp_proj_copy = copy(pp_proj)
@@ -295,9 +295,9 @@ end
     @test pp_proj.p == 4.0
 
     # Test with different penalty/projection combinations
-    rp = RationalPenalty(2.0)
-    sp = SigmoidProjection(3.0)
-    rp_sp = ProjectedPenalty(rp, sp)
+    rp = RationalPenaltyFun(2.0)
+    sp = SigmoidProjectionFun(3.0)
+    rp_sp = ProjectedPenaltyFun(rp, sp)
 
     x = PseudoDensities([0.2, 0.6, 0.8])
     result = rp_sp(x)
@@ -305,7 +305,7 @@ end
     @test result.x ≈ expected
 
     # Test gradient
-    f(x) = ProjectedPenalty(PowerPenalty(2.0), HeavisideProjection(3.0))(x)
+    f(x) = ProjectedPenaltyFun(PowerPenaltyFun(2.0), HeavisideProjectionFun(3.0))(x)
     g = Zygote.gradient(f, 0.5)[1]
     @test g isa Real
 end
@@ -318,9 +318,9 @@ using TopOpt.Utilities: get_ρ, get_ρ_dρ, density
     # To test the other mode, restart Julia with the preference changed.
     @info "Testing get_ρ with PENALTY_BEFORE_INTERPOLATION = $(TopOpt.PENALTY_BEFORE_INTERPOLATION)"
 
-    # Test with PowerPenalty
-    @testset "PowerPenalty" begin
-        penalty = PowerPenalty(3.0)
+    # Test with PowerPenaltyFun
+    @testset "PowerPenaltyFun" begin
+        penalty = PowerPenaltyFun(3.0)
         xmin = 0.001
 
         # Test basic computation at x_e = 0.5
@@ -368,7 +368,7 @@ using TopOpt.Utilities: get_ρ, get_ρ_dρ, density
 
         # Test with different penalty values
         for p in [1.0, 2.0, 3.0, 5.0]
-            penalty_p = PowerPenalty(p)
+            penalty_p = PowerPenaltyFun(p)
             result_p = get_ρ(0.5, penalty_p, xmin)
             if TopOpt.PENALTY_BEFORE_INTERPOLATION
                 expected_p = density(penalty_p(0.5), xmin)
@@ -379,9 +379,9 @@ using TopOpt.Utilities: get_ρ, get_ρ_dρ, density
         end
     end
 
-    # Test with RationalPenalty
-    @testset "RationalPenalty" begin
-        penalty = RationalPenalty(3.0)
+    # Test with RationalPenaltyFun
+    @testset "RationalPenaltyFun" begin
+        penalty = RationalPenaltyFun(3.0)
         xmin = 0.001
 
         x_e = 0.5
@@ -411,9 +411,9 @@ using TopOpt.Utilities: get_ρ, get_ρ_dρ, density
         )
     end
 
-    # Test with SinhPenalty
-    @testset "SinhPenalty" begin
-        penalty = SinhPenalty(3.0)
+    # Test with SinhPenaltyFun
+    @testset "SinhPenaltyFun" begin
+        penalty = SinhPenaltyFun(3.0)
         xmin = 0.001
 
         x_e = 0.5
@@ -443,11 +443,11 @@ using TopOpt.Utilities: get_ρ, get_ρ_dρ, density
         )
     end
 
-    # Test with ProjectedPenalty
-    @testset "ProjectedPenalty" begin
-        base_penalty = PowerPenalty(3.0)
-        proj = HeavisideProjection(5.0)
-        penalty = ProjectedPenalty(base_penalty, proj)
+    # Test with ProjectedPenaltyFun
+    @testset "ProjectedPenaltyFun" begin
+        base_penalty = PowerPenaltyFun(3.0)
+        proj = HeavisideProjectionFun(5.0)
+        penalty = ProjectedPenaltyFun(base_penalty, proj)
         xmin = 0.001
 
         x_e = 0.5
@@ -461,8 +461,8 @@ using TopOpt.Utilities: get_ρ, get_ρ_dρ, density
         @test result ≈ expected
 
         # Test with different base penalties
-        rp_base = RationalPenalty(2.0)
-        rp_proj = ProjectedPenalty(rp_base, proj)
+        rp_base = RationalPenaltyFun(2.0)
+        rp_proj = ProjectedPenaltyFun(rp_base, proj)
         result_rp = get_ρ(0.5, rp_proj, xmin)
         if TopOpt.PENALTY_BEFORE_INTERPOLATION
             expected_rp = density(rp_proj(0.5), xmin)
@@ -474,7 +474,7 @@ using TopOpt.Utilities: get_ρ, get_ρ_dρ, density
 
     # Test output type
     @testset "Output type" begin
-        penalty = PowerPenalty(3.0)
+        penalty = PowerPenaltyFun(3.0)
         xmin = 0.001
         x_e = 0.5
 
@@ -482,7 +482,7 @@ using TopOpt.Utilities: get_ρ, get_ρ_dρ, density
         @test result isa Float64
 
         # Test with Float32
-        penalty_f32 = PowerPenalty(3.0f0)
+        penalty_f32 = PowerPenaltyFun(3.0f0)
         xmin_f32 = 0.001f0
         x_e_f32 = 0.5f0
 
@@ -492,7 +492,7 @@ using TopOpt.Utilities: get_ρ, get_ρ_dρ, density
 
     # Test mathematical properties
     @testset "Mathematical properties" begin
-        penalty = PowerPenalty(3.0)
+        penalty = PowerPenaltyFun(3.0)
         xmin = 0.001
 
         # For any valid input, result should be between xmin and penalty(1.0) (or vice versa)
@@ -508,12 +508,12 @@ using TopOpt.Utilities: get_ρ, get_ρ_dρ, density
         x1, x2 = 0.3, 0.7
         r1 = get_ρ(x1, penalty, xmin)
         r2 = get_ρ(x2, penalty, xmin)
-        @test r1 < r2  # PowerPenalty should preserve ordering
+        @test r1 < r2  # PowerPenaltyFun should preserve ordering
     end
 
     # Test consistency with manual computation
     @testset "Consistency with manual computation" begin
-        penalty = PowerPenalty(2.0)
+        penalty = PowerPenaltyFun(2.0)
         xmin = 0.01
         x_e = 0.6
 
@@ -537,8 +537,8 @@ end
 @testset "get_ρ_dρ - penalized density with derivative" begin
     @info "Testing get_ρ_dρ with PENALTY_BEFORE_INTERPOLATION = $(TopOpt.PENALTY_BEFORE_INTERPOLATION)"
 
-    @testset "PowerPenalty derivatives" begin
-        penalty = PowerPenalty(3.0)
+    @testset "PowerPenaltyFun derivatives" begin
+        penalty = PowerPenaltyFun(3.0)
         xmin = 0.001
 
         # Test at x_e = 0.5
@@ -568,8 +568,8 @@ end
         end
     end
 
-    @testset "RationalPenalty derivatives" begin
-        penalty = RationalPenalty(3.0)
+    @testset "RationalPenaltyFun derivatives" begin
+        penalty = RationalPenaltyFun(3.0)
         xmin = 0.001
 
         x_e = 0.5
@@ -585,8 +585,8 @@ end
         @test dρ ≈ fd_derivative rtol = 1e-5
     end
 
-    @testset "SinhPenalty derivatives" begin
-        penalty = SinhPenalty(3.0)
+    @testset "SinhPenaltyFun derivatives" begin
+        penalty = SinhPenaltyFun(3.0)
         xmin = 0.001
 
         x_e = 0.5
@@ -602,10 +602,10 @@ end
         @test dρ ≈ fd_derivative rtol = 1e-5
     end
 
-    @testset "ProjectedPenalty derivatives" begin
-        base_penalty = PowerPenalty(3.0)
-        proj = HeavisideProjection(5.0)
-        penalty = ProjectedPenalty(base_penalty, proj)
+    @testset "ProjectedPenaltyFun derivatives" begin
+        base_penalty = PowerPenaltyFun(3.0)
+        proj = HeavisideProjectionFun(5.0)
+        penalty = ProjectedPenaltyFun(base_penalty, proj)
         xmin = 0.001
 
         x_e = 0.5
@@ -622,7 +622,7 @@ end
     end
 
     @testset "Edge case derivatives" begin
-        penalty = PowerPenalty(3.0)
+        penalty = PowerPenaltyFun(3.0)
         xmin = 0.001
 
         # Test at boundaries
@@ -654,7 +654,7 @@ end
         solver = FEASolver(DirectSolver, problem)
         # Compare p values, not struct equality (they are different objects)
         @test getprevpenalty(solver).p == getpenalty(solver).p
-        @test getprevpenalty(solver) isa PowerPenalty
+        @test getprevpenalty(solver) isa PowerPenaltyFun
 
         # Test with CGAssemblySolver
         solver_cg = FEASolver(CGAssemblySolver, problem)
@@ -690,7 +690,7 @@ end
         old_p = old_penalty.p
 
         # Create and set a new penalty object
-        new_penalty = PowerPenalty(5.0)
+        new_penalty = PowerPenaltyFun(5.0)
         setpenalty!(solver, new_penalty)
 
         # prev_penalty should be a copy of the old penalty, not the same object
@@ -708,7 +708,7 @@ end
         prev_after_1 = getprevpenalty(solver).p
         curr_after_1 = getpenalty(solver).p
 
-        @test prev_after_1 == 1.0  # Default PowerPenalty has p=1
+        @test prev_after_1 == 1.0  # Default PowerPenaltyFun has p=1
         @test curr_after_1 == 2.0
 
         # Second update
@@ -738,31 +738,31 @@ end
     end
 
     @testset "Different penalty types" begin
-        # Test with RationalPenalty
-        rp = RationalPenalty(2.0)
+        # Test with RationalPenaltyFun
+        rp = RationalPenaltyFun(2.0)
         solver = FEASolver(DirectSolver, problem; penalty=rp)
 
-        @test getprevpenalty(solver) isa RationalPenalty
+        @test getprevpenalty(solver) isa RationalPenaltyFun
         @test getprevpenalty(solver).p == 2.0
 
         setpenalty!(solver, 3.0)
         @test getprevpenalty(solver).p == 2.0
         @test getpenalty(solver).p == 3.0
 
-        # Test with SinhPenalty
-        sp = SinhPenalty(1.5)
+        # Test with SinhPenaltyFun
+        sp = SinhPenaltyFun(1.5)
         solver2 = FEASolver(DirectSolver, problem; penalty=sp)
 
-        @test getprevpenalty(solver2) isa SinhPenalty
+        @test getprevpenalty(solver2) isa SinhPenaltyFun
         setpenalty!(solver2, 2.5)
         @test getprevpenalty(solver2).p == 1.5
         @test getpenalty(solver2).p == 2.5
 
-        # Test with ProjectedPenalty
-        pp = ProjectedPenalty(PowerPenalty(2.0), HeavisideProjection(5.0))
+        # Test with ProjectedPenaltyFun
+        pp = ProjectedPenaltyFun(PowerPenaltyFun(2.0), HeavisideProjectionFun(5.0))
         solver3 = FEASolver(DirectSolver, problem; penalty=pp)
 
-        @test getprevpenalty(solver3) isa ProjectedPenalty
+        @test getprevpenalty(solver3) isa ProjectedPenaltyFun
         @test getprevpenalty(solver3).p == 2.0
 
         setpenalty!(solver3, 4.0)
@@ -772,7 +772,7 @@ end
 
     @testset "Custom prev_penalty initialization" begin
         # Create solver with custom prev_penalty
-        custom_prev = PowerPenalty(5.0)
+        custom_prev = PowerPenaltyFun(5.0)
         solver = FEASolver(DirectSolver, problem; prev_penalty=custom_prev)
 
         @test getprevpenalty(solver).p == 5.0

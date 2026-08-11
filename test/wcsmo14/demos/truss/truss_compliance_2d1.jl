@@ -22,9 +22,9 @@ p = 4.0 # penalty
 V = 0.5 # maximum volume fraction
 
 solver = FEASolver(DirectSolver, problem; xmin=xmin)
-comp = TopOpt.Compliance(solver)
+comp = TopOpt.ComplianceFun(solver)
 
-ts = TopOpt.TrussStress(solver)
+ts = TopOpt.TrussStressFun(solver)
 ts(PseudoDensities(x0))
 
 function obj(x)
@@ -41,7 +41,7 @@ addvar!(m, zeros(length(x0)), ones(length(x0)))
 Nonconvex.add_ineq_constraint!(m, constr)
 
 options = MMAOptions(; maxiter=1000, tol=Tolerance(; kkt=1e-4, f=1e-4))
-TopOpt.setpenalty!(solver, p)
+setpenalty!(solver, p)
 @time r = Nonconvex.optimize(
     m, MMA87(; dualoptimizer=ConjugateGradient()), x0; options=options
 )

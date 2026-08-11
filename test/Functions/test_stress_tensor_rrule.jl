@@ -12,28 +12,28 @@ const FDM = FiniteDifferences
 using TopOpt: ndofs
 using Ferrite: ndofs_per_cell, getncells
 using NonconvexCore: getdim
-using TopOpt.Functions: StressTensor, DisplacementResult, reinit!
+using TopOpt.Functions: StressTensorFun, DisplacementResult, reinit!
 
 Random.seed!(1)
 
-@testset "StressTensor reinit! rrule" begin
+@testset "StressTensorFun reinit! rrule" begin
     nels = (2, 2)
     problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
-    solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(3.0))
+    solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(3.0))
 
-    st = StressTensor(solver)
-    dp = Displacement(solver)
+    st = StressTensorFun(solver)
+    dp = DisplacementFun(solver)
 
     # Get displacement result for testing
     x = clamp.(rand(prod(nels)), 0.1, 1.0)
     u = dp(PseudoDensities(x))
 
     @testset "rrule returns correct types" begin
-        # Test rrule for StressTensor reinit!
+        # Test rrule for StressTensorFun reinit!
         cellidx = 1
         y, pullback = ChainRulesCore.rrule(reinit!, st, cellidx)
 
-        # Check that the output is the StressTensor itself
+        # Check that the output is the StressTensorFun itself
         @test y === st
 
         # Check that the pullback returns NoTangent for all inputs
@@ -96,8 +96,8 @@ Random.seed!(1)
         # that involves reinit! should work without error
     end
 
-    @testset "rrule consistency with ElementStressTensor" begin
-        # Also test ElementStressTensor rrule for consistency
+    @testset "rrule consistency with ElementStressTensorFun" begin
+        # Also test ElementStressTensorFun rrule for consistency
         est = st[1]
 
         cellidx = 1
@@ -112,7 +112,7 @@ Random.seed!(1)
         @test all(g isa ChainRulesCore.NoTangent for g in grads)
     end
 
-    @testset "reinit! modifies StressTensor correctly" begin
+    @testset "reinit! modifies StressTensorFun correctly" begin
         # Save original state
         orig_dofs = copy(st.global_dofs)
 
@@ -131,13 +131,13 @@ Random.seed!(1)
     end
 end
 
-@testset "StressTensor reinit! integration with AD" begin
+@testset "StressTensorFun reinit! integration with AD" begin
     nels = (3, 3)
     problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
-    solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(3.0))
+    solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(3.0))
 
-    st = StressTensor(solver)
-    dp = Displacement(solver)
+    st = StressTensorFun(solver)
+    dp = DisplacementFun(solver)
 
     @testset "AD through stress tensor computation" begin
         # Test that we can compute gradients of stress-related quantities
@@ -172,10 +172,10 @@ end
 @testset "ElementStressTensorKernel rrule" begin
     nels = (2, 2)
     problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
-    solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(3.0))
+    solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(3.0))
 
-    st = StressTensor(solver)
-    dp = Displacement(solver)
+    st = StressTensorFun(solver)
+    dp = DisplacementFun(solver)
 
     # Get displacement result for testing
     x = clamp.(rand(prod(nels)), 0.1, 1.0)

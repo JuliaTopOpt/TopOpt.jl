@@ -397,7 +397,7 @@ end
     @test cd[top_center] == [1.0]
 
     # The point source must show up in the assembled non-penalized load Q.
-    solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(3.0))
+    solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(3.0))
     Q = solver.elementinfo.fixedload
     @test count(!=(0), Q) > 0
     # The injected heat should land on the top-center DOF, which is the first
@@ -472,7 +472,7 @@ end
     @test length(problem.ch.prescribed_dofs) == 9
     @test all(==(0), problem.ch.inhomogeneities)
     # The problem solves.
-    solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(3.0))
+    solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(3.0))
     solver.vars .= 1.0
     solver()
     @test all(isfinite, solver.u)

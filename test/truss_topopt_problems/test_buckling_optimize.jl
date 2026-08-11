@@ -42,7 +42,7 @@ gm_ins_dir = joinpath(@__DIR__, "instances", "ground_meshes");
 #     # smallest_pos_eigval = 1/sparse_eigvals[1]
 #     # @test smallest_pos_eigval >= 1.0
 
-#     comp = TopOpt.Compliance(solver)
+#     comp = TopOpt.ComplianceFun(solver)
 #     # TODO "manual" interior point loop, adjusting the c value every iter
 #     for c in [0.1] # 10:-0.1:0.1
 #         function obj(x)
@@ -109,10 +109,10 @@ gm_ins_dir = joinpath(@__DIR__, "instances", "ground_meshes");
     ch = problem.ch
     dh = problem.ch.dh
 
-    comp = TopOpt.Compliance(solver)
-    dp = TopOpt.Displacement(solver)
-    assemble_k = TopOpt.AssembleK(problem)
-    element_k = ElementK(solver)
+    comp = TopOpt.ComplianceFun(solver)
+    dp = TopOpt.DisplacementFun(solver)
+    assemble_k = TopOpt.AssembleKFun(problem)
+    element_k = ElementKFun(solver)
     truss_element_kσ = TrussElementKσ(problem, solver)
 
     # * comliance minimization objective

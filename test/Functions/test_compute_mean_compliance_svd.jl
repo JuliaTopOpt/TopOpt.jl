@@ -25,10 +25,10 @@ Random.seed!(42)
         end
 
         problem = MultiLoad(base_problem, F)
-        solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(2.0))
+        solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(2.0))
 
-        # Create MeanCompliance with TraceEstimationSVDMean method
-        mc = MeanCompliance(problem, solver; method=:approx_svd, nv=5)
+        # Create MeanComplianceFun with TraceEstimationSVDMean method
+        mc = MeanComplianceFun(problem, solver; method=:approx_svd, nv=5)
 
         # Verify it's using TraceEstimationSVDMean
         @test mc.method isa Functions.TraceEstimationSVDMean
@@ -68,9 +68,9 @@ Random.seed!(42)
         end
 
         problem = MultiLoad(base_problem, F)
-        solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(2.0))
+        solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(2.0))
 
-        mc = MeanCompliance(problem, solver; method=:approx_svd, nv=5)
+        mc = MeanComplianceFun(problem, solver; method=:approx_svd, nv=5)
         ax = mc.method
 
         x = fill(0.5, length(solver.vars))
@@ -106,11 +106,11 @@ Random.seed!(42)
         end
 
         problem = MultiLoad(base_problem, F)
-        solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(2.0))
+        solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(2.0))
 
         # Test with different sample counts
         for nv in [1, 3, 5]
-            mc = MeanCompliance(problem, solver; method=:approx_svd, nv=nv)
+            mc = MeanComplianceFun(problem, solver; method=:approx_svd, nv=nv)
             ax = mc.method
 
             x = fill(0.5, length(solver.vars))
@@ -141,9 +141,9 @@ Random.seed!(42)
         end
 
         problem = MultiLoad(base_problem, F)
-        solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(2.0))
+        solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(2.0))
 
-        mc = MeanCompliance(problem, solver; method=:approx_svd, nv=5)
+        mc = MeanComplianceFun(problem, solver; method=:approx_svd, nv=5)
         ax = mc.method
 
         # Test with different density values
@@ -157,7 +157,7 @@ Random.seed!(42)
             @test val > 0
             @test all(isfinite.(grad))
 
-            # Compliance should decrease with higher density
+            # ComplianceFun should decrease with higher density
             # (this is a physical property, not strict requirement)
         end
     end
@@ -179,9 +179,9 @@ Random.seed!(42)
         end
 
         problem = MultiLoad(base_problem, F)
-        solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(2.0))
+        solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(2.0))
 
-        mc = MeanCompliance(problem, solver; method=:approx_svd, nv=5)
+        mc = MeanComplianceFun(problem, solver; method=:approx_svd, nv=5)
         ax = mc.method
 
         x = fill(0.5, length(solver.vars))
@@ -214,10 +214,10 @@ Random.seed!(42)
         end
 
         problem = MultiLoad(base_problem, F)
-        solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(2.0))
+        solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(2.0))
 
         # Exact SVD
-        mc_exact = MeanCompliance(problem, solver; method=:exact_svd)
+        mc_exact = MeanComplianceFun(problem, solver; method=:exact_svd)
         x = fill(0.5, length(solver.vars))
         grad_exact = similar(x)
         val_exact = Functions.compute_mean_compliance(
@@ -225,7 +225,7 @@ Random.seed!(42)
         )
 
         # Approximate SVD with many samples
-        mc_approx = MeanCompliance(problem, solver; method=:approx_svd, nv=20)
+        mc_approx = MeanComplianceFun(problem, solver; method=:approx_svd, nv=20)
         ax = mc_approx.method
         grad_approx = similar(x)
         val_approx = Functions.compute_mean_compliance(mc_approx, ax, x, grad_approx)
@@ -251,9 +251,9 @@ Random.seed!(42)
         end
 
         problem = MultiLoad(base_problem, F)
-        solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(2.0))
+        solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(2.0))
 
-        mc = MeanCompliance(problem, solver; method=:approx_svd, nv=5)
+        mc = MeanComplianceFun(problem, solver; method=:approx_svd, nv=5)
         ax = mc.method
 
         # Verify structure
@@ -292,12 +292,12 @@ Random.seed!(42)
         end
 
         problem = MultiLoad(base_problem, F)
-        solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(2.0))
+        solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(2.0))
 
         x = fill(0.5, length(solver.vars))
 
         for sample_method in [:hutch, :hadamard]
-            mc = MeanCompliance(
+            mc = MeanComplianceFun(
                 problem, solver; method=:approx_svd, nv=5, sample_method=sample_method
             )
             ax = mc.method
@@ -328,9 +328,9 @@ Random.seed!(42)
         end
 
         problem = MultiLoad(base_problem, F)
-        solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(2.0))
+        solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(2.0))
 
-        mc = MeanCompliance(problem, solver; method=:approx_svd, nv=5)
+        mc = MeanComplianceFun(problem, solver; method=:approx_svd, nv=5)
         ax = mc.method
 
         x = fill(0.5, length(solver.vars))

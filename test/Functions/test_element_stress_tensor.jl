@@ -1,7 +1,7 @@
 using TopOpt, Zygote, LinearAlgebra, Test, Random, SparseArrays, ForwardDiff, ChainRulesCore
 using Ferrite: ndofs_per_cell, getncells, celldofs!
 using TopOpt.Functions:
-    StressTensor, DisplacementResult, ElementStressTensor, reinit!, _element_stress_tensor
+    StressTensorFun, DisplacementResult, ElementStressTensorFun, reinit!, _element_stress_tensor
 
 Random.seed!(1)
 
@@ -25,20 +25,20 @@ function von_mises_reference_3d(σ)
     return sqrt(1.5 * (sxx^2 + syy^2 + szz^2) + 3 * (σxy^2 + σyz^2 + σzx^2))
 end
 
-@testset "ElementStressTensor call function" begin
+@testset "ElementStressTensorFun call function" begin
     nels = (2, 2)
     problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
-    solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(3.0))
+    solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(3.0))
 
-    st = StressTensor(solver)
-    dp = Displacement(solver)
+    st = StressTensorFun(solver)
+    dp = DisplacementFun(solver)
 
     # Get displacement result for testing
     x = clamp.(rand(prod(nels)), 0.1, 1.0)
     u = dp(PseudoDensities(x))
 
     @testset "Basic call with element_dofs=false (default)" begin
-        # Test calling ElementStressTensor with default element_dofs=false
+        # Test calling ElementStressTensorFun with default element_dofs=false
         for cellidx in 1:min(2, length(st.cells))
             est = st[cellidx]
 
@@ -58,7 +58,7 @@ end
     end
 
     @testset "Call with element_dofs=true" begin
-        # Test calling ElementStressTensor with element_dofs=true
+        # Test calling ElementStressTensorFun with element_dofs=true
         for cellidx in 1:min(2, length(st.cells))
             est = st[cellidx]
 
@@ -196,15 +196,15 @@ end
 end
 
 @testset "2D plane strain σzz is nonzero" begin
-    # The StressTensor kernel uses 3D (plane strain) constitutive law.
+    # The StressTensorFun kernel uses 3D (plane strain) constitutive law.
     # For a 2D problem, σzz = λ*(εxx + εyy) ≠ 0, so the returned tensor must
     # be 3×3 with a nonzero σzz entry. The old code returned 2×2 and used
     # the plane-stress von Mises formula, which incorrectly assumed σzz=0.
     nels = (2, 2)
     problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
-    solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(3.0))
-    st = StressTensor(solver)
-    dp = Displacement(solver)
+    solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(3.0))
+    st = StressTensorFun(solver)
+    dp = DisplacementFun(solver)
 
     x = fill(0.5, prod(nels))
     u = dp(PseudoDensities(x))
@@ -320,5 +320,5 @@ end
     end
 end
 
-println("All ElementStressTensor call tests passed!")
+println("All ElementStressTensorFun call tests passed!")
 println("All von_mises tests passed!")

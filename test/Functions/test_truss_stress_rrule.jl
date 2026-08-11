@@ -3,7 +3,7 @@ const FDM = FiniteDifferences
 
 Random.seed!(42)
 
-@testset "TrussStress rrule" begin
+@testset "TrussStressFun rrule" begin
     # Use the same simple 3-element truss as test_truss_stress_fns.jl
     node_points, elements, mats, crosssecs, fixities, load_cases = load_truss_json(
         joinpath(@__DIR__, "testfile2_compact.json")
@@ -15,8 +15,8 @@ Random.seed!(42)
     ncells = length(elements)
 
     xmin = 0.0001
-    solver = FEASolver(DirectSolver, problem; xmin=xmin, penalty=PowerPenalty(1.0))
-    ts = TrussStress(solver)
+    solver = FEASolver(DirectSolver, problem; xmin=xmin, penalty=PowerPenaltyFun(1.0))
+    ts = TrussStressFun(solver)
 
     # 1. Forward pass: stress with all-solid design matches hand calculation
     x_ones = ones(ncells)
@@ -58,7 +58,7 @@ Random.seed!(42)
     @test σ_half != σ
 end
 
-@testset "TrussStress rrule with higher penalty" begin
+@testset "TrussStressFun rrule with higher penalty" begin
     node_points, elements, mats, crosssecs, fixities, load_cases = load_truss_json(
         joinpath(@__DIR__, "testfile2_compact.json")
     )
@@ -69,8 +69,8 @@ end
     ncells = length(elements)
 
     # Use p=3 penalty to test that the rrule correctly chains through penalty
-    solver = FEASolver(DirectSolver, problem; xmin=0.001, penalty=PowerPenalty(3.0))
-    ts = TrussStress(solver)
+    solver = FEASolver(DirectSolver, problem; xmin=0.001, penalty=PowerPenaltyFun(3.0))
+    ts = TrussStressFun(solver)
 
     for _ in 1:3
         x = clamp.(rand(ncells), 0.3, 1.0)

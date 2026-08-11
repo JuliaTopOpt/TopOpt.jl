@@ -97,8 +97,8 @@ gm_ins_dir = joinpath(@__DIR__, "instances", "ground_meshes");
 #             # trigger assembly
 #             solver()
 
-#             assemble_k = TopOpt.AssembleK(problem)
-#             element_k = ElementK(solver)
+#             assemble_k = TopOpt.AssembleKFun(problem)
+#             element_k = ElementKFun(solver)
 #             truss_element_kσ = TrussElementKσ(problem, solver)
 
 #             # reaction force in global coordinate

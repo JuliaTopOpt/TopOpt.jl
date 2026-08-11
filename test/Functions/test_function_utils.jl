@@ -1,12 +1,12 @@
 using TopOpt, Test, Random, ForwardDiff
 using TopOpt.Utilities: get_ρ, get_ρ_dρ
-using TopOpt.Utilities: PowerPenalty, RationalPenalty, SinhPenalty
+using TopOpt.Utilities: PowerPenaltyFun, RationalPenaltyFun, SinhPenaltyFun
 
 Random.seed!(42)
 
 @testset "Function Utilities - get_ρ and get_ρ_dρ" begin
     @testset "get_ρ basic functionality" begin
-        penalty = PowerPenalty(3.0)
+        penalty = PowerPenaltyFun(3.0)
         xmin = 0.01
 
         # Test at various density values
@@ -21,7 +21,7 @@ Random.seed!(42)
     end
 
     @testset "get_ρ_dρ returns value and gradient" begin
-        penalty = PowerPenalty(2.0)
+        penalty = PowerPenaltyFun(2.0)
         xmin = 0.001
 
         for x_e in [0.1, 0.5, 1.0]
@@ -47,7 +47,7 @@ Random.seed!(42)
         xmin = 0.01
         x_e = 0.5
 
-        for penalty in [PowerPenalty(3.0), RationalPenalty(3.0), SinhPenalty(3.0)]
+        for penalty in [PowerPenaltyFun(3.0), RationalPenaltyFun(3.0), SinhPenaltyFun(3.0)]
             ρ = get_ρ(x_e, penalty, xmin)
             @test isa(ρ, Real)
             @test isfinite(ρ)
@@ -60,7 +60,7 @@ Random.seed!(42)
     end
 
     @testset "get_ρ boundary values" begin
-        penalty = PowerPenalty(3.0)
+        penalty = PowerPenaltyFun(3.0)
         xmin = 0.001
 
         # At x_e = xmin, should get penalized minimum density
@@ -75,7 +75,7 @@ Random.seed!(42)
 
     @testset "get_ρ_dρ consistency" begin
         # The value returned by get_ρ_dρ should match get_ρ
-        penalty = PowerPenalty(3.0)
+        penalty = PowerPenaltyFun(3.0)
         xmin = 0.01
 
         for x_e in [0.1, 0.5, 0.9]
@@ -86,7 +86,7 @@ Random.seed!(42)
     end
 
     @testset "get_ρ gradient properties" begin
-        penalty = PowerPenalty(3.0)
+        penalty = PowerPenaltyFun(3.0)
         xmin = 0.01
 
         # For power penalty, gradient should be positive (more density = more stiffness)

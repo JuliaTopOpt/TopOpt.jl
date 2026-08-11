@@ -30,7 +30,7 @@ using TopOpt.TopOptProblems: make_Kes_and_fes
 
     # Test assemble_f! with existing vector (main API)
     @testset "assemble_f! inplace" begin
-        penalty = PowerPenalty(3.0)
+        penalty = PowerPenaltyFun(3.0)
         vars = ones(Float64, ncells)
 
         # Create output vector
@@ -102,7 +102,7 @@ end
         # Test that get_Kσs returns the geometric stiffness matrices
         # Need actual displacement values from solving the system
         u = ginfo.K \ ginfo.f
-        penalty = PowerPenalty(1.0)
+        penalty = PowerPenaltyFun(1.0)
         xmin_val = 1e-3
         Kσs = TopOpt.TopOptProblems.get_Kσs(
             problem, u, elementinfo.cellvalues, vars, penalty, xmin_val
@@ -154,7 +154,7 @@ end
         # wrong for the 3D/plane-strain stiffness matrix. Verify the fix by
         # checking that get_Kσs with the correct Lamé constants matches.
         u = ginfo.K \ ginfo.f
-        penalty = PowerPenalty(1.0)
+        penalty = PowerPenaltyFun(1.0)
         xmin_val = 1e-3
         Kσs = TopOpt.TopOptProblems.get_Kσs(
             problem, u, elementinfo.cellvalues, vars, penalty, xmin_val
@@ -281,7 +281,7 @@ end
 
     @testset "Power penalty" begin
         vars = fill(0.5, ncells)
-        penalty = PowerPenalty(3.0)
+        penalty = PowerPenaltyFun(3.0)
         f_out = zeros(Float64, ndofs(problem.ch.dh))
         TopOpt.TopOptProblems.assemble_f!(f_out, problem, elementinfo, vars, penalty, 0.001)
         @test length(f_out) == ndofs(problem.ch.dh)
@@ -289,7 +289,7 @@ end
 
     @testset "Rational penalty" begin
         vars = fill(0.5, ncells)
-        penalty = RationalPenalty(3.0)
+        penalty = RationalPenaltyFun(3.0)
         f_out = zeros(Float64, ndofs(problem.ch.dh))
         TopOpt.TopOptProblems.assemble_f!(f_out, problem, elementinfo, vars, penalty, 0.001)
         @test length(f_out) == ndofs(problem.ch.dh)
@@ -310,7 +310,7 @@ end
 
     @testset "Very small densities" begin
         vars = fill(0.001, ncells)
-        penalty = PowerPenalty(3.0)
+        penalty = PowerPenaltyFun(3.0)
         f_out = zeros(Float64, ndofs(problem.ch.dh))
         TopOpt.TopOptProblems.assemble_f!(f_out, problem, elementinfo, vars, penalty, 0.001)
         @test length(f_out) == ndofs(problem.ch.dh)

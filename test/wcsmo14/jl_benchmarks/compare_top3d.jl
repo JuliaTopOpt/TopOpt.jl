@@ -34,7 +34,7 @@ sizes = (1.0, 1.0, 1.0)
 );
 
 # Define a finite element solver
-@timeit to "penalty def" penalty = TopOpt.PowerPenalty(3.0)
+@timeit to "penalty def" penalty = TopOpt.PowerPenaltyFun(3.0)
 @timeit to "solver def" solver = FEASolver(
     DirectSolver, problem; xmin=xmin, penalty=penalty
 );
@@ -42,14 +42,14 @@ sizes = (1.0, 1.0, 1.0)
 # Define compliance objective
 @timeit to "objective def" begin
     # Define compliance objective
-    comp = Compliance(solver)
-    filter = DensityFilter(solver; rmin=rmin)
+    comp = ComplianceFun(solver)
+    filter = DensityFilterFun(solver; rmin=rmin)
     obj = x -> comp(filter(PseudoDensities(x)))
 end
 
 # Define volume constraint
 @timeit to "constraint def" begin
-    volfrac = TopOpt.Volume(solver)
+    volfrac = TopOpt.VolumeFun(solver)
     constr = x -> volfrac(filter(PseudoDensities(x))) - V
 end
 

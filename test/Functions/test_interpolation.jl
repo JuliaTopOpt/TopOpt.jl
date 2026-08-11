@@ -5,11 +5,11 @@ using Test
 # Test interpolation functions for SIMP and material models
 @testset "Interpolation Tests" begin
     @testset "SIMP penalization" begin
-        # Test standard SIMP interpolation using PowerPenalty from Utilities
+        # Test standard SIMP interpolation using PowerPenaltyFun from Utilities
         p = 3.0
-        penalty = PowerPenalty(p)
+        penalty = PowerPenaltyFun(p)
 
-        # Test PowerPenalty on scalar value
+        # Test PowerPenaltyFun on scalar value
         x = 0.5
         result = penalty(x)
         expected = x^p
@@ -32,9 +32,9 @@ using Test
     end
 
     @testset "RAMP interpolation" begin
-        # Test RAMP (Rational Approximation of Material Properties) using RationalPenalty
+        # Test RAMP (Rational Approximation of Material Properties) using RationalPenaltyFun
         q = 3.0
-        ramp_penalty = RationalPenalty(q)
+        ramp_penalty = RationalPenaltyFun(q)
 
         # Test RAMP function on scalar
         x = 0.5
@@ -50,9 +50,9 @@ using Test
     end
 
     @testset "Sinh penalty interpolation" begin
-        # Test SinhPenalty
+        # Test SinhPenaltyFun
         p = 2.0
-        sinh_penalty = SinhPenalty(p)
+        sinh_penalty = SinhPenaltyFun(p)
 
         # Test on scalar
         x = 0.5
@@ -68,9 +68,9 @@ using Test
     end
 
     @testset "Projection functions" begin
-        # Test HeavisideProjection
+        # Test HeavisideProjectionFun
         β = 10.0
-        proj = HeavisideProjection(β)
+        proj = HeavisideProjectionFun(β)
 
         # Test on scalar
         x = 0.5
@@ -80,21 +80,21 @@ using Test
         @test result > 0
         @test result <= 1.0
 
-        # Test SigmoidProjection
+        # Test SigmoidProjectionFun
         β = 5.0
-        sigmoid_proj = SigmoidProjection(β)
+        sigmoid_proj = SigmoidProjectionFun(β)
         result2 = sigmoid_proj(x)
         expected2 = 1 / (1 + exp((β + 1) * (-x + 0.5)))
         @test result2 ≈ expected2
     end
 
-    @testset "ProjectedPenalty" begin
+    @testset "ProjectedPenaltyFun" begin
         # Test combination of penalty and projection
         p = 3.0
         β = 10.0
-        power_penalty = PowerPenalty(p)
-        heaviside_proj = HeavisideProjection(β)
-        proj_penalty = ProjectedPenalty(power_penalty, heaviside_proj)
+        power_penalty = PowerPenaltyFun(p)
+        heaviside_proj = HeavisideProjectionFun(β)
+        proj_penalty = ProjectedPenaltyFun(power_penalty, heaviside_proj)
 
         # Test on scalar
         x = 0.5

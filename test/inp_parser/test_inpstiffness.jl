@@ -151,7 +151,7 @@ using Ferrite, Test
         problem = InpStiffness(inp_file)
 
         # Verify FEASolver can be constructed without error
-        solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(3.0))
+        solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(3.0))
         @test !isnothing(solver)
     end
 

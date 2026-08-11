@@ -1,6 +1,6 @@
 using Test, ChainRulesCore, Zygote, LinearAlgebra
 using TopOpt.Functions:
-    FixedElementProjector,
+    FixedElementProjectorFun,
     get_fixed_element_projector,
     get_free_variables,
     get_free_variable_count
@@ -19,14 +19,14 @@ function finite_diff_gradient(f, x::AbstractVector{T}, h=T(1e-6)) where {T}
     return grad
 end
 
-@testset "FixedElementProjector" begin
+@testset "FixedElementProjectorFun" begin
     @testset "Constructor validation" begin
         # Valid construction
         black = falses(10)
         black[1:3] .= true
         white = falses(10)
         white[8:10] .= true
-        p = FixedElementProjector(10, black, white)
+        p = FixedElementProjectorFun(10, black, white)
 
         @test p.nel == 10
         @test get_free_variable_count(p) == 4  # elements 4-7
@@ -37,10 +37,10 @@ end
         invalid_black[1:3] .= true
         invalid_white = falses(5)
         invalid_white[3:5] .= true  # element 3 is both
-        @test_throws ArgumentError FixedElementProjector(5, invalid_black, invalid_white)
+        @test_throws ArgumentError FixedElementProjectorFun(5, invalid_black, invalid_white)
 
         # Invalid: mismatched lengths
-        @test_throws ArgumentError FixedElementProjector(5, falses(5), falses(6))
+        @test_throws ArgumentError FixedElementProjectorFun(5, falses(5), falses(6))
     end
 
     @testset "get_free_variables" begin
@@ -49,7 +49,7 @@ end
         black[1:3] .= true
         white = falses(10)
         white[8:10] .= true
-        p = FixedElementProjector(10, black, white)
+        p = FixedElementProjectorFun(10, black, white)
 
         free_vars = get_free_variables(p)
         @test free_vars isa BitVector
@@ -63,7 +63,7 @@ end
         # All black - no free elements
         black_all = trues(5)
         white_none = falses(5)
-        p_all_black = FixedElementProjector(5, black_all, white_none)
+        p_all_black = FixedElementProjectorFun(5, black_all, white_none)
         free_all_black = get_free_variables(p_all_black)
         @test free_all_black isa BitVector
         @test length(free_all_black) == 5
@@ -73,7 +73,7 @@ end
         # All white - no free elements
         black_none = falses(5)
         white_all = trues(5)
-        p_all_white = FixedElementProjector(5, black_none, white_all)
+        p_all_white = FixedElementProjectorFun(5, black_none, white_all)
         free_all_white = get_free_variables(p_all_white)
         @test free_all_white isa BitVector
         @test length(free_all_white) == 5
@@ -83,7 +83,7 @@ end
         # No fixed elements - all free
         black_empty = falses(5)
         white_empty = falses(5)
-        p_all_free = FixedElementProjector(5, black_empty, white_empty)
+        p_all_free = FixedElementProjectorFun(5, black_empty, white_empty)
         free_all_free = get_free_variables(p_all_free)
         @test free_all_free isa BitVector
         @test length(free_all_free) == 5
@@ -92,21 +92,21 @@ end
 
         # Single element cases
         # One free element
-        p_single_free = FixedElementProjector(1, falses(1), falses(1))
+        p_single_free = FixedElementProjectorFun(1, falses(1), falses(1))
         free_single = get_free_variables(p_single_free)
         @test free_single isa BitVector
         @test length(free_single) == 1
         @test free_single[1] == true
 
         # One black element
-        p_single_black = FixedElementProjector(1, trues(1), falses(1))
+        p_single_black = FixedElementProjectorFun(1, trues(1), falses(1))
         free_single_black = get_free_variables(p_single_black)
         @test free_single_black isa BitVector
         @test length(free_single_black) == 1
         @test free_single_black[1] == false
 
         # One white element
-        p_single_white = FixedElementProjector(1, falses(1), trues(1))
+        p_single_white = FixedElementProjectorFun(1, falses(1), trues(1))
         free_single_white = get_free_variables(p_single_white)
         @test free_single_white isa BitVector
         @test length(free_single_white) == 1
@@ -123,7 +123,7 @@ end
         # Simple case: 5 elements, no fixed
         black = falses(5)
         white = falses(5)
-        p = FixedElementProjector(5, black, white)
+        p = FixedElementProjectorFun(5, black, white)
 
         x_free = [0.0, 0.25, 0.5, 0.75, 1.0]
         ρ = p(x_free)
@@ -138,7 +138,7 @@ end
         black[1:3] .= true
         white = falses(10)
         white[8:10] .= true
-        p = FixedElementProjector(10, black, white)
+        p = FixedElementProjectorFun(10, black, white)
 
         x_free = [0.0, 0.25, 0.5, 0.75]  # 4 free elements
 
@@ -158,7 +158,7 @@ end
         black[1:3] .= true
         white = falses(10)
         white[8:10] .= true
-        p = FixedElementProjector(10, black, white)
+        p = FixedElementProjectorFun(10, black, white)
 
         # Wrong size input
         @test_throws ArgumentError p([0.0, 1.0])  # 2 instead of 4
@@ -170,7 +170,7 @@ end
         black[1:3] .= true
         white = falses(10)
         white[8:10] .= true
-        p = FixedElementProjector(10, black, white)
+        p = FixedElementProjectorFun(10, black, white)
 
         x_free = [0.1, 0.2, 0.3, 0.4]
 
@@ -288,10 +288,10 @@ end
         proj = get_fixed_element_projector(problem, black_cells, white_cells)
 
         # Create solver
-        solver = FEASolver(DirectSolver, problem; xmin=0.001, penalty=PowerPenalty(3.0))
+        solver = FEASolver(DirectSolver, problem; xmin=0.001, penalty=PowerPenaltyFun(3.0))
 
-        # Compliance function
-        comp = Compliance(solver)
+        # ComplianceFun function
+        comp = ComplianceFun(solver)
 
         # Objective with projection
         function obj(x_free)
@@ -325,7 +325,7 @@ end
         black[1:3] .= true
         white = falses(10)
         white[8:10] .= true
-        p = FixedElementProjector(10, black, white)
+        p = FixedElementProjectorFun(10, black, white)
         x_free = [0.1, 0.2, 0.3, 0.4]
 
         # Test that rrule produces same result as forward function
@@ -338,7 +338,7 @@ end
         black[1:3] .= true
         white = falses(10)
         white[8:10] .= true
-        p = FixedElementProjector(10, black, white)
+        p = FixedElementProjectorFun(10, black, white)
         x_free = [0.1, 0.2, 0.3, 0.4]
 
         y, pb = ChainRulesCore.rrule(p, x_free)
@@ -358,7 +358,7 @@ end
         black[1:2] .= true
         white = falses(5)
         white[4:5] .= true
-        p = FixedElementProjector(5, black, white)  # free: only element 3
+        p = FixedElementProjectorFun(5, black, white)  # free: only element 3
         x_free = [0.5]
 
         y, pb = ChainRulesCore.rrule(p, x_free)
@@ -376,7 +376,7 @@ end
         black[1:3] .= true
         white = falses(10)
         white[8:10] .= true
-        p = FixedElementProjector(10, black, white)
+        p = FixedElementProjectorFun(10, black, white)
         x_free = [0.1, 0.2, 0.3, 0.4]
 
         # Test with a composite function
@@ -420,7 +420,7 @@ end
     @testset "All black" begin
         black = trues(5)
         white = falses(5)
-        p = FixedElementProjector(5, black, white)
+        p = FixedElementProjectorFun(5, black, white)
         x_free = Float64[]
         ρ = p(x_free)
         @test all(ρ .== 1.0)
@@ -429,7 +429,7 @@ end
     @testset "All white" begin
         black = falses(5)
         white = trues(5)
-        p = FixedElementProjector(5, black, white)
+        p = FixedElementProjectorFun(5, black, white)
         x_free = Float64[]
         ρ = p(x_free)
         @test all(ρ .== 0.0)
@@ -438,7 +438,7 @@ end
     @testset "No fixed elements" begin
         black = falses(5)
         white = falses(5)
-        p = FixedElementProjector(5, black, white)
+        p = FixedElementProjectorFun(5, black, white)
         x_free = zeros(5)
         ρ = p(x_free)
         @test all(ρ .== 0.0)
@@ -447,14 +447,14 @@ end
     @testset "Single element" begin
         black = falses(1)
         white = falses(1)
-        p = FixedElementProjector(1, black, white)
+        p = FixedElementProjectorFun(1, black, white)
         x_free = [0.5]
         ρ = p(x_free)
         @test ρ[1] == 0.5
     end
 end
 
-@testset "Compliance minimization with fixed elements" begin
+@testset "ComplianceFun minimization with fixed elements" begin
     using TopOpt, TopOpt.TopOptProblems, Nonconvex, LinearAlgebra
 
     # Create a cantilever problem
@@ -474,13 +474,13 @@ end
         nel - length(black_cells) - length(white_cells)
 
     # Create solver
-    solver = FEASolver(DirectSolver, problem; xmin=0.001, penalty=PowerPenalty(3.0))
+    solver = FEASolver(DirectSolver, problem; xmin=0.001, penalty=PowerPenaltyFun(3.0))
 
-    # Compliance objective
-    comp = Compliance(solver)
+    # ComplianceFun objective
+    comp = ComplianceFun(solver)
 
-    # Volume constraint
-    vol = Volume(solver; fraction=true)
+    # VolumeFun constraint
+    vol = VolumeFun(solver; fraction=true)
 
     # Initial design: all 0.5 on free variables
     x0_free = fill(0.5, get_free_variable_count(free_to_full_proj))
@@ -491,7 +491,7 @@ end
         return comp(PseudoDensities(ρ))
     end
 
-    # Volume constraint function
+    # VolumeFun constraint function
     function constr(x_free)
         ρ = free_to_full_proj(x_free)
         return vol(PseudoDensities(ρ)) - 0.5

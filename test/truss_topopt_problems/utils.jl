@@ -93,7 +93,7 @@ function buckling(
     end
     Kσs = get_truss_Kσs(problem, u, einfo.cellvalues)
     # TODO replace
-    # assemble_k = TopOpt.AssembleK(problem)
+    # assemble_k = TopOpt.AssembleKFun(problem)
     # Kσ = assemble_k(Kσs)
 
     Kσ = deepcopy(ginfo.K)
@@ -119,7 +119,7 @@ function buckling(
         celldofs!(global_dofs, dh, i)
         Kσ_e = Kσs[i]
         # Apply the same density interpolation as TrussElementKσ. With the
-        # default penalty PowerPenalty(1), ρ = density(x^1, xmin) = density(x, xmin).
+        # default penalty PowerPenaltyFun(1), ρ = density(x^1, xmin) = density(x, xmin).
         ρ_e = (1 - xmin) * vars[i] + xmin
         Kσ_e = ρ_e * Kσ_e
         Ferrite.assemble!(assembler, global_dofs, Kσ_e)

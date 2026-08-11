@@ -44,7 +44,7 @@ using Ferrite, StaticArrays
         comp_direct = getcompliance(solver_direct)
         comp_cg = getcompliance(solver_cg)
 
-        # Compliance should be similar between solvers
+        # ComplianceFun should be similar between solvers
         @test isapprox(comp_direct, comp_cg; rtol=1e-3)
     end
 
@@ -88,7 +88,7 @@ end
 
         # Setup test parameters
         vars = ones(prod(nels))
-        penalty = PowerPenalty(1.0)
+        penalty = PowerPenaltyFun(1.0)
         xmin = 0.001
         M = 1.0  # Diagonal scaling factor
 
@@ -141,7 +141,7 @@ end
 
         # Setup test parameters
         vars = ones(prod(nels))
-        penalty = PowerPenalty(1.0)
+        penalty = PowerPenaltyFun(1.0)
         xmin = 0.001
         M = 1.0  # Diagonal scaling factor
 
@@ -220,7 +220,7 @@ end
 
         # Setup test parameters
         vars = ones(prod(nels))
-        penalty = PowerPenalty(1.0)
+        penalty = PowerPenaltyFun(1.0)
         xmin = 0.001
         M = 1.0
 
@@ -265,7 +265,7 @@ end
         f = zeros(ndofs_total)
 
         vars = ones(prod(nels))
-        penalty = PowerPenalty(1.0)
+        penalty = PowerPenaltyFun(1.0)
         xmin = 0.001
         M = 1.0
 
@@ -294,7 +294,7 @@ end
         f = zeros(ndofs_total)
 
         vars = ones(prod(nels))
-        penalty = PowerPenalty(1.0)
+        penalty = PowerPenaltyFun(1.0)
         xmin = 0.001
         M = 1.0
 
@@ -318,7 +318,7 @@ end
         # Test with full density
         vars_full = ones(prod(nels))
         f_full = zeros(ndofs_total)
-        penalty = PowerPenalty(1.0)
+        penalty = PowerPenaltyFun(1.0)
         xmin = 0.001
         M = 1.0
 
@@ -681,7 +681,7 @@ end
         # Solutions should be similar
         @test isapprox(solver_assembly.u, solver_matrixfree.u; rtol=1e-3)
 
-        # Compliance should be similar
+        # ComplianceFun should be similar
         comp_assembly = getcompliance(solver_assembly)
         comp_matrixfree = getcompliance(solver_matrixfree)
 

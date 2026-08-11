@@ -4,43 +4,43 @@ using NonconvexCore: NonconvexCore
 using TopOpt.TopOptProblems:
     getmetadata, getpressuredict, getheatfluxdict, getcloaddict, nnodespercell, getfacesets
 
-# Minimal test for Nonconvex.NonconvexCore.getdim(::Compliance) = 1
-@testset "getdim Compliance test" begin
+# Minimal test for Nonconvex.NonconvexCore.getdim(::ComplianceFun) = 1
+@testset "getdim ComplianceFun test" begin
     nels = (2, 2)
     problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
-    solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(3.0))
+    solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(3.0))
 
-    comp = Compliance(solver)
+    comp = ComplianceFun(solver)
 
-    # Test NonconvexCore.getdim(::Compliance) = 1
+    # Test NonconvexCore.getdim(::ComplianceFun) = 1
     dim = NonconvexCore.getdim(comp)
     @test dim == 1
-    println("✓ NonconvexCore.getdim(::Compliance) = $dim")
+    println("✓ NonconvexCore.getdim(::ComplianceFun) = $dim")
 
-    # Also test that getdim returns 1 for Volume
-    vol = TopOpt.Volume(solver)
+    # Also test that getdim returns 1 for VolumeFun
+    vol = TopOpt.VolumeFun(solver)
     vol_dim = NonconvexCore.getdim(vol)
     @test vol_dim == 1
-    println("✓ NonconvexCore.getdim(::Volume) = $vol_dim")
+    println("✓ NonconvexCore.getdim(::VolumeFun) = $vol_dim")
 end
 
-# Test for Nonconvex.NonconvexCore.getdim(::MeanCompliance) = 1
-@testset "getdim MeanCompliance test" begin
+# Test for Nonconvex.NonconvexCore.getdim(::MeanComplianceFun) = 1
+@testset "getdim MeanComplianceFun test" begin
     nels = (2, 2)
     problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
     multiload_problem = MultiLoad(problem, F -> begin
         return [F[:, 1] F[:, 1]]
     end)
     solver = FEASolver(
-        DirectSolver, multiload_problem; xmin=0.01, penalty=PowerPenalty(3.0)
+        DirectSolver, multiload_problem; xmin=0.01, penalty=PowerPenaltyFun(3.0)
     )
 
-    mean_comp = MeanCompliance(multiload_problem, solver; method=:exact)
+    mean_comp = MeanComplianceFun(multiload_problem, solver; method=:exact)
 
-    # Test NonconvexCore.getdim(::MeanCompliance) = 1
+    # Test NonconvexCore.getdim(::MeanComplianceFun) = 1
     dim = NonconvexCore.getdim(mean_comp)
     @test dim == 1
-    println("✓ NonconvexCore.getdim(::MeanCompliance) = $dim")
+    println("✓ NonconvexCore.getdim(::MeanComplianceFun) = $dim")
 end
 
 # Test for TopOptProblems.getdim(::LBeam) = 2 (Linear)
