@@ -24,7 +24,7 @@ jobs:
       - name: Scan .qmd files
         id: scan
         run: |
-          LIST=$(find docs/tutorials -maxdepth 1 -name '*.qmd' ! -name 'index.qmd' \
+          LIST=$(find docs/tutorials -maxdepth 1 -name '*.qmd' \
                  | xargs -n1 basename | sed 's/\.qmd$//' \
                  | jq -R -s -c 'split("\n")[:-1]')
           echo "list=$LIST" >> $GITHUB_OUTPUT
