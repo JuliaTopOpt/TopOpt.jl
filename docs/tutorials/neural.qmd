@@ -19,15 +19,6 @@ constraints).
 ## Setup
 
 ```{julia}
-#| echo: false
-#| output: false
-import Pkg
-Pkg.activate(@__DIR__)
-Pkg.develop(PackageSpec(path=joinpath(@__DIR__, "..", "..")))
-Pkg.instantiate()
-```
-
-```{julia}
 #| output: false
 using TopOpt, Zygote, ChainRulesCore
 using Flux

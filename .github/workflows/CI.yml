@@ -113,6 +113,8 @@ jobs:
             Pkg.precompile()'
       - name: Render tutorial with Quarto
         working-directory: docs/tutorials
+        env:
+          JULIA_PROJECT: ${{ github.workspace }}/docs/tutorials
         run: quarto render ${{ matrix.tutorial }}.qmd --execute
       - name: Upload rendered tutorial
         uses: actions/upload-artifact@v4
