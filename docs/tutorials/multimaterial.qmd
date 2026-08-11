@@ -135,10 +135,9 @@ println("Softmax sums to 1: $(all(x -> isapprox(x, 1), sum(x; dims=2)))")
 ```{julia}
 #| label: fig-multimaterial
 #| fig-cap: "Multi-material design: void (white), soft material (gray), stiff material (black)"
-using Makie
 using CairoMakie
 fig = visualize(problem; topology=y)  # Note: y is multi-material variables
-Makie.display(fig)
+
 ```
 
 The result shows optimal material distribution — stiff material in high-stress

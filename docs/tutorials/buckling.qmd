@@ -177,7 +177,6 @@ eigenvalues (unstable).
 ```{julia}
 #| label: fig-buckling
 #| fig-cap: "Buckling-constrained truss design (top) vs compliance-only (bottom)"
-using Makie
 using CairoMakie
 
 fig = Figure(size=(800, 400))
@@ -187,7 +186,7 @@ ax2 = Axis(fig[1, 2], title="Buckling-constrained (stable)")
 visualize!(ax1, problem; solver.u, topology=r1.minimizer, default_exagg_scale=0.0)
 visualize!(ax2, problem; solver.u, topology=r2.minimizer, default_exagg_scale=0.0)
 
-Makie.display(fig)
+
 ```
 
 The buckling-constrained design typically shows thicker compression

@@ -116,10 +116,9 @@ println("  All gradients finite: $(all(isfinite, grad))")
 ```{julia}
 #| label: fig-heat-sink
 #| fig-cap: "Heat sink optimization: conduction paths from top flux to left/right temperature fins"
-using Makie
 using CairoMakie
 fig = visualize(problem; topology=result.minimizer)
-Makie.display(fig)
+
 ```
 
 The optimal design shows branching conduction paths that efficiently

@@ -111,10 +111,9 @@ problem size.
 #| eval: false
 #| label: fig-beso
 #| fig-cap: "BESO optimization result showing the evolved beam structure"
-using Makie
 using CairoMakie
 fig = visualize(problem; topology=result.topology)
-Makie.display(fig)
+
 ```
 
 The visualization shows the final material distribution — a truss-like structure

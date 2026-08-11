@@ -161,9 +161,8 @@ end
 ```{julia}
 #| label: fig-neural2
 #| fig-cap: "Adam-optimized neural network design (6-layer MLP)"
-using Makie
 using CairoMakie
 topology = todensities(w; filter=true)
 fig = visualize(problem; topology=topology)
-Makie.display(fig)
+
 ```

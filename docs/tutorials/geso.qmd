@@ -89,10 +89,9 @@ stochastic nature, but can find better global optima for complex problems.
 #| eval: false
 #| label: fig-geso
 #| fig-cap: "GESO optimization result showing the evolved beam structure"
-using Makie
 using CairoMakie
 fig = visualize(problem; topology=result.topology)
-Makie.display(fig)
+
 ```
 
 The result shows a truss-like structure optimized for minimum compliance under

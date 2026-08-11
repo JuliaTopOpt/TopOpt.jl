@@ -107,10 +107,9 @@ that efficiently conducts heat from the top to the bottom boundary.
 ```{julia}
 #| label: fig-heat-tree
 #| fig-cap: "Conductivity tree: optimal heat conduction paths from top flux to bottom sink"
-using Makie
 using CairoMakie
 fig = visualize(problem; topology=res.minimizer)
-Makie.display(fig)
+
 ```
 
 The visualization reveals the tree-like structure — high-conductivity

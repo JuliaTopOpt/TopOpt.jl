@@ -114,11 +114,10 @@ designs without intermediate densities.
 ```{julia}
 #| label: fig-tobs
 #| fig-cap: "TOBS optimization result showing binary (0/1) material distribution"
-using Makie
 using CairoMakie
 topology = r.minimizer
 fig = visualize(problem; topology=topology)
-Makie.display(fig)
+
 ```
 
 The visualization shows the final binary structure — TOBS naturally produces

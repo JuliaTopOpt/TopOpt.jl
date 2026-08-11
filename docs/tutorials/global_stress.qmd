@@ -119,8 +119,7 @@ below the threshold.
 ```{julia}
 #| label: fig-global-stress
 #| fig-cap: "Global stress-constrained optimization with p-norm aggregation (p=5)"
-using Makie
 using CairoMakie
 fig = visualize(problem; topology=r.minimizer)
-Makie.display(fig)
+
 ```

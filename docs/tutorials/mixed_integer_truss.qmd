@@ -19,7 +19,6 @@ or absent.
 ```{julia}
 #| output: false
 using TopOpt, LinearAlgebra, StatsFuns
-using Makie
 using CairoMakie
 Nonconvex.@load Juniper
 ```
@@ -104,7 +103,7 @@ println("Elements removed: $(sum(x .< 0.5)) / $ncells")
 #| label: fig-mixed-integer-truss
 #| fig-cap: "Binary truss design: elements either present (black) or removed (white)"
 fig = visualize(problem; solver.u, topology=r.minimizer, default_exagg_scale=0.0)
-Makie.display(fig)
+
 ```
 
 The result shows a true binary truss layout — optimal load paths with

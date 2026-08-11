@@ -111,7 +111,6 @@ println("Stress constraint satisfied: $((maximum(s) - thr) / thr < 0.05)")
 ```{julia}
 #| label: fig-local-stress
 #| fig-cap: "Local stress-constrained design with element-wise stress limits (threshold=150)"
-using Makie
 using CairoMakie
 fig = visualize(
     problem;
@@ -120,7 +119,7 @@ fig = visualize(
     scale_range=10.0,
     vector_arrowsize=0.5,
 )
-Makie.display(fig)
+
 ```
 
 The optimized design shows smooth stress distributions without concentration
