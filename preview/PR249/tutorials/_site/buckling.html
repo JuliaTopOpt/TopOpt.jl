@@ -1,0 +1,1824 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.10.18">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>Buckling-Constrained Truss Optimization with SDP Constraints – TopOpt.jl</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js" integrity="sha384-ZvpUoO/+PpLXR1lu4jmpXWu80pZlYUAfxl5NsBMWOEPSjUn/6Z/hRTt8+pR6L4N2" crossorigin="anonymous"></script><script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<script src="site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-64a204ab8560d761af7679ceaba22944.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap-8ee6456b0f401cc28b332fe98c5cbc1d.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<script src="https://cdn.jsdelivr.net/npm/requirejs@2.3.6/require.min.js" integrity="sha384-c9c+LnTbwQ3aujuU7ULEPVvgLs+Fn6fJUvIGTsuu1ZcCf11fiEubah0ttpca4ntM sha384-6V1/AdqZRWk1KAlWbKBlGhN7VG4iE/yAZcO6NZPMF8od0vukrvr0tg4qY6NSrItx" crossorigin="anonymous"></script>
+
+<script type="application/javascript">define('jquery', [],function() {return window.jQuery;})</script>
+
+
+</head>
+
+<body class="nav-sidebar docked nav-fixed quarto-light">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a class="navbar-brand" href="./index.html">
+    <span class="navbar-title">TopOpt.jl</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="./../index.html"> 
+<span class="menu-text">Back to Docs</span></a>
+  </li>  
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://github.com/JuliaTopOpt/TopOpt.jl"> <i class="bi bi-github" role="img">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools">
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item">Buckling-Constrained Truss Optimization with SDP Constraints</li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation docked overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+      <a href="./index.html" class="sidebar-logo-link">
+      <img src="https://github.com/JuliaTopOpt/TopOpt.jl/assets/19524993/585ca4eb-83df-48d4-850c-1debc3d93eff" alt="" class="sidebar-logo light-content py-0 d-lg-inline d-none">
+      <img src="https://github.com/JuliaTopOpt/TopOpt.jl/assets/19524993/585ca4eb-83df-48d4-850c-1debc3d93eff" alt="" class="sidebar-logo dark-content py-0 d-lg-inline d-none">
+      </a>
+      </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#description" id="toc-description" class="nav-link active" data-scroll-target="#description">Description</a></li>
+  <li><a href="#setup" id="toc-setup" class="nav-link" data-scroll-target="#setup">Setup</a></li>
+  <li><a href="#load-truss-geometry" id="toc-load-truss-geometry" class="nav-link" data-scroll-target="#load-truss-geometry">Load Truss Geometry</a></li>
+  <li><a href="#parameter-settings" id="toc-parameter-settings" class="nav-link" data-scroll-target="#parameter-settings">Parameter Settings</a></li>
+  <li><a href="#fea-solver-and-buckling-helpers" id="toc-fea-solver-and-buckling-helpers" class="nav-link" data-scroll-target="#fea-solver-and-buckling-helpers">FEA Solver and Buckling Helpers</a></li>
+  <li><a href="#buckling-constraint-function" id="toc-buckling-constraint-function" class="nav-link" data-scroll-target="#buckling-constraint-function">Buckling Constraint Function</a></li>
+  <li><a href="#check-initial-design" id="toc-check-initial-design" class="nav-link" data-scroll-target="#check-initial-design">Check Initial Design</a></li>
+  <li><a href="#volume-constraint" id="toc-volume-constraint" class="nav-link" data-scroll-target="#volume-constraint">Volume Constraint</a></li>
+  <li><a href="#compliance-only-optimization-baseline" id="toc-compliance-only-optimization-baseline" class="nav-link" data-scroll-target="#compliance-only-optimization-baseline">Compliance-Only Optimization (Baseline)</a></li>
+  <li><a href="#add-buckling-sdp-constraint" id="toc-add-buckling-sdp-constraint" class="nav-link" data-scroll-target="#add-buckling-sdp-constraint">Add Buckling SDP Constraint</a></li>
+  <li><a href="#check-stability" id="toc-check-stability" class="nav-link" data-scroll-target="#check-stability">Check Stability</a></li>
+  <li><a href="#visualization" id="toc-visualization" class="nav-link" data-scroll-target="#visualization">Visualization</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Buckling-Constrained Truss Optimization with SDP Constraints</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="description" class="level2">
+<h2 class="anchored" data-anchor-id="description">Description</h2>
+<p>This tutorial demonstrates buckling-constrained topology optimization on a truss structure. The goal is to minimize compliance while ensuring the combined stiffness matrix <code>K + c·Kσ</code> remains positive semidefinite — i.e., the structure does not buckle under the applied load scaled by buckling factor <code>c</code>.</p>
+<p>We use differentiable building blocks (<code>ElementK</code>, <code>AssembleK</code>, <code>TrussElementKσ</code>, <code>apply_boundary_with_zerodiag!</code>, <code>apply_boundary_with_meandiag!</code>) and enforce the PSD constraint via semidefinite programming (SDP) using NonconvexSemidefinite.jl with an IPM barrier method.</p>
+</section>
+<section id="setup" class="level2">
+<h2 class="anchored" data-anchor-id="setup">Setup</h2>
+<div id="2" class="cell" data-execution_count="1">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">using</span> <span class="bu">TopOpt</span>, <span class="bu">LinearAlgebra</span>, <span class="bu">Zygote</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="im">using</span> <span class="bu">Nonconvex</span>, <span class="bu">NonconvexSemidefinite</span>, <span class="bu">NonconvexIpopt</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</section>
+<section id="load-truss-geometry" class="level2">
+<h2 class="anchored" data-anchor-id="load-truss-geometry">Load Truss Geometry</h2>
+<p>Download the truss geometry file: <a href="tim_2d.json">tim_2d.json</a>.</p>
+<div id="4" class="cell" data-execution_count="1">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>ndim <span class="op">=</span> <span class="fl">2</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>node_points, elements, mats, crosssecs, fixities, load_cases <span class="op">=</span> <span class="fu">load_truss_json</span>(</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">joinpath</span>(<span class="pp">@__DIR__</span>, <span class="st">"tim_</span><span class="sc">$</span>(ndim)<span class="st">d.json"</span>)</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>ndim, nnodes, ncells <span class="op">=</span> <span class="fu">length</span>(node_points[<span class="fl">1</span>]), <span class="fu">length</span>(node_points), <span class="fu">length</span>(elements)</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>loads <span class="op">=</span> load_cases[<span class="st">"0"</span>]</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>problem <span class="op">=</span> <span class="fu">TrussProblem</span>(</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>    <span class="dt">Val</span>{<span class="op">:</span>Linear}, node_points, elements, loads, fixities, mats, crosssecs</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</section>
+<section id="parameter-settings" class="level2">
+<h2 class="anchored" data-anchor-id="parameter-settings">Parameter Settings</h2>
+<div id="6" class="cell" data-execution_count="1">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>xmin <span class="op">=</span> <span class="fl">0.0001</span>   <span class="co"># minimum density</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>p <span class="op">=</span> <span class="fl">1.0</span>         <span class="co"># SIMP penalty exponent</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>V <span class="op">=</span> <span class="fl">0.5</span>         <span class="co"># volume fraction</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>x0 <span class="op">=</span> <span class="fu">fill</span>(<span class="fl">1.0</span>, ncells)  <span class="co"># initial design (all solid)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</section>
+<section id="fea-solver-and-buckling-helpers" class="level2">
+<h2 class="anchored" data-anchor-id="fea-solver-and-buckling-helpers">FEA Solver and Buckling Helpers</h2>
+<div id="8" class="cell" data-execution_count="1">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>solver <span class="op">=</span> <span class="fu">FEASolver</span>(DirectSolver, problem; xmin<span class="op">=</span>xmin)</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>ch <span class="op">=</span> problem.ch</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>comp <span class="op">=</span> TopOpt.<span class="fu">Compliance</span>(solver)</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>dp <span class="op">=</span> TopOpt.<span class="fu">Displacement</span>(solver)</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>assemble_k <span class="op">=</span> TopOpt.<span class="fu">AssembleK</span>(problem)</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>element_k <span class="op">=</span> <span class="fu">ElementK</span>(solver)</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>truss_element_kσ <span class="op">=</span> <span class="fu">TrussElementKσ</span>(problem, solver)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>Five differentiable building blocks: 1. <strong>Compliance</strong> — objective to minimize 2. <strong>Displacement</strong> — solves <code>K·u = f</code> for displacements 3. <strong>ElementK</strong> — per-element stiffness matrices 4. <strong>AssembleK</strong> — assembles global sparse matrix 5. <strong>TrussElementKσ</strong> — geometric (stress) stiffness matrices</p>
+</section>
+<section id="buckling-constraint-function" class="level2">
+<h2 class="anchored" data-anchor-id="buckling-constraint-function">Buckling Constraint Function</h2>
+<div id="10" class="cell" data-execution_count="1">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>c <span class="op">=</span> <span class="fl">0.0001</span>  <span class="co"># buckling load multiplier (below critical load)</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="kw">function</span> <span class="fu">buckling_matrix_constr</span>(x)</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>    xd <span class="op">=</span> <span class="fu">PseudoDensities</span>(x)</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>    u <span class="op">=</span> <span class="fu">dp</span>(xd)</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>    Kes <span class="op">=</span> <span class="fu">element_k</span>(xd)</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>    K <span class="op">=</span> <span class="fu">assemble_k</span>(Kes)</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>    K <span class="op">=</span> <span class="fu">apply_boundary_with_meandiag!</span>(K, ch)</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>    Kσs <span class="op">=</span> <span class="fu">truss_element_kσ</span>(u, xd)</span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>    Kσ <span class="op">=</span> <span class="fu">assemble_k</span>(Kσs)</span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>    Kσ <span class="op">=</span> <span class="fu">apply_boundary_with_zerodiag!</span>(Kσ, ch)</span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="fu">Array</span>(K <span class="op">+</span> c <span class="op">*</span> Kσ)</span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a><span class="kw">end</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>The constraint returns the combined matrix <code>K + c·Kσ</code> which must be PSD (all eigenvalues ≥ 0).</p>
+</section>
+<section id="check-initial-design" class="level2">
+<h2 class="anchored" data-anchor-id="check-initial-design">Check Initial Design</h2>
+<div id="12" class="cell" data-execution_count="1">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>S0 <span class="op">=</span> <span class="fu">buckling_matrix_constr</span>(x0)</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="fu">println</span>(<span class="st">"Initial design minimum eigenvalue: </span><span class="sc">$</span>(<span class="fu">minimum</span>(<span class="fu">eigen</span>(S0).values))<span class="st">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Initial design minimum eigenvalue: 0.00045596061885728594</code></pre>
+</div>
+</div>
+<p>The initial all-solid design should have positive eigenvalues (stable).</p>
+</section>
+<section id="volume-constraint" class="level2">
+<h2 class="anchored" data-anchor-id="volume-constraint">Volume Constraint</h2>
+<div id="14" class="cell" data-execution_count="1">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">vol_constr</span>(x) <span class="op">=</span> <span class="fu">sum</span>(x) <span class="op">/</span> <span class="fu">length</span>(x) <span class="op">-</span> V</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</section>
+<section id="compliance-only-optimization-baseline" class="level2">
+<h2 class="anchored" data-anchor-id="compliance-only-optimization-baseline">Compliance-Only Optimization (Baseline)</h2>
+<div id="16" class="cell" data-execution_count="1">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb9"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>obj <span class="op">=</span> x <span class="op">-&gt;</span> <span class="fu">comp</span>(<span class="fu">PseudoDensities</span>(x))</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>model <span class="op">=</span> <span class="fu">Model</span>(obj)</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="fu">addvar!</span>(model, <span class="fu">zeros</span>(<span class="fu">length</span>(x0)), <span class="fu">ones</span>(<span class="fu">length</span>(x0)))</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a><span class="fu">add_ineq_constraint!</span>(model, vol_constr)</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>alg <span class="op">=</span> <span class="fu">MMA87</span>()</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>options <span class="op">=</span> <span class="fu">MMAOptions</span>(; maxiter<span class="op">=</span><span class="fl">20</span>, tol<span class="op">=</span><span class="fu">Tolerance</span>(; kkt<span class="op">=</span><span class="fl">1e-4</span>))</span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>r1 <span class="op">=</span> <span class="fu">optimize</span>(model, alg, x0; options<span class="op">=</span>options)</span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a><span class="fu">println</span>(<span class="st">"Compliance-only result:"</span>)</span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a><span class="fu">println</span>(<span class="st">"  obj = </span><span class="sc">$</span>(<span class="fu">obj</span>(r1.minimizer))<span class="st">"</span>)</span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a><span class="fu">println</span>(<span class="st">"  vol = </span><span class="sc">$</span>(<span class="fu">vol_constr</span>(r1.minimizer))<span class="st">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<div class="ansi-escaped-output">
+<pre><span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>  iter       obj      Δobj  violation  kkt_residual  
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>     0   4.3e+00       Inf   5.0e-01   5.0e-01
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>     1   7.8e+00   3.5e+00   5.0e-02   4.3e+32
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>     2   7.5e+00   3.8e-01   0.0e+00   6.5e-01
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>     3   6.3e+00   1.2e+00   0.0e+00   3.0e-01
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>     4   5.4e+00   8.8e-01   0.0e+00   9.6e-01
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>     5   4.9e+00   4.8e-01   0.0e+00   1.5e-01
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>     6   4.9e+00   5.3e-03   0.0e+00   4.8e-02
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>     7   4.9e+00   5.8e-04   0.0e+00   9.4e-01
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>     8   4.9e+00   1.2e-02   0.0e+00   7.8e-02
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>     9   4.9e+00   9.3e-03   0.0e+00   9.6e-01
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>    10   4.9e+00   1.3e-04   0.0e+00   5.6e-01
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>    11   4.9e+00   1.6e-02   0.0e+00   3.7e-01
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>    12   4.9e+00   4.9e-03   0.0e+00   3.7e-01
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>    13   4.9e+00   1.2e-02   0.0e+00   2.4e-01
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>    14   4.9e+00   1.2e-02   0.0e+00   2.7e-01
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>    15   4.9e+00   5.6e-03   0.0e+00   3.7e-02
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>    16   4.9e+00   5.5e-03   0.0e+00   1.8e-01
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>    17   4.9e+00   1.3e-03   0.0e+00   3.2e-02
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>    18   4.9e+00   5.7e-04   0.0e+00   5.7e-01
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>    19   4.9e+00   7.4e-04   0.0e+00   3.7e-02
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>    20   4.9e+00   6.1e-04   0.0e+00   5.2e-01
+Compliance-only result:
+  obj = 4.873294163994937
+  vol = -0.00018838189008052453
+</pre>
+</div>
+</div>
+</div>
+<p>This baseline ignores buckling — the result may be unstable.</p>
+</section>
+<section id="add-buckling-sdp-constraint" class="level2">
+<h2 class="anchored" data-anchor-id="add-buckling-sdp-constraint">Add Buckling SDP Constraint</h2>
+<div id="18" class="cell" data-execution_count="1">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb10"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Add semidefinite constraint: K + c·Kσ ≽ 0</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="fu">add_sd_constraint!</span>(model, buckling_matrix_constr)</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>alg2 <span class="op">=</span> <span class="fu">SDPBarrierAlg</span>(; sub_alg<span class="op">=</span><span class="fu">IpoptAlg</span>())</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>options2 <span class="op">=</span> <span class="fu">SDPBarrierOptions</span>(; </span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>    sub_options<span class="op">=</span><span class="fu">IpoptOptions</span>(; max_iter<span class="op">=</span><span class="fl">20</span>),</span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>    keep_all<span class="op">=</span><span class="cn">true</span></span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>r2 <span class="op">=</span> <span class="fu">optimize</span>(model, alg2, x0; options<span class="op">=</span>options2)</span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a><span class="fu">println</span>(<span class="st">"Buckling-constrained result:"</span>)</span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a><span class="fu">println</span>(<span class="st">"  obj = </span><span class="sc">$</span>(<span class="fu">obj</span>(r2.minimizer))<span class="st">"</span>)</span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a><span class="fu">println</span>(<span class="st">"  vol = </span><span class="sc">$</span>(<span class="fu">vol_constr</span>(r2.minimizer))<span class="st">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+******************************************************************************
+This program contains Ipopt, a library for large-scale nonlinear optimization.
+ Ipopt is released as open source code under the Eclipse Public License (EPL).
+         For more information visit https://github.com/coin-or/Ipopt
+******************************************************************************
+
+This is Ipopt version 3.14.19, running with linear solver MUMPS 5.9.0.
+
+Number of nonzeros in equality constraint Jacobian...:        0
+Number of nonzeros in inequality constraint Jacobian.:       42
+Number of nonzeros in Lagrangian Hessian.............:        0
+
+Total number of variables............................:       42
+                     variables with only lower bounds:        0
+                variables with lower and upper bounds:       42
+                     variables with only upper bounds:        0
+Total number of equality constraints.................:        0
+Total number of inequality constraints...............:        1
+        inequality constraints with only lower bounds:        0
+   inequality constraints with lower and upper bounds:        0
+        inequality constraints with only upper bounds:        1
+
+iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
+   0 -5.2714917e-02 4.90e-01 1.47e+00   0.0 0.00e+00    -  0.00e+00 0.00e+00   0
+   1  1.2992876e+01 2.31e-01 2.28e+01  -0.3 4.84e-01    -  1.00e+00 5.37e-01f  1
+   2  2.9370657e+01 0.00e+00 4.60e-01  -0.5 3.26e-01    -  1.00e+00 1.00e+00h  1
+   3  2.8465135e+01 0.00e+00 9.28e-02  -1.5 7.45e-02    -  9.63e-01 1.00e+00f  1
+   4  2.8322374e+01 0.00e+00 2.55e-02  -2.8 3.58e-02    -  1.00e+00 1.00e+00f  1
+   5  2.8319946e+01 0.00e+00 5.68e-03  -4.4 1.32e-02    -  9.98e-01 1.00e+00f  1
+   6  2.8319894e+01 0.00e+00 7.15e-04  -6.0 2.22e-03    -  1.00e+00 1.00e+00f  1
+   7  2.8319893e+01 0.00e+00 4.01e-04  -8.0 2.19e-04    -  1.00e+00 1.00e+00f  1
+   8  2.8319893e+01 0.00e+00 7.65e-06 -11.0 7.46e-05    -  1.00e+00 1.00e+00f  1
+   9  2.8319893e+01 0.00e+00 1.65e-06 -11.0 1.50e-06    -  1.00e+00 1.00e+00h  1
+iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
+  10  2.8319893e+01 0.00e+00 1.82e-07 -11.0 4.28e-07    -  1.00e+00 1.00e+00h  1
+  11  2.8319893e+01 0.00e+00 6.34e-08 -11.0 4.71e-08    -  1.00e+00 1.00e+00H  1
+  12  2.8319893e+01 0.00e+00 3.94e-09 -11.0 1.23e-08    -  1.00e+00 1.00e+00h  1
+
+Number of Iterations....: 12
+
+                                   (scaled)                 (unscaled)
+Objective...............:   2.8319893128901576e+01    2.8319893128901576e+01
+Dual infeasibility......:   3.9359256631129567e-09    3.9359256631129567e-09
+Constraint violation....:   0.0000000000000000e+00    0.0000000000000000e+00
+Variable bound violation:   0.0000000000000000e+00    0.0000000000000000e+00
+Complementarity.........:   1.0000000000004618e-11    1.0000000000004618e-11
+Overall NLP error.......:   3.9359256631129567e-09    3.9359256631129567e-09
+
+
+Number of objective function evaluations             = 14
+Number of objective gradient evaluations             = 13
+Number of equality constraint evaluations            = 0
+Number of inequality constraint evaluations          = 14
+Number of equality constraint Jacobian evaluations   = 0
+Number of inequality constraint Jacobian evaluations = 13
+Number of Lagrangian Hessian evaluations             = 0
+Total seconds in IPOPT                               = 8.339
+
+EXIT: Optimal Solution Found.
+This is Ipopt version 3.14.19, running with linear solver MUMPS 5.9.0.
+
+Number of nonzeros in equality constraint Jacobian...:        0
+Number of nonzeros in inequality constraint Jacobian.:       42
+Number of nonzeros in Lagrangian Hessian.............:        0
+
+Total number of variables............................:       42
+                     variables with only lower bounds:        0
+                variables with lower and upper bounds:       42
+                     variables with only upper bounds:        0
+Total number of equality constraints.................:        0
+Total number of inequality constraints...............:        1
+        inequality constraints with only lower bounds:        0
+   inequality constraints with lower and upper bounds:        0
+        inequality constraints with only upper bounds:        1
+
+iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
+   0  8.9972592e+00 0.00e+00 7.01e-01   0.0 0.00e+00    -  0.00e+00 0.00e+00   0
+   1  8.8212480e+00 7.62e-03 7.46e+00  -1.2 6.13e-02    -  9.99e-01 2.28e-01h  1
+   2  8.5311502e+00 0.00e+00 9.37e-02  -1.9 8.50e-02    -  1.00e+00 1.00e+00f  1
+   3  8.1287558e+00 0.00e+00 9.52e-02  -2.6 1.38e-01    -  9.95e-01 1.00e+00f  1
+   4  8.1015751e+00 0.00e+00 2.91e-02  -3.8 6.74e-02    -  1.00e+00 8.95e-01f  1
+   5  8.0987524e+00 0.00e+00 1.58e-02  -4.3 1.78e-02    -  1.00e+00 1.00e+00f  1
+   6  8.0976192e+00 0.00e+00 4.27e-03  -5.3 8.90e-03    -  1.00e+00 1.00e+00f  1
+   7  8.0974702e+00 0.00e+00 1.22e-03  -7.1 1.79e-03    -  1.00e+00 9.84e-01f  1
+   8  8.0974684e+00 0.00e+00 2.84e-04  -9.2 7.53e-04    -  1.00e+00 9.96e-01f  1
+   9  8.0974683e+00 0.00e+00 2.02e-05 -11.0 1.32e-04    -  1.00e+00 1.00e+00f  1
+iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
+  10  8.0974683e+00 0.00e+00 1.07e-05 -11.0 1.15e-05    -  1.00e+00 1.00e+00h  1
+  11  8.0974683e+00 0.00e+00 8.06e-06 -11.0 1.72e-05    -  1.00e+00 1.00e+00h  1
+  12  8.0974683e+00 0.00e+00 4.45e-06 -11.0 6.13e-06    -  1.00e+00 1.00e+00h  1
+  13  8.0974683e+00 0.00e+00 7.45e-08 -11.0 2.13e-06    -  1.00e+00 1.00e+00h  1
+  14  8.0974683e+00 0.00e+00 2.31e-08 -11.0 4.24e-08    -  1.00e+00 1.00e+00h  1
+  15  8.0974683e+00 0.00e+00 8.32e-09 -11.0 1.54e-08    -  1.00e+00 1.00e+00h  1
+
+Number of Iterations....: 15
+
+                                   (scaled)                 (unscaled)
+Objective...............:   8.0974683158140817e+00    8.0974683158140817e+00
+Dual infeasibility......:   8.3221860277212010e-09    8.3221860277212010e-09
+Constraint violation....:   0.0000000000000000e+00    0.0000000000000000e+00
+Variable bound violation:   9.7904835349993391e-09    9.7904835349993391e-09
+Complementarity.........:   1.0000002146920556e-11    1.0000002146920556e-11
+Overall NLP error.......:   8.3221860277212010e-09    8.3221860277212010e-09
+
+
+Number of objective function evaluations             = 16
+Number of objective gradient evaluations             = 16
+Number of equality constraint evaluations            = 0
+Number of inequality constraint evaluations          = 16
+Number of equality constraint Jacobian evaluations   = 0
+Number of inequality constraint Jacobian evaluations = 16
+Number of Lagrangian Hessian evaluations             = 0
+Total seconds in IPOPT                               = 0.026
+
+EXIT: Optimal Solution Found.
+This is Ipopt version 3.14.19, running with linear solver MUMPS 5.9.0.
+
+Number of nonzeros in equality constraint Jacobian...:        0
+Number of nonzeros in inequality constraint Jacobian.:       42
+Number of nonzeros in Lagrangian Hessian.............:        0
+
+Total number of variables............................:       42
+                     variables with only lower bounds:        0
+                variables with lower and upper bounds:       42
+                     variables with only upper bounds:        0
+Total number of equality constraints.................:        0
+Total number of inequality constraints...............:        1
+        inequality constraints with only lower bounds:        0
+   inequality constraints with lower and upper bounds:        0
+        inequality constraints with only upper bounds:        1
+
+iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
+   0  5.6600126e+00 0.00e+00 3.46e-01   0.0 0.00e+00    -  0.00e+00 0.00e+00   0
+   1  5.6241802e+00 4.30e-03 1.08e+00  -1.8 1.84e-02    -  9.94e-01 5.38e-01h  1
+   2  5.4339081e+00 0.00e+00 2.50e-02  -2.6 6.58e-02    -  1.00e+00 1.00e+00f  1
+   3  5.2524410e+00 0.00e+00 2.70e-02  -3.7 7.49e-02    -  1.00e+00 9.44e-01f  1
+   4  5.2528428e+00 0.00e+00 1.14e-02  -3.6 1.93e-02    -  9.98e-01 1.00e+00f  1
+   5  5.2513137e+00 0.00e+00 1.41e-03  -3.7 8.87e-03    -  1.00e+00 1.00e+00f  1
+   6  5.2473968e+00 0.00e+00 7.44e-04  -5.8 1.52e-03    -  1.00e+00 9.94e-01f  1
+   7  5.2473632e+00 0.00e+00 4.16e-04  -7.2 1.10e-03    -  1.00e+00 1.00e+00f  1
+   8  5.2473619e+00 0.00e+00 1.70e-04  -9.3 3.51e-04    -  1.00e+00 1.00e+00f  1
+   9  5.2473619e+00 0.00e+00 2.42e-06 -11.0 1.07e-04    -  1.00e+00 1.00e+00f  1
+iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
+  10  5.2473619e+00 0.00e+00 3.91e-07 -11.0 2.17e-06    -  1.00e+00 1.00e+00h  1
+  11  5.2473619e+00 0.00e+00 5.55e-08 -11.0 3.94e-07    -  1.00e+00 1.00e+00h  1
+  12  5.2473619e+00 0.00e+00 1.00e-08 -11.0 6.98e-08    -  1.00e+00 1.00e+00h  1
+  13  5.2473619e+00 0.00e+00 2.06e-09 -11.0 1.03e-08    -  1.00e+00 1.00e+00h  1
+
+Number of Iterations....: 13
+
+                                   (scaled)                 (unscaled)
+Objective...............:   5.2473618849886696e+00    5.2473618849886696e+00
+Dual infeasibility......:   2.0589541451405094e-09    2.0589541451405094e-09
+Constraint violation....:   0.0000000000000000e+00    0.0000000000000000e+00
+Variable bound violation:   9.9607109227406454e-09    9.9607109227406454e-09
+Complementarity.........:   1.0000007252671333e-11    1.0000007252671333e-11
+Overall NLP error.......:   2.0589541451405094e-09    2.0589541451405094e-09
+
+
+Number of objective function evaluations             = 14
+Number of objective gradient evaluations             = 14
+Number of equality constraint evaluations            = 0
+Number of inequality constraint evaluations          = 14
+Number of equality constraint Jacobian evaluations   = 0
+Number of inequality constraint Jacobian evaluations = 14
+Number of Lagrangian Hessian evaluations             = 0
+Total seconds in IPOPT                               = 0.021
+
+EXIT: Optimal Solution Found.
+This is Ipopt version 3.14.19, running with linear solver MUMPS 5.9.0.
+
+Number of nonzeros in equality constraint Jacobian...:        0
+Number of nonzeros in inequality constraint Jacobian.:       42
+Number of nonzeros in Lagrangian Hessian.............:        0
+
+Total number of variables............................:       42
+                     variables with only lower bounds:        0
+                variables with lower and upper bounds:       42
+                     variables with only upper bounds:        0
+Total number of equality constraints.................:        0
+Total number of inequality constraints...............:        1
+        inequality constraints with only lower bounds:        0
+   inequality constraints with lower and upper bounds:        0
+        inequality constraints with only upper bounds:        1
+
+iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
+   0  4.9721996e+00 0.00e+00 3.35e-01   0.0 0.00e+00    -  0.00e+00 0.00e+00   0
+   1  5.0036046e+00 0.00e+00 9.36e-03  -2.0 9.29e-03    -  1.00e+00 1.00e+00f  1
+   2  4.9466874e+00 0.00e+00 1.34e-02  -3.3 4.10e-02    -  9.87e-01 8.77e-01f  1
+   3  4.9227972e+00 0.00e+00 1.87e-02  -3.7 5.59e-02    -  9.96e-01 1.00e+00f  1
+   4  4.9199355e+00 0.00e+00 9.10e-03  -4.0 8.16e-02    -  1.00e+00 1.00e+00f  1
+   5  4.9196499e+00 0.00e+00 1.12e-02  -4.1 1.59e-01    -  9.98e-01 2.50e-01f  3
+   6  4.9178923e+00 0.00e+00 5.14e-02  -4.8 4.55e-02    -  1.00e+00 1.00e+00f  1
+   7  4.9186931e+00 0.00e+00 1.70e-02  -4.2 1.78e-02    -  1.00e+00 1.00e+00f  1
+   8  4.9183154e+00 0.00e+00 6.68e-03  -4.3 3.15e-02    -  1.00e+00 1.00e+00f  1
+   9  4.9182912e+00 0.00e+00 6.52e-03  -4.3 1.09e-02    -  1.00e+00 1.00e+00f  1
+iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
+  10  4.9182322e+00 0.00e+00 1.15e-03  -4.3 5.86e-03    -  1.00e+00 1.00e+00f  1
+  11  4.9182304e+00 0.00e+00 8.19e-04  -4.3 2.23e-03    -  1.00e+00 1.00e+00f  1
+  12  4.9182242e+00 0.00e+00 4.95e-04  -4.3 2.22e-03    -  1.00e+00 1.00e+00f  1
+  13  4.9182231e+00 0.00e+00 2.16e-04  -4.3 7.23e-04    -  1.00e+00 5.00e-01f  2
+  14  4.9172605e+00 0.00e+00 1.09e-03  -6.5 7.38e-03    -  9.86e-01 1.00e+00f  1
+  15  4.9172603e+00 0.00e+00 6.30e-04  -6.2 1.40e-02    -  1.00e+00 2.50e-01f  3
+  16  4.9172550e+00 0.00e+00 1.73e-03  -7.6 2.14e-03    -  1.00e+00 1.00e+00f  1
+  17  4.9172520e+00 0.00e+00 1.08e-04  -9.1 1.84e-03    -  1.00e+00 1.00e+00f  1
+  18  4.9172520e+00 0.00e+00 5.64e-05 -11.0 1.21e-04    -  1.00e+00 1.00e+00f  1
+  19  4.9172520e+00 0.00e+00 1.69e-05 -11.0 4.59e-05    -  1.00e+00 1.00e+00h  1
+iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
+  20  4.9172520e+00 0.00e+00 7.64e-06 -11.0 5.33e-05    -  1.00e+00 1.00e+00h  1
+
+Number of Iterations....: 20
+
+                                   (scaled)                 (unscaled)
+Objective...............:   4.9172520068625118e+00    4.9172520068625118e+00
+Dual infeasibility......:   7.6370435682176828e-06    7.6370435682176828e-06
+Constraint violation....:   0.0000000000000000e+00    0.0000000000000000e+00
+Variable bound violation:   9.9676371601020719e-09    9.9676371601020719e-09
+Complementarity.........:   1.0000008370030180e-11    1.0000008370030180e-11
+Overall NLP error.......:   7.6370435682176828e-06    7.6370435682176828e-06
+
+
+Number of objective function evaluations             = 29
+Number of objective gradient evaluations             = 21
+Number of equality constraint evaluations            = 0
+Number of inequality constraint evaluations          = 29
+Number of equality constraint Jacobian evaluations   = 0
+Number of inequality constraint Jacobian evaluations = 21
+Number of Lagrangian Hessian evaluations             = 0
+Total seconds in IPOPT                               = 0.033
+
+EXIT: Maximum Number of Iterations Exceeded.
+This is Ipopt version 3.14.19, running with linear solver MUMPS 5.9.0.
+
+Number of nonzeros in equality constraint Jacobian...:        0
+Number of nonzeros in inequality constraint Jacobian.:       42
+Number of nonzeros in Lagrangian Hessian.............:        0
+
+Total number of variables............................:       42
+                     variables with only lower bounds:        0
+                variables with lower and upper bounds:       42
+                     variables with only upper bounds:        0
+Total number of equality constraints.................:        0
+Total number of inequality constraints...............:        1
+        inequality constraints with only lower bounds:        0
+   inequality constraints with lower and upper bounds:        0
+        inequality constraints with only upper bounds:        1
+
+iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
+   0  4.9290729e+00 0.00e+00 3.34e-01   0.0 0.00e+00    -  0.00e+00 0.00e+00   0
+   1  4.9442591e+00 0.00e+00 6.57e-03  -2.2 6.66e-03    -  9.97e-01 1.00e+00h  1
+   2  4.9007358e+00 0.00e+00 8.37e-03  -3.6 2.14e-02    -  9.93e-01 8.00e-01f  1
+   3  4.8794452e+00 0.00e+00 1.41e-02  -4.7 3.12e-02    -  1.00e+00 9.84e-01f  1
+   4  4.8782769e+00 0.00e+00 2.22e-02  -5.7 4.52e-02    -  1.00e+00 1.00e+00f  1
+   5  4.8840554e+00 0.00e+00 7.16e-01  -3.6 3.25e-01    -  9.95e-01 4.35e-01f  1
+   6  4.8810965e+00 0.00e+00 4.55e-02  -3.8 4.80e-02    -  4.52e-02 1.00e+00f  1
+   7  4.8815400e+00 0.00e+00 2.56e-02  -3.8 5.70e-02    -  4.97e-01 1.00e+00f  1
+   8  4.8815498e+00 0.00e+00 2.34e-02  -3.8 4.07e-02    -  1.00e+00 1.00e+00f  1
+   9  4.8809902e+00 0.00e+00 1.32e-02  -3.8 2.93e-02    -  1.00e+00 1.00e+00f  1
+iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
+  10  4.8807397e+00 0.00e+00 6.39e-03  -3.8 3.36e-02    -  1.00e+00 5.00e-01f  2
+  11  4.8806156e+00 0.00e+00 8.47e-03  -3.8 1.78e-02    -  1.00e+00 5.00e-01f  2
+  12  4.8806130e+00 0.00e+00 6.24e-03  -3.8 4.28e-03    -  1.00e+00 1.00e+00f  1
+  13  4.8805703e+00 0.00e+00 1.70e-03  -3.8 9.95e-03    -  1.00e+00 5.00e-01f  2
+  14  4.8805246e+00 0.00e+00 1.03e-03  -3.8 4.31e-03    -  1.00e+00 1.00e+00f  1
+Warning: Cutting back alpha due to evaluation error
+  15  4.8784797e+00 0.00e+00 1.95e-02  -5.7 1.22e-01    -  8.19e-01 4.97e-01f  2
+Warning: Cutting back alpha due to evaluation error
+  16  4.8780400e+00 0.00e+00 2.37e-02  -5.7 1.17e-01    -  5.76e-01 4.17e-01f  2
+  17  4.8775040e+00 0.00e+00 1.63e-02  -4.6 2.54e-02    -  1.00e+00 5.00e-01f  2
+  18  4.8769241e+00 0.00e+00 8.19e-03  -4.9 8.63e-03    -  1.00e+00 1.00e+00f  1
+  19  4.8767113e+00 0.00e+00 2.97e-02  -5.9 9.90e-03    -  1.00e+00 1.00e+00f  1
+iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
+  20  4.8775757e+00 0.00e+00 5.63e-02  -4.8 1.03e-02    -  1.00e+00 1.00e+00f  1
+
+Number of Iterations....: 20
+
+                                   (scaled)                 (unscaled)
+Objective...............:   4.8775756526400533e+00    4.8775756526400533e+00
+Dual infeasibility......:   5.6343159553570402e-02    5.6343159553570402e-02
+Constraint violation....:   0.0000000000000000e+00    0.0000000000000000e+00
+Variable bound violation:   0.0000000000000000e+00    0.0000000000000000e+00
+Complementarity.........:   2.0266811208627156e-05    2.0266811208627156e-05
+Overall NLP error.......:   5.6343159553570402e-02    5.6343159553570402e-02
+
+
+Number of objective function evaluations             = 31
+Number of objective gradient evaluations             = 21
+Number of equality constraint evaluations            = 0
+Number of inequality constraint evaluations          = 31
+Number of equality constraint Jacobian evaluations   = 0
+Number of inequality constraint Jacobian evaluations = 21
+Number of Lagrangian Hessian evaluations             = 0
+Total seconds in IPOPT                               = 0.033
+
+EXIT: Maximum Number of Iterations Exceeded.
+This is Ipopt version 3.14.19, running with linear solver MUMPS 5.9.0.
+
+Number of nonzeros in equality constraint Jacobian...:        0
+Number of nonzeros in inequality constraint Jacobian.:       42
+Number of nonzeros in Lagrangian Hessian.............:        0
+
+Total number of variables............................:       42
+                     variables with only lower bounds:        0
+                variables with lower and upper bounds:       42
+                     variables with only upper bounds:        0
+Total number of equality constraints.................:        0
+Total number of inequality constraints...............:        1
+        inequality constraints with only lower bounds:        0
+   inequality constraints with lower and upper bounds:        0
+        inequality constraints with only upper bounds:        1
+
+iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
+   0  4.9205951e+00 0.00e+00 3.34e-01   0.0 0.00e+00    -  0.00e+00 0.00e+00   0
+   1  4.9813938e+00 0.00e+00 2.77e-02  -1.8 1.67e-02    -  1.00e+00 1.00e+00f  1
+   2  4.9008816e+00 0.00e+00 4.96e-02  -3.3 4.91e-02    -  9.13e-01 1.00e+00f  1
+   3  4.8750012e+00 0.00e+00 1.78e-02  -3.9 2.22e-02    -  9.98e-01 1.00e+00f  1
+   4  4.8787105e+00 0.00e+00 3.58e-02  -3.6 3.97e-02    -  1.00e+00 1.00e+00f  1
+   5  4.8767871e+00 0.00e+00 1.06e-02  -3.7 1.82e-02    -  1.00e+00 1.00e+00f  1
+   6  4.8767190e+00 0.00e+00 8.03e-03  -3.7 7.55e-03    -  1.00e+00 1.00e+00f  1
+   7  4.8767297e+00 0.00e+00 1.84e-03  -3.7 4.77e-03    -  1.00e+00 1.00e+00f  1
+   8  4.8724927e+00 0.00e+00 5.72e-03  -5.6 2.53e-02    -  9.68e-01 9.90e-01f  1
+   9  4.8720280e+00 0.00e+00 2.39e-02  -5.6 2.01e-01    -  1.00e+00 3.06e-01f  2
+iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
+  10  4.8716897e+00 0.00e+00 2.18e-02  -5.8 3.13e-01    -  1.00e+00 1.28e-01f  2
+  11  4.8713673e+00 0.00e+00 2.51e-02  -6.7 1.38e-01    -  1.00e+00 1.95e-01f  2
+  12  4.8719696e+00 0.00e+00 5.95e-02  -4.3 3.39e-02    -  9.99e-01 2.94e-01f  2
+  13  4.8721991e+00 0.00e+00 1.18e-02  -4.5 2.56e-02    -  6.70e-01 1.00e+00f  1
+  14  4.8721556e+00 0.00e+00 7.66e-03  -4.5 9.62e-03    -  1.00e+00 2.50e-01f  3
+  15  4.8720862e+00 0.00e+00 7.45e-03  -4.5 9.01e-03    -  1.00e+00 1.00e+00f  1
+  16  4.8720790e+00 0.00e+00 5.66e-03  -4.5 4.91e-03    -  1.00e+00 2.50e-01f  3
+  17  4.8720849e+00 0.00e+00 1.57e-03  -4.5 2.39e-03    -  1.00e+00 1.00e+00f  1
+  18  4.8720670e+00 0.00e+00 2.88e-03  -4.5 2.80e-03    -  1.00e+00 1.00e+00f  1
+  19  4.8720476e+00 0.00e+00 2.49e-03  -4.5 2.97e-03    -  1.00e+00 1.00e+00f  1
+iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
+  20  4.8720518e+00 0.00e+00 2.09e-03  -4.5 3.64e-03    -  1.00e+00 2.50e-01f  3
+
+Number of Iterations....: 20
+
+                                   (scaled)                 (unscaled)
+Objective...............:   4.8720518302777647e+00    4.8720518302777647e+00
+Dual infeasibility......:   2.0927725140434234e-03    2.0927725140434234e-03
+Constraint violation....:   0.0000000000000000e+00    0.0000000000000000e+00
+Variable bound violation:   0.0000000000000000e+00    0.0000000000000000e+00
+Complementarity.........:   3.3998890237535696e-05    3.3998890237535696e-05
+Overall NLP error.......:   2.0927725140434234e-03    2.0927725140434234e-03
+
+
+Number of objective function evaluations             = 38
+Number of objective gradient evaluations             = 21
+Number of equality constraint evaluations            = 0
+Number of inequality constraint evaluations          = 38
+Number of equality constraint Jacobian evaluations   = 0
+Number of inequality constraint Jacobian evaluations = 21
+Number of Lagrangian Hessian evaluations             = 0
+Total seconds in IPOPT                               = 0.075
+
+EXIT: Maximum Number of Iterations Exceeded.
+This is Ipopt version 3.14.19, running with linear solver MUMPS 5.9.0.
+
+Number of nonzeros in equality constraint Jacobian...:        0
+Number of nonzeros in inequality constraint Jacobian.:       42
+Number of nonzeros in Lagrangian Hessian.............:        0
+
+Total number of variables............................:       42
+                     variables with only lower bounds:        0
+                variables with lower and upper bounds:       42
+                     variables with only upper bounds:        0
+Total number of equality constraints.................:        0
+Total number of inequality constraints...............:        1
+        inequality constraints with only lower bounds:        0
+   inequality constraints with lower and upper bounds:        0
+        inequality constraints with only upper bounds:        1
+
+iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
+   0  4.9190273e+00 0.00e+00 3.34e-01   0.0 0.00e+00    -  0.00e+00 0.00e+00   0
+   1  4.9344405e+00 0.00e+00 9.61e-03  -2.2 7.10e-03    -  9.97e-01 1.00e+00f  1
+   2  4.8923501e+00 0.00e+00 3.29e-02  -3.8 2.61e-02    -  9.46e-01 7.76e-01f  1
+   3  4.8720698e+00 0.00e+00 1.09e-02  -4.4 1.94e-02    -  1.00e+00 1.00e+00f  1
+   4  4.8715171e+00 0.00e+00 1.32e-02  -4.7 6.47e-03    -  1.00e+00 1.00e+00f  1
+   5  4.8710332e+00 0.00e+00 5.01e-03  -5.6 3.29e-03    -  1.00e+00 1.00e+00f  1
+Warning: Cutting back alpha due to evaluation error
+   6  4.8709683e+00 0.00e+00 5.82e-03  -7.2 6.32e-03    -  1.00e+00 4.40e-01f  2
+   7  4.8709616e+00 0.00e+00 5.01e-02  -8.4 4.06e-02    -  1.00e+00 9.76e-01f  1
+Warning: Cutting back alpha due to evaluation error
+   8  4.8709363e+00 0.00e+00 4.61e-02  -7.8 1.44e-01    -  1.00e+00 1.24e-02f  2
+   9  4.8708636e+00 0.00e+00 8.16e-02  -6.2 6.71e-02    -  1.00e+00 1.03e-01f  2
+iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
+  10  4.8706866e+00 0.00e+00 4.32e-02  -5.8 1.49e-02    -  1.00e+00 2.22e-01f  2
+  11  4.8707595e+00 0.00e+00 2.25e-02  -5.3 6.71e-03    -  1.00e+00 1.00e+00f  1
+  12  4.8706528e+00 0.00e+00 1.28e-02  -5.4 5.89e-03    -  1.00e+00 1.00e+00f  1
+  13  4.8705990e+00 0.00e+00 2.92e-02 -11.0 5.75e-02    -  8.65e-01 1.77e-01f  2
+  14  4.8705958e+00 0.00e+00 7.89e-02 -11.0 6.78e-02    -  4.97e-01 9.37e-02f  1
+  15  4.8705593e+00 0.00e+00 6.82e-02  -6.4 2.90e-02    -  1.00e+00 2.07e-01f  2
+  16  4.8706314e+00 0.00e+00 5.89e-02  -5.0 1.34e-02    -  3.20e-01 3.13e-01f  2
+  17  4.8705533e+00 0.00e+00 1.77e-02  -5.5 4.25e-03    -  7.58e-01 1.00e+00f  1
+Warning: Cutting back alpha due to evaluation error
+  18  4.8704927e+00 0.00e+00 1.48e-02  -7.0 7.31e-03    -  1.00e+00 5.00e-01f  2
+  19  4.8704571e+00 0.00e+00 1.46e-02  -7.9 1.46e-01    -  1.00e+00 5.78e-02f  2
+iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
+  20  4.8704576e+00 0.00e+00 2.91e-02  -5.8 1.84e-02    -  4.58e-01 1.20e-01f  3
+
+Number of Iterations....: 20
+
+                                   (scaled)                 (unscaled)
+Objective...............:   4.8704576020441452e+00    4.8704576020441452e+00
+Dual infeasibility......:   2.9089807204140204e-02    2.9089807204140204e-02
+Constraint violation....:   0.0000000000000000e+00    0.0000000000000000e+00
+Variable bound violation:   0.0000000000000000e+00    0.0000000000000000e+00
+Complementarity.........:   5.3997265789714551e-06    5.3997265789714551e-06
+Overall NLP error.......:   2.9089807204140204e-02    2.9089807204140204e-02
+
+
+Number of objective function evaluations             = 36
+Number of objective gradient evaluations             = 21
+Number of equality constraint evaluations            = 0
+Number of inequality constraint evaluations          = 36
+Number of equality constraint Jacobian evaluations   = 0
+Number of inequality constraint Jacobian evaluations = 21
+Number of Lagrangian Hessian evaluations             = 0
+Total seconds in IPOPT                               = 0.034
+
+EXIT: Maximum Number of Iterations Exceeded.
+This is Ipopt version 3.14.19, running with linear solver MUMPS 5.9.0.
+
+Number of nonzeros in equality constraint Jacobian...:        0
+Number of nonzeros in inequality constraint Jacobian.:       42
+Number of nonzeros in Lagrangian Hessian.............:        0
+
+Total number of variables............................:       42
+                     variables with only lower bounds:        0
+                variables with lower and upper bounds:       42
+                     variables with only upper bounds:        0
+Total number of equality constraints.................:        0
+Total number of inequality constraints...............:        1
+        inequality constraints with only lower bounds:        0
+   inequality constraints with lower and upper bounds:        0
+        inequality constraints with only upper bounds:        1
+
+iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
+   0  4.9139349e+00 0.00e+00 3.34e-01   0.0 0.00e+00    -  0.00e+00 0.00e+00   0
+   1  4.9296916e+00 3.94e-05 8.03e-03  -2.2 1.01e-02    -  1.00e+00 9.85e-01h  1
+   2  4.8782854e+00 0.00e+00 2.85e-02  -4.3 6.71e-02    -  8.60e-01 1.00e+00f  1
+   3  4.8724935e+00 0.00e+00 4.32e-02  -4.1 1.30e-02    -  1.00e+00 1.00e+00f  1
+   4  4.8714766e+00 0.00e+00 1.25e-02  -4.5 7.42e-03    -  1.00e+00 1.00e+00f  1
+   5  4.8706336e+00 0.00e+00 6.80e-03  -5.7 2.00e-02    -  1.00e+00 1.00e+00f  1
+   6  4.8704682e+00 0.00e+00 1.12e-02  -6.6 2.28e-01    -  1.00e+00 1.23e-01f  2
+   7  4.8706914e+00 0.00e+00 6.54e-02  -4.8 9.04e-03    -  1.00e+00 3.89e-01f  2
+   8  4.8706420e+00 0.00e+00 5.76e-03  -5.0 3.38e-03    -  8.21e-01 1.00e+00f  1
+   9  4.8706420e+00 0.00e+00 3.72e-03  -5.0 9.59e-04    -  1.00e+00 1.00e+00f  1
+iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
+  10  4.8706355e+00 0.00e+00 1.31e-03  -5.0 1.06e-03    -  1.00e+00 1.00e+00f  1
+  11  4.8706300e+00 0.00e+00 2.09e-03  -5.0 1.32e-03    -  1.00e+00 1.00e+00f  1
+  12  4.8706258e+00 0.00e+00 3.26e-03  -5.0 1.40e-02    -  1.00e+00 2.50e-01f  3
+  13  4.8706237e+00 0.00e+00 3.45e-03  -5.0 1.16e-02    -  1.00e+00 1.25e-01f  4
+  14  4.8706189e+00 0.00e+00 1.42e-03  -5.0 1.72e-03    -  1.00e+00 1.00e+00f  1
+  15  4.8706177e+00 0.00e+00 1.80e-03  -5.0 1.99e-03    -  1.00e+00 2.50e-01f  3
+  16  4.8706157e+00 0.00e+00 3.11e-04  -5.0 5.53e-04    -  1.00e+00 1.00e+00f  1
+  17  4.8706125e+00 0.00e+00 5.25e-04  -5.0 9.69e-04    -  1.00e+00 1.00e+00f  1
+  18  4.8706123e+00 0.00e+00 8.05e-04  -5.0 5.72e-04    -  1.00e+00 1.25e-01f  4
+  19  4.8706128e+00 0.00e+00 9.01e-05  -5.0 2.26e-04    -  1.00e+00 1.00e+00f  1
+Warning: Cutting back alpha due to evaluation error
+iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
+  20  4.8704511e+00 0.00e+00 6.57e-03  -7.5 3.73e-02    -  9.54e-01 4.82e-01f  2
+
+Number of Iterations....: 20
+
+                                   (scaled)                 (unscaled)
+Objective...............:   4.8704511297716433e+00    4.8704511297716433e+00
+Dual infeasibility......:   6.5684852961910246e-03    6.5684852961910246e-03
+Constraint violation....:   0.0000000000000000e+00    0.0000000000000000e+00
+Variable bound violation:   0.0000000000000000e+00    0.0000000000000000e+00
+Complementarity.........:   5.2237896331444207e-06    5.2237896331444207e-06
+Overall NLP error.......:   6.5684852961910246e-03    6.5684852961910246e-03
+
+
+Number of objective function evaluations             = 41
+Number of objective gradient evaluations             = 21
+Number of equality constraint evaluations            = 0
+Number of inequality constraint evaluations          = 41
+Number of equality constraint Jacobian evaluations   = 0
+Number of inequality constraint Jacobian evaluations = 21
+Number of Lagrangian Hessian evaluations             = 0
+Total seconds in IPOPT                               = 0.034
+
+EXIT: Maximum Number of Iterations Exceeded.
+This is Ipopt version 3.14.19, running with linear solver MUMPS 5.9.0.
+
+Number of nonzeros in equality constraint Jacobian...:        0
+Number of nonzeros in inequality constraint Jacobian.:       42
+Number of nonzeros in Lagrangian Hessian.............:        0
+
+Total number of variables............................:       42
+                     variables with only lower bounds:        0
+                variables with lower and upper bounds:       42
+                     variables with only upper bounds:        0
+Total number of equality constraints.................:        0
+Total number of inequality constraints...............:        1
+        inequality constraints with only lower bounds:        0
+   inequality constraints with lower and upper bounds:        0
+        inequality constraints with only upper bounds:        1
+
+iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
+   0  4.9144668e+00 0.00e+00 3.34e-01   0.0 0.00e+00    -  0.00e+00 0.00e+00   0
+   1  4.9304024e+00 0.00e+00 6.52e-03  -2.2 9.73e-03    -  1.00e+00 1.00e+00f  1
+   2  4.8798908e+00 0.00e+00 2.86e-02  -4.3 4.76e-02    -  8.44e-01 9.71e-01f  1
+   3  4.8720182e+00 0.00e+00 3.45e-02  -4.2 1.44e-02    -  1.00e+00 1.00e+00f  1
+   4  4.8713127e+00 0.00e+00 1.23e-02  -4.6 7.32e-03    -  1.00e+00 1.00e+00f  1
+   5  4.8706552e+00 0.00e+00 6.50e-03  -6.1 9.61e-03    -  1.00e+00 9.99e-01f  1
+   6  4.8704718e+00 0.00e+00 1.06e-02  -6.7 2.98e-01    -  1.00e+00 8.75e-02f  2
+   7  4.8705563e+00 0.00e+00 4.34e-02  -5.0 6.18e-02    -  1.00e+00 1.70e-01f  2
+   8  4.8705510e+00 0.00e+00 1.71e-02  -5.2 2.76e-03    -  8.73e-01 1.00e+00f  1
+   9  4.8705248e+00 0.00e+00 7.50e-03  -5.2 1.74e-03    -  1.00e+00 1.00e+00f  1
+iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
+  10  4.8705107e+00 0.00e+00 2.16e-03  -5.2 1.97e-03    -  1.00e+00 1.00e+00f  1
+  11  4.8705084e+00 0.00e+00 2.28e-03  -5.2 3.96e-03    -  1.00e+00 1.25e-01f  4
+  12  4.8705017e+00 0.00e+00 2.38e-03  -5.2 2.92e-03    -  1.00e+00 5.00e-01f  2
+  13  4.8705002e+00 0.00e+00 1.40e-03  -5.2 2.40e-03    -  1.00e+00 1.25e-01f  4
+  14  4.8704987e+00 0.00e+00 1.86e-03  -5.2 6.96e-04    -  1.00e+00 5.00e-01f  2
+  15  4.8704970e+00 0.00e+00 1.06e-03  -5.2 6.88e-04    -  1.00e+00 5.00e-01f  2
+  16  4.8704971e+00 0.00e+00 7.11e-04  -5.2 1.42e-04    -  1.00e+00 5.00e-01f  2
+  17  4.8704966e+00 0.00e+00 3.73e-04  -5.2 1.15e-04    -  1.00e+00 1.00e+00f  1
+  18  4.8704966e+00 0.00e+00 5.19e-04  -5.2 6.68e-05    -  1.00e+00 1.00e+00f  1
+  19  4.8704967e+00 0.00e+00 5.30e-04  -5.2 1.84e-04    -  1.00e+00 1.00e+00f  1
+iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
+  20  4.8704967e+00 0.00e+00 4.66e-04  -5.2 1.53e-04    -  1.00e+00 2.50e-01f  3
+
+Number of Iterations....: 20
+
+                                   (scaled)                 (unscaled)
+Objective...............:   4.8704967427784398e+00    4.8704967427784398e+00
+Dual infeasibility......:   4.6551407592956015e-04    4.6551407592956015e-04
+Constraint violation....:   0.0000000000000000e+00    0.0000000000000000e+00
+Variable bound violation:   0.0000000000000000e+00    0.0000000000000000e+00
+Complementarity.........:   7.0925589687431663e-06    7.0925589687431663e-06
+Overall NLP error.......:   4.6551407592956015e-04    4.6551407592956015e-04
+
+
+Number of objective function evaluations             = 39
+Number of objective gradient evaluations             = 21
+Number of equality constraint evaluations            = 0
+Number of inequality constraint evaluations          = 39
+Number of equality constraint Jacobian evaluations   = 0
+Number of inequality constraint Jacobian evaluations = 21
+Number of Lagrangian Hessian evaluations             = 0
+Total seconds in IPOPT                               = 0.033
+
+EXIT: Maximum Number of Iterations Exceeded.
+This is Ipopt version 3.14.19, running with linear solver MUMPS 5.9.0.
+
+Number of nonzeros in equality constraint Jacobian...:        0
+Number of nonzeros in inequality constraint Jacobian.:       42
+Number of nonzeros in Lagrangian Hessian.............:        0
+
+Total number of variables............................:       42
+                     variables with only lower bounds:        0
+                variables with lower and upper bounds:       42
+                     variables with only upper bounds:        0
+Total number of equality constraints.................:        0
+Total number of inequality constraints...............:        1
+        inequality constraints with only lower bounds:        0
+   inequality constraints with lower and upper bounds:        0
+        inequality constraints with only upper bounds:        1
+
+iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
+   0  4.9149537e+00 0.00e+00 3.34e-01   0.0 0.00e+00    -  0.00e+00 0.00e+00   0
+   1  4.9308356e+00 0.00e+00 6.53e-03  -2.2 9.43e-03    -  1.00e+00 1.00e+00f  1
+   2  4.8831938e+00 0.00e+00 2.80e-02  -4.3 4.73e-02    -  8.66e-01 9.07e-01f  1
+   3  4.8717006e+00 0.00e+00 3.65e-02  -4.3 1.24e-02    -  1.00e+00 1.00e+00f  1
+   4  4.8711319e+00 0.00e+00 1.25e-02  -4.8 7.44e-03    -  1.00e+00 1.00e+00f  1
+   5  4.8706379e+00 0.00e+00 6.40e-03  -6.3 7.07e-03    -  1.00e+00 1.00e+00f  1
+   6  4.8704947e+00 0.00e+00 2.35e-02  -6.9 2.52e-01    -  1.00e+00 9.43e-02f  2
+   7  4.8707362e+00 0.00e+00 4.85e-02  -4.8 4.09e-02    -  1.00e+00 3.06e-01f  2
+   8  4.8707157e+00 0.00e+00 2.18e-02  -5.0 8.57e-03    -  7.71e-01 1.00e+00f  1
+   9  4.8706904e+00 0.00e+00 9.42e-03  -5.0 5.47e-03    -  1.00e+00 5.00e-01f  2
+iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
+  10  4.8706603e+00 0.00e+00 2.94e-03  -5.0 3.05e-03    -  1.00e+00 1.00e+00f  1
+  11  4.8706433e+00 0.00e+00 4.22e-03  -5.0 3.05e-03    -  1.00e+00 1.00e+00f  1
+  12  4.8706402e+00 0.00e+00 6.54e-03  -5.0 3.11e-03    -  1.00e+00 2.50e-01f  3
+  13  4.8706358e+00 0.00e+00 1.81e-03  -5.0 5.63e-04    -  1.00e+00 1.00e+00f  1
+  14  4.8706357e+00 0.00e+00 7.07e-04  -5.0 1.90e-04    -  1.00e+00 1.00e+00f  1
+  15  4.8706347e+00 0.00e+00 2.11e-04  -5.0 1.84e-04    -  1.00e+00 1.00e+00f  1
+  16  4.8706331e+00 0.00e+00 5.00e-04  -5.0 4.84e-04    -  1.00e+00 1.00e+00f  1
+  17  4.8706330e+00 0.00e+00 1.03e-03  -5.0 3.11e-03    -  1.00e+00 2.50e-01f  3
+  18  4.8706333e+00 0.00e+00 6.59e-04  -5.0 1.75e-03    -  1.00e+00 2.50e-01f  3
+  19  4.8706332e+00 0.00e+00 6.74e-04  -5.0 2.52e-04    -  1.00e+00 5.00e-01f  2
+iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
+  20  4.8706328e+00 0.00e+00 2.21e-04  -5.0 3.03e-04    -  1.00e+00 1.00e+00f  1
+
+Number of Iterations....: 20
+
+                                   (scaled)                 (unscaled)
+Objective...............:   4.8706328262739991e+00    4.8706328262739991e+00
+Dual infeasibility......:   2.2090267078644915e-04    2.2090267078644915e-04
+Constraint violation....:   0.0000000000000000e+00    0.0000000000000000e+00
+Variable bound violation:   0.0000000000000000e+00    0.0000000000000000e+00
+Complementarity.........:   1.0850183601502595e-05    1.0850183601502595e-05
+Overall NLP error.......:   2.2090267078644915e-04    2.2090267078644915e-04
+
+
+Number of objective function evaluations             = 37
+Number of objective gradient evaluations             = 21
+Number of equality constraint evaluations            = 0
+Number of inequality constraint evaluations          = 37
+Number of equality constraint Jacobian evaluations   = 0
+Number of inequality constraint Jacobian evaluations = 21
+Number of Lagrangian Hessian evaluations             = 0
+Total seconds in IPOPT                               = 0.033
+
+EXIT: Maximum Number of Iterations Exceeded.
+This is Ipopt version 3.14.19, running with linear solver MUMPS 5.9.0.
+
+Number of nonzeros in equality constraint Jacobian...:        0
+Number of nonzeros in inequality constraint Jacobian.:       42
+Number of nonzeros in Lagrangian Hessian.............:        0
+
+Total number of variables............................:       42
+                     variables with only lower bounds:        0
+                variables with lower and upper bounds:       42
+                     variables with only upper bounds:        0
+Total number of equality constraints.................:        0
+Total number of inequality constraints...............:        1
+        inequality constraints with only lower bounds:        0
+   inequality constraints with lower and upper bounds:        0
+        inequality constraints with only upper bounds:        1
+
+iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
+   0  4.9160098e+00 0.00e+00 3.34e-01   0.0 0.00e+00    -  0.00e+00 0.00e+00   0
+   1  4.9317707e+00 0.00e+00 6.54e-03  -2.2 8.80e-03    -  1.00e+00 1.00e+00f  1
+   2  4.8863246e+00 0.00e+00 2.85e-02  -4.1 4.53e-02    -  8.79e-01 8.63e-01f  1
+   3  4.8716044e+00 0.00e+00 1.97e-02  -4.4 1.30e-02    -  1.00e+00 1.00e+00f  1
+   4  4.8709921e+00 0.00e+00 8.78e-03  -5.0 5.65e-03    -  1.00e+00 1.00e+00f  1
+Warning: Cutting back alpha due to evaluation error
+   5  4.8708122e+00 0.00e+00 5.95e-03  -6.4 9.53e-03    -  1.00e+00 4.88e-01f  2
+   6  4.8706077e+00 0.00e+00 8.57e-02  -7.1 2.18e-01    -  1.00e+00 2.56e-01f  1
+   7  4.8705831e+00 0.00e+00 6.42e-02  -5.6 5.33e-02    -  1.00e+00 3.15e-02f  3
+   8  4.8706557e+00 0.00e+00 4.54e-02  -5.1 1.35e-02    -  4.00e-01 1.00e+00f  1
+   9  4.8706462e+00 0.00e+00 2.03e-02  -5.3 1.46e-02    -  2.49e-01 5.00e-01f  2
+iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
+  10  4.8705835e+00 0.00e+00 2.33e-02  -5.3 3.27e-03    -  1.00e+00 1.00e+00f  1
+  11  4.8704981e+00 0.00e+00 7.45e-03  -5.3 6.43e-03    -  1.00e+00 1.00e+00f  1
+Warning: Cutting back alpha due to evaluation error
+  12  4.8704394e+00 0.00e+00 6.83e-03  -6.3 3.92e-02    -  1.00e+00 2.25e-01f  2
+Warning: Cutting back alpha due to evaluation error
+  13  4.8703828e+00 0.00e+00 1.59e-02  -7.8 3.99e-02    -  1.00e+00 2.64e-01f  2
+  14  4.8703677e+00 0.00e+00 2.63e-02  -7.9 3.01e-02    -  1.00e+00 1.49e-01f  2
+  15  4.8703346e+00 0.00e+00 2.66e-02  -8.0 1.50e-02    -  1.00e+00 2.39e-01f  2
+Warning: Cutting back alpha due to evaluation error
+Warning: Cutting back alpha due to evaluation error
+  16  4.8703169e+00 0.00e+00 2.19e-02 -11.0 1.06e-02    -  3.97e-01 1.52e-01f  3
+Warning: Cutting back alpha due to evaluation error
+Warning: Cutting back alpha due to evaluation error
+  17  4.8703026e+00 0.00e+00 1.96e-02  -6.9 7.59e-03    -  5.72e-01 1.42e-01f  3
+Warning: Cutting back alpha due to evaluation error
+Warning: Cutting back alpha due to evaluation error
+Warning: Cutting back alpha due to evaluation error
+Warning: Cutting back alpha due to evaluation error
+  18  4.8702992e+00 0.00e+00 1.48e-02 -11.0 1.03e-02    -  9.37e-01 3.43e-02f  5
+Warning: Cutting back alpha due to evaluation error
+Warning: Cutting back alpha due to evaluation error
+Warning: Cutting back alpha due to evaluation error
+Warning: Cutting back alpha due to evaluation error
+  19  4.8702965e+00 0.00e+00 1.43e-02  -8.4 1.26e-02    -  1.00e+00 3.58e-02f  5
+Warning: Cutting back alpha due to evaluation error
+Warning: Cutting back alpha due to evaluation error
+Warning: Cutting back alpha due to evaluation error
+Warning: Cutting back alpha due to evaluation error
+Warning: Cutting back alpha due to evaluation error
+Warning: Cutting back alpha due to evaluation error
+Warning: Cutting back alpha due to evaluation error
+iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
+  20  4.8702963e+00 0.00e+00 1.36e-02  -6.8 2.04e-02    -  1.00e+00 1.32e-03f  8
+
+Number of Iterations....: 20
+
+                                   (scaled)                 (unscaled)
+Objective...............:   4.8702962793601969e+00    4.8702962793601969e+00
+Dual infeasibility......:   1.3577864562213916e-02    1.3577864562213916e-02
+Constraint violation....:   0.0000000000000000e+00    0.0000000000000000e+00
+Variable bound violation:   0.0000000000000000e+00    0.0000000000000000e+00
+Complementarity.........:   3.8826553865082018e-06    3.8826553865082018e-06
+Overall NLP error.......:   1.3577864562213916e-02    1.3577864562213916e-02
+
+
+Number of objective function evaluations             = 52
+Number of objective gradient evaluations             = 21
+Number of equality constraint evaluations            = 0
+Number of inequality constraint evaluations          = 52
+Number of equality constraint Jacobian evaluations   = 0
+Number of inequality constraint Jacobian evaluations = 21
+Number of Lagrangian Hessian evaluations             = 0
+Total seconds in IPOPT                               = 0.059
+
+EXIT: Maximum Number of Iterations Exceeded.
+This is Ipopt version 3.14.19, running with linear solver MUMPS 5.9.0.
+
+Number of nonzeros in equality constraint Jacobian...:        0
+Number of nonzeros in inequality constraint Jacobian.:       42
+Number of nonzeros in Lagrangian Hessian.............:        0
+
+Total number of variables............................:       42
+                     variables with only lower bounds:        0
+                variables with lower and upper bounds:       42
+                     variables with only upper bounds:        0
+Total number of equality constraints.................:        0
+Total number of inequality constraints...............:        1
+        inequality constraints with only lower bounds:        0
+   inequality constraints with lower and upper bounds:        0
+        inequality constraints with only upper bounds:        1
+
+iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
+   0  4.9129812e+00 0.00e+00 3.34e-01   0.0 0.00e+00    -  0.00e+00 0.00e+00   0
+   1  4.9279859e+00 5.64e-04 4.06e-02  -2.2 1.06e-02    -  1.00e+00 9.32e-01h  1
+   2  4.8809646e+00 5.63e-05 2.61e-02  -8.2 5.63e-02    -  8.40e-01 9.14e-01f  1
+   3  4.8719466e+00 0.00e+00 7.77e-02  -4.3 1.60e-02    -  1.00e+00 1.00e+00f  1
+   4  4.8726311e+00 0.00e+00 1.47e-02  -4.1 2.45e-02    -  1.00e+00 1.00e+00f  1
+   5  4.8724703e+00 0.00e+00 1.15e-02  -4.2 1.23e-02    -  8.90e-01 5.00e-01f  2
+   6  4.8722740e+00 0.00e+00 4.08e-03  -4.2 2.51e-03    -  1.00e+00 1.00e+00f  1
+   7  4.8722345e+00 0.00e+00 3.30e-03  -4.2 4.94e-03    -  1.00e+00 1.00e+00f  1
+   8  4.8722295e+00 0.00e+00 1.82e-02  -4.2 1.01e-02    -  1.00e+00 1.00e+00f  1
+   9  4.8722413e+00 0.00e+00 8.21e-03  -4.2 1.27e-02    -  1.00e+00 1.00e+00f  1
+iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
+  10  4.8722848e+00 0.00e+00 9.43e-03  -4.2 8.57e-03    -  1.00e+00 1.00e+00f  1
+  11  4.8722694e+00 0.00e+00 3.90e-03  -4.2 3.75e-03    -  1.00e+00 5.00e-01f  2
+  12  4.8722573e+00 0.00e+00 1.27e-03  -4.2 1.66e-03    -  1.00e+00 1.00e+00f  1
+  13  4.8722634e+00 0.00e+00 5.19e-04  -4.2 8.24e-04    -  1.00e+00 1.00e+00f  1
+  14  4.8707283e+00 0.00e+00 1.49e-02  -6.3 3.09e-02    -  9.62e-01 9.97e-01f  1
+  15  4.8706718e+00 0.00e+00 1.95e-02  -6.8 1.19e-01    -  1.00e+00 9.44e-02f  3
+  16  4.8705520e+00 0.00e+00 2.26e-02  -7.6 9.23e-02    -  1.00e+00 1.79e-01f  2
+  17  4.8704981e+00 0.00e+00 4.17e-02  -6.0 7.44e-02    -  1.00e+00 2.20e-01f  2
+Warning: Cutting back alpha due to evaluation error
+  18  4.8704238e+00 0.00e+00 1.55e-02  -7.2 2.39e-02    -  1.00e+00 2.28e-01f  2
+Warning: Cutting back alpha due to evaluation error
+  19  4.8704045e+00 0.00e+00 1.62e-02  -5.8 8.38e-02    -  1.00e+00 2.49e-02f  2
+iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
+  20  4.8703892e+00 0.00e+00 2.65e-01  -6.5 5.46e-02    -  1.00e+00 3.27e-01f  1
+
+Number of Iterations....: 20
+
+                                   (scaled)                 (unscaled)
+Objective...............:   4.8703892165716134e+00    4.8703892165716134e+00
+Dual infeasibility......:   2.6474742032534948e-01    2.6474742032534948e-01
+Constraint violation....:   0.0000000000000000e+00    0.0000000000000000e+00
+Variable bound violation:   0.0000000000000000e+00    0.0000000000000000e+00
+Complementarity.........:   1.3547204466215427e-05    1.3547204466215427e-05
+Overall NLP error.......:   2.6474742032534948e-01    2.6474742032534948e-01
+
+
+Number of objective function evaluations             = 34
+Number of objective gradient evaluations             = 21
+Number of equality constraint evaluations            = 0
+Number of inequality constraint evaluations          = 34
+Number of equality constraint Jacobian evaluations   = 0
+Number of inequality constraint Jacobian evaluations = 21
+Number of Lagrangian Hessian evaluations             = 0
+Total seconds in IPOPT                               = 0.034
+
+EXIT: Maximum Number of Iterations Exceeded.
+This is Ipopt version 3.14.19, running with linear solver MUMPS 5.9.0.
+
+Number of nonzeros in equality constraint Jacobian...:        0
+Number of nonzeros in inequality constraint Jacobian.:       42
+Number of nonzeros in Lagrangian Hessian.............:        0
+
+Total number of variables............................:       42
+                     variables with only lower bounds:        0
+                variables with lower and upper bounds:       42
+                     variables with only upper bounds:        0
+Total number of equality constraints.................:        0
+Total number of inequality constraints...............:        1
+        inequality constraints with only lower bounds:        0
+   inequality constraints with lower and upper bounds:        0
+        inequality constraints with only upper bounds:        1
+
+iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
+   0  4.9138830e+00 0.00e+00 3.34e-01   0.0 0.00e+00    -  0.00e+00 0.00e+00   0
+   1  4.9295999e+00 6.31e-05 9.46e-03  -2.2 1.01e-02    -  1.00e+00 9.82e-01h  1
+   2  4.8821108e+00 1.55e-05 2.68e-02  -8.2 4.48e-02    -  8.52e-01 8.99e-01f  1
+   3  4.8717286e+00 0.00e+00 7.30e-02  -4.4 1.29e-02    -  9.99e-01 1.00e+00f  1
+   4  4.8713079e+00 0.00e+00 1.68e-02  -4.6 1.04e-02    -  1.00e+00 1.00e+00f  1
+   5  4.8706505e+00 0.00e+00 7.81e-03  -5.9 5.87e-03    -  1.00e+00 1.00e+00f  1
+   6  4.8705437e+00 0.00e+00 3.61e-02  -6.5 1.34e-01    -  1.00e+00 1.13e-01f  2
+   7  4.8704945e+00 0.00e+00 3.70e-02  -5.2 1.45e-01    -  1.00e+00 9.63e-02f  2
+   8  4.8706590e+00 0.00e+00 4.93e-02  -4.9 6.15e-03    -  1.00e+00 5.00e-01f  2
+   9  4.8706225e+00 0.00e+00 6.06e-03  -5.1 6.40e-03    -  7.19e-01 1.00e+00f  1
+iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
+  10  4.8705873e+00 0.00e+00 5.22e-03  -5.1 6.09e-03    -  1.00e+00 1.00e+00f  1
+  11  4.8705814e+00 0.00e+00 6.23e-03  -5.1 8.81e-03    -  1.00e+00 1.25e-01f  4
+  12  4.8705673e+00 0.00e+00 3.31e-03  -5.1 3.21e-03    -  1.00e+00 1.00e+00f  1
+  13  4.8705659e+00 0.00e+00 2.67e-03  -5.1 3.60e-03    -  1.00e+00 1.25e-01f  4
+  14  4.8705632e+00 0.00e+00 5.89e-04  -5.1 4.61e-04    -  1.00e+00 1.00e+00f  1
+  15  4.8705625e+00 0.00e+00 5.61e-04  -5.1 6.42e-04    -  1.00e+00 2.50e-01f  3
+  16  4.8705618e+00 0.00e+00 4.78e-04  -5.1 3.20e-04    -  1.00e+00 5.00e-01f  2
+  17  4.8705601e+00 0.00e+00 8.80e-04  -5.1 5.40e-04    -  1.00e+00 1.00e+00f  1
+  18  4.8705602e+00 0.00e+00 1.07e-03  -5.1 1.64e-03    -  1.00e+00 2.50e-01f  3
+  19  4.8705604e+00 0.00e+00 5.43e-04  -5.1 9.65e-05    -  1.00e+00 1.00e+00f  1
+iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
+  20  4.8705603e+00 0.00e+00 6.36e-04  -5.1 1.16e-04    -  1.00e+00 1.00e+00f  1
+
+Number of Iterations....: 20
+
+                                   (scaled)                 (unscaled)
+Objective...............:   4.8705602573719551e+00    4.8705602573719551e+00
+Dual infeasibility......:   6.3574766052746257e-04    6.3574766052746257e-04
+Constraint violation....:   0.0000000000000000e+00    0.0000000000000000e+00
+Variable bound violation:   0.0000000000000000e+00    0.0000000000000000e+00
+Complementarity.........:   8.7915061195147312e-06    8.7915061195147312e-06
+Overall NLP error.......:   6.3574766052746257e-04    6.3574766052746257e-04
+
+
+Number of objective function evaluations             = 45
+Number of objective gradient evaluations             = 21
+Number of equality constraint evaluations            = 0
+Number of inequality constraint evaluations          = 45
+Number of equality constraint Jacobian evaluations   = 0
+Number of inequality constraint Jacobian evaluations = 21
+Number of Lagrangian Hessian evaluations             = 0
+Total seconds in IPOPT                               = 0.035
+
+EXIT: Maximum Number of Iterations Exceeded.
+This is Ipopt version 3.14.19, running with linear solver MUMPS 5.9.0.
+
+Number of nonzeros in equality constraint Jacobian...:        0
+Number of nonzeros in inequality constraint Jacobian.:       42
+Number of nonzeros in Lagrangian Hessian.............:        0
+
+Total number of variables............................:       42
+                     variables with only lower bounds:        0
+                variables with lower and upper bounds:       42
+                     variables with only upper bounds:        0
+Total number of equality constraints.................:        0
+Total number of inequality constraints...............:        1
+        inequality constraints with only lower bounds:        0
+   inequality constraints with lower and upper bounds:        0
+        inequality constraints with only upper bounds:        1
+
+iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
+   0  4.9154648e+00 0.00e+00 3.34e-01   0.0 0.00e+00    -  0.00e+00 0.00e+00   0
+   1  4.9312881e+00 0.00e+00 6.54e-03  -2.2 9.12e-03    -  1.00e+00 1.00e+00f  1
+   2  4.8851475e+00 0.00e+00 2.81e-02  -4.1 4.86e-02    -  8.68e-01 8.85e-01f  1
+   3  4.8716879e+00 0.00e+00 2.53e-02  -4.3 1.27e-02    -  1.00e+00 1.00e+00f  1
+   4  4.8710734e+00 0.00e+00 1.03e-02  -4.9 6.55e-03    -  1.00e+00 1.00e+00f  1
+Warning: Cutting back alpha due to evaluation error
+   5  4.8708469e+00 0.00e+00 6.29e-03  -6.2 1.12e-02    -  1.00e+00 4.89e-01f  2
+   6  4.8706068e+00 0.00e+00 7.36e-02  -6.9 2.14e-01    -  1.00e+00 2.63e-01f  1
+   7  4.8705855e+00 0.00e+00 5.60e-02  -6.0 6.29e-02    -  1.00e+00 4.77e-02f  2
+   8  4.8710852e+00 0.00e+00 1.40e-02  -4.6 4.25e-02    -  2.74e-01 1.00e+00f  1
+   9  4.8710417e+00 0.00e+00 1.48e-02  -5.0 1.44e-02    -  4.81e-01 2.50e-01f  3
+iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
+  10  4.8707390e+00 0.00e+00 8.68e-03  -5.0 9.52e-03    -  1.00e+00 1.00e+00f  1
+  11  4.8707239e+00 0.00e+00 1.02e-02  -5.0 7.16e-03    -  1.00e+00 2.50e-01f  3
+  12  4.8706968e+00 0.00e+00 1.19e-02  -5.0 7.82e-03    -  1.00e+00 5.00e-01f  2
+  13  4.8706695e+00 0.00e+00 1.28e-02  -5.0 4.21e-03    -  1.00e+00 1.00e+00f  1
+  14  4.8706637e+00 0.00e+00 9.60e-03  -5.0 3.01e-03    -  1.00e+00 5.00e-01f  2
+  15  4.8706610e+00 0.00e+00 2.45e-03  -5.0 1.59e-03    -  1.00e+00 1.00e+00f  1
+  16  4.8706564e+00 0.00e+00 1.18e-03  -5.0 1.44e-03    -  1.00e+00 5.00e-01f  2
+  17  4.8706479e+00 0.00e+00 2.43e-03  -5.0 1.74e-03    -  1.00e+00 1.00e+00f  1
+  18  4.8706417e+00 0.00e+00 1.93e-03  -5.0 2.64e-03    -  1.00e+00 5.00e-01f  2
+  19  4.8706424e+00 0.00e+00 1.58e-03  -5.0 1.70e-03    -  1.00e+00 2.50e-01f  3
+iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
+  20  4.8706434e+00 0.00e+00 8.82e-04  -5.0 6.91e-04    -  1.00e+00 1.00e+00f  1
+
+Number of Iterations....: 20
+
+                                   (scaled)                 (unscaled)
+Objective...............:   4.8706434412069637e+00    4.8706434412069637e+00
+Dual infeasibility......:   8.8238883833704302e-04    8.8238883833704302e-04
+Constraint violation....:   0.0000000000000000e+00    0.0000000000000000e+00
+Variable bound violation:   0.0000000000000000e+00    0.0000000000000000e+00
+Complementarity.........:   1.1084397004476158e-05    1.1084397004476158e-05
+Overall NLP error.......:   8.8238883833704302e-04    8.8238883833704302e-04
+
+
+Number of objective function evaluations             = 37
+Number of objective gradient evaluations             = 21
+Number of equality constraint evaluations            = 0
+Number of inequality constraint evaluations          = 37
+Number of equality constraint Jacobian evaluations   = 0
+Number of inequality constraint Jacobian evaluations = 21
+Number of Lagrangian Hessian evaluations             = 0
+Total seconds in IPOPT                               = 0.033
+
+EXIT: Maximum Number of Iterations Exceeded.
+This is Ipopt version 3.14.19, running with linear solver MUMPS 5.9.0.
+
+Number of nonzeros in equality constraint Jacobian...:        0
+Number of nonzeros in inequality constraint Jacobian.:       42
+Number of nonzeros in Lagrangian Hessian.............:        0
+
+Total number of variables............................:       42
+                     variables with only lower bounds:        0
+                variables with lower and upper bounds:       42
+                     variables with only upper bounds:        0
+Total number of equality constraints.................:        0
+Total number of inequality constraints...............:        1
+        inequality constraints with only lower bounds:        0
+   inequality constraints with lower and upper bounds:        0
+        inequality constraints with only upper bounds:        1
+
+iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
+   0  4.9161162e+00 0.00e+00 3.34e-01   0.0 0.00e+00    -  0.00e+00 0.00e+00   0
+   1  4.9318650e+00 0.00e+00 6.54e-03  -2.2 8.73e-03    -  1.00e+00 1.00e+00f  1
+   2  4.8865105e+00 0.00e+00 2.86e-02  -4.1 4.55e-02    -  8.82e-01 8.60e-01f  1
+   3  4.8715850e+00 0.00e+00 1.87e-02  -4.4 1.31e-02    -  1.00e+00 1.00e+00f  1
+   4  4.8709763e+00 0.00e+00 8.71e-03  -5.0 5.41e-03    -  1.00e+00 1.00e+00f  1
+Warning: Cutting back alpha due to evaluation error
+   5  4.8708056e+00 0.00e+00 5.94e-03  -6.5 9.37e-03    -  1.00e+00 4.87e-01f  2
+   6  4.8706255e+00 0.00e+00 1.02e-01  -7.1 2.29e-01    -  1.00e+00 2.47e-01f  1
+   7  4.8706032e+00 0.00e+00 6.60e-02  -5.6 5.61e-02    -  1.00e+00 3.39e-02f  3
+   8  4.8707096e+00 0.00e+00 2.28e-02  -5.0 1.85e-02    -  3.79e-01 1.00e+00f  1
+   9  4.8706609e+00 0.00e+00 1.48e-02  -5.2 1.14e-02    -  4.78e-01 5.00e-01f  2
+iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
+  10  4.8706059e+00 0.00e+00 1.09e-02  -5.2 4.81e-03    -  1.00e+00 5.00e-01f  2
+  11  4.8705204e+00 0.00e+00 5.01e-03  -5.2 7.58e-03    -  1.00e+00 1.00e+00f  1
+Warning: Cutting back alpha due to evaluation error
+  12  4.8704485e+00 0.00e+00 9.72e-03  -6.2 4.46e-02    -  1.00e+00 2.63e-01f  2
+  13  4.8704445e+00 0.00e+00 2.70e-01  -7.7 2.96e-02    -  1.00e+00 6.89e-01f  1
+  14  4.8706349e+00 0.00e+00 2.03e-02  -5.0 3.16e-02    -  8.83e-01 1.00e+00f  1
+  15  4.8706000e+00 0.00e+00 1.38e-02  -5.1 2.88e-02    -  1.00e+00 9.11e-02f  3
+  16  4.8705113e+00 0.00e+00 1.26e-02  -5.1 1.13e-02    -  1.00e+00 1.00e+00f  1
+  17  4.8705100e+00 0.00e+00 6.80e-03  -5.1 3.35e-03    -  6.52e-01 1.25e-01f  4
+  18  4.8705190e+00 0.00e+00 1.05e-03  -5.1 4.48e-03    -  1.00e+00 1.00e+00f  1
+  19  4.8705167e+00 0.00e+00 3.91e-03  -5.1 5.26e-03    -  1.00e+00 5.00e-01f  2
+iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
+  20  4.8705153e+00 0.00e+00 3.27e-03  -5.1 8.90e-03    -  1.00e+00 1.25e-01f  4
+
+Number of Iterations....: 20
+
+                                   (scaled)                 (unscaled)
+Objective...............:   4.8705152951821917e+00    4.8705152951821917e+00
+Dual infeasibility......:   3.2651197790322575e-03    3.2651197790322575e-03
+Constraint violation....:   0.0000000000000000e+00    0.0000000000000000e+00
+Variable bound violation:   0.0000000000000000e+00    0.0000000000000000e+00
+Complementarity.........:   9.3115607092845713e-06    9.3115607092845713e-06
+Overall NLP error.......:   3.2651197790322575e-03    3.2651197790322575e-03
+
+
+Number of objective function evaluations             = 41
+Number of objective gradient evaluations             = 21
+Number of equality constraint evaluations            = 0
+Number of inequality constraint evaluations          = 41
+Number of equality constraint Jacobian evaluations   = 0
+Number of inequality constraint Jacobian evaluations = 21
+Number of Lagrangian Hessian evaluations             = 0
+Total seconds in IPOPT                               = 0.046
+
+EXIT: Maximum Number of Iterations Exceeded.
+This is Ipopt version 3.14.19, running with linear solver MUMPS 5.9.0.
+
+Number of nonzeros in equality constraint Jacobian...:        0
+Number of nonzeros in inequality constraint Jacobian.:       42
+Number of nonzeros in Lagrangian Hessian.............:        0
+
+Total number of variables............................:       42
+                     variables with only lower bounds:        0
+                variables with lower and upper bounds:       42
+                     variables with only upper bounds:        0
+Total number of equality constraints.................:        0
+Total number of inequality constraints...............:        1
+        inequality constraints with only lower bounds:        0
+   inequality constraints with lower and upper bounds:        0
+        inequality constraints with only upper bounds:        1
+
+iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
+   0  4.9152136e+00 0.00e+00 3.34e-01   0.0 0.00e+00    -  0.00e+00 0.00e+00   0
+   1  4.9310651e+00 0.00e+00 6.53e-03  -2.2 9.28e-03    -  1.00e+00 1.00e+00f  1
+   2  4.8839758e+00 0.00e+00 2.81e-02  -4.3 4.34e-02    -  8.68e-01 8.93e-01f  1
+   3  4.8715556e+00 0.00e+00 3.41e-02  -4.4 1.27e-02    -  9.99e-01 1.00e+00f  1
+   4  4.8710441e+00 0.00e+00 1.22e-02  -4.8 7.25e-03    -  1.00e+00 1.00e+00f  1
+   5  4.8706367e+00 0.00e+00 6.28e-03  -6.4 5.65e-03    -  1.00e+00 1.00e+00f  1
+   6  4.8705329e+00 0.00e+00 2.49e-02  -7.0 1.79e-01    -  1.00e+00 1.25e-01f  2
+   7  4.8706827e+00 0.00e+00 4.18e-02  -4.9 4.68e-02    -  1.00e+00 2.20e-01f  2
+   8  4.8706538e+00 0.00e+00 2.15e-02  -5.1 6.15e-03    -  8.74e-01 1.00e+00f  1
+   9  4.8706272e+00 0.00e+00 2.71e-02  -5.1 3.91e-03    -  1.00e+00 1.00e+00f  1
+iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
+  10  4.8705896e+00 0.00e+00 8.73e-03  -5.1 1.87e-03    -  1.00e+00 1.00e+00f  1
+  11  4.8705713e+00 0.00e+00 2.87e-03  -5.1 2.36e-03    -  1.00e+00 1.00e+00f  1
+  12  4.8705658e+00 0.00e+00 4.65e-03  -5.1 9.34e-03    -  1.00e+00 1.25e-01f  4
+  13  4.8705504e+00 0.00e+00 3.95e-03  -5.1 3.19e-03    -  1.00e+00 1.00e+00f  1
+  14  4.8705442e+00 0.00e+00 5.34e-03  -5.1 5.53e-03    -  1.00e+00 2.50e-01f  3
+  15  4.8705478e+00 0.00e+00 3.84e-03  -5.1 1.14e-03    -  1.00e+00 1.00e+00f  1
+  16  4.8705465e+00 0.00e+00 1.75e-03  -5.1 7.41e-04    -  1.00e+00 5.00e-01f  2
+  17  4.8705408e+00 0.00e+00 3.32e-04  -5.1 1.13e-03    -  1.00e+00 1.00e+00f  1
+  18  4.8705393e+00 0.00e+00 1.41e-03  -5.1 2.80e-03    -  1.00e+00 2.50e-01f  3
+  19  4.8705384e+00 0.00e+00 1.13e-03  -5.1 7.44e-03    -  1.00e+00 2.50e-01f  3
+iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
+  20  4.8705380e+00 0.00e+00 1.43e-03  -5.1 7.15e-04    -  1.00e+00 2.50e-01f  3
+   1  4.9311752e+00 0.00e+00 6.53e-03  -2.2 9.20e-03    -  1.00e+00 1.00e+00f  1
+   2  4.8842443e+00 0.00e+00 2.81e-02  -4.3 4.39e-02    -  8.70e-01 8.88e-01f  1
+Buckling-constrained result:
+  obj = 4.8702962693900576
+  vol = -8.238594795817455e-7</code></pre>
+</div>
+</div>
+<p>The <code>SDPBarrierAlg</code> uses an interior-point method with log-barrier for PSD constraints. IPOPT solves the continuous subproblems.</p>
+</section>
+<section id="check-stability" class="level2">
+<h2 class="anchored" data-anchor-id="check-stability">Check Stability</h2>
+<div id="20" class="cell" data-execution_count="1">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb12"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>S1 <span class="op">=</span> <span class="fu">buckling_matrix_constr</span>(r1.minimizer)</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>S2 <span class="op">=</span> <span class="fu">buckling_matrix_constr</span>(r2.minimizer)</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>ev1 <span class="op">=</span> <span class="fu">eigen</span>(S1).values</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>ev2 <span class="op">=</span> <span class="fu">eigen</span>(S2).values</span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a><span class="fu">println</span>(<span class="st">"Compliance-only min eigenvalue: </span><span class="sc">$</span>(<span class="fu">minimum</span>(ev1))<span class="st">"</span>)</span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a><span class="fu">println</span>(<span class="st">"Buckling-constrained min eigenvalue: </span><span class="sc">$</span>(<span class="fu">minimum</span>(ev2))<span class="st">"</span>)</span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a><span class="fu">println</span>(<span class="st">"Design is stable: </span><span class="sc">$</span>(<span class="fu">minimum</span>(ev2) <span class="op">≥</span> <span class="op">-</span><span class="fl">1e-6</span>)<span class="st">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Compliance-only min eigenvalue: -1.0058117186307713e-5
+Buckling-constrained min eigenvalue: 3.6669304869106886e-9
+Design is stable: true</code></pre>
+</div>
+</div>
+<p>The buckling-constrained design should have non-negative eigenvalues (stable under load), while the compliance-only design may have negative eigenvalues (unstable).</p>
+</section>
+<section id="visualization" class="level2">
+<h2 class="anchored" data-anchor-id="visualization">Visualization</h2>
+<div id="cell-fig-buckling" class="cell" data-execution_count="1">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb14"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="im">using</span> <span class="bu">Makie</span>, <span class="bu">CairoMakie</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>fig1 <span class="op">=</span> <span class="fu">visualize</span>(problem; solver.u, topology<span class="op">=</span>r1.minimizer, default_exagg_scale<span class="op">=</span><span class="fl">0.0</span>)</span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>fig2 <span class="op">=</span> <span class="fu">visualize</span>(problem; solver.u, topology<span class="op">=</span>r2.minimizer, default_exagg_scale<span class="op">=</span><span class="fl">0.0</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<div class="ansi-escaped-output">
+<pre><span class="ansi-green-fg ansi-bold">Precompiling</span> packages...
+   5677.6 ms<span class="ansi-green-fg">  ✓ </span>QuartoNotebookWorkerMakieExt<span class="ansi-bright-black-fg"> (serial)</span>
+  1 dependency successfully precompiled in 6 seconds
+<span class="ansi-green-fg ansi-bold">Precompiling</span> packages...
+   4677.0 ms<span class="ansi-green-fg">  ✓ </span>QuartoNotebookWorkerCairoMakieExt<span class="ansi-bright-black-fg"> (serial)</span>
+  1 dependency successfully precompiled in 5 seconds
+</pre>
+</div>
+</div>
+<div id="fig-buckling" class="cell-output cell-output-display quarto-float quarto-figure quarto-figure-center anchored" data-execution_count="1">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-buckling-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img width="672" height="480" style="object-fit: contain; height: auto;" src="data:image/png;base64, iVBORw0KGgoAAAANSUhEUgAAAqAAAAHgCAYAAAB6jN80AAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAgY0hSTQAAeiYAAICEAAD6AAAAgOgAAHUwAADqYAAAOpgAABdwnLpRPAAAAAlwSFlzAAAOxAAADsQBlSsOGwAAIABJREFUeAHswQd81vWh8O3vnfwyWCFMEZIgoEwFtyhBURQrbrR6jsUeLaAvQ1SIJYh1tQwVquA6VWoraNW+FSsgAg6wBFSQWhdVcYADkYCSQAZk3O8bnw99AoK1Rf4F7u91hfj/D0mSJCkiAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCAUmSJClCgX3Ifffdx1tvvcVBBx2EJEmSordq1SoOO+wwhgwZwr8rsA955ZVX+Oijj2jYsCFRKCsrI4RASkoKSmwlJSWkp6eTnJyMEtvmzZupW7cuSUlJKLEVFxeTkZGBVFxcTEZGBonirbfeoqSkhCFDhvDvCuxD2rZtS9u2bbn55puJwvr166lbty5169ZFie3LL78kMzOTtLQ0lNjWrFlD8+bNCSGgxPbpp5+SlZVFLBZDiSsej/PZZ5+RnZ1Norj55pvZXQFJkiQpQgHtUtP5zfjGJXEkSZL0wwho5z75E/+wZQOkNUGSJEm7L/ADeeihhzjkkEPo2bMn3+WNN97gscceo6SkhHPOOYfTTjuNvU7Jaij4Mf/wZFO4pBqIIUmSpN0T+AF88sknjBkzhjvuuIOePXuyK0uXLqV3795cfPHFNGnShPPOO4/f/OY39O/fn73K0wdRozKeRIhV840tGyCtKZIkSdo9gd1QXFxM7969eeONN6ioqOCfGT9+PBdffDFTp06lRqtWrbjlllvo378/e5O3ey7h//nL71m6tR51qKBb2To+yL+ZNcfcy4GvXkU1MRJJq2bN+LywkETWPDOTdRs3kuiaZmayfuNGElnLJk1Ys2EDia5eejol5eUkslZNmvD5hg1IP+3alTsGDEDfX2A31KtXjwcffJAaffv25bvE43GeffZZnnrqKba58MILufrqq3nvvffo0KEDe4OS8iLOenE6q6sbUKOCNBbVyeb4tqup8cVxd3PAkktZV1GH/V5GBmzaRN2KCtaVl5PI0qqqWFdeTqJL2rKFdeXlJLJ6VVWsKy8n0TWIxdhUXk4iy4jHWVdejlRUVsYnhYWcfddd3Ne/Pz06dULfLbAbkpOTOfzww6mRmprKd/nqq6/YsmULOTk5bNOyZUtCCHzxxRd06NCB2pYvX87y5cup7YsvvqBJkyZs3ryZPWXuij+xurouO3q/fnO2+fKE6dSIvXQF+62mTaFjR9iwgeqvviLRxaurEVTH4yS6eDyOII6qq6uRanxdVsYJ48bxeWkpZ9xzDzMGDKB7+/bsr7Zu3Upqaiq7IxCR4uJiatSrV4/a6tWrx9dff82O1qxZw/Lly6lt06ZNZGZmsnXrVvaUkq3l7MwWkkkYTZtCx44QAhx9NJ9+/TW8+y588AFSwovHEcTjcaSElp0NLVpAcjJPpqYSb9SIGps+/ZR+v/0tj196Kd3bt2d/VFVVxe4KRKRJkybUKC4uZpvq6mo2bdpE06ZN2dHZZ5/N2WefTW0333wzNRo3bsye0qfLGdRfOZnNpFBbB4rZps+bfXnu6yz2S82bQ4cOfCMWg5QU4k2aQE4OfPABiSqWlIQgKRYj0cWSkhAkxWIkuqSkJJTAUlKgXj1o1Yr4pk0Qj/ONENhUWcl/PfIIc4YMIbdzZ/Y3derUYXcFIpKRkUFmZiYrV66ka9eu1Pj444+prq4mJyeHvcWBjdryUNduXPHW62yMp1GjA1/zccpRwMM0j99HYZ118PUa9jtNm0L79nxLdTV8/TWSJKmWunUhLQ02bWJHmyoqOPO++5gzdCg9OnVC2wvsQZ999hkbNmygW7du1Pjxj3/M9OnTueCCC6gxffp0jj32WFq3bs3e5MdH/YzTO23g8cWPc8/Lf+Xtr+sTr/6AGMOBd4nFYlx21FFc06cP+4vHXn6Z2195herXXuMf0tKgqgpWrODY9HQeHD2aRPXVV19Rv359UlNTSWRJQDWJrbCwkMaNG5OcnEwiiwFxEtu6L7+kWfPmxGIxlHiuf+opnnnxRTjgADjoIHamuKKCM+69lzlDhpDbuTP6vwJ70F133cXvf/971q9fT40xY8Zw8skn06dPHzIzM3n++eeZNWsWe6OMuk3od8TFHN36NH50770UlpezTRz43fLlNEhJYfLll7Ovu/uZZ7h94UKq2V6dWIyy11+HTZuon5ND14MOIlF9WacOmZmZpKWlocS2JjWV5s2bE0JAie3T5GSysrKIxWIo8WSmpEB5OaxeDVu2wCGHsDObKiroe999zBkyhNzOndH/EfiBPP7447Rp04baBg8ezPnnn882rVu3Zvny5Tz33HOUlpYyadIksrOz2Zt1zMpi4ciR9Jo0icLycmqb8sor1Jh8+eXsq6Y88wzXzpxJNdurFwL3nXce//PYY0iSpO+wdi3fOOQQdmZTRQV977uPOUOGkNu5M4LAD6R79+7sqF27drRr147aGjVqxEUXXcS+pHNODgtHjqTXpEkUlpdT25RXXqHG5MsvZ18z5ZlnuHbmTKrZXr0QePqKK8hp1gxJkvQ9rF1LjVhyMnG+bVNFBX3vu49nBg+mZ5cuJLqAvpfOOTksHDmSXpMmUVheTm1TXnmFGpMvv5x9xZRnnuHamTOpZnv1QuDpK66gd7durFyzBkmS9D2tXcsJBx/MEiDOt22qqOCM++7j6SuuoHe3biSygL63zjk5vJSXx0kTJ1JYXk5tU155hXg8zpSf/Yy93eTZsxkxaxbVbK9BSgrPDB5Mzy5dkCRJ/7rjmjfnjLZt+cX8+cT5tpLKSs594AGevuIKenfrRqIK6F/SKTubl/LyOGniRArLy6nt7ldfpcaUn/2MvdXk2bMZMWsW1WyvQUoKc4YMIbdzZyRJ0r9vzAUXEANumD+fON9WUlnJuQ88wNNXXEHvbt1IRAH9yzplZ/NSXh69Jk5kXXk5td396qvUmPKzn7G3mTx7NiNmz6aa7TVISWHOkCHkdu6MJEnafddfcAE1bpg/nzjfVlJZybkPPMBTgwZx2uGHk2gC+rd0ys5mYV4evSZOZF15ObXd/eqrVMfj3DNgAHuLybNnM2L2bKrjcWprkJLCnCFDyO3cGUmS9MO5/oILqHHD/PnE+baSykrOf/BBnho0iNMOP5xEEtC/rVN2Ngvz8ug1cSLrysup7d6lS6lxz4AB/KfdNXs2I2fPpjoep7YGKSnMGTKE3M6dkSRJP7zrL7iAGjfMn0+cbyuprOT8Bx/kqUGDOO3ww0kUAe2WTtnZLMzLo9fEiawrL6e2e5cupcY9AwbwnzJhxgyunzePONtrkJLCnCFDyO3cGUmStOdcf8EF1Lhh/nzifFtJZSXnPfggfx40iNMOP5xEENBu65SdzcK8PE6eNIkvy8qo7d6lS6lxz4ABRG38jBmMmTePONvLSEnhmSFDyO3cGUmStOddf8EFxGIxxsybR5xvK62s5LwHH+TPgwZx2uGHs78L6AfRKTubhXl59Jo4kS/Lyqjt3qVLqXHPgAFEZfyMGYyZN48428tISWHO0KH06NQJSZIUndH9+lFjzLx5xPm20spKznvwQZ4aOJA+RxzB/iygH0zHrCwW5uXRa+JEviwro7Z7ly6lxj0DBrCnjZ8xgzHz5hFnexkpKcwZOpQenTohSZKiN7pfP2qMmTePON9WWlnJ+VOn8tTAgfQ54gj2VwH9oDpmZbEwL49eEyfyZVkZtd27dCnV8Tj3DRzInjLuySe5Yf584mwvIyWFOUOH0qNTJyRJ0n/O6H79iAHXz5tHnG8rrazk/KlTeWrgQPoccQT7o4B+cB2zsliYl0eviRP5sqyM2u5ftowa9w0cyA9t3JNPcsP8+cTZXkZKCnOGDqVHp05IkqT/vPx+/aiTmsqI2bOpjsfZUWllJedPncpTAwfS54gj2N8EtEd0zMpiYV4evSZO5MuyMmq7f9kyatw3cCA/lHFPPskN8+cTZ3sZKSnMGTqUHp06IUmS9h5Xn3UWNUbMnk11PM6OSisrOX/qVGYMHMjpRxzB/iSgPaZjVhYL8/I4edIk1paWUtv9y5ZR476BA9ld4558khvmzyfO9jJSUpg7bBjHd+yIJEna+1x91lnUGDFrFtV8W2llJf2mTmXGwIGcfsQR7C8C2qM6ZmXxUl4eJ02cyNrSUmq7f9kyatw3cCD/rnFPPskN8+cTZ3sZKSnMHTaM4zt2RJIk7b2uPussaoyYNYtqvq20spLzH3yQpwYN4vQjjmB/ENAe175VK17Ky+OkiRNZW1pKbfcvW0aN+wYO5F819skn+cX8+cTZXsPUVJ4dOpTjO3ZEkiTt/a4+6yxqjJg1i2q+rayqivMffJCnBg3i9COOYF8XUCTat2rFS3l5nDRxImtLS6nt/mXLiMfj3D9oEN/X2Cef5Bfz5xNnew1TU3l26FCO79gRSZK077j6rLOIxWJcO3Mm1XxbWVUV5z/4IDMGDuRHRx7JviygyLRv1YqX8vI4aeJE1paWUtv/vvYaNe4fNIh/ZuyTT/KL+fOJs72GqanMHTaM7h06IEmS9j3DzzyTGtfOnEk131ZWVUW/qVOZMXAgPzrySPZVAUWqfatWLMnPp+dtt/F5SQm1/e9rr1Hj/kGD2JVf/elP3Pjcc8TZXsPUVOYOG0b3Dh2QJEn7ruFnnkmNa2fOpJpvK6uqot/UqcwYOJAfHXkk+6KAItfmgANYNGoUPW+7jc9LSqjtf197jep4nN9ccQU7+tWf/sSNzz1HnO01TE1l7rBhdO/QAUmStO8bfuaZxIBrZs6kmm8rq6qi39SpzBg4kB8deST7msAPoLKyki+//JJWrVqh76fNAQewaNQoet52G5+XlFDbA8uXwwMP8JsrrmCbX/3pT9z43HPE2V7D1FTmDhtG9w4dkCRJ+4+rzjyTGtfMnEk131ZWVUW/qVOZMXAgPzrySPYlgd101113MWbMGCoqKjjggAN46qmnOProo9mZefPmce6551JbixYtWLVqFYmozQEHsGjUKE687TY+KymhtgeWL4cHHuA3V1zBL//f/5ebnn+eONtrmJrK3GHD6N6hA5Ikaf9z1ZlnUuOamTOp5tvKqqroN3UqTw4YwBlHHcW+IrAbFi9eTH5+PnPmzKFnz57cdNNNnHPOOXzyySeEENjRe++9R9euXbn99tvZJjU1lUTW5oADKMjPJ3fCBD4rKaG2B5YvZ+n48byxahVxttcwJYW5w4bRvUMHJEnS/uuqM8+kxjUzZ1LNjpIpizXlvN8/y282V3LZScexLwjshoceeoizzz6bU045hRo33ngjU6ZMYf78+fTt25cdffjhhxx99NH06tUL/V+tmzenID+f3AkT+KykhH9o0YK/ZWfzjVWr2KZhSgrzhw/n2PbtkSRJ+7+rzjyTqnickbNn02hjMlc90ZybBxdDne5AOluBy59eyxdb32b0aYeytwvshhUrVnDBBRewTXp6Ol27dmXFihX07duXHa1cuZLMzEwuvvhiioqKOP7448nLy6NevXokutbNm1OQn0/uhAl8VlICLVrAIYfwjexsvrFqFQ1TUpg/fDjHtm+PJElKHNecdRZFZy/nHxp3h7J0/iGWxM3PreYnR7cjp1Ed9maB3fDll1/SuHFjamvSpAlr165lZz744AOqqqoYOXIkIQTuvPNO5s+fz6JFi0hKSqK2adOmMX36dGqrX78+Bx98MOvWrSMKX331FXXq1KFOnTpEoQ7w9KBB9HrsMTYdcgjbyc4mpaqKJ047jYMyM1m3bh172oYNG9hm69atrFu3jkS1fv16KioqSE1NRYlt/fr11AghoMS2YcMGUlNTicViKPGUl5ezM6Wlpaxbt4494f4D7qe2lE1pVAS2s7WqmuffXs1ZHRqzp5SUlFCvXj12R2A3hBCorKyktsrKSpKSktiZadOm0b59exo3bkyNH/3oR7Rt25ZFixZx0kknUVtubi4tW7aktlmzZpGWlkZGRgZRqKiooE6dOtStW5eoPPX882z++msoLYW6dfmHrVup2LCBh195hZO6dSMK9UtK2CaEQEZGBomqvLycBg0akJaWhhJbSUkJGRkZhBBQYisuLiYjI4NYLIYSTwiBnUlLSyMjI4M9YcDyAfz2qN+yTTy5GkhmR62aZJCRkcGekpaWxu4K7IYWLVqwfv16alu/fj0HHnggO9O9e3dqy8nJITs7m48//piTTjqJ2tq2bUvbtm2praCggBrp6elEIS0tjfT0dNLT04nCLX/8I2P/8hfi8Ti8+SZ07Qp168LWrfDGG1BezmMrVhB++1umDR3KnpaWlsY2SUlJpKenk6jS0tJIT08nLS0NJba0tDTS09MJIaDElpaWRnp6OrFYDCWeEAI7k5ycTHp6OntCvfaZzBhZTr9J6dSoTP0cKnKorWuLepzSoQUpyUnsKSEEdldgNxx33HEsWrSIbTZt2sQbb7zBXXfdxY7WrFnDueeey/Tp0+nYsSM1SkpKWLduHe3atSPR3fLHP3LLiy8Sj8f5RkUFvPkmSZ06Uf3++1BezjbT33wT7r2XaUOHIkmS9n9FJSX0Gj+eNzd9xZtXQNrWGHy9BlI2QciGWOCA9DJmDTiZlOQk9naB3TBo0CAOP/xwfve733HKKadw4403cuihh9KjRw9qPPTQQ7zwwgs8+uijtGzZkrp163LZZZdx880306RJE8aOHcthhx1Gjx49SGS3/PGP3PLii8TjcWprnJTEI8cfz5UffcSnbG/6m28Sv+cepg8bhiRJ2n8VlZTQc+xY3tqwgW22pMb5RsXHUPExPbOyeC4/n7SUFPYFgd3Qvn17Zs2axQ033MDo0aM54YQTmDt3Ltts2bKFzZs3s80f//hHRowYweWXX05KSgqnnXYaU6dOJSkpiUR1yx//yC0vvkg8Hqe2JmlpPH/NNRzeti0F2dnkTpjAp5s3U9sjb70F99zD9GHDkCRJ+5+ikhJ6jh3LWxs2sCsnZmUxPz+ftJQU9hWB3dS7d2969+7NzgwePJjBgwezzQEHHMCjjz6K/o+bnniCXy5YQDwep7YmaWm8cO21dGvThho5zZpRkJ9PzwkT+GTzZmp75K234J57mD5sGJIkaf9RVFJCz7FjeWvDBnblxKws5ufnk5aSwr4koP+IUY88wh0FBcTjcWprkpbGC9deS7c2bagtp1kzFuXn03PCBD7ZvJnaHnnrLeL33MMjw4YhSZL2fUUlJfQcO5a3NmxgV07MyuK50aNJDYF9TUCRG/XII9xRUEA8Hqe2JmlpvHDttXRr04adyWnWjEX5+fScMIFPNm+mtkffegvuuYdHhg1DkiTtu4pKSug5dixvbdjArpyYlcVzo0eTGgL7ooAiNeqRR7h90SJ21CQtjReuvZZubdrwXXKaNWNRfj49J0zgk82bqe3Rt96Ce+7hkWHDkCRJ+56ikhJyx47l7Q0b2JUTs7J4bvRoUkNgXxVQZEY98gi3L1rEjpqkpfHCtdfSrU0bvo+cZs1YlJ9PzwkT+GTzZmp79K23iN99N49edRWSJGnfUVRSQu7Ysby9YQO7cmJWFs+NHk1qCOzLAorEz6dP546CAnbUJC2NF669lm5t2vCvyGnWjEX5+fScMIFPNm+mtj+8/TbcfTePXnUVkiRp71dUUkLu2LG8vWEDu3JiVhbPjR5Nagjs6wLa434+fTp3FBSwoyZpabw4YgRdDzqIf0dOs2YsHj2aHuPH88nmzdT2h7ffhrvv5tGrrkKSJO29ikpK6PGrX/HOV1+xKydlZzM/P5/UENgfBLRH/Xz6dO4oKGBHTdLSeHHECLoedBC7I6tpUxaPHk2P8eP5ZPNmavvD228TnzKFPwwfjiRJ2vusLy6mx9ixvL9xI7tyUnY28/PzSQ2B/UVAe8x106czsaCAHTVJS+PFESPoetBB/BCymjZl8ejR9Bg/nk82b6a2x955B6ZM4Q/DhyNJkvYe64uL6TF2LO9v3MiunJSdzfz8fFJDYH8S0B5x3fTpTCwoYEdN0tJ4ccQIuh50ED+krKZNWTx6ND3Gj+eTzZup7bF33oEpU/jD8OFIkqT/vMKiInLHjeP9jRvZlZOys5mfn09qCOxvAvrBXTd9OhMLCthRk7Q0Xhwxgq4HHcSekNW0KYtHj6bH+PF8snkztT32zjvEp0zhseHDkSRJ/zmFRUXkjhvH+xs3siu9srOZl59PagjsjwL6QeVNm8akxYvZUZO0NBaOHMmhrVuzJ2U1bcri0aPJnTCB1Zs2Udvj77wDU6bw2PDhSJKk6BUWFZE7bhzvb9zIrvTKzmZefj6pIbC/CugHkzdtGpMWL2ZHTdLSWDhyJIe2bk0Uspo2pSA/n9wJE1i9aRO1Pf7OOzBlCo8NH44kSYpOYVERuePG8f7GjexKr+xs5uXnkxoC+7OAfhB506YxafFidtQ0PZ0FI0ZwaOvWRCmraVNeGTOG3PHj+bCoiNoef+cd4pMn8/jVVyNJkva8wqIicseN4/2NG9mVk3NymDtqFKkhsL8LaLeNfPhhfr1kCTtqmp7OghEjOLR1a/4TWjRqRMHo0eSOH8+HRUXU9sSKFTB5Mo9ffTWSJGnPKSwqInfcON7fuJFdOTknh7mjRpEaAokgoN0y8uGH+fWSJeyoaXo6C0aM4NDWrflPatGoEQWjR5M7fjwfFhVR2xMrVsDkyTw2fDixWAxJkvTDKiwqInfcON7fuJFdOTknh7mjRpEaAokioH/byIcf5tdLlrCjpunpLBgxgkNbt2Zv0KJRIwpGjyZ33Dg+LC6mtidWrIApU3hs+HBisRiSJOmHUVhURI+xY1lZVMSunJyTw/z8fEJyMokkoH/LiIcf5s4lS9hR0/R0Fo4cSZecHPYmLRo1ouD668kdN44Pi4up7YkVK9jy618zY8QIYrEYkiRp9xQWFdFj7FhWFhWxKyfn5DA/P5+QnEyiCehfNuLhh7lzyRJ21DQ9nYUjR9IlJ4e9UYtGjVgyZgwnjB3Lh8XF1Pbn99/nvEmT+PPIkcRiMSRJ0r9n3caN5I4bx8qiInbllJwc5uXnE5KTSUQB/UtGPPwwdy5Zwo6apaezYORIuuTksDdrnpnJkjFjOGHsWD4sLqa2mStXct6kSfx55EhisRiSJOlfU1pRQe64cawsKmJXzmjbllnXXUdyUhKJKqBdajq/GWVnfAR121Dj2t//nrtefpkdNUtPZ8HIkXTJyWFf0DwzkyVjxtBj3Dg+KCqitpkrV3LepEn8eeRIJEnSvyAEHv/8czYWFbErZ7Rty6zrriM5KYlEFtDOFb9LjTrPtoX/ruLah6dx18svs6Nm6eksGDmSLjk57EuaZ2ay+Prr6TFuHB8UFVHbzJUrOW/SJO747/9GkiR9DyHAYYexsbCQXTmjbVtmXXcdyUlJJLrAbqqqquLVV1/l448/5thjj+WQQw7hu2zevJmCggJKSko48cQTadasGXudqnKY3Yl/eCyZu16+gh21qFOHl667jvatWrEvap6ZyeLrr6fHuHF8UFREbTNXrmTzI48gSZL+iRDgsMOgfn0oLGRn+rZrx8y8PJKTkhAEdkNlZSUXX3wxBQUFdO7cmUGDBjF58mQGDRrEzqxZs4bevXsTj8dp2LAhV1xxBfPmzePoo49mr/JEHXbULLWcwq3pbNOiTh3+8vOfc0jLluzLmmdmsvj66+kxbhwfFBVR24uffw6HHAIrVyJJknYiBDjsMKhfn13p264dM/PySE5KQv9HYDfMmDGDRYsW8eabb9KiRQuefPJJLr30Ui6++GIyMjLY0a9+9StatGjB888/T3JyMldddRXXXHMNBQUF7E3KLtzEr1+axMtfvEFpZWB9WTMKW7chRpw4MdIqKugci5H3hz+wv2jXtClfNGpESUoK/xACdO4MrVrx1kcfce7EiSSq1ORkyrZuJTk5mURWr04dSsrKSGTpKSmUbtlCUlISiSw1JYWtFRUksrSUFLZUVKDEtLy8HDp2hLZtoaoKSkvZmb7t2jEzL4/kpCT0fwV2wxNPPEG/fv1o0aIFNfr168fQoUOZNWsWP/nJT9jRE088wb333ktycjI1hgwZQufOnfn8889p1aoVe4Mr3y3JAAAgAElEQVQ41fSbkcfcsvpAW4gBdeHo+p+wLOVuaiS9ehUvlm9hvxMCHHYY1K/PN0KAhg2hfn0KYzFmLlhAospu1oxPCwtJdC0aNWLt11+TyNq0aMHHa9eS6BrUqcOmsjIS2cEtW/LBmjUoQbVtC+3awQEHwPr1UFrKjs46+GD+PHIkyUlJaHuB3bBq1Sp69uzJNrFYjA4dOrB69Wp2tGnTJr766is6duzINh06dCAWi7F69WpatWpFbWVlZZSXl1NbZWUlycnJVFdXs6csev8Z5pbVZ0dfVpezTfVxd9N08U/ZUJnOfqWyEt56Cw49FBo04B+qq6G4GEmSVEtxMSQlQSzGjs5o25YZ115LDKiurmZ/Eo/HicVi7I7Abli/fj2ZmZnUlpmZybp169jR+vXrqZGZmck2SUlJNGjQgHXr1rGjKVOmcNttt1HbUUcdxWGHHcaaNWvYU95d8x47U0hdalvfYxqxl65gv1NZCW+/DYceChkZsHYtdVatomzNGhJZVVUVgqrqahJdVWUlgup4nERXWVmJElhhIZSVUaNpSgrrKyr4RnExvVu14v7//m++XLuW/dGmTZvIyMhgdwR2Q4MGDSgtLaW2kpIS6tevz44aNGhAjdLSUmorLS2lfv367GjUqFGMGjWK2m6++WZqZGVlsaccH+9ObPWfibO97Ooiakv9y0D2W5WV8Pbb0Lkz/O1vHFC3Lqs2biSRJScnI0hOSiLRJYeAICkWI9GFEFAC27QJNm2ixvmHHUbDhg2ZWFDAme3a8XReHslJSeyvMjIy2F2B3dCyZUvWrFlDbV988QUtW7ZkR02aNCE1NZU1a9bQuXNnahQWFlJZWUnLli3ZW3TNzmVokz9zzwb+oQ4VJK8ug458I/bSFez3KivhzTf5Rt26SJKkXbvj0kvpmp1N/5NOIhaLoe8W2A2nn346jz76KL/85S+JxWKsWrWKd999lz59+rCjWCxGnz59eOaZZzj11FOpMWfOHFq3bk3Hjh35Pj755BM+/fRTbrvtNvakLJpx+do3+XvharZs3UqjcCBJsfqc9uEl1DiVzSSSlFWrOLiykkRWXVRE+6QkYrEYiSy5rIxDq6pIZNXvvUe75GQSXVJpKdXV1SSy6hUrOCgEpLI33+S2226jxu2vvsr+bvHixWRnZ7M7Arvhsssu4+677+byyy/n5JNPZvLkyVxyySUcfPDB1BgzZgyPPvooq1atosaoUaM444wzaNasGZmZmdx4441MmDCBpKQkvo+OHTtSWlrK119/zZ7WPC2bjaVlNG3alMaNG6PE9s4775CTk0ODBg1QYvvb3/5Gp06dSEtLQ4lt2bJlHH7kkSQnJ6PEVVVVxV//+ldaNW5MomjSpAkdO3ZkdwR2Q5MmTSgoKODee+/l2Wef5bLLLmPo0KFsc9JJJ9GwYUO2yc3N5bnnnmPatGm8//77/Pa3v+Xcc8/l+/r5z39OlPr168cZZ5zB+eefjxJbjx49GD16NCeccAJKbAcffDD33nsv7dq1Q4mtQYMGPP3009SvXx8lrs2bN3PggQfywgsvoO8vsJuysrIYP348O9OnTx/69OlDbd27d6d79+5IkiQpMQUkSZKkCAUkSZKkCAW0S+effz7t27dH6t+/P61atUK68soryczMRLr22mtJTU1FiS01NZVrr70W/WsC2qVLL70UqcbgwYORalx33XVINW699Vak1NRUbr31VvSvCUiSJEkRCkiSJEkRCkiSJEkRCkiSJEkRCminZs+ezZw5c2jUqBH9+/enU6dOKPFs2rSJ+++/nxUrVnDAAQfw05/+lC5duqDE9pvf/Ia0tDQuu+wylJieeeYZ5s2bRywWY+DAgRx22GEo8Xz00Uc8+OCDfPHFF3Tr1o0rr7ySunXron8uoG+57777uP766xkyZAirV6/mhBNOoKCggC5duqDEsXXrVrp3706DBg248MILefvttznyyCOZM2cOvXv3RonplVdeYdiwYQwdOhQlpttuu4277rqLAQMG8Pe//51jjz2WZcuWceihh6LE8fe//51jjjmG3Nxcjj76aH7zm9/w+OOPs3jxYkII6LsFtJ2KigpuueUW7rnnHvr370+Nfv36ceeddzJ16lSUOJ566inWrl3Lq6++Sv369alRt25dbr31Vnr37o0ST3FxMf379+fAAw9EiWn9+vXcdNNNLFmyhCOPPJIa55xzDo888ggTJkxAieOhhx6iTZs2zJ07lxr/8z//Q4cOHVi6dCknnHAC+m4BbWfZsmVs2LCB8847j20uvPBCRo4ciRJLSUkJl156KfXr12ebtm3b8vzzz6PENGTIEM4991xWr16NEtOTTz5Jx44dOfLII9lm5syZKPHUrVuX6upqtqmurqZG3bp10T8X0Ha++OILGjVqRP369dkmJyeHdevWUVVVRXJyMkoMP/vZz6itsLCQhx56iNNPPx0lnunTp/P222/z0EMPcckll6DE9NFHH9GmTRtuuOEGnnrqKdLS0vjpT3/K8OHDSUpKQoljyJAhzJo1i169enHMMccwY8YMhg4dSrdu3dA/F9B2iouLqVevHrXVr1+f6upqiouLadSoEUo8M2bMYMSIEbRt25bx48ejxPLRRx9x3XXXsWDBAlJTU1Hi+vLLL5k9ezYtWrRg6tSpfPjhh1x99dUkJSUxfPhwlDgqKytJTU2lqqqK9evXE4/HSU1NpaqqihAC+m4BbadJkyYUFxdT28aNGwkh0LBhQ5RY1q5dy4ABA3j99de59dZbGTBgALFYDCWWQYMGcdZZZ7FhwwYKCgrYsGEDSUlJFBQU0KNHD2KxGEoM9erVo2PHjtx///3UOP7441m9ejXTpk1j+PDhKHFceeWVHHPMMdx9993UKCsro2vXrnTu3JkBAwag7xbQdlq3bs3GjRtZv349TZs2pcaHH35IVlYWSUlJKHEUFxdzyimncOyxx/L+++9Tv359lJiqqqp4/vnnef7556lRWFhIcnIyS5cu5b333iMtLQ0lhlatWnHggQdSW8uWLSkqKkKJ5eWXX2bQoEFsU6dOHXr06MHLL7/MgAED0HcLaDvdunWjffv2PPLII1xzzTXE43EeffRRLrroIpRYHnzwQaqqqvjd735HLBZDiWvhwoXUduGFF5KVlcVdd92FEsv555/PuHHjWLlyJYcccghVVVU88cQT9OjRAyWWww47jNmzZ3PuuedSo7i4mJdeeomrr74a/XMBfcuUKVO46KKLWLZsGZ9++ikbNmxgxIgRKLEUFBTw0Ucf0aBBA2rr3LkzS5cuRVLi6dSpE4MHD+aYY47hlFNO4b333qOyspKHHnoIJZbJkydz+umnc9RRR9G2bVsKCgro0KEDgwcPRv9cQN/Sp08fXn/9dRYsWEBmZiannnoqGRkZKLHceOONXH311eyoXr16KLHdcsstpKWlocR0xx13cOGFF/LXv/6VSy+9lB/96EfUqVMHJZZu3brx/vvvM3fuXL788kuuvPJKevfuTSwWQ/9cQDvVpk0b2rRpgxLXEUccgbQzXbp0QYntuOOO47jjjkOJLSMjg4suugj96wKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAKSJElShAL7oRUrVtCiRQsaN27MvmTFihW0aNGCxo0bszdavnw5Xbp0IT09ndqKi4tZtWoVXbt2JUpbtlZBLEZSDEkJoHxrNSE5RnpqEtLeKB6PE4vFiMVi6LsF9kOXXHIJeXl59O/fn73J66+/TlVVFUcffTQ7c8kll5CXl0f//v3p2rUrF110ETfccANReO+99+jduzcPP/wwvXv3ZmeOO+44/va3v3HooYcyb948OnXqRE5ODkuWLGHgwIF89tln7Gkl5VX8/eNNfLGhnMqqOJL2b/E4/P2TLbz36RaKS6up0axhMid1q0ffY+qRnBxD2tskJSWRmppKWloaUdu6dSs33HADc+fOJRaLcdVVVzFw4EB2ZfHixdxyyy18/PHHdO/encmTJ9O4cWO2mTp1KlOnTqWkpITzzjuPW265haSkJHZXQJF5+OGHKS8v5+ijj+afOeecc+jatStRadiwIRdeeCEHHngg38eoUaPIz88nJyeHqGzcXEHBGxuoqIwjaf9XHY+z8G8lfFpYSW2FRVX86S/FrFi1hREXNiYlxJD2JtXV1ZSXl1NVVUXdunWJ0k9+8hO++OILfv3rX/P3v/+dwYMHc+CBB3LmmWeyow8//JA+ffowcuRIxowZw7hx4+jbty+vvPIKNR5//HGuueYa/vd//5cmTZowePBgKioqmDBhArsrsI8qLS1lxowZrFy5ki5dutCvXz9CCOzMp59+yuzZsyksLKRXr16ceOKJbLNw4UI6duzIO++8w8svv0y3bt04++yzWb58OfPmzSMzM5PLLruMunXrss2cOXN47bXXaN68ORdffDGNGjWixttvv008HicjI4OZM2dSWlrKxRdfzEEHHcQbb7zBBx98wNatW3nxxRc55ZRT+C69e/emTZs21FiwYAGdOnXis88+47nnniMzM5P+/fvToEEDtvn000+ZPXs2hYWF9OrVixNPPJEazz77LB07dqRNmzbUWLBgASkpKeTm5lJj5cqVfPjhh/Tp04fc3Fxat27NNkuWLGHhwoUceOCBXHjhhWzz/PPPU1RUxKuvvkqXLl3YpqioiD/96U98/vnn9O7dmx49evBD+uu7RVRUxpGUGFZ+vpVPCyvZlRWfbOG5v5bQ99j6SHujiooKtm7dSmpqKlF47733ePrpp/nss89o3rw5p556KmVlZaxevZqdmTp1Kscccwy33norNbp06UKLFi147bXXOProo5k8eTJ5eXn079+fGnfeeScDBw7klltuIS0tjd0R2AcVFhZy0kkn0aBBA4466ijy8/OZMWMGjz/+ODsqKCjgnHPO4cQTT6RZs2aceeaZ3H777QwePJgaN9xwA2lpaTRs2JD69etz6623ct555/H5559z5JFH8utf/5qXX36Z6dOnU+PHP/4xy5Yto2/fvjz77LPceeedvPrqq2RmZvLII4+wYsUK1q9fz/HHH8+CBQu47bbbeO+993jnnXf46KOPqKqqYtGiRZxyyil8l9GjRzNw4EAGDhzI6NGj6dSpE6tWraJr167ce++9/OEPf2DRokXUKCgo4JxzzuHEE0+kWbNmnHnmmdx+++0MHjyYBx54gKysLO6++26qq6u54IILqFOnDp9//jk1xo0bR2lpKb169eLHP/4xK1eu5OCDD2bSpElcf/31XHDBBSxdupS7776beDxOjb/85S8UFRXx17/+le7du9OwYUNKS0s566yzOPLII/n444+56aabeOGFFzjllFP4IWzcVEFRSQWSEseHn1fwzxS8XUbfY+sj7a22bt1KamoqUZg9ezbdu3enefPmrFu3jrS0NH7+85+zK0uWLOHUU09lm6ZNm9K1a1cWL17MEUccwdKlS7n99tvZpnfv3nz11Ve8++67dOvWjd0R2AeNHTuW1q1bM2fOHGKxGMXFxXTp0oVp06bx05/+lNqGDRvGddddx+jRo6lx5ZVXkpubS58+fWjXrh3bzJgxgxrl5eW89tprvPvuu6SmpnLIIYdw1113UePPf/4zBQUFrFixgkaNGhGPxzn//PMZMWIEDz30EDVeeuklPvjgA5o1a0ZxcTEtW7Zk2bJlXHLJJSxdupTy8nJuuukm/lUrV67kL3/5C0lJSZxzzjmceuqplJSUUK9ePYYNG8Z1113H6NGjqXHllVeSm5tLnz596Nu3L3feeSc13nzzTerWrcuGDRt4//33ad++PQsWLOCXv/wlta1bt45f/OIXPPzww/zXf/0XNW699VZef/11atx6663MnDmTwYMHc/HFFzN37ly+/vprbr75Znr37k2N4447jueff55TTjmFH8KmskokJZbi0ir+mbVfVxKPQyyGtFeqrq4mKp999hkpKSnk5uayfPlytmzZwjnnnMO0adPIyMhgR2vXrqV58+b8f+3Bd3zNB9/4/9c553NG9jhZkkjMSAilRmzRaAShNCr26DBa2qo9SlVR1aKqLa2bLrS9iGgprVWEWq3YsdWKIEKafU5yvr/PH+fxOL886NXrbpy7ubyfT0cBAQFkZWVx8+ZNysrKCAgIwM7T0xOTyURWVhZ/l0IltG3bNuLj4/nxxx+xi4qKIi0tjYEDB2KXnZ3NkSNHGD16NJs3b8bO29ub/fv3U7NmTVTdunXDLiIiAp1Oh8FgQBUREUFJSQmqbdu2ER0dzf79+7GrVasW3333HXZt2rTB398flaenJ6GhoZSUlPB3de/eHa1Wi6pevXqoLBYL2dnZHDlyhNGjR7N582bsvL292b9/P507d2bYsGFcv36dXbt20aFDB65cucKOHTswGAxcuXKFhIQEHP36668YjUaSk5Oxe+GFF5g+fToP4u7uTlxcHHb169enpKSEiqLVaBBCPGI0/Fs6DWg0CCH+P9nZ2fz888+sXLmS5ORkrl27RseOHZk2bRoLFy6kvJKSEvR6PY70ej2FhYWUlJSg0uv1OFIUhcLCQv4uhUooKyuL/fv38/vvv2Pn6elJ3bp1cZSVlYUqNTUVnU6HXevWrfH398fOaDTiSKfTcT9ZWVlcvnyZZcuW4ahdu3bYeXt78zB4e3tzP1lZWahSU1PR6XTYtW7dGn9/f0JCQnjsscfYvn07O3fuJDExkWvXrrFjxw4MBgPNmjXD39+foqIi7O7evYvZbEaj0WDn5+fHn/Hy8uJh8nJXEEI8WsweOq5nW/kzVQP0CPFPptPpcBaz2Uzr1q3p3bs3qtDQUF566SUWLVrE/QQGBpKTk4OjnJwcgoKCCAwMRJWTk4Od1WolLy+PoKAg/i6FSig8PJz+/fszfPhw7E6dOoWnpyeOwsLCUM2ZM4fIyEjsDhw4QFRUFP+p8PBwtFotX3/9NXbXrl0jNzeX/ythYWGo5syZQ2RkJHYHDhwgKioKVadOndi6dSu7du3i3Xff5caNGyxevBi9Xk9iYiLlhYeHc/XqVfLy8nB3d0d1+vRp/i+5uygE+Bi5mVOMEOLRUCfMyPVsK38mrqErQvyTGQwGnKVGjRocOHCA8oxGI/cTFRXF4cOHsbNarRw/fpyxY8diMpmoVq0ahw8fpnHjxqgOHz6MoijUrFmTv0uhEurduzfz58+nS5cuVK1alb1799K+fXt++uknQkJCsHN3dycxMZHJkyezcuVKDAYDixYtYvr06Vy7do3/VHJyMq1bt2bXrl20bduWGzdu0K5dOwYOHMi0adP4dzQaDXl5eVQkd3d3EhMTmTx5MitXrsRgMLBo0SKmT5/OtWvXUHXp0oX4+HjMZjPVq1enatWq5Ofnk5KSwp49eyivWbNmhISEMGbMGD788EMsFgsTJ07EkUajIS8vD2dqHOnF7iN3yCuwIoT47xfmr6d+dSPHLhZzPx0ed6NlPVeE+KcyGo3o9XqcpXfv3owfP55vv/2WXr16ce3aNRYtWkSvXr1QXbhwgZSUFIYMGYLZbGbQoEF07dqV06dPU6dOHT755BMMBgOdO3dGNWjQIBYvXkzfvn1xcXHh3XffJTExET8/P/4uhUpo1KhRZGRkUKNGDby9vcnPz2fmzJm0a9eO8pYsWUJycjJmsxmDwYCrqytr1qzBw8OD/1STJk1YsGABCQkJeHh4cPv2bXr16sXEiRP5K5544gl69erFlStX2LlzJxVlyZIlJCcnYzabMRgMuLq6smbNGjw8PFA1b94co9FIbGwsKkVRaNu2LUeOHKFhw4aUpygKq1evJikpCS8vL2w2G6NGjSIjIwO7hIQEXnzxRS5dukTr1q1xBpNBR/vH/bhwPZ/M20X8UVCKtdSGRgNarQYNQoj/NjFRblT1N3DycjHZuVaMeg3hAQZiH3PlsZomhPinsNlsqLRaLTqdDoPBgKIoOJO/vz+rVq1i0KBBDB8+nNzcXPr06cOUKVNQnTx5knHjxpGQkIDZbCY2NpYJEybQqFEjAgMDycvLIzU1FYPBgGrixImkp6cTHByM0WgkJCSEjRs3UhEUKiGDwcCnn37Ku+++y+XLl6levTru7u7YpaenYxcSEkJaWhrXr1/n3r171KpVC71ej11aWhqO3nrrLRwlJCRw9epV7EaMGMGzzz7L2bNnCQgIICAgALu3336b8jIyMrDr2rUrd+7c4UHS09Ox27dvH3b79u3DUVBQEDabDbuQkBDS0tK4fv069+7do1atWuj1eux0Oh137tzB0caNG3FkMpmw2WzYNWvWjN9//51z584REBCAt7c3c+fOxW7OnDlMmjQJV1dXFEXh6tWrOFq2bBkPg6LTEFHVnYiq7gghhBDi/69Hjx507dqVs2fPEhQUhI+PD3aJiYnYbDYcTZ06ldGjR3PlyhUiIiLQarXYmUwmUlNTuXnzJgUFBVSrVo2KolCJeXl5Ub9+ff6K4OBggoODqQhGo5Ho6Gj+N1xcXHhYgoODCQ4OpqJotVoiIiJ4EE9PT4QQQgjxz6IoClFRUfxVbm5uREZG8iABAQFUNAUhhBBCCCGcSEEIIYQQQggnUhBCCCGEEMKJFIQQQgghhHAiBSGEEEIIIZxIQQghhBBCCCdSEEIIIYQQwokUhBBCCCGEcCIFIYQQQgghnEhBCCGEEEIIJ1IQQgghhBDCiRSEEEIIIYRwIgUhhBBCCCGcSEEIIYQQQggnUhBCCCGEEMKJFIQQQgghhHAiBSGEEEIIIZxIQQghhBBCCCdSEEIIIYQQwokUhBBCCCGEcCIFIYQQQgghnEhBCCGEEEIIJ1IQD9Uff/yBzWbD09MTZ9mwYQNTpkzhyJEjONuNO8Vcu1lIboGF/MJSrKUazl4r5vptCwa9hkAfhZhIFx6r6YIQQgjxKLDZbNhsNjQaDVqtFkVRMBgMaDQaKprVamXZsmUcOnSI2rVrM3ToUHx8fHiQmzdvsmzZMi5evEjz5s159tln0Wg0lDdmzBimTJmCr68vFUFBPFSvv/46RUVFLFmyBGexWq3k5+fjTGU2GwdP3eX6rSLsbt4tZXt6HsUlNuxOXylm19F8mkW6MLyLNzqdBiGEEOJRYLPZKCsrw2q1UlxcjKurK4qiUJH69u3LkSNH6NevH99//z2rVq1i3759uLi4UN7du3dp06YNVatWpU2bNsycOZN9+/bx6aef4uinn35iwYIFjB49Gl9fXyqCQiWVn59Peno6Wq2WRo0aYTKZUOXn56Nyc3PD7s6dO3h4eKDX68nOzsbX15ecnBxOnjxJ3bp18fX1RWW1WsnLy8Pb25tLly5x48YNGjZsiMlkwtGNGzc4ffo01atXJywsDLuCggJUBoOBAwcO8Nhjj1FUVERRURH37t3Dy8uL+zl37hyXL1+mRo0aVKtWDUe5ubkcOXIEs9lM3bp1cZSVlcXJkycxmUw0bNgQFxcXHqSoqIijR4+iaty4MTqdjop08uIfXL9VhF2JxcaOw3kUW2zcz4GMQgK8dTzT1hMhhBDiUWOz2SgoKMDDwwONRkNFOHr0KGvXruXChQuEh4czduxYIiIiWLt2Lf3796e8zz//HK1Wy6ZNm9Dr9fTo0YNGjRrx+uuvExYWxu7duxk6dCgZGRlUNIVKaPfu3fTo0QOj0UhhYSGurq7s3r2b6tWrM2bMGEwmEwsXLsQuIiKCNWvWEBsbS2BgIG+99RZz5szB19eX69ev8+GHH/L888+zb98+hg4dSkxMDJs2baKsrAydTkdqaioxMTGoJkyYwMKFC6lZsyYXL17k6aefZsWKFRgMBt58800KCgpIS0vj5MmTTJ48mVWrVmGz2bhz5w7fffcdjsrKyujXrx9r166lWrVqnD9/ngkTJjB79mxUq1atYtiwYVSpUoULFy7QqVMn1q1bh6IoLFq0iLFjxxIaGsqdO3fQ6/Vs376d+vXrU97OnTtJTk7Gzc2NvLw8fH192bVrF/7+/j4JRwIAACAASURBVFSE0jIbF64X4OjctRKKLDb+zJZf83mqpQcGRYMQQgjxqLHZbJSUlGA0GqkIGzZsoEmTJoSHh6NydXWlc+fObNy4kf79+1Pexo0b6datG3q9HlWDBg2oWbMmmzZtYtiwYTRo0IDVq1dz/fp1unTpQkVSqISmTZvGM888w8cff0xpaSkxMTEsX76cmTNn8ld88803XL58GS8vLz7//HOGDh1KfHw8qlOnTtGiRQsyMzOx2WwMHTqUZ599lmPHjvHjjz+yePFiDh48SIMGDbh69SotWrTgk08+YeTIkag++eQTPv30U5KTkzEYDNy5c4eioiKWLFlCebt37yYlJYVz584RFhbG2rVrGThwIFOnTuXOnTs8//zz/Otf/6JLly5cu3aNqKgoVq9eTd++fZk8eTJLly5lyJAhlJWV0a5dO1asWMH8+fNxVFBQQJ8+fZg8eTIvv/wyVquVIUOG0KdPH7Zu3UpFyM2zUlpqw9Gt3FL+nWKLjeu3rVQL0iOEEEI8ikpLS6komZmZhIWF4SgsLIytW7dyP5mZmTz11FM4CgsLIzMzE5WXlxcNGzbE29ubiqZQCel0Ok6dOkVGRgaRkZEcOnSI/8T48ePx8vJCNWjQIObOncsPP/xAdHQ0qrfeeguNRoNGo2H27NkEBgZy5swZ1q1bR8+ePWnQoAGq0NBQXnjhBVJTUxk5ciSqJk2aMGDAAP4KnU6HxWJh27Zt9OnTh6SkJJKSklB99tln1K1bly5duqAKCQkhJSUFT09PNBoN586dIyAgAFV2djaKopCbm0t5P//8M2VlZQwdOpSioiJUEydOJDo6mjt37uDr68vfVVpmozxrqY2/osRqQwghhHhU2Ww2Kkpubi5ubm44cnd3Jycnh/vJzc3Fzc0NR+7u7uTk5PCwKVRCixcvZuTIkdSrV4+qVavSrVs3pkyZQmBgIH9F7dq1cVS7dm0uX75MdHQ0bm5uVKlSBbuAgAA8PT25fPkyV65coXnz5jiqUaMGX331FXZhYWH8Va1bt2bWrFlMmjSJESNG0KpVK4YPH84zzzzDpUuXqF69Oo46dOiA3fHjx5k3bx7Hjh1Dp9Oh1+upWbMm5V26dIns7GxCQ0NxZDabycnJwdfXl7/L1aSjPA8XLX+Fv5cOIYQQ4lGl1WqpKGazmUuXLuHo7t27+Pn5cT9ms5nc3Fwc3b17l8aNG/OwKVRCkZGRbN26lezsbHbs2MHs2bPp06cP27dvpzyr1cq9e/dwdOvWLRxlZWURGxuLqqCggIKCAlxdXVEVFBTwxx9/4O/vT0BAAFlZWTi6efMmAQEB2Gm1Wv4TkyZNYsKECRw5coSUlBSSk5MJCAjAz8+PgwcP4ujMmTNYLBZsNhsJCQmsWLGCp556Ck9PT15++WUKCgooz9/fn2rVqnH27FkeFleTDl9PA3dyS7CrFmTg1OVi/kztEAM+HjqEEEKIR5Ver6eihIeHs2XLFhydP3+esLAw7ic8PJyzZ8/i6Pz58wwZMoSHTaES8vf3Z8GCBfTv35+ePXty4cIFli9fjspoNJKeno7dmjVrsFqtOFq6dCkdO3ZEq9Wyd+9eDh48yEcffURBQQE2m42PP/6YMWPGoHr//fcJCAggKiqK9u3bM378eN588038/PwoKCjgs88+o3v37vyZ0tJS7mfRokV8/PHHHD9+nEaNGhEZGcnHH39MZmYm7du3Z+rUqZw6dYqoqCjKyspITExkyJAhhIaGYjab6devH1qtlsLCQrZv305MTAzltWzZkmvXrvHzzz8TGxuLavbs2XzzzTccOXKEitKwtie70rOxltpQBXjrqFPVyOkrxdyPi0HD4I7eCCGEEI8qg8GAoihUlKSkJMaMGcPhw4dp1KgR2dnZbNq0iS+//BLVvXv3OHv2LNHR0ZhMJp555hkmTJjA7Nmz8fDw4Oeff+b27dt069aNh02hEnr++ecZPnw4q1atwmq1smfPHhYsWICqW7duLF68mNjYWEJDQ7l16xa1a9fGUXZ2No8//jhhYWFs3bqVV155hccff5y0tDTc3NxYuXIlmzdvxmq18ssvv/Dll19iMpkYMGAA3377LQ0aNKBNmzYcOnQIX19fxo4dy4PUqlWLadOm4eHhwfz583GUlJTEzJkziY6Opn79+vz2228EBgbSqVMnvLy8GDVqFC1btiQuLo7Dhw+j1+t58cUXyc3Npbi4mLi4OEJCQtizZw+NGzcmNTWVrl274igkJIR33nmHLl26EB8fz+3btzly5AgpKSlUJC93PbGP+3H0XC63coqxATGRLni5aTl2sZjC4jJUGg1EVzPS9wlPgs0KQgghxKNGo9FgNBoxGo1UpNDQUKZPn05CQgJdunQhLS2NuLg4OnbsiGr37t107dqVY8eOER0dTc+ePfnqq69o0aIFTZs25fvvv2fu3Ln4+PjwsClUQnPmzKFLly6kp6djNBpZvHgxERERqOLi4khPT2fnzp1Uq1aNDh06cPz4cWrVqoXdxx9/TFZWFqdPn2bixIm0bNkSO5PJRFpaGps2bSI7O5tPPvmE2rVro9LpdGzcuJFt27aRkZHBwIEDiY+PR6/Xoxo6dCjFxcU4Gj58OPXq1UOv11NeSEgIZ86cYcOGDWRnZ9OvXz86d+6MXq9H9d5775GcnMyhQ4dITk6ma9eumEwmvLy8OHnyJBs2bMDFxYV33nmHoKAgtm/fTs2aNfHw8GDlypXYjRw5kri4ONLS0lAUhU6dOhEUFERF83BVaNXAF4u1jNwCK8UlZTzRWIfNBll3LWiBILOCm0mHEEII8Six2WzYbDZ0Oh1arZaH5fXXXychIYFDhw7Rr18/2rdvj1arRdWiRQt27NhB9erVURkMBtavX8/27du5ePEir776Ko899hjlBQUFsWPHDvz9/akoCpVU69atad26NfdTv3596tevj12TJk0oLy4ujri4OO7H1dWVpKQk7kej0dChQwc6dOhAeTVq1KA8RVFo3749D+Lj48OAAQN4kGbNmtGsWTPKCw4OZujQoTjq0KEDdn5+fjiKiooiKioKZ9ArWsyeBhz5eOoRQgghxMPXtGlTmjZtSnlms5nY2Fgc6fV6OnbsyJ8xmUzExsZSkRSEEEIIIYRwIoVHTEpKCuHh4dxP3bp1+fLLLxFCCCGEEA+PwiOmW7duPIivry+dOnVCCCGEEEI8PApCCCGEEEI4kYIQQgghhBBOpCCEEEIIIYQTKQghhBBCCOFECkIIIYQQQjiRghBCCCGEEE6kIIQQQgghhBMpCCGEEEII4UQKQgghhBBCOJGCEEIIIYQQTqQghBBCCCGEEykIIYQQQgjhRApCCCGEEEI4kYIQQgghhBBOpCCEEEIIIYQTKQghhBBCCOFECkIIIYQQQjiRghBCCCGEEE6kIIQQQgghhBMpVEI7duzAYrEQHx/PwzB//nwGDRqE2WzGGXbs2IHFYiE+Pp7Kzlpq41ZOMXfzLOQWWHE16biXX8rF6yUYDRqCfRXq13DBZNAihBBCPApsNhtlZWWoFEVBp9Oh0+l4mK5evUqVKlXQ6XT8O1arlaysLEJCQniQS5cuERoaiqIoVASFSmj9+vXk5eURHx/PwzB+/Hji4+Mxm804w/r168nLyyM+Pp7K7HJWIUfP5WKxlqEqsdjYc6KAyzctOHIzaekX50mreq4IIYQQjxKLxYJKURRcXV3RaDRUpF27dtGrVy/u3LmD0Whk4cKFPPfcczzIwoULmTJlChaLhcDAQNatW0eTJk1wVFRURJMmTUhPTyc0NJSKoCBEBbh2q4hfM+5iZ7PBtsN53LxbSnn5RWV8+sNdjHotTSJMCCGEEI8aq9VKfn4+7u7uVJSCggK6devG5MmTee211/jhhx9ISkqiefPm1KtXj/L27NnDxIkT+eGHH2jTpg3Tp0+nW7duXL58GUVRyM7OZuvWrXzyySdkZ2dTkRT+C+zevZulS5eSmZlJw4YNmTx5MmazGVVxcTHz589nx44dlJSU8PjjjzNp0iT8/f1RWa1W5s2bx44dO6hSpQpjx47lz3z77besXLmSe/fuERMTw+TJk/Hy8kJ18eJF3n77bU6fPk1kZCSTJ08mLCwM1cGDB1m4cCG///47fn5+DBkyhKeeeor7ycnJYc6cORw6dIiAgABGjx5NTEwM/2THz+fi6PesEm7eLeVBbDb4esc9Gtc2odEghBBCPHJKS0uxWCzo9Xoqwtq1azEajYwdOxatVku3bt1o27Ytn3/+Oe+88w7lLV++nK5du/LEE0+gmjZtGosWLeKnn36ic+fOnDlzhtWrV6PT6ahoCpXctm3b6NKlC2PGjKFr164sX76cmJgYTpw4gdFoZNq0aXz99deMGzcOFxcXFixYwOXLl1mzZg2qgQMHsmfPHqZMmUJBQQFdu3alrKyM+1m/fj0DBw7kzTffxN/fn7fffptbt26xfPlyMjMzady4Mc888wzPP/88n3/+OR06dODYsWPcu3ePuLg4kpKSGDlyJAcPHqRHjx6kp6fToEEDHBUVFRETE0O9evUYPnw4v/32G506dWL37t3Uq1ePf6LcfCsFxaU4upZt5d+5da+UzDtWgs0KQgghxKPIYrGg1+upCCdPnqRp06ZotVrsYmJiOHr0KPdz8uRJkpKSsDOZTDRo0ICTJ0/SuXNnWrRoQWpqKpcuXaJ69epUJIVKbtasWbz44ovMmjULVY8ePahRowarV69m8ODBmM1mPvnkEzp27IhKURRmzZqF6uzZs3z99df8+uuvNGrUCFVQUBB9+vThfnbv3k1MTAzjx49HVbduXY4fP45q/vz5NG3alKVLl6Lq3LkzTZs25ejRo7i5ufHss8/y3nvvodPp6N27NykpKRw/fpwGDRrgaPny5ZhMJtauXYtWq6VXr14UFxczbtw4fvjhB/6Jii1llFdUbOOv+KOgDMwIIYQQjySbzUZFycrKwtfXF0dms5kbN25wP1lZWfj6+uLIbDZz48YNHjaFSu7YsWOMHTsWO4PBQJs2bTh27Biq8ePHk5GRwRdffEFGRgbffvstdseOHSMwMJBGjRph16lTJx4kISGBDz74gNjYWHr06EF8fDzPPfccqt9++42OHTti5+vry/nz57GbPXs2W7ZsISMjg/3793Pp0iXKysoo79dff0Wn0zF58mTsLly4wKlTp/inMug1lGc0aPgr3F21CCGEEI8qjUZDRVEUhaKiIhxZrVa0Wi33oygKVqsVR1arFa1Wy8OmUMmVlJRgMBhwZDQaKSoqQjVu3Di+/PJLnnrqKerWrcuzzz7L8uXLUdlsNgwGA44MBgMP0qFDB06cOMGqVatISUnhtddeo0+fPnz11VcUFhZiNBq5n5MnT9K5c2dq1qxJq1at6NGjB+np6dxPYWEhPj4+hIaGYhcaGspTTz3FP5Wnmx6TQUtRSRl2VcwK56+X8Gd8PLQE+yoIIYQQjypFUagoQUFB7Nu3D0e3b9+mSpUq3E9QUBC3b9/G0e3bt6lSpQoPm0IlFxERwf79++nQoQMqm83GgQMHGD58ONnZ2cyfP5+9e/cSExODatmyZdhFRERw9epVfv/9d8LDw1H98ssvPMjKlSsJCQlh2rRpTJs2jbS0NNq0acPs2bOJiIjg119/xa60tJTu3bszduxYUlJSiIqKYtOmTdi99tpr3E+dOnW4efMmI0eOxG7r1q3k5ubyT6UB6tXw5NeMu9hVD9Jz6ncd2bmlPEivdp5oNAghhBCPJJ1Oh8FgoKLExMTw/vvvY7FY0Ov1qNLS0khMTOR+YmJi2L17N3Z//PEHR44cYeHChTxsCpXcqFGjePnll6lVqxbR0dEsXbqUGzduMGDAALRaLTqdjt27dxMcHMzOnTuZOXMmf/zxBxcuXKB+/fq0adOG3r17895771FcXMwrr7yCi4sL9/Pbb7/x5ptv8uGHHxIQEMA333yDr68vQUFBjBo1ipYtW9K8eXPatGnDF198wZ49e1ixYgU//PADly5d4uTJkxQUFLBkyRJu3LjB8ePHKSoqwtELL7zAvHnzePPNN3nmmWc4duwYzz//PB999BH/ZGGBLlisZZy48AelZTa0Gg1xjdzYfayQzDsWHBn1GpJjPWlZ1xUhhBDiUaQoCi4uLlSkhIQEAgICGD16NOPHjyc1NZXjx4+zdu1aVAcPHmTGjBl89NFHhIWF8cILL9CwYUNWrFjBE088wbRp04iOjqZVq1Y8bAqVUK1atSgsLEQ1cOBACgoKmDVrFjdu3KBRo0bs3r0bHx8fVCtWrOCNN97gvffeo02bNmzZsoUJEybw3nvv8eGHH7J27VpGjRpFz549CQwMZNasWXzzzTe4ublR3vTp07l16xYDBw6kpKSEhg0bsmnTJgwGA40bN2bdunW88cYbvP7669StW5eNGzfi5+fHhAkTOH36NG3btqVq1aqMGDGCTp06MXv2bPr160etWrUoLCxEFRwczM6dOxk3bhyLFi0iMDCQefPm0b9/f/7paoa4UTXAhRvZxdzJKyEvr5Tnu7hz666VS1nFmPQaqpj1NI5wxd1FixBCCPGoKC0tRaUoCoqioNPpqGg6nY5t27YxYsQImjZtSkREBFu2bCE4OBiV1WolLy+P0tJSVBEREXz//fdMnTqVSZMm0bJlSzZv3kx5JpOJdu3aYTQaqSgKldDIkSNxNHz4cIYPH8799OvXj379+uFo3bp12JnNZlatWoWjbt26cT+enp588cUXPEjnzp3p3Lkz5fn6+pKamkp5SUlJqOrXr4+jxo0bs337diojg15LWJALYbgghBBCCOcKCwtj48aN3E+LFi34+eefcRQXF0dcXBx/JigoiJ9//pmKpCCEEEIIIYQTKQghhBBCCOFECkIIIYQQQjiRghBCCCGEEE6kIIQQQgghhBMpCCGEEEII4UQKQgghhBBCOJGCEEIIIYQQTqQghBBCCCGEEykIIYQQQgjhRApCCCGEEEI4kYIQQgghhBBOpCCEEEIIIYQTKQghhBBCCOFECkIIIYQQQjiRghBCCCGEEE6kIIQQQgghhBMpCCGEEEII4UQKQgghhBBCOJGCEEIIIYQQTqQghBBCCCGEEykIIYQQQgjhRAr/Jc6cOYOPjw/+/v78FZmZmRQXF1OtWjWE+L90404JRcWlBJn1GBQtQgghKqeysjK0Wi1arRbx5xT+S7z44ot0796dkSNH8u98+umnvPbaa0yYMIGpU6fyf8lisbB27Vq6d++OyWTis88+Y+rUqZw5cwZXV1fEf85isbB27Vq6d++OyWRi2LBhXL16lY0bN/JPYbPBqi1Z/HjoLrn5ZagMioamkS70auuBt7sOIYQQlZNGo8FgMGAymXC2Gzdu8Oqrr3Lo0CFq167N7NmzadSoEQ+yZ88eZsyYwcWLF2nevDnvv/8+vr6+2C1btoxly5aRn59P9+7dmTFjBlqtlr9L4RG0atUqZs6cyauvvsr/tfz8fPr06UNmZiZBQUHUqlWLnj17oigK4n8nPz+fPn36kJmZSVBQEC1atODOnTv8k8z68jKHTufjqMRqY8/xAk5eKmLaAH98PXQIIYSofGw2G8XFxZSWluLm5oazlJWV8cQTTxAZGcny5ctJTU2lffv2nD59msDAQMo7f/488fHxjBkzhilTpjB79mw6d+7Mvn37UH399de8+uqrLFmyBLPZzIgRI7BYLLz99tv8XQqV1Pnz5/n+++/RaDQ89dRTlHflyhU2bNjArVu3iI2NpW3btqh27tzJtWvXOH36NL/++iuNGzdGtWPHDvbu3YuPjw9dunQhPDwcVVZWFidPnqRhw4Z8+eWXdO/enQsXLhAZGcmJEyf45ZdfeOyxx+jatSu//vorP/74I97e3gwePBhXV1dUpaWlrF+/niNHjmAymejQoQNNmzbFYrHw3XffodqwYQOJiYnUrl2b+Ph4DAYDKqvVSkpKCqdOnaJ69eokJSXh5uaG6vjx49hsNjw9Pfnuu+8oKCggOTmZatWq8SBXrlxhw4YN3Lp1i9jYWNq2bYvqxIkT3Lhxg7i4OOw2bdpE7dq1qVWrFqWlpaxfv54jR45gMpno0KEDTZs2xS4/P581a9aQmZlJ586dMRgMFBYW0qhRI1RXrlxh3bp1aLVakpKSOHfuHNWrVyc0NBRVQUEBKSkpnD17lnr16vH000+jKAqqHTt2ULduXTIyMrh48SKDBw8mNzeXb775ht9//x0/Pz+SkpKoWrUqFouF7777DtWGDRtITEykSZMmFBYWYme1WklJSeHUqVNUr16dpKQk3NzcUB0/fhybzYanpyffffcdBQUFJCcnU61aNSrK7vS7HDqdz4Pk5JWxcts9RnX3RQghROVltVopLi7GaDTiDFu2bOH333/n0KFDuLq60rZtW7Zt28aXX37J2LFjKW/ZsmU0bdqUN998E1W9evUICgri0KFDNGnShPfff5+xY8fSv39/VAsWLOD5559nxowZGI1G/g6FSmjXrl106dKFmJgYQkNDmT9/PlqtFru0tDS6detG27Zt8ff3p0uXLrzzzjuMGDGCX375hZycHI4ePcrRo0dp3Lgx48eP59NPP6Vnz57s3buXSZMmsXHjRlq3bs3hw4eZNGkSLi4uFBUV0aFDB6ZOnYrRaMTLywt3d3fefPNNunfvzrVr13j88ceZP38+v/zyC19++SWqwYMHs3XrVjp16sStW7d4/fXXWbduHXFxcWzevBnVli1baNq0KZmZmQwdOpSrV69isViIjY3l5s2bPPnkk6xfv55Zs2axZ88e/Pz8+Oqrrzh58iS3b9+mRYsW7Nixg7lz53L69Gn8/f0pLy0tjW7dutG2bVv8/f3p0qUL77zzDiNGjMDDw4NWrVqxbt062rdvT2pqKi+99BLHjh1DNXjwYLZu3UqnTp24desWr7/+OuvWraNr16788ccftG7dGp1OR0xMDElJSYSEhBAZGcmSJUs4fPgwHTp0oHnz5gQGBrJ48WK0Wi3Tpk2jd+/e3Lp1i3bt2uHh4UHjxo2ZOHEiKSkpfP3116gmTZpEw4YNSUlJYeDAgRQUFNC0aVP0ej2tW7dm69atvPHGG5w4cQIfHx82b96MasuWLTRt2pTVq1dz9epVvvrqKywWC7Gxsdy8eZMnn3yS9evXM2vWLPbs2YOfnx9fffUVJ0+e5Pbt27Ro0YIdO3Ywd+5cTp8+jb+/PxVh2+F7/DuHzxdTVGLDZNAghBCi8rJYLBiNRpxh7969NG/eHFdXV+zi4uLYs2cPY8eOpby9e/fSoUMH7Pz8/GjQoAF79uyhUaNGHDhwgHfeeQe7uLg47ty5Q0ZGBo899hh/h0IlNHr0aPr168eSJUtQ7dq1i3bt2mE3cuRIxo0bx6RJk1ANGzaM1q1bEx8fz8SJE0lNTWXIkCEMGTKEjIwM5s+fz759+2jSpAmq0aNHM2bMGPbv348qPT2dL774ggEDBuAoJSUFVVFREYcOHSIjIwODwUDt2rVZuHAhKovFQnp6Ot9++y1t2rRB1atXLzZt2kTXrl356KOPWL16Ne+//z5BQUFkZmZit2LFCi5dukRGRgYeHh5YLBZatWrFvHnzmDt3LqqdO3dy7tw5/P39yc3NJTg4mIMHD9K5c2fKGzlyJOPGjWPSpEmohg0bRuvWrYmPj6dmzZosWLCA5557jp9//pkRI0bw2Wef4evri8ViIT09nW+//ZY2bdqg6tWrF5s2baJr16588MEHaLVa9u/fj16v5/r169SqVYvIyEhUEyZMoHfv3nz44YeoUlNT6dGjB3azZs0iPDycH374AY1GQ25uLvXq1eOLL75g4MCBqPbv38/58+fx8PDgwIEDuLi4sHPnTry8vLBarYSHh7Nnzx569erFRx99xOrVq3n//fcJCgpi9erV2K1YsYJLly6RkZGBh4cHFouFVq1aMW/ePObOnYtq586dnDt3Dn9/f3JzcwkODubgwYN07tyZinDrnoV/p7TURnZuKSF+CkIIISqvsrIynOXGjRsEBATgKCAggH379nE/N27cICAgAEcBAQFkZWVx8+ZNysrKCAgIwM7T0xOTyURWVhZ/l0IlU1hYyOHDh1m2bBl2bdu2JSIiAlV2djZHjhxh9OjRbN68GTtvb2/2799PzZo1cbR3716ioqJo0qQJdoMGDWLRokUUFxejcnFxYcCAATjq1q0bdhEREeh0OgwGA6qIiAhKSkpQ6fV6jh07hsVi4fTp0xw7dozDhw/Trl07/p20tDSefvppPDw8UOn1evr27cuaNWuwa9OmDf7+/qg8PT0JDQ2lpKSE8rKzszly5AijR49m8+bN2Hl7e7N//35q1qzJkCFDWLduHY0aNaJv37507NgRlV6v59ixY1gsFk6fPs2xY8c4fPgw7dq1Q7V9+3b69OmDXq9HFRwczBNPPIGqrKyMnTt38tZbb2H31FNP4eHhgd22bduIj4/nxx9/xC4qKoq0tDQGDhyIqnfv3nh4eKBq1qwZ6enp5Ofnk56ezv79+7l9+zYlJSX8O2lpaTz99NN4eHig0uv19O3blzVr1mDXpk0b/P39UXl6ehIaGkpJSQkVRa/T8FfoFYQQQoi/rKSkBL1ejyO9Xk9hYSH3U1JSgl6vx5Fer6ewsJCSkhJUer0eR4qiUFhYyN+lUMncvXsXm82Gv78/jvz8/FBlZWWhSk1NRafTYde6dWv8/f0p7/bt25jNZhz5+flRVlZGdnY2Kl9fX8ozGo040ul03E9ZWRkzZsxg0aJF1KhRg6ioKKpUqcJfcfv2bWrUqIEjPz8/bt68iZ23tzd/RVZWFqrU1FR0Oh12rVu3xt/fH7vu3bvz/fffk5CQgF1ZWRkzZsxg0aJF1KhRg6ioKKpUqYLdzZs3MZvNOPLz80N19+5dSkpKMJvN2Gk0Gnx9fbHLyspi//79/P7779h5wILZLwAACSVJREFUenpSt25d7MxmM3Z3797lhRdeYOvWrdSvX5/o6GgCAgL4K27fvk2NGjVw5Ofnx82bN7Hz9vbmYQoPNHLpRgl/xt1Fi9lThxBCiMpNp9PhLIGBgZw4cQJHOTk5BAUFcT+BgYHk5OTgKCcnh6CgIAIDA1Hl5ORgZ7VaycvLIygoiL9LoZIJDAzEaDRy6tQpQkNDUZWWlnL+/HlUYWFhqObMmUNkZCR2Bw4cICoqivLCwsI4f/48NpsNjUaD6syZMxiNRoKCgjh69Ch/x86dO5k7dy4nTpygZs2aqIYNG0ZpaSn/TlhYGGfPnsXRmTNnCA8P5z8VFhaGas6cOURGRmJ34MABoqKiUF2/fp2JEycycuRIXnzxRY4dO4anpyc7d+5k7ty5nDhxgpo1a6IaNmwYpaWlqMLDwzl79iyOzp8/T7169fD19cXDw4OzZ89Ss2ZNVAUFBWRmZmIXHh5O//79GT58OHanTp3C09OT+1mwYAFnzpzh+vXruLi4oNq2bRt/RVhYGGfPnsXRmTNnCA8Px1mebutH2vE/KC3lgZ583A2dVoMQQojKzWg04ixRUVGsXLkSR4cPH6ZOnTrcT1RUFIcPH8bOarVy/Phxxo4di8lkolq1ahw+fJjGjRujOnz4MIqiULNmTf4uhUpGq9XSq1cvpkyZQqNGjTCbzcyZM4esrCxU7u7uJCYmMnnyZFauXInBYGDRokVMnz6da9euUV7Hjh0ZMWIE8+fPZ8yYMdy7d4/p06fzzDPPoNVq+buysrIwmUwEBASgOnjwIOvWrePJJ59EpdFoUOXl5VFe7969SUhI4MUXX6RVq1ZkZGSwdOlSZs+ezX/K3d2dxMREJk+ezMqVKzEYDCxatIjp06dz7do1VM8++ywDBgzgvffe49y5c4wePZr/+Z//ISsrC5PJREBAAKqDBw+ybt06nnzySVR9+vThlVdeYfDgwURGRrJhwwb27t1LdHQ0qt69ezNz5kxatmyJh4cHb7zxBhaLBY1Gg6p3797Mnz+fLl26ULVqVfbu3Uv79u356aefCAkJobysrCz8/f1xcXHBYrHwzTffcPbsWQoLC1FpNBpUeXl5lNe7d28SEhJ48cUXadWqFRkZGSxdupTZs2fjLOFBJl7oHMiyH25iLbVRXrM6LnRt4Y4QQojKzWQyoSgKzpKUlMTIkSNZtWoVffv25bfffmPbtm3MmjUL1YULF0hJSWHIkCGYzWYGDRpE165dOX36NHXq1OGTTz7BYDDQuXNnVIMGDWLx4sX07dsXFxcX3n33XRITE/Hz8+PvUqiE5s2bR8+ePQkKCsLNzY2mTZvSu3dv7JYsWUJycjJmsxmDwYCrqytr1qzBw8OD8nx8fPj6668ZMGAAs2bNIj8/nzZt2vDee+9RERITE6lTpw5VqlTB29uboKAgpk6dyvjx42nWrBmvvPIKrVq1Ijo6mtTUVBzFxsYyY8YM2rdvj4+PD9nZ2bz00ksMHjyY/40lS5aQnJyM2WzGYDDg6urKmjVr8PDw4MMPP+TChQusW7cO1dKlS6lfvz49e/YkMTGROnXqUKVKFby9vQkKCmLq1KmMHz+eZs2a8fLLL7Nv3z7q1auH2Wymdu3aDB8+HC8vL1Rz5syhZ8+e+Pv74+bmRnJyMi1btsTHxwfVqFGjyMjIoEaNGnh7e5Ofn8/MmTNp164d9/PSSy8RHx9PYGAgFouFhIQEXn75ZUaNGkXDhg1p2rQprVq1Ijo6mtTUVBzFxsYyY8YM2rdvj4+PD9nZ2bz00ksMHjwYZ0po7ktkNVfW/Hyb89eL0Ggg2FehZV0XmtRxRaNBCCFEJWKz2bDZbOh0OnQ6HQaDAZ1OhzO5u7uzZs0akpOTmTp1Kjdu3GDevHk0bNgQ1cmTJxk3bhwJCQmYzWZiY2OZMGECjRo1IjAwkLy8PFJTUzEYDKgmTpxIeno6wcHBGI1GQkJC2LhxIxVBoRIKDAxk9+7dXL16FZvNRtWqVXEUEhJCWloa169f5969e9SqVQu9Xo/dvn37cNSxY0cyMzM5d+4c3t7eBAYGYpeQkMDVq1dxlJaWhqO33noLRwkJCVy9ehWVu7s7+/bt4+zZs7i4uFC1alVUzz33HCaTCVVaWho5OTl4e3uj0Wi4evUqdhMmTODll1/m/PnzhIeH4+Hhgd3bb79NeRkZGTxISEgIaWlpXL9+nXv37lGrVi30ej2ql156iZdeegm7sLAw7t27h92+ffs4e/YsLi4uVK1aFdVzzz2HyWTi5s2bTJo0iTfeeIN79+5RvXp1+vfvT2RkJKrc3FxSU1O5e/cubm5umM1mwsLCqFKlCiqDwcCnn37Ku+++y+XLl6levTru7u7Y7du3D0f169fn4sWLnDt3jtDQULy9vVHNnDkTDw8PVGlpaeTk5ODt7U1CQgKOJkyYwMsvv8z58+cJDw/Hw8MDu7fffpvyMjIyeBiqBZkY2zsUIYQQoqJ07NiR27dvc/bsWapVq4aLiwt2iYmJ2Gw2HE2dOpXRo0dz5coVIiIi0Gq12JlMJlJTU7l58yYFBQVUq1aNiqJQiYWGhvJngoODCQ4O5q/Q6XTUqVOHh0Gj0RAREYEjNzc3HPn4+PAgLi4uREdHU1GCg4MJDg7mP6HRaIiIiMCRm5sbqnXr1jFt2jT27t1LrVq12LVrF+vXr2f27NmoJk2axO3bt/nXv/6Fp6cn8+fPx83NjejoaBx5eXlRv359/gqTyUR0dDSOPDw8cOTj48ODuLi4EB0djRBCCPHfRlEUoqKi+Kvc3NyIjIzkQQICAqhoCkL8TS+88AInTpygYcOGlJWV4e/vz9KlSwkLC0O1cOFChgwZQlBQEHq9nsjISFatWoVGo0EIIYQQjx4FIf4mnU7HBx98wAcffEBJSQkGgwFHQUFBbNq0idLSUmw2G4qiIIQQQohHl4IQFchgMPAgOp0OIYQQQggFIYQQQgghnEhBCCGEEEIIJ1IQQgghhBDCiRSEEEIIIYRwIgUhhBBCCCGcSEEIIYQQQggnUhBCCCGEEMKJFIQQQgghhHAiBSGEEEIIIZxIQQghhBBCCCdSEEIIIYQQwokUhBBCCCGEcCIFIYQQQgghnEhBCCGEEEIIJ/p/Scpo9a65NoIAAAAASUVORK5CYII=" class="figure-img">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-buckling-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;1: Buckling-constrained truss design (top) vs compliance-only (bottom)
+</figcaption>
+</figure>
+</div>
+</div>
+<p>The buckling-constrained design typically shows thicker compression members and more stable load paths compared to the compliance-only design.</p>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

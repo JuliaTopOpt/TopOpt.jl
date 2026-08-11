@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.10.18">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>SIMP: Solid Isotropic Material with Penalization – TopOpt.jl</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<script src="site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-64a204ab8560d761af7679ceaba22944.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap-8ee6456b0f401cc28b332fe98c5cbc1d.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+
+</head>
+
+<body class="nav-sidebar docked nav-fixed quarto-light">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a class="navbar-brand" href="./index.html">
+    <span class="navbar-title">TopOpt.jl</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="./../index.html"> 
+<span class="menu-text">Back to Docs</span></a>
+  </li>  
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://github.com/JuliaTopOpt/TopOpt.jl"> <i class="bi bi-github" role="img">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools">
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item">SIMP: Solid Isotropic Material with Penalization</li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation docked overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+      <a href="./index.html" class="sidebar-logo-link">
+      <img src="https://github.com/JuliaTopOpt/TopOpt.jl/assets/19524993/585ca4eb-83df-48d4-850c-1debc3d93eff" alt="" class="sidebar-logo light-content py-0 d-lg-inline d-none">
+      <img src="https://github.com/JuliaTopOpt/TopOpt.jl/assets/19524993/585ca4eb-83df-48d4-850c-1debc3d93eff" alt="" class="sidebar-logo dark-content py-0 d-lg-inline d-none">
+      </a>
+      </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#description" id="toc-description" class="nav-link active" data-scroll-target="#description">Description</a></li>
+  <li><a href="#setup" id="toc-setup" class="nav-link" data-scroll-target="#setup">Setup</a></li>
+  <li><a href="#define-the-3d-cantilever-problem" id="toc-define-the-3d-cantilever-problem" class="nav-link" data-scroll-target="#define-the-3d-cantilever-problem">Define the 3D cantilever problem</a></li>
+  <li><a href="#parameter-settings" id="toc-parameter-settings" class="nav-link" data-scroll-target="#parameter-settings">Parameter settings</a></li>
+  <li><a href="#define-the-finite-element-solver" id="toc-define-the-finite-element-solver" class="nav-link" data-scroll-target="#define-the-finite-element-solver">Define the finite element solver</a></li>
+  <li><a href="#define-the-filtered-compliance-objective" id="toc-define-the-filtered-compliance-objective" class="nav-link" data-scroll-target="#define-the-filtered-compliance-objective">Define the filtered compliance objective</a></li>
+  <li><a href="#define-the-volume-constraint" id="toc-define-the-volume-constraint" class="nav-link" data-scroll-target="#define-the-volume-constraint">Define the volume constraint</a></li>
+  <li><a href="#set-up-and-run-the-mma87-optimizer" id="toc-set-up-and-run-the-mma87-optimizer" class="nav-link" data-scroll-target="#set-up-and-run-the-mma87-optimizer">Set up and run the MMA87 optimizer</a></li>
+  <li><a href="#visualize-the-result" id="toc-visualize-the-result" class="nav-link" data-scroll-target="#visualize-the-result">Visualize the result</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">SIMP: Solid Isotropic Material with Penalization</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="description" class="level2">
+<h2 class="anchored" data-anchor-id="description">Description</h2>
+<p>The SIMP (Solid Isotropic Material with Penalization) method is the most widely used approach in topology optimization. It parametrizes the design as a continuous density field (0 = void, 1 = solid) and uses gradient-based optimization to find the optimal material distribution.</p>
+<p>This tutorial solves a 3D cantilever beam problem: a beam fixed at one end with a point load at the free end. We minimize compliance (maximize stiffness) subject to using only 30% of the available material volume. The problem demonstrates: - 3D finite element modeling with hexahedral elements - Density filtering for smooth, mesh-independent designs - Nonconvex.jl integration for constrained optimization with MMA87</p>
+</section>
+<section id="setup" class="level2">
+<h2 class="anchored" data-anchor-id="setup">Setup</h2>
+<p>Load TopOpt, which builds on Ferrite.jl for FEA and Nonconvex.jl for optimization:</p>
+<div id="2" class="cell" data-execution_count="1">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">using</span> <span class="bu">TopOpt</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</section>
+<section id="define-the-3d-cantilever-problem" class="level2">
+<h2 class="anchored" data-anchor-id="define-the-3d-cantilever-problem">Define the 3D cantilever problem</h2>
+<p>We create a 3D point-load cantilever with 30×10×10 hexahedral elements. The boundary conditions are: - Fixed support (all DOFs constrained) on the left face - Downward point load at the center of the right face</p>
+<div id="4" class="cell" data-execution_count="1">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>E <span class="op">=</span> <span class="fl">1.0</span> <span class="co"># Young's modulus (normalized)</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>v <span class="op">=</span> <span class="fl">0.3</span> <span class="co"># Poisson's ratio</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>f <span class="op">=</span> <span class="fl">1.0</span> <span class="co"># downward force magnitude</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>nels <span class="op">=</span> (<span class="fl">30</span>, <span class="fl">10</span>, <span class="fl">10</span>)  <span class="co"># 30 elements in x, 10 in y, 10 in z</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>problem <span class="op">=</span> <span class="fu">PointLoadCantilever</span>(<span class="dt">Val</span>{<span class="op">:</span>Linear}, nels, (<span class="fl">1.0</span>, <span class="fl">1.0</span>, <span class="fl">1.0</span>), E, v, f)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>The <code>Val{:Linear}</code> specifies linear (trilinear) hexahedral elements. The problem object contains the 3D mesh, Dirichlet boundary conditions on the fixed face, and the point load definition.</p>
+</section>
+<section id="parameter-settings" class="level2">
+<h2 class="anchored" data-anchor-id="parameter-settings">Parameter settings</h2>
+<p>We target a 30% volume fraction with a density filter radius of 2.0 elements to ensure smooth transitions and prevent checkerboarding:</p>
+<div id="6" class="cell" data-execution_count="1">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>V <span class="op">=</span> <span class="fl">0.3</span>       <span class="co"># target volume fraction (30% of domain)</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>xmin <span class="op">=</span> <span class="fl">1e-6</span>   <span class="co"># minimum density (prevents singular stiffness matrix)</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>rmin <span class="op">=</span> <span class="fl">2.0</span>    <span class="co"># filter radius in element units</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</section>
+<section id="define-the-finite-element-solver" class="level2">
+<h2 class="anchored" data-anchor-id="define-the-finite-element-solver">Define the finite element solver</h2>
+<p>The <code>FEASolver</code> handles stiffness matrix assembly and linear system solution. We use a direct solver for robustness. The power-law penalty raises element densities to the power of 3.0, strongly penalizing intermediate densities and pushing the solution toward 0/1 (void/solid):</p>
+<div id="8" class="cell" data-execution_count="1">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>penalty <span class="op">=</span> TopOpt.<span class="fu">PowerPenalty</span>(<span class="fl">3.0</span>)  <span class="co"># ρ³ penalty</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>solver <span class="op">=</span> <span class="fu">FEASolver</span>(DirectSolver, problem; xmin<span class="op">=</span>xmin, penalty<span class="op">=</span>penalty)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-display" data-execution_count="1">
+<pre><code>TopOpt direct structural solver (GenericFEASolver)</code></pre>
+</div>
+</div>
+<p>The penalized element stiffness is: <code>Kₑ(ρ) = ρ³ · Kₑ₀</code>, where <code>Kₑ₀</code> is the stiffness of a solid element.</p>
+</section>
+<section id="define-the-filtered-compliance-objective" class="level2">
+<h2 class="anchored" data-anchor-id="define-the-filtered-compliance-objective">Define the filtered compliance objective</h2>
+<p>The objective is compliance (strain energy): <code>f(x) = uᵀKu</code>. We wrap it with a density filter to ensure smooth designs and avoid mesh-dependent solutions. The filter computes weighted averages of neighboring element densities:</p>
+<div id="10" class="cell" data-execution_count="1">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>comp <span class="op">=</span> TopOpt.<span class="fu">Compliance</span>(solver)           <span class="co"># f(x) = uᵀKu</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>filter <span class="op">=</span> <span class="fu">DensityFilter</span>(solver; rmin<span class="op">=</span>rmin)  <span class="co"># smooths density field</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>obj <span class="op">=</span> x <span class="op">-&gt;</span> <span class="fu">comp</span>(<span class="fu">filter</span>(<span class="fu">PseudoDensities</span>(x)))  <span class="co"># compose: filter → compliance</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-display" data-execution_count="1">
+<pre><code>#2 (generic function with 1 method)</code></pre>
+</div>
+</div>
+<p>The <code>DensityFilter</code> applies a convolution with a hat kernel over elements within the filter radius. This ensures that small changes in design variables produce smooth changes in the filtered densities, enabling gradient-based optimization.</p>
+</section>
+<section id="define-the-volume-constraint" class="level2">
+<h2 class="anchored" data-anchor-id="define-the-volume-constraint">Define the volume constraint</h2>
+<p>The volume constraint limits total material usage to 30% of the domain:</p>
+<div id="12" class="cell" data-execution_count="1">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>volfrac <span class="op">=</span> TopOpt.<span class="fu">Volume</span>(solver)  <span class="co"># g(x) = Σ(ρᵢ·Vᵢ) / V_total</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>constr <span class="op">=</span> x <span class="op">-&gt;</span> <span class="fu">volfrac</span>(<span class="fu">filter</span>(<span class="fu">PseudoDensities</span>(x))) <span class="op">-</span> V  <span class="co"># g(x) ≤ 0</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-display" data-execution_count="1">
+<pre><code>#5 (generic function with 1 method)</code></pre>
+</div>
+</div>
+<p>The constraint function returns <code>volume_fraction - 0.3</code>, which must be ≤ 0. The filter is applied to the densities before computing the volume to ensure consistent smoothing.</p>
+</section>
+<section id="set-up-and-run-the-mma87-optimizer" class="level2">
+<h2 class="anchored" data-anchor-id="set-up-and-run-the-mma87-optimizer">Set up and run the MMA87 optimizer</h2>
+<p>We use the Method of Moving Asymptotes (MMA87), a gradient-based optimizer well-suited for topology optimization. The problem is set up using Nonconvex.jl’s modeling API:</p>
+<div id="14" class="cell" data-execution_count="1">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb10"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>x0 <span class="op">=</span> <span class="fu">fill</span>(V, <span class="fu">length</span>(solver.vars))  <span class="co"># start from uniform 30% density</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>model <span class="op">=</span> <span class="fu">Model</span>(obj)                  <span class="co"># minimize objective</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="fu">addvar!</span>(model, <span class="fu">zeros</span>(<span class="fu">length</span>(x0)), <span class="fu">ones</span>(<span class="fu">length</span>(x0)))  <span class="co"># box: 0 ≤ x ≤ 1</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="fu">add_ineq_constraint!</span>(model, constr)  <span class="co"># g(x) ≤ 0</span></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>alg <span class="op">=</span> <span class="fu">MMA87</span>()                       <span class="co"># Method of Moving Asymptotes</span></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>convcriteria <span class="op">=</span> Nonconvex.<span class="fu">KKTCriteria</span>()  <span class="co"># KKT conditions for convergence</span></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>options <span class="op">=</span> <span class="fu">MMAOptions</span>(;</span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>    maxiter<span class="op">=</span><span class="fl">200</span>, </span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>    tol<span class="op">=</span>Nonconvex.<span class="fu">Tolerance</span>(; x<span class="op">=</span><span class="fl">1e-3</span>, f<span class="op">=</span><span class="fl">1e-3</span>, kkt<span class="op">=</span><span class="fl">0.001</span>)</span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>r <span class="op">=</span> <span class="fu">optimize</span>(model, alg, x0; options)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<div class="ansi-escaped-output">
+<pre><span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>  iter       obj      Δobj  violation  kkt_residual  
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>     0   5.7e+02       Inf   0.0e+00   9.9e+01
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>     1   3.3e+02   2.4e+02   0.0e+00   1.6e+02
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>     2   1.8e+02   1.6e+02   0.0e+00   5.5e+01
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>     3   1.2e+02   6.2e+01   0.0e+00   1.4e+01
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>     4   8.6e+01   3.0e+01   0.0e+00   7.0e+00
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>     5   6.9e+01   1.7e+01   0.0e+00   4.1e+00
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>     6   5.8e+01   1.1e+01   0.0e+00   2.9e+00
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>     7   5.1e+01   6.9e+00   0.0e+00   1.7e+00
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>     8   4.7e+01   4.0e+00   0.0e+00   9.0e-01
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>     9   4.4e+01   2.4e+00   0.0e+00   5.1e-01
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>    10   4.3e+01   1.4e+00   0.0e+00   3.0e-01
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>    11   4.2e+01   9.2e-01   0.0e+00   1.8e-01
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>    12   4.1e+01   6.4e-01   0.0e+00   1.3e-01
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>    13   4.1e+01   4.9e-01   0.0e+00   1.1e-01
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>    14   4.0e+01   3.4e-01   0.0e+00   8.6e-02
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>    15   4.0e+01   2.1e-01   0.0e+00   5.4e-02
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>    16   4.0e+01   1.4e-01   0.0e+00   4.9e-02
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>    17   4.0e+01   9.9e-02   0.0e+00   2.6e-02
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>    18   4.0e+01   6.7e-02   0.0e+00   2.6e-02
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>    19   4.0e+01   4.3e-02   0.0e+00   1.7e-02
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>    20   4.0e+01   3.4e-02   0.0e+00   1.3e-02
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>    21   4.0e+01   2.6e-02   0.0e+00   9.7e-03
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>    22   4.0e+01   1.5e-02   0.0e+00   8.6e-03
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>    23   4.0e+01   1.2e-02   0.0e+00   8.3e-03
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>    24   4.0e+01   9.9e-03   0.0e+00   7.4e-03
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>    25   4.0e+01   6.3e-03   0.0e+00   4.9e-03
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>    26   4.0e+01   4.9e-03   0.0e+00   3.8e-03
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>    27   4.0e+01   3.1e-03   0.0e+00   3.4e-03
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>    28   4.0e+01   1.7e-03   0.0e+00   2.8e-03
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>    29   4.0e+01   1.3e-03   0.0e+00   2.8e-03
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>    30   4.0e+01   7.0e-04   0.0e+00   2.2e-03
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>    31   4.0e+01   2.5e-04   0.0e+00   2.0e-03
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>    32   4.0e+01   2.6e-04   0.0e+00   2.0e-03
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>    33   4.0e+01   2.9e-04   0.0e+00   2.0e-03
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>    34   4.0e+01   3.1e-04   0.0e+00   2.0e-03
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>    35   4.0e+01   3.3e-04   0.0e+00   1.9e-03
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>    36   4.0e+01   3.4e-04   0.0e+00   1.8e-03
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>    37   4.0e+01   3.4e-04   0.0e+00   1.7e-03
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>    38   4.0e+01   3.5e-04   0.0e+00   1.6e-03
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>    39   4.0e+01   3.6e-04   0.0e+00   1.6e-03
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>    40   4.0e+01   3.1e-04   0.0e+00   1.4e-03
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>    41   4.0e+01   2.7e-04   0.0e+00   1.4e-03
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>    42   4.0e+01   2.6e-04   0.0e+00   1.4e-03
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>    43   4.0e+01   2.5e-04   0.0e+00   1.3e-03
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>    44   4.0e+01   2.4e-04   0.0e+00   1.3e-03
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>    45   4.0e+01   2.4e-04   0.0e+00   1.3e-03
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>    46   4.0e+01   2.5e-04   0.0e+00   1.3e-03
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>    47   4.0e+01   2.6e-04   0.0e+00   1.4e-03
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>    48   4.0e+01   2.8e-04   0.0e+00   1.4e-03
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>    49   4.0e+01   3.0e-04   0.0e+00   1.4e-03
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>    50   4.0e+01   1.9e-04   0.0e+00   9.8e-04
+</pre>
+</div>
+</div>
+<div class="cell-output cell-output-display" data-execution_count="1">
+<pre><code>NonconvexCore.GenericResult{MMA87{GradientDescent{LineSearches.InitialPrevious{Float64}, LineSearches.HagerZhang{Float64, Base.RefValue{Bool}}, Nothing, Returns{Nothing}}}, Vector{Float64}, Vector{Float64}, Float64, Tolerance{Float64, Float64, Float64, Float64}, NonconvexCore.ConvergenceState{Float64}}(MMA87{GradientDescent{LineSearches.InitialPrevious{Float64}, LineSearches.HagerZhang{Float64, Base.RefValue{Bool}}, Nothing, Returns{Nothing}}}(GradientDescent{LineSearches.InitialPrevious{Float64}, LineSearches.HagerZhang{Float64, Base.RefValue{Bool}}, Nothing, Returns{Nothing}}(LineSearches.InitialPrevious{Float64}(1.0, 0.0, Inf), LineSearches.HagerZhang{Float64, Base.RefValue{Bool}}(0.1, 0.9, Inf, 5.0, 1.0e-6, 0.66, 50, 0.1, 0, Base.RefValue{Bool}(false), nothing, false), nothing, Returns{Nothing}(nothing), Flat())), [0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3  …  0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3], [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0  …  0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], 39.817316523645694, 50, false, Tolerance{Float64, Float64, Float64, Float64}(0.001, 0.001, 0.001, 0.001, 1.0e-5), NonconvexCore.ConvergenceState{Float64}
+  Δx: Float64 0.038879996185903654
+  Δf: Float64 0.00019160844760079954
+  relΔf: Float64 4.812068021183539e-6
+  kkt_residual: Float64 0.000977618873077138
+  ipopt_residual: Float64 0.000977618873077138
+  infeas: Float64 0.0
+  x_converged: Bool false
+  fabs_converged: Bool true
+  frel_converged: Bool true
+  kkt_converged: Bool true
+  ipopt_converged: Bool true
+  infeas_converged: Bool true
+  f_increased: Bool false
+  converged: Bool true
+, 51)</code></pre>
+</div>
+</div>
+<p>The optimizer iterates: 1. Evaluate objective and constraint at current design 2. Compute gradients via automatic differentiation (Zygote.jl) 3. Build convex MMA approximation 4. Solve subproblem to get search direction 5. Update design with move limits 6. Check KKT convergence criteria</p>
+<div id="16" class="cell" data-execution_count="1">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb12"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="pp">@show</span> <span class="fu">obj</span>(r.minimizer)  <span class="co"># print final compliance</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>obj(r.minimizer) = 39.817316523645694</code></pre>
+</div>
+<div class="cell-output cell-output-display" data-execution_count="1">
+<pre><code>39.817316523645694</code></pre>
+</div>
+</div>
+<p>The optimization typically converges in 40-60 iterations for this problem, achieving a final compliance around 39-40 (normalized units).</p>
+</section>
+<section id="visualize-the-result" class="level2">
+<h2 class="anchored" data-anchor-id="visualize-the-result">Visualize the result</h2>
+<div id="fig-simp" class="cell quarto-float quarto-figure quarto-figure-center anchored" data-execution_count="0">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-simp-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb15"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="im">using</span> <span class="bu">CairoMakie</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>fig <span class="op">=</span> <span class="fu">visualize</span>(</span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>    problem;</span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>    topology<span class="op">=</span>r.minimizer,</span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>    default_exagg_scale<span class="op">=</span><span class="fl">0.07</span>,  <span class="co"># exaggerate displacements for visibility</span></span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>    scale_range<span class="op">=</span><span class="fl">10.0</span>,          <span class="co"># color scale range</span></span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>    vector_arrowsize<span class="op">=</span><span class="fl">0.5</span>,      <span class="co"># arrow size for load vectors</span></span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig quarto-uncaptioned" id="fig-simp-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;1
+</figcaption>
+</figure>
+</div>
+<p>The visualization shows the optimized 3D structure — typically an L-shaped or curved truss-like form that efficiently transfers the load from the free end to the fixed support while using only 30% of the material volume.</p>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>
