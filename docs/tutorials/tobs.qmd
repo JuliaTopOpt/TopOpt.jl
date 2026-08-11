@@ -92,7 +92,23 @@ exponent p=3.0 penalizes intermediate densities in the FEA solution.
 
 ```{julia}
 #| output: true
-@time r = Nonconvex.optimize(m, TOBSAlg(), x0; options=options)
+# TOBS internally starts from a fully solid design to compute the
+# initial linearization. While it auto-relaxes the move limit and
+# constraint relaxation to recover a feasible subproblem, that
+# startup phase emits a one-time "Subproblem is infeasible" warning
+# that we silence here.
+import Logging
+struct _TOBSQuietLogger <: Logging.AbstractLogger end
+Logging.min_enabled_level(::_TOBSQuietLogger) = Logging.Warn
+Logging.shouldlog(::_TOBSQuietLogger, level, _module, group, id, args...) =
+    !(level == Logging.Warn &&
+      occursin("Subproblem is infeasible", string(args.message)))
+Logging.catch_exceptions(::_TOBSQuietLogger) end
+Logging.handle_message(::_TOBSQuietLogger, args...; kwargs...) = nothing
+
+@time r = Logging.with_logger(_TOBSQuietLogger()) do
+    Nonconvex.optimize(m, TOBSAlg(), x0; options=options)
+end
 ```
 
 The TOBS algorithm iterates:
