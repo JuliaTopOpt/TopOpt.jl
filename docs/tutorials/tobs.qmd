@@ -39,7 +39,7 @@ V = 0.5 # maximum volume fraction
 p = 3.0 # topological optimization penalty
 
 problem_size = (80, 50)  # 4,000 elements
-x0 = fill(V, prod(problem_size))  # start from a feasible uniform design
+x0 = fill(0.0, prod(problem_size))  # start from a feasible empty design
 problem = PointLoadCantilever(Val{:Linear}, problem_size, (1.0, 1.0), E, v, f)
 ```
 
