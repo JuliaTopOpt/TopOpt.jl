@@ -11,7 +11,7 @@ on:
 jobs:
   # Scan for tutorial .qmd files (outputs list for dynamic matrix)
   scan-tutorials:
-    name: [scan] Scan tutorial files
+    name: "scan: Tutorial files"
     runs-on: ubuntu-latest
     outputs:
       tutorial-list: ${{ steps.scan.outputs.list }}
@@ -26,7 +26,7 @@ jobs:
           echo "list=$LIST" >> $GITHUB_OUTPUT
 
   test:
-    name: [test] ${{matrix.group}}
+    name: "test: ${{matrix.group}}"
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -83,7 +83,7 @@ jobs:
 
   # One CI job per tutorial .qmd file (dynamic matrix from scan-tutorials)
   tutorials:
-    name: [tutorial] ${{ matrix.tutorial }}
+    name: "tutorial: ${{ matrix.tutorial }}"
     needs: scan-tutorials
     runs-on: ubuntu-latest
     strategy:
@@ -133,7 +133,7 @@ jobs:
 
   # Build main docs site (parallel to tutorials, doesn't wait for them)
   docs-build:
-    name: [docs] Build main docs
+    name: "docs: Build main docs"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -164,7 +164,7 @@ jobs:
 
   # Assemble final site from docs and tutorials artifacts
   assemble-site:
-    name: [assemble] Assemble final site
+    name: "assemble: Final site"
     needs: [test, tutorials, docs-build]
     if: always() && !cancelled()
     runs-on: ubuntu-latest
@@ -194,7 +194,7 @@ jobs:
 
   # Deploy to GitHub Pages (only on tag push)
   deploy:
-    name: [deploy] Deploy to GitHub Pages
+    name: "deploy: GitHub Pages"
     needs: assemble-site
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
