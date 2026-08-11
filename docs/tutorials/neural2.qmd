@@ -45,6 +45,13 @@ p_max = 5.0       # maximum penalty
 alpha = 0.1       # initial constraint weight
 delta_alpha = 0.05
 alpha_max = 100   # maximum constraint weight
+
+# Initial solver and compliance for C0
+penalty = TopOpt.PowerPenalty(p)
+solver = FEASolver(DirectSolver, problem; xmin, penalty)
+cheqfilter = DensityFilter(solver; rmin)
+comp = Compliance(solver)
+C0 = comp(cheqfilter(PseudoDensities(fill(V, TopOpt.getncells(problem)))))
 ```
 
 ## Neural Network
@@ -69,9 +76,6 @@ nn = NeuralNetwork(
     scale=true,
 )
 w0 = nn.init_params
-
-# Normalize initial compliance
-C0 = comp(cheqfilter(PseudoDensities(fill(V, TopOpt.getncells(problem)))))
 ```
 
 ## Optimizer Setup

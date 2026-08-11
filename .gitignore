@@ -4,7 +4,6 @@
 
 docs/build/
 docs/site/
-docs/src/examples/
 docs/Manifest.toml
 
 .vscode
@@ -17,9 +16,8 @@ Manifest.toml
 examples/benchmark/iterations
 memory-bank/
 IMPROVEMENTS_SUMMARY.md
-lbracket_stress_opt.png
-lbracket_stress_opt_densities.csv
 
 # Quarto render artifacts
 docs/tutorials/*_files/
 docs/tutorials/_site/
+docs/tutorials/Manifest.toml
