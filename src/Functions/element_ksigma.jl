@@ -1,7 +1,7 @@
 using TopOpt.TopOptProblems: getE
 using TopOpt.TrussTopOptProblems: truss_reinit!
 using ..TopOpt: PENALTY_BEFORE_INTERPOLATION
-using ..Utilities: density, get_ρ_dρ, getpenalty
+using ..Utilities: density, getpenalty
 
 """
     TrussElementKσ(problem, solver)

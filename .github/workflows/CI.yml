@@ -24,7 +24,7 @@ jobs:
       - name: Scan .qmd files
         id: scan
         run: |
-          LIST=$(find docs/tutorials -maxdepth 1 -name '*.qmd' ! -name 'index.qmd' \
+          LIST=$(find docs/tutorials -maxdepth 1 -name '*.qmd' \
                  | xargs -n1 basename | sed 's/\.qmd$//' \
                  | jq -R -s -c 'split("\n")[:-1]')
           echo "list=$LIST" >> $GITHUB_OUTPUT
@@ -102,7 +102,7 @@ jobs:
           arch: x64
       - uses: julia-actions/cache@v2
         with:
-          cache-name: tutorials
+          cache-name: tutorials-${{ hashFiles('Project.toml') }}
           cache-artifacts: true
           cache-packages: true
           cache-compiled: true
@@ -138,7 +138,7 @@ jobs:
           version: '1'
       - uses: julia-actions/cache@v2
         with:
-          cache-name: docs
+          cache-name: docs-${{ hashFiles('Project.toml') }}
           cache-artifacts: true
           cache-packages: true
           cache-compiled: true
@@ -179,7 +179,13 @@ jobs:
           path: docs/tutorials/_site
       - name: Copy tutorials into docs build
         run: |
-          cp -r docs/tutorials/_site docs/build/tutorials/
+          mkdir -p docs/build/tutorials
+          # Copy Quarto-rendered HTML files (overwrites Documenter stubs)
+          cp docs/tutorials/_site/*.html docs/build/tutorials/
+          # Copy Quarto assets (CSS, JS, etc.) needed for tutorial styling
+          if [ -d docs/tutorials/_site/site_libs ]; then
+            cp -r docs/tutorials/_site/site_libs docs/build/tutorials/
+          fi
           echo "Copied $(ls docs/build/tutorials/*.html | wc -l) tutorial HTML files"
       - name: Upload final site
         uses: actions/upload-artifact@v4
@@ -188,9 +194,29 @@ jobs:
           path: docs/build/
           retention-days: 7
 
-  # Deploy to GitHub Pages (only on tag push)
-  deploy:
-    name: "deploy: GitHub Pages"
+  # Deploy dev docs to GitHub Pages (on push to master)
+  deploy-dev:
+    name: "deploy: Dev docs"
+    needs: assemble-site
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Download final site
+        uses: actions/download-artifact@v4
+        with:
+          name: final-site
+          path: docs/build/
+      - name: Deploy to GitHub Pages (dev)
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: docs/build/
+          destination_dir: dev
+
+  # Deploy stable docs to GitHub Pages (on tag push)
+  deploy-stable:
+    name: "deploy: Stable docs"
     needs: assemble-site
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
@@ -201,8 +227,36 @@ jobs:
         with:
           name: final-site
           path: docs/build/
-      - name: Deploy to GitHub Pages
+      - name: Deploy to GitHub Pages (stable)
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: docs/build/
+          destination_dir: stable
+
+  # Deploy PR preview docs to GitHub Pages (on pull_request)
+  deploy-preview:
+    name: "deploy: PR preview docs"
+    needs: assemble-site
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Download final site
+        uses: actions/download-artifact@v4
+        with:
+          name: final-site
+          path: docs/build/
+      - name: Deploy to GitHub Pages (preview)
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: docs/build/
+          destination_dir: preview/PR${{ github.event.pull_request.number }}
+          keep_files: true
+      - name: Post preview URL comment
+        uses: thollander/actions-comment-pull-request@v3
+        with:
+          message: |
+            📖 PR preview docs: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/preview/PR${{ github.event.pull_request.number }}/
+          comment_tag: preview-docs
