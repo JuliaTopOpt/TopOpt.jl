@@ -30,6 +30,18 @@ specific kinds of work:
 - Use American spellings. Avoid jargon and metaphors not widely accepted by
   experts in the field. Do not make technical prose sound like a pitch deck.
 
+## Progress updates
+
+Always provide progress updates during tasks. For each meaningful step, state:
+
+- **What you're doing** — the action being taken.
+- **Why you're doing it** — the reason or goal behind the action.
+- **What you found/changed** — the result or outcome.
+- **What you'll do next** — the follow-up step.
+
+Do not silently perform multiple tool calls without a progress update unless the
+action is trivial (e.g., reading a single file, a quick grep).
+
 ## Memory Bank
 
 This project uses a **Memory Bank** to preserve context across agent sessions,
