@@ -13,8 +13,8 @@ using Parameters: @unpack
 using TimerOutputs, Ferrite, StaticArrays, StatsFuns
 using SparseArrays, Statistics, ChainRulesCore, Zygote
 using Nonconvex: Nonconvex
-using AbstractDifferentiation: AbstractDifferentiation
-const AD = AbstractDifferentiation
+using DifferentiationInterface
+const DI = DifferentiationInterface
 
 export Volume,
     Compliance,

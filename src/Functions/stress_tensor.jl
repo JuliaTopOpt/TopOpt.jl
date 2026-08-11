@@ -148,8 +148,8 @@ function (f::ElementStressTensorKernel)(u::DisplacementResult)
     end
 end
 function ChainRulesCore.rrule(f::ElementStressTensorKernel, u::DisplacementResult)
-    v, (∇,) = AD.value_and_jacobian(
-        AD.ForwardDiffBackend(), u -> vec(f(DisplacementResult(u))), u.u
+    v, ∇ = DI.value_and_jacobian(
+        u -> vec(f(DisplacementResult(u))), DI.AutoForwardDiff(), u.u
     )
     out_dim = f.dim == 2 ? 3 : f.dim
     return reshape(v, out_dim, out_dim),
