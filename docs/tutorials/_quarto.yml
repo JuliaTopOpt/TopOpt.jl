@@ -24,3 +24,5 @@ format:
     toc: true
     toc-location: right
     toc-floating: true
+    embed-resources: true
+    self-contained-math: true

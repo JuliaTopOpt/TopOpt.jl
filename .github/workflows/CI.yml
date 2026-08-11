@@ -180,7 +180,12 @@ jobs:
       - name: Copy tutorials into docs build
         run: |
           mkdir -p docs/build/tutorials
+          # Copy Quarto-rendered HTML files (overwrites Documenter stubs)
           cp docs/tutorials/_site/*.html docs/build/tutorials/
+          # Copy Quarto assets (CSS, JS, etc.) needed for tutorial styling
+          if [ -d docs/tutorials/_site/site_libs ]; then
+            cp -r docs/tutorials/_site/site_libs docs/build/tutorials/
+          fi
           echo "Copied $(ls docs/build/tutorials/*.html | wc -l) tutorial HTML files"
       - name: Upload final site
         uses: actions/upload-artifact@v4
