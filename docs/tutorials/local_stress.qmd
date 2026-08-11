@@ -46,19 +46,24 @@ xmin = 0.0001  # minimum density
 
 x0 = fill(0.5, 160 * 40)  # initial design
 N = length(x0)
-penalty = TopOpt.PowerPenalty(1.0)  # start with no penalization
+penalty = PowerPenalty(1.0)  # start with no penalization
 
 solver = FEASolver(DirectSolver, problem; xmin=xmin, penalty=penalty)
-stress = TopOpt.von_mises_stress_function(solver)
-filter = DensityFilter(solver; rmin=rmin)
-volfrac = TopOpt.Volume(solver)
+stress = von_mises_stress_function(solver)
+filter = DensityFilterFun(solver; rmin=rmin)
+volfrac = VolumeFun(solver)
 ```
 
 ## Local Stress Constraints
 
 ```{julia}
 #| output: false
-obj = x -> volfrac(filter(PseudoDensities(x))) - V  # volume constraint as objective
+comp = ComplianceFun(solver)
+λ = 1e-4
+# Minimize volume with a compliance regularization term. The regularizer
+# steers the optimizer toward stiff layouts, preventing the trivial
+# all-void solution that pure volume minimization would produce.
+obj = x -> volfrac(filter(PseudoDensities(x))) - V + λ * comp(filter(PseudoDensities(x)))
 thr = 150  # stress threshold
 
 # Local constraints: (σᵢ - thr)/N ≤ 0 for each element
@@ -70,7 +75,9 @@ end
 
 Each element's von Mises stress must satisfy the threshold. The constraint
 function returns a vector (one constraint per element), which Percival
-handles efficiently using interior-point methods.
+handles efficiently using interior-point methods. The compliance regularizer
+(`λ·uᵀKu`) penalizes overly compliant (near-void) designs, keeping the
+optimization away from the degenerate empty-domain solution.
 
 ## Optimization with Continuation
 
@@ -83,16 +90,17 @@ addvar!(model, zeros(N), ones(N))
 add_ineq_constraint!(model, constr)
 
 x = copy(x0)
-for p in [1.0, 3.0]
-    TopOpt.setpenalty!(solver, p)
+for p in [1.0, 2.0, 3.0]
+    setpenalty!(solver, p)
     global r = optimize(model, alg, x; options=options)
     global x = r.minimizer
     println("Penalty $p: obj=$(obj(x)), max_stress=$(maximum(stress(filter(PseudoDensities(x)))))")
 end
 ```
 
-The continuation strategy (penalty 1.0 → 3.0) helps converge to feasible
-designs by first solving a relaxed problem.
+The continuation strategy (penalty 1.0 → 2.0 → 3.0) helps converge to feasible
+designs by first solving a relaxed problem, then progressively penalizing
+intermediate densities.
 
 ## Verify Results
 

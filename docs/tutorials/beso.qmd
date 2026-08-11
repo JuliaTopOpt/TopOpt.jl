@@ -30,6 +30,7 @@ using TopOpt
 We set up a 2D HalfMBB (half Messerschmitt-Bölkow-Blohm) beam — a standard
 benchmark in topology optimization. The problem is defined on a rectilinear grid
 with 160×40 elements. Due to symmetry, we only model half the beam with:
+
 - A roller support on the left edge (vertical displacement fixed)
 - A pin support on the bottom right corner
 - A downward point load at the top center
@@ -57,7 +58,7 @@ driving the design toward black/white (solid/void) solutions:
 
 ```{julia}
 #| output: false
-solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=TopOpt.PowerPenalty(3.0))
+solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(3.0))
 ```
 
 - `xmin=0.01` prevents numerical singularity by keeping a minimum stiffness
@@ -67,6 +68,7 @@ solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=TopOpt.PowerPenalty
 ## Define the compliance objective and volume constraint
 
 BESO requires:
+
 1. **Objective**: Compliance (strain energy) to minimize — lower compliance means
    stiffer structure
 2. **Constraint**: Volume fraction ≤ 50%
@@ -75,9 +77,9 @@ BESO requires:
 
 ```{julia}
 #| output: false
-comp = Compliance(solver)           # f(x) = uᵀKu (strain energy)
-volfrac = Volume(solver)            # g(x) = ΣρᵢVᵢ / V_total
-sensfilter = SensFilter(solver; rmin=4.0)  # mesh-independent filtering
+comp = ComplianceFun(solver)           # f(x) = uᵀKu (strain energy)
+volfrac = VolumeFun(solver)            # g(x) = ΣρᵢVᵢ / V_total
+sensfilter = SensFilterFun(solver; rmin=4.0)  # mesh-independent filtering
 beso = BESO(comp, volfrac, 0.5, sensfilter)  # target volume = 50%
 ```
 
@@ -88,6 +90,7 @@ sensitivities in small features.
 ## Run the BESO optimization
 
 The BESO algorithm iterates:
+
 1. Solve FEA: `K·u = f`
 2. Compute elemental sensitivities (compliance derivatives)
 3. Filter sensitivities
@@ -108,12 +111,10 @@ problem size.
 ## Visualize the result
 
 ```{julia}
-#| eval: false
 #| label: fig-beso
 #| fig-cap: "BESO optimization result showing the evolved beam structure"
 using CairoMakie
 fig = visualize(problem; topology=result.topology)
-
 ```
 
 The visualization shows the final material distribution — a truss-like structure

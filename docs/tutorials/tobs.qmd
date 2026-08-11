@@ -51,8 +51,8 @@ optimization problems.
 ```{julia}
 #| output: false
 solver = FEASolver(DirectSolver, problem; xmin=xmin)
-cheqfilter = DensityFilter(solver; rmin=rmin)  # mesh-independent filtering
-comp = TopOpt.Compliance(solver)
+cheqfilter = DensityFilterFun(solver; rmin=rmin)  # mesh-independent filtering
+comp = ComplianceFun(solver)
 ```
 
 The density filter ensures smooth designs and prevents checkerboarding,
@@ -77,8 +77,12 @@ material usage to 50% of the domain volume.
 m = Model(obj)
 addvar!(m, zeros(length(x0)), ones(length(x0)))  # bounds: 0 ≤ xᵢ ≤ 1
 Nonconvex.add_ineq_constraint!(m, constr)
-options = TOBSOptions(; maxiter=20)  # TOBS-specific options
-TopOpt.setpenalty!(solver, p)
+# TOBS starts internally from the all-solid design and flips at most
+# `movelimit * numVars` variables per iteration, so reaching the 50%
+# volume target from 100% solid needs enough iterations to remove half
+# the material.
+options = TOBSOptions(; maxiter=200, movelimit=0.1)
+setpenalty!(solver, p)
 ```
 
 TOBS uses binary variables (0 or 1) with bound constraints. The penalty
@@ -92,6 +96,7 @@ exponent p=3.0 penalizes intermediate densities in the FEA solution.
 ```
 
 The TOBS algorithm iterates:
+
 1. Linearize objective and constraints around current design
 2. Solve binary subproblem with Cbc.jl
 3. Determine which variables to flip (0→1 or 1→0)

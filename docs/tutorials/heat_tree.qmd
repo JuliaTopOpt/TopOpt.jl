@@ -36,6 +36,7 @@ problem = HeatTree(Val{:Linear}, nels, (1.0, 1.0), k; q=q)
 ```
 
 The boundary conditions:
+
 - **Top edge**: Distributed heat flux q (Neumann BC)
 - **Bottom edge**: Fixed temperature T = 0 (Dirichlet BC)
 - **Left/Right edges**: Insulated (zero heat flux)
@@ -48,10 +49,10 @@ V = 0.3       # volume fraction (30% high-conductivity material)
 xmin = 1e-3   # minimum density
 rmin = 2.0    # density filter radius
 
-x0 = fill(V, TopOpt.getncells(problem))  # start from uniform 30% density
-solver = FEASolver(DirectSolver, problem; xmin=xmin, penalty=PowerPenalty(3.0))
-comp = ThermalCompliance(solver)
-filter = DensityFilter(solver; rmin=rmin)
+x0 = fill(V, getncells(problem))  # start from uniform 30% density
+solver = FEASolver(DirectSolver, problem; xmin=xmin, penalty=PowerPenalty(1.0))
+comp = ThermalComplianceFun(solver)
+filter = DensityFilterFun(solver; rmin=rmin)
 ```
 
 The 30% volume constraint forces the optimizer to strategically place high-
@@ -62,7 +63,7 @@ conductivity material for maximum heat dissipation.
 ```{julia}
 #| output: false
 obj = x -> comp(filter(PseudoDensities(x)))  # thermal compliance
-volfrac = Volume(solver)
+volfrac = VolumeFun(solver)
 constr = x -> volfrac(filter(PseudoDensities(x))) - V  # volume constraint
 ```
 
@@ -78,18 +79,50 @@ model = Model(obj)
 addvar!(model, zeros(length(x0)), ones(length(x0)))
 add_ineq_constraint!(model, constr)
 alg = MMA87()
-options = MMAOptions(; tol=Tolerance(; kkt=1e-4), maxiter=30)
+convcriteria = Nonconvex.KKTCriteria()
+```
+
+## Continuation Strategy
+
+A fixed penalty often leaves intermediate (gray) densities. We use a
+continuation strategy that ramps the penalty exponent through 1.0, 2.0, and
+3.0, with exponentially decaying KKT tolerances so each subproblem is solved
+accurately before the penalty increases:
+
+```{julia}
+#| output: false
+ps = [1.0, 2.0, 3.0]
+tols = [1e-2, 1e-3, 1e-4]
+
+x = x0
 ```
 
 ## Run Optimization
 
+Each continuation step:
+
+1. Set the penalty exponent `p`
+2. Set the convergence tolerance `tol`
+3. Solve the subproblem with MMA87
+4. Warm-start the next step from the current solution
+
 ```{julia}
 #| output: true
-res = optimize(model, alg, x0; options=options)
+for j in eachindex(ps)
+    global x, convcriteria
+    p = ps[j]
+    tol = tols[j]
+    setpenalty!(solver, p)
+    options = MMAOptions(; tol=Tolerance(; kkt=tol), maxiter=1000, convcriteria)
+    res = optimize(model, alg, x; options)
+    global x = res.minimizer
+    println("Step $j: penalty=$p, tol=$tol, obj=$(obj(x))")
+end
 ```
 
 The MMA87 optimizer iteratively updates the density field to minimize
-thermal compliance while satisfying the volume constraint.
+thermal compliance while satisfying the volume constraint. Ramping the
+penalty drives the final design toward a crisp 0/1 distribution.
 
 ## Results
 

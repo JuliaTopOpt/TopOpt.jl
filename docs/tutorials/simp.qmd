@@ -14,6 +14,7 @@ This tutorial solves a 3D cantilever beam problem: a beam fixed at one end with
 a point load at the free end. We minimize compliance (maximize stiffness)
 subject to using only 30% of the available material volume. The problem
 demonstrates:
+
 - 3D finite element modeling with hexahedral elements
 - Density filtering for smooth, mesh-independent designs
 - Nonconvex.jl integration for constrained optimization with MMA87
@@ -32,6 +33,7 @@ using TopOpt
 
 We create a 3D point-load cantilever with 30×10×10 hexahedral elements. The
 boundary conditions are:
+
 - Fixed support (all DOFs constrained) on the left face
 - Downward point load at the center of the right face
 
@@ -69,7 +71,7 @@ densities to the power of 3.0, strongly penalizing intermediate densities and
 pushing the solution toward 0/1 (void/solid):
 
 ```{julia}
-penalty = TopOpt.PowerPenalty(3.0)  # ρ³ penalty
+penalty = PowerPenalty(3.0)  # ρ³ penalty
 solver = FEASolver(DirectSolver, problem; xmin=xmin, penalty=penalty)
 ```
 
@@ -83,8 +85,8 @@ density filter to ensure smooth designs and avoid mesh-dependent solutions. The
 filter computes weighted averages of neighboring element densities:
 
 ```{julia}
-comp = TopOpt.Compliance(solver)           # f(x) = uᵀKu
-filter = DensityFilter(solver; rmin=rmin)  # smooths density field
+comp = ComplianceFun(solver)           # f(x) = uᵀKu
+filter = DensityFilterFun(solver; rmin=rmin)  # smooths density field
 obj = x -> comp(filter(PseudoDensities(x)))  # compose: filter → compliance
 ```
 
@@ -97,7 +99,7 @@ smooth changes in the filtered densities, enabling gradient-based optimization.
 The volume constraint limits total material usage to 30% of the domain:
 
 ```{julia}
-volfrac = TopOpt.Volume(solver)  # g(x) = Σ(ρᵢ·Vᵢ) / V_total
+volfrac = VolumeFun(solver)  # g(x) = Σ(ρᵢ·Vᵢ) / V_total
 constr = x -> volfrac(filter(PseudoDensities(x))) - V  # g(x) ≤ 0
 ```
 
@@ -125,6 +127,7 @@ r = optimize(model, alg, x0; options)
 ```
 
 The optimizer iterates:
+
 1. Evaluate objective and constraint at current design
 2. Compute gradients via automatic differentiation (Zygote.jl)
 3. Build convex MMA approximation
@@ -142,7 +145,6 @@ achieving a final compliance around 39-40 (normalized units).
 ## Visualize the result
 
 ```{julia}
-#| eval: false
 #| label: fig-simp
 #| fig-cap: "SIMP optimization result: 3D cantilever with 30% volume fraction"
 using CairoMakie
@@ -153,7 +155,6 @@ fig = visualize(
     scale_range=10.0,          # color scale range
     vector_arrowsize=0.5,      # arrow size for load vectors
 )
-
 ```
 
 The visualization shows the optimized 3D structure — typically an L-shaped or

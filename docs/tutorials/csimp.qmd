@@ -62,20 +62,20 @@ V = 0.5        # volume fraction constraint (50% material usage)
 xmin = 0.001   # minimum density (prevents singular stiffness)
 rmin = 3.0     # density filter radius
 
-x0 = fill(V, TopOpt.getncells(problem))  # start from uniform design
-penalty = TopOpt.PowerPenalty(1.0)       # start with no penalization
+x0 = fill(V, getncells(problem))  # start from uniform design
+penalty = PowerPenalty(1.0)       # start with no penalization
 solver = FEASolver(DirectSolver, problem; xmin=xmin, penalty=penalty)
-comp = Compliance(solver)
+comp = ComplianceFun(solver)
 
 # TieBeam doesn't need filtering (already stable)
 filter = if problem isa TopOptProblems.TieBeam
     identity
 else
-    DensityFilter(solver; rmin=rmin)
+    DensityFilterFun(solver; rmin=rmin)
 end
 
 obj = x -> comp(filter(PseudoDensities(x)))
-volfrac = Volume(solver)
+volfrac = VolumeFun(solver)
 constr = x -> volfrac(filter(PseudoDensities(x))) - V
 
 model = Model(obj)
@@ -103,6 +103,7 @@ convcriteria = Nonconvex.KKTCriteria()
 ## Optimization Loop
 
 Each iteration:
+
 1. Set penalty exponent `p`
 2. Set convergence tolerance `tol`
 3. Solve subproblem with MMA87
@@ -114,7 +115,7 @@ for j in 1:(nsteps + 1)
     global convcriteria
     p = ps[j]
     tol = tols[j]
-    TopOpt.setpenalty!(solver, p)
+    setpenalty!(solver, p)
     options = MMAOptions(; tol=Tolerance(; kkt=tol), maxiter=1000, convcriteria)
     res = optimize(model, alg, x; options)
     global x = res.minimizer

@@ -36,6 +36,7 @@ problem_2d = PointLoadCantilever(Val{order}, nels, elsizes, E, ν, f)
 ```
 
 The `Val{order}` specifies shape function order:
+
 - `:Linear` — bilinear (2D) or trilinear (3D) elements
 - `:Quadratic` — biquadratic (2D) or triquadratic (3D) elements
 
@@ -62,6 +63,7 @@ problem = HalfMBB(Val{order}, nels, elsizes, E, ν, f)
 ```
 
 Boundary conditions:
+
 - **Left edge**: roller support (vertical displacement fixed)
 - **Bottom right**: pin support (both DOFs fixed)
 - **Top center**: downward point load
@@ -131,6 +133,7 @@ problem = InpStiffness(filename)
 ```
 
 Workflow:
+
 1. Define geometry in CAD software (FreeCAD, SolidWorks)
 2. Mesh and export as `.inp` format
 3. Import into TopOpt.jl for optimization

@@ -31,11 +31,19 @@ Download the truss geometry file: [tim_2d.json](tim_2d.json).
 ```{julia}
 #| output: false
 ndim = 2
-node_points, elements, mats, crosssecs, fixities, load_cases = load_truss_json(
+node_points, elements, _, _, fixities, load_cases = load_truss_json(
     joinpath(@__DIR__, "tim_$(ndim)d.json")
 )
 ndim, nnodes, ncells = length(node_points[1]), length(node_points), length(elements)
 loads = load_cases["0"]
+
+# Override material and cross-section: a large area (A=800) makes the
+# stiffness matrix K dominate the geometric stiffness Kσ, so the initial
+# all-solid design is stable (K + c·Kσ ≻ 0) while still allowing the
+# compliance-only optimum to go unstable.
+mats = TrussFEAMaterial(1.0, 0.3)
+crosssecs = TrussFEACrossSec(800.0)
+
 problem = TrussProblem(
     Val{:Linear}, node_points, elements, loads, fixities, mats, crosssecs
 )
@@ -58,14 +66,15 @@ x0 = fill(1.0, ncells)  # initial design (all solid)
 solver = FEASolver(DirectSolver, problem; xmin=xmin)
 ch = problem.ch
 
-comp = TopOpt.Compliance(solver)
-dp = TopOpt.Displacement(solver)
-assemble_k = TopOpt.AssembleK(problem)
-element_k = ElementK(solver)
+comp = ComplianceFun(solver)
+dp = DisplacementFun(solver)
+assemble_k = AssembleKFun(problem)
+element_k = ElementKFun(solver)
 truss_element_kσ = TrussElementKσ(problem, solver)
 ```
 
 Five differentiable building blocks:
+
 1. **Compliance** — objective to minimize
 2. **Displacement** — solves `K·u = f` for displacements
 3. **ElementK** — per-element stiffness matrices
@@ -76,7 +85,7 @@ Five differentiable building blocks:
 
 ```{julia}
 #| output: false
-c = 0.0001  # buckling load multiplier (below critical load)
+c = 1.0  # buckling load multiplier — large enough that the constraint binds
 
 function buckling_matrix_constr(x)
     xd = PseudoDensities(x)
@@ -122,10 +131,10 @@ addvar!(model, zeros(length(x0)), ones(length(x0)))
 add_ineq_constraint!(model, vol_constr)
 
 alg = MMA87()
-options = MMAOptions(; maxiter=20, tol=Tolerance(; kkt=1e-4))
+options = MMAOptions(; maxiter=200, tol=Tolerance(; kkt=1e-4))
 r1 = optimize(model, alg, x0; options=options)
 
-println("Compliance-only result:")
+println("ComplianceFun-only result:")
 println("  obj = $(obj(r1.minimizer))")
 println("  vol = $(vol_constr(r1.minimizer))")
 ```
@@ -141,7 +150,7 @@ add_sd_constraint!(model, buckling_matrix_constr)
 
 alg2 = SDPBarrierAlg(; sub_alg=IpoptAlg())
 options2 = SDPBarrierOptions(; 
-    sub_options=IpoptOptions(; max_iter=20),
+    sub_options=IpoptOptions(; max_iter=200),
     keep_all=true
 )
 r2 = optimize(model, alg2, x0; options=options2)
@@ -164,7 +173,7 @@ S2 = buckling_matrix_constr(r2.minimizer)
 ev1 = eigen(S1).values
 ev2 = eigen(S2).values
 
-println("Compliance-only min eigenvalue: $(minimum(ev1))")
+println("ComplianceFun-only min eigenvalue: $(minimum(ev1))")
 println("Buckling-constrained min eigenvalue: $(minimum(ev2))")
 println("Design is stable: $(minimum(ev2) ≥ -1e-6)")
 ```

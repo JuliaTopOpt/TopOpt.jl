@@ -39,10 +39,11 @@ problem = HeatConductionProblem(
     Tleft=100.0, Tright=0.0, heatflux=heatflux
 )
 
-println("Created heat conduction problem with $(TopOpt.getncells(problem)) elements")
+println("Created heat conduction problem with $(getncells(problem)) elements")
 ```
 
 The boundary conditions:
+
 - **Top edge**: Distributed heat flux (100 W/m²)
 - **Left edge**: Fixed temperature T = 100 (hot fin)
 - **Right edge**: Fixed temperature T = 0 (cold fin)
@@ -53,9 +54,9 @@ The boundary conditions:
 ```{julia}
 #| output: false
 solver = FEASolver(DirectSolver, problem; xmin=0.001)
-comp = ThermalCompliance(solver)
-vol = TopOpt.Volume(solver; fraction=true)
-filter = DensityFilter(solver; rmin=2.0)
+comp = ThermalComplianceFun(solver)
+vol = VolumeFun(solver; fraction=true)
+filter = DensityFilterFun(solver; rmin=2.0)
 
 f = x -> comp(filter(PseudoDensities(x)))
 g = x -> [vol(filter(PseudoDensities(x))) - V]
@@ -72,7 +73,7 @@ temperature boundaries efficiently.
 x0 = fill(V, length(solver.vars))
 
 println("Starting topology optimization...")
-println("Volume constraint: $V")
+println("VolumeFun constraint: $V")
 println("Number of design variables: $(length(x0))")
 println("Initial objective value (thermal compliance): $(f(x0))")
 
