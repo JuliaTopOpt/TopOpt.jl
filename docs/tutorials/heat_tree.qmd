@@ -109,7 +109,7 @@ Each continuation step:
 ```{julia}
 #| output: true
 for j in eachindex(ps)
-    global x, convcriteria
+    global x, convcriteria, res
     p = ps[j]
     tol = tols[j]
     setpenalty!(solver, p)
