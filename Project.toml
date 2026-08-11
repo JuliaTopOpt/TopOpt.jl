@@ -1,6 +1,6 @@
 name = "TopOpt"
 uuid = "53a1e1a5-51bb-58a9-8a02-02056cc81109"
-version = "0.11.0"
+version = "0.12.0"
 authors = ["Mohamed Tarek <mohdibntarek@gmail.com>", "Yijiang Huang <yijiang94817@gmail.com>"]
 
 [deps]
