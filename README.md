@@ -1,6 +1,6 @@
 
 <p align="center">
-  <img src="https://github.com/JuliaTopOpt/TopOpt.jl/assets/19524993/585ca4eb-83df-48d4-850c-1debc3d93eff" />
+  <img src="assets/logo.png" />
 </p>
 
 # TopOpt.jl
