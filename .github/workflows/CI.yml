@@ -150,6 +150,10 @@ jobs:
           cache-artifacts: true
           cache-packages: true
           cache-compiled: true
+      - name: Use General git registry (avoids CDN lag for new versions)
+        run: |
+          rm -rf ~/.julia/registries/General.toml ~/.julia/registries/General.tar.gz
+          julia -e 'using Pkg; Pkg.Registry.add(RegistrySpec(url="https://github.com/JuliaRegistries/General.git"))'
       - name: Install dependencies
         run: |
           julia --project=docs -e '
