@@ -114,22 +114,12 @@ jobs:
       - name: Render tutorial with Quarto
         working-directory: docs/tutorials
         run: quarto render ${{ matrix.tutorial }}.qmd --execute
-      - name: Run coverage for tutorial
-        if: ${{ matrix.tutorial != 'index' }}
-        run: |
-          julia --project=docs/tutorials --code-coverage=@. -e '
-            include("docs/tutorials/${{ matrix.tutorial }}.jl")'
       - name: Upload rendered tutorial
         uses: actions/upload-artifact@v4
         with:
           name: tutorial-${{ matrix.tutorial }}
           path: docs/tutorials/_site/${{ matrix.tutorial }}.html
           retention-days: 1
-      - name: Upload coverage
-        if: ${{ matrix.tutorial != 'index' }}
-        uses: julia-actions/julia-processcoverage@v1
-        with:
-          directories: docs/tutorials
 
   # Build main docs site (parallel to tutorials, doesn't wait for them)
   docs-build:

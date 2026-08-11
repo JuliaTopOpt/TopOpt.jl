@@ -1,4 +1,7 @@
 using Documenter, TopOpt
+using DocumenterCitations
+
+bib = CitationBibliography(joinpath(@__DIR__, "biblio", "ref.bib"))
 
 makedocs(;
     sitename="TopOpt.jl",
@@ -6,6 +9,7 @@ makedocs(;
     doctest=true,
     checkdocs=:all,
     warnonly=false,
+    plugins=[bib],
     pages=[
         "Home" => "index.md",
         "Problem types" => [
