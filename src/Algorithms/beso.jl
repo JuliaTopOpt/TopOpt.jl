@@ -36,7 +36,9 @@ struct BESO{
     sens_tol::T
     result::Tr
 end
-Base.show(io::IO, ::MIME{Symbol("text/plain")}, ::BESO) = println(io, "TopOpt BESO algorithm")
+function Base.show(io::IO, ::MIME{Symbol("text/plain")}, ::BESO)
+    return println(io, "TopOpt BESO algorithm")
+end
 
 function BESO(
     comp::Compliance,

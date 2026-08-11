@@ -1,3 +1,10 @@
+"""
+    MeanCompliance(solver, scenarios)
+
+Mean compliance over multiple load cases. Returns the average of the
+per-scenario compliance values. `scenarios` is typically produced by
+`generate_scenarios`.
+"""
 mutable struct MeanCompliance{T,TC<:Compliance{T},TM,TS,Tg<:AbstractVector{T}} <:
                AbstractFunction{T}
     compliance::TC
@@ -80,9 +87,7 @@ function compute_exact_ec(ec, x, grad, F, n)
         @views solver.rhs .= F[:, i]
         solver(; assemble_f=false, reuse_fact=(i > 1))
         u = solver.lhs
-        obj += compute_compliance(
-            cell_comp, grad_temp, cell_dofs, Kes, u, x, penalty, xmin
-        )
+        obj += compute_compliance(cell_comp, grad_temp, cell_dofs, Kes, u, x, penalty, xmin)
         grad .+= grad_temp
     end
     obj /= n
@@ -110,14 +115,7 @@ function compute_approx_ec(ec, x, grad, F, V, n)
         solver(; assemble_f=false, reuse_fact=(i > 1))
         invKFv = solver.lhs
         obj += compute_compliance(
-            cell_comp,
-            grad_temp,
-            cell_dofs,
-            Kes,
-            invKFv,
-            x,
-            penalty,
-            xmin,
+            cell_comp, grad_temp, cell_dofs, Kes, invKFv, x, penalty, xmin
         )
         grad .+= grad_temp
     end

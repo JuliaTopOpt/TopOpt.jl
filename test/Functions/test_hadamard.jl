@@ -14,13 +14,13 @@ using TopOpt.Functions: hadamard2!, hadamard3!
         V = zeros(2, 2)
         hadamard3!(V)
         @test V == [1 1; 1 -1]
-        
+
         # Test 4x4 matrix
         V = zeros(4, 4)
         hadamard3!(V)
         @test V == [1 1 1 1; 1 -1 1 -1; 1 1 -1 -1; 1 -1 -1 1]
     end
-    
+
     @testset "Rectangular matrices" begin
         # More rows than columns
         V = zeros(6, 4)
@@ -28,38 +28,38 @@ using TopOpt.Functions: hadamard2!, hadamard3!
         @test size(V) == (6, 4)
         # Check all values are ±1
         @test all(x -> x == 1 || x == -1, V)
-        
+
         # Fewer columns than rows (n < nv case)
         V = zeros(4, 2)
         hadamard3!(V)
         @test size(V) == (4, 2)
         @test all(x -> x == 1 || x == -1, V)
     end
-    
+
     @testset "Non-power-of-2 dimensions" begin
         V = zeros(3, 3)
         hadamard3!(V)
         @test size(V) == (3, 3)
         @test all(x -> x == 1 || x == -1, V)
-        
+
         V = zeros(5, 6)
         hadamard3!(V)
         @test size(V) == (5, 6)
         @test all(x -> x == 1 || x == -1, V)
     end
-    
+
     @testset "Edge cases" begin
         # 1x1 matrix
         V = zeros(1, 1)
         hadamard3!(V)
         @test V ≈ [1.0]
-        
+
         # Single row
         V = zeros(1, 4)
         hadamard3!(V)
         @test size(V) == (1, 4)
         @test all(x -> x == 1 || x == -1, V)
-        
+
         # Single column
         V = zeros(4, 1)
         hadamard3!(V)
@@ -74,43 +74,45 @@ end
         V = zeros(2, 2)
         hadamard2!(V)
         @test V == [1 1; 1 -1]
-        
+
         # Test 4x4 matrix
         V = zeros(4, 4)
         hadamard2!(V)
-        expected = [1 1 1 1; 
-                    1 -1 1 -1; 
-                    1 1 -1 -1; 
-                    1 -1 -1 1]
+        expected = [
+            1 1 1 1
+            1 -1 1 -1
+            1 1 -1 -1
+            1 -1 -1 1
+        ]
         @test V == expected
     end
-    
+
     @testset "Rectangular matrices" begin
         # More rows than columns
         V = zeros(6, 4)
         hadamard2!(V)
         @test size(V) == (6, 4)
         @test all(x -> x == 1 || x == -1, V)
-        
+
         # More rows (should just repeat rows with sign flip)
         V = zeros(8, 4)
         hadamard2!(V)
         @test size(V) == (8, 4)
         @test all(x -> x == 1 || x == -1, V)
     end
-    
+
     @testset "Edge cases" begin
         # 1x1 matrix
         V = zeros(1, 1)
         hadamard2!(V)
         @test V ≈ [1.0]
-        
+
         # Single row
         V = zeros(1, 4)
         hadamard2!(V)
         @test size(V) == (1, 4)
         @test all(x -> x == 1 || x == -1, V)
-        
+
         # Single column
         V = zeros(4, 1)
         hadamard2!(V)
@@ -129,14 +131,14 @@ end
             hadamard!(V1)
             hadamard2!(V2)
             hadamard3!(V3)
-            
+
             # Check they all produce valid Hadamard matrices
             @test all(x -> x == 1 || x == -1, V1)
             @test all(x -> x == 1 || x == -1, V2)
             @test all(x -> x == 1 || x == -1, V3)
         end
     end
-    
+
     @testset "In-place modification" begin
         # Test that functions modify V in-place
         V1 = zeros(4, 4)
@@ -156,13 +158,13 @@ end
             @test isapprox(V * V', n * I, atol=1e-10)
         end
     end
-    
+
     @testset "Determinant (for power-of-2)" begin
         for n in [1, 2, 4, 8]
             V = zeros(n, n)
             hadamard3!(V)
             # det(Hadamard) = ±n^(n/2)
-            @test abs(det(V)) ≈ n^(n/2)
+            @test abs(det(V)) ≈ n^(n / 2)
         end
     end
 end

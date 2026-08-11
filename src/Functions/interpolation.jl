@@ -3,6 +3,12 @@ function ChainRulesCore.rrule(::typeof(assert_eq), x1, x2)
     return assert_eq(x1, x2), _ -> (NoTangent(), NoTangent(), NoTangent())
 end
 
+"""
+    MultiMaterialVariables(y, nmats)
+
+Wraps the raw per-cell, per-material decision variables `y` (length
+`ncells * (nmats - 1)`) for use with `MaterialInterpolation`.
+"""
 struct MultiMaterialVariables{M<:AbstractMatrix}
     x::M
 end
@@ -11,6 +17,11 @@ function MultiMaterialVariables(x::AbstractVector, nmats::Int)
     assert_eq(r, 0)
     return MultiMaterialVariables(reshape(x, d, nmats - 1))
 end
+"""
+    element_densities(mv::MultiMaterialVariables)
+
+Extract the per-element density vector from multi-material variables.
+"""
 function element_densities(x::PseudoDensities, densities::AbstractVector)
     return x.x * densities
 end
@@ -19,6 +30,14 @@ function Base.sum(x::MultiMaterialVariables; dims)
     return sum(x.x; dims)
 end
 
+"""
+    MaterialInterpolation(values, penalty)
+
+Maps a softmax over per-material decision variables to a physical material
+property (e.g. Young's modulus or density). `values` is a vector of material
+property values (length `nmats`, including void as the first entry). `penalty`
+is applied to the softmax output.
+"""
 struct MaterialInterpolation{T,P}
     Es::Vector{T}
     penalty::P
@@ -37,6 +56,12 @@ function Utilities.setpenalty!(interp::MaterialInterpolation, p::Real)
     return Utilities.setpenalty!(interp.penalty, p)
 end
 
+"""
+    tounit(mv::MultiMaterialVariables)
+
+Convert `MultiMaterialVariables` to unit-sum densities via softmax, so the
+per-cell material fractions sum to 1.
+"""
 tounit(x::MultiMaterialVariables) = PseudoDensities(tounit(x.x))
 
 function tounit(x::AbstractVector)

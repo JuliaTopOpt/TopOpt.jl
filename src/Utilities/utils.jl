@@ -119,6 +119,13 @@ function meandiag(K::AbstractMatrix)
     return z / size(K, 1)
 end
 
+"""
+    density(var, xmin)
+
+Map a design variable `var` ∈ [0, 1] to a physical density in `[xmin, 1]`:
+`ρ = var * (1 - xmin) + xmin`. This is the interpolation step that gives void
+(`xmin`) a small but nonzero stiffness to keep the system non-singular.
+"""
 density(var, xmin) = var * (1 - xmin) + xmin
 
 macro debug(expr)

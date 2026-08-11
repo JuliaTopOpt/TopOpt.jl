@@ -102,7 +102,22 @@ We use [Nonconvex.jl](https://github.com/JuliaNonconvex/Nonconvex.jl) for the op
 
 ## Citation
 
-To cite this package, you can cite the following 2 conference publications.
+If you use TopOpt.jl in your research, please cite the following journal paper
+and conference publications.
+
+- [Adaptive continuation solid isotropic material with penalization for volume constrained compliance minimization](https://doi.org/10/gg55cc)
+
+```bibtex
+@article{TarekRay2020,
+  title={Adaptive continuation solid isotropic material with penalization for volume constrained compliance minimization},
+  author={Tarek, Mohamed and Ray, Tapabrata},
+  journal={Computer Methods in Applied Mechanics and Engineering},
+  volume={363},
+  pages={112880},
+  year={2020},
+  doi={10/gg55cc}
+}
+```
 
 - TopOpt.jl: An efficient and high-performance package for topology optimization of continuum structures in the Julia programming language
 
@@ -125,6 +140,8 @@ To cite this package, you can cite the following 2 conference publications.
   year={2021}
 }
 ```
+
+A standard citation file is provided as [`CITATION.bib`](CITATION.bib).
 
 ## Contribute
 

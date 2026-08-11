@@ -40,8 +40,7 @@ apply_zero!(b, problem.ch)
     f_vec = globalinfo.f
 
     mfree = MatrixFreeOperator(
-        f_vec, elementinfo, meandiag, x, xes,
-        fixed_dofs, free_dofs, xmin, penalty, conv
+        f_vec, elementinfo, meandiag, x, xes, fixed_dofs, free_dofs, xmin, penalty, conv
     )
 
     # Test * operator

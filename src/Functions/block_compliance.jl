@@ -1,3 +1,9 @@
+"""
+    BlockCompliance(solver, scenarios)
+
+Per-load-case compliance vector for multi-load problems. Returns a vector of
+compliance values, one per load case.
+"""
 mutable struct BlockCompliance{
     T,TC<:Compliance{T},TM,TS,Tr<:AbstractVector{T},Tv<:AbstractVector{T}
 } <: AbstractFunction{T}

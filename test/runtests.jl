@@ -60,6 +60,7 @@ if ACTUAL_GROUP in ("All", "Core_Tests")
         include("Functions/test_hadamard.jl")
         include("Functions/test_mean_compliance_branches.jl")
         include("Functions/test_stress_tensor_rrule.jl")
+        include("Functions/test_truss_stress_rrule.jl")
     end
     @safetestset "Solver" begin
         include("FEA/solvers.jl")
@@ -96,59 +97,17 @@ if ACTUAL_GROUP in ("All", "Core_Tests")
     end
 end
 
-if ACTUAL_GROUP in ("All", "Examples_1")
-    @safetestset "CSIMP example" begin
-        include("examples/csimp.jl")
-    end
-end
-
-if ACTUAL_GROUP in ("All", "Examples_2")
-    @safetestset "Global stress example" begin
-        include("examples/global_stress.jl")
-    end
-end
-
-if ACTUAL_GROUP in ("All", "Examples_3")
-    @safetestset "Local stress example" begin
-        include("examples/local_stress.jl")
-    end
-end
-
-if ACTUAL_GROUP in ("All", "Examples_4")
-    @safetestset "More examples" begin
-        include("examples/test_examples.jl")
-    end
-    @safetestset "Neural network example" begin
-        include("examples/neural.jl")
-    end
-    @safetestset "Integer nonlinear programming for truss optimization example" begin
-        include("examples/mixed_integer_truss/truss_compliance_2d1.jl")
-    end
-    @safetestset "Multi-material" begin
-        include("examples/multimaterial.jl")
-    end
-    @safetestset "Heat sink example" begin
-        include("examples/heat_sink.jl")
-    end
-    # Neural2 example is a long-running neural network optimization example with visualization
-    # that requires Images and ImageInTerminal packages. It is not structured as a unit test.
-    # include("examples/neural2.jl")
-end
+# Tutorial tests are now run via Quarto render in CI (tutorials job)
+# Each .qmd file is executed during rendering, catching any execution errors.
+# No separate test runner needed - Quarto render serves as the test.
 
 if ACTUAL_GROUP in ("All", "WCSMO14_1")
-    # This was originlly part of https://github.com/JuliaTopOpt/TopOpt.jl_WCSMO21
     @safetestset "Continuum demos" begin
         include("wcsmo14/demos/continuum/cont_compliance1.jl")
-        # cont_compliance2.jl and cont_stress.jl are additional continuum demos
-        # that are not included in regular CI testing to keep test times reasonable.
-        # They can be run manually for extended validation.
-        # include("wcsmo14/demos/continuum/cont_compliance2.jl")
-        # include("wcsmo14/demos/continuum/cont_stress.jl")
     end
 end
 
 if ACTUAL_GROUP in ("All", "WCSMO14_2")
-    # This was originlly part of https://github.com/JuliaTopOpt/TopOpt.jl_WCSMO21
     @safetestset "Truss 2d demos" begin
         include("wcsmo14/demos/truss/truss_compliance_2d1.jl")
         include("wcsmo14/demos/truss/truss_compliance_2d2.jl")
@@ -156,17 +115,5 @@ if ACTUAL_GROUP in ("All", "WCSMO14_2")
     @safetestset "Truss 3d demos" begin
         include("wcsmo14/demos/truss/truss_compliance_3d1.jl")
         include("wcsmo14/demos/truss/truss_compliance_3d2.jl")
-    end
-    @safetestset "WCSMO Benchmarks" begin
-        # Benchmark comparison files are excluded from regular CI testing
-        # as they are used for performance benchmarking against other topopt
-        # implementations and can take significant time to run.
-        # They can be run manually for benchmarking purposes.
-        # include("wcsmo14/jl_benchmarks/compare_neo99_2D.jl")
-        # include("wcsmo14/jl_benchmarks/compare_polytop.jl")
-        # include("wcsmo14/jl_benchmarks/compare_top3d.jl")
-        # include("wcsmo14/jl_benchmarks/compare_top3d125.jl")
-        # include("wcsmo14/jl_benchmarks/new_problems.jl")
-        # include("wcsmo14/jl_benchmarks/compare_topopt_py.jl")
     end
 end

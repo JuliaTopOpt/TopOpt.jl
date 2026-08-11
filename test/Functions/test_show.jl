@@ -11,8 +11,10 @@ using TopOpt, Test
         nels_truss = (6, 4)
         sizes = (1.0, 1.0)
         truss_problem = PointLoadCantileverTruss(nels_truss, sizes; k_connect=1)
-        truss_solver = FEASolver(DirectSolver, truss_problem; xmin=0.001, penalty=PowerPenalty(1.0))
-        
+        truss_solver = FEASolver(
+            DirectSolver, truss_problem; xmin=0.001, penalty=PowerPenalty(1.0)
+        )
+
         stress_fn = TrussStress(truss_solver)
         io = IOBuffer()
         show(io, MIME("text/plain"), stress_fn)
@@ -49,13 +51,16 @@ using TopOpt, Test
         nels_truss = (6, 4)
         sizes = (1.0, 1.0)
         truss_problem = PointLoadCantileverTruss(nels_truss, sizes; k_connect=1)
-        truss_solver = FEASolver(DirectSolver, truss_problem; xmin=0.001, penalty=PowerPenalty(1.0))
-        
+        truss_solver = FEASolver(
+            DirectSolver, truss_problem; xmin=0.001, penalty=PowerPenalty(1.0)
+        )
+
         ksigma_fn = TrussElementKσ(truss_problem, truss_solver)
         io = IOBuffer()
         show(io, MIME("text/plain"), ksigma_fn)
         output = String(take!(io))
-        @test output == "TopOpt element stress stiffness matrix (Kσ_e) construction function\n"
+        @test output ==
+            "TopOpt element stress stiffness matrix (Kσ_e) construction function\n"
     end
 
     @testset "AssembleK show method" begin

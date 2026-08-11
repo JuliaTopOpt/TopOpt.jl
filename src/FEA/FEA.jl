@@ -14,16 +14,24 @@ export AbstractFEASolver,
     CGMatrixFreeSolver,
     DefaultCriteria,
     EnergyCriteria,
+    ConvergenceCriteria,
     simulate,
     AbstractPhysics,
     LinearElasticity,
     HeatTransfer,
     MatrixFreeOperator,
-    MatrixOperator
+    MatrixOperator,
+    SolverResult
 
 const to = TimerOutput()
 
 # FEA solvers
+"""
+    AbstractFEASolver
+
+Abstract type for all FEA solvers in TopOpt. `GenericFEASolver` is the concrete
+implementation.
+"""
 abstract type AbstractFEASolver end
 
 include("solvers_api.jl")  # Shared abstractions first

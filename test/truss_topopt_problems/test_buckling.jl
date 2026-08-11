@@ -16,27 +16,31 @@ include("utils.jl")
     # Load a simple truss problem
     fea_ins_dir = joinpath(@__DIR__, "instances", "fea_examples")
     problem_file = joinpath(fea_ins_dir, "mgz_geom_stiff_ex9.1.json")
-    
-    node_points, elements, mats, crosssecs, fixities, load_cases = load_truss_json(problem_file)
+
+    node_points, elements, mats, crosssecs, fixities, load_cases = load_truss_json(
+        problem_file
+    )
     loads = load_cases["0"]
-    
-    problem = TrussProblem(Val{:Linear}, node_points, elements, loads, fixities, mats, crosssecs)
+
+    problem = TrussProblem(
+        Val{:Linear}, node_points, elements, loads, fixities, mats, crosssecs
+    )
     solver = FEASolver(DirectSolver, problem)
     solver()
-    
+
     # Test buckling with u argument (lines 89-93 in truss_topoptproblems.jl)
     u = solver.u
     Ke, Kg = buckling(problem, solver.globalinfo, solver.elementinfo; u=u)
-    
+
     # Verify return types and dimensions
     # The exact type depends on the problem - just check they are valid matrices
     @test !isnothing(Ke)
     @test !isnothing(Kg)
-    
+
     # Verify that the combined matrix is valid
     K = Ke + Kg
     @test size(K, 1) == size(K, 2)
-    
+
     # Test buckling without u argument (covers lines 91-92: u === undef branch)
     Ke2, Kg2 = buckling(problem, solver.globalinfo, solver.elementinfo)
     @test !isnothing(Ke2)

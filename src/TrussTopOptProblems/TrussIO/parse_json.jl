@@ -2,6 +2,13 @@ using JSON: JSON
 
 # add_format(format"JSON", "JSON", [".json"])
 
+"""
+    load_truss_json(path)
+
+Load a 2D/3D truss problem from a JSON file. Returns
+`(node_points, elements, mats, crosssecs, fixities, load_cases)`.
+Indices in the JSON are zero-based (Python convention).
+"""
 function load_truss_json(filepath::AbstractString)
     open(filepath) do io
         load_truss_json(io)

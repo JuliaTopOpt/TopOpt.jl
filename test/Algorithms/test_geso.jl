@@ -49,7 +49,9 @@ using Ferrite: getncells
 
         @test result isa TopOpt.Algorithms.GESOResult
         @test length(result.topology) == getncells(problem)
-        @test all(0 .<= result.topology .<= 1) || all(result.topology .== 0) || all(result.topology .== 1)
+        @test all(0 .<= result.topology .<= 1) ||
+            all(result.topology .== 0) ||
+            all(result.topology .== 1)
         @test result.fevals > 0
         @test result.fevals <= 5  # Should not exceed maxiter
     end
@@ -233,7 +235,7 @@ using Ferrite: getncells
         filter = DensityFilter(solver; rmin=2.0)
 
         geso = GESO(comp, vol, 0.5, filter; maxiter=5, tol=0.1, p=1.0)
-        
+
         @testset "GESO algorithm show" begin
             io = IOBuffer()
             show(io, MIME("text/plain"), geso)
@@ -284,7 +286,7 @@ using Ferrite: getncells
 
         nel = getncells(problem)
         white = falses(nel)
-        white[end-4:end] .= true
+        white[(end - 4):end] .= true
 
         geso = GESO(comp, vol, 0.5, filter; maxiter=10, tol=0.1, p=1.0)
         x0 = fill(0.5, length(solver.vars))
@@ -308,7 +310,7 @@ using Ferrite: getncells
         black = falses(nel)
         black[1:10] .= true
         white = falses(nel)
-        white[end-9:end] .= true
+        white[(end - 9):end] .= true
 
         @test !any(black .& white)
 
@@ -347,7 +349,9 @@ using Ferrite: getncells
         white_overlap = falses(nel)
         black_overlap[1:3] .= true
         white_overlap[1:3] .= true
-        @test_throws AssertionError geso(x0; black=black_overlap, white=white_overlap, seed=102)
+        @test_throws AssertionError geso(
+            x0; black=black_overlap, white=white_overlap, seed=102
+        )
     end
 
     @testset "GESO with black elements - different volume fractions" begin

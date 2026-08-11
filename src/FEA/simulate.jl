@@ -8,6 +8,12 @@ function Base.show(io::IO, ::MIME{Symbol("text/plain")}, ::LinearElasticityResul
     return println(io, "TopOpt linear elasticity result")
 end
 
+"""
+    simulate(solver, x)
+
+Run a forward FEA solve for the design `x` and return the displacement/temperature
+field. Convenience wrapper around the solver call operator.
+"""
 function simulate(
     problem::StiffnessTopOptProblem,
     topology=ones(getncells(TopOptProblems.getdh(problem).grid));

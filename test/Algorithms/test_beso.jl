@@ -43,7 +43,9 @@ using Ferrite: getncells
 
         @test result isa TopOpt.Algorithms.BESOResult
         @test length(result.topology) == getncells(problem)
-        @test all(0 .<= result.topology .<= 1) || all(result.topology .== 0) || all(result.topology .== 1)
+        @test all(0 .<= result.topology .<= 1) ||
+            all(result.topology .== 0) ||
+            all(result.topology .== 1)
         @test result.fevals > 0
         @test result.fevals <= 5  # Should not exceed maxiter
     end
@@ -200,7 +202,7 @@ using Ferrite: getncells
     @testset "BESO with different filter radii" begin
         nels = (12, 6)
         problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
-        
+
         for rmin in [1.5, 2.0, 3.0]
             solver = FEASolver(DirectSolver, problem; xmin=0.001)
             comp = Compliance(solver)
@@ -249,7 +251,7 @@ using Ferrite: getncells
         beso_strict = BESO(comp, vol, 0.5, filter; maxiter=3, tol=1e-10, p=1.0)
         x0 = fill(0.5, length(solver.vars))
         result_strict = beso_strict(x0)
-        
+
         # Should stop at maxiter without converging
         @test result_strict.fevals <= 3
         # Either converged is false OR it converged very quickly
@@ -258,7 +260,7 @@ using Ferrite: getncells
         # Test with loose tolerance (likely will converge)
         beso_loose = BESO(comp, vol, 0.5, filter; maxiter=20, tol=0.5, p=1.0)
         result_loose = beso_loose(x0)
-        
+
         # Should have evaluated at least once
         @test result_loose.fevals >= 1
     end
@@ -282,7 +284,7 @@ using Ferrite: getncells
     @testset "BESO evolutionary rate effects" begin
         nels = (10, 4)
         problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
-        
+
         # Test with different evolutionary rates
         for er in [0.01, 0.02, 0.05]
             solver = FEASolver(DirectSolver, problem; xmin=0.001)
@@ -302,7 +304,7 @@ using Ferrite: getncells
     @testset "BESO material interpolation powers" begin
         nels = (10, 4)
         problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
-        
+
         # Test with different penalization powers
         for p in [1.0, 2.0, 3.0]
             solver = FEASolver(DirectSolver, problem; xmin=0.001)
@@ -413,7 +415,7 @@ using Ferrite: getncells
         # Fix some elements as void (white)
         nel = getncells(problem)
         white = falses(nel)
-        white[end-4:end] .= true  # Fix last 5 elements as void
+        white[(end - 4):end] .= true  # Fix last 5 elements as void
 
         beso = BESO(comp, vol, 0.5, filter; maxiter=10, tol=0.1, p=1.0)
         x0 = fill(0.5, length(solver.vars))
@@ -439,14 +441,14 @@ using Ferrite: getncells
         filter = DensityFilter(solver; rmin=2.0)
 
         nel = getncells(problem)
-        
+
         # Fix some elements as solid (black) - near the load
         black = falses(nel)
         black[1:10] .= true
-        
+
         # Fix some elements as void (white) - far from load
         white = falses(nel)
-        white[end-9:end] .= true
+        white[(end - 9):end] .= true
 
         # Verify black and white don't overlap
         @test !any(black .& white)
@@ -557,7 +559,7 @@ using Ferrite: getncells
         filter = DensityFilter(solver; rmin=2.0)
 
         beso = BESO(comp, vol, 0.5, filter; maxiter=10, tol=0.1, p=1.0)
-        
+
         @testset "BESO algorithm show" begin
             io = IOBuffer()
             show(io, MIME("text/plain"), beso)

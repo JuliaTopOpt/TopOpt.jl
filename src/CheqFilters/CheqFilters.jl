@@ -18,8 +18,26 @@ export AbstractCheqFilter,
     AbstractSensFilter,
     AbstractDensityFilter
 
+"""
+    AbstractCheqFilter
+
+Abstract type for chequerboard filters. Subtypes: `AbstractSensFilter`,
+`AbstractDensityFilter`.
+"""
 abstract type AbstractCheqFilter end
+"""
+    AbstractSensFilter
+
+Abstract type for sensitivity filters, which smooth the gradient of the
+objective/constraint with respect to the design.
+"""
 abstract type AbstractSensFilter <: AbstractCheqFilter end
+"""
+    AbstractDensityFilter
+
+Abstract type for density filters, which smooth the design variables
+themselves before they enter the objective/constraint.
+"""
 abstract type AbstractDensityFilter <: AbstractCheqFilter end
 
 struct FilterMetadata{TC1,TC2}

@@ -1,0 +1,145 @@
+---
+title: "Multi-Material Topology Optimization with Softmax Parametrization"
+toc: true
+---
+
+## Description
+
+This tutorial demonstrates multi-material topology optimization, where the
+design distributes several candidate materials (plus void) over the domain.
+Each element holds a softmax over `nmats - 1` decision variables, ensuring
+material fractions sum to one. Material interpolation maps these fractions
+to Young's moduli (for compliance) and physical densities (for mass
+constraints).
+
+We optimize a cantilever beam with 3 materials: void (E=1e-5), soft material
+(E=1.0), and stiff material (E=4.0), subject to a 40% mass constraint.
+
+## Setup
+
+```{julia}
+#| output: false
+using TopOpt, Zygote, Test
+```
+
+## Define the Problem
+
+```{julia}
+#| output: false
+Es = [1e-5, 1.0, 4.0]      # Young's moduli: void, soft, stiff
+densities = [0.0, 0.5, 1.0] # physical densities for mass constraint
+nmats = 3                   # number of materials
+
+nu = 0.3  # Poisson's ratio
+f = 1.0   # downward force
+
+problem = PointLoadCantilever(
+    Val{:Linear},    # linear elements
+    (160, 40),       # 160×40 mesh
+    (1.0, 1.0),      # element size
+    1.0,             # base Young's modulus
+    nu,              # Poisson's ratio
+    f,               # load
+)
+ncells = TopOpt.getncells(problem)
+```
+
+## FEA Solver and Filter
+
+```{julia}
+#| output: false
+solver = FEASolver(DirectSolver, problem; xmin=0.0)
+filter = DensityFilter(solver; rmin=4.0)
+comp = Compliance(solver)
+```
+
+## Material Interpolation
+
+```{julia}
+#| output: false
+# Interpolation 1: Young's moduli for compliance (penalty=3.0)
+penalty1 = TopOpt.PowerPenalty(3.0)
+interp1 = MaterialInterpolation(Es, penalty1)
+
+# Interpolation 2: Physical densities for mass constraint (penalty=1.0)
+penalty2 = TopOpt.PowerPenalty(1.0)
+interp2 = MaterialInterpolation(densities, penalty2)
+```
+
+Two interpolations serve different purposes:
+- `interp1` maps softmax outputs to stiffness for FEA
+- `interp2` maps to physical densities for mass calculation
+
+## Objective and Constraint
+
+```{julia}
+#| output: false
+obj = y -> begin
+    x = tounit(MultiMaterialVariables(y, nmats))
+    _E = interp1(filter(x))
+    return comp(_E)
+end
+
+y0 = zeros(ncells * (nmats - 1))
+
+# Sanity-check objective and gradient
+println("Initial objective: $(obj(y0))")
+grad_obj = Zygote.gradient(obj, y0)[1]
+println("Gradient norm: $(norm(grad_obj))")
+
+constr = y -> begin
+    _rhos = interp2(MultiMaterialVariables(y, nmats))
+    return sum(_rhos.x) / ncells - 0.4  # 40% mass constraint
+end
+
+println("Initial constraint: $(constr(y0))")
+grad_constr = Zygote.gradient(constr, y0)[1]
+println("Constraint gradient norm: $(norm(grad_constr))")
+```
+
+The softmax parametrization ensures material fractions sum to one at each
+element. Design variables `y` are unconstrained (−10 to 10), transformed
+to material fractions via softmax.
+
+## Optimization
+
+```{julia}
+#| output: true
+model = Model(obj)
+addvar!(model, fill(-10.0, length(y0)), fill(10.0, length(y0)))
+add_ineq_constraint!(model, constr)
+
+alg = MMA87()
+options = MMAOptions(; s_init=0.1, tol=Tolerance(; kkt=1e-3))
+
+y0 = zeros(ncells * (nmats - 1))
+res = optimize(model, alg, y0; options=options)
+y = res.minimizer
+```
+
+## Verify Results
+
+```{julia}
+#| output: true
+println("Constraint value: $(constr(y))")
+x = TopOpt.tounit(reshape(y, ncells, nmats - 1))
+println("Non-void fraction: $(sum(x[:, 2:3]) / size(x, 1))")
+
+# Verify constraints are satisfied
+println("Mass constraint satisfied: $(constr(y) < 1e-6)")
+println("Softmax sums to 1: $(all(x -> isapprox(x, 1), sum(x; dims=2)))")
+```
+
+## Visualization
+
+```{julia}
+#| label: fig-multimaterial
+#| fig-cap: "Multi-material design: void (white), soft material (gray), stiff material (black)"
+using CairoMakie
+fig = visualize(problem; topology=y)  # Note: y is multi-material variables
+
+```
+
+The result shows optimal material distribution — stiff material in high-stress
+regions, soft material in intermediate areas, and void where material is
+inefficient.

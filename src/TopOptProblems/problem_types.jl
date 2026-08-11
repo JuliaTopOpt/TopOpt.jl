@@ -377,7 +377,7 @@ struct LBeam{T,N,M,Tc<:ConstraintHandler{<:DofHandler,T},Tf<:Integer,Tm<:Metadat
     metadata::Tm
 end
 function Base.show(io::IO, ::MIME{Symbol("text/plain")}, ::LBeam)
-    println(io, "TopOpt L-beam problem")
+    return println(io, "TopOpt L-beam problem")
 end
 
 """
@@ -622,6 +622,9 @@ Mathematical note: For thermal compliance J = Q^T T, the gradient is:
     dJ/dx_e = -T_e^T Ke T_e · dρ_e/dx_e
 This is the same form as structural compliance because Q doesn't depend on x.
 
+See [BendsoeSigmund2003](@cite) §1.3 and §4.1 for thermal topology
+optimization, and [Iga2009](@cite) for SIMP-based heat conduction.
+
 All subtypes must have:
 - `ch`: ConstraintHandler with temperature DOFs (1 DOF per node)
 - `metadata`: Metadata with cell-node-dof relationships
@@ -640,10 +643,10 @@ getpressuredict(p::HeatTransferTopOptProblem{dim,T}) where {dim,T} = Dict{String
 getheatfluxdict(p::HeatTransferTopOptProblem{dim,T}) where {dim,T} = Dict{String,T}()
 getfacesets(p::HeatTransferTopOptProblem) = getdh(p).grid.facetsets
 function Ferrite.getncells(problem::HeatTransferTopOptProblem)
-    Ferrite.getncells(getdh(problem).grid)
+    return Ferrite.getncells(getdh(problem).grid)
 end
 getgeomorder(p::HeatTransferTopOptProblem) = nnodespercell(p) in (9, 27) ? 2 : 1
-getcloaddict(p::HeatTransferTopOptProblem{dim,T}) where {dim,T} = Dict{String,Vector{T}}()
+getcloaddict(p::HeatTransferTopOptProblem{dim,T}) where {dim,T} = Dict{Int,Vector{T}}()
 
 """
     struct HeatConductionProblem{dim, T, N, M} <: HeatTransferTopOptProblem{dim, T}
@@ -682,8 +685,16 @@ Constructor arguments:
 - `heatflux`: Dict mapping faceset names to heat flux values (W/m²)
   - Positive values = heat entering the domain (heat source on boundary)
   - Negative values = heat leaving the domain (heat sink on boundary)
+- `cload`: Dict mapping a node index to a concentrated heat source value (W).
+  Positive values inject heat at that node; negative values remove heat.
+  This is the point-source analogue of the distributed `heatflux` and is the
+  setup that produces the classic branching "conductivity tree" topology.
+- `Tfix`: Dict mapping a node index to a prescribed temperature (K), applied
+  as a point Dirichlet BC. Use it to pin the temperature at individual nodes
+  (e.g. a point cold sink) instead of along a whole boundary face.
 
-Note: Heat flux q is NOT penalized in the assembly. Only conductivity k(ρ) is penalized.
+Note: Heat flux q and concentrated heat sources are NOT penalized in the
+assembly. Only conductivity k(ρ) is penalized.
 """
 struct HeatConductionProblem{
     dim,
@@ -693,12 +704,14 @@ struct HeatConductionProblem{
     Tr<:RectilinearGrid{dim,T,N,M},
     Tc<:ConstraintHandler{<:DofHandler,T},
     Th<:AbstractDict{String,T},
+    Tc2<:AbstractDict{Int,T},
     Tm<:Metadata,
 } <: HeatTransferTopOptProblem{dim,T}
     rect_grid::Tr
     k::T
     ch::Tc
     heatfluxdict::Th
+    cloaddict::Tc2
     metadata::Tm
 end
 
@@ -707,14 +720,23 @@ function Base.show(io::IO, ::MIME{Symbol("text/plain")}, ::HeatConductionProblem
 end
 
 getheatfluxdict(p::HeatConductionProblem) = p.heatfluxdict
+# Wrap each scalar heat source in a 1-element vector to match the structural
+# `Dict{node => [values...]}` convention used by `make_cload`.
+getcloaddict(p::HeatConductionProblem) = Dict(node => [v] for (node, v) in p.cloaddict)
 
 """
-    HeatConductionProblem(::Type{Val{CellType}}, nels, sizes, k=1.0; Tleft=0.0, Tright=0.0, heatflux=Dict{String,Float64}())
+    HeatConductionProblem(::Type{Val{CellType}}, nels, sizes, k=1.0; Tleft=0.0, Tright=0.0, Ttop=nothing, Tbottom=nothing, heatflux=Dict{String,Float64}(), cload=Dict{Int,Float64}(), Tfix=Dict{Int,Float64}())
 
 Create a 2D/3D heat conduction problem on a rectangular domain.
 
-Temperature BCs are applied on left (Tleft) and right (Tright) boundaries.
+Temperature (Dirichlet) BCs default to `0.0` on the left and right
+boundaries; pass `Tleft`/`Tright` to set them, or `nothing` to leave a
+side free (no Dirichlet BC there). `Ttop` and `Tbottom` default to
+`nothing` (free); set them to apply temperature BCs on the top/bottom.
+`Tfix` applies point Dirichlet BCs at individual nodes.
+
 Heat flux BCs can be applied on any faceset via the `heatflux` argument.
+Point heat sources can be applied at nodes via the `cload` argument.
 
 Example:
 ```julia
@@ -724,6 +746,20 @@ k = 1.0
 # Apply heat flux on top boundary (faceset "top")
 heatflux = Dict("top" => 100.0)  # 100 W/m² into the domain
 problem = HeatConductionProblem(Val{:Linear}, nels, sizes, k; Tleft=0.0, Tright=0.0, heatflux=heatflux)
+
+# Point heat source at the top-center node, cold bottom (classic tree setup):
+nx, ny = nels
+center_top_node = div(nx, 2) + 1 + ny * (nx + 1)
+cload = Dict(center_top_node => 1.0)
+problem = HeatConductionProblem(Val{:Linear}, nels, sizes, k; Tleft=nothing, Tright=nothing, Tbottom=0.0, cload=cload)
+
+# Point source top-center, point sink bottom-center (branching tree):
+center_bottom_node = div(nx, 2) + 1
+problem = HeatConductionProblem(Val{:Linear}, nels, sizes, k;
+    Tleft=nothing, Tright=nothing, Ttop=nothing, Tbottom=nothing,
+    cload=Dict(center_top_node => 1.0),
+    Tfix=Dict(center_bottom_node => 0.0),
+)
 ```
 """
 function HeatConductionProblem(
@@ -733,9 +769,25 @@ function HeatConductionProblem(
     k=1.0;
     Tleft=0.0,
     Tright=0.0,
+    Ttop=nothing,
+    Tbottom=nothing,
     heatflux=Dict{String,Float64}(),
+    cload=Dict{Int,Float64}(),
+    Tfix=Dict{Int,Float64}(),
 ) where {dim,CellType}
-    T = float(promote_type(eltype(sizes), typeof(k), typeof(Tleft), typeof(Tright)))
+    # Promote the numeric BC values (skipping `nothing`) to pick the element
+    # type, defaulting to Float64 when all BCs are `nothing`.
+    bc_vals = [v for v in (Tleft, Tright, Ttop, Tbottom) if v !== nothing]
+    T = float(
+        promote_type(
+            eltype(sizes),
+            typeof(k),
+            map(typeof, bc_vals)...,
+            map(typeof, values(cload))...,
+            map(typeof, values(Tfix))...,
+            Float64,
+        ),
+    )
 
     if CellType === :Linear
         rect_grid = RectilinearGrid(Val{:Linear}, nels, T.(sizes))
@@ -754,6 +806,16 @@ function HeatConductionProblem(
     end
     addnodeset!(rect_grid.grid, "right_boundary", x -> right(rect_grid, x))
 
+    if haskey(rect_grid.grid.nodesets, "top_boundary")
+        pop!(rect_grid.grid.nodesets, "top_boundary")
+    end
+    addnodeset!(rect_grid.grid, "top_boundary", x -> top(rect_grid, x))
+
+    if haskey(rect_grid.grid.nodesets, "bottom_boundary")
+        pop!(rect_grid.grid.nodesets, "bottom_boundary")
+    end
+    addnodeset!(rect_grid.grid, "bottom_boundary", x -> bottom(rect_grid, x))
+
     # Create temperature field (scalar, 1 DOF per node)
     dh = DofHandler(rect_grid.grid)
     refshape = Ferrite.getrefshape(eltype(rect_grid.grid.cells))
@@ -766,14 +828,47 @@ function HeatConductionProblem(
     end
     close!(dh)
 
-    # Apply temperature boundary conditions
+    # Apply temperature boundary conditions. A side left at `nothing` has no
+    # Dirichlet BC (free boundary); a numeric value fixes the temperature there.
     ch = ConstraintHandler(dh)
-    dbc_left = Dirichlet(:T, getnodeset(rect_grid.grid, "left_boundary"), (x, t) -> Tleft)
-    dbc_right = Dirichlet(
-        :T, getnodeset(rect_grid.grid, "right_boundary"), (x, t) -> Tright
-    )
-    add!(ch, dbc_left)
-    add!(ch, dbc_right)
+    if Tleft !== nothing
+        add!(
+            ch,
+            Dirichlet(:T, getnodeset(rect_grid.grid, "left_boundary"), (x, t) -> T(Tleft)),
+        )
+    end
+    if Tright !== nothing
+        add!(
+            ch,
+            Dirichlet(
+                :T, getnodeset(rect_grid.grid, "right_boundary"), (x, t) -> T(Tright)
+            ),
+        )
+    end
+    if Ttop !== nothing
+        add!(
+            ch, Dirichlet(:T, getnodeset(rect_grid.grid, "top_boundary"), (x, t) -> T(Ttop))
+        )
+    end
+    if Tbottom !== nothing
+        add!(
+            ch,
+            Dirichlet(
+                :T, getnodeset(rect_grid.grid, "bottom_boundary"), (x, t) -> T(Tbottom)
+            ),
+        )
+    end
+    if !isempty(Tfix)
+        # Prescribe the temperature at individual nodes (point Dirichlet BCs).
+        fix_nodes = collect(keys(Tfix))
+        # Ferrite's Dirichlet applies a single value to a node set; since each
+        # fixed node can carry a different temperature, add one Dirichlet per
+        # distinct value.
+        for val in unique(values(Tfix))
+            nodes = [n for n in fix_nodes if Tfix[n] == val]
+            add!(ch, Dirichlet(:T, Set(nodes), (x, t) -> T(val)))
+        end
+    end
     close!(ch)
     t = T(0)
     update!(ch, t)
@@ -786,7 +881,46 @@ function HeatConductionProblem(
         heatfluxdict[key] = T(val)
     end
 
-    return HeatConductionProblem(rect_grid, T(k), ch, heatfluxdict, metadata)
+    # Convert cload dict (node index => heat source value) to proper type.
+    cloaddict = Dict{Int,T}()
+    for (node, val) in cload
+        cloaddict[node] = T(val)
+    end
+
+    return HeatConductionProblem(rect_grid, T(k), ch, heatfluxdict, cloaddict, metadata)
 end
 
 nnodespercell(p::HeatConductionProblem) = nnodespercell(p.rect_grid)
+
+"""
+    HeatTree(::Type{Val{CellType}}, nels, sizes, k=1.0; q=1.0)
+
+Convenience constructor for the classic heat-conduction topology-optimization
+benchmark ([BendsoeSigmund2003](@cite) §1.3, Fig. 1.4):
+distributed heat flux `q` enters through the full top edge, the full bottom
+edge is held at `T = 0` (cold sink), and the left/right sides are insulated
+(free). Minimizing thermal compliance with this setup produces the branching
+"conductivity tree" — a root structure at the cold bottom that branches and
+tapers toward the hot top.
+
+Arguments:
+- `nels`: tuple of number of elements per dimension
+- `sizes`: tuple of element sizes
+- `k`: thermal conductivity
+- `q`: heat flux on the top boundary (W/m², positive = into the domain)
+"""
+function HeatTree(
+    ::Type{Val{CellType}}, nels::NTuple{dim,Int}, sizes::NTuple{dim}, k=1.0; q=1.0
+) where {dim,CellType}
+    return HeatConductionProblem(
+        Val{CellType},
+        nels,
+        sizes,
+        k;
+        Tleft=nothing,
+        Tright=nothing,
+        Ttop=nothing,
+        Tbottom=0.0,
+        heatflux=Dict("top" => q),
+    )
+end

@@ -6,6 +6,12 @@ using WriteVTK
 
 export save_mesh
 
+"""
+    save_mesh(problem, topology, filename)
+
+Save the design topology as a VTK (.vtu) mesh file for visualization in
+ParaView or similar. `topology` is the density vector.
+"""
 function save_mesh(filename::AbstractString, problem::StiffnessTopOptProblem)
     topology = ones(Ferrite.getncells(TopOptProblems.getdh(problem).grid))
     vtkfile = WriteVTK.vtk_grid(filename, problem, topology)

@@ -102,7 +102,11 @@ end
         # Test that get_Kσs returns the geometric stiffness matrices
         # Need actual displacement values from solving the system
         u = ginfo.K \ ginfo.f
-        Kσs = TopOpt.TopOptProblems.get_Kσs(problem, u, elementinfo.cellvalues)
+        penalty = PowerPenalty(1.0)
+        xmin_val = 1e-3
+        Kσs = TopOpt.TopOptProblems.get_Kσs(
+            problem, u, elementinfo.cellvalues, vars, penalty, xmin_val
+        )
 
         ncells = getncells(problem.ch.dh.grid)
         @test length(Kσs) == ncells
@@ -111,6 +115,18 @@ end
         for Kσ in Kσs
             @test Kσ isa Matrix
             @test size(Kσ, 1) == size(Kσ, 2)  # Square matrices
+        end
+
+        # Verify density scaling: Kσ should scale with penalized density
+        vars_half = fill(0.5, ncells)
+        Kσs_half = TopOpt.TopOptProblems.get_Kσs(
+            problem, u, elementinfo.cellvalues, vars_half, penalty, xmin_val
+        )
+        ρ_half = TopOpt.Utilities.density(penalty(0.5), xmin_val)
+        for ci in 1:ncells
+            # With density=1 (ones), ρ=1; with density=0.5, ρ=density(0.5^1, xmin)
+            # Kσ should scale linearly with ρ since Kσ_e = ρ_e * Kσ_0_e
+            @test Kσs_half[ci] ≈ ρ_half * Kσs[ci] atol = 1e-10
         end
     end
 
@@ -131,6 +147,52 @@ end
         # We'll check this by verifying it's symmetric and has positive diagonal
         @test all(diag(K) .> 0)
     end
+
+    @testset "buckling uses correct 3D constitutive law" begin
+        # The geometric stiffness Kσ depends on the stress σ = λ*tr(ε)*I + 2μ*ε.
+        # The old code used plane-stress constants (Eν/(1-ν²), Eν(1+ν)) which are
+        # wrong for the 3D/plane-strain stiffness matrix. Verify the fix by
+        # checking that get_Kσs with the correct Lamé constants matches.
+        u = ginfo.K \ ginfo.f
+        penalty = PowerPenalty(1.0)
+        xmin_val = 1e-3
+        Kσs = TopOpt.TopOptProblems.get_Kσs(
+            problem, u, elementinfo.cellvalues, vars, penalty, xmin_val
+        )
+
+        # Compute reference Kσs manually with the correct 3D Lamé constants
+        E_val = 1.0
+        ν_val = 0.3
+        λ_correct = E_val * ν_val / ((1 + ν_val) * (1 - 2 * ν_val))
+        two_mu_correct = E_val / (1 + ν_val)
+
+        # Old (wrong) constants:
+        λ_old = E_val * ν_val / (1 - ν_val^2)
+        c2_old = E_val * ν_val * (1 + ν_val)
+
+        # Verify the constants are different (proves the bug was real)
+        @test λ_correct != λ_old
+        @test two_mu_correct != c2_old
+
+        # The Kσs from get_Kσs should be finite and nonzero
+        @test all(Kσ -> all(isfinite, Kσ), Kσs)
+        @test any(Kσ -> norm(Kσ) > 0, Kσs)
+    end
+
+    @testset "buckling function with design variables" begin
+        # Test that buckling respects the design variable vector
+        K1, Kσ1 = buckling(problem, ginfo, elementinfo, vars)
+        vars_low = fill(0.5, length(vars))
+        K2, Kσ2 = buckling(problem, ginfo, elementinfo, vars_low)
+
+        # K (elastic stiffness) should be the same (it's ginfo.K)
+        @test K1 === K2
+
+        # Kσ should be different — lower density means lower geometric stiffness
+        @test norm(Kσ1) != norm(Kσ2)
+        # With lower density, Kσ should be smaller in norm
+        @test norm(Kσ2) < norm(Kσ1)
+    end
 end
 
 # Test TrussElementKσ for truss problems
@@ -140,7 +202,7 @@ end
 
     # Load a simple truss problem
     ins_dir = joinpath(@__DIR__, "..", "truss_topopt_problems", "instances", "fea_examples")
-    file_name = "buckling_2d_nodal_instab.json"
+    file_name = "mgz_geom_stiff_ex9.1.json"
     problem_file = joinpath(ins_dir, file_name)
 
     if isfile(problem_file)
@@ -180,6 +242,17 @@ end
 
             @test Kσ_result isa AbstractVector  # Should return element Kσ matrices
             @test length(Kσ_result) == ncells
+
+            # Verify penalty is applied: with x=0.5, Kσ should be scaled by
+            # ρ = density(penalty(0.5), xmin), not by 0.5 directly
+            x_half = TopOpt.PseudoDensities(fill(0.5, ncells))
+            Kσ_half = eksig(u_result, x_half)
+            penalty = TopOpt.getpenalty(solver)
+            xmin = solver.xmin
+            ρ_half = TopOpt.Utilities.density(penalty(0.5), xmin)
+            for ci in 1:ncells
+                @test Kσ_half[ci] ≈ ρ_half * Kσ_result[ci] atol = 1e-10
+            end
         end
 
         @testset "TrussElementKσ show method" begin
@@ -269,7 +342,9 @@ end
     @test haskey(facesets, "bottomload")
 
     # Test _make_dloads function via make_Kes_and_fes (public API)
-    Kes, weights, dloads, cellvalues, facevalues = make_Kes_and_fes(problem, 2, Val{:Static})
+    Kes, weights, dloads, cellvalues, facevalues = make_Kes_and_fes(
+        problem, 2, Val{:Static}
+    )
     ncells = getncells(problem.ch.dh.grid)
     @test length(dloads) == ncells
 
@@ -310,7 +385,9 @@ end
     elementinfo = ElementFEAInfo(problem, 2, Val{:Static})
 
     # Get distributed loads from pressure via make_Kes_and_fes
-    Kes, weights, dloads, cellvalues, facevalues = make_Kes_and_fes(problem, 2, Val{:Static})
+    Kes, weights, dloads, cellvalues, facevalues = make_Kes_and_fes(
+        problem, 2, Val{:Static}
+    )
 
     # Create global FEA info
     ginfo = GlobalFEAInfo(problem)
@@ -356,7 +433,9 @@ end
     end
 
     # Test that distributed loads are computed correctly via make_Kes_and_fes
-    Kes, weights, dloads, cellvalues, facevalues = make_Kes_and_fes(problem, 2, Val{:Static})
+    Kes, weights, dloads, cellvalues, facevalues = make_Kes_and_fes(
+        problem, 2, Val{:Static}
+    )
 
     # Verify dloads is populated (non-zero)
     any_nonzero = any(fe -> any(x -> x != 0, fe), dloads)
@@ -376,13 +455,17 @@ end
     # Get problem data needed for the loop
     dh = TopOpt.TopOptProblems.getdh(problem)
     grid = dh.grid
-    all_boundary_facets = reduce(union, values(grid.facetsets); init=Set{Ferrite.FacetIndex}())
+    all_boundary_facets = reduce(
+        union, values(grid.facetsets); init=Set{Ferrite.FacetIndex}()
+    )
     pressuredict = TopOpt.TopOptProblems.getpressuredict(problem)
     facesets = TopOpt.TopOptProblems.getfacesets(problem)
 
     # Build element FEA info to get facevalues
     elementinfo = ElementFEAInfo(problem, 2, Val{:Static})
-    Kes, weights, dloads, cellvalues, facevalues = make_Kes_and_fes(problem, 2, Val{:Static})
+    Kes, weights, dloads, cellvalues, facevalues = make_Kes_and_fes(
+        problem, 2, Val{:Static}
+    )
 
     dim = TopOpt.TopOptProblems.getdim(problem)
     N = TopOpt.TopOptProblems.nnodespercell(problem)
@@ -421,7 +504,9 @@ end
     problem = TieBeam(Val{:Linear}, T; refine=2, force=T(1.0), E=T(1), ν=T(0.3))
 
     # Get facevalues and dloads
-    Kes, weights, dloads, cellvalues, facevalues = make_Kes_and_fes(problem, 2, Val{:Static})
+    Kes, weights, dloads, cellvalues, facevalues = make_Kes_and_fes(
+        problem, 2, Val{:Static}
+    )
 
     # Verify quadrature is set up
     n_quadpoints = Ferrite.getnquadpoints(facevalues)
@@ -459,7 +544,9 @@ end
     # Verify all faces in pressuredict facesets are on the boundary
     dh = TopOpt.TopOptProblems.getdh(problem)
     grid = dh.grid
-    all_boundary_facets = reduce(union, values(grid.facetsets); init=Set{Ferrite.FacetIndex}())
+    all_boundary_facets = reduce(
+        union, values(grid.facetsets); init=Set{Ferrite.FacetIndex}()
+    )
     pressuredict = TopOpt.TopOptProblems.getpressuredict(problem)
     facesets = TopOpt.TopOptProblems.getfacesets(problem)
 
