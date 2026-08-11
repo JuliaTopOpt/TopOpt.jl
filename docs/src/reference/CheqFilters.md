@@ -20,12 +20,12 @@ AbstractDensityFilter
 ## Sensitivity filter
 
 ```@docs
-SensFilter
+SensFilterFun
 ```
 
 ## Density filters
 
 ```@docs
-DensityFilter
-ProjectedDensityFilter
+DensityFilterFun
+ProjectedDensityFilterFun
 ```

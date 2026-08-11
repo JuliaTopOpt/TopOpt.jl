@@ -64,7 +64,7 @@ HeatTree
 
 ```@docs
 MultiLoad
-RandomMagnitude
+RandomMagnitudeFun
 ```
 
 ## Grids

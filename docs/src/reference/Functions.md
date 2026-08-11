@@ -9,31 +9,31 @@ docstrings.
 CurrentModule = TopOpt.Functions
 ```
 
-## Compliance and volume
+## ComplianceFun and volume
 
 ```@docs
-Compliance
-Volume
-ThermalCompliance
-MeanCompliance
-BlockCompliance
+ComplianceFun
+VolumeFun
+ThermalComplianceFun
+MeanComplianceFun
+BlockComplianceFun
 ```
 
-## Displacement and stress
+## DisplacementFun and stress
 
 ```@docs
-Displacement
-StressTensor
-ElementStressTensor
+DisplacementFun
+StressTensorFun
+ElementStressTensorFun
 von_mises_stress_function
-TrussStress
+TrussStressFun
 ```
 
 ## Buckling helpers
 
 ```@docs
-ElementK
-AssembleK
+ElementKFun
+AssembleKFun
 apply_boundary_with_zerodiag!
 apply_boundary_with_meandiag!
 TrussElementKσ
@@ -42,29 +42,29 @@ TrussElementKσ
 ## Neural-network parametrization
 
 ```@docs
-NeuralNetwork
-TrainFunction
-PredictFunction
+NeuralNetworkFun
+TrainFunctionFun
+PredictFunctionFun
 ```
 
 ## Multi-material
 
 ```@docs
-MaterialInterpolation
-MultiMaterialVariables
+MaterialInterpolationFun
+MultiMaterialVariablesFun
 element_densities
 tounit
 ```
 
 ## Fixed element projection
 
-`FixedElementProjector` maps a reduced vector of free design variables to a
+`FixedElementProjectorFun` maps a reduced vector of free design variables to a
 full element density vector, holding black (solid) and white (void) elements
 fixed. Use `get_fixed_element_projector` to construct one from a problem or an
 element count.
 
 ```@docs
-FixedElementProjector
+FixedElementProjectorFun
 ```
 
 ```@docs
