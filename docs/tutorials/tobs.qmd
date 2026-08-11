@@ -12,8 +12,8 @@ and constraints, then solving a binary nonlinear program. The default solver
 is Cbc.jl (COIN-OR Branch and Cut), which determines which binary variables
 must be flipped in each iteration.
 
-This tutorial demonstrates TOBS on a 2D cantilever beam with 160×100 elements
-(16,000 design variables). The algorithm efficiently handles the combinatorial
+This tutorial demonstrates TOBS on a 2D cantilever beam with 80×50 elements
+(4,000 design variables). The algorithm efficiently handles the combinatorial
 challenge of binary optimization through sequential linearization and branch-
 and-cut solving.
 
@@ -39,11 +39,11 @@ V = 0.5 # maximum volume fraction
 p = 3.0 # topological optimization penalty
 
 problem_size = (80, 50)  # 4,000 elements
-x0 = fill(0.0, prod(problem_size))  # start from a feasible empty design
+x0 = fill(1.0, prod(problem_size))  # start from fully solid design
 problem = PointLoadCantilever(Val{:Linear}, problem_size, (1.0, 1.0), E, v, f)
 ```
 
-The large mesh (160×100) tests TOBS ability to handle high-dimensional binary
+The mesh (80×50) tests TOBS ability to handle high-dimensional binary
 optimization problems.
 
 ## FEA Solver and Filter
@@ -77,11 +77,11 @@ material usage to 50% of the domain volume.
 m = Model(obj)
 addvar!(m, zeros(length(x0)), ones(length(x0)))  # bounds: 0 ≤ xᵢ ≤ 1
 Nonconvex.add_ineq_constraint!(m, constr)
-# TOBS starts internally from the all-solid design and flips at most
+# TOBS starts from the provided x0 and flips at most
 # `movelimit * numVars` variables per iteration, so reaching the 50%
 # volume target from 100% solid needs enough iterations to remove half
 # the material.
-options = TOBSOptions(; maxiter=100, movelimit=0.15)
+options = TOBSOptions(; maxiter=100, movelimit=0.05)
 setpenalty!(solver, p)
 ```
 
@@ -92,23 +92,7 @@ exponent p=3.0 penalizes intermediate densities in the FEA solution.
 
 ```{julia}
 #| output: true
-# TOBS internally starts from a fully solid design to compute the
-# initial linearization. While it auto-relaxes the move limit and
-# constraint relaxation to recover a feasible subproblem, that
-# startup phase emits a one-time "Subproblem is infeasible" warning
-# that we silence here.
-import Logging
-struct _TOBSQuietLogger <: Logging.AbstractLogger end
-Logging.min_enabled_level(::_TOBSQuietLogger) = Logging.Warn
-Logging.shouldlog(::_TOBSQuietLogger, level, _module, group, id, args...) =
-    !(level == Logging.Warn &&
-      occursin("Subproblem is infeasible", string(args.message)))
-Logging.catch_exceptions(::_TOBSQuietLogger) end
-Logging.handle_message(::_TOBSQuietLogger, args...; kwargs...) = nothing
-
-@time r = Logging.with_logger(_TOBSQuietLogger()) do
-    Nonconvex.optimize(m, TOBSAlg(), x0; options=options)
-end
+@time r = Nonconvex.optimize(m, TOBSAlg(), x0; options=options)
 ```
 
 The TOBS algorithm iterates:
