@@ -58,6 +58,10 @@ jobs:
           cache-artifacts: true
           cache-packages: true
           cache-compiled: true
+      - name: Use General git registry (avoids CDN lag for new versions)
+        run: |
+          rm -rf ~/.julia/registries/General.toml ~/.julia/registries/General.tar.gz
+          julia -e 'using Pkg; Pkg.Registry.add(RegistrySpec(url="https://github.com/JuliaRegistries/General.git"))'
       - name: Set preference for opposite preference jobs
         if: contains(matrix.group, 'Opposite_Preference')
         run: |
@@ -106,6 +110,10 @@ jobs:
           cache-artifacts: true
           cache-packages: true
           cache-compiled: true
+      - name: Use General git registry (avoids CDN lag for new versions)
+        run: |
+          rm -rf ~/.julia/registries/General.toml ~/.julia/registries/General.tar.gz
+          julia -e 'using Pkg; Pkg.Registry.add(RegistrySpec(url="https://github.com/JuliaRegistries/General.git"))'
       - name: Install Quarto
         uses: quarto-dev/quarto-actions/setup@v2
       - name: Install tutorial dependencies
