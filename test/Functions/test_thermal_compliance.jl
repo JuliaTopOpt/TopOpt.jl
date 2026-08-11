@@ -351,14 +351,14 @@ end
     tc = ThermalComplianceFun(solver)
 
     @testset "getpenalty returns current penalty" begin
-        current = Utilities.getpenalty(tc)
+        current = TopOpt.Utilities.getpenalty(tc)
         @test current isa PowerPenaltyFun
         @test current.p == 3.0
     end
 
     @testset "setpenalty! updates penalty" begin
-        Utilities.setpenalty!(tc, PowerPenaltyFun(2.0))
-        @test Utilities.getpenalty(tc).p == 2.0
+        TopOpt.Utilities.setpenalty!(tc, PowerPenaltyFun(2.0))
+        @test TopOpt.Utilities.getpenalty(tc).p == 2.0
     end
 end
 

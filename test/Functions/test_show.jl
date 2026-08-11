@@ -31,7 +31,7 @@ using TopOpt, Test
     end
 
     @testset "VolumeFun show method" begin
-        vol = Functions.VolumeFun(solver)
+        vol = TopOpt.Functions.VolumeFun(solver)
         io = IOBuffer()
         show(io, MIME("text/plain"), vol)
         output = String(take!(io))

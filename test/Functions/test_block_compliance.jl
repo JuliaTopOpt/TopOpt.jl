@@ -61,12 +61,12 @@ Random.seed!(42)
         solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(3.0))
         bc = BlockComplianceFun(problem, solver; nv=1)
 
-        current_penalty = Utilities.getpenalty(bc)
+        current_penalty = TopOpt.Utilities.getpenalty(bc)
         @test current_penalty isa PowerPenaltyFun
         @test current_penalty.p == 3.0
 
         # Test getsolver forwarding
-        @test Utilities.getsolver(bc.compliance) isa FEA.GenericFEASolver
+        @test TopOpt.Utilities.getsolver(bc.compliance) isa TopOpt.FEA.GenericFEASolver
     end
 
     @testset "Evaluation produces finite positive results" begin
@@ -104,7 +104,7 @@ end
         # Create 3 load cases
         nloads = 3
         F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
-        right_dofs = TopOptProblems.get_surface_dofs(base_problem)
+        right_dofs = TopOpt.TopOptProblems.get_surface_dofs(base_problem)
 
         # Load case 1: force at top
         F[right_dofs[1], 1] = 1.0
@@ -137,7 +137,7 @@ end
         # Create 2 load cases
         nloads = 2
         F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
-        right_dofs = TopOptProblems.get_surface_dofs(base_problem)
+        right_dofs = TopOpt.TopOptProblems.get_surface_dofs(base_problem)
 
         F[right_dofs[1], 1] = 1.0
         F[right_dofs[end], 2] = 0.5
@@ -161,7 +161,7 @@ end
 
         nloads = 3
         F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
-        right_dofs = TopOptProblems.get_surface_dofs(base_problem)
+        right_dofs = TopOpt.TopOptProblems.get_surface_dofs(base_problem)
 
         for i in 1:nloads
             F[right_dofs[i * length(right_dofs) ÷ (nloads + 1)], i] = 1.0
@@ -190,7 +190,7 @@ end
 
         nloads = 3
         F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
-        right_dofs = TopOptProblems.get_surface_dofs(base_problem)
+        right_dofs = TopOpt.TopOptProblems.get_surface_dofs(base_problem)
 
         for i in 1:nloads
             F[right_dofs[i * length(right_dofs) ÷ (nloads + 1)], i] = 1.0
@@ -220,7 +220,7 @@ end
 
         nloads = 2
         F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
-        right_dofs = TopOptProblems.get_surface_dofs(base_problem)
+        right_dofs = TopOpt.TopOptProblems.get_surface_dofs(base_problem)
 
         F[right_dofs[1], 1] = 1.0
         F[right_dofs[end], 2] = 1.0
@@ -261,7 +261,7 @@ end
 
         nloads = 2
         F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
-        right_dofs = TopOptProblems.get_surface_dofs(base_problem)
+        right_dofs = TopOpt.TopOptProblems.get_surface_dofs(base_problem)
 
         F[right_dofs[1], 1] = 1.0
         F[right_dofs[end], 2] = 1.0
@@ -296,7 +296,7 @@ end
 
         nloads = 2
         F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
-        right_dofs = TopOptProblems.get_surface_dofs(base_problem)
+        right_dofs = TopOpt.TopOptProblems.get_surface_dofs(base_problem)
 
         F[right_dofs[1], 1] = 1.0
         F[right_dofs[end], 2] = 0.5
@@ -328,7 +328,7 @@ end
 
         nloads = 2
         F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
-        right_dofs = TopOptProblems.get_surface_dofs(base_problem)
+        right_dofs = TopOpt.TopOptProblems.get_surface_dofs(base_problem)
 
         F[right_dofs[1], 1] = 1.0
         F[right_dofs[end], 2] = 0.5
@@ -360,7 +360,7 @@ end
 
         nloads = 2
         F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
-        right_dofs = TopOptProblems.get_surface_dofs(base_problem)
+        right_dofs = TopOpt.TopOptProblems.get_surface_dofs(base_problem)
 
         F[right_dofs[1], 1] = 1.0
         F[right_dofs[end], 2] = 0.5
@@ -399,7 +399,7 @@ end
 
         nloads = 3
         F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
-        right_dofs = TopOptProblems.get_surface_dofs(base_problem)
+        right_dofs = TopOpt.TopOptProblems.get_surface_dofs(base_problem)
 
         for i in 1:nloads
             F[right_dofs[i * length(right_dofs) ÷ (nloads + 1)], i] = 1.0
@@ -436,7 +436,7 @@ end
 
         nloads = 2
         F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
-        right_dofs = TopOptProblems.get_surface_dofs(base_problem)
+        right_dofs = TopOpt.TopOptProblems.get_surface_dofs(base_problem)
 
         F[right_dofs[1], 1] = 1.0
         F[right_dofs[end], 2] = 1.0
@@ -470,7 +470,7 @@ end
 
         nloads = 2
         F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
-        right_dofs = TopOptProblems.get_surface_dofs(base_problem)
+        right_dofs = TopOpt.TopOptProblems.get_surface_dofs(base_problem)
 
         F[right_dofs[1], 1] = 1.0
         F[right_dofs[end], 2] = 1.0
@@ -506,7 +506,7 @@ end
 
         nloads = 3
         F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
-        right_dofs = TopOptProblems.get_surface_dofs(base_problem)
+        right_dofs = TopOpt.TopOptProblems.get_surface_dofs(base_problem)
 
         for i in 1:nloads
             F[right_dofs[i * length(right_dofs) ÷ (nloads + 1)], i] = 1.0
@@ -561,7 +561,7 @@ end
 
         nloads = 2
         F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
-        right_dofs = TopOptProblems.get_surface_dofs(base_problem)
+        right_dofs = TopOpt.TopOptProblems.get_surface_dofs(base_problem)
 
         F[right_dofs[1], 1] = 1.0
         F[right_dofs[end], 2] = 0.5
@@ -641,7 +641,7 @@ end
 
         nloads = 2
         F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
-        right_dofs = TopOptProblems.get_surface_dofs(base_problem)
+        right_dofs = TopOpt.TopOptProblems.get_surface_dofs(base_problem)
 
         F[right_dofs[1], 1] = 1.0
         F[right_dofs[end], 2] = 0.5

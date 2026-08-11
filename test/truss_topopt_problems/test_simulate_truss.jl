@@ -16,12 +16,12 @@ using TopOpt.FEA: simulate
 
         # Create a truss problem (note: loads come before fixities in constructor)
         loads = load_cases["0"]
-        problem = TrussTopOptProblems.TrussProblem(
+        problem = TopOpt.TrussTopOptProblems.TrussProblem(
             Val{:Linear}, node_points, elements, loads, fixities, mats, crosssecs
         )
 
         # Full material topology
-        topology = ones(TrussTopOptProblems.getncells(problem))
+        topology = ones(TopOpt.TrussTopOptProblems.getncells(problem))
 
         result = simulate(problem, topology)
 
@@ -37,11 +37,11 @@ using TopOpt.FEA: simulate
             file_path
         )
         loads = load_cases["0"]
-        problem = TrussTopOptProblems.TrussProblem(
+        problem = TopOpt.TrussTopOptProblems.TrussProblem(
             Val{:Linear}, node_points, elements, loads, fixities, mats, crosssecs
         )
 
-        topology = ones(TrussTopOptProblems.getncells(problem))
+        topology = ones(TopOpt.TrussTopOptProblems.getncells(problem))
         # Remove some elements
         topology[1:2] .= 0.0
 

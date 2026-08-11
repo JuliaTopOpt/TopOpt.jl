@@ -213,7 +213,7 @@ end
 
 # Tie-beam problem
 @testset "Tie-beam" begin
-    problem = TopOptProblems.TieBeam(Val{:Quadratic}, Float64)
+    problem = TopOpt.TopOptProblems.TieBeam(Val{:Quadratic}, Float64)
     ncells = 100
     @test problem.E == 1
     @test problem.ν == 0.3
@@ -260,28 +260,28 @@ end
 # Tie-beam accessor functions
 @testset "Tie-beam accessor functions" begin
     @testset "getdim(::TieBeam) = 2" begin
-        problem_linear = TopOptProblems.TieBeam(Val{:Linear}, Float64; refine=1)
-        problem_quad = TopOptProblems.TieBeam(Val{:Quadratic}, Float64)
+        problem_linear = TopOpt.TopOptProblems.TieBeam(Val{:Linear}, Float64; refine=1)
+        problem_quad = TopOpt.TopOptProblems.TieBeam(Val{:Quadratic}, Float64)
 
-        @test TopOptProblems.getdim(problem_linear) == 2
-        @test TopOptProblems.getdim(problem_quad) == 2
+        @test TopOpt.TopOptProblems.getdim(problem_linear) == 2
+        @test TopOpt.TopOptProblems.getdim(problem_quad) == 2
     end
 
     @testset "nnodespercell(::TieBeam{T,N}) = N" begin
-        problem_linear = TopOptProblems.TieBeam(Val{:Linear}, Float64; refine=1)
-        problem_quad = TopOptProblems.TieBeam(Val{:Quadratic}, Float64)
+        problem_linear = TopOpt.TopOptProblems.TieBeam(Val{:Linear}, Float64; refine=1)
+        problem_quad = TopOpt.TopOptProblems.TieBeam(Val{:Quadratic}, Float64)
 
         # Linear elements have 4 nodes per cell
-        @test TopOptProblems.nnodespercell(problem_linear) == 4
+        @test TopOpt.TopOptProblems.nnodespercell(problem_linear) == 4
         # Quadratic elements have 9 nodes per cell
-        @test TopOptProblems.nnodespercell(problem_quad) == 9
+        @test TopOpt.TopOptProblems.nnodespercell(problem_quad) == 9
     end
 
     @testset "getpressuredict(::TieBeam)" begin
         force = 2.5
-        problem = TopOptProblems.TieBeam(Val{:Linear}, Float64; refine=1, force=force)
+        problem = TopOpt.TopOptProblems.TieBeam(Val{:Linear}, Float64; refine=1, force=force)
 
-        pd = TopOptProblems.getpressuredict(problem)
+        pd = TopOpt.TopOptProblems.getpressuredict(problem)
         @test pd isa Dict{String,Float64}
         @test haskey(pd, "rightload")
         @test haskey(pd, "bottomload")
@@ -290,9 +290,9 @@ end
     end
 
     @testset "getfacesets(::TieBeam)" begin
-        problem = TopOptProblems.TieBeam(Val{:Linear}, Float64; refine=1)
+        problem = TopOpt.TopOptProblems.TieBeam(Val{:Linear}, Float64; refine=1)
 
-        facesets = TopOptProblems.getfacesets(problem)
+        facesets = TopOpt.TopOptProblems.getfacesets(problem)
         @test facesets isa Dict
         @test haskey(facesets, "bottomload")
         @test haskey(facesets, "rightload")
@@ -310,8 +310,8 @@ end
             Val{:Linear}, (10, 5), (1.0, 1.0), 1.0; Tleft=0.0, Tright=0.0, heatflux=heatflux
         )
 
-        metadata = TopOptProblems.getmetadata(problem)
-        @test metadata isa TopOptProblems.Metadata
+        metadata = TopOpt.TopOptProblems.getmetadata(problem)
+        @test metadata isa TopOpt.TopOptProblems.Metadata
     end
 
     @testset "getpressuredict(::HeatTransferTopOptProblem)" begin
@@ -321,7 +321,7 @@ end
         )
 
         # Returns empty dict for HeatTransferTopOptProblem
-        pd = TopOptProblems.getpressuredict(problem)
+        pd = TopOpt.TopOptProblems.getpressuredict(problem)
         @test pd isa Dict{String,Float64}
         @test isempty(pd)
     end
@@ -333,7 +333,7 @@ end
         )
 
         # Returns the heatflux dict that was passed in
-        hd = TopOptProblems.getheatfluxdict(problem)
+        hd = TopOpt.TopOptProblems.getheatfluxdict(problem)
         @test hd isa Dict{String,Float64}
         @test hd == heatflux
     end
@@ -346,7 +346,7 @@ end
 
         # Returns an empty Dict{Int,Vector{Float64}} (node index => heat value)
         # for a problem with no point heat sources configured.
-        cd = TopOptProblems.getcloaddict(problem)
+        cd = TopOpt.TopOptProblems.getcloaddict(problem)
         @test cd isa Dict{Int,Vector{Float64}}
         @test isempty(cd)
     end
@@ -391,7 +391,7 @@ end
     )
 
     @test problem isa HeatConductionProblem
-    cd = TopOptProblems.getcloaddict(problem)
+    cd = TopOpt.TopOptProblems.getcloaddict(problem)
     @test cd isa Dict{Int,<:Vector}
     @test haskey(cd, top_center)
     @test cd[top_center] == [1.0]
@@ -415,7 +415,7 @@ end
         Tright=0.0,
         heatflux=Dict{String,Float64}(),
     )
-    @test isempty(TopOptProblems.getcloaddict(problem_empty))
+    @test isempty(TopOpt.TopOptProblems.getcloaddict(problem_empty))
     solver_empty = FEASolver(DirectSolver, problem_empty; xmin=0.01)
     @test all(==(0), solver_empty.elementinfo.fixedload)
 end
@@ -467,7 +467,7 @@ end
     # insulated sides.
     problem = HeatTree(Val{:Linear}, (8, 4), (1.0, 1.0), 1.0; q=2.0)
     @test problem isa HeatConductionProblem
-    @test TopOptProblems.getheatfluxdict(problem) == Dict("top" => 2.0)
+    @test TopOpt.TopOptProblems.getheatfluxdict(problem) == Dict("top" => 2.0)
     # Only the bottom boundary is prescribed (9 nodes for 8 bottom elements).
     @test length(problem.ch.prescribed_dofs) == 9
     @test all(==(0), problem.ch.inhomogeneities)
@@ -506,7 +506,7 @@ end
     @test haskey(grid.facetsets, "right")
 
     # Check heatflux dict is accessible
-    @test TopOptProblems.getheatfluxdict(problem) == heatflux
+    @test TopOpt.TopOptProblems.getheatfluxdict(problem) == heatflux
 
     # ElementFEAInfo now builds for quadratic heat conduction elements (the
     # cellvalues interpolation is taken from the DofHandler instead of being
@@ -637,8 +637,8 @@ end
     problem = PointLoadCantilever(Val{:Linear}, nels, sizes, E, ν, force)
 
     # Test accessor functions
-    @test TopOptProblems.getE(problem) == E
-    @test TopOptProblems.getν(problem) == ν
+    @test TopOpt.TopOptProblems.getE(problem) == E
+    @test TopOpt.TopOptProblems.getν(problem) == ν
 end
 
 @testset "Problem type consistency" begin
@@ -779,7 +779,7 @@ end
     end
 
     @testset "TieBeam show" begin
-        problem = TopOptProblems.TieBeam(Val{:Quadratic}, Float64)
+        problem = TopOpt.TopOptProblems.TieBeam(Val{:Quadratic}, Float64)
         io = IOBuffer()
         show(io, MIME("text/plain"), problem)
         output = String(take!(io))

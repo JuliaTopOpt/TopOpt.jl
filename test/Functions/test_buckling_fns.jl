@@ -106,16 +106,16 @@ end
         vs = [rand(T, k, k) for i in 1:N]
         f =
             x -> begin
-                Keσs = esigk(Functions.DisplacementResult(u), PseudoDensities(x))
+                Keσs = esigk(TopOpt.Functions.DisplacementResult(u), PseudoDensities(x))
                 sum([sum(Keσs[i] * vs[i]) for i in 1:length(x)])
             end
 
         x = clamp.(rand(nels), 0.1, 1.0)
 
-        Kσs_1 = esigk(Functions.DisplacementResult(u), PseudoDensities(x))
+        Kσs_1 = esigk(TopOpt.Functions.DisplacementResult(u), PseudoDensities(x))
         for (ci, (k1, k0)) in enumerate(zip(Kσs_1, Kσs_0))
             # TrussElementKσ now applies the penalty: ρ = density(penalty(x), xmin)
-            ρ_e = Utilities.density(penalty(x[ci]), xmin)
+            ρ_e = TopOpt.Utilities.density(penalty(x[ci]), xmin)
             @test k1 ≈ k0 * ρ_e
         end
 
@@ -151,7 +151,7 @@ end
 
     # Test with DisplacementResult
     u_vec = rand(n_dofs)
-    u = Functions.DisplacementResult(u_vec)
+    u = TopOpt.Functions.DisplacementResult(u_vec)
     x = PseudoDensities(ones(n_cells))
 
     # Call the operator

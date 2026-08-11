@@ -90,6 +90,8 @@ include(joinpath("TrussTopOptProblems", "TrussTopOptProblems.jl"))
 @reexport using .TrussTopOptProblems
 
 using Ferrite, StaticArrays
+using Ferrite: getncells
+export getncells
 
 using ForwardDiff, IterativeSolvers#, Preconditioners
 @reexport using VTKDataTypes

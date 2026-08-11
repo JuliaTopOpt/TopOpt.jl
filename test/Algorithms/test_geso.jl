@@ -16,7 +16,7 @@ using Ferrite: getncells
 
         geso = GESO(comp, vol, 0.5, filter; maxiter=100, tol=0.001, p=3.0)
 
-        @test geso isa Algorithms.TopOptAlgorithm
+        @test geso isa TopOpt.Algorithms.TopOptAlgorithm
         @test geso.comp === comp
         @test geso.vol === vol
         @test geso.vol_limit ≈ 0.5
@@ -47,7 +47,7 @@ using Ferrite: getncells
         x0 = fill(0.5, length(solver.vars))
         result = geso(x0; seed=123)  # Set seed for reproducibility
 
-        @test result isa Algorithms.GESOResult
+        @test result isa TopOpt.Algorithms.GESOResult
         @test length(result.topology) == getncells(problem)
         @test all(0 .<= result.topology .<= 1) ||
             all(result.topology .== 0) ||
@@ -151,7 +151,7 @@ using Ferrite: getncells
         # Run with updated penalty
         x0 = fill(0.5, length(solver.vars))
         result = geso(x0; seed=222)
-        @test result isa Algorithms.GESOResult
+        @test result isa TopOpt.Algorithms.GESOResult
     end
 
     @testset "GESO with HalfMBB" begin
@@ -166,7 +166,7 @@ using Ferrite: getncells
         x0 = fill(0.6, length(solver.vars))
         result = geso(x0; seed=333)
 
-        @test result isa Algorithms.GESOResult
+        @test result isa TopOpt.Algorithms.GESOResult
         @test length(result.topology) == getncells(problem)
     end
 
@@ -212,12 +212,12 @@ using Ferrite: getncells
         total_vol = 100.0
         current_vol = 60.0
         design_vol = 50.0
-        progress = Algorithms.get_progress(current_vol, total_vol, design_vol)
+        progress = TopOpt.Algorithms.get_progress(current_vol, total_vol, design_vol)
         @test 0 <= progress <= 1
 
         # Test get_probs function
         Prg = 0.5
-        Pc, Pm = Algorithms.get_probs(geso, Prg)
+        Pc, Pm = TopOpt.Algorithms.get_probs(geso, Prg)
         @test 0 <= Pc <= 1
         @test 0 <= Pm <= 1
         @test Pc >= geso.Pcmin
@@ -272,7 +272,7 @@ using Ferrite: getncells
 
         @test all(result.topology[black] .== 1)
         @test all(x -> x == 0 || x == 1, result.topology)
-        @test result isa Algorithms.GESOResult
+        @test result isa TopOpt.Algorithms.GESOResult
         @test length(result.topology) == nel
     end
 
@@ -294,7 +294,7 @@ using Ferrite: getncells
 
         @test all(result.topology[white] .== 0)
         @test all(x -> x == 0 || x == 1, result.topology)
-        @test result isa Algorithms.GESOResult
+        @test result isa TopOpt.Algorithms.GESOResult
         @test length(result.topology) == nel
     end
 

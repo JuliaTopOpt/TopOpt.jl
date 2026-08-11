@@ -22,13 +22,13 @@ import TopOptProblems: make_Kes_and_fes
     @test pd["bottomload"] == -1.0
 
     # Test getfacesets
-    fs = TopOptProblems.getfacesets(problem)
+    fs = TopOpt.TopOptProblems.getfacesets(problem)
     # Ferrite 1.x stores facetsets as OrderedSet, so check the element type
     # rather than the concrete set/container type.
     @test fs isa Dict{String,<:AbstractSet{Ferrite.FacetIndex}}
 
     # Test default values
-    @test TopOptProblems.getfacesets(problem) === getdh(problem).grid.facetsets
+    @test TopOpt.TopOptProblems.getfacesets(problem) === getdh(problem).grid.facetsets
 
     # Create another problem with different force value
     problem2 = TieBeam(Val{:Linear}, Float64; refine=2, force=5.0)
@@ -123,7 +123,7 @@ end
     problem = TieBeam(Val{:Linear}, Float64; refine=1, force=1.0)
 
     # Verify facesets exist via problem's getfacesets
-    fs = TopOptProblems.getfacesets(problem)
+    fs = TopOpt.TopOptProblems.getfacesets(problem)
     @test haskey(fs, "leftfixed")
     @test haskey(fs, "rightload")
     @test haskey(fs, "bottomload")
@@ -146,7 +146,7 @@ end
 
     # Check that pressuredict entries match faceset names
     pd = getpressuredict(problem)
-    fs = TopOptProblems.getfacesets(problem)
+    fs = TopOpt.TopOptProblems.getfacesets(problem)
 
     for key in keys(pd)
         @test haskey(fs, key) || error("Pressure key '$key' not found in facesets")

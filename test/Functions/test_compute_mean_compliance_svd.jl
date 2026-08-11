@@ -18,7 +18,7 @@ Random.seed!(42)
         # Create multiple load cases
         nloads = 3
         F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
-        dense_load_inds = vec(TopOptProblems.get_surface_dofs(base_problem))
+        dense_load_inds = vec(TopOpt.TopOptProblems.get_surface_dofs(base_problem))
         for i in 1:nloads
             dofs = dense_load_inds[rand(1:length(dense_load_inds), 2)]
             F[dofs, i] .= randn(2)
@@ -31,7 +31,7 @@ Random.seed!(42)
         mc = MeanComplianceFun(problem, solver; method=:approx_svd, nv=5)
 
         # Verify it's using TraceEstimationSVDMean
-        @test mc.method isa Functions.TraceEstimationSVDMean
+        @test mc.method isa TopOpt.Functions.TraceEstimationSVDMean
 
         # Get the method object
         ax = mc.method
@@ -41,7 +41,7 @@ Random.seed!(42)
         grad = similar(x)
 
         # Call the specific dispatch
-        val = Functions.compute_mean_compliance(mc, ax, x, grad)
+        val = TopOpt.Functions.compute_mean_compliance(mc, ax, x, grad)
 
         # Verify results
         @test isfinite(val)
@@ -61,7 +61,7 @@ Random.seed!(42)
 
         nloads = 3
         F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
-        dense_load_inds = vec(TopOptProblems.get_surface_dofs(base_problem))
+        dense_load_inds = vec(TopOpt.TopOptProblems.get_surface_dofs(base_problem))
         for i in 1:nloads
             dofs = dense_load_inds[rand(1:length(dense_load_inds), 2)]
             F[dofs, i] .= randn(2)
@@ -77,12 +77,12 @@ Random.seed!(42)
         grad = similar(x)
 
         # Call via dispatch
-        val1 = Functions.compute_mean_compliance(mc, ax, x, grad)
+        val1 = TopOpt.Functions.compute_mean_compliance(mc, ax, x, grad)
         grad1 = copy(grad)
 
         # Call compute_approx_ec directly with same parameters
         grad .= 0
-        val2 = Functions.compute_approx_ec(mc, x, grad, ax.US, ax.V, ax.n)
+        val2 = TopOpt.Functions.compute_approx_ec(mc, x, grad, ax.US, ax.V, ax.n)
 
         # Results should match
         @test isapprox(val1, val2; rtol=1e-10)
@@ -99,7 +99,7 @@ Random.seed!(42)
 
         nloads = 3
         F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
-        dense_load_inds = vec(TopOptProblems.get_surface_dofs(base_problem))
+        dense_load_inds = vec(TopOpt.TopOptProblems.get_surface_dofs(base_problem))
         for i in 1:nloads
             dofs = dense_load_inds[rand(1:length(dense_load_inds), 2)]
             F[dofs, i] .= randn(2)
@@ -116,7 +116,7 @@ Random.seed!(42)
             x = fill(0.5, length(solver.vars))
             grad = similar(x)
 
-            val = Functions.compute_mean_compliance(mc, ax, x, grad)
+            val = TopOpt.Functions.compute_mean_compliance(mc, ax, x, grad)
 
             @test isfinite(val)
             @test val > 0
@@ -134,7 +134,7 @@ Random.seed!(42)
 
         nloads = 3
         F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
-        dense_load_inds = vec(TopOptProblems.get_surface_dofs(base_problem))
+        dense_load_inds = vec(TopOpt.TopOptProblems.get_surface_dofs(base_problem))
         for i in 1:nloads
             dofs = dense_load_inds[rand(1:length(dense_load_inds), 2)]
             F[dofs, i] .= randn(2)
@@ -151,7 +151,7 @@ Random.seed!(42)
             x = fill(rho, length(solver.vars))
             grad = similar(x)
 
-            val = Functions.compute_mean_compliance(mc, ax, x, grad)
+            val = TopOpt.Functions.compute_mean_compliance(mc, ax, x, grad)
 
             @test isfinite(val)
             @test val > 0
@@ -172,7 +172,7 @@ Random.seed!(42)
 
         nloads = 3
         F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
-        dense_load_inds = vec(TopOptProblems.get_surface_dofs(base_problem))
+        dense_load_inds = vec(TopOpt.TopOptProblems.get_surface_dofs(base_problem))
         for i in 1:nloads
             dofs = dense_load_inds[rand(1:length(dense_load_inds), 2)]
             F[dofs, i] .= randn(2)
@@ -190,7 +190,7 @@ Random.seed!(42)
         grad_pre = ones(length(x))
         grad = copy(grad_pre)
 
-        Functions.compute_mean_compliance(mc, ax, x, grad)
+        TopOpt.Functions.compute_mean_compliance(mc, ax, x, grad)
 
         # Gradient should be updated
         @test !iszero(grad)
@@ -207,7 +207,7 @@ Random.seed!(42)
 
         nloads = 3
         F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
-        dense_load_inds = vec(TopOptProblems.get_surface_dofs(base_problem))
+        dense_load_inds = vec(TopOpt.TopOptProblems.get_surface_dofs(base_problem))
         for i in 1:nloads
             dofs = dense_load_inds[rand(1:length(dense_load_inds), 2)]
             F[dofs, i] .= randn(2)
@@ -220,7 +220,7 @@ Random.seed!(42)
         mc_exact = MeanComplianceFun(problem, solver; method=:exact_svd)
         x = fill(0.5, length(solver.vars))
         grad_exact = similar(x)
-        val_exact = Functions.compute_mean_compliance(
+        val_exact = TopOpt.Functions.compute_mean_compliance(
             mc_exact, mc_exact.method, x, grad_exact
         )
 
@@ -228,7 +228,7 @@ Random.seed!(42)
         mc_approx = MeanComplianceFun(problem, solver; method=:approx_svd, nv=20)
         ax = mc_approx.method
         grad_approx = similar(x)
-        val_approx = Functions.compute_mean_compliance(mc_approx, ax, x, grad_approx)
+        val_approx = TopOpt.Functions.compute_mean_compliance(mc_approx, ax, x, grad_approx)
 
         # Should be reasonably close (within 30% for trace estimation)
         @test abs(val_approx - val_exact) / val_exact < 0.3
@@ -244,7 +244,7 @@ Random.seed!(42)
 
         nloads = 3
         F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
-        dense_load_inds = vec(TopOptProblems.get_surface_dofs(base_problem))
+        dense_load_inds = vec(TopOpt.TopOptProblems.get_surface_dofs(base_problem))
         for i in 1:nloads
             dofs = dense_load_inds[rand(1:length(dense_load_inds), 2)]
             F[dofs, i] .= randn(2)
@@ -270,7 +270,7 @@ Random.seed!(42)
         x = fill(0.5, length(solver.vars))
         grad = similar(x)
 
-        val = Functions.compute_mean_compliance(mc, ax, x, grad)
+        val = TopOpt.Functions.compute_mean_compliance(mc, ax, x, grad)
 
         @test isfinite(val)
     end
@@ -285,7 +285,7 @@ Random.seed!(42)
 
         nloads = 3
         F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
-        dense_load_inds = vec(TopOptProblems.get_surface_dofs(base_problem))
+        dense_load_inds = vec(TopOpt.TopOptProblems.get_surface_dofs(base_problem))
         for i in 1:nloads
             dofs = dense_load_inds[rand(1:length(dense_load_inds), 2)]
             F[dofs, i] .= randn(2)
@@ -303,7 +303,7 @@ Random.seed!(42)
             ax = mc.method
             grad = similar(x)
 
-            val = Functions.compute_mean_compliance(mc, ax, x, grad)
+            val = TopOpt.Functions.compute_mean_compliance(mc, ax, x, grad)
 
             @test isfinite(val)
             @test val > 0
@@ -321,7 +321,7 @@ Random.seed!(42)
 
         nloads = 3
         F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
-        dense_load_inds = vec(TopOptProblems.get_surface_dofs(base_problem))
+        dense_load_inds = vec(TopOpt.TopOptProblems.get_surface_dofs(base_problem))
         for i in 1:nloads
             dofs = dense_load_inds[rand(1:length(dense_load_inds), 2)]
             F[dofs, i] .= randn(2)
@@ -337,11 +337,11 @@ Random.seed!(42)
         grad = similar(x)
 
         # First call
-        val1 = Functions.compute_mean_compliance(mc, ax, x, grad)
+        val1 = TopOpt.Functions.compute_mean_compliance(mc, ax, x, grad)
 
         # Second call with same x should give same result
         grad2 = similar(x)
-        val2 = Functions.compute_mean_compliance(mc, ax, x, grad2)
+        val2 = TopOpt.Functions.compute_mean_compliance(mc, ax, x, grad2)
 
         @test isapprox(val1, val2; rtol=1e-10)
         @test isapprox(grad, grad2; rtol=1e-10)

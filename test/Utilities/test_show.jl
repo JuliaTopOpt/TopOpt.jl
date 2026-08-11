@@ -35,7 +35,7 @@ using TopOpt, Test
         # The show method should not error
         io = IOBuffer()
         # Test that MatrixOperator show doesn't throw
-        op = FEA.MatrixOperator(
+        op = TopOpt.FEA.MatrixOperator(
             solver.globalinfo.K, solver.globalinfo.f, DefaultCriteria()
         )
         show(io, MIME("text/plain"), op)

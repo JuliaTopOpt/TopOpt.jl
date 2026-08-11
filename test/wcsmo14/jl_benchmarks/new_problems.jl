@@ -105,10 +105,10 @@ end
 
 # used in FEA to determine default quad order
 # we don't assume the problem struct has `rect_grid` to define its grid
-TopOptProblems.nnodespercell(p::NewPointLoadCantilever) = nnodespercell(p.rect_grid)
+TopOpt.TopOptProblems.nnodespercell(p::NewPointLoadCantilever) = nnodespercell(p.rect_grid)
 
 # ! important, used for specification!
-function TopOptProblems.getcloaddict(p::NewPointLoadCantilever{dim,T}) where {dim,T}
+function TopOpt.TopOptProblems.getcloaddict(p::NewPointLoadCantilever{dim,T}) where {dim,T}
     # f = T[0, -p.force, 0]
     # fnode = Tuple(getnodeset(p.rect_grid.grid, "down_force"))[1]
     # return Dict{Int, Vector{T}}(fnode => f)

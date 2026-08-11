@@ -16,7 +16,7 @@ using Ferrite: getncells
 
         beso = BESO(comp, vol, 0.5, filter; maxiter=100, tol=0.001, p=3.0, er=0.02)
 
-        @test beso isa Algorithms.TopOptAlgorithm
+        @test beso isa TopOpt.Algorithms.TopOptAlgorithm
         @test beso.comp === comp
         @test beso.vol === vol
         @test beso.vol_limit ≈ 0.5
@@ -41,7 +41,7 @@ using Ferrite: getncells
         x0 = fill(0.5, length(solver.vars))
         result = beso(x0)
 
-        @test result isa Algorithms.BESOResult
+        @test result isa TopOpt.Algorithms.BESOResult
         @test length(result.topology) == getncells(problem)
         @test all(0 .<= result.topology .<= 1) ||
             all(result.topology .== 0) ||
@@ -140,7 +140,7 @@ using Ferrite: getncells
         x0 = fill(0.6, length(solver.vars))
         result = beso(x0)
 
-        @test result isa Algorithms.BESOResult
+        @test result isa TopOpt.Algorithms.BESOResult
         @test length(result.topology) == getncells(problem)
     end
 
@@ -213,7 +213,7 @@ using Ferrite: getncells
             x0 = fill(0.5, length(solver.vars))
             result = beso(x0)
 
-            @test result isa Algorithms.BESOResult
+            @test result isa TopOpt.Algorithms.BESOResult
             @test length(result.topology) == getncells(problem)
             @test all(x -> x == 0 || x == 1, result.topology)
         end
@@ -236,7 +236,7 @@ using Ferrite: getncells
         # Run with updated penalty
         x0 = fill(0.5, length(solver.vars))
         result = beso(x0)
-        @test result isa Algorithms.BESOResult
+        @test result isa TopOpt.Algorithms.BESOResult
     end
 
     @testset "BESO convergence criteria" begin
@@ -277,7 +277,7 @@ using Ferrite: getncells
         x0 = fill(0.5, length(solver.vars))
         result = beso(x0)
 
-        @test result isa Algorithms.BESOResult
+        @test result isa TopOpt.Algorithms.BESOResult
         @test length(result.topology) == getncells(problem)
     end
 
@@ -296,7 +296,7 @@ using Ferrite: getncells
             x0 = fill(0.5, length(solver.vars))
             result = beso(x0)
 
-            @test result isa Algorithms.BESOResult
+            @test result isa TopOpt.Algorithms.BESOResult
             @test length(result.topology) == getncells(problem)
         end
     end
@@ -316,7 +316,7 @@ using Ferrite: getncells
             x0 = fill(0.5, length(solver.vars))
             result = beso(x0)
 
-            @test result isa Algorithms.BESOResult
+            @test result isa TopOpt.Algorithms.BESOResult
             @test beso.penalty.p ≈ p
         end
     end
@@ -341,7 +341,7 @@ using Ferrite: getncells
 
         for x0 in initial_designs
             result = beso(x0)
-            @test result isa Algorithms.BESOResult
+            @test result isa TopOpt.Algorithms.BESOResult
             @test length(result.topology) == getncells(problem)
             @test all(x -> x == 0 || x == 1, result.topology)
         end
@@ -400,7 +400,7 @@ using Ferrite: getncells
         @test all(x -> x == 0 || x == 1, result.topology)
 
         # Verify the result is valid
-        @test result isa Algorithms.BESOResult
+        @test result isa TopOpt.Algorithms.BESOResult
         @test length(result.topology) == nel
     end
 
@@ -428,7 +428,7 @@ using Ferrite: getncells
         @test all(x -> x == 0 || x == 1, result.topology)
 
         # Verify the result is valid
-        @test result isa Algorithms.BESOResult
+        @test result isa TopOpt.Algorithms.BESOResult
         @test length(result.topology) == nel
     end
 

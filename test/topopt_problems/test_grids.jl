@@ -116,12 +116,12 @@ end
 
     # Test nnodes on Ferrite cell types
     quad = Ferrite.Quadrilateral((1, 2, 3, 4))
-    @test TopOptProblems.nnodes(quad) == 4
-    @test TopOptProblems.nnodes(typeof(quad)) == 4
+    @test TopOpt.TopOptProblems.nnodes(quad) == 4
+    @test TopOpt.TopOptProblems.nnodes(typeof(quad)) == 4
 
     hex = Ferrite.Hexahedron((1, 2, 3, 4, 5, 6, 7, 8))
-    @test TopOptProblems.nnodes(hex) == 8
-    @test TopOptProblems.nnodes(typeof(hex)) == 8
+    @test TopOpt.TopOptProblems.nnodes(hex) == 8
+    @test TopOpt.TopOptProblems.nnodes(typeof(hex)) == 8
 end
 
 @testset "LGrid Construction" begin

@@ -36,7 +36,7 @@ ElementKFun
 AssembleKFun
 apply_boundary_with_zerodiag!
 apply_boundary_with_meandiag!
-TrussElementKσ
+TrussElementKσFun
 ```
 
 ## Neural-network parametrization

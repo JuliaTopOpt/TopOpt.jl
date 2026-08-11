@@ -19,7 +19,7 @@ Random.seed!(42)
 
     nloads = 3
     F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
-    dense_load_inds = vec(TopOptProblems.get_surface_dofs(base_problem))
+    dense_load_inds = vec(TopOpt.TopOptProblems.get_surface_dofs(base_problem))
     for i in 1:nloads
         dofs = dense_load_inds[rand(1:length(dense_load_inds), 2)]
         F[dofs, i] .= randn(2)
@@ -32,21 +32,21 @@ Random.seed!(42)
 
         # Test with default parameters
         mc = MeanComplianceFun(problem, solver; method=:trace)
-        @test mc.method isa Functions.TraceEstimationMean
+        @test mc.method isa TopOpt.Functions.TraceEstimationMean
 
         # Test with nv specified
         mc = MeanComplianceFun(problem, solver; method=:trace, nv=5)
-        @test mc.method isa Functions.TraceEstimationMean
+        @test mc.method isa TopOpt.Functions.TraceEstimationMean
         @test size(mc.method.V, 2) == 5
 
         # Test with sample_method=:hadamard
         mc = MeanComplianceFun(problem, solver; method=:trace, nv=5, sample_method=:hadamard)
-        @test mc.method isa Functions.TraceEstimationMean
+        @test mc.method isa TopOpt.Functions.TraceEstimationMean
         @test mc.method.sample_once == true  # hadamard forces sample_once=true
 
         # Test with sample_method=:hutch (default behavior)
         mc = MeanComplianceFun(problem, solver; method=:trace, nv=5, sample_method=:hutch)
-        @test mc.method isa Functions.TraceEstimationMean
+        @test mc.method isa TopOpt.Functions.TraceEstimationMean
     end
 
     @testset "Branch 2: method=:approx creates TraceEstimationMean" begin
@@ -54,11 +54,11 @@ Random.seed!(42)
 
         # Test with default parameters
         mc = MeanComplianceFun(problem, solver; method=:approx)
-        @test mc.method isa Functions.TraceEstimationMean
+        @test mc.method isa TopOpt.Functions.TraceEstimationMean
 
         # Test with nv specified
         mc = MeanComplianceFun(problem, solver; method=:approx, nv=7)
-        @test mc.method isa Functions.TraceEstimationMean
+        @test mc.method isa TopOpt.Functions.TraceEstimationMean
         @test size(mc.method.V, 2) == 7
     end
 
@@ -67,23 +67,23 @@ Random.seed!(42)
 
         # Test with default parameters
         mc = MeanComplianceFun(problem, solver; method=:svd_trace)
-        @test mc.method isa Functions.TraceEstimationSVDMean
+        @test mc.method isa TopOpt.Functions.TraceEstimationSVDMean
 
         # Test with nv specified
         mc = MeanComplianceFun(problem, solver; method=:svd_trace, nv=4)
-        @test mc.method isa Functions.TraceEstimationSVDMean
+        @test mc.method isa TopOpt.Functions.TraceEstimationSVDMean
         @test size(mc.method.V, 2) == 4
 
         # Test with sample_method=:hadamard
         mc = MeanComplianceFun(
             problem, solver; method=:svd_trace, nv=4, sample_method=:hadamard
         )
-        @test mc.method isa Functions.TraceEstimationSVDMean
+        @test mc.method isa TopOpt.Functions.TraceEstimationSVDMean
         @test mc.method.sample_once == true  # hadamard forces sample_once=true
 
         # Test with sample_method=:hutch
         mc = MeanComplianceFun(problem, solver; method=:svd_trace, nv=4, sample_method=:hutch)
-        @test mc.method isa Functions.TraceEstimationSVDMean
+        @test mc.method isa TopOpt.Functions.TraceEstimationSVDMean
     end
 
     @testset "V matrix parameter handling - TraceEstimationMean" begin
@@ -91,24 +91,24 @@ Random.seed!(42)
 
         # Test V === nothing with nv === nothing (default nv=1)
         mc = MeanComplianceFun(problem, solver; method=:trace)
-        @test mc.method isa Functions.TraceEstimationMean
+        @test mc.method isa TopOpt.Functions.TraceEstimationMean
         @test size(mc.method.V, 2) == 1
 
         # Test V === nothing with nv specified
         mc = MeanComplianceFun(problem, solver; method=:trace, nv=10)
-        @test mc.method isa Functions.TraceEstimationMean
+        @test mc.method isa TopOpt.Functions.TraceEstimationMean
         @test size(mc.method.V, 2) == 10
 
         # Test V provided with nv === nothing (use size(V, 2))
         V_provided = zeros(Float64, size(F, 2), 8)
         mc = MeanComplianceFun(problem, solver; method=:trace, V=V_provided)
-        @test mc.method isa Functions.TraceEstimationMean
+        @test mc.method isa TopOpt.Functions.TraceEstimationMean
         @test size(mc.method.V, 2) == 8
 
         # Test V provided with nv specified (take first nv columns)
         V_provided = zeros(Float64, size(F, 2), 15)
         mc = MeanComplianceFun(problem, solver; method=:trace, V=V_provided, nv=5)
-        @test mc.method isa Functions.TraceEstimationMean
+        @test mc.method isa TopOpt.Functions.TraceEstimationMean
         @test size(mc.method.V, 2) == 5
     end
 
@@ -117,28 +117,28 @@ Random.seed!(42)
 
         # Test V === nothing with nv === nothing (default nv=1)
         mc = MeanComplianceFun(problem, solver; method=:svd_trace)
-        @test mc.method isa Functions.TraceEstimationSVDMean
+        @test mc.method isa TopOpt.Functions.TraceEstimationSVDMean
         @test size(mc.method.V, 2) == 1
 
         # Test V === nothing with nv specified
         mc = MeanComplianceFun(problem, solver; method=:svd_trace, nv=10)
-        @test mc.method isa Functions.TraceEstimationSVDMean
+        @test mc.method isa TopOpt.Functions.TraceEstimationSVDMean
         @test size(mc.method.V, 2) == 10
 
         # Test V provided with nv === nothing (use size(V, 2))
         # Note: V must match US dimensions, not F dimensions
         # Get US from ExactSVDMean to determine correct size
-        exact_svd = Functions.ExactSVDMean(F)
+        exact_svd = TopOpt.Functions.ExactSVDMean(F)
         nv_us = size(exact_svd.US, 2)
         V_provided = zeros(Float64, nv_us, 8)
         mc = MeanComplianceFun(problem, solver; method=:svd_trace, V=V_provided)
-        @test mc.method isa Functions.TraceEstimationSVDMean
+        @test mc.method isa TopOpt.Functions.TraceEstimationSVDMean
         @test size(mc.method.V, 2) == 8
 
         # Test V provided with nv specified (take first nv columns)
         V_provided = zeros(Float64, nv_us, 12)
         mc = MeanComplianceFun(problem, solver; method=:svd_trace, V=V_provided, nv=6)
-        @test mc.method isa Functions.TraceEstimationSVDMean
+        @test mc.method isa TopOpt.Functions.TraceEstimationSVDMean
         @test size(mc.method.V, 2) == 6
     end
 
@@ -147,21 +147,21 @@ Random.seed!(42)
 
         # Test hadamard symbol conversion for TraceEstimationMean
         mc = MeanComplianceFun(problem, solver; method=:trace, nv=3, sample_method=:hadamard)
-        @test mc.method.sample_method === Functions.hadamard!
+        @test mc.method.sample_method === TopOpt.Functions.hadamard!
 
         # Test hutch symbol conversion for TraceEstimationMean
         mc = MeanComplianceFun(problem, solver; method=:trace, nv=3, sample_method=:hutch)
-        @test mc.method.sample_method === Functions.hutch_rand!
+        @test mc.method.sample_method === TopOpt.Functions.hutch_rand!
 
         # Test hadamard symbol conversion for TraceEstimationSVDMean
         mc = MeanComplianceFun(
             problem, solver; method=:svd_trace, nv=3, sample_method=:hadamard
         )
-        @test mc.method.sample_method === Functions.hadamard!
+        @test mc.method.sample_method === TopOpt.Functions.hadamard!
 
         # Test hutch symbol conversion for TraceEstimationSVDMean
         mc = MeanComplianceFun(problem, solver; method=:svd_trace, nv=3, sample_method=:hutch)
-        @test mc.method.sample_method === Functions.hutch_rand!
+        @test mc.method.sample_method === TopOpt.Functions.hutch_rand!
     end
 
     @testset "sample_once parameter handling" begin
@@ -255,7 +255,7 @@ Random.seed!(42)
         @test size(mc_trace2.method.V, 2) == size(mc_svd2.method.V, 2) == 5
 
         # Test case 3: V provided with nv === nothing
-        exact_svd = Functions.ExactSVDMean(F)
+        exact_svd = TopOpt.Functions.ExactSVDMean(F)
         nv_us = size(exact_svd.US, 2)
         V_trace = zeros(Float64, size(F, 2), 6)
         V_svd = zeros(Float64, nv_us, 6)

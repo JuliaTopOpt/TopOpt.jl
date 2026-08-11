@@ -191,10 +191,10 @@ end
     cellvalues = st.cellvalues
     n_basefuncs = Ferrite.getnbasefunctions(cellvalues)
     n_quad = Ferrite.getnquadpoints(cellvalues)
-    dim = TopOptProblems.getdim(problem)
+    dim = TopOpt.TopOptProblems.getdim(problem)
 
     # Create an ElementStressTensorKernel manually (similar to tensor_kernel function)
-    kernel = Functions.ElementStressTensorKernel(
+    kernel = TopOpt.Functions.ElementStressTensorKernel(
         problem.E,
         problem.ν,
         1,  # q_point
@@ -274,7 +274,7 @@ end
         # Test different combinations of quad points and basis functions
         for q_point in 1:min(2, n_quad)
             for a in 1:min(2, n_basefuncs)
-                kernel_test = Functions.ElementStressTensorKernel(
+                kernel_test = TopOpt.Functions.ElementStressTensorKernel(
                     problem.E, problem.ν, q_point, a, cellvalues, dim
                 )
 

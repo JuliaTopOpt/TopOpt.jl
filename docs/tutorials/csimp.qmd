@@ -68,7 +68,7 @@ solver = FEASolver(DirectSolver, problem; xmin=xmin, penalty=penalty)
 comp = ComplianceFun(solver)
 
 # TieBeam doesn't need filtering (already stable)
-filter = if problem isa TopOptProblems.TieBeam
+filter = if problem isa TopOpt.TopOptProblems.TieBeam
     identity
 else
     DensityFilterFun(solver; rmin=rmin)

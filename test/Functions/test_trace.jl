@@ -32,7 +32,7 @@ Random.seed!(42)
 
         # Verify structure is correct
         @test size(em.F) == (n, m)
-        @test em isa Functions.AbstractExactMeanMethod
+        @test em isa TopOpt.Functions.AbstractExactMeanMethod
     end
 
     @testset "ExactSVDMean preserves trace via SVD" begin

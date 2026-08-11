@@ -51,7 +51,7 @@ Random.seed!(42)
     x_half = fill(0.5, ncells)
     σ_half = ts(PseudoDensities(x_half))
     penalty = getpenalty(solver)
-    ρ_half = Utilities.density(penalty(0.5), xmin)
+    ρ_half = TopOpt.Utilities.density(penalty(0.5), xmin)
     # With lower density, the stiffness is lower, so displacements are larger
     # and stress changes. Just check the result is finite and different.
     @test all(isfinite, σ_half)

@@ -43,24 +43,24 @@ end
     println("✓ NonconvexCore.getdim(::MeanComplianceFun) = $dim")
 end
 
-# Test for TopOptProblems.getdim(::LBeam) = 2 (Linear)
-@testset "TopOptProblems.getdim LBeam test" begin
+# Test for TopOpt.TopOptProblems.getdim(::LBeam) = 2 (Linear)
+@testset "TopOpt.TopOptProblems.getdim LBeam test" begin
     problem = LBeam(Val{:Linear}, Float64; force=1.0)
 
-    # Test TopOptProblems.getdim(::LBeam) = 2
-    dim = TopOptProblems.getdim(problem)
+    # Test TopOpt.TopOptProblems.getdim(::LBeam) = 2
+    dim = TopOpt.TopOptProblems.getdim(problem)
     @test dim == 2
-    println("✓ TopOptProblems.getdim(::LBeam) = $dim")
+    println("✓ TopOpt.TopOptProblems.getdim(::LBeam) = $dim")
 end
 
-# Test for TopOptProblems.getdim(::TieBeam) = 2 (Linear)
-@testset "TopOptProblems.getdim TieBeam test" begin
+# Test for TopOpt.TopOptProblems.getdim(::TieBeam) = 2 (Linear)
+@testset "TopOpt.TopOptProblems.getdim TieBeam test" begin
     problem = TieBeam(Val{:Linear}, Float64; refine=1, force=1.0)
 
-    # Test TopOptProblems.getdim(::TieBeam) = 2
-    dim = TopOptProblems.getdim(problem)
+    # Test TopOpt.TopOptProblems.getdim(::TieBeam) = 2
+    dim = TopOpt.TopOptProblems.getdim(problem)
     @test dim == 2
-    println("✓ TopOptProblems.getdim(::TieBeam) = $dim")
+    println("✓ TopOpt.TopOptProblems.getdim(::TieBeam) = $dim")
 end
 
 # Test for TieBeam accessor functions
@@ -101,12 +101,12 @@ end
     )
 
     # Test getdim
-    @test TopOptProblems.getdim(problem) == 2
-    println("✓ TopOptProblems.getdim(::HeatConductionProblem) = 2")
+    @test TopOpt.TopOptProblems.getdim(problem) == 2
+    println("✓ TopOpt.TopOptProblems.getdim(::HeatConductionProblem) = 2")
 
     # Test getmetadata
     metadata = getmetadata(problem)
-    @test metadata isa TopOptProblems.Metadata
+    @test metadata isa TopOpt.TopOptProblems.Metadata
     println("✓ getmetadata(::HeatConductionProblem) returns Metadata")
 
     # Test getpressuredict - should return empty dict for heat transfer

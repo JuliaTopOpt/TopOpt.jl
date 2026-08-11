@@ -119,7 +119,7 @@ for (j, p) in enumerate(penalties)
     setpenalty!(solver, p)
     μ = 1.0
     for i in 1:5
-        global μ *= 5
+        μ *= 5
         model2 = Model()
         addvar!(model2, fill(-100.0, nparams), fill(100.0, nparams))
         # Smooth log-barrier: penalize constraint violation. The max

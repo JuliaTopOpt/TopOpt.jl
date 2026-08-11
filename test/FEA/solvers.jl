@@ -128,7 +128,7 @@ using TopOpt, Test, LinearAlgebra, Ferrite
             vars = ones(length(solver.vars))
             penalty = PowerPenaltyFun(1.0)
             xmin = 0.001
-            TopOptProblems.assemble!(
+            TopOpt.TopOptProblems.assemble!(
                 globalinfo, problem, elementinfo, vars, penalty, xmin
             )
             K = globalinfo.K
@@ -165,7 +165,7 @@ using TopOpt, Test, LinearAlgebra, Ferrite
             vars = ones(length(solver.vars))
             penalty = PowerPenaltyFun(1.0)
             xmin = 0.001
-            TopOptProblems.assemble!(
+            TopOpt.TopOptProblems.assemble!(
                 globalinfo, problem, elementinfo, vars, penalty, xmin
             )
             K = globalinfo.K
@@ -201,7 +201,7 @@ using TopOpt, Test, LinearAlgebra, Ferrite
             vars = ones(length(solver_ref.vars))
             penalty = PowerPenaltyFun(1.0)
             xmin = 0.001
-            TopOptProblems.assemble!(
+            TopOpt.TopOptProblems.assemble!(
                 globalinfo, problem, elementinfo, vars, penalty, xmin
             )
             K = globalinfo.K
@@ -242,7 +242,7 @@ using TopOpt, Test, LinearAlgebra, Ferrite
             vars = ones(length(solver.vars))
             penalty = PowerPenaltyFun(1.0)
             xmin = 0.001
-            TopOptProblems.assemble!(
+            TopOpt.TopOptProblems.assemble!(
                 globalinfo, problem, elementinfo, vars, penalty, xmin
             )
             K = globalinfo.K
@@ -378,6 +378,6 @@ using TopOpt, Test, LinearAlgebra, Ferrite
             Tright=0.0,
             heatflux=Dict("top" => 1.0),
         )
-        @test FEASolver(CGMatrixFreeSolver, problem_homog) isa FEA.GenericFEASolver
+        @test FEASolver(CGMatrixFreeSolver, problem_homog) isa TopOpt.FEA.GenericFEASolver
     end
 end
