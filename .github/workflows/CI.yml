@@ -161,7 +161,7 @@ jobs:
   # Assemble final site from docs and tutorials artifacts
   assemble-site:
     name: "assemble: Final site"
-    needs: [test, tutorials, docs-build]
+    needs: [tutorials, docs-build]
     if: always() && !cancelled()
     runs-on: ubuntu-latest
     steps:
