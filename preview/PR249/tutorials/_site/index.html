@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>GESO: Genetic Evolutionary Structural Optimization – TopOpt.jl</title>
+<title>Overview – TopOpt.jl</title>
 <style>
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
@@ -25,41 +25,6 @@ ul.task-list li input[type="checkbox"] {
   width: 0.8em;
   margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
   vertical-align: middle;
-}
-/* CSS for syntax highlighting */
-html { -webkit-text-size-adjust: 100%; }
-pre > code.sourceCode { white-space: pre; position: relative; }
-pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
-pre > code.sourceCode > span:empty { height: 1.2em; }
-.sourceCode { overflow: visible; }
-code.sourceCode > span { color: inherit; text-decoration: inherit; }
-div.sourceCode { margin: 1em 0; }
-pre.sourceCode { margin: 0; }
-@media screen {
-div.sourceCode { overflow: auto; }
-}
-@media print {
-pre > code.sourceCode { white-space: pre-wrap; }
-pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
-}
-pre.numberSource code
-  { counter-reset: source-line 0; }
-pre.numberSource code > span
-  { position: relative; left: -4em; counter-increment: source-line; }
-pre.numberSource code > span > a:first-child::before
-  { content: counter(source-line);
-    position: relative; left: -1em; text-align: right; vertical-align: baseline;
-    border: none; display: inline-block;
-    -webkit-touch-callout: none; -webkit-user-select: none;
-    -khtml-user-select: none; -moz-user-select: none;
-    -ms-user-select: none; user-select: none;
-    padding: 0 4px; width: 4em;
-  }
-pre.numberSource { margin-left: 3em;  padding-left: 4px; }
-div.sourceCode
-  {   }
-@media screen {
-pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
 }
 </style>
 
@@ -149,7 +114,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item">GESO: Genetic Evolutionary Structural Optimization</li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item">Overview</li></ol></nav>
         <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
     </div>
@@ -173,13 +138,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <h2 id="toc-title">On this page</h2>
    
   <ul>
-  <li><a href="#description" id="toc-description" class="nav-link active" data-scroll-target="#description">Description</a></li>
-  <li><a href="#setup" id="toc-setup" class="nav-link" data-scroll-target="#setup">Setup</a></li>
-  <li><a href="#define-the-problem" id="toc-define-the-problem" class="nav-link" data-scroll-target="#define-the-problem">Define the problem</a></li>
-  <li><a href="#define-the-fea-solver-and-apply-material-penalization" id="toc-define-the-fea-solver-and-apply-material-penalization" class="nav-link" data-scroll-target="#define-the-fea-solver-and-apply-material-penalization">Define the FEA solver and apply material penalization</a></li>
-  <li><a href="#define-the-compliance-objective-and-volume-constraint" id="toc-define-the-compliance-objective-and-volume-constraint" class="nav-link" data-scroll-target="#define-the-compliance-objective-and-volume-constraint">Define the compliance objective and volume constraint</a></li>
-  <li><a href="#run-the-geso-optimization" id="toc-run-the-geso-optimization" class="nav-link" data-scroll-target="#run-the-geso-optimization">Run the GESO optimization</a></li>
-  <li><a href="#visualize-the-result" id="toc-visualize-the-result" class="nav-link" data-scroll-target="#visualize-the-result">Visualize the result</a></li>
+  <li><a href="#density-based-methods" id="toc-density-based-methods" class="nav-link active" data-scroll-target="#density-based-methods">Density-based methods</a></li>
+  <li><a href="#different-methods" id="toc-different-methods" class="nav-link" data-scroll-target="#different-methods">Different methods</a></li>
+  <li><a href="#heat-conduction" id="toc-heat-conduction" class="nav-link" data-scroll-target="#heat-conduction">Heat conduction</a></li>
+  <li><a href="#stress-and-buckling" id="toc-stress-and-buckling" class="nav-link" data-scroll-target="#stress-and-buckling">Stress and buckling</a></li>
+  <li><a href="#advanced-parametrization" id="toc-advanced-parametrization" class="nav-link" data-scroll-target="#advanced-parametrization">Advanced parametrization</a></li>
+  <li><a href="#problem-types" id="toc-problem-types" class="nav-link" data-scroll-target="#problem-types">Problem types</a></li>
+  <li><a href="#back-to-the-main-docs" id="toc-back-to-the-main-docs" class="nav-link" data-scroll-target="#back-to-the-main-docs">Back to the main docs</a></li>
   </ul>
 </nav>
     </div>
@@ -188,7 +153,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title">GESO: Genetic Evolutionary Structural Optimization</h1>
+<h1 class="title">Overview</h1>
 </div>
 
 
@@ -205,83 +170,57 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </header>
 
 
-<section id="description" class="level2">
-<h2 class="anchored" data-anchor-id="description">Description</h2>
-<p>GESO (Genetic Evolutionary Structural Optimization) is a hybrid algorithm that combines evolutionary structural optimization with genetic algorithm concepts. Unlike BESO which uses sensitivity-based element removal/addition, GESO employs binary encoding of design variables and genetic operators (crossover, mutation) to explore the design space.</p>
-<p>This tutorial solves the same HalfMBB beam problem as the BESO tutorial, but using the GESO algorithm. GESO is particularly useful when dealing with discrete design variables and can escape local minima through its stochastic search strategy.</p>
+<p>Welcome to the TopOpt.jl tutorials. These are interactive, rendered examples that demonstrate how to use TopOpt.jl for topology optimization.</p>
+<p>Each tutorial is a self-contained Quarto document that walks through a complete optimization workflow: defining a problem, setting up a finite element solver, composing differentiable objectives and constraints, and running the optimizer. The rendered output is generated during CI with real code execution and plots.</p>
+<section id="density-based-methods" class="level2">
+<h2 class="anchored" data-anchor-id="density-based-methods">Density-based methods</h2>
+<ul>
+<li><p><strong><a href="beso.html">BESO: Bi-directional Evolutionary Structural Optimization</a></strong> — A 2D compliance minimization on the HalfMBB beam showing problem setup, FEA solver construction, sensitivity filtering, and the BESO algorithm loop.</p></li>
+<li><p><strong><a href="simp.html">SIMP: Solid Isotropic Material with Penalization</a></strong> — A 3D compliance minimization on a point-load cantilever showing 3D problem setup, density filtering, Nonconvex.jl integration with MMA87, and Makie visualization.</p></li>
+<li><p><strong><a href="geso.html">GESO: Genetic Evolutionary Structural Optimization</a></strong> — A 2D compliance minimization using genetic algorithm concepts with binary encoding, crossover, and mutation operators for global search.</p></li>
+<li><p><strong><a href="csimp.html">Continuation SIMP</a></strong> — Penalty ramp strategy (1.0 → 5.0) for improved convergence on multiple benchmark problems including 3D cantilever, Half MBB, L-beam, and tie-beam.</p></li>
+<li><p><strong><a href="tobs.html">TOBS: Topological Optimization of Binary Structures</a></strong> — Binary (0/1) topology optimization using sequential linearization and Cbc.jl branch-and-cut solver for 16,000+ design variables.</p></li>
+</ul>
 </section>
-<section id="setup" class="level2">
-<h2 class="anchored" data-anchor-id="setup">Setup</h2>
-<p>Load the TopOpt package:</p>
-<div id="2" class="cell" data-execution_count="1">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">using</span> <span class="bu">TopOpt</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</div>
+<section id="different-methods" class="level2">
+<h2 class="anchored" data-anchor-id="different-methods">Different methods</h2>
+<ul>
+<li><strong><a href="mixed_integer_truss.html">Mixed-Integer Truss Optimization</a></strong> — Binary truss design (0/1 elements) using Juniper.jl MINLP solver with IPOPT relaxation for compliance minimization.</li>
+</ul>
 </section>
-<section id="define-the-problem" class="level2">
-<h2 class="anchored" data-anchor-id="define-the-problem">Define the problem</h2>
-<p>We use the same 2D HalfMBB benchmark with 160×40 elements:</p>
-<div id="4" class="cell" data-execution_count="1">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>E <span class="op">=</span> <span class="fl">1.0</span> <span class="co"># Young's modulus (normalized)</span></span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>v <span class="op">=</span> <span class="fl">0.3</span> <span class="co"># Poisson's ratio</span></span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>f <span class="op">=</span> <span class="fl">1.0</span> <span class="co"># downward force magnitude</span></span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>nels <span class="op">=</span> (<span class="fl">160</span>, <span class="fl">40</span>)  <span class="co"># 160 elements in x, 40 in y</span></span>
-<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>problem <span class="op">=</span> <span class="fu">HalfMBB</span>(<span class="dt">Val</span>{<span class="op">:</span>Linear}, nels, (<span class="fl">1.0</span>, <span class="fl">1.0</span>), E, v, f)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-display" data-execution_count="1">
-<pre><code>TopOpt half MBB problem</code></pre>
-</div>
-</div>
+<section id="heat-conduction" class="level2">
+<h2 class="anchored" data-anchor-id="heat-conduction">Heat conduction</h2>
+<ul>
+<li><p><strong><a href="heat_tree.html">Heat Conduction: Conductivity Tree</a></strong> — Thermal compliance minimization with the classic branching tree benchmark from Bendsøe &amp; Sigmund: heat flux on top, fixed temperature at bottom.</p></li>
+<li><p><strong><a href="heat_sink.html">Heat Sink with Temperature BCs</a></strong> — Asymmetric temperature boundary conditions (T=100 left, T=0 right), distributed flux from top, and Zygote gradient verification.</p></li>
+</ul>
 </section>
-<section id="define-the-fea-solver-and-apply-material-penalization" class="level2">
-<h2 class="anchored" data-anchor-id="define-the-fea-solver-and-apply-material-penalization">Define the FEA solver and apply material penalization</h2>
-<p>The FEA solver uses power-law penalization to drive toward 0/1 designs:</p>
-<div id="6" class="cell" data-execution_count="1">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>solver <span class="op">=</span> <span class="fu">FEASolver</span>(DirectSolver, problem; xmin<span class="op">=</span><span class="fl">0.01</span>, penalty<span class="op">=</span>TopOpt.<span class="fu">PowerPenalty</span>(<span class="fl">3.0</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-display" data-execution_count="1">
-<pre><code>TopOpt direct structural solver (GenericFEASolver)</code></pre>
-</div>
-</div>
+<section id="stress-and-buckling" class="level2">
+<h2 class="anchored" data-anchor-id="stress-and-buckling">Stress and buckling</h2>
+<ul>
+<li><p><strong><a href="global_stress.html">Global Stress Constraints</a></strong> — P-norm stress aggregation (p=5) for efficient gradient-based optimization with single global constraint. Minimizes volume subject to stress threshold.</p></li>
+<li><p><strong><a href="local_stress.html">Local Stress Constraints</a></strong> — Element-wise stress limits using Percival.jl for large-scale constrained optimization with continuation SIMP (penalty 1.0 → 3.0).</p></li>
+<li><p><strong><a href="buckling.html">Buckling-Constrained Truss Optimization</a></strong> — Semidefinite programming (SDP) constraints for stability using NonconvexSemidefinite.jl with IPM barrier method. Enforces K + c·Kσ ≽ 0.</p></li>
+</ul>
 </section>
-<section id="define-the-compliance-objective-and-volume-constraint" class="level2">
-<h2 class="anchored" data-anchor-id="define-the-compliance-objective-and-volume-constraint">Define the compliance objective and volume constraint</h2>
-<p>GESO requires: 1. <strong>Objective</strong>: Compliance to minimize 2. <strong>Constraint</strong>: Volume fraction limit 3. <strong>Filter</strong>: Sensitivity filter for mesh independence</p>
-<div id="8" class="cell" data-execution_count="1">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>comp <span class="op">=</span> <span class="fu">Compliance</span>(solver)</span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>volfrac <span class="op">=</span> <span class="fu">Volume</span>(solver)</span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>sensfilter <span class="op">=</span> <span class="fu">SensFilter</span>(solver; rmin<span class="op">=</span><span class="fl">4.0</span>)</span>
-<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>geso <span class="op">=</span> <span class="fu">GESO</span>(comp, volfrac, <span class="fl">0.5</span>, sensfilter)  <span class="co"># target volume = 50%</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-display" data-execution_count="1">
-<pre><code>TopOpt GESO algorithm</code></pre>
-</div>
-</div>
-<p>The GESO algorithm uses: - Binary encoding of design variables (string length = 4 bits per element) - Crossover probability (Pcmin=0.6, Pcmax=1.0) - Mutation probability (Pmmin=0.5, Pmmax=1.0) - Penalty parameter (Pen=3.0) for constraint handling</p>
+<section id="advanced-parametrization" class="level2">
+<h2 class="anchored" data-anchor-id="advanced-parametrization">Advanced parametrization</h2>
+<ul>
+<li><p><strong><a href="multimaterial.html">Multi-Material Optimization</a></strong> — Softmax parametrization for distributing 3+ candidate materials with mass constraints and MaterialInterpolation.</p></li>
+<li><p><strong><a href="neural.html">Neural Network Parametrization (IPOPT)</a></strong> — 4-layer MLP parametrization with feasibility restoration and augmented-Lagrangian refinement using IPOPT.</p></li>
+<li><p><strong><a href="neural2.html">Neural Network Parametrization (Adam)</a></strong> — 6-layer MLP with Adam optimizer and continuation on penalty and constraint aggregation weight.</p></li>
+</ul>
 </section>
-<section id="run-the-geso-optimization" class="level2">
-<h2 class="anchored" data-anchor-id="run-the-geso-optimization">Run the GESO optimization</h2>
-<p>The GESO algorithm iterates: 1. Encode current design as binary strings 2. Evaluate fitness (compliance + penalty for constraint violation) 3. Apply genetic operators: selection, crossover, mutation 4. Decode binary strings to get new design 5. Filter sensitivities for stability 6. Check convergence</p>
-<div id="10" class="cell" data-execution_count="1">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>x0 <span class="op">=</span> <span class="fu">ones</span>(<span class="fu">length</span>(solver.vars))  <span class="co"># start from fully solid design</span></span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>result <span class="op">=</span> <span class="fu">geso</span>(x0)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-display" data-execution_count="1">
-<pre><code>TopOpt.Algorithms.GESOResult{Float64, Vector{Float64}}([1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0  …  0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], 555.0798295925352, 7.475427033111886e-5, true, 1000)</code></pre>
-</div>
-</div>
-<p>GESO typically requires more iterations than BESO (100-200+) due to its stochastic nature, but can find better global optima for complex problems.</p>
+<section id="problem-types" class="level2">
+<h2 class="anchored" data-anchor-id="problem-types">Problem types</h2>
+<ul>
+<li><p><strong><a href="problems_continuum.html">Continuum Problem Types</a></strong> — Standard benchmark problems: point load cantilever (2D/3D), Half MBB beam (2D/3D), L-beam, tie-beam, and INP file import from CAD software.</p></li>
+<li><p><strong><a href="problems_truss.html">Truss Problem Types</a></strong> — Ground structure definition via JSON files, programmatic truss cantilever construction, and 2D vs 3D truss differences.</p></li>
+</ul>
 </section>
-<section id="visualize-the-result" class="level2">
-<h2 class="anchored" data-anchor-id="visualize-the-result">Visualize the result</h2>
-<div id="fig-geso" class="cell quarto-float quarto-figure quarto-figure-center anchored" data-execution_count="0">
-<figure class="quarto-float quarto-float-fig figure">
-<div aria-describedby="fig-geso-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb10"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="im">using</span> <span class="bu">CairoMakie</span></span>
-<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>fig <span class="op">=</span> <span class="fu">visualize</span>(problem; topology<span class="op">=</span>result.topology)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</div>
-<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig quarto-uncaptioned" id="fig-geso-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
-Figure&nbsp;1
-</figcaption>
-</figure>
-</div>
-<p>The result shows a truss-like structure optimized for minimum compliance under the 50% volume constraint.</p>
+<section id="back-to-the-main-docs" class="level2">
+<h2 class="anchored" data-anchor-id="back-to-the-main-docs">Back to the main docs</h2>
+<p><a href="../index.html">← Back to TopOpt.jl documentation</a></p>
 
 
 </section>
