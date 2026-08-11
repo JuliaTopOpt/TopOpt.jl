@@ -1,39 +1,29 @@
 using Documenter, TopOpt
 using DocumenterCitations
 
-# Load packages to avoid precompilation output in the docs
-# import ...
-
-# Generate examples
-include("generate.jl")
-
-GENERATED_EXAMPLES = [
-    joinpath("examples", f) for
-    f in ("simp.md", "beso.md", "geso.md", "csimp.md", "global_stress.md", "TOBS.md", "heat_tree.md")
-]
-
 bib = CitationBibliography(joinpath(@__DIR__, "biblio", "ref.bib"))
+
 makedocs(;
     sitename="TopOpt.jl",
     format=Documenter.HTML(; prettyurls=get(ENV, "CI", nothing) == "true"),
-    # doctest = false,
-    warnonly=true,
+    doctest=true,
+    checkdocs=:all,
+    warnonly=false,
     plugins=[bib],
     pages=[
         "Home" => "index.md",
-        "Problem types" => "examples/problem.md",
+        "Problem types" => [
+            "Continuum" => "reference/TopOptProblems.md",
+            "Truss" => "reference/TrussTopOptProblems.md",
+        ],
         "Functions" => "functions.md",
-        "Examples" => GENERATED_EXAMPLES,
-        "API Reference" => ["reference/TopOptProblems.md", "reference/Algorithms.md"],
+        "API Reference" => [
+            "FEA" => "reference/FEA.md",
+            "Filters" => "reference/CheqFilters.md",
+            "Functions" => "reference/Functions.md",
+            "Algorithms" => "reference/Algorithms.md",
+            "Utilities" => "reference/Utilities.md",
+        ],
         "Bibliography" => "bibliography.md",
     ],
 )
-
-# # make sure there are no *.vtu files left around from the build
-# cd(joinpath(@__DIR__, "build", "examples")) do
-#     foreach(file -> endswith(file, ".vtu") && rm(file), readdir())
-# end
-
-if get(ENV, "CI", nothing) == "true"
-    deploydocs(; repo="github.com/JuliaTopOpt/TopOpt.jl.git", push_preview=true)
-end

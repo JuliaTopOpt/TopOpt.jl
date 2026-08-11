@@ -1,4 +1,10 @@
 """
+    MultiLoad(problem, scenarios)
+
+Multi-load-case wrapper that generates stochastic load scenarios for robust
+topology optimization. `scenarios` is the number of random load cases to draw.
+Use with `MeanCompliance` or `BlockCompliance`.
+
 Usage example:
 
 ```
@@ -10,6 +16,7 @@ f3 = RandomMagnitude(normalize([-1, -1]), Uniform(0.5, 1.5))
 
 base_problem = PointLoadCantilever(Val{:Linear}, (160, 40), (1.0, 1.0), 1.0, 0.3, 1.0)
 problem = MultiLoad(base_problem, [(160, 20) => f1, (80, 40) => f2, (120, 0) => f3], 10000)
+```
 """
 struct MultiLoad{dim,T,TP<:StiffnessTopOptProblem{dim,T},TF} <:
        StiffnessTopOptProblem{dim,T}
@@ -59,6 +66,11 @@ function find_nearest_dofs(problem, p)
     return problem.metadata.node_dofs[:, closest]
 end
 
+"""
+    RandomMagnitude
+
+Random load-magnitude sampler used inside `MultiLoad`.
+"""
 struct RandomMagnitude{Tf,Tdist} <: Function
     f::Tf
     dist::Tdist

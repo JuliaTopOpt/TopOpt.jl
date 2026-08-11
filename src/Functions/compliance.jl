@@ -1,3 +1,18 @@
+"""
+    Compliance(solver::AbstractFEASolver)
+
+Differentiable structural compliance objective `J = Fᵀ U = Σ ρ_e u_eᵀ K_e u_e`.
+
+Construct with `Compliance(solver)`. Call as `comp(PseudoDensities(x))` where `x`
+is the filtered, optionally projected design. The closed-form gradient
+`dJ/dx_e = -u_eᵀ K_e u_e · dρ_e/dx_e` is propagated via a `ChainRulesCore.rrule`.
+
+Only valid for `StiffnessTopOptProblem` with homogeneous Dirichlet BCs.
+
+See [BendsoeSigmund2003](@cite) §2.1 for compliance minimization and
+[BendsoeSigmund1999](@cite) for the SIMP interpolation used in the stiffness
+assembly.
+"""
 mutable struct Compliance{
     T,TS<:AbstractFEASolver,TC<:AbstractVector{T},TG<:AbstractVector{T}
 } <: AbstractFunction{T}
@@ -11,19 +26,24 @@ Nonconvex.NonconvexCore.getdim(::Compliance) = 1
 getsolver(c::Compliance) = c.solver
 
 function Compliance(solver::AbstractFEASolver)
-    solver.problem isa StiffnessTopOptProblem ||
-        throw(ArgumentError("Compliance can only be used with StiffnessTopOptProblem (structural mechanics). Got $(typeof(solver.problem))"))
+    solver.problem isa StiffnessTopOptProblem || throw(
+        ArgumentError(
+            "Compliance can only be used with StiffnessTopOptProblem (structural mechanics). Got $(typeof(solver.problem))",
+        ),
+    )
     # The closed-form compliance gradient `dJ/dx_e = -dρ_e/dx_e · u_e^T Ke u_e`
     # is only valid for homogeneous Dirichlet BCs. Fail fast on inhomogeneous
     # prescribed displacements rather than silently returning a wrong answer.
     ch = solver.problem.ch
     if any(!=(0), ch.inhomogeneities)
-        throw(ArgumentError(
-            "Compliance assumes homogeneous Dirichlet BCs (prescribed displacement = 0), " *
-            "but this problem has nonzero prescribed displacements. The closed-form " *
-            "compliance gradient is wrong in that case; use an adjoint-based objective " *
-            "or remove the inhomogeneous Dirichlet BCs."
-        ))
+        throw(
+            ArgumentError(
+                "Compliance assumes homogeneous Dirichlet BCs (prescribed displacement = 0), " *
+                "but this problem has nonzero prescribed displacements. The closed-form " *
+                "compliance gradient is wrong in that case; use an adjoint-based objective " *
+                "or remove the inhomogeneous Dirichlet BCs.",
+            ),
+        )
     end
     T = eltype(solver.vars)
     cell_comp = zeros(T, getncells(solver.problem.ch.dh.grid))
@@ -77,9 +97,7 @@ function compute_inner(inner, u1, u2, solver)
     @unpack metadata, Kes = elementinfo
     @unpack cell_dofs = metadata
     penalty = getpenalty(solver)
-    return compute_inner(
-        inner, u1, u2, cell_dofs, Kes, solver.vars, penalty, xmin
-    )
+    return compute_inner(inner, u1, u2, cell_dofs, Kes, solver.vars, penalty, xmin)
 end
 function compute_inner(
     inner::AbstractVector{T}, u1, u2, cell_dofs, Kes, x, penalty, xmin

@@ -138,21 +138,21 @@ end
     @test problem.force == force
     grid = problem.ch.dh.grid
     @test length(grid.cells) == ncells
-    
+
     # Quadratic elements have 9 nodes per cell
     @test Ferrite.nnodes(grid.cells[1]) == 9
     @test Ferrite.getorder(problem.ch.dh.subdofhandlers[1].field_interpolations[1]) == 2
-    
+
     for i in 1:2, j in 1:2
         @test boundingbox(grid)[i][j] ≈ problem.rect_grid.corners[i][j] atol = 1e-8
     end
-    
+
     # Check facesets exist and have correct structure
     @test haskey(grid.facetsets, "bottom")
     @test haskey(grid.facetsets, "right")
     @test haskey(grid.facetsets, "top")
     @test haskey(grid.facetsets, "left")
-    
+
     # Verify boundary faces
     for (c, f) in grid.facetsets["bottom"]
         @test f == 1
@@ -171,27 +171,37 @@ end
 # L-beam with quadratic elements
 @testset "L-beam quadratic elements" begin
     global E, ν, force
-    problem = LBeam(Val{:Quadratic}, Float64; length=50, height=50, upperslab=25, lowerslab=25, E=E, ν=ν, force=force)
+    problem = LBeam(
+        Val{:Quadratic},
+        Float64;
+        length=50,
+        height=50,
+        upperslab=25,
+        lowerslab=25,
+        E=E,
+        ν=ν,
+        force=force,
+    )
     ncells = 50 * 25 + 25 * 25
     @test problem.E == E
     @test problem.ν == ν
     @test problem.force == force
     grid = problem.ch.dh.grid
     @test length(grid.cells) == ncells
-    
+
     # Quadratic elements have 9 nodes per cell
     @test Ferrite.nnodes(grid.cells[1]) == 9
     @test Ferrite.getorder(problem.ch.dh.subdofhandlers[1].field_interpolations[1]) == 2
-    
+
     corners = [[0.0, 0.0], [50.0, 50.0]]
     for i in 1:2, j in 1:2
         @test boundingbox(grid)[i][j] ≈ corners[i][j] atol = 1e-8
     end
-    
+
     # Check facesets exist
     @test haskey(grid.facetsets, "right")
     @test haskey(grid.facetsets, "top")
-    
+
     # Verify boundary faces
     for (c, f) in grid.facetsets["right"]
         @test f == 2
@@ -252,25 +262,25 @@ end
     @testset "getdim(::TieBeam) = 2" begin
         problem_linear = TopOptProblems.TieBeam(Val{:Linear}, Float64; refine=1)
         problem_quad = TopOptProblems.TieBeam(Val{:Quadratic}, Float64)
-        
+
         @test TopOptProblems.getdim(problem_linear) == 2
         @test TopOptProblems.getdim(problem_quad) == 2
     end
-    
+
     @testset "nnodespercell(::TieBeam{T,N}) = N" begin
         problem_linear = TopOptProblems.TieBeam(Val{:Linear}, Float64; refine=1)
         problem_quad = TopOptProblems.TieBeam(Val{:Quadratic}, Float64)
-        
+
         # Linear elements have 4 nodes per cell
         @test TopOptProblems.nnodespercell(problem_linear) == 4
         # Quadratic elements have 9 nodes per cell
         @test TopOptProblems.nnodespercell(problem_quad) == 9
     end
-    
+
     @testset "getpressuredict(::TieBeam)" begin
         force = 2.5
         problem = TopOptProblems.TieBeam(Val{:Linear}, Float64; refine=1, force=force)
-        
+
         pd = TopOptProblems.getpressuredict(problem)
         @test pd isa Dict{String,Float64}
         @test haskey(pd, "rightload")
@@ -278,10 +288,10 @@ end
         @test pd["rightload"] == 2 * force
         @test pd["bottomload"] == -force
     end
-    
+
     @testset "getfacesets(::TieBeam)" begin
         problem = TopOptProblems.TieBeam(Val{:Linear}, Float64; refine=1)
-        
+
         facesets = TopOptProblems.getfacesets(problem)
         @test facesets isa Dict
         @test haskey(facesets, "bottomload")
@@ -292,50 +302,46 @@ end
 end
 
 # Heat conduction problem tests
-        # HeatTransferTopOptProblem accessor functions
+# HeatTransferTopOptProblem accessor functions
 @testset "HeatTransferTopOptProblem accessor functions" begin
     @testset "getmetadata(::HeatTransferTopOptProblem)" begin
         heatflux = Dict{String,Float64}("top" => 1.0)
         problem = HeatConductionProblem(
-            Val{:Linear}, (10, 5), (1.0, 1.0), 1.0;
-            Tleft=0.0, Tright=0.0, heatflux=heatflux
+            Val{:Linear}, (10, 5), (1.0, 1.0), 1.0; Tleft=0.0, Tright=0.0, heatflux=heatflux
         )
-        
+
         metadata = TopOptProblems.getmetadata(problem)
         @test metadata isa TopOpt.TopOptProblems.Metadata
     end
-    
+
     @testset "getpressuredict(::HeatTransferTopOptProblem)" begin
         heatflux = Dict{String,Float64}("top" => 1.0)
         problem = HeatConductionProblem(
-            Val{:Linear}, (10, 5), (1.0, 1.0), 1.0;
-            Tleft=0.0, Tright=0.0, heatflux=heatflux
+            Val{:Linear}, (10, 5), (1.0, 1.0), 1.0; Tleft=0.0, Tright=0.0, heatflux=heatflux
         )
-        
+
         # Returns empty dict for HeatTransferTopOptProblem
         pd = TopOptProblems.getpressuredict(problem)
         @test pd isa Dict{String,Float64}
         @test isempty(pd)
     end
-    
+
     @testset "getheatfluxdict(::HeatTransferTopOptProblem)" begin
         heatflux = Dict{String,Float64}("top" => 1.0)
         problem = HeatConductionProblem(
-            Val{:Linear}, (10, 5), (1.0, 1.0), 1.0;
-            Tleft=0.0, Tright=0.0, heatflux=heatflux
+            Val{:Linear}, (10, 5), (1.0, 1.0), 1.0; Tleft=0.0, Tright=0.0, heatflux=heatflux
         )
-        
+
         # Returns the heatflux dict that was passed in
         hd = TopOptProblems.getheatfluxdict(problem)
         @test hd isa Dict{String,Float64}
         @test hd == heatflux
     end
-    
+
     @testset "getcloaddict(::HeatTransferTopOptProblem)" begin
         heatflux = Dict{String,Float64}("top" => 1.0)
         problem = HeatConductionProblem(
-            Val{:Linear}, (10, 5), (1.0, 1.0), 1.0;
-            Tleft=0.0, Tright=0.0, heatflux=heatflux
+            Val{:Linear}, (10, 5), (1.0, 1.0), 1.0; Tleft=0.0, Tright=0.0, heatflux=heatflux
         )
 
         # Returns an empty Dict{Int,Vector{Float64}} (node index => heat value)
@@ -355,8 +361,7 @@ end
     heatflux = Dict{String,Float64}("top" => 1.0)
 
     problem = HeatConductionProblem(
-        Val{:Linear}, nels, sizes, k;
-        Tleft=0.0, Tright=0.0, heatflux=heatflux
+        Val{:Linear}, nels, sizes, k; Tleft=0.0, Tright=0.0, heatflux=heatflux
     )
 
     @test problem isa HeatConductionProblem
@@ -375,8 +380,12 @@ end
     top_center = center_x + ny * (nx + 1)
 
     problem = HeatConductionProblem(
-        Val{:Linear}, nels, (1.0, 1.0), 1.0;
-        Tleft=0.0, Tright=0.0,
+        Val{:Linear},
+        nels,
+        (1.0, 1.0),
+        1.0;
+        Tleft=0.0,
+        Tright=0.0,
         heatflux=Dict{String,Float64}(),
         cload=Dict(top_center => 1.0),
     )
@@ -398,8 +407,13 @@ end
 
     # Default (no cload) keeps the zero load, preserving old behavior.
     problem_empty = HeatConductionProblem(
-        Val{:Linear}, nels, (1.0, 1.0), 1.0;
-        Tleft=0.0, Tright=0.0, heatflux=Dict{String,Float64}(),
+        Val{:Linear},
+        nels,
+        (1.0, 1.0),
+        1.0;
+        Tleft=0.0,
+        Tright=0.0,
+        heatflux=Dict{String,Float64}(),
     )
     @test isempty(TopOptProblems.getcloaddict(problem_empty))
     solver_empty = FEASolver(DirectSolver, problem_empty; xmin=0.01)
@@ -414,8 +428,14 @@ end
     center_bottom = div(nx, 2) + 1
 
     problem = HeatConductionProblem(
-        Val{:Linear}, nels, (1.0, 1.0), 1.0;
-        Tleft=nothing, Tright=nothing, Ttop=nothing, Tbottom=nothing,
+        Val{:Linear},
+        nels,
+        (1.0, 1.0),
+        1.0;
+        Tleft=nothing,
+        Tright=nothing,
+        Ttop=nothing,
+        Tbottom=nothing,
         Tfix=Dict(center_bottom => 0.0),
     )
 
@@ -428,8 +448,14 @@ end
 
     # Multiple fixed nodes with distinct temperatures.
     problem2 = HeatConductionProblem(
-        Val{:Linear}, nels, (1.0, 1.0), 1.0;
-        Tleft=nothing, Tright=nothing, Ttop=nothing, Tbottom=nothing,
+        Val{:Linear},
+        nels,
+        (1.0, 1.0),
+        1.0;
+        Tleft=nothing,
+        Tright=nothing,
+        Ttop=nothing,
+        Tbottom=nothing,
         Tfix=Dict(1 => 100.0, center_bottom => 0.0),
     )
     @test length(problem2.ch.prescribed_dofs) == 2
@@ -461,25 +487,24 @@ end
     heatflux = Dict{String,Float64}("top" => 10.0)
 
     problem = HeatConductionProblem(
-        Val{:Quadratic}, nels, sizes, k;
-        Tleft=100.0, Tright=0.0, heatflux=heatflux
+        Val{:Quadratic}, nels, sizes, k; Tleft=100.0, Tright=0.0, heatflux=heatflux
     )
 
     @test problem isa HeatConductionProblem
     @test problem.k == k
     @test Ferrite.getncells(problem) == nels[1] * nels[2]
-    
+
     # Quadratic elements have 9 nodes per cell
     grid = problem.ch.dh.grid
     @test Ferrite.nnodes(grid.cells[1]) == 9
     @test Ferrite.getorder(problem.ch.dh.subdofhandlers[1].field_interpolations[1]) == 2
-    
+
     # Check boundary facesets exist
     @test haskey(grid.facetsets, "top")
     @test haskey(grid.facetsets, "bottom")
     @test haskey(grid.facetsets, "left")
     @test haskey(grid.facetsets, "right")
-    
+
     # Check heatflux dict is accessible
     @test TopOptProblems.getheatfluxdict(problem) == heatflux
 
@@ -500,8 +525,7 @@ end
     heatflux = Dict{String,Float64}("top" => 1.0)
 
     problem = HeatConductionProblem(
-        Val{:Linear}, nels, sizes, k;
-        Tleft=0.0, Tright=0.0, heatflux=heatflux
+        Val{:Linear}, nels, sizes, k; Tleft=0.0, Tright=0.0, heatflux=heatflux
     )
 
     # Build element FEA info
@@ -523,8 +547,7 @@ end
         heatflux = Dict{String,Float64}("top" => 1.0)
 
         problem = HeatConductionProblem(
-            Val{:Linear}, nels, sizes, k;
-            Tleft=0.0, Tright=0.0, heatflux=heatflux
+            Val{:Linear}, nels, sizes, k; Tleft=0.0, Tright=0.0, heatflux=heatflux
         )
 
         elementinfo = ElementFEAInfo(problem, 2, Val{:Static})
@@ -540,7 +563,7 @@ end
 
             # Should be symmetric
             mat_Ke = Matrix(Ke)
-            @test mat_Ke ≈ mat_Ke' rtol=1e-10
+            @test mat_Ke ≈ mat_Ke' rtol = 1e-10
 
             # Should be positive semi-definite (non-negative eigenvalues)
             eigs = eigvals(mat_Ke)
@@ -563,8 +586,7 @@ end
         heatflux = Dict{String,Float64}("top" => 1.0)
 
         problem = HeatConductionProblem(
-            Val{:Linear}, nels, sizes, k;
-            Tleft=0.0, Tright=0.0, heatflux=heatflux
+            Val{:Linear}, nels, sizes, k; Tleft=0.0, Tright=0.0, heatflux=heatflux
         )
 
         elementinfo = ElementFEAInfo(problem, 2, Val{:Static})
@@ -587,17 +609,17 @@ end
     sizes = (1.0, 1.0)
     E = 1.0
     ν = 0.3
-    
+
     # Create problem
     problem = PointLoadCantilever(Val{:Linear}, nels, sizes, E, ν, 1.0)
-    
+
     # Verify boundary condition facesets exist
     grid = problem.ch.dh.grid
     @test haskey(grid.facetsets, "left")
     @test haskey(grid.facetsets, "right")
     @test haskey(grid.facetsets, "top")
     @test haskey(grid.facetsets, "bottom")
-    
+
     # Verify constraint handler has entries
     ch = problem.ch
     @test ch.dh.ndofs[] > 0  # Check dof handler has dofs (unwrap ScalarWrapper)
@@ -611,9 +633,9 @@ end
     E = 1.0
     ν = 0.3
     force = 1.0
-    
+
     problem = PointLoadCantilever(Val{:Linear}, nels, sizes, E, ν, force)
-    
+
     # Test accessor functions
     @test TopOptProblems.getE(problem) == E
     @test TopOptProblems.getν(problem) == ν
@@ -625,17 +647,17 @@ end
     sizes = (1.0, 1.0)
     E = 1.0
     ν = 0.3
-    
+
     problems = [
         PointLoadCantilever(Val{:Linear}, nels, sizes, E, ν, 1.0),
         HalfMBB(Val{:Linear}, nels, sizes, E, ν, 1.0),
     ]
-    
+
     for problem in problems
         # All problems should have required fields
         @test hasfield(typeof(problem), :E)
         @test hasfield(typeof(problem), :ν)
-        
+
         # All should have a constraint handler
         @test hasfield(typeof(problem), :ch)
         @test problem.ch isa Ferrite.ConstraintHandler
@@ -647,10 +669,10 @@ end
     sizes = (1.0, 1.0)
     E = 1.0
     ν = 0.3
-    
+
     problem = PointLoadCantilever(Val{:Linear}, nels, sizes, E, ν, 1.0)
     grid = problem.ch.dh.grid
-    
+
     # Test bounding box calculation
     bbox = boundingbox(grid)
     @test length(bbox) == 2
@@ -658,7 +680,7 @@ end
     @test bbox[1][2] ≈ 0.0
     @test bbox[2][1] ≈ nels[1] * sizes[1]
     @test bbox[2][2] ≈ nels[2] * sizes[2]
-    
+
     # Test cell count
     @test Ferrite.getncells(grid) == prod(nels)
 end
@@ -735,7 +757,9 @@ end
         io = IOBuffer()
         show(io, MIME("text/plain"), problem)
         output = String(take!(io))
-        @test occursin("PointLoadCantilever", output) || occursin("Point", output) || output != ""
+        @test occursin("PointLoadCantilever", output) ||
+            occursin("Point", output) ||
+            output != ""
     end
 
     @testset "HalfMBB show" begin
@@ -765,8 +789,7 @@ end
     @testset "HeatConductionProblem show" begin
         heatflux = Dict{String,Float64}("top" => 1.0)
         problem = HeatConductionProblem(
-            Val{:Linear}, (10, 5), (1.0, 1.0), 1.0;
-            Tleft=0.0, Tright=0.0, heatflux=heatflux
+            Val{:Linear}, (10, 5), (1.0, 1.0), 1.0; Tleft=0.0, Tright=0.0, heatflux=heatflux
         )
         io = IOBuffer()
         show(io, MIME("text/plain"), problem)

@@ -48,7 +48,7 @@ end
         f1::T
         f2::AbstractVector{T}
     end
-    
+
     # Create instance using default constructor
     # The macro generates: struct TestStruct1{T, T1<:T, T2<:AbstractVector{T}}
     ts = TestStruct1(1.0, [2.0, 3.0])
@@ -61,7 +61,7 @@ end
         f2::AbstractVector{<:Real}
         f3
     end
-    
+
     ts2 = TestStruct2(1, [2.0, 3.0], "test")
     @test ts2.f1 == 1
     @test ts2.f2 == [2.0, 3.0]
@@ -72,7 +72,7 @@ end
     @params struct TestStruct3{T} <: AbstractTest
         f1::T
     end
-    
+
     ts3 = TestStruct3(1.0)
     @test ts3 isa AbstractTest
 end
@@ -83,7 +83,11 @@ end
     u = [1.0, 2.0]
     dofs = [1, 2]
     comp = compliance(Ke, u, dofs)
-    expected = u[1]*Ke[1,1]*u[1] + u[1]*Ke[1,2]*u[2] + u[2]*Ke[2,1]*u[1] + u[2]*Ke[2,2]*u[2]
+    expected =
+        u[1] * Ke[1, 1] * u[1] +
+        u[1] * Ke[1, 2] * u[2] +
+        u[2] * Ke[2, 1] * u[1] +
+        u[2] * Ke[2, 2] * u[2]
     @test comp ≈ expected
 
     # Test with different dof configuration
@@ -134,25 +138,25 @@ end
 @testset "@forward_property macro" begin
     # Create a nested structure to test property forwarding
     using TopOpt: @forward_property
-    
+
     # Use mutable struct for Inner to allow setproperty!
     mutable struct InnerFP
         x::Float64
         y::Float64
     end
-    
+
     struct OuterFP
         inner::InnerFP
     end
     @forward_property OuterFP inner
-    
+
     inner_obj = InnerFP(1.0, 2.0)
     outer_obj = OuterFP(inner_obj)
-    
+
     # Test getproperty forwarding
     @test outer_obj.x == 1.0
     @test outer_obj.y == 2.0
-    
+
     # Test setproperty! forwarding
     outer_obj.x = 3.0
     @test outer_obj.x == 3.0
@@ -163,15 +167,15 @@ end
     # Test with StaticMatrix
     K_static = @SMatrix [1.0 2.0; 3.0 4.0]
     @test sumdiag(K_static) ≈ 1.0 + 4.0
-    
+
     # Test with Symmetric StaticMatrix
     K_sym = Symmetric(@SMatrix [1.0 2.0; 2.0 4.0])
     @test sumdiag(K_sym) ≈ 1.0 + 4.0
-    
+
     # Test with 3x3 matrix
     K_3x3 = @SMatrix [1.0 0.0 0.0; 0.0 2.0 0.0; 0.0 0.0 3.0]
     @test sumdiag(K_3x3) ≈ 6.0
-    
+
     # Compare with manual sum
     K_test = @SMatrix [5.0 1.0; 2.0 3.0]
     @test sumdiag(K_test) == sum(diag(K_test))

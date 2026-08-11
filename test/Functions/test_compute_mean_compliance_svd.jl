@@ -6,7 +6,6 @@ const FDM = FiniteDifferences
 Random.seed!(42)
 
 @testset "compute_mean_compliance with TraceEstimationSVDMean" begin
-
     @testset "Basic functionality - function returns finite value" begin
         # Create a simple problem
         E = 1.0
@@ -221,7 +220,9 @@ Random.seed!(42)
         mc_exact = MeanCompliance(problem, solver; method=:exact_svd)
         x = fill(0.5, length(solver.vars))
         grad_exact = similar(x)
-        val_exact = Functions.compute_mean_compliance(mc_exact, mc_exact.method, x, grad_exact)
+        val_exact = Functions.compute_mean_compliance(
+            mc_exact, mc_exact.method, x, grad_exact
+        )
 
         # Approximate SVD with many samples
         mc_approx = MeanCompliance(problem, solver; method=:approx_svd, nv=20)
@@ -296,7 +297,9 @@ Random.seed!(42)
         x = fill(0.5, length(solver.vars))
 
         for sample_method in [:hutch, :hadamard]
-            mc = MeanCompliance(problem, solver; method=:approx_svd, nv=5, sample_method=sample_method)
+            mc = MeanCompliance(
+                problem, solver; method=:approx_svd, nv=5, sample_method=sample_method
+            )
             ax = mc.method
             grad = similar(x)
 
@@ -343,5 +346,4 @@ Random.seed!(42)
         @test isapprox(val1, val2; rtol=1e-10)
         @test isapprox(grad, grad2; rtol=1e-10)
     end
-
 end

@@ -17,11 +17,17 @@ using LinearAlgebra
         # Test VTK saving with default densities
         @test_nowarn TopOpt.TopOptProblems.InputOutput.save_mesh(vtk_path, problem)
         # Verify files were created - check for .vtu or .pvtu files
-        vtk_files = filter(f -> occursin("test_output", f) && (endswith(f, ".vtu") || endswith(f, ".pvtu")), readdir(tmpdir))
+        vtk_files = filter(
+            f ->
+                occursin("test_output", f) && (endswith(f, ".vtu") || endswith(f, ".pvtu")),
+            readdir(tmpdir),
+        )
         @test length(vtk_files) > 0
         # Test with custom densities
         densities = fill(0.5, getncells(problem.ch.dh.grid))
-        @test_nowarn TopOpt.TopOptProblems.InputOutput.save_mesh(vtk_path * "_custom", problem, densities)
+        @test_nowarn TopOpt.TopOptProblems.InputOutput.save_mesh(
+            vtk_path * "_custom", problem, densities
+        )
     end
 end
 
@@ -67,12 +73,18 @@ end
 
             # Check files were created
             files = readdir(tmpdir)
-            @test any(f -> occursin("test_2d", f) && (endswith(f, ".vtu") || endswith(f, ".pvtu")), files)
+            @test any(
+                f ->
+                    occursin("test_2d", f) && (endswith(f, ".vtu") || endswith(f, ".pvtu")),
+                files,
+            )
         end
 
         @testset "3D problem VTK export" begin
             # Skip if 3D problems not available or too slow
-            problem_3d = PointLoadCantilever(Val{:Linear}, (4, 4, 2), (1.0, 1.0, 1.0), 1.0, 0.3, 1.0)
+            problem_3d = PointLoadCantilever(
+                Val{:Linear}, (4, 4, 2), (1.0, 1.0, 1.0), 1.0, 0.3, 1.0
+            )
             vtk_path = joinpath(tmpdir, "test_3d")
 
             @test_nowarn TopOpt.TopOptProblems.InputOutput.save_mesh(vtk_path, problem_3d)
@@ -85,7 +97,9 @@ end
             # Create a heat conduction problem
             nels = (4, 4)
             sizes = (1.0, 1.0)
-            problem = HeatConductionProblem(Val{:Linear}, nels, sizes, 1.0; Tleft=0.0, Tright=0.0)
+            problem = HeatConductionProblem(
+                Val{:Linear}, nels, sizes, 1.0; Tleft=0.0, Tright=0.0
+            )
             vtk_path = joinpath(tmpdir, "test_heat")
 
             # Heat problems should also be exportable
@@ -94,7 +108,9 @@ end
             # Test with custom densities
             densities = fill(0.6, getncells(problem.ch.dh.grid))
             vtk_path2 = joinpath(tmpdir, "test_heat_densities")
-            @test_nowarn TopOpt.TopOptProblems.InputOutput.save_mesh(vtk_path2, problem, densities)
+            @test_nowarn TopOpt.TopOptProblems.InputOutput.save_mesh(
+                vtk_path2, problem, densities
+            )
 
             # Verify files were created
             files = readdir(tmpdir)
@@ -113,4 +129,3 @@ end
         end
     end
 end
-

@@ -1,5 +1,17 @@
-struct DensityFilter{T,TM<:FilterMetadata,TJ<:AbstractMatrix{T}} <:
-       AbstractDensityFilter
+"""
+    DensityFilter(solver; rmin)
+
+Density chequerboard filter with radius `rmin`. Produces a filtered design
+where each element's density is a weighted average of neighboring densities
+within `rmin`, using the BESO filter weighting scheme
+`w = max(rmin - dist, 0)` from [HuangXie2010](@cite). Implemented as a
+differentiable linear operator (sparse Jacobian). Call as
+`y = flt(PseudoDensities(x))`.
+
+See also [BendsoeSigmund2003](@cite) §3.4 for general background on density
+filtering.
+"""
+struct DensityFilter{T,TM<:FilterMetadata,TJ<:AbstractMatrix{T}} <: AbstractDensityFilter
     metadata::TM
     rmin::T
     jacobian::TJ
@@ -15,7 +27,7 @@ function DensityFilter(
 ) where {T,TI<:Integer,TS<:AbstractFEASolver}
     metadata = FilterMetadata(solver, rmin, TI)
     TM = typeof(metadata)
-    
+
     jacobian = getJacobian(solver, metadata)
     return DensityFilter(metadata, rmin, jacobian)
 end
@@ -95,6 +107,13 @@ function scalecols!(A::SparseMatrixCSC)
     return A
 end
 
+"""
+    ProjectedDensityFilter
+
+Density filter followed by a projection (e.g. Heaviside) to push the design
+toward 0/1. Useful for producing near-binary designs. See
+[BendsoeSigmund2003](@cite) §3.5 for projection-based filtering.
+"""
 struct ProjectedDensityFilter{TF<:DensityFilter,TP1,TP2} <: AbstractDensityFilter
     filter::TF
     preproj::TP1

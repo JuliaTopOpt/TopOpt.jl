@@ -1,5 +1,11 @@
 # FileIO.add_format(format"GEO", "TrussGEO", [".geo"])
 
+"""
+    load_truss_geo(path)
+
+Load truss geometry from a .geo file. Returns node coordinates and element
+connectivity.
+"""
 function load_truss_geo(filepath::AbstractString)
     open(filepath) do io
         load_truss_geo(io)

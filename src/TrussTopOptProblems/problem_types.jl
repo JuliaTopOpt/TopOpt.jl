@@ -3,6 +3,13 @@ using ..TopOpt.TopOptProblems:
 
 get_fixities_node_set_name(i) = "fixed_u$(i)"
 
+"""
+    TrussProblem(::Val{:Linear}, node_points, elements, loads, fixities, mats, crosssecs)
+
+Truss topology optimization problem. Construct from node coordinates,
+element connectivity, loads, fixities, material and cross-section data.
+Use `load_truss_json` to load these from a JSON file.
+"""
 struct TrussProblem{
     xdim,
     T,

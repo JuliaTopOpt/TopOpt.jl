@@ -1,0 +1,125 @@
+---
+title: "Global Stress: P-Norm Aggregation for Stress Constraints"
+toc: true
+---
+
+## Description
+
+This tutorial demonstrates topology optimization with global stress constraints
+using p-norm aggregation. Instead of constraining stress at every element
+(thousands of constraints), we aggregate von Mises stresses into a single
+global measure using the p-norm with p=5. This approach enables efficient
+gradient-based optimization while controlling peak stresses.
+
+The tutorial optimizes volume fraction minimization subject to a stress
+threshold, demonstrating stress-driven design for cantilever and Half MBB
+benchmarks.
+
+## Setup
+
+```{julia}
+#| output: false
+using TopOpt, LinearAlgebra
+```
+
+## Define the Problem
+
+```{julia}
+#| output: false
+E = 1.0 # Young's modulus
+v = 0.3 # Poisson's ratio
+f = 1.0 # downward force
+rmin = 3.0 # filter radius
+
+problems = Any[
+    PointLoadCantilever(Val{:Linear}, (60, 20), (1.0, 1.0), E, v, f),
+    HalfMBB(Val{:Linear}, (60, 20), (1.0, 1.0), E, v, f),
+]
+problem_names = ["Cantilever beam", "Half MBB beam"]
+
+i = 1  # Select problem (1 or 2)
+println(problem_names[i])
+problem = problems[i]
+```
+
+## Parameter Settings
+
+```{julia}
+#| output: false
+V = 0.5 # volume fraction
+xmin = 0.001 # minimum density
+convcriteria = Nonconvex.KKTCriteria()
+penalty = TopOpt.PowerPenalty(1.0)  # start with no penalization
+
+solver = FEASolver(DirectSolver, problem; xmin=xmin, penalty=penalty)
+```
+
+## Stress Objective
+
+```{julia}
+#| output: false
+# von Mises stress function (automatically differentiable via Zygote)
+stress = TopOpt.von_mises_stress_function(solver)
+
+filter = if problem isa TopOptProblems.TieBeam
+    identity
+else
+    DensityFilter(solver; rmin=rmin)
+end
+
+volfrac = TopOpt.Volume(solver)
+
+x0 = ones(length(solver.vars))
+# Set stress threshold as 3× initial maximum stress
+threshold = 3 * maximum(stress(filter(PseudoDensities(x0))))
+
+# Minimize volume, constrain aggregated stress
+obj = x -> volfrac(filter(PseudoDensities(x)))
+constr = x -> norm(stress(filter(PseudoDensities(x))), 5) - threshold
+```
+
+The p-norm with p=5 aggregates element stresses into a global measure:
+`‖σ‖₅ = (Σ σᵢ⁵)^(1/5)`. This smooth approximation enables efficient gradient
+computation while capturing peak stress behavior.
+
+## Optimization Setup
+
+```{julia}
+#| output: false
+N = length(solver.vars)
+x0 = fill(0.5, N)
+
+options = MMAOptions(; maxiter=50, tol=Tolerance(; kkt=1e-4), convcriteria)
+model = Model(obj)
+addvar!(model, zeros(N), ones(N))
+add_ineq_constraint!(model, constr)
+alg = MMA87()
+```
+
+## Run Optimization
+
+```{julia}
+#| output: true
+r = optimize(model, alg, x0; options=options)
+```
+
+## Results
+
+```{julia}
+#| output: true
+@show obj(r.minimizer)
+@show constr(r.minimizer)
+```
+
+The optimized design minimizes material usage while keeping aggregated stress
+below the threshold.
+
+## Visualization
+
+```{julia}
+#| label: fig-global-stress
+#| fig-cap: "Global stress-constrained optimization with p-norm aggregation (p=5)"
+using CairoMakie
+fig = visualize(problem; topology=r.minimizer)
+
+```

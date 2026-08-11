@@ -5,4 +5,99 @@
  @article{Svanberg1987, title={The method of moving asymptotes—a new method for structural optimization}, volume={24}, ISSN={1097-0207}, DOI={10/cdjbm9}, abstractNote={A new method for non-linear programming in general and structural optimization in particular is presented. In each step of the iterative process, a strictly convex approximating subproblem is generated and solved. The generation of these subproblems is controlled by so called ‘moving asymptotes’, which may both stabilize and speed up the convergence of the general process.}, number={2}, journal={International Journal for Numerical Methods in Engineering}, author={Svanberg, Krister}, year={1987}, pages={359–373} }
  @article{Svanberg2002, title={A Class of Globally Convergent Optimization Methods Based on Conservative Convex Separable Approximations}, volume={12}, ISSN={1052-6234, 1095-7189}, DOI={10/cdhbq4}, abstractNote={This paper deals with a certain class of optimization methods, based on conservative convex separable approximations (CCSA), for solving inequality-constrained nonlinear programming problems. Each generated iteration point is a feasible solution with lower objective value than the previous one, and it is proved that the sequence of iteration points converges toward the set of Karush–Kuhn–Tucker points. A major advantage of CCSA methods is that they can be applied to problems with a very large number of variables (say 104–105) even if the Hessian matrices of the objective and constraint functions are dense.}, number={2}, journal={SIAM Journal on Optimization}, author={Svanberg, Krister}, year={2002}, month={Jan}, pages={555–573} }
  @article{TarekRay2020, title={Adaptive continuation solid isotropic material with penalization for volume constrained compliance minimization}, volume={363}, ISSN={0045-7825}, DOI={10/gg55cc}, abstractNote={In this paper, the traditional decreasing tolerance continuation solid isotropic material with penalization (CSIMP) was extended by providing a way to adapt the penalty step between subproblems, decreasing the number of subproblems solved. Four linearly elastic, volume constrained, compliance minimization problems were used to test the efficacy of the penalty adaptation for different parameter settings. Three of the problems are common 2D test problems and one is 3D. The main factors affecting the efficacy of the penalty adaptation were identified. Experimental results confirmed that the penalty adaptation successfully reduces the number of finite element analysis (FEA) simulations needed to converge to the optimal solution when using the decreasing tolerance CSIMP (Dec-Tol CSIMP), with exponentially decaying tolerance. In particular, the number of FEA simulations required by Dec-Tol CSIMP was cut down by an average of 28.8% with no more than 4.1% increase in the objective value in the worst case. Finally, a mathematical and experimental treatment of the effect of xmin on the convergence of the SIMP algorithm was given, with recommendations for choosing a suitable value for xmin.}, journal={Computer Methods in Applied Mechanics and Engineering}, author={Tarek, Mohamed and Ray, Tapabrata}, year={2020}, month={May}, pages={112880} }
+
+@book{CookMalkusPlesha1989,
+  title={Concepts and Applications of Finite Element Analysis},
+  author={Cook, Robert D. and Malkus, David S. and Plesha, Michael E.},
+  year={1989},
+  publisher={John Wiley \& Sons},
+  edition={3rd},
+  note={Chapter 4: Formulation of the Element Stiffness Matrix. Chapter 13: Stability and Vibration Analysis.}
+}
+
+@book{Bathe1996,
+  title={Finite Element Procedures},
+  author={Bathe, Klaus-J{\"u}rgen},
+  year={1996},
+  publisher={Prentice-Hall},
+  note={Chapter 4.2: Plane Strain and Plane Stress Conditions. Chapter 9.3: Solution of Linearized Buckling Problems.}
+}
+
+@article{Kocvara2002,
+  title={On the modelling and solving of the truss design problem with global stability constraints},
+  author={Ko{\v{c}}vara, Michal},
+  journal={Structural and Multidisciplinary Optimization},
+  volume={23},
+  number={3},
+  pages={189--203},
+  year={2002},
+  month={Apr},
+  DOI={10/br35mf},
+  note={Truss geometric stiffness matrix formulation and SDP buckling constraint.}
+}
+
+@misc{Gavin2014,
+  title={Geometric Stiffness Effects in 2D Trusses},
+  author={Gavin, Henri P.},
+  year={2014},
+  url={https://people.duke.edu/~hpgavin/cee421/truss-finite-def.pdf},
+  note={CEE 421L lecture notes, Duke University: truss geometric stiffness matrix, eqs. (3)--(4).}
+}
+
+@article{DuysinxBendsøe1998,
+  title={Topology Optimization of Continuum Structures with Local Stress Constraints},
+  author={Duysinx, Pierre and Bends{\o}e, Martin P.},
+  journal={International Journal for Numerical Methods in Engineering},
+  volume={43},
+  number={8},
+  pages={1453--1478},
+  year={1998},
+  DOI={10.1002/(SICI)1097-0207(19981230)43:8<1453::AID-NME480>3.3.CO;2-U},
+  note={Stress criteria for porous/SIMP materials and epsilon-relaxation of local stress constraints in topology optimization.}
+}
+
+@book{BendsoeSigmund2003,
+  title={Topology Optimization: Theory, Methods, and Applications},
+  author={Bends{\o}e, Martin P. and Sigmund, Ole},
+  year={2003},
+  publisher={Springer},
+  edition={2nd},
+  note={SIMP method (Ch. 1), compliance minimization (§2.1), volume constraint (§2.1), chequerboard filtering (§3.4), thermal/heat conduction topology optimization (§1.3, §4.1).}
+}
+
+@article{BendsoeSigmund1999,
+  title={Material interpolation schemes in topology optimization},
+  author={Bends{\o}e, Martin P. and Sigmund, Ole},
+  journal={Archive of Applied Mechanics},
+  volume={69},
+  number={9-10},
+  pages={635--654},
+  year={1999},
+  DOI={10.1007/s004190050248},
+  note={SIMP power-law interpolation, justification of the penalization exponent.}
+}
+
+@article{Bruns2005,
+  title={A reevaluation of the SIMP method with filtering and an alternative formulation for solid--void topology optimization},
+  author={Bruns, Tyler E.},
+  journal={Structural and Multidisciplinary Optimization},
+  volume={30},
+  number={6},
+  pages={428--436},
+  year={2005},
+  DOI={10.1007/s00158-005-0537-x},
+  note={Sensitivity filter and density filter formulations for chequerboard suppression.}
+}
+
+@article{Iga2009,
+  title={Topology optimization for thermal conductors considering design-dependent effects, including heat conduction and convection},
+  author={Iga, Atsushi and Nishiwaki, Shinji and Izui, Kazuhiro and Yoshimura, Masataka},
+  journal={International Journal of Heat and Mass Transfer},
+  volume={52},
+  number={11-12},
+  pages={2721--2732},
+  year={2009},
+  DOI={10.1016/j.ijheatmasstransfer.2008.12.013},
+  note={Heat conduction topology optimization: SIMP for thermal conductivity, thermal compliance minimization.}
+}
  

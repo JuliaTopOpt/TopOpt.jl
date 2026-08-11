@@ -377,7 +377,7 @@ struct LBeam{T,N,M,Tc<:ConstraintHandler{<:DofHandler,T},Tf<:Integer,Tm<:Metadat
     metadata::Tm
 end
 function Base.show(io::IO, ::MIME{Symbol("text/plain")}, ::LBeam)
-    println(io, "TopOpt L-beam problem")
+    return println(io, "TopOpt L-beam problem")
 end
 
 """
@@ -622,6 +622,9 @@ Mathematical note: For thermal compliance J = Q^T T, the gradient is:
     dJ/dx_e = -T_e^T Ke T_e · dρ_e/dx_e
 This is the same form as structural compliance because Q doesn't depend on x.
 
+See [BendsoeSigmund2003](@cite) §1.3 and §4.1 for thermal topology
+optimization, and [Iga2009](@cite) for SIMP-based heat conduction.
+
 All subtypes must have:
 - `ch`: ConstraintHandler with temperature DOFs (1 DOF per node)
 - `metadata`: Metadata with cell-node-dof relationships
@@ -640,7 +643,7 @@ getpressuredict(p::HeatTransferTopOptProblem{dim,T}) where {dim,T} = Dict{String
 getheatfluxdict(p::HeatTransferTopOptProblem{dim,T}) where {dim,T} = Dict{String,T}()
 getfacesets(p::HeatTransferTopOptProblem) = getdh(p).grid.facetsets
 function Ferrite.getncells(problem::HeatTransferTopOptProblem)
-    Ferrite.getncells(getdh(problem).grid)
+    return Ferrite.getncells(getdh(problem).grid)
 end
 getgeomorder(p::HeatTransferTopOptProblem) = nnodespercell(p) in (9, 27) ? 2 : 1
 getcloaddict(p::HeatTransferTopOptProblem{dim,T}) where {dim,T} = Dict{Int,Vector{T}}()
@@ -775,11 +778,16 @@ function HeatConductionProblem(
     # Promote the numeric BC values (skipping `nothing`) to pick the element
     # type, defaulting to Float64 when all BCs are `nothing`.
     bc_vals = [v for v in (Tleft, Tright, Ttop, Tbottom) if v !== nothing]
-    T = float(promote_type(
-        eltype(sizes), typeof(k), map(typeof, bc_vals)...,
-        map(typeof, values(cload))..., map(typeof, values(Tfix))...,
-        Float64,
-    ))
+    T = float(
+        promote_type(
+            eltype(sizes),
+            typeof(k),
+            map(typeof, bc_vals)...,
+            map(typeof, values(cload))...,
+            map(typeof, values(Tfix))...,
+            Float64,
+        ),
+    )
 
     if CellType === :Linear
         rect_grid = RectilinearGrid(Val{:Linear}, nels, T.(sizes))
@@ -824,16 +832,31 @@ function HeatConductionProblem(
     # Dirichlet BC (free boundary); a numeric value fixes the temperature there.
     ch = ConstraintHandler(dh)
     if Tleft !== nothing
-        add!(ch, Dirichlet(:T, getnodeset(rect_grid.grid, "left_boundary"), (x, t) -> T(Tleft)))
+        add!(
+            ch,
+            Dirichlet(:T, getnodeset(rect_grid.grid, "left_boundary"), (x, t) -> T(Tleft)),
+        )
     end
     if Tright !== nothing
-        add!(ch, Dirichlet(:T, getnodeset(rect_grid.grid, "right_boundary"), (x, t) -> T(Tright)))
+        add!(
+            ch,
+            Dirichlet(
+                :T, getnodeset(rect_grid.grid, "right_boundary"), (x, t) -> T(Tright)
+            ),
+        )
     end
     if Ttop !== nothing
-        add!(ch, Dirichlet(:T, getnodeset(rect_grid.grid, "top_boundary"), (x, t) -> T(Ttop)))
+        add!(
+            ch, Dirichlet(:T, getnodeset(rect_grid.grid, "top_boundary"), (x, t) -> T(Ttop))
+        )
     end
     if Tbottom !== nothing
-        add!(ch, Dirichlet(:T, getnodeset(rect_grid.grid, "bottom_boundary"), (x, t) -> T(Tbottom)))
+        add!(
+            ch,
+            Dirichlet(
+                :T, getnodeset(rect_grid.grid, "bottom_boundary"), (x, t) -> T(Tbottom)
+            ),
+        )
     end
     if !isempty(Tfix)
         # Prescribe the temperature at individual nodes (point Dirichlet BCs).
@@ -873,7 +896,7 @@ nnodespercell(p::HeatConductionProblem) = nnodespercell(p.rect_grid)
     HeatTree(::Type{Val{CellType}}, nels, sizes, k=1.0; q=1.0)
 
 Convenience constructor for the classic heat-conduction topology-optimization
-benchmark (Bendsøe & Sigmund, *Topology Optimization*, §1.3, Fig. 1.4):
+benchmark ([BendsoeSigmund2003](@cite) §1.3, Fig. 1.4):
 distributed heat flux `q` enters through the full top edge, the full bottom
 edge is held at `T = 0` (cold sink), and the left/right sides are insulated
 (free). Minimizing thermal compliance with this setup produces the branching
@@ -890,7 +913,10 @@ function HeatTree(
     ::Type{Val{CellType}}, nels::NTuple{dim,Int}, sizes::NTuple{dim}, k=1.0; q=1.0
 ) where {dim,CellType}
     return HeatConductionProblem(
-        Val{CellType}, nels, sizes, k;
+        Val{CellType},
+        nels,
+        sizes,
+        k;
         Tleft=nothing,
         Tright=nothing,
         Ttop=nothing,

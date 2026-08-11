@@ -26,8 +26,8 @@ using TopOpt, Test, LinearAlgebra, Ferrite
         solver_matrixfree()
 
         # Compare results - they should be very close for well-conditioned problems
-        @test solver_assembly.u ≈ solver_direct.u rtol=1e-4
-        @test solver_matrixfree.u ≈ solver_direct.u rtol=1e-4
+        @test solver_assembly.u ≈ solver_direct.u rtol = 1e-4
+        @test solver_matrixfree.u ≈ solver_direct.u rtol = 1e-4
     end
 
     @testset "CGAssemblySolver with safe=true" begin
@@ -51,7 +51,7 @@ using TopOpt, Test, LinearAlgebra, Ferrite
 
         @test all(isfinite, solver_safe.u)
         @test all(isfinite, solver_normal.u)
-        @test solver_safe.u ≈ solver_normal.u rtol=1e-4
+        @test solver_safe.u ≈ solver_normal.u rtol = 1e-4
     end
 
     @testset "DirectSolver with QR decomposition" begin
@@ -128,7 +128,9 @@ using TopOpt, Test, LinearAlgebra, Ferrite
             vars = ones(length(solver.vars))
             penalty = PowerPenalty(1.0)
             xmin = 0.001
-            TopOpt.TopOptProblems.assemble!(globalinfo, problem, elementinfo, vars, penalty, xmin)
+            TopOpt.TopOptProblems.assemble!(
+                globalinfo, problem, elementinfo, vars, penalty, xmin
+            )
             K = globalinfo.K
 
             # Get reference solutions by solving each column with boundary conditions applied
@@ -145,7 +147,7 @@ using TopOpt, Test, LinearAlgebra, Ferrite
 
             # Verify solutions match reference
             for j in 1:num_rhs
-                @test lhs_matrix[:, j] ≈ lhs_reference[:, j] rtol=1e-4
+                @test lhs_matrix[:, j] ≈ lhs_reference[:, j] rtol = 1e-4
             end
         end
 
@@ -163,7 +165,9 @@ using TopOpt, Test, LinearAlgebra, Ferrite
             vars = ones(length(solver.vars))
             penalty = PowerPenalty(1.0)
             xmin = 0.001
-            TopOpt.TopOptProblems.assemble!(globalinfo, problem, elementinfo, vars, penalty, xmin)
+            TopOpt.TopOptProblems.assemble!(
+                globalinfo, problem, elementinfo, vars, penalty, xmin
+            )
             K = globalinfo.K
 
             # Get reference solutions
@@ -177,7 +181,7 @@ using TopOpt, Test, LinearAlgebra, Ferrite
             solver(; assemble_f=true, rhs=rhs_matrix, lhs=lhs_matrix)
 
             for j in 1:num_rhs
-                @test lhs_matrix[:, j] ≈ lhs_reference[:, j] rtol=1e-4
+                @test lhs_matrix[:, j] ≈ lhs_reference[:, j] rtol = 1e-4
             end
         end
 
@@ -197,7 +201,9 @@ using TopOpt, Test, LinearAlgebra, Ferrite
             vars = ones(length(solver_ref.vars))
             penalty = PowerPenalty(1.0)
             xmin = 0.001
-            TopOpt.TopOptProblems.assemble!(globalinfo, problem, elementinfo, vars, penalty, xmin)
+            TopOpt.TopOptProblems.assemble!(
+                globalinfo, problem, elementinfo, vars, penalty, xmin
+            )
             K = globalinfo.K
 
             lhs_reference = similar(rhs_matrix, Float64)
@@ -210,7 +216,7 @@ using TopOpt, Test, LinearAlgebra, Ferrite
             solver(; assemble_f=true, rhs=rhs_matrix, lhs=lhs_matrix)
 
             for j in 1:num_rhs
-                @test lhs_matrix[:, j] ≈ lhs_reference[:, j] rtol=1e-3
+                @test lhs_matrix[:, j] ≈ lhs_reference[:, j] rtol = 1e-3
             end
         end
 
@@ -220,8 +226,7 @@ using TopOpt, Test, LinearAlgebra, Ferrite
             k = 1.0
             heatflux = Dict{String,Float64}("top" => 1.0)
             problem = HeatConductionProblem(
-                Val{:Linear}, nels, sizes, k;
-                Tleft=0.0, Tright=0.0, heatflux=heatflux
+                Val{:Linear}, nels, sizes, k; Tleft=0.0, Tright=0.0, heatflux=heatflux
             )
 
             solver = FEASolver(DirectSolver, problem)
@@ -237,7 +242,9 @@ using TopOpt, Test, LinearAlgebra, Ferrite
             vars = ones(length(solver.vars))
             penalty = PowerPenalty(1.0)
             xmin = 0.001
-            TopOpt.TopOptProblems.assemble!(globalinfo, problem, elementinfo, vars, penalty, xmin)
+            TopOpt.TopOptProblems.assemble!(
+                globalinfo, problem, elementinfo, vars, penalty, xmin
+            )
             K = globalinfo.K
 
             lhs_reference = similar(rhs_matrix, Float64)
@@ -250,7 +257,7 @@ using TopOpt, Test, LinearAlgebra, Ferrite
             solver(; assemble_f=true, rhs=rhs_matrix, lhs=lhs_matrix)
 
             for j in 1:num_rhs
-                @test lhs_matrix[:, j] ≈ lhs_reference[:, j] rtol=1e-4
+                @test lhs_matrix[:, j] ≈ lhs_reference[:, j] rtol = 1e-4
             end
         end
 
@@ -275,8 +282,8 @@ using TopOpt, Test, LinearAlgebra, Ferrite
                 results[name] = lhs
             end
 
-            @test results["CGAssemblySolver"] ≈ results["DirectSolver"] rtol=1e-4
-            @test results["CGMatrixFreeSolver"] ≈ results["DirectSolver"] rtol=1e-3
+            @test results["CGAssemblySolver"] ≈ results["DirectSolver"] rtol = 1e-4
+            @test results["CGMatrixFreeSolver"] ≈ results["DirectSolver"] rtol = 1e-3
         end
     end
 
@@ -287,8 +294,7 @@ using TopOpt, Test, LinearAlgebra, Ferrite
         heatflux = Dict{String,Float64}("top" => 1.0)
 
         problem = HeatConductionProblem(
-            Val{:Linear}, nels, sizes, k;
-            Tleft=0.0, Tright=0.0, heatflux=heatflux
+            Val{:Linear}, nels, sizes, k; Tleft=0.0, Tright=0.0, heatflux=heatflux
         )
 
         # Create different solvers for heat transfer
@@ -308,8 +314,8 @@ using TopOpt, Test, LinearAlgebra, Ferrite
         solver_matrixfree()
 
         # Compare results
-        @test solver_assembly.u ≈ solver_direct.u rtol=1e-4
-        @test solver_matrixfree.u ≈ solver_direct.u rtol=1e-4
+        @test solver_assembly.u ≈ solver_direct.u rtol = 1e-4
+        @test solver_matrixfree.u ≈ solver_direct.u rtol = 1e-4
     end
 
     @testset "Heat Transfer - Solver Consistency (inhomogeneous Dirichlet)" begin
@@ -320,12 +326,19 @@ using TopOpt, Test, LinearAlgebra, Ferrite
         # constructor fails fast on that combination (tested separately).
         nels = (4, 4)
         problem = HeatConductionProblem(
-            Val{:Linear}, nels, (1.0, 1.0), 1.0;
-            Tleft=100.0, Tright=0.0, heatflux=Dict("top" => 1.0)
+            Val{:Linear},
+            nels,
+            (1.0, 1.0),
+            1.0;
+            Tleft=100.0,
+            Tright=0.0,
+            heatflux=Dict("top" => 1.0),
         )
 
         solver_direct = FEASolver(DirectSolver, problem)
-        solver_assembly = FEASolver(CGAssemblySolver, problem; abstol=1e-9, cg_max_iter=2000)
+        solver_assembly = FEASolver(
+            CGAssemblySolver, problem; abstol=1e-9, cg_max_iter=2000
+        )
 
         x0 = fill(0.7, length(solver_direct.vars))
         for s in (solver_direct, solver_assembly)
@@ -333,27 +346,37 @@ using TopOpt, Test, LinearAlgebra, Ferrite
             s()
         end
 
-        @test solver_assembly.u ≈ solver_direct.u rtol=1e-3
+        @test solver_assembly.u ≈ solver_direct.u rtol = 1e-3
 
         # Prescribed DOFs should carry the Dirichlet values.
         pdofs = problem.ch.prescribed_dofs
         inhom = problem.ch.inhomogeneities
-        @test solver_direct.u[pdofs] ≈ inhom atol=1e-8
-        @test solver_assembly.u[pdofs] ≈ inhom atol=1e-4
+        @test solver_direct.u[pdofs] ≈ inhom atol = 1e-8
+        @test solver_assembly.u[pdofs] ≈ inhom atol = 1e-4
     end
 
     @testset "CGMatrixFreeSolver rejects inhomogeneous Dirichlet" begin
         # Fail-fast guard: the matrix-free meandiag mismatch would silently
         # corrupt prescribed DOFs, so the constructor throws instead.
         problem = HeatConductionProblem(
-            Val{:Linear}, (4, 4), (1.0, 1.0), 1.0;
-            Tleft=100.0, Tright=0.0, heatflux=Dict("top" => 1.0)
+            Val{:Linear},
+            (4, 4),
+            (1.0, 1.0),
+            1.0;
+            Tleft=100.0,
+            Tright=0.0,
+            heatflux=Dict("top" => 1.0),
         )
         @test_throws ArgumentError FEASolver(CGMatrixFreeSolver, problem)
         # Homogeneous Dirichlet is still supported.
         problem_homog = HeatConductionProblem(
-            Val{:Linear}, (4, 4), (1.0, 1.0), 1.0;
-            Tleft=0.0, Tright=0.0, heatflux=Dict("top" => 1.0)
+            Val{:Linear},
+            (4, 4),
+            (1.0, 1.0),
+            1.0;
+            Tleft=0.0,
+            Tright=0.0,
+            heatflux=Dict("top" => 1.0),
         )
         @test FEASolver(CGMatrixFreeSolver, problem_homog) isa TopOpt.FEA.GenericFEASolver
     end

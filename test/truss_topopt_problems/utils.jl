@@ -118,13 +118,10 @@ function buckling(
     for (i, cell) in enumerate(celliterator)
         celldofs!(global_dofs, dh, i)
         Kσ_e = Kσs[i]
-        px = vars[i]
-        # if PENALTY_BEFORE_INTERPOLATION
-        #   px = density(penalty(vars[i]), xmin)
-        # else
-        #   px = penalty(density(vars[i], xmin))
-        # end
-        Kσ_e = px * Kσ_e
+        # Apply the same density interpolation as TrussElementKσ. With the
+        # default penalty PowerPenalty(1), ρ = density(x^1, xmin) = density(x, xmin).
+        ρ_e = (1 - xmin) * vars[i] + xmin
+        Kσ_e = ρ_e * Kσ_e
         Ferrite.assemble!(assembler, global_dofs, Kσ_e)
     end
 

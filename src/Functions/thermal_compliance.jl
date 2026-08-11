@@ -28,6 +28,10 @@ where `Q_cond` is `Q` zeroed on prescribed DOFs, then
 that the adjoint state `λ` is not `-T` when the Dirichlet values are nonzero
 (because the Dirichlet lift `K(ρ) v` enters the forward residual).
 
+See [BendsoeSigmund2003](@cite) §1.3 and §4.1 for thermal topology
+optimization, and [Iga2009](@cite) for SIMP-based heat conduction
+optimization.
+
 # Usage
 
 ```julia
@@ -39,7 +43,7 @@ val = comp(PseudoDensities(ones(length(solver.vars))))
 ```
 """
 mutable struct ThermalCompliance{
-    T, TS<:AbstractFEASolver, TC<:AbstractVector{T}, TG<:AbstractVector{T}
+    T,TS<:AbstractFEASolver,TC<:AbstractVector{T},TG<:AbstractVector{T}
 } <: AbstractFunction{T}
     solver::TS
     cell_comp::TC
@@ -58,8 +62,11 @@ Nonconvex.NonconvexCore.getdim(::ThermalCompliance) = 1
 getsolver(tc::ThermalCompliance) = tc.solver
 
 function ThermalCompliance(solver::AbstractFEASolver)
-    solver.problem isa HeatTransferTopOptProblem ||
-        throw(ArgumentError("ThermalCompliance can only be used with HeatTransferTopOptProblem. Got $(typeof(solver.problem))"))
+    solver.problem isa HeatTransferTopOptProblem || throw(
+        ArgumentError(
+            "ThermalCompliance can only be used with HeatTransferTopOptProblem. Got $(typeof(solver.problem))",
+        ),
+    )
     T = eltype(solver.vars)
     nel = getncells(solver.problem.ch.dh.grid)
     cell_comp = zeros(T, nel)
@@ -179,16 +186,32 @@ function solve_adjoint!(
     # `adjoint_sol`, reused across ThermalCompliance evaluations).
     fill!(lhs, zero(T))
     if solver.preconditioner === identity
-        cg!(lhs, op, rhs; abstol=solver.abstol, maxiter=solver.cg_max_iter,
-            log=false, statevars=solver.cg_statevars, initially_zero=true)
+        cg!(
+            lhs,
+            op,
+            rhs;
+            abstol=solver.abstol,
+            maxiter=solver.cg_max_iter,
+            log=false,
+            statevars=solver.cg_statevars,
+            initially_zero=true,
+        )
     else
         if !solver.preconditioner_initialized[]
             UpdatePreconditioner!(solver.preconditioner, _K)
             solver.preconditioner_initialized[] = true
         end
-        cg!(lhs, op, rhs; abstol=solver.abstol, maxiter=solver.cg_max_iter,
-            log=false, statevars=solver.cg_statevars, initially_zero=true,
-            Pl=solver.preconditioner)
+        cg!(
+            lhs,
+            op,
+            rhs;
+            abstol=solver.abstol,
+            maxiter=solver.cg_max_iter,
+            log=false,
+            statevars=solver.cg_statevars,
+            initially_zero=true,
+            Pl=solver.preconditioner,
+        )
     end
     return nothing
 end
@@ -199,13 +222,29 @@ function solve_adjoint!(
     @unpack elementinfo, meandiag, vars, xes, fixed_dofs, free_dofs = solver
     penalty = getpenalty(solver)
     operator = MatrixFreeOperator(
-        rhs, elementinfo, meandiag, vars, xes,
-        fixed_dofs, free_dofs, solver.xmin, penalty, solver.conv
+        rhs,
+        elementinfo,
+        meandiag,
+        vars,
+        xes,
+        fixed_dofs,
+        free_dofs,
+        solver.xmin,
+        penalty,
+        solver.conv,
     )
     fill!(lhs, zero(T))
     if solver.preconditioner === identity
-        cg!(lhs, operator, rhs; abstol=solver.abstol, maxiter=solver.cg_max_iter,
-            log=false, statevars=solver.cg_statevars, initially_zero=true)
+        cg!(
+            lhs,
+            operator,
+            rhs;
+            abstol=solver.abstol,
+            maxiter=solver.cg_max_iter,
+            log=false,
+            statevars=solver.cg_statevars,
+            initially_zero=true,
+        )
     else
         _K = solver.globalinfo.K
         _K = _K isa Symmetric ? _K.data : _K
@@ -213,9 +252,17 @@ function solve_adjoint!(
             UpdatePreconditioner!(solver.preconditioner, _K)
             solver.preconditioner_initialized[] = true
         end
-        cg!(lhs, operator, rhs; abstol=solver.abstol, maxiter=solver.cg_max_iter,
-            log=false, statevars=solver.cg_statevars, initially_zero=true,
-            Pl=solver.preconditioner)
+        cg!(
+            lhs,
+            operator,
+            rhs;
+            abstol=solver.abstol,
+            maxiter=solver.cg_max_iter,
+            log=false,
+            statevars=solver.cg_statevars,
+            initially_zero=true,
+            Pl=solver.preconditioner,
+        )
     end
     return nothing
 end

@@ -37,7 +37,9 @@ struct GESO{T<:Real,TF<:AbstractCheqFilter} <: TopOptAlgorithm
     sens_tol::T
     result::GESOResult{T,Vector{T}}
 end
-Base.show(io::IO, ::MIME{Symbol("text/plain")}, ::GESO) = println(io, "TopOpt GESO algorithm")
+function Base.show(io::IO, ::MIME{Symbol("text/plain")}, ::GESO)
+    return println(io, "TopOpt GESO algorithm")
+end
 
 function GESO(
     comp::Compliance,
@@ -141,7 +143,18 @@ function crossover!(children, genotypes, i, j)
     return nothing
 end
 
-function update!(var_black, children, genotypes, Pc, Pm, high_class, mid_class, low_class, black=BitVector(), white=BitVector())
+function update!(
+    var_black,
+    children,
+    genotypes,
+    Pc,
+    Pm,
+    high_class,
+    mid_class,
+    low_class,
+    black=BitVector(),
+    white=BitVector(),
+)
     topology_changed = false
     while !topology_changed
         # Crossover for all classes
@@ -297,7 +310,9 @@ function update!(var_black, children, genotypes, Pc, Pm, high_class, mid_class, 
     return var_black
 end
 
-function (b::GESO)(x0=copy(b.comp.solver.vars); seed=NaN, black=BitVector(), white=BitVector())
+function (b::GESO)(
+    x0=copy(b.comp.solver.vars); seed=NaN, black=BitVector(), white=BitVector()
+)
     @unpack sens, old_sens, tol, maxiter = b
     @unpack obj_trace, topology, sens_tol, vars = b
     @unpack Pcmin, Pcmax, Pmmin, Pmmax, Pen = b
@@ -388,8 +403,16 @@ function (b::GESO)(x0=copy(b.comp.solver.vars); seed=NaN, black=BitVector(), whi
         Prg = get_progress(current_volume, total_volume, design_volume)
         Pc, Pm = get_probs(b, Prg)
         vars .= update!(
-            var_black, children, genotypes, Pc, Pm, high_class, mid_class, low_class,
-            black, white
+            var_black,
+            children,
+            genotypes,
+            Pc,
+            Pm,
+            high_class,
+            mid_class,
+            low_class,
+            black,
+            white,
         )
 
         # Update crossover and mutation probabilities

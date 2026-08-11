@@ -75,7 +75,9 @@ Random.seed!(42)
         @test size(mc.method.V, 2) == 4
 
         # Test with sample_method=:hadamard
-        mc = MeanCompliance(problem, solver; method=:svd_trace, nv=4, sample_method=:hadamard)
+        mc = MeanCompliance(
+            problem, solver; method=:svd_trace, nv=4, sample_method=:hadamard
+        )
         @test mc.method isa TopOpt.Functions.TraceEstimationSVDMean
         @test mc.method.sample_once == true  # hadamard forces sample_once=true
 
@@ -152,7 +154,9 @@ Random.seed!(42)
         @test mc.method.sample_method === TopOpt.Functions.hutch_rand!
 
         # Test hadamard symbol conversion for TraceEstimationSVDMean
-        mc = MeanCompliance(problem, solver; method=:svd_trace, nv=3, sample_method=:hadamard)
+        mc = MeanCompliance(
+            problem, solver; method=:svd_trace, nv=3, sample_method=:hadamard
+        )
         @test mc.method.sample_method === TopOpt.Functions.hadamard!
 
         # Test hutch symbol conversion for TraceEstimationSVDMean
@@ -180,7 +184,14 @@ Random.seed!(42)
         @test mc.method.sample_once == false
 
         # Test that hadamard forces sample_once=true for TraceEstimationSVDMean
-        mc = MeanCompliance(problem, solver; method=:svd_trace, nv=3, sample_method=:hadamard, sample_once=false)
+        mc = MeanCompliance(
+            problem,
+            solver;
+            method=:svd_trace,
+            nv=3,
+            sample_method=:hadamard,
+            sample_once=false,
+        )
         @test mc.method.sample_once == true
     end
 
@@ -189,7 +200,9 @@ Random.seed!(42)
         x = fill(0.5, nels[1] * nels[2])
 
         # Test TraceEstimationMean
-        solver_trace = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(2.0))
+        solver_trace = FEASolver(
+            DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(2.0)
+        )
         mc_trace = MeanCompliance(problem, solver_trace; method=:trace, nv=10)
         val_trace = mc_trace(PseudoDensities(x))
         @test val_trace > 0
@@ -207,7 +220,9 @@ Random.seed!(42)
         x = fill(0.5, nels[1] * nels[2])
 
         # Test TraceEstimationMean gradient
-        solver_trace = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(2.0))
+        solver_trace = FEASolver(
+            DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(2.0)
+        )
         mc_trace = MeanCompliance(problem, solver_trace; method=:trace, nv=10)
         grad_trace = Zygote.gradient(x -> mc_trace(PseudoDensities(x)), x)[1]
         @test length(grad_trace) == length(x)
