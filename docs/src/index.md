@@ -96,6 +96,6 @@ TopOpt.jl provides several pre-defined problem types for common test cases:
 - **`TrussProblem`** — General truss topology optimization with stress/buckling constraints
 - **`PointLoadCantileverTruss`** — Truss cantilever with point load
 
-See the [TopOpt Tutorials](https://juliatopopt.github.io/TopOpt.jl/tutorials/index.html) section for complete, commented examples covering
+See the [TopOpt Tutorials](tutorials/index.html) section for complete, commented examples covering
 stress-constrained optimization, heat sinks, multi-material design,
 neural-network parametrization, trusses, and more.
