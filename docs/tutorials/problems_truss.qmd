@@ -97,7 +97,7 @@ Julia's one-based indexing. The parser handles conversion.
 For simple trusses, define directly:
 
 ```{julia}
-#| output: false
+#| eval: false
 # 2D cantilever truss
 node_points = [
     [0.0, 0.0],   # node 1: fixed
