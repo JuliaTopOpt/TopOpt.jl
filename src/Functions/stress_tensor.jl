@@ -12,7 +12,7 @@ The returned tensor is 3×3 for 2D problems and 3×3 for 3D problems. See
 [Bathe1996](@cite) §4.2 for the plane-strain formulation and
 [DuysinxBendsøe1998](@cite) for stress-constrained topology optimization.
 """
-struct StressTensor{T,Tp,Ts,Tc1,Tc2} <: AbstractFunction{T}
+struct StressTensorFun{T,Tp,Ts,Tc1,Tc2} <: AbstractFunction{T}
     problem::Tp
     solver::Ts
     global_dofs::Vector{Int}
@@ -20,29 +20,29 @@ struct StressTensor{T,Tp,Ts,Tc1,Tc2} <: AbstractFunction{T}
     cells::Tc2
     _::T
 end
-function StressTensor(solver)
+function StressTensorFun(solver)
     problem = solver.problem
     # StressTensor is only valid for structural (LinearElasticity) problems
-    @assert problem isa StiffnessTopOptProblem "StressTensor can only be used with StiffnessTopOptProblem (structural mechanics). Got $(typeof(problem))"
+    @assert problem isa StiffnessTopOptProblem "StressTensorFun can only be used with StiffnessTopOptProblem (structural mechanics). Got $(typeof(problem))"
     dh = problem.ch.dh
     n = ndofs_per_cell(dh)
     global_dofs = zeros(Int, n)
     cellvalues = solver.elementinfo.cellvalues
-    return StressTensor(
+    return StressTensorFun(
         problem, solver, global_dofs, cellvalues, collect(CellIterator(dh)), 0.0
     )
 end
 
-function Ferrite.reinit!(s::StressTensor, cellidx)
+function Ferrite.reinit!(s::StressTensorFun, cellidx)
     reinit!(s.cellvalues, s.cells[cellidx])
     celldofs!(s.global_dofs, s.problem.ch.dh, cellidx)
     return s
 end
-function ChainRulesCore.rrule(::typeof(reinit!), st::StressTensor, cellidx)
+function ChainRulesCore.rrule(::typeof(reinit!), st::StressTensorFun, cellidx)
     return reinit!(st, cellidx), _ -> (NoTangent(), NoTangent(), NoTangent())
 end
 
-function (f::StressTensor)(dofs::DisplacementResult)
+function (f::StressTensorFun)(dofs::DisplacementResult)
     return map(1:length(f.cells)) do cellidx
         cf = f[cellidx]
         return cf(dofs)
@@ -55,25 +55,25 @@ end
 Element stress tensor operator that also stores per-element metadata for use
 in stress-constrained optimization and ML applications.
 """
-struct ElementStressTensor{T,Ts<:StressTensor{T},Tc1,Tc2} <: AbstractFunction{T}
+struct ElementStressTensorFun{T,Ts<:StressTensorFun{T},Tc1,Tc2} <: AbstractFunction{T}
     stress_tensor::Ts
     cell::Tc1
     cellidx::Tc2
 end
-function Base.getindex(f::StressTensor{T}, cellidx) where {T}
+function Base.getindex(f::StressTensorFun{T}, cellidx) where {T}
     reinit!(f, cellidx)
-    return ElementStressTensor(f, f.cells[cellidx], cellidx)
+    return ElementStressTensorFun(f, f.cells[cellidx], cellidx)
 end
 
-function Ferrite.reinit!(s::ElementStressTensor, cellidx)
+function Ferrite.reinit!(s::ElementStressTensorFun, cellidx)
     reinit!(s.stress_tensor, cellidx)
     return s
 end
-function ChainRulesCore.rrule(::typeof(reinit!), st::ElementStressTensor, cellidx)
+function ChainRulesCore.rrule(::typeof(reinit!), st::ElementStressTensorFun, cellidx)
     return reinit!(st, cellidx), _ -> (NoTangent(), NoTangent(), NoTangent())
 end
 
-function (f::ElementStressTensor)(u::DisplacementResult; element_dofs=false)
+function (f::ElementStressTensorFun)(u::DisplacementResult; element_dofs=false)
     st = f.stress_tensor
     reinit!(f, f.cellidx)
     if element_dofs
@@ -83,7 +83,7 @@ function (f::ElementStressTensor)(u::DisplacementResult; element_dofs=false)
     end
 end
 
-function _element_stress_tensor(f::ElementStressTensor, u::DisplacementResult)
+function _element_stress_tensor(f::ElementStressTensorFun, u::DisplacementResult)
     st = f.stress_tensor
     cellu = u.u
     n_basefuncs = getnbasefunctions(st.cellvalues)
@@ -104,7 +104,7 @@ function _element_stress_tensor(f::ElementStressTensor, u::DisplacementResult)
 end
 
 function ChainRulesCore.rrule(
-    ::typeof(_element_stress_tensor), f::ElementStressTensor, u::DisplacementResult
+    ::typeof(_element_stress_tensor), f::ElementStressTensorFun, u::DisplacementResult
 )
     J = ForwardDiff.jacobian(
         vec ∘ (u -> _element_stress_tensor(f, DisplacementResult(u))), u.u
@@ -116,7 +116,7 @@ function ChainRulesCore.rrule(
     end
 end
 
-struct ElementStressTensorKernel{T,Tc} <: AbstractFunction{T}
+struct ElementStressTensorKernelFun{T,Tc} <: AbstractFunction{T}
     E::T
     ν::T
     q_point::Int
@@ -124,7 +124,7 @@ struct ElementStressTensorKernel{T,Tc} <: AbstractFunction{T}
     cellvalues::Tc
     dim::Int
 end
-function (f::ElementStressTensorKernel)(u::DisplacementResult)
+function (f::ElementStressTensorKernelFun)(u::DisplacementResult)
     @unpack E, ν, q_point, a, cellvalues, dim = f
     ∇ϕ = Vector(shape_gradient(cellvalues, q_point, a))
     ϵ = (u.u .* ∇ϕ' .+ ∇ϕ .* u.u') ./ 2
@@ -148,7 +148,7 @@ function (f::ElementStressTensorKernel)(u::DisplacementResult)
         return λ * sum(diag(ϵ)) * I + two_mu * ϵ
     end
 end
-function ChainRulesCore.rrule(f::ElementStressTensorKernel, u::DisplacementResult)
+function ChainRulesCore.rrule(f::ElementStressTensorKernelFun, u::DisplacementResult)
     v, ∇ = DI.value_and_jacobian(
         u -> vec(f(DisplacementResult(u))), DI.AutoForwardDiff(), u.u
     )
@@ -157,8 +157,8 @@ function ChainRulesCore.rrule(f::ElementStressTensorKernel, u::DisplacementResul
     Δ -> (NoTangent(), Tangent{typeof(u)}(; u=∇' * vec(ChainRulesCore.unthunk(Δ))))
 end
 
-function tensor_kernel(f::StressTensor, quad, basef)
-    return ElementStressTensorKernel(
+function tensor_kernel(f::StressTensorFun, quad, basef)
+    return ElementStressTensorKernelFun(
         f.problem.E,
         f.problem.ν,
         quad,
@@ -167,7 +167,7 @@ function tensor_kernel(f::StressTensor, quad, basef)
         TopOptProblems.getdim(f.problem),
     )
 end
-function tensor_kernel(f::ElementStressTensor, quad, basef)
+function tensor_kernel(f::ElementStressTensorFun, quad, basef)
     return tensor_kernel(f.stress_tensor, quad, basef)
 end
 
@@ -215,7 +215,7 @@ Call as `σv = σvf(PseudoDensities(x))`. Returns a vector of von Mises stress
 values, one per element.
 """
 function von_mises_stress_function(solver::AbstractFEASolver)
-    st = StressTensor(solver)
-    dp = Displacement(solver)
+    st = StressTensorFun(solver)
+    dp = DisplacementFun(solver)
     return x -> von_mises.(st(dp(x)))
 end

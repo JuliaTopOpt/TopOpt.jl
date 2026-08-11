@@ -13,40 +13,40 @@ const FDM = FiniteDifferences
 
 Random.seed!(42)
 
-@testset "BlockCompliance Basic API" begin
+@testset "BlockComplianceFun Basic API" begin
     @testset "Construction with different methods" begin
         nels = (4, 4)
         base_problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
 
         # Create multi-load problem with single load
-        F = spzeros(TopOpt.Ferrite.ndofs(base_problem.ch.dh), 1)
+        F = spzeros(Ferrite.ndofs(base_problem.ch.dh), 1)
         F[end, 1] = 1.0
         problem = MultiLoad(base_problem, F)
 
-        solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(3.0))
+        solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(3.0))
 
         # Test exact method
-        bc_exact = BlockCompliance(problem, solver; method=:exact)
-        @test bc_exact isa BlockCompliance
+        bc_exact = BlockComplianceFun(problem, solver; method=:exact)
+        @test bc_exact isa BlockComplianceFun
         @test Nonconvex.NonconvexCore.getdim(bc_exact) == 1
 
         # Test exact_svd method
-        bc_svd = BlockCompliance(problem, solver; method=:exact_svd)
-        @test bc_svd isa BlockCompliance
+        bc_svd = BlockComplianceFun(problem, solver; method=:exact_svd)
+        @test bc_svd isa BlockComplianceFun
         @test Nonconvex.NonconvexCore.getdim(bc_svd) == 1
 
         # Test approximate method with hutchinson
-        bc_approx = BlockCompliance(
+        bc_approx = BlockComplianceFun(
             problem, solver; method=:approx, nv=2, sample_method=:hutch
         )
-        @test bc_approx isa BlockCompliance
+        @test bc_approx isa BlockComplianceFun
         @test Nonconvex.NonconvexCore.getdim(bc_approx) == 1
 
         # Test approximate method with hadamard
-        bc_hadamard = BlockCompliance(
+        bc_hadamard = BlockComplianceFun(
             problem, solver; method=:approx, nv=2, sample_method=:hadamard
         )
-        @test bc_hadamard isa BlockCompliance
+        @test bc_hadamard isa BlockComplianceFun
         @test Nonconvex.NonconvexCore.getdim(bc_hadamard) == 1
     end
 
@@ -54,15 +54,15 @@ Random.seed!(42)
         nels = (4, 4)
         base_problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
 
-        F = spzeros(TopOpt.Ferrite.ndofs(base_problem.ch.dh), 1)
+        F = spzeros(Ferrite.ndofs(base_problem.ch.dh), 1)
         F[end, 1] = 1.0
         problem = MultiLoad(base_problem, F)
 
-        solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(3.0))
-        bc = BlockCompliance(problem, solver; nv=1)
+        solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(3.0))
+        bc = BlockComplianceFun(problem, solver; nv=1)
 
         current_penalty = TopOpt.Utilities.getpenalty(bc)
-        @test current_penalty isa PowerPenalty
+        @test current_penalty isa PowerPenaltyFun
         @test current_penalty.p == 3.0
 
         # Test getsolver forwarding
@@ -73,12 +73,12 @@ Random.seed!(42)
         nels = (4, 4)
         base_problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
 
-        F = spzeros(TopOpt.Ferrite.ndofs(base_problem.ch.dh), 1)
+        F = spzeros(Ferrite.ndofs(base_problem.ch.dh), 1)
         F[end, 1] = 1.0
         problem = MultiLoad(base_problem, F)
 
-        solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(3.0))
-        bc = BlockCompliance(problem, solver; nv=1)
+        solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(3.0))
+        bc = BlockComplianceFun(problem, solver; nv=1)
 
         # Test with uniform density
         x = ones(prod(nels))
@@ -96,14 +96,14 @@ Random.seed!(42)
     end
 end
 
-@testset "BlockCompliance Multi-Load Cases" begin
+@testset "BlockComplianceFun Multi-Load Cases" begin
     @testset "Multiple independent loads" begin
         nels = (6, 4)
         base_problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
 
         # Create 3 load cases
         nloads = 3
-        F = spzeros(TopOpt.Ferrite.ndofs(base_problem.ch.dh), nloads)
+        F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
         right_dofs = TopOpt.TopOptProblems.get_surface_dofs(base_problem)
 
         # Load case 1: force at top
@@ -114,10 +114,10 @@ end
         F[right_dofs[end], 3] = 1.0
 
         problem = MultiLoad(base_problem, F)
-        solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(3.0))
+        solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(3.0))
 
         # Test with exact method
-        bc_exact = BlockCompliance(problem, solver; method=:exact)
+        bc_exact = BlockComplianceFun(problem, solver; method=:exact)
         x = fill(0.5, prod(nels))
         result_exact = bc_exact(PseudoDensities(x))
 
@@ -136,15 +136,15 @@ end
 
         # Create 2 load cases
         nloads = 2
-        F = spzeros(TopOpt.Ferrite.ndofs(base_problem.ch.dh), nloads)
+        F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
         right_dofs = TopOpt.TopOptProblems.get_surface_dofs(base_problem)
 
         F[right_dofs[1], 1] = 1.0
         F[right_dofs[end], 2] = 0.5
 
         problem = MultiLoad(base_problem, F)
-        solver_ml = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(3.0))
-        bc = BlockCompliance(problem, solver_ml; method=:exact)
+        solver_ml = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(3.0))
+        bc = BlockComplianceFun(problem, solver_ml; method=:exact)
 
         x = fill(0.5, prod(nels))
         bc_result = bc(PseudoDensities(x))
@@ -155,12 +155,12 @@ end
         @test all(bc_result .> 0)
     end
 
-    @testset "Compliance decreases with increasing density" begin
+    @testset "ComplianceFun decreases with increasing density" begin
         nels = (6, 4)
         base_problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
 
         nloads = 3
-        F = spzeros(TopOpt.Ferrite.ndofs(base_problem.ch.dh), nloads)
+        F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
         right_dofs = TopOpt.TopOptProblems.get_surface_dofs(base_problem)
 
         for i in 1:nloads
@@ -168,14 +168,14 @@ end
         end
 
         problem = MultiLoad(base_problem, F)
-        solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(3.0))
-        bc = BlockCompliance(problem, solver; method=:exact)
+        solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(3.0))
+        bc = BlockComplianceFun(problem, solver; method=:exact)
 
         # Compare different volume fractions
         densities = [0.3, 0.5, 0.7, 0.9]
         results = [bc(PseudoDensities(fill(d, prod(nels)))) for d in densities]
 
-        # Compliance should generally decrease as density increases
+        # ComplianceFun should generally decrease as density increases
         for i in 2:length(results)
             # Allow some tolerance for numerical variations
             @test mean(results[i]) <= mean(results[i - 1]) * 1.5
@@ -183,13 +183,13 @@ end
     end
 end
 
-@testset "BlockCompliance Method Accuracy" begin
+@testset "BlockComplianceFun Method Accuracy" begin
     @testset "Exact and exact_svd methods match" begin
         nels = (6, 4)
         base_problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
 
         nloads = 3
-        F = spzeros(TopOpt.Ferrite.ndofs(base_problem.ch.dh), nloads)
+        F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
         right_dofs = TopOpt.TopOptProblems.get_surface_dofs(base_problem)
 
         for i in 1:nloads
@@ -199,12 +199,12 @@ end
         problem = MultiLoad(base_problem, F)
 
         solver_exact = FEASolver(
-            DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(3.0)
+            DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(3.0)
         )
-        bc_exact = BlockCompliance(problem, solver_exact; method=:exact)
+        bc_exact = BlockComplianceFun(problem, solver_exact; method=:exact)
 
-        solver_svd = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(3.0))
-        bc_svd = BlockCompliance(problem, solver_svd; method=:exact_svd)
+        solver_svd = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(3.0))
+        bc_svd = BlockComplianceFun(problem, solver_svd; method=:exact_svd)
 
         x = fill(0.5, prod(nels))
 
@@ -219,7 +219,7 @@ end
         base_problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
 
         nloads = 2
-        F = spzeros(TopOpt.Ferrite.ndofs(base_problem.ch.dh), nloads)
+        F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
         right_dofs = TopOpt.TopOptProblems.get_surface_dofs(base_problem)
 
         F[right_dofs[1], 1] = 1.0
@@ -229,9 +229,9 @@ end
 
         # Reference exact solution
         solver_exact = FEASolver(
-            DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(3.0)
+            DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(3.0)
         )
-        bc_exact = BlockCompliance(problem, solver_exact; method=:exact)
+        bc_exact = BlockComplianceFun(problem, solver_exact; method=:exact)
 
         x = fill(0.5, prod(nels))
         result_exact = bc_exact(PseudoDensities(x))
@@ -242,9 +242,9 @@ end
 
         for nv in sample_counts
             solver_approx = FEASolver(
-                DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(3.0)
+                DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(3.0)
             )
-            bc_approx = BlockCompliance(problem, solver_approx; method=:approx, nv=nv)
+            bc_approx = BlockComplianceFun(problem, solver_approx; method=:approx, nv=nv)
             result_approx = bc_approx(PseudoDensities(x))
 
             rel_error = norm(result_approx - result_exact) / norm(result_exact)
@@ -260,7 +260,7 @@ end
         base_problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
 
         nloads = 2
-        F = spzeros(TopOpt.Ferrite.ndofs(base_problem.ch.dh), nloads)
+        F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
         right_dofs = TopOpt.TopOptProblems.get_surface_dofs(base_problem)
 
         F[right_dofs[1], 1] = 1.0
@@ -271,8 +271,8 @@ end
         results = []
 
         for sample_method in [:hutch, :hadamard]
-            solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(3.0))
-            bc = BlockCompliance(
+            solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(3.0))
+            bc = BlockComplianceFun(
                 problem, solver; method=:approx, nv=10, sample_method=sample_method
             )
 
@@ -289,21 +289,21 @@ end
     end
 end
 
-@testset "BlockCompliance Gradient Verification" begin
+@testset "BlockComplianceFun Gradient Verification" begin
     @testset "Zygote gradient with exact method" begin
         nels = (4, 4)
         base_problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
 
         nloads = 2
-        F = spzeros(TopOpt.Ferrite.ndofs(base_problem.ch.dh), nloads)
+        F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
         right_dofs = TopOpt.TopOptProblems.get_surface_dofs(base_problem)
 
         F[right_dofs[1], 1] = 1.0
         F[right_dofs[end], 2] = 0.5
 
         problem = MultiLoad(base_problem, F)
-        solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(3.0))
-        bc = BlockCompliance(problem, solver; method=:exact)
+        solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(3.0))
+        bc = BlockComplianceFun(problem, solver; method=:exact)
 
         # Test with a specific weight vector
         w = [0.5, 0.5]
@@ -327,15 +327,15 @@ end
         base_problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
 
         nloads = 2
-        F = spzeros(TopOpt.Ferrite.ndofs(base_problem.ch.dh), nloads)
+        F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
         right_dofs = TopOpt.TopOptProblems.get_surface_dofs(base_problem)
 
         F[right_dofs[1], 1] = 1.0
         F[right_dofs[end], 2] = 0.5
 
         problem = MultiLoad(base_problem, F)
-        solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(3.0))
-        bc = BlockCompliance(problem, solver; method=:exact)
+        solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(3.0))
+        bc = BlockComplianceFun(problem, solver; method=:exact)
 
         x = fill(0.5, prod(nels))
         pd = PseudoDensities(x)
@@ -359,7 +359,7 @@ end
         base_problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
 
         nloads = 2
-        F = spzeros(TopOpt.Ferrite.ndofs(base_problem.ch.dh), nloads)
+        F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
         right_dofs = TopOpt.TopOptProblems.get_surface_dofs(base_problem)
 
         F[right_dofs[1], 1] = 1.0
@@ -371,8 +371,8 @@ end
         w = [0.5, 0.5]
 
         for method in [:exact, :exact_svd]
-            solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(3.0))
-            bc = BlockCompliance(problem, solver; method=method)
+            solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(3.0))
+            bc = BlockComplianceFun(problem, solver; method=method)
 
             f = x -> sum(w .* bc(PseudoDensities(x)))
             grad = Zygote.gradient(f, x)[1]
@@ -383,9 +383,9 @@ end
 
         # Test with approximate method
         solver_approx = FEASolver(
-            DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(3.0)
+            DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(3.0)
         )
-        bc_approx = BlockCompliance(problem, solver_approx; method=:approx, nv=10)
+        bc_approx = BlockComplianceFun(problem, solver_approx; method=:approx, nv=10)
 
         f_approx = x -> sum(w .* bc_approx(PseudoDensities(x)))
         grad_approx = Zygote.gradient(f_approx, x)[1]
@@ -398,7 +398,7 @@ end
         base_problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
 
         nloads = 3
-        F = spzeros(TopOpt.Ferrite.ndofs(base_problem.ch.dh), nloads)
+        F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
         right_dofs = TopOpt.TopOptProblems.get_surface_dofs(base_problem)
 
         for i in 1:nloads
@@ -406,8 +406,8 @@ end
         end
 
         problem = MultiLoad(base_problem, F)
-        solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(3.0))
-        bc = BlockCompliance(problem, solver; method=:exact)
+        solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(3.0))
+        bc = BlockComplianceFun(problem, solver; method=:exact)
 
         x = fill(0.5, prod(nels))
 
@@ -429,21 +429,21 @@ end
     end
 end
 
-@testset "BlockCompliance Physical Properties" begin
-    @testset "Compliance scales with load magnitude squared" begin
+@testset "BlockComplianceFun Physical Properties" begin
+    @testset "ComplianceFun scales with load magnitude squared" begin
         nels = (4, 4)
         base_problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
 
         nloads = 2
-        F = spzeros(TopOpt.Ferrite.ndofs(base_problem.ch.dh), nloads)
+        F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
         right_dofs = TopOpt.TopOptProblems.get_surface_dofs(base_problem)
 
         F[right_dofs[1], 1] = 1.0
         F[right_dofs[end], 2] = 1.0
 
         problem = MultiLoad(base_problem, F)
-        solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(3.0))
-        bc = BlockCompliance(problem, solver; method=:exact)
+        solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(3.0))
+        bc = BlockComplianceFun(problem, solver; method=:exact)
 
         x = fill(0.5, prod(nels))
         result_ref = bc(PseudoDensities(x))
@@ -452,9 +452,9 @@ end
         F_scaled = 2.0 .* F
         problem_scaled = MultiLoad(base_problem, F_scaled)
         solver_scaled = FEASolver(
-            DirectSolver, problem_scaled; xmin=0.01, penalty=PowerPenalty(3.0)
+            DirectSolver, problem_scaled; xmin=0.01, penalty=PowerPenaltyFun(3.0)
         )
-        bc_scaled = BlockCompliance(problem_scaled, solver_scaled; method=:exact)
+        bc_scaled = BlockComplianceFun(problem_scaled, solver_scaled; method=:exact)
 
         result_scaled = bc_scaled(PseudoDensities(x))
 
@@ -469,7 +469,7 @@ end
         base_problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
 
         nloads = 2
-        F = spzeros(TopOpt.Ferrite.ndofs(base_problem.ch.dh), nloads)
+        F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
         right_dofs = TopOpt.TopOptProblems.get_surface_dofs(base_problem)
 
         F[right_dofs[1], 1] = 1.0
@@ -478,8 +478,8 @@ end
         problem = MultiLoad(base_problem, F)
 
         # Reference with full density
-        solver_ref = FEASolver(DirectSolver, problem; xmin=0.001, penalty=PowerPenalty(1.0))
-        bc_ref = BlockCompliance(problem, solver_ref; method=:exact)
+        solver_ref = FEASolver(DirectSolver, problem; xmin=0.001, penalty=PowerPenaltyFun(1.0))
+        bc_ref = BlockComplianceFun(problem, solver_ref; method=:exact)
         result_ref = bc_ref(PseudoDensities(ones(prod(nels))))
 
         # Test at reduced density
@@ -487,8 +487,8 @@ end
         x_uniform = fill(rho, prod(nels))
 
         for p in [1.0, 2.0, 3.0]
-            solver = FEASolver(DirectSolver, problem; xmin=0.001, penalty=PowerPenalty(p))
-            bc = BlockCompliance(problem, solver; method=:exact)
+            solver = FEASolver(DirectSolver, problem; xmin=0.001, penalty=PowerPenaltyFun(p))
+            bc = BlockComplianceFun(problem, solver; method=:exact)
             result_uniform = bc(PseudoDensities(x_uniform))
 
             # Check approximate power law: C(ρ) ≈ ρ^(-p) * C(1)
@@ -505,7 +505,7 @@ end
         base_problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
 
         nloads = 3
-        F = spzeros(TopOpt.Ferrite.ndofs(base_problem.ch.dh), nloads)
+        F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
         right_dofs = TopOpt.TopOptProblems.get_surface_dofs(base_problem)
 
         for i in 1:nloads
@@ -516,8 +516,8 @@ end
 
         for method in [:exact, :exact_svd, :approx]
             nv = method == :approx ? 5 : nothing
-            solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(3.0))
-            bc = BlockCompliance(problem, solver; method=method, nv=nv)
+            solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(3.0))
+            bc = BlockComplianceFun(problem, solver; method=method, nv=nv)
 
             for vf in [0.3, 0.5, 0.7]
                 x = fill(vf, prod(nels))
@@ -529,14 +529,14 @@ end
     end
 end
 
-@testset "BlockCompliance with Different Problem Types" begin
+@testset "BlockComplianceFun with Different Problem Types" begin
     @testset "Half MBB problem" begin
         nels = (6, 4)
         base_problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
 
         nloads = 2
-        F = spzeros(TopOpt.Ferrite.ndofs(base_problem.ch.dh), nloads)
-        dofs = TopOpt.Ferrite.ndofs(base_problem.ch.dh)
+        F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
+        dofs = Ferrite.ndofs(base_problem.ch.dh)
 
         # Apply loads at different locations
         F[dofs - 5, 1] = 1.0
@@ -544,7 +544,7 @@ end
 
         problem = MultiLoad(base_problem, F)
         solver = FEASolver(DirectSolver, problem; xmin=0.01)
-        bc = BlockCompliance(problem, solver; method=:exact)
+        bc = BlockComplianceFun(problem, solver; method=:exact)
 
         x = ones(prod(nels))
         result = bc(PseudoDensities(x))
@@ -554,22 +554,22 @@ end
     end
 end
 
-@testset "BlockCompliance Integration with Filter" begin
-    @testset "DensityFilter chain rule" begin
+@testset "BlockComplianceFun Integration with Filter" begin
+    @testset "DensityFilterFun chain rule" begin
         nels = (6, 4)
         base_problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
 
         nloads = 2
-        F = spzeros(TopOpt.Ferrite.ndofs(base_problem.ch.dh), nloads)
+        F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
         right_dofs = TopOpt.TopOptProblems.get_surface_dofs(base_problem)
 
         F[right_dofs[1], 1] = 1.0
         F[right_dofs[end], 2] = 0.5
 
         problem = MultiLoad(base_problem, F)
-        solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(3.0))
-        bc = BlockCompliance(problem, solver; method=:exact)
-        filter = DensityFilter(solver; rmin=2.0)
+        solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(3.0))
+        bc = BlockComplianceFun(problem, solver; method=:exact)
+        filter = DensityFilterFun(solver; rmin=2.0)
 
         w = [0.5, 0.5]
         f = x -> sum(w .* bc(filter(PseudoDensities(x))))
@@ -584,20 +584,20 @@ end
     end
 end
 
-@testset "BlockCompliance Decay Parameter" begin
+@testset "BlockComplianceFun Decay Parameter" begin
     @testset "Decay affects result" begin
         nels = (4, 4)
         base_problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
 
-        F = spzeros(TopOpt.Ferrite.ndofs(base_problem.ch.dh), 1)
+        F = spzeros(Ferrite.ndofs(base_problem.ch.dh), 1)
         F[end, 1] = 1.0
         problem = MultiLoad(base_problem, F)
 
-        solver1 = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(3.0))
-        bc1 = BlockCompliance(problem, solver1; method=:exact, decay=1.0)
+        solver1 = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(3.0))
+        bc1 = BlockComplianceFun(problem, solver1; method=:exact, decay=1.0)
 
-        solver2 = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(3.0))
-        bc2 = BlockCompliance(problem, solver2; method=:exact, decay=0.5)
+        solver2 = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(3.0))
+        bc2 = BlockComplianceFun(problem, solver2; method=:exact, decay=0.5)
 
         x = fill(0.5, prod(nels))
 
@@ -610,17 +610,17 @@ end
     end
 end
 
-@testset "BlockCompliance fevals tracking" begin
+@testset "BlockComplianceFun fevals tracking" begin
     @testset "Function evaluations are counted" begin
         nels = (4, 4)
         base_problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
 
-        F = spzeros(TopOpt.Ferrite.ndofs(base_problem.ch.dh), 1)
+        F = spzeros(Ferrite.ndofs(base_problem.ch.dh), 1)
         F[end, 1] = 1.0
         problem = MultiLoad(base_problem, F)
 
-        solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(3.0))
-        bc = BlockCompliance(problem, solver; method=:exact)
+        solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(3.0))
+        bc = BlockComplianceFun(problem, solver; method=:exact)
 
         @test bc.fevals == 0
 
@@ -634,13 +634,13 @@ end
     end
 end
 
-@testset "BlockCompliance with Custom V Matrix" begin
+@testset "BlockComplianceFun with Custom V Matrix" begin
     @testset "User-provided V matrix" begin
         nels = (4, 4)
         base_problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
 
         nloads = 2
-        F = spzeros(TopOpt.Ferrite.ndofs(base_problem.ch.dh), nloads)
+        F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
         right_dofs = TopOpt.TopOptProblems.get_surface_dofs(base_problem)
 
         F[right_dofs[1], 1] = 1.0
@@ -651,8 +651,8 @@ end
         # Create custom V matrix
         V_custom = ones(nloads, 3) ./ sqrt(nloads)
 
-        solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(3.0))
-        bc = BlockCompliance(problem, solver; method=:approx, V=V_custom)
+        solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(3.0))
+        bc = BlockComplianceFun(problem, solver; method=:approx, V=V_custom)
 
         x = fill(0.5, prod(nels))
         result = bc(PseudoDensities(x))

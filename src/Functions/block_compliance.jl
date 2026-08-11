@@ -4,8 +4,8 @@
 Per-load-case compliance vector for multi-load problems. Returns a vector of
 compliance values, one per load case.
 """
-mutable struct BlockCompliance{
-    T,TC<:Compliance{T},TM,TS,Tr<:AbstractVector{T},Tv<:AbstractVector{T}
+mutable struct BlockComplianceFun{
+    T,TC<:ComplianceFun{T},TM,TS,Tr<:AbstractVector{T},Tv<:AbstractVector{T}
 } <: AbstractFunction{T}
     compliance::TC
     method::TM
@@ -15,7 +15,7 @@ mutable struct BlockCompliance{
     fevals::Int
     decay::T
 end
-function BlockCompliance(
+function BlockComplianceFun(
     problem::MultiLoad,
     solver::AbstractFEASolver;
     method=:exact,
@@ -27,8 +27,8 @@ function BlockCompliance(
     kwargs...,
 )
     # BlockCompliance is only valid for structural (LinearElasticity) problems
-    @assert solver.problem isa StiffnessTopOptProblem "BlockCompliance can only be used with StiffnessTopOptProblem (structural mechanics). Got $(typeof(solver.problem))"
-    comp = Compliance(solver; kwargs...)
+    @assert solver.problem isa StiffnessTopOptProblem "BlockComplianceFun can only be used with StiffnessTopOptProblem (structural mechanics). Got $(typeof(solver.problem))"
+    comp = ComplianceFun(solver; kwargs...)
     if method == :exact
         method = ExactDiagonal(problem.F, length(comp.grad))
     elseif method == :exact_svd
@@ -52,11 +52,11 @@ function BlockCompliance(
     val = similar(comp.grad, size(problem.F, 2))
     val .= 0
     raw_val = copy(val)
-    return BlockCompliance(comp, method, problem.F, raw_val, val, 0, decay)
+    return BlockComplianceFun(comp, method, problem.F, raw_val, val, 0, decay)
 end
-@forward_property BlockCompliance compliance
+@forward_property BlockComplianceFun compliance
 
-function (bc::BlockCompliance{T})(x::PseudoDensities) where {T}
+function (bc::BlockComplianceFun{T})(x::PseudoDensities) where {T}
     @unpack compliance, method, raw_val, val, decay = bc
     @unpack solver = compliance
     solver.vars .= x.x
@@ -68,7 +68,7 @@ function (bc::BlockCompliance{T})(x::PseudoDensities) where {T}
     return val
 end
 
-function ChainRulesCore.rrule(bc::BlockCompliance, x::PseudoDensities)
+function ChainRulesCore.rrule(bc::BlockComplianceFun, x::PseudoDensities)
     return bc(x), Δ -> begin
         Δ = ChainRulesCore.unthunk(Δ)
         @assert Nonconvex.NonconvexCore.getdim(bc) == length(Δ)
@@ -83,10 +83,10 @@ function ChainRulesCore.rrule(bc::BlockCompliance, x::PseudoDensities)
     end
 end
 
-Nonconvex.NonconvexCore.getdim(f::BlockCompliance) = length(f.val)
-Utilities.getpenalty(c::BlockCompliance) = getpenalty(getsolver(c.compliance))
+Nonconvex.NonconvexCore.getdim(f::BlockComplianceFun) = length(f.val)
+Utilities.getpenalty(c::BlockComplianceFun) = getpenalty(getsolver(c.compliance))
 
-function compute_block_compliance(ec::BlockCompliance, m::ExactDiagonal)
+function compute_block_compliance(ec::BlockComplianceFun, m::ExactDiagonal)
     return compute_exact_bc(ec, m.F, m.Y)
 end
 function compute_exact_bc(bc, F, Y)
@@ -110,7 +110,7 @@ function compute_jtvp!_bc(out, bc, method::ExactDiagonal, w)
     return out
 end
 
-function compute_block_compliance(bc::BlockCompliance, m::ExactSVDDiagonal)
+function compute_block_compliance(bc::BlockComplianceFun, m::ExactSVDDiagonal)
     return compute_exact_svd_bc(bc, m.F, m.US, m.V, m.Q, m.Y)
 end
 function compute_exact_svd_bc(bc, F, US, V, Q, Y)
@@ -143,7 +143,7 @@ function compute_jtvp!_bc(out, bc, method::ExactSVDDiagonal, w)
     return out
 end
 
-function compute_block_compliance(bc::BlockCompliance, ap::DiagonalEstimation)
+function compute_block_compliance(bc::BlockComplianceFun, ap::DiagonalEstimation)
     return compute_approx_bc(bc, ap.F, ap.V, ap.Y)
 end
 function compute_approx_bc(bc, F, V, Y)

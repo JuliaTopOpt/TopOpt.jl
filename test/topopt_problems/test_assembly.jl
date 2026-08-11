@@ -9,6 +9,7 @@ using Ferrite
 # Import types needed for TrussElementKσ evaluation
 using TopOpt.Functions: DisplacementResult
 using TopOpt: PseudoDensities
+using TopOpt.Utilities: getpenalty, density
 
 # Import make_Kes_and_fes which is exported by TopOptProblems
 using TopOpt.TopOptProblems: make_Kes_and_fes
@@ -30,7 +31,7 @@ using TopOpt.TopOptProblems: make_Kes_and_fes
 
     # Test assemble_f! with existing vector (main API)
     @testset "assemble_f! inplace" begin
-        penalty = PowerPenalty(3.0)
+        penalty = PowerPenaltyFun(3.0)
         vars = ones(Float64, ncells)
 
         # Create output vector
@@ -102,7 +103,7 @@ end
         # Test that get_Kσs returns the geometric stiffness matrices
         # Need actual displacement values from solving the system
         u = ginfo.K \ ginfo.f
-        penalty = PowerPenalty(1.0)
+        penalty = PowerPenaltyFun(1.0)
         xmin_val = 1e-3
         Kσs = TopOpt.TopOptProblems.get_Kσs(
             problem, u, elementinfo.cellvalues, vars, penalty, xmin_val
@@ -154,7 +155,7 @@ end
         # wrong for the 3D/plane-strain stiffness matrix. Verify the fix by
         # checking that get_Kσs with the correct Lamé constants matches.
         u = ginfo.K \ ginfo.f
-        penalty = PowerPenalty(1.0)
+        penalty = PowerPenaltyFun(1.0)
         xmin_val = 1e-3
         Kσs = TopOpt.TopOptProblems.get_Kσs(
             problem, u, elementinfo.cellvalues, vars, penalty, xmin_val
@@ -235,7 +236,7 @@ end
 
             # Test with displacement result - wrap in proper types
             u_result = TopOpt.Functions.DisplacementResult(solver.u)
-            x_densities = TopOpt.PseudoDensities(ones(ncells))
+            x_densities = PseudoDensities(ones(ncells))
 
             # Call the evaluator
             Kσ_result = eksig(u_result, x_densities)
@@ -245,9 +246,9 @@ end
 
             # Verify penalty is applied: with x=0.5, Kσ should be scaled by
             # ρ = density(penalty(0.5), xmin), not by 0.5 directly
-            x_half = TopOpt.PseudoDensities(fill(0.5, ncells))
+            x_half = PseudoDensities(fill(0.5, ncells))
             Kσ_half = eksig(u_result, x_half)
-            penalty = TopOpt.getpenalty(solver)
+            penalty = getpenalty(solver)
             xmin = solver.xmin
             ρ_half = TopOpt.Utilities.density(penalty(0.5), xmin)
             for ci in 1:ncells
@@ -281,7 +282,7 @@ end
 
     @testset "Power penalty" begin
         vars = fill(0.5, ncells)
-        penalty = PowerPenalty(3.0)
+        penalty = PowerPenaltyFun(3.0)
         f_out = zeros(Float64, ndofs(problem.ch.dh))
         TopOpt.TopOptProblems.assemble_f!(f_out, problem, elementinfo, vars, penalty, 0.001)
         @test length(f_out) == ndofs(problem.ch.dh)
@@ -289,7 +290,7 @@ end
 
     @testset "Rational penalty" begin
         vars = fill(0.5, ncells)
-        penalty = RationalPenalty(3.0)
+        penalty = RationalPenaltyFun(3.0)
         f_out = zeros(Float64, ndofs(problem.ch.dh))
         TopOpt.TopOptProblems.assemble_f!(f_out, problem, elementinfo, vars, penalty, 0.001)
         @test length(f_out) == ndofs(problem.ch.dh)
@@ -310,7 +311,7 @@ end
 
     @testset "Very small densities" begin
         vars = fill(0.001, ncells)
-        penalty = PowerPenalty(3.0)
+        penalty = PowerPenaltyFun(3.0)
         f_out = zeros(Float64, ndofs(problem.ch.dh))
         TopOpt.TopOptProblems.assemble_f!(f_out, problem, elementinfo, vars, penalty, 0.001)
         @test length(f_out) == ndofs(problem.ch.dh)

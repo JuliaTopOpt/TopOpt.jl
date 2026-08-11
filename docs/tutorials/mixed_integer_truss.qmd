@@ -58,7 +58,7 @@ V = 0.5 # maximum volume fraction (50%)
 ```{julia}
 #| output: false
 solver = FEASolver(DirectSolver, problem; xmin=xmin)
-comp = TopOpt.Compliance(solver)
+comp = ComplianceFun(solver)
 
 function obj(x)
     return comp(PseudoDensities(x))
@@ -78,8 +78,13 @@ m = Model(obj)
 addvar!(m, zeros(length(x0)), ones(length(x0)); integer=trues(length(x0)))
 Nonconvex.add_ineq_constraint!(m, constr)
 
-options = JuniperIpoptOptions()
-TopOpt.setpenalty!(solver, p)
+# Silence the Juniper branch-and-bound trace and IPOPT's per-node logs so
+# the rendered tutorial stays readable.
+options = JuniperIpoptOptions(
+    log_levels = Symbol[],
+    subsolver_options = IpoptOptions(; print_level = 0),
+)
+setpenalty!(solver, p)
 @time r = Nonconvex.optimize(m, JuniperIpoptAlg(), x0; options=options)
 ```
 

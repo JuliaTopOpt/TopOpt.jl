@@ -10,7 +10,7 @@ using Distributions
 # Import internal functions for testing
 using TopOpt.TopOptProblems:
     find_nearest_dofs,
-    RandomMagnitude,
+    RandomMagnitudeFun,
     random_direction,
     generate_random_loads,
     get_surface_dofs,
@@ -63,25 +63,25 @@ end
         @test length(boundary_dofs) == 2
     end
 
-    @testset "RandomMagnitude" begin
-        # Test RandomMagnitude struct with Normal distribution
-        rm = RandomMagnitude(1.0, Normal(0.0, 1.0))
+    @testset "RandomMagnitudeFun" begin
+        # Test RandomMagnitudeFun struct with Normal distribution
+        rm = RandomMagnitudeFun(1.0, Normal(0.0, 1.0))
         @test rm.f == 1.0
         @test rm.dist isa Normal
 
-        # Test calling the RandomMagnitude function
+        # Test calling the RandomMagnitudeFun function
         # Should return a value that's scaled by f
         val = rm()
         @test isa(val, Float64)
 
         # Test with scalar multiplier
-        rm2 = RandomMagnitude(2.5, Normal(5.0, 1.0))
+        rm2 = RandomMagnitudeFun(2.5, Normal(5.0, 1.0))
         val2 = rm2()
         # The result should be 2.5 * (5.0 + rand), so roughly around 12.5
         @test val2 isa Float64
 
         # Test with array multiplier
-        rm3 = RandomMagnitude([1.0, 2.0, 3.0], Normal(0.0, 1.0))
+        rm3 = RandomMagnitudeFun([1.0, 2.0, 3.0], Normal(0.0, 1.0))
         val3 = rm3()
         @test length(val3) == 3
         @test val3 isa Vector{Float64}
@@ -240,7 +240,7 @@ end
 
     @testset "MultiLoad type" begin
         # Test that MultiLoad is exported and can be referenced
-        @test isdefined(TopOpt.TopOptProblems, :MultiLoad)
+        @test isdefined(TopOptProblems, :MultiLoad)
 
         # Create a basic problem
         problem = PointLoadCantilever(Val{:Linear}, nels, sizes, E, ν, force)
@@ -248,10 +248,10 @@ end
         # Create MultiLoad using load rules constructor with explicit positions
         # This bypasses the buggy generate_random_loads function
         nloads = 3
-        # Define load rules with specific positions and RandomMagnitude functions
+        # Define load rules with specific positions and RandomMagnitudeFun functions
         load_rules = [
-            (5.0, 3.0) => RandomMagnitude([0.0, -1.0], Uniform(0.5, 1.0)),
-            (2.0, 1.0) => RandomMagnitude([1.0, 0.0], Uniform(0.5, 1.0)),
+            (5.0, 3.0) => RandomMagnitudeFun([0.0, -1.0], Uniform(0.5, 1.0)),
+            (2.0, 1.0) => RandomMagnitudeFun([1.0, 0.0], Uniform(0.5, 1.0)),
         ]
         multiload = MultiLoad(problem, nloads, load_rules)
 
@@ -297,8 +297,8 @@ end
         problem = PointLoadCantilever(Val{:Linear}, nels, sizes, E, ν, force)
 
         # Create load rules for specific positions
-        f1 = RandomMagnitude([0.0, -1.0], Uniform(0.5, 1.5))
-        f2 = RandomMagnitude(normalize([1.0, -1.0]), Uniform(0.5, 1.5))
+        f1 = RandomMagnitudeFun([0.0, -1.0], Uniform(0.5, 1.5))
+        f2 = RandomMagnitudeFun(normalize([1.0, -1.0]), Uniform(0.5, 1.5))
 
         # Create MultiLoad with specific load positions
         nloads = 10

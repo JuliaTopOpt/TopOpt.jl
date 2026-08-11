@@ -16,7 +16,7 @@ using TopOpt.FEA: simulate
 
         # Create a truss problem (note: loads come before fixities in constructor)
         loads = load_cases["0"]
-        problem = TrussTopOptProblems.TrussProblem(
+        problem = TopOpt.TrussTopOptProblems.TrussProblem(
             Val{:Linear}, node_points, elements, loads, fixities, mats, crosssecs
         )
 
@@ -37,7 +37,7 @@ using TopOpt.FEA: simulate
             file_path
         )
         loads = load_cases["0"]
-        problem = TrussTopOptProblems.TrussProblem(
+        problem = TopOpt.TrussTopOptProblems.TrussProblem(
             Val{:Linear}, node_points, elements, loads, fixities, mats, crosssecs
         )
 

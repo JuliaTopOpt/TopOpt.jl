@@ -10,7 +10,7 @@ Random.seed!(1)
 get_pen_T(::PseudoDensities{<:Any,T,<:Any}) where {T} = T
 
 @testset "Projections and penalties" begin
-    for proj in (HeavisideProjection(5.0), SigmoidProjection(4.0))
+    for proj in (HeavisideProjectionFun(5.0), SigmoidProjectionFun(4.0))
         for T1 in (true, false), T2 in (true, false), T3 in (true, false)
             x = PseudoDensities{T1,T2,T3}(rand(4))
             @test typeof(proj(x)) === typeof(x)
@@ -19,22 +19,22 @@ get_pen_T(::PseudoDensities{<:Any,T,<:Any}) where {T} = T
         end
     end
 
-    for pen in (PowerPenalty(3.0), RationalPenalty(3.0), SinhPenalty(3.0))
+    for pen in (PowerPenaltyFun(3.0), RationalPenaltyFun(3.0), SinhPenaltyFun(3.0))
         for T1 in (true, false), T2 in (true, false), T3 in (true, false)
             x = PseudoDensities{T1,T2,T3}(rand(4))
             @test get_pen_T(pen(x)) === true
-            @test get_pen_T(ProjectedPenalty(pen)(x)) === true
+            @test get_pen_T(ProjectedPenaltyFun(pen)(x)) === true
             Zygote.gradient(sum ∘ pen ∘ PseudoDensities, x)
         end
     end
 end
 
-@testset "Compliance" begin
+@testset "ComplianceFun" begin
     nels = (2, 2)
     problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
     for p in (1.0, 2.0, 3.0)
-        solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(p))
-        comp = Compliance(solver)
+        solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(p))
+        comp = ComplianceFun(solver)
         f = x -> comp(PseudoDensities(x))
         for i in 1:3
             x = clamp.(rand(prod(nels)), 0.1, 1.0)
@@ -48,11 +48,11 @@ end
     end
 end
 
-@testset "Compliance - Vector input warning" begin
+@testset "ComplianceFun - Vector input warning" begin
     nels = (2, 2)
     problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
-    solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(3.0))
-    comp = Compliance(solver)
+    solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(3.0))
+    comp = ComplianceFun(solver)
 
     # Create a simple density vector
     n_vars = length(solver.vars)
@@ -66,12 +66,12 @@ end
     @test result > 0
 end
 
-@testset "Displacement" begin
+@testset "DisplacementFun" begin
     nels = (2, 2)
     problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
     for p in (1.0, 2.0, 3.0)
-        solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(p))
-        dp = Displacement(solver)
+        solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(p))
+        dp = DisplacementFun(solver)
         u = dp(PseudoDensities(solver.vars))
         for _ in 1:3
             x = clamp.(rand(prod(nels)), 0.1, 1.0)
@@ -87,12 +87,12 @@ end
     end
 end
 
-@testset "Volume" begin
+@testset "VolumeFun" begin
     nels = (2, 2)
     problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
     for p in (1.0, 2.0, 3.0)
-        solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(p))
-        vol = Volume(solver)
+        solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(p))
+        vol = VolumeFun(solver)
         constr = x -> vol(PseudoDensities(x)) - 0.3
         for i in 1:3
             x = rand(prod(nels))
@@ -106,12 +106,12 @@ end
     end
 end
 
-@testset "DensityFilter" begin
+@testset "DensityFilterFun" begin
     nels = (2, 2)
     problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
     for p in (1.0, 2.0, 3.0)
-        solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(p))
-        filter = DensityFilter(solver; rmin=4.0)
+        solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(p))
+        filter = DensityFilterFun(solver; rmin=4.0)
         for i in 1:3
             x = rand(prod(nels))
             v = rand(prod(nels))
@@ -126,11 +126,11 @@ end
     end
 end
 
-@testset "SensFilter" begin
+@testset "SensFilterFun" begin
     nels = (2, 2)
     problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0))
-    solver = FEASolver(DirectSolver, problem; xmin=1e-3, penalty=PowerPenalty(3.0))
-    sensfilter = SensFilter(solver; rmin=4.0)
+    solver = FEASolver(DirectSolver, problem; xmin=1e-3, penalty=PowerPenaltyFun(3.0))
+    sensfilter = SensFilterFun(solver; rmin=4.0)
     f = x -> sensfilter(PseudoDensities(x))
     x = rand(length(solver.vars))
     y = rand(length(x))
@@ -145,7 +145,7 @@ end
     base_problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
     dense_load_inds = vec(TopOpt.TopOptProblems.get_surface_dofs(base_problem))
     dense_rank = 3
-    F = spzeros(TopOpt.Ferrite.ndofs(base_problem.ch.dh), nloads)
+    F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
     Fsize = size(F)
     for i in 1:dense_rank
         F +=
@@ -155,8 +155,8 @@ end
     end
     problem = MultiLoad(base_problem, F)
     for p in (1.0, 2.0, 3.0)
-        solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(p))
-        exact_svd_block = BlockCompliance(problem, solver; method=:exact)
+        solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(p))
+        exact_svd_block = BlockComplianceFun(problem, solver; method=:exact)
         constr = Nonconvex.FunctionWrapper(
             x -> exact_svd_block(x) .- 1000.0,
             length(exact_svd_block(PseudoDensities(solver.vars))),
@@ -179,11 +179,11 @@ end
     nels = (2, 2)
     problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
     for p in (1.0, 2.0, 3.0)
-        solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(p))
-        st = StressTensor(solver)
+        solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(p))
+        st = StressTensorFun(solver)
         # element stress tensor - element 1
         est = st[1]
-        dp = Displacement(solver)
+        dp = DisplacementFun(solver)
         for i in 1:3
             x = clamp.(rand(prod(nels)), 0.1, 1.0)
             u = dp(PseudoDensities(x))
@@ -209,15 +209,15 @@ end
 @testset "getdim for Functions" begin
     nels = (2, 2)
     problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
-    solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(3.0))
+    solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(3.0))
 
-    @testset "Compliance getdim" begin
-        comp = Compliance(solver)
+    @testset "ComplianceFun getdim" begin
+        comp = ComplianceFun(solver)
         @test Nonconvex.NonconvexCore.getdim(comp) == 1
     end
 
-    @testset "Volume getdim" begin
-        vol = Volume(solver)
+    @testset "VolumeFun getdim" begin
+        vol = VolumeFun(solver)
         @test Nonconvex.NonconvexCore.getdim(vol) == 1
     end
 end
@@ -226,15 +226,15 @@ end
     @testset "getdim for basic functions" begin
         nels = (2, 2)
         problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
-        solver = FEASolver(DirectSolver, problem; xmin=0.001, penalty=PowerPenalty(3.0))
+        solver = FEASolver(DirectSolver, problem; xmin=0.001, penalty=PowerPenaltyFun(3.0))
 
-        @testset "Volume getdim" begin
-            vol = Volume(solver)
+        @testset "VolumeFun getdim" begin
+            vol = VolumeFun(solver)
             @test getdim(vol) == 1
         end
 
-        @testset "Compliance getdim" begin
-            comp = Compliance(solver)
+        @testset "ComplianceFun getdim" begin
+            comp = ComplianceFun(solver)
             @test getdim(comp) == 1
         end
     end
@@ -245,10 +245,10 @@ end
             problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
             solver = FEASolver(DirectSolver, problem; xmin=0.001)
 
-            vol = Volume(solver)
+            vol = VolumeFun(solver)
             @test getdim(vol) == 1
 
-            comp = Compliance(solver)
+            comp = ComplianceFun(solver)
             @test getdim(comp) == 1
         end
 
@@ -257,19 +257,19 @@ end
             problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
             solver = FEASolver(DirectSolver, problem; xmin=0.001)
 
-            vol = Volume(solver)
+            vol = VolumeFun(solver)
             @test getdim(vol) == 1
         end
     end
 end
 
-@testset "Volume project function" begin
+@testset "VolumeFun project function" begin
     nels = (3, 3)
     problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
-    solver = FEASolver(DirectSolver, problem; xmin=0.001, penalty=PowerPenalty(3.0))
+    solver = FEASolver(DirectSolver, problem; xmin=0.001, penalty=PowerPenaltyFun(3.0))
 
     @testset "Basic binary projection with fraction=true" begin
-        vol = Volume(solver; fraction=true)
+        vol = VolumeFun(solver; fraction=true)
         x = rand(9)  # 3x3 grid
         target_fraction = 0.5
         projected = TopOpt.Functions.project(vol, target_fraction, x)
@@ -280,7 +280,7 @@ end
     end
 
     @testset "Binary projection with fraction=false (absolute volume)" begin
-        vol = Volume(solver; fraction=false)
+        vol = VolumeFun(solver; fraction=false)
         x = rand(9)
         total_volume = sum(vol.cellvolumes)
         target_volume = 0.5 * total_volume
@@ -290,8 +290,8 @@ end
         @test all(projected .== 0 .|| projected .== 1)
     end
 
-    @testset "Volume constraint satisfaction" begin
-        vol = Volume(solver; fraction=true)
+    @testset "VolumeFun constraint satisfaction" begin
+        vol = VolumeFun(solver; fraction=true)
         x = [0.1, 0.9, 0.2, 0.8, 0.3, 0.7, 0.4, 0.6, 0.5]
         target_fraction = 0.4
         projected = TopOpt.Functions.project(vol, target_fraction, x)
@@ -304,7 +304,7 @@ end
     end
 
     @testset "Edge case: V=0 (empty projection)" begin
-        vol = Volume(solver; fraction=true)
+        vol = VolumeFun(solver; fraction=true)
         x = rand(9)
         projected = TopOpt.Functions.project(vol, 0.0, x)
 
@@ -313,7 +313,7 @@ end
     end
 
     @testset "Edge case: V=total_volume (full projection)" begin
-        vol = Volume(solver; fraction=false)
+        vol = VolumeFun(solver; fraction=false)
         x = rand(9)
         total_volume = sum(vol.cellvolumes)
         projected = TopOpt.Functions.project(vol, total_volume, x)

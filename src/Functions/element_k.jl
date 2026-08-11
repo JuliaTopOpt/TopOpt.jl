@@ -16,7 +16,7 @@ quadrature. Useful in buckling-constrained optimization.
 Call as `Kes = kesf(PseudoDensities(x))`. Returns a vector of symmetric
 matrices, one per element.
 """
-mutable struct ElementK{
+mutable struct ElementKFun{
     T,
     Ts<:AbstractFEASolver,
     TK1<:AbstractVector{<:AbstractMatrix{T}},
@@ -30,11 +30,11 @@ mutable struct ElementK{
     xmin::T
 end
 
-function Base.show(io::IO, ::MIME{Symbol("text/plain")}, ::ElementK)
+function Base.show(io::IO, ::MIME{Symbol("text/plain")}, ::ElementKFun)
     return println(io, "TopOpt element stiffness matrix construction function")
 end
 
-function ElementK(solver::AbstractFEASolver)
+function ElementKFun(solver::AbstractFEASolver)
     @unpack elementinfo = solver
     dh = solver.problem.ch.dh
     penalty = getpenalty(solver)
@@ -56,10 +56,10 @@ function ElementK(solver::AbstractFEASolver)
         push!(Kes, Ke)
     end
 
-    return ElementK(solver, Kes, Kes_0, penalty, xmin)
+    return ElementKFun(solver, Kes, Kes_0, penalty, xmin)
 end
 
-function (ek::ElementK)(xe::Number, ci::Integer)
+function (ek::ElementKFun)(xe::Number, ci::Integer)
     @unpack xmin, Kes_0, penalty = ek
     if PENALTY_BEFORE_INTERPOLATION
         px = density(penalty(xe), xmin)
@@ -69,7 +69,7 @@ function (ek::ElementK)(xe::Number, ci::Integer)
     return px * Kes_0[ci]
 end
 
-function (ek::ElementK{T})(x::PseudoDensities) where {T}
+function (ek::ElementKFun{T})(x::PseudoDensities) where {T}
     @unpack solver, Kes = ek
     @assert getncells(solver.problem.ch.dh.grid) == length(x)
     for ci in 1:length(x)
@@ -78,7 +78,7 @@ function (ek::ElementK{T})(x::PseudoDensities) where {T}
     return copy(Kes)
 end
 
-function ChainRulesCore.rrule(ek::ElementK, x::PseudoDensities)
+function ChainRulesCore.rrule(ek::ElementKFun, x::PseudoDensities)
     @unpack solver, Kes = ek
     @assert getncells(solver.problem.ch.dh.grid) == length(x.x)
     Kes = ek(x)

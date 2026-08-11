@@ -50,15 +50,15 @@ end
     xmin = 0.001 # minimum density
     rmin = 4.0 # density filter radius
 
-    penalty = TopOpt.PowerPenalty(1.0) # 1
+    penalty = PowerPenaltyFun(1.0) # 1
     solver = FEASolver(DirectSolver, problem; xmin=xmin, penalty=penalty)
     ## call solver to trigger assemble!
     solver()
 
-    # * Compliance
-    comp = TopOpt.Compliance(solver)
+    # * ComplianceFun
+    comp = ComplianceFun(solver)
     obj = x -> comp(PseudoDensities(x))
-    volfrac = TopOpt.Volume(solver)
+    volfrac = VolumeFun(solver)
     constr = x -> volfrac(PseudoDensities(x)) - V
 
     options = MMAOptions(; maxiter=3000, tol=Nonconvex.Tolerance(; kkt=0.001))
@@ -69,7 +69,7 @@ end
     addvar!(m, zeros(nelem), ones(nelem))
     add_ineq_constraint!(m, constr)
 
-    TopOpt.setpenalty!(solver, penalty.p)
+    setpenalty!(solver, penalty.p)
     result = Nonconvex.optimize(m, MMA87(), x0; options=options)
 
     println("="^10)
@@ -100,15 +100,15 @@ end # end testset
     xmin = 0.001 # minimum density
     rmin = 4.0 # density filter radius
 
-    penalty = TopOpt.PowerPenalty(1.0) # 1
+    penalty = PowerPenaltyFun(1.0) # 1
     solver = FEASolver(DirectSolver, problem; xmin=xmin, penalty=penalty)
     ## call solver to trigger assemble!
     solver()
 
-    # * Compliance
-    comp = TopOpt.Compliance(solver)
+    # * ComplianceFun
+    comp = ComplianceFun(solver)
     obj = x -> comp(PseudoDensities(x))
-    volfrac = TopOpt.Volume(solver)
+    volfrac = VolumeFun(solver)
     constr = x -> volfrac(PseudoDensities(x)) - V
 
     options = MMAOptions(; maxiter=3000, tol=Nonconvex.Tolerance(; kkt=0.001))
@@ -119,7 +119,7 @@ end # end testset
     addvar!(m, zeros(nelem), ones(nelem))
     add_ineq_constraint!(m, constr)
 
-    TopOpt.setpenalty!(solver, penalty.p)
+    setpenalty!(solver, penalty.p)
     result = Nonconvex.optimize(m, MMA87(), x0; options=options)
 
     fig = visualize(problem; topology=result.minimizer)

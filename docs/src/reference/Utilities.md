@@ -16,22 +16,22 @@ optimization converges to a near-binary design.
 
 ```@docs
 AbstractPenalty
-PowerPenalty
-RationalPenalty
-SinhPenalty
-ProjectedPenalty
+PowerPenaltyFun
+RationalPenaltyFun
+SinhPenaltyFun
+ProjectedPenaltyFun
 ```
 
 ## Projections
 
 Projections are smooth approximations of a step function, used to sharpen the
 design. They can be applied standalone or composed with a penalty via
-`ProjectedPenalty`.
+`ProjectedPenaltyFun`.
 
 ```@docs
 AbstractProjection
-HeavisideProjection
-SigmoidProjection
+HeavisideProjectionFun
+SigmoidProjectionFun
 ```
 
 ## Penalty accessors

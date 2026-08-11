@@ -49,7 +49,7 @@ problem = problems[i]
 V = 0.5 # volume fraction
 xmin = 0.001 # minimum density
 convcriteria = Nonconvex.KKTCriteria()
-penalty = TopOpt.PowerPenalty(1.0)  # start with no penalization
+penalty = PowerPenalty(1.0)  # start with no penalization
 
 solver = FEASolver(DirectSolver, problem; xmin=xmin, penalty=penalty)
 ```
@@ -59,28 +59,36 @@ solver = FEASolver(DirectSolver, problem; xmin=xmin, penalty=penalty)
 ```{julia}
 #| output: false
 # von Mises stress function (automatically differentiable via Zygote)
-stress = TopOpt.von_mises_stress_function(solver)
+stress = von_mises_stress_function(solver)
 
-filter = if problem isa TopOptProblems.TieBeam
+filter = if problem isa TopOpt.TopOptProblems.TieBeam
     identity
 else
-    DensityFilter(solver; rmin=rmin)
+    DensityFilterFun(solver; rmin=rmin)
 end
 
-volfrac = TopOpt.Volume(solver)
+volfrac = VolumeFun(solver)
+comp = ComplianceFun(solver)
 
 x0 = ones(length(solver.vars))
-# Set stress threshold as 3× initial maximum stress
-threshold = 3 * maximum(stress(filter(PseudoDensities(x0))))
+# Stress threshold: 2× the initial peak stress of the fully-solid design
+threshold = 2 * maximum(stress(filter(PseudoDensities(x0))))
 
-# Minimize volume, constrain aggregated stress
-obj = x -> volfrac(filter(PseudoDensities(x)))
+# Minimize volume with a compliance regularization term. The regularizer
+# steers the optimizer toward stiff layouts, preventing the trivial
+# all-void solution that pure volume minimization would produce.
+λ = 1e-4
+obj = x -> volfrac(filter(PseudoDensities(x))) + λ * comp(filter(PseudoDensities(x)))
 constr = x -> norm(stress(filter(PseudoDensities(x))), 5) - threshold
 ```
 
 The p-norm with p=5 aggregates element stresses into a global measure:
 `‖σ‖₅ = (Σ σᵢ⁵)^(1/5)`. This smooth approximation enables efficient gradient
-computation while capturing peak stress behavior.
+computation while capturing peak stress behavior. The threshold is set just
+above the initial peak stress so the constraint stays active throughout
+optimization. The compliance regularizer (`λ·uᵀKu`) penalizes overly
+compliant (near-void) designs, keeping the optimization away from the
+degenerate empty-domain solution.
 
 ## Optimization Setup
 
@@ -89,18 +97,41 @@ computation while capturing peak stress behavior.
 N = length(solver.vars)
 x0 = fill(0.5, N)
 
-options = MMAOptions(; maxiter=50, tol=Tolerance(; kkt=1e-4), convcriteria)
 model = Model(obj)
 addvar!(model, zeros(N), ones(N))
 add_ineq_constraint!(model, constr)
 alg = MMA87()
 ```
 
+## Continuation Strategy
+
+Volume minimization with a loose stress constraint collapses to the trivial
+all-void design. We ramp the SIMP penalty exponent from 1.0 to 3.0 so the
+optimizer must commit material to satisfy the stress constraint, with
+decaying KKT tolerances for accurate subproblem solves:
+
+```{julia}
+#| output: false
+ps = [1.0, 2.0, 3.0]
+tols = [1e-2, 1e-3, 1e-4]
+
+x = copy(x0)
+```
+
 ## Run Optimization
 
 ```{julia}
 #| output: true
-r = optimize(model, alg, x0; options=options)
+for j in eachindex(ps)
+    global x, convcriteria, r
+    p = ps[j]
+    tol = tols[j]
+    setpenalty!(solver, p)
+    options = MMAOptions(; maxiter=50, tol=Tolerance(; kkt=tol), convcriteria)
+    r = optimize(model, alg, x; options)
+    global x = r.minimizer
+    println("Step $j: penalty=$p, tol=$tol, obj=$(obj(x)), constr=$(constr(x))")
+end
 ```
 
 ## Results

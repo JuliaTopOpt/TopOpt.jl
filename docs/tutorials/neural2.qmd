@@ -8,11 +8,10 @@ toc: true
 This tutorial demonstrates neural network-parametrized topology optimization
 using Flux.jl's Adam optimizer. Unlike the IPOPT-based approach, this method
 uses first-order gradient descent with adaptive learning rates. A continuation
-strategy progressively increases the SIMP penalty (1→5) and constraint
-aggregation weight (0.1→100) to converge to binary designs.
+strategy progressively increases the SIMP penalty (1→3) and constraint
+aggregation weight (1→100) to converge to binary designs.
 
-The network uses 6 hidden layers (deeper than the IPOPT example) with softmax
-output for material fraction parametrization.
+The network uses 6 hidden layers with sigmoid output for density parametrization.
 
 ## Setup
 
@@ -37,40 +36,41 @@ V = 0.5       # volume fraction
 xmin = 1e-6   # minimum density
 rmin = 3.0    # filter radius
 
-# Continuation parameters
+# Continuation parameters: penalty ramps 1 → 3 over the epochs, and the
+# constraint weight ramps from 1 to 100 so the volume constraint is
+# progressively enforced.
 p = 1.0           # initial SIMP penalty
-delta_p = 0.01    # penalty increment per epoch
-p_max = 5.0       # maximum penalty
+delta_p = 0.1     # penalty increment per epoch
+p_max = 3.0       # maximum penalty
 
-alpha = 0.1       # initial constraint weight
-delta_alpha = 0.05
+alpha = 1.0       # initial constraint weight
+delta_alpha = 10.0
 alpha_max = 100   # maximum constraint weight
 
-# Initial solver and compliance for C0
-penalty = TopOpt.PowerPenalty(p)
+# Initial solver and compliance for C0 (normalization constant)
+penalty = PowerPenalty(p)
 solver = FEASolver(DirectSolver, problem; xmin, penalty)
-cheqfilter = DensityFilter(solver; rmin)
-comp = Compliance(solver)
-C0 = comp(cheqfilter(PseudoDensities(fill(V, TopOpt.getncells(problem)))))
+cheqfilter = DensityFilterFun(solver; rmin)
+comp = ComplianceFun(solver)
+volfrac = VolumeFun(solver)
+C0 = comp(cheqfilter(PseudoDensities(fill(V, getncells(problem)))))
 ```
 
 ## Neural Network
 
 ```{julia}
 #| output: false
-# 6-layer MLP with softmax output
+# 6-layer MLP with sigmoid output (scalar density in [0, 1])
 m = 20
 act = leakyrelu
-nn = NeuralNetwork(
+nn = NeuralNetworkFun(
     Chain(
         Dense(2, m, act; init=Flux.glorot_normal),
         Dense(m, m, act; init=Flux.glorot_normal),
         Dense(m, m, act; init=Flux.glorot_normal),
         Dense(m, m, act; init=Flux.glorot_normal),
         Dense(m, m, act; init=Flux.glorot_normal),
-        Dense(m, m, act; init=Flux.glorot_normal),
-        softmax,
-        x -> [x[1]],
+        Dense(m, 1, sigmoid; init=Flux.glorot_normal),
     ),
     problem;
     scale=true,
@@ -82,17 +82,18 @@ w0 = nn.init_params
 
 ```{julia}
 #| output: false
-alg = Flux.Optimise.Adam(0.1)
+# Adam with a moderate learning rate; gradient clipping avoids spikes.
+alg = Flux.Optimise.Adam(0.01)
 clip_alg = Flux.Optimise.ClipValue(1.0)
 w = copy(w0)
 
-# Heaviside projection for binary designs
-proj = HeavisideProjection(0.0)
+# Heaviside projection with nonzero steepness pushes densities toward 0/1.
+proj = HeavisideProjection(2.0)
 
 # Termination criteria
 eps = Inf
-eps_star = 0.05    # target binary fraction
-maxiter = 20
+eps_star = 0.05    # target intermediate-density fraction
+maxiter = 50
 constr_tol = 0.01
 ```
 
@@ -115,35 +116,34 @@ end
 #| output: true
 epoch = 1
 while true
+    global epoch, p, alpha, eps, w
     epoch > maxiter && break
     eps < eps_star && break
-    
-    # Update penalty and constraint weight
+
+    # Ramp penalty and constraint weight
     global p = min(p + delta_p, p_max)
     global alpha = min(alpha + delta_alpha, alpha_max)
-    
-    # Rebuild solver with current penalty
-    global penalty = TopOpt.PowerPenalty(p)
-    global solver = FEASolver(DirectSolver, problem; xmin, penalty)
-    global cheqfilter = DensityFilter(solver; rmin)
-    global comp = Compliance(solver)
-    global volfrac = Volume(solver)
-    
+
+    # Update penalty on the existing solver (mutates in-place, so the
+    # compliance and volume functions pick up the new penalty automatically)
+    setpenalty!(solver, p)
+
     obj = w -> comp(todensities(w; filter=true)) / C0
     constr = w -> volfrac(todensities(w; filter=false)) / V - 1
     combined_obj = w -> obj(w) + alpha * constr(w)^2
-    
-    # Adam step
+
+    # Adam step with gradient clipping
     Δ = Zygote.gradient(combined_obj, w)[1]
+    Δ = Flux.Optimise.apply!(clip_alg, w, Δ)
     Flux.Optimise.update!(alg, w, Δ)
-    
+
     # Check convergence
     x = nn(NNParams(w)).x
-    eps = sum(0.05 .< x .< 0.95) / length(x)
+    global eps = sum(0.05 .< x .< 0.95) / length(x)
     violation = abs(constr(w))
-    
-    println("Epoch $epoch: p=$p, α=$alpha, obj=$(obj(w)), constr=$(constr(w)), eps=$eps")
-    epoch += 1
+
+    println("Epoch $epoch: p=$p, α=$alpha, obj=$(round(obj(w); digits=4)), constr=$(round(constr(w); digits=4)), eps=$(round(eps; digits=3))")
+    global epoch += 1
 end
 ```
 
@@ -166,5 +166,4 @@ constr_final = w -> volfrac(todensities(w; filter=false)) / V - 1
 using CairoMakie
 topology = todensities(w; filter=true)
 fig = visualize(problem; topology=topology)
-
 ```

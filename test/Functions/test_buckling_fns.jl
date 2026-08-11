@@ -7,10 +7,10 @@ include("..//truss_topopt_problems//utils.jl")
 
 gm_ins_dir = joinpath(@__DIR__, "..", "truss_topopt_problems", "instances", "ground_meshes");
 
-@testset "AssembleK" begin
+@testset "AssembleKFun" begin
     nels = (2, 2)
     problem = PointLoadCantilever(Val{:Quadratic}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
-    ak = AssembleK(problem)
+    ak = AssembleKFun(problem)
     dh = problem.ch.dh
     total_ndof = ndofs(dh)
     T = eltype(problem.E)
@@ -36,12 +36,12 @@ gm_ins_dir = joinpath(@__DIR__, "..", "truss_topopt_problems", "instances", "gro
     end
 end
 
-@testset "ElementK" begin
+@testset "ElementKFun" begin
     nels = (2, 2)
     problem = PointLoadCantilever(Val{:Quadratic}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
-    solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=TopOpt.PowerPenalty(1.0))
+    solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(1.0))
 
-    ek = ElementK(solver)
+    ek = ElementKFun(solver)
     dh = problem.ch.dh
     T = eltype(problem.E)
     N = getncells(dh.grid)
@@ -99,7 +99,7 @@ end
     # * check geometric stiffness matrix consistency
     Kσs_0 = get_truss_Kσs(problem, u, solver.elementinfo.cellvalues)
     # The solver's penalty and xmin are used by TrussElementKσ to scale Kσ
-    penalty = TopOpt.getpenalty(solver)
+    penalty = getpenalty(solver)
     xmin = solver.xmin
 
     for _ in 1:3
@@ -230,10 +230,10 @@ end
     dh = problem.ch.dh
     total_ndof = ndofs(dh)
 
-    comp = TopOpt.Compliance(solver)
-    dp = TopOpt.Displacement(solver)
-    assemble_k = TopOpt.AssembleK(problem)
-    element_k = ElementK(solver)
+    comp = ComplianceFun(solver)
+    dp = DisplacementFun(solver)
+    assemble_k = AssembleKFun(problem)
+    element_k = ElementKFun(solver)
     truss_element_kσ = TrussElementKσ(problem, solver)
 
     # * comliance minimization objective

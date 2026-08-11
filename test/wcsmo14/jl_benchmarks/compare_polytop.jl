@@ -26,7 +26,7 @@ sizes = (3.0 / nels[1], 1.0 / nels[2])
 @timeit to "problem def" problem = HalfMBB(Val{:Linear}, nels, sizes, E, v, f);
 
 # Define a finite element solver
-@timeit to "penalty def" penalty = TopOpt.PowerPenalty(3.0)
+@timeit to "penalty def" penalty = PowerPenaltyFun(3.0)
 @timeit to "solver def" solver = FEASolver(
     DirectSolver, problem; xmin=xmin, penalty=penalty
 );
@@ -34,14 +34,14 @@ sizes = (3.0 / nels[1], 1.0 / nels[2])
 # Define compliance objective
 @timeit to "objective def" begin
     # Define compliance objective
-    comp = Compliance(solver)
-    filter = DensityFilter(solver; rmin=rmin)
+    comp = ComplianceFun(solver)
+    filter = DensityFilterFun(solver; rmin=rmin)
     obj = x -> comp(filter(PseudoDensities(x)))
 end
 
 # Define volume constraint
 @timeit to "constraint def" begin
-    volfrac = TopOpt.Volume(solver)
+    volfrac = VolumeFun(solver)
     constr = x -> volfrac(filter(PseudoDensities(x))) - V
 end
 

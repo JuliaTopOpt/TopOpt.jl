@@ -41,7 +41,7 @@ problem = PointLoadCantilever(
     nu,              # Poisson's ratio
     f,               # load
 )
-ncells = TopOpt.getncells(problem)
+ncells = getncells(problem)
 ```
 
 ## FEA Solver and Filter
@@ -49,8 +49,8 @@ ncells = TopOpt.getncells(problem)
 ```{julia}
 #| output: false
 solver = FEASolver(DirectSolver, problem; xmin=0.0)
-filter = DensityFilter(solver; rmin=4.0)
-comp = Compliance(solver)
+filter = DensityFilterFun(solver; rmin=4.0)
+comp = ComplianceFun(solver)
 ```
 
 ## Material Interpolation
@@ -58,15 +58,16 @@ comp = Compliance(solver)
 ```{julia}
 #| output: false
 # Interpolation 1: Young's moduli for compliance (penalty=3.0)
-penalty1 = TopOpt.PowerPenalty(3.0)
-interp1 = MaterialInterpolation(Es, penalty1)
+penalty1 = PowerPenalty(3.0)
+interp1 = MaterialInterpolationFun(Es, penalty1)
 
 # Interpolation 2: Physical densities for mass constraint (penalty=1.0)
-penalty2 = TopOpt.PowerPenalty(1.0)
-interp2 = MaterialInterpolation(densities, penalty2)
+penalty2 = PowerPenalty(1.0)
+interp2 = MaterialInterpolationFun(densities, penalty2)
 ```
 
 Two interpolations serve different purposes:
+
 - `interp1` maps softmax outputs to stiffness for FEA
 - `interp2` maps to physical densities for mass calculation
 
@@ -75,7 +76,7 @@ Two interpolations serve different purposes:
 ```{julia}
 #| output: false
 obj = y -> begin
-    x = tounit(MultiMaterialVariables(y, nmats))
+    x = tounit(MultiMaterialVariablesFun(y, nmats))
     _E = interp1(filter(x))
     return comp(_E)
 end
@@ -88,7 +89,7 @@ grad_obj = Zygote.gradient(obj, y0)[1]
 println("Gradient norm: $(norm(grad_obj))")
 
 constr = y -> begin
-    _rhos = interp2(MultiMaterialVariables(y, nmats))
+    _rhos = interp2(MultiMaterialVariablesFun(y, nmats))
     return sum(_rhos.x) / ncells - 0.4  # 40% mass constraint
 end
 
@@ -122,7 +123,7 @@ y = res.minimizer
 ```{julia}
 #| output: true
 println("Constraint value: $(constr(y))")
-x = TopOpt.tounit(reshape(y, ncells, nmats - 1))
+x = tounit(reshape(y, ncells, nmats - 1))
 println("Non-void fraction: $(sum(x[:, 2:3]) / size(x, 1))")
 
 # Verify constraints are satisfied
@@ -132,14 +133,45 @@ println("Softmax sums to 1: $(all(x -> isapprox(x, 1), sum(x; dims=2)))")
 
 ## Visualization
 
+The `visualize` function accepts a per-cell `topology` vector (length
+`ncells`) that controls each cell's transparency, and an optional
+`cell_colors` vector (same length) mapped through a colormap. For
+multi-material designs we first convert the raw decision variables `y`
+into per-cell material fractions via `tounit`, yielding an `ncells × nmats`
+matrix whose rows sum to 1. Each column is one material's fraction per
+element, which we can pass to `visualize` to inspect that material in
+isolation.
+
 ```{julia}
 #| label: fig-multimaterial
 #| fig-cap: "Multi-material design: void (white), soft material (gray), stiff material (black)"
 using CairoMakie
-fig = visualize(problem; topology=y)  # Note: y is multi-material variables
-
+x = tounit(MultiMaterialVariablesFun(y, nmats))  # ncells × nmats, rows sum to 1
+rhos = x.x * densities  # physical density per cell, used for transparency
+fig = visualize(problem; topology=rhos, cell_colors=interp1(x).x, draw_legend=true)
 ```
 
-The result shows optimal material distribution — stiff material in high-stress
-regions, soft material in intermediate areas, and void where material is
-inefficient.
+Here `topology=rhos` sets each cell's alpha to its physical density (0 for
+void, 0.5 for soft, 1.0 for stiff), and `cell_colors` is the per-cell
+Young's modulus so the colormap distinguishes the three materials. To
+inspect a single material, pass that material's fraction column as the
+topology and mask the others:
+
+```{julia}
+#| label: fig-multimaterial-stiff
+#| fig-cap: "Stiff material (E=4.0) distribution only"
+stiff_frac = x.x[:, 3]  # fraction of stiff material per cell
+fig_stiff = visualize(problem; topology=stiff_frac)
+```
+
+```{julia}
+#| label: fig-multimaterial-soft
+#| fig-cap: "Soft material (E=1.0) distribution only"
+soft_frac = x.x[:, 2]  # fraction of soft material per cell
+fig_soft = visualize(problem; topology=soft_frac)
+```
+
+The combined view shows optimal material distribution — stiff material
+concentrates in high-stress regions, soft material in intermediate areas,
+and void where material is inefficient. The per-material figures isolate
+each phase, making it easier to verify the design.

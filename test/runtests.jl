@@ -9,10 +9,10 @@ if OPPOSITE_PREFERENCE
     using TopOpt
     # Skip tests if preference is not set to false (i.e., still default/true)
     if TopOpt.PENALTY_BEFORE_INTERPOLATION != false
-        @info "Skipping tests: PENALTY_BEFORE_INTERPOLATION is not false (current value: $(TopOpt.PENALTY_BEFORE_INTERPOLATION))"
+        @info "Skipping tests: TopOpt.PENALTY_BEFORE_INTERPOLATION is not false (current value: $(TopOpt.PENALTY_BEFORE_INTERPOLATION))"
         exit(0)  # Exit successfully but skip all tests
     else
-        @info "Running tests with PENALTY_BEFORE_INTERPOLATION = false"
+        @info "Running tests with TopOpt.PENALTY_BEFORE_INTERPOLATION = false"
     end
 end
 

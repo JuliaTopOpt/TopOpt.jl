@@ -24,7 +24,7 @@ function get_Kσs(
     u_dofs,
     cellvalues,
     vars=ones(TT, getncells(sp.ch.dh.grid)),
-    penalty=PowerPenalty{TT}(1),
+    penalty=PowerPenaltyFun{TT}(1),
     xmin=TT(1//1000),
 ) where {xdim,TT}
     E = getE(sp)
@@ -104,7 +104,7 @@ function buckling(
     ginfo,
     einfo,
     vars=ones(T, getncells(problem.ch.dh.grid)),
-    penalty=PowerPenalty{T}(1),
+    penalty=PowerPenaltyFun{T}(1),
     xmin=T(1) / 1000,
 ) where {xdim,T}
     dh = problem.ch.dh

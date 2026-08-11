@@ -10,7 +10,7 @@ neighboring elements within `rmin`, using the filter scheme from
 Call as `y = flt(x)`. See also [BendsoeSigmund2003](@cite) §3.4 for general
 background on sensitivity filtering.
 """
-struct SensFilter{T,TV<:AbstractVector{T},TE<:ElementFEAInfo,TM<:FilterMetadata} <:
+struct SensFilterFun{T,TV<:AbstractVector{T},TE<:ElementFEAInfo,TM<:FilterMetadata} <:
        AbstractSensFilter
     elementinfo::TE
     metadata::TM
@@ -19,14 +19,14 @@ struct SensFilter{T,TV<:AbstractVector{T},TE<:ElementFEAInfo,TM<:FilterMetadata}
     last_grad::TV
     cell_weights::TV
 end
-function Base.show(io::IO, ::MIME{Symbol("text/plain")}, ::SensFilter)
+function Base.show(io::IO, ::MIME{Symbol("text/plain")}, ::SensFilterFun)
     return println(io, "TopOpt sensitivity filter")
 end
 
-function SensFilter(solver::AbstractFEASolver; rmin)
-    return SensFilter(solver, rmin)
+function SensFilterFun(solver::AbstractFEASolver; rmin)
+    return SensFilterFun(solver, rmin)
 end
-function SensFilter(
+function SensFilterFun(
     solver::TS, rmin::T, (::Type{TI})=Int
 ) where {T,TI<:Integer,TS<:AbstractFEASolver}
     metadata = FilterMetadata(solver, rmin, TI)
@@ -43,13 +43,13 @@ function SensFilter(
 
     cell_weights = zeros(T, nnodes)
 
-    return SensFilter(elementinfo, metadata, rmin, nodal_grad, last_grad, cell_weights)
+    return SensFilterFun(elementinfo, metadata, rmin, nodal_grad, last_grad, cell_weights)
 end
 
-function (cf::SensFilter)(x::PseudoDensities{I,P}) where {I,P}
+function (cf::SensFilterFun)(x::PseudoDensities{I,P}) where {I,P}
     return PseudoDensities{I,P,true}(x.x)
 end
-function ChainRulesCore.rrule(cf::SensFilter, x::PseudoDensities)
+function ChainRulesCore.rrule(cf::SensFilterFun, x::PseudoDensities)
     return x,
     Δ -> begin
         Δ = ChainRulesCore.unthunk(Δ)

@@ -10,9 +10,9 @@ using Ferrite: getncells
         nels = (20, 10)
         problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
         solver = FEASolver(DirectSolver, problem; xmin=0.001)
-        comp = Compliance(solver)
-        vol = Volume(solver)
-        filter = DensityFilter(solver; rmin=2.0)
+        comp = ComplianceFun(solver)
+        vol = VolumeFun(solver)
+        filter = DensityFilterFun(solver; rmin=2.0)
 
         geso = GESO(comp, vol, 0.5, filter; maxiter=100, tol=0.001, p=3.0)
 
@@ -38,9 +38,9 @@ using Ferrite: getncells
         nels = (10, 4)
         problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
         solver = FEASolver(DirectSolver, problem; xmin=0.001)
-        comp = Compliance(solver)
-        vol = Volume(solver)
-        filter = DensityFilter(solver; rmin=2.0)
+        comp = ComplianceFun(solver)
+        vol = VolumeFun(solver)
+        filter = DensityFilterFun(solver; rmin=2.0)
 
         # Run with limited iterations for testing
         geso = GESO(comp, vol, 0.5, filter; maxiter=5, tol=0.1, p=1.0)
@@ -60,9 +60,9 @@ using Ferrite: getncells
         nels = (10, 4)
         problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
         solver = FEASolver(DirectSolver, problem; xmin=0.001)
-        comp = Compliance(solver)
-        vol = Volume(solver)
-        filter = DensityFilter(solver; rmin=2.0)
+        comp = ComplianceFun(solver)
+        vol = VolumeFun(solver)
+        filter = DensityFilterFun(solver; rmin=2.0)
 
         # Run with very loose tolerance to ensure quick convergence
         geso = GESO(comp, vol, 0.5, filter; maxiter=50, tol=0.1, p=1.0)
@@ -80,9 +80,9 @@ using Ferrite: getncells
         nels = (8, 4)
         problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
         solver = FEASolver(DirectSolver, problem; xmin=0.001)
-        comp = Compliance(solver)
-        vol = Volume(solver)
-        filter = DensityFilter(solver; rmin=1.5)
+        comp = ComplianceFun(solver)
+        vol = VolumeFun(solver)
+        filter = DensityFilterFun(solver; rmin=1.5)
 
         geso = GESO(comp, vol, 0.4, filter; maxiter=10, tol=0.05, p=1.0)
         x0 = fill(0.8, length(solver.vars))
@@ -104,9 +104,9 @@ using Ferrite: getncells
 
         for V_target in [0.3, 0.5, 0.7]
             solver = FEASolver(DirectSolver, problem; xmin=0.001)
-            comp = Compliance(solver)
-            vol = Volume(solver)
-            filter = DensityFilter(solver; rmin=2.0)
+            comp = ComplianceFun(solver)
+            vol = VolumeFun(solver)
+            filter = DensityFilterFun(solver; rmin=2.0)
 
             geso = GESO(comp, vol, V_target, filter; maxiter=10, tol=0.1, p=1.0)
             x0 = fill(V_target, length(solver.vars))
@@ -122,9 +122,9 @@ using Ferrite: getncells
         # Test GESO with a different problem type
         problem = LBeam(Val{:Linear}, Float64; force=force)
         solver = FEASolver(DirectSolver, problem; xmin=0.001)
-        comp = Compliance(solver)
-        vol = Volume(solver)
-        filter = DensityFilter(solver; rmin=2.0)
+        comp = ComplianceFun(solver)
+        vol = VolumeFun(solver)
+        filter = DensityFilterFun(solver; rmin=2.0)
 
         geso = GESO(comp, vol, 0.5, filter; maxiter=10, tol=0.1, p=1.0)
         x0 = fill(0.5, length(solver.vars))
@@ -137,15 +137,15 @@ using Ferrite: getncells
     @testset "GESO setpenalty!" begin
         nels = (10, 4)
         problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
-        solver = FEASolver(DirectSolver, problem; xmin=0.001, penalty=PowerPenalty(1.0))
-        comp = Compliance(solver)
-        vol = Volume(solver)
-        filter = DensityFilter(solver; rmin=2.0)
+        solver = FEASolver(DirectSolver, problem; xmin=0.001, penalty=PowerPenaltyFun(1.0))
+        comp = ComplianceFun(solver)
+        vol = VolumeFun(solver)
+        filter = DensityFilterFun(solver; rmin=2.0)
 
         geso = GESO(comp, vol, 0.5, filter; maxiter=5, tol=0.1, p=1.0)
 
         # Test that penalty can be updated
-        TopOpt.setpenalty!(geso, 2.0)
+        setpenalty!(geso, 2.0)
         @test geso.penalty.p ≈ 2.0
 
         # Run with updated penalty
@@ -158,9 +158,9 @@ using Ferrite: getncells
         nels = (10, 4)
         problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
         solver = FEASolver(DirectSolver, problem; xmin=0.001)
-        comp = Compliance(solver)
-        vol = Volume(solver)
-        filter = DensityFilter(solver; rmin=2.0)
+        comp = ComplianceFun(solver)
+        vol = VolumeFun(solver)
+        filter = DensityFilterFun(solver; rmin=2.0)
 
         geso = GESO(comp, vol, 0.5, filter; maxiter=10, tol=0.1, p=1.0)
         x0 = fill(0.6, length(solver.vars))
@@ -174,9 +174,9 @@ using Ferrite: getncells
         nels = (8, 4)
         problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
         solver = FEASolver(DirectSolver, problem; xmin=0.001)
-        comp = Compliance(solver)
-        vol = Volume(solver)
-        filter = DensityFilter(solver; rmin=1.5)
+        comp = ComplianceFun(solver)
+        vol = VolumeFun(solver)
+        filter = DensityFilterFun(solver; rmin=1.5)
 
         geso = GESO(comp, vol, 0.5, filter; maxiter=5, tol=0.001, p=1.0)
         x0 = fill(0.5, length(solver.vars))
@@ -202,9 +202,9 @@ using Ferrite: getncells
         nels = (10, 4)
         problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
         solver = FEASolver(DirectSolver, problem; xmin=0.001)
-        comp = Compliance(solver)
-        vol = Volume(solver)
-        filter = DensityFilter(solver; rmin=2.0)
+        comp = ComplianceFun(solver)
+        vol = VolumeFun(solver)
+        filter = DensityFilterFun(solver; rmin=2.0)
 
         geso = GESO(comp, vol, 0.5, filter; maxiter=5, tol=0.1, p=1.0)
 
@@ -230,9 +230,9 @@ using Ferrite: getncells
         nels = (10, 4)
         problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
         solver = FEASolver(DirectSolver, problem; xmin=0.001)
-        comp = Compliance(solver)
-        vol = Volume(solver)
-        filter = DensityFilter(solver; rmin=2.0)
+        comp = ComplianceFun(solver)
+        vol = VolumeFun(solver)
+        filter = DensityFilterFun(solver; rmin=2.0)
 
         geso = GESO(comp, vol, 0.5, filter; maxiter=5, tol=0.1, p=1.0)
 
@@ -258,9 +258,9 @@ using Ferrite: getncells
         nels = (10, 4)
         problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
         solver = FEASolver(DirectSolver, problem; xmin=0.001)
-        comp = Compliance(solver)
-        vol = Volume(solver)
-        filter = DensityFilter(solver; rmin=2.0)
+        comp = ComplianceFun(solver)
+        vol = VolumeFun(solver)
+        filter = DensityFilterFun(solver; rmin=2.0)
 
         nel = getncells(problem)
         black = falses(nel)
@@ -280,9 +280,9 @@ using Ferrite: getncells
         nels = (10, 4)
         problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
         solver = FEASolver(DirectSolver, problem; xmin=0.001)
-        comp = Compliance(solver)
-        vol = Volume(solver)
-        filter = DensityFilter(solver; rmin=2.0)
+        comp = ComplianceFun(solver)
+        vol = VolumeFun(solver)
+        filter = DensityFilterFun(solver; rmin=2.0)
 
         nel = getncells(problem)
         white = falses(nel)
@@ -302,9 +302,9 @@ using Ferrite: getncells
         nels = (12, 6)
         problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
         solver = FEASolver(DirectSolver, problem; xmin=0.001)
-        comp = Compliance(solver)
-        vol = Volume(solver)
-        filter = DensityFilter(solver; rmin=2.0)
+        comp = ComplianceFun(solver)
+        vol = VolumeFun(solver)
+        filter = DensityFilterFun(solver; rmin=2.0)
 
         nel = getncells(problem)
         black = falses(nel)
@@ -331,9 +331,9 @@ using Ferrite: getncells
         nels = (8, 4)
         problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
         solver = FEASolver(DirectSolver, problem; xmin=0.001)
-        comp = Compliance(solver)
-        vol = Volume(solver)
-        filter = DensityFilter(solver; rmin=2.0)
+        comp = ComplianceFun(solver)
+        vol = VolumeFun(solver)
+        filter = DensityFilterFun(solver; rmin=2.0)
 
         nel = getncells(problem)
         geso = GESO(comp, vol, 0.5, filter; maxiter=5, tol=0.1, p=1.0)
@@ -364,9 +364,9 @@ using Ferrite: getncells
 
         for V_target in [0.3, 0.5, 0.7]
             solver = FEASolver(DirectSolver, problem; xmin=0.001)
-            comp = Compliance(solver)
-            vol = Volume(solver)
-            filter = DensityFilter(solver; rmin=2.0)
+            comp = ComplianceFun(solver)
+            vol = VolumeFun(solver)
+            filter = DensityFilterFun(solver; rmin=2.0)
 
             geso = GESO(comp, vol, V_target, filter; maxiter=10, tol=0.1, p=1.0)
             x0 = fill(V_target, length(solver.vars))
@@ -380,9 +380,9 @@ using Ferrite: getncells
     @testset "GESO with black elements on LBeam" begin
         problem = LBeam(Val{:Linear}, Float64; force=force)
         solver = FEASolver(DirectSolver, problem; xmin=0.001)
-        comp = Compliance(solver)
-        vol = Volume(solver)
-        filter = DensityFilter(solver; rmin=2.0)
+        comp = ComplianceFun(solver)
+        vol = VolumeFun(solver)
+        filter = DensityFilterFun(solver; rmin=2.0)
 
         nel = getncells(problem)
         black = falses(nel)

@@ -12,8 +12,8 @@ stiffness matrix, and `A_e` is the cross-sectional area. Compressive stress
 is negative, tensile stress is positive. See [Gavin2014](@cite) for the
 truss finite element formulation.
 """
-mutable struct TrussStress{
-    T,Ts<:AbstractVector{T},Tu<:Displacement,Tt<:AbstractVector{<:AbstractMatrix{T}}
+mutable struct TrussStressFun{
+    T,Ts<:AbstractVector{T},Tu<:DisplacementFun,Tt<:AbstractVector{<:AbstractMatrix{T}}
 } <: AbstractFunction{T}
     σ::Ts # stress vector, axial stress per cell
     u_fn::Tu
@@ -22,7 +22,7 @@ mutable struct TrussStress{
     maxfevals::Int
 end
 
-function Base.show(io::IO, ::MIME{Symbol("text/plain")}, ::TrussStress)
+function Base.show(io::IO, ::MIME{Symbol("text/plain")}, ::TrussStressFun)
     return println(io, "TopOpt truss stress function")
 end
 
@@ -31,16 +31,16 @@ end
 
 Construct the TrussStress function struct.
 """
-function TrussStress(solver::AbstractFEASolver; maxfevals=10^8)
+function TrussStressFun(solver::AbstractFEASolver; maxfevals=10^8)
     # TrussStress is only valid for truss problems
-    @assert solver.problem isa TrussProblem "TrussStress can only be used with TrussProblem. Got $(typeof(solver.problem))"
+    @assert solver.problem isa TrussProblem "TrussStressFun can only be used with TrussProblem. Got $(typeof(solver.problem))"
     T = eltype(solver.u)
     dim = TopOptProblems.getdim(solver.problem)
     dh = solver.problem.ch.dh
     N = getncells(dh.grid)
     σ = zeros(T, N)
     transf_matrices = Matrix{T}[]
-    u_fn = Displacement(solver; maxfevals)
+    u_fn = DisplacementFun(solver; maxfevals)
     R = zeros(T, (2, 2 * dim))
     for (cellidx, cell) in enumerate(CellIterator(dh))
         u, v = cell.coords[1], cell.coords[2]
@@ -51,7 +51,7 @@ function TrussStress(solver::AbstractFEASolver; maxfevals=10^8)
         R[2, (dim + 1):(2 * dim)] = R_coord[:, 2]
         push!(transf_matrices, copy(R))
     end
-    return TrussStress(σ, u_fn, transf_matrices, 0, maxfevals)
+    return TrussStressFun(σ, u_fn, transf_matrices, 0, maxfevals)
 end
 
 """
@@ -61,7 +61,7 @@ end
 # Returns
 displacement vector `σ`, compressive stress < 0, tensile stress > 0
 """
-function (ts::TrussStress{T})(x::PseudoDensities) where {T}
+function (ts::TrussStressFun{T})(x::PseudoDensities) where {T}
     @unpack σ, transf_matrices, u_fn = ts
     @unpack global_dofs, solver = u_fn
     @unpack penalty, problem, xmin = solver
@@ -86,7 +86,7 @@ Adjoint-based differentiation. The stress σ_e = -(R_e · Ke_e · u_e)[1] / A_e
 depends on x through both the penalized stiffness Ke_e = ρ(x)_e · Ke_0_e and the
 displacement u = K⁻¹f. The pullback solves one adjoint system per evaluation.
 """
-function ChainRulesCore.rrule(ts::TrussStress{T}, x::PseudoDensities) where {T}
+function ChainRulesCore.rrule(ts::TrussStressFun{T}, x::PseudoDensities) where {T}
     @unpack σ, transf_matrices, u_fn = ts
     @unpack global_dofs, solver = u_fn
     @unpack penalty, problem, xmin = solver

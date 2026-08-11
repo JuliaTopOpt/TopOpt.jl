@@ -5,7 +5,7 @@ using Ferrite
 using SparseArrays
 
 using TopOpt
-using TopOpt.TrussTopOptProblems.TrussTopOptProblems: compute_local_axes
+using TopOpt.TrussTopOptProblems: compute_local_axes
 using TopOpt.TopOptProblems: getE, getdh
 using TopOpt.TrussTopOptProblems: getA
 using Arpack
@@ -97,8 +97,8 @@ gm_ins_dir = joinpath(@__DIR__, "instances", "ground_meshes");
 #             # trigger assembly
 #             solver()
 
-#             assemble_k = TopOpt.AssembleK(problem)
-#             element_k = ElementK(solver)
+#             assemble_k = AssembleKFun(problem)
+#             element_k = ElementKFun(solver)
 #             truss_element_kσ = TrussElementKσ(problem, solver)
 
 #             # reaction force in global coordinate

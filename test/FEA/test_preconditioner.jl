@@ -1,7 +1,7 @@
 using TopOpt, Test, LinearAlgebra
 using Ferrite: ndofs
 
-# Access Preconditioners through TopOpt.FEA (it's imported in src/FEA/FEA.jl)
+# Access Preconditioners through FEA (it's imported in src/FEA/FEA.jl)
 const Preconditioners = TopOpt.FEA.Preconditioners
 
 @testset "CG Solvers with Preconditioner" begin

@@ -90,6 +90,8 @@ include(joinpath("TrussTopOptProblems", "TrussTopOptProblems.jl"))
 @reexport using .TrussTopOptProblems
 
 using Ferrite, StaticArrays
+using Ferrite: getncells
+export getncells
 
 using ForwardDiff, IterativeSolvers#, Preconditioners
 @reexport using VTKDataTypes
@@ -116,10 +118,15 @@ export TopOpt,
     simulate,
     TopOptTrace,
     SensFilter,
+    SensFilterFun,
     DensityFilter,
+    DensityFilterFun,
     Displacement,
+    DisplacementFun,
     Compliance,
+    ComplianceFun,
     ThermalCompliance,
+    ThermalComplianceFun,
     FEASolver,
     DirectSolver,
     CGAssemblySolver,
@@ -132,12 +139,19 @@ export TopOpt,
     DefaultCriteria,
     EnergyCriteria,
     PowerPenalty,
+    PowerPenaltyFun,
     RationalPenalty,
+    RationalPenaltyFun,
     SinhPenalty,
+    SinhPenaltyFun,
     MMA87,
     MMA02,
     HeavisideProjection,
+    HeavisideProjectionFun,
     SigmoidProjection,
+    SigmoidProjectionFun,
     ProjectedPenalty,
+    ProjectedPenaltyFun,
+    setpenalty!,
     visualize
 end

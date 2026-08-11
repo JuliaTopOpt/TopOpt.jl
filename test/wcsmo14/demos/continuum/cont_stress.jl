@@ -21,9 +21,9 @@ problem = PointLoadCantilever(Val{:Linear}, problem_size, (1.0, 1.0), E, v, f)
 
 solver = FEASolver(DirectSolver, problem; xmin=xmin)
 
-cheqfilter = DensityFilter(solver; rmin=rmin)
-stress = TopOpt.von_mises_stress_function(solver)
-comp = TopOpt.Compliance(solver)
+cheqfilter = DensityFilterFun(solver; rmin=rmin)
+stress = von_mises_stress_function(solver)
+comp = ComplianceFun(solver)
 
 function obj(x)
     # minimize volume
@@ -44,7 +44,7 @@ Nonconvex.add_ineq_constraint!(m, constr1)
 Nonconvex.add_ineq_constraint!(m, constr2)
 
 options = MMAOptions(; maxiter=1000, tol=Tolerance(; kkt=1e-4, f=1e-4))
-TopOpt.setpenalty!(solver, p)
+setpenalty!(solver, p)
 @time r = Nonconvex.optimize(
     m, MMA87(; dualoptimizer=ConjugateGradient()), x0; options=options
 )

@@ -7,15 +7,25 @@ using TopOpt
 using TopOpt.TopOptProblems: RectilinearGrid, Metadata
 using TopOpt.TopOptProblems:
     left, right, bottom, middley, middlez, nnodespercell, nfacespercell
-using TopOpt.Utilities: @params
 
-@params struct NewPointLoadCantilever{dim,T,N,M} <: StiffnessTopOptProblem{dim,T}
-    rect_grid::RectilinearGrid{dim,T,N,M}
-    E::T
-    ν::T
-    ch::ConstraintHandler{<:DofHandler{dim,<:Cell{dim,N,M},T},T}
-    load_dict::Dict{Int,Vector{T}}
-    metadata::Metadata
+struct NewPointLoadCantilever{
+    dim,
+    T,
+    N,
+    M,
+    T1 <: RectilinearGrid{dim,T,N,M},
+    T2 <: T,
+    T3 <: T,
+    T4 <: ConstraintHandler{<:DofHandler{dim,<:Cell{dim,N,M},T},T},
+    T5 <: Dict{Int,Vector{T}},
+    T6 <: Metadata,
+} <: StiffnessTopOptProblem{dim,T}
+    rect_grid::T1
+    E::T2
+    ν::T3
+    ch::T4
+    load_dict::T5
+    metadata::T6
 end
 # force::T
 # force_dof::Integer
@@ -95,10 +105,10 @@ end
 
 # used in FEA to determine default quad order
 # we don't assume the problem struct has `rect_grid` to define its grid
-TopOptProblems.nnodespercell(p::NewPointLoadCantilever) = nnodespercell(p.rect_grid)
+TopOpt.TopOptProblems.nnodespercell(p::NewPointLoadCantilever) = nnodespercell(p.rect_grid)
 
 # ! important, used for specification!
-function TopOptProblems.getcloaddict(p::NewPointLoadCantilever{dim,T}) where {dim,T}
+function TopOpt.TopOptProblems.getcloaddict(p::NewPointLoadCantilever{dim,T}) where {dim,T}
     # f = T[0, -p.force, 0]
     # fnode = Tuple(getnodeset(p.rect_grid.grid, "down_force"))[1]
     # return Dict{Int, Vector{T}}(fnode => f)

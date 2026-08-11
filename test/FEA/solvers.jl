@@ -126,7 +126,7 @@ using TopOpt, Test, LinearAlgebra, Ferrite
             globalinfo = solver.globalinfo
             elementinfo = solver.elementinfo
             vars = ones(length(solver.vars))
-            penalty = PowerPenalty(1.0)
+            penalty = PowerPenaltyFun(1.0)
             xmin = 0.001
             TopOpt.TopOptProblems.assemble!(
                 globalinfo, problem, elementinfo, vars, penalty, xmin
@@ -163,7 +163,7 @@ using TopOpt, Test, LinearAlgebra, Ferrite
             globalinfo = solver.globalinfo
             elementinfo = solver.elementinfo
             vars = ones(length(solver.vars))
-            penalty = PowerPenalty(1.0)
+            penalty = PowerPenaltyFun(1.0)
             xmin = 0.001
             TopOpt.TopOptProblems.assemble!(
                 globalinfo, problem, elementinfo, vars, penalty, xmin
@@ -199,7 +199,7 @@ using TopOpt, Test, LinearAlgebra, Ferrite
             globalinfo = solver_ref.globalinfo
             elementinfo = solver_ref.elementinfo
             vars = ones(length(solver_ref.vars))
-            penalty = PowerPenalty(1.0)
+            penalty = PowerPenaltyFun(1.0)
             xmin = 0.001
             TopOpt.TopOptProblems.assemble!(
                 globalinfo, problem, elementinfo, vars, penalty, xmin
@@ -240,7 +240,7 @@ using TopOpt, Test, LinearAlgebra, Ferrite
             globalinfo = solver.globalinfo
             elementinfo = solver.elementinfo
             vars = ones(length(solver.vars))
-            penalty = PowerPenalty(1.0)
+            penalty = PowerPenaltyFun(1.0)
             xmin = 0.001
             TopOpt.TopOptProblems.assemble!(
                 globalinfo, problem, elementinfo, vars, penalty, xmin

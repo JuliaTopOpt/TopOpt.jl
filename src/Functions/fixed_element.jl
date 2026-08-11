@@ -10,13 +10,13 @@ Implements the projection with ChainRulesCore.rrule for automatic differentiatio
 - `white::BitVector`: Fixed void elements (density = 0)
 - `free::BitVector`: Free design elements
 """
-struct FixedElementProjector
+struct FixedElementProjectorFun
     nel::Int
     black::BitVector
     white::BitVector
     free::BitVector
 
-    function FixedElementProjector(nel::Int, black::BitVector, white::BitVector)
+    function FixedElementProjectorFun(nel::Int, black::BitVector, white::BitVector)
         length(black) == nel || throw(ArgumentError("black must have length $nel"))
         length(white) == nel || throw(ArgumentError("white must have length $nel"))
         any(black .& white) &&
@@ -27,7 +27,7 @@ struct FixedElementProjector
 end
 
 """
-    (p::FixedElementProjector)(x_free::AbstractVector{T}) -> Vector{T}
+    (p::FixedElementProjectorFun)(x_free::AbstractVector{T}) -> Vector{T}
 
 Project free design variables to full density vector by direct copying.
 
@@ -41,7 +41,7 @@ Project free design variables to full density vector by direct copying.
 # Returns
 - `ρ::Vector{T}`: Full density vector of length p.nel
 """
-function (p::FixedElementProjector)(x_free::AbstractVector{T}) where {T}
+function (p::FixedElementProjectorFun)(x_free::AbstractVector{T}) where {T}
     nfree = count(p.free)
     length(x_free) == nfree || throw(
         ArgumentError(
@@ -58,14 +58,14 @@ function (p::FixedElementProjector)(x_free::AbstractVector{T}) where {T}
 end
 
 """
-    ChainRulesCore.rrule(p::FixedElementProjector, x_free)
+    ChainRulesCore.rrule(p::FixedElementProjectorFun, x_free)
 
 Reverse-mode AD rule for `FixedElementProjector`.
 
 The pullback propagates gradients only through free elements, with zero
 gradient through fixed (black/white) elements.
 """
-function ChainRulesCore.rrule(p::FixedElementProjector, x_free::AbstractVector{T}) where {T}
+function ChainRulesCore.rrule(p::FixedElementProjectorFun, x_free::AbstractVector{T}) where {T}
     y = p(x_free)
 
     function projector_pullback(Δy)
@@ -79,18 +79,18 @@ function ChainRulesCore.rrule(p::FixedElementProjector, x_free::AbstractVector{T
 end
 
 """
-    get_free_variables(p::FixedElementProjector) -> BitVector
+    get_free_variables(p::FixedElementProjectorFun) -> BitVector
 
 Return a BitVector indicating which elements are free design variables.
 """
-get_free_variables(p::FixedElementProjector) = p.free
+get_free_variables(p::FixedElementProjectorFun) = p.free
 
 """
-    get_free_variable_count(p::FixedElementProjector) -> Int
+    get_free_variable_count(p::FixedElementProjectorFun) -> Int
 
 Return the number of free design variables.
 """
-get_free_variable_count(p::FixedElementProjector) = count(p.free)
+get_free_variable_count(p::FixedElementProjectorFun) = count(p.free)
 
 """
     get_fixed_element_projector(problem, black_cells, white_cells) -> FixedElementProjector
@@ -130,7 +130,7 @@ function get_fixed_element_projector(
     white = falses(nel)
     black[black_cells] .= true
     white[white_cells] .= true
-    return FixedElementProjector(nel, black, white)
+    return FixedElementProjectorFun(nel, black, white)
 end
 
 """
@@ -153,8 +153,8 @@ function get_fixed_element_projector(
     white = falses(nel)
     black[black_cells] .= true
     white[white_cells] .= true
-    return FixedElementProjector(nel, black, white)
+    return FixedElementProjectorFun(nel, black, white)
 end
 
-export FixedElementProjector,
+export FixedElementProjectorFun,
     get_fixed_element_projector, get_free_variables, get_free_variable_count

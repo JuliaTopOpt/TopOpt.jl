@@ -18,7 +18,7 @@ function grad_vs_fd(name, f, x; rtol=1e-6, atol=1e-8)
     return val, rel
 end
 
-@testset "Thermal Compliance - Gradient Verification (DirectSolver)" begin
+@testset "Thermal ComplianceFun - Gradient Verification (DirectSolver)" begin
     @testset "Gradient matches finite differences: homogeneous Dirichlet" begin
         nels = (8, 6)
         problem = HeatConductionProblem(
@@ -30,8 +30,8 @@ end
             Tright=0.0,
             heatflux=Dict("top" => 100.0),
         )
-        solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(1.0))
-        comp = ThermalCompliance(solver)
+        solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(1.0))
+        comp = ThermalComplianceFun(solver)
         f = x -> comp(PseudoDensities(x))
         for _ in 1:3
             x = clamp.(rand(prod(nels)), 0.2, 1.0)
@@ -53,8 +53,8 @@ end
             Tright=0.0,
             heatflux=Dict("top" => 1.0),
         )
-        solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(3.0))
-        comp = ThermalCompliance(solver)
+        solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(3.0))
+        comp = ThermalComplianceFun(solver)
         f = x -> comp(PseudoDensities(x))
         for _ in 1:3
             x = clamp.(rand(prod(nels)), 0.2, 1.0)
@@ -75,8 +75,8 @@ end
             Tright=0.0,
             heatflux=Dict("top" => 1.0),
         )
-        solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(3.0))
-        comp = ThermalCompliance(solver)
+        solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(3.0))
+        comp = ThermalComplianceFun(solver)
         f = x -> comp(PseudoDensities(x))
         x = clamp.(rand(prod(nels)), 0.2, 1.0)
         grad_vs_fd("quadratic", f, x; rtol=1e-5)
@@ -93,15 +93,15 @@ end
             Tright=0.0,
             heatflux=Dict("top" => 1.0),
         )
-        solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(3.0))
-        comp = ThermalCompliance(solver)
+        solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(3.0))
+        comp = ThermalComplianceFun(solver)
         f = x -> comp(PseudoDensities(x))
         x = clamp.(rand(prod(nels)), 0.2, 1.0)
         grad_vs_fd("quadratic-inhomog", f, x; rtol=1e-5)
     end
 end
 
-@testset "Thermal Compliance - Objective Correctness" begin
+@testset "Thermal ComplianceFun - Objective Correctness" begin
     @testset "J == Q^T T for homogeneous Dirichlet" begin
         problem = HeatConductionProblem(
             Val{:Linear},
@@ -112,8 +112,8 @@ end
             Tright=0.0,
             heatflux=Dict("top" => 1.0),
         )
-        solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(3.0))
-        comp = ThermalCompliance(solver)
+        solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(3.0))
+        comp = ThermalComplianceFun(solver)
         J = comp(PseudoDensities(ones(32)))
         QT = dot(solver.elementinfo.fixedload, solver.u)
         @test J ≈ QT rtol = 1e-10
@@ -131,8 +131,8 @@ end
             Tright=0.0,
             heatflux=Dict("top" => 1.0),
         )
-        solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(3.0))
-        comp = ThermalCompliance(solver)
+        solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(3.0))
+        comp = ThermalComplianceFun(solver)
         J = comp(PseudoDensities(ones(32)))
         QT = dot(solver.elementinfo.fixedload, solver.u)
         @test J ≈ QT rtol = 1e-10
@@ -155,8 +155,8 @@ end
             Tright=0.0,
             heatflux=Dict{String,Float64}(),
         )
-        solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(3.0))
-        comp = ThermalCompliance(solver)
+        solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(3.0))
+        comp = ThermalComplianceFun(solver)
         J = comp(PseudoDensities(ones(16)))
         @test J ≈ 0.0 atol = 1e-10
         # Gradient should also be zero (no objective to minimize).
@@ -182,8 +182,8 @@ end
             heatflux=Dict{String,Float64}(),
             cload=Dict(top_center => 1.0),
         )
-        solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(3.0))
-        comp = ThermalCompliance(solver)
+        solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(3.0))
+        comp = ThermalComplianceFun(solver)
         f = x -> comp(PseudoDensities(x))
         x = clamp.(rand(prod(nels)), 0.2, 1.0)
         val, gz, fd = f(x),
@@ -194,7 +194,7 @@ end
     end
 end
 
-@testset "Thermal Compliance - Physical Validation" begin
+@testset "Thermal ComplianceFun - Physical Validation" begin
     @testset "Higher conductivity gives lower thermal compliance" begin
         nels = (8, 4)
         heatflux = Dict("top" => 1.0)
@@ -204,8 +204,8 @@ end
         problem_high = HeatConductionProblem(
             Val{:Linear}, nels, (1.0, 1.0), 5.0; Tleft=0.0, Tright=0.0, heatflux=heatflux
         )
-        comp_low = ThermalCompliance(FEASolver(DirectSolver, problem_low; xmin=0.01))
-        comp_high = ThermalCompliance(FEASolver(DirectSolver, problem_high; xmin=0.01))
+        comp_low = ThermalComplianceFun(FEASolver(DirectSolver, problem_low; xmin=0.01))
+        comp_high = ThermalComplianceFun(FEASolver(DirectSolver, problem_high; xmin=0.01))
         x = ones(prod(nels))
         @test comp_high(PseudoDensities(x)) < comp_low(PseudoDensities(x))
     end
@@ -233,8 +233,8 @@ end
             Tright=0.0,
             heatflux=Dict("top" => 2.0),
         )
-        comp1 = ThermalCompliance(FEASolver(DirectSolver, problem1; xmin=0.01))
-        comp2 = ThermalCompliance(FEASolver(DirectSolver, problem2; xmin=0.01))
+        comp1 = ThermalComplianceFun(FEASolver(DirectSolver, problem1; xmin=0.01))
+        comp2 = ThermalComplianceFun(FEASolver(DirectSolver, problem2; xmin=0.01))
         x = ones(prod((6, 4)))
         tc1 = comp1(PseudoDensities(x))
         tc2 = comp2(PseudoDensities(x))
@@ -266,8 +266,8 @@ end
             heatflux=Dict("top" => 2.0),
         )
         for (p, label) in [(problem1, "Q"), (problem2, "2Q")]
-            solver = FEASolver(DirectSolver, p; xmin=0.01, penalty=PowerPenalty(3.0))
-            comp = ThermalCompliance(solver)
+            solver = FEASolver(DirectSolver, p; xmin=0.01, penalty=PowerPenaltyFun(3.0))
+            comp = ThermalComplianceFun(solver)
             J = comp(PseudoDensities(ones(24)))
             QT = dot(solver.elementinfo.fixedload, solver.u)
             @test isapprox(J, QT; rtol=1e-10)
@@ -275,7 +275,7 @@ end
     end
 end
 
-@testset "Thermal Compliance - Quadratic Elements" begin
+@testset "Thermal ComplianceFun - Quadratic Elements" begin
     @testset "ElementFEAInfo builds for Val{:Quadratic} (previously crashed)" begin
         problem = HeatConductionProblem(
             Val{:Quadratic},
@@ -310,34 +310,34 @@ end
             Tright=0.0,
             heatflux=Dict("top" => 1.0),
         )
-        solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(3.0))
+        solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(3.0))
         solver.vars .= 0.7
         solver()
         @test all(isfinite, solver.u)
-        comp = ThermalCompliance(solver)
+        comp = ThermalComplianceFun(solver)
         J = comp(PseudoDensities(fill(0.7, prod(nels))))
         @test isfinite(J)
         @test J > 0
     end
 end
 
-@testset "Thermal Compliance - Error Handling" begin
-    @testset "ThermalCompliance rejects structural problems" begin
+@testset "Thermal ComplianceFun - Error Handling" begin
+    @testset "ThermalComplianceFun rejects structural problems" begin
         problem = PointLoadCantilever(Val{:Linear}, (6, 4), (1.0, 1.0), 1.0, 0.3, 1.0)
         solver = FEASolver(DirectSolver, problem; xmin=0.001)
-        @test_throws ArgumentError ThermalCompliance(solver)
+        @test_throws ArgumentError ThermalComplianceFun(solver)
     end
 
-    @testset "Compliance rejects heat transfer problems" begin
+    @testset "ComplianceFun rejects heat transfer problems" begin
         problem = HeatConductionProblem(
             Val{:Linear}, (4, 4), (1.0, 1.0), 1.0; Tleft=0.0, Tright=0.0
         )
         solver = FEASolver(DirectSolver, problem; xmin=0.001)
-        @test_throws ArgumentError Compliance(solver)
+        @test_throws ArgumentError ComplianceFun(solver)
     end
 end
 
-@testset "Thermal Compliance - getpenalty and setpenalty!" begin
+@testset "Thermal ComplianceFun - getpenalty and setpenalty!" begin
     problem = HeatConductionProblem(
         Val{:Linear},
         (4, 4),
@@ -347,22 +347,22 @@ end
         Tright=0.0,
         heatflux=Dict("top" => 1.0),
     )
-    solver = FEASolver(DirectSolver, problem; xmin=0.001, penalty=PowerPenalty(3.0))
-    tc = ThermalCompliance(solver)
+    solver = FEASolver(DirectSolver, problem; xmin=0.001, penalty=PowerPenaltyFun(3.0))
+    tc = ThermalComplianceFun(solver)
 
     @testset "getpenalty returns current penalty" begin
         current = TopOpt.Utilities.getpenalty(tc)
-        @test current isa PowerPenalty
+        @test current isa PowerPenaltyFun
         @test current.p == 3.0
     end
 
     @testset "setpenalty! updates penalty" begin
-        TopOpt.Utilities.setpenalty!(tc, PowerPenalty(2.0))
+        TopOpt.Utilities.setpenalty!(tc, PowerPenaltyFun(2.0))
         @test TopOpt.Utilities.getpenalty(tc).p == 2.0
     end
 end
 
-@testset "Thermal Compliance - Vector input warning" begin
+@testset "Thermal ComplianceFun - Vector input warning" begin
     problem = HeatConductionProblem(
         Val{:Linear},
         (4, 4),
@@ -372,8 +372,8 @@ end
         Tright=0.0,
         heatflux=Dict("top" => 1.0),
     )
-    solver = FEASolver(DirectSolver, problem; xmin=0.001, penalty=PowerPenalty(3.0))
-    tc = ThermalCompliance(solver)
+    solver = FEASolver(DirectSolver, problem; xmin=0.001, penalty=PowerPenaltyFun(3.0))
+    tc = ThermalComplianceFun(solver)
     x = ones(length(solver.vars)) * 0.5
     @test_logs (:warn, r"A vector input was passed in to the thermal compliance function") tc(
         x

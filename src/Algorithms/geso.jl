@@ -10,8 +10,8 @@ end
 The GESO algorithm, see [LiuYiLiShen2008](@cite).
 """
 struct GESO{T<:Real,TF<:AbstractCheqFilter} <: TopOptAlgorithm
-    comp::Compliance
-    vol::Volume
+    comp::ComplianceFun
+    vol::VolumeFun
     vol_limit::T
     filter::TF
     vars::AbstractVector{T}
@@ -42,8 +42,8 @@ function Base.show(io::IO, ::MIME{Symbol("text/plain")}, ::GESO)
 end
 
 function GESO(
-    comp::Compliance,
-    vol::Volume,
+    comp::ComplianceFun,
+    vol::VolumeFun,
     vol_limit,
     filter;
     maxiter=1000,

@@ -7,9 +7,9 @@ _mean(x) = sum(x) / length(x)
 
 Random.seed!(42)
 
-@testset "MeanCompliance - Analytical Validation" begin
-    @testset "MeanCompliance produces finite positive values" begin
-        # Basic sanity check: MeanCompliance should return positive finite values
+@testset "MeanComplianceFun - Analytical Validation" begin
+    @testset "MeanComplianceFun produces finite positive values" begin
+        # Basic sanity check: MeanComplianceFun should return positive finite values
         E = 1.0
         ν = 0.3
         force = 1.0
@@ -17,7 +17,7 @@ Random.seed!(42)
 
         base_problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
         nloads = 3
-        F = spzeros(TopOpt.Ferrite.ndofs(base_problem.ch.dh), nloads)
+        F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
         dense_load_inds = vec(TopOpt.TopOptProblems.get_surface_dofs(base_problem))
         for i in 1:nloads
             dofs = dense_load_inds[rand(1:length(dense_load_inds), 2)]
@@ -26,9 +26,9 @@ Random.seed!(42)
 
         problem_ml = MultiLoad(base_problem, F)
         solver_ml = FEASolver(
-            DirectSolver, problem_ml; xmin=0.01, penalty=PowerPenalty(1.0)
+            DirectSolver, problem_ml; xmin=0.01, penalty=PowerPenaltyFun(1.0)
         )
-        mc = MeanCompliance(problem_ml, solver_ml; method=:exact)
+        mc = MeanComplianceFun(problem_ml, solver_ml; method=:exact)
 
         x = fill(0.5, length(solver_ml.vars))
         val = mc(PseudoDensities(x))
@@ -48,24 +48,24 @@ Random.seed!(42)
         base_problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
 
         # Single load
-        F1 = spzeros(TopOpt.Ferrite.ndofs(base_problem.ch.dh), 1)
+        F1 = spzeros(Ferrite.ndofs(base_problem.ch.dh), 1)
         right_dofs = TopOpt.TopOptProblems.get_surface_dofs(base_problem)
         F1[right_dofs, 1] .= force
 
         problem1 = MultiLoad(base_problem, F1)
-        solver1 = FEASolver(DirectSolver, problem1; xmin=0.01, penalty=PowerPenalty(1.0))
-        mc1 = MeanCompliance(problem1, solver1; method=:exact)
+        solver1 = FEASolver(DirectSolver, problem1; xmin=0.01, penalty=PowerPenaltyFun(1.0))
+        mc1 = MeanComplianceFun(problem1, solver1; method=:exact)
 
         # Multiple identical loads
         nloads = 5
-        F5 = spzeros(TopOpt.Ferrite.ndofs(base_problem.ch.dh), nloads)
+        F5 = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
         for i in 1:nloads
             F5[right_dofs, i] .= force
         end
 
         problem5 = MultiLoad(base_problem, F5)
-        solver5 = FEASolver(DirectSolver, problem5; xmin=0.01, penalty=PowerPenalty(1.0))
-        mc5 = MeanCompliance(problem5, solver5; method=:exact)
+        solver5 = FEASolver(DirectSolver, problem5; xmin=0.01, penalty=PowerPenaltyFun(1.0))
+        mc5 = MeanComplianceFun(problem5, solver5; method=:exact)
 
         x = fill(0.6, length(solver1.vars))
         val1 = mc1(PseudoDensities(x))
@@ -76,7 +76,7 @@ Random.seed!(42)
     end
 
     @testset "Mean compliance scales with load magnitude squared" begin
-        # Analytical result: Compliance C = f^T * K^-1 * f
+        # Analytical result: ComplianceFun C = f^T * K^-1 * f
         # If all loads scale by factor α, then C scales by α²
         E = 1.0
         ν = 0.3
@@ -87,7 +87,7 @@ Random.seed!(42)
 
         # Reference with unit load
         nloads = 3
-        F_ref = spzeros(TopOpt.Ferrite.ndofs(base_problem.ch.dh), nloads)
+        F_ref = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
         dense_load_inds = vec(TopOpt.TopOptProblems.get_surface_dofs(base_problem))
         for i in 1:nloads
             dofs = dense_load_inds[rand(1:length(dense_load_inds), 2)]
@@ -96,9 +96,9 @@ Random.seed!(42)
 
         problem_ref = MultiLoad(base_problem, F_ref)
         solver_ref = FEASolver(
-            DirectSolver, problem_ref; xmin=0.01, penalty=PowerPenalty(1.0)
+            DirectSolver, problem_ref; xmin=0.01, penalty=PowerPenaltyFun(1.0)
         )
-        mc_ref = MeanCompliance(problem_ref, solver_ref; method=:exact)
+        mc_ref = MeanComplianceFun(problem_ref, solver_ref; method=:exact)
 
         x = fill(0.5, length(solver_ref.vars))
         C_ref = mc_ref(PseudoDensities(x))
@@ -108,9 +108,9 @@ Random.seed!(42)
         F_scaled = scale_factor .* F_ref
         problem_scaled = MultiLoad(base_problem, F_scaled)
         solver_scaled = FEASolver(
-            DirectSolver, problem_scaled; xmin=0.01, penalty=PowerPenalty(1.0)
+            DirectSolver, problem_scaled; xmin=0.01, penalty=PowerPenaltyFun(1.0)
         )
-        mc_scaled = MeanCompliance(problem_scaled, solver_scaled; method=:exact)
+        mc_scaled = MeanComplianceFun(problem_scaled, solver_scaled; method=:exact)
 
         C_scaled = mc_scaled(PseudoDensities(x))
 
@@ -131,7 +131,7 @@ Random.seed!(42)
         base_problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
 
         nloads = 3
-        F = spzeros(TopOpt.Ferrite.ndofs(base_problem.ch.dh), nloads)
+        F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
         dense_load_inds = vec(TopOpt.TopOptProblems.get_surface_dofs(base_problem))
         for i in 1:nloads
             dofs = dense_load_inds[rand(1:length(dense_load_inds), 2)]
@@ -139,8 +139,8 @@ Random.seed!(42)
         end
 
         problem = MultiLoad(base_problem, F)
-        solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(2.0))
-        mc = MeanCompliance(problem, solver; method=:exact)
+        solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(2.0))
+        mc = MeanComplianceFun(problem, solver; method=:exact)
 
         # Compare different volume fractions
         vol_fracs = [0.3, 0.5, 0.7, 0.9]
@@ -152,14 +152,14 @@ Random.seed!(42)
             push!(compliances, C)
         end
 
-        # Compliance should decrease with increasing volume fraction
+        # ComplianceFun should decrease with increasing volume fraction
         for i in 2:length(compliances)
             @test compliances[i] < compliances[i - 1]
         end
     end
 end
 
-@testset "MeanCompliance - Method Accuracy" begin
+@testset "MeanComplianceFun - Method Accuracy" begin
     @testset "Exact methods produce consistent results" begin
         # All exact methods should give very similar results
         E = 1.0
@@ -170,7 +170,7 @@ end
         base_problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
 
         nloads = 4
-        F = spzeros(TopOpt.Ferrite.ndofs(base_problem.ch.dh), nloads)
+        F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
         dense_load_inds = vec(TopOpt.TopOptProblems.get_surface_dofs(base_problem))
         for i in 1:nloads
             dofs = dense_load_inds[rand(1:length(dense_load_inds), 2)]
@@ -181,12 +181,12 @@ end
 
         # Test both exact methods
         solver_exact = FEASolver(
-            DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(2.0)
+            DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(2.0)
         )
-        mc_exact = MeanCompliance(problem, solver_exact; method=:exact)
+        mc_exact = MeanComplianceFun(problem, solver_exact; method=:exact)
 
-        solver_svd = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(2.0))
-        mc_svd = MeanCompliance(problem, solver_svd; method=:exact_svd)
+        solver_svd = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(2.0))
+        mc_svd = MeanComplianceFun(problem, solver_svd; method=:exact_svd)
 
         x = fill(0.5, length(solver_exact.vars))
 
@@ -208,7 +208,7 @@ end
         base_problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
 
         nloads = 3
-        F = spzeros(TopOpt.Ferrite.ndofs(base_problem.ch.dh), nloads)
+        F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
         dense_load_inds = vec(TopOpt.TopOptProblems.get_surface_dofs(base_problem))
         for i in 1:nloads
             dofs = dense_load_inds[rand(1:length(dense_load_inds), 2)]
@@ -219,9 +219,9 @@ end
 
         # Reference exact solution
         solver_exact = FEASolver(
-            DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(2.0)
+            DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(2.0)
         )
-        mc_exact = MeanCompliance(problem, solver_exact; method=:exact)
+        mc_exact = MeanComplianceFun(problem, solver_exact; method=:exact)
 
         x = fill(0.5, length(solver_exact.vars))
         C_exact = mc_exact(PseudoDensities(x))
@@ -232,9 +232,9 @@ end
 
         for nv in sample_counts
             solver_trace = FEASolver(
-                DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(2.0)
+                DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(2.0)
             )
-            mc_trace = MeanCompliance(problem, solver_trace; method=:trace, nv=nv)
+            mc_trace = MeanComplianceFun(problem, solver_trace; method=:trace, nv=nv)
             C_trace = mc_trace(PseudoDensities(x))
 
             rel_error = abs(C_trace - C_exact) / C_exact
@@ -257,7 +257,7 @@ end
         base_problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
 
         nloads = 3
-        F = spzeros(TopOpt.Ferrite.ndofs(base_problem.ch.dh), nloads)
+        F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
         dense_load_inds = vec(TopOpt.TopOptProblems.get_surface_dofs(base_problem))
         for i in 1:nloads
             dofs = dense_load_inds[rand(1:length(dense_load_inds), 2)]
@@ -267,8 +267,8 @@ end
         problem = MultiLoad(base_problem, F)
 
         # Reference with full density, p=1
-        solver_ref = FEASolver(DirectSolver, problem; xmin=0.001, penalty=PowerPenalty(1.0))
-        mc_ref = MeanCompliance(problem, solver_ref; method=:exact)
+        solver_ref = FEASolver(DirectSolver, problem; xmin=0.001, penalty=PowerPenaltyFun(1.0))
+        mc_ref = MeanComplianceFun(problem, solver_ref; method=:exact)
         C_full = mc_ref(PseudoDensities(ones(length(solver_ref.vars))))
 
         # Test power law scaling with ρ=0.5
@@ -276,12 +276,12 @@ end
         x_uniform = fill(rho, length(solver_ref.vars))
 
         for p in [1.0, 2.0, 3.0]
-            solver = FEASolver(DirectSolver, problem; xmin=0.001, penalty=PowerPenalty(p))
-            mc = MeanCompliance(problem, solver; method=:exact)
+            solver = FEASolver(DirectSolver, problem; xmin=0.001, penalty=PowerPenaltyFun(p))
+            mc = MeanComplianceFun(problem, solver; method=:exact)
             C_uniform = mc(PseudoDensities(x_uniform))
 
             # Check approximate power law behavior
-            expected_ratio = rho^(-p)  # Compliance increases as density decreases
+            expected_ratio = rho^(-p)  # ComplianceFun increases as density decreases
             actual_ratio = C_uniform / C_full
 
             # Allow 30% tolerance for multi-load effects
@@ -290,7 +290,7 @@ end
     end
 end
 
-@testset "MeanCompliance - Gradient Verification" begin
+@testset "MeanComplianceFun - Gradient Verification" begin
     @testset "Zygote vs FiniteDifferences consistency" begin
         # Gradient should match between automatic and finite difference
         E = 1.0
@@ -301,7 +301,7 @@ end
         base_problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
 
         nloads = 3
-        F = spzeros(TopOpt.Ferrite.ndofs(base_problem.ch.dh), nloads)
+        F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
         dense_load_inds = vec(TopOpt.TopOptProblems.get_surface_dofs(base_problem))
         for i in 1:nloads
             dofs = dense_load_inds[rand(1:length(dense_load_inds), 2)]
@@ -311,8 +311,8 @@ end
         problem = MultiLoad(base_problem, F)
 
         for method in [:exact, :exact_svd]
-            solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(2.0))
-            mc = MeanCompliance(problem, solver; method=method)
+            solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(2.0))
+            mc = MeanComplianceFun(problem, solver; method=method)
             f = x -> mc(PseudoDensities(x))
 
             # Test at a random point
@@ -344,7 +344,7 @@ end
         base_problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
 
         nloads = 3
-        F = spzeros(TopOpt.Ferrite.ndofs(base_problem.ch.dh), nloads)
+        F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
         dense_load_inds = vec(TopOpt.TopOptProblems.get_surface_dofs(base_problem))
         for i in 1:nloads
             dofs = dense_load_inds[rand(1:length(dense_load_inds), 2)]
@@ -354,14 +354,14 @@ end
         problem = MultiLoad(base_problem, F)
 
         solver_exact = FEASolver(
-            DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(2.0)
+            DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(2.0)
         )
-        mc_exact = MeanCompliance(problem, solver_exact; method=:exact)
+        mc_exact = MeanComplianceFun(problem, solver_exact; method=:exact)
 
         solver_trace = FEASolver(
-            DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(2.0)
+            DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(2.0)
         )
-        mc_trace = MeanCompliance(problem, solver_trace; method=:trace, nv=20)
+        mc_trace = MeanComplianceFun(problem, solver_trace; method=:trace, nv=20)
 
         x = fill(0.5, length(solver_exact.vars))
 
@@ -387,7 +387,7 @@ end
         base_problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
 
         nloads = 3
-        F = spzeros(TopOpt.Ferrite.ndofs(base_problem.ch.dh), nloads)
+        F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
         dense_load_inds = vec(TopOpt.TopOptProblems.get_surface_dofs(base_problem))
         for i in 1:nloads
             dofs = dense_load_inds[rand(1:length(dense_load_inds), 2)]
@@ -396,8 +396,8 @@ end
 
         problem = MultiLoad(base_problem, F)
 
-        solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(3.0))
-        mc = MeanCompliance(problem, solver; method=:exact)
+        solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(3.0))
+        mc = MeanComplianceFun(problem, solver; method=:exact)
         f = x -> mc(PseudoDensities(x))
 
         # Test at low and high density
@@ -412,8 +412,8 @@ end
     end
 end
 
-@testset "MeanCompliance - System Properties" begin
-    @testset "Compliance is positive definite" begin
+@testset "MeanComplianceFun - System Properties" begin
+    @testset "ComplianceFun is positive definite" begin
         # Mean compliance must always be positive for valid configurations
         E = 1.0
         ν = 0.3
@@ -423,7 +423,7 @@ end
         base_problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
 
         nloads = 3
-        F = spzeros(TopOpt.Ferrite.ndofs(base_problem.ch.dh), nloads)
+        F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
         dense_load_inds = vec(TopOpt.TopOptProblems.get_surface_dofs(base_problem))
         for i in 1:nloads
             dofs = dense_load_inds[rand(1:length(dense_load_inds), 2)]
@@ -433,8 +433,8 @@ end
         problem = MultiLoad(base_problem, F)
 
         for method in [:exact, :exact_svd, :trace]
-            solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(2.0))
-            mc = MeanCompliance(problem, solver; method=method, nv=5)
+            solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(2.0))
+            mc = MeanComplianceFun(problem, solver; method=method, nv=5)
 
             # Test at multiple densities
             for vf in [0.3, 0.5, 0.7]
@@ -456,7 +456,7 @@ end
         base_problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
 
         nloads = 3
-        F = spzeros(TopOpt.Ferrite.ndofs(base_problem.ch.dh), nloads)
+        F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
         dense_load_inds = vec(TopOpt.TopOptProblems.get_surface_dofs(base_problem))
         for i in 1:nloads
             dofs = dense_load_inds[rand(1:length(dense_load_inds), 2)]
@@ -468,8 +468,8 @@ end
         values = Float64[]
 
         for sample_method in [:hutch, :hadamard]
-            solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(2.0))
-            mc = MeanCompliance(
+            solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(2.0))
+            mc = MeanComplianceFun(
                 problem, solver; method=:trace, nv=15, sample_method=sample_method
             )
 
@@ -493,7 +493,7 @@ end
 
         # Create 3 specific load cases
         nloads = 3
-        F = spzeros(TopOpt.Ferrite.ndofs(base_problem.ch.dh), nloads)
+        F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
         dense_load_inds = vec(TopOpt.TopOptProblems.get_surface_dofs(base_problem))
 
         for i in 1:nloads
@@ -508,9 +508,9 @@ end
             F_single = F[:, i:i]
             problem_single = MultiLoad(base_problem, F_single)
             solver_single = FEASolver(
-                DirectSolver, problem_single; xmin=0.01, penalty=PowerPenalty(2.0)
+                DirectSolver, problem_single; xmin=0.01, penalty=PowerPenaltyFun(2.0)
             )
-            comp = Compliance(solver_single)
+            comp = ComplianceFun(solver_single)
             C_single = comp(PseudoDensities(x))
             @test C_single > 0
             @test isfinite(C_single)
@@ -519,17 +519,17 @@ end
         # Multi-load compliance should also be positive
         problem_ml = MultiLoad(base_problem, F)
         solver_ml = FEASolver(
-            DirectSolver, problem_ml; xmin=0.01, penalty=PowerPenalty(2.0)
+            DirectSolver, problem_ml; xmin=0.01, penalty=PowerPenaltyFun(2.0)
         )
-        mc = MeanCompliance(problem_ml, solver_ml; method=:exact)
+        mc = MeanComplianceFun(problem_ml, solver_ml; method=:exact)
         C_mean = mc(PseudoDensities(x))
         @test C_mean > 0
         @test isfinite(C_mean)
     end
 end
 
-@testset "MeanCompliance - Integration with Filter" begin
-    @testset "DensityFilter with mean compliance chain rule" begin
+@testset "MeanComplianceFun - Integration with Filter" begin
+    @testset "DensityFilterFun with mean compliance chain rule" begin
         # Test that gradient chain rule works through filter
         E = 1.0
         ν = 0.3
@@ -539,7 +539,7 @@ end
         base_problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
 
         nloads = 3
-        F = spzeros(TopOpt.Ferrite.ndofs(base_problem.ch.dh), nloads)
+        F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
         dense_load_inds = vec(TopOpt.TopOptProblems.get_surface_dofs(base_problem))
         for i in 1:nloads
             dofs = dense_load_inds[rand(1:length(dense_load_inds), 2)]
@@ -548,9 +548,9 @@ end
 
         problem = MultiLoad(base_problem, F)
 
-        solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(2.0))
-        mc = MeanCompliance(problem, solver; method=:exact)
-        filter = DensityFilter(solver; rmin=2.0)
+        solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(2.0))
+        mc = MeanComplianceFun(problem, solver; method=:exact)
+        filter = DensityFilterFun(solver; rmin=2.0)
 
         f = x -> mc(filter(PseudoDensities(x)))
 
@@ -570,7 +570,7 @@ end
     end
 end
 
-@testset "MeanCompliance - Error Handling" begin
+@testset "MeanComplianceFun - Error Handling" begin
     @testset "Construction validation" begin
         E = 1.0
         ν = 0.3
@@ -580,7 +580,7 @@ end
         base_problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
 
         nloads = 3
-        F = spzeros(TopOpt.Ferrite.ndofs(base_problem.ch.dh), nloads)
+        F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
         dense_load_inds = vec(TopOpt.TopOptProblems.get_surface_dofs(base_problem))
         for i in 1:nloads
             dofs = dense_load_inds[rand(1:length(dense_load_inds), 2)]
@@ -588,18 +588,18 @@ end
         end
 
         problem = MultiLoad(base_problem, F)
-        solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(2.0))
-        mc = MeanCompliance(problem, solver; method=:exact)
+        solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(2.0))
+        mc = MeanComplianceFun(problem, solver; method=:exact)
 
         # Verify properties
         @test mc isa TopOpt.Functions.AbstractFunction
-        @test mc.compliance isa Compliance
+        @test mc.compliance isa ComplianceFun
         @test mc.F === F
         @test Nonconvex.NonconvexCore.getdim(mc) == 1
     end
 end
 
-@testset "MeanCompliance - Helper Functions" begin
+@testset "MeanComplianceFun - Helper Functions" begin
     @testset "hutch_rand! produces valid Rademacher samples" begin
         # Hutchinson estimator uses Rademacher random variables (±1)
         for n in [10, 20, 30]

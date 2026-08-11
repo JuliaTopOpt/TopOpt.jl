@@ -15,12 +15,12 @@ Random.seed!(42)
         # Based on the approach in csimp.jl
         nels = (20, 10)
         problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
-        solver = FEASolver(DirectSolver, problem; xmin=0.001, penalty=PowerPenalty(1.0))
+        solver = FEASolver(DirectSolver, problem; xmin=0.001, penalty=PowerPenaltyFun(1.0))
 
         # Set up optimization
-        comp = Compliance(solver)
-        vol = Volume(solver)
-        filter = DensityFilter(solver; rmin=2.0)
+        comp = ComplianceFun(solver)
+        vol = VolumeFun(solver)
+        filter = DensityFilterFun(solver; rmin=2.0)
 
         # Objective and constraint
         V = 0.5  # volume fraction
@@ -41,7 +41,7 @@ Random.seed!(42)
         for j in 1:nsteps
             p = ps[j]
             tol = tols[j]
-            TopOpt.setpenalty!(solver, p)
+            setpenalty!(solver, p)
             options = MMAOptions(; tol=Tolerance(; kkt=tol), maxiter=50)
             res = optimize(model, alg, x; options)
             x = res.minimizer
@@ -51,7 +51,7 @@ Random.seed!(42)
         @test length(x) == getncells(problem)
         @test all(0 .<= x .<= 1)
         final_vol = vol(PseudoDensities(x))
-        @test abs(final_vol - V) < 0.05  # Volume constraint should be satisfied
+        @test abs(final_vol - V) < 0.05  # VolumeFun constraint should be satisfied
     end
 
     @testset "Filtered sensitivity workflow" begin
@@ -61,8 +61,8 @@ Random.seed!(42)
         solver = FEASolver(DirectSolver, problem; xmin=0.001)
 
         # Create filtered compliance
-        comp = Compliance(solver)
-        filter = DensityFilter(solver; rmin=2.0)
+        comp = ComplianceFun(solver)
+        filter = DensityFilterFun(solver; rmin=2.0)
 
         # Evaluate at uniform density
         x = fill(0.5, length(solver.vars))
@@ -95,12 +95,12 @@ Random.seed!(42)
         end
 
         problem = MultiLoad(base_problem, F)
-        solver = FEASolver(DirectSolver, problem; xmin=0.001, penalty=PowerPenalty(2.0))
+        solver = FEASolver(DirectSolver, problem; xmin=0.001, penalty=PowerPenaltyFun(2.0))
 
         # Set up optimization with mean compliance
-        mc = MeanCompliance(problem, solver; method=:exact)
-        vol = Volume(solver)
-        filter = DensityFilter(solver; rmin=2.0)
+        mc = MeanComplianceFun(problem, solver; method=:exact)
+        vol = VolumeFun(solver)
+        filter = DensityFilterFun(solver; rmin=2.0)
 
         # Brief optimization
         V = 0.5
@@ -133,12 +133,12 @@ Random.seed!(42)
             Val{:Linear}, nels, sizes, k; Tleft=0.0, Tright=0.0, heatflux=heatflux
         )
 
-        solver = FEASolver(DirectSolver, problem; xmin=0.001, penalty=PowerPenalty(2.0))
+        solver = FEASolver(DirectSolver, problem; xmin=0.001, penalty=PowerPenaltyFun(2.0))
 
         # Thermal compliance optimization
-        comp = ThermalCompliance(solver)
-        vol = Volume(solver)
-        filter = DensityFilter(solver; rmin=2.0)
+        comp = ThermalComplianceFun(solver)
+        vol = VolumeFun(solver)
+        filter = DensityFilterFun(solver; rmin=2.0)
 
         # Brief optimization
         V = 0.5
@@ -158,15 +158,15 @@ Random.seed!(42)
         @test res.fcalls > 0
     end
 
-    @testset "BESO + DensityFilter integration" begin
+    @testset "BESO + DensityFilterFun integration" begin
         # BESO with filtering
         nels = (12, 6)
         problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
         solver = FEASolver(DirectSolver, problem; xmin=0.001)
 
-        comp = Compliance(solver)
-        vol = Volume(solver)
-        filter = DensityFilter(solver; rmin=2.0)
+        comp = ComplianceFun(solver)
+        vol = VolumeFun(solver)
+        filter = DensityFilterFun(solver; rmin=2.0)
 
         beso = BESO(comp, vol, 0.5, filter; maxiter=15, tol=0.05, p=1.0)
         x0 = fill(0.5, length(solver.vars))
@@ -175,22 +175,22 @@ Random.seed!(42)
         @test length(result.topology) == getncells(problem)
         @test all(x -> x == 0 || x == 1, result.topology)
 
-        # Volume should be approximately satisfied
+        # VolumeFun should be approximately satisfied
         total_volume = sum(vol.cellvolumes)
         material_volume = dot(result.topology, vol.cellvolumes)
         actual_vol_frac = material_volume / total_volume
         @test abs(actual_vol_frac - 0.5) < 0.1
     end
 
-    @testset "GESO + DensityFilter integration" begin
+    @testset "GESO + DensityFilterFun integration" begin
         # GESO with filtering
         nels = (10, 4)
         problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
         solver = FEASolver(DirectSolver, problem; xmin=0.001)
 
-        comp = Compliance(solver)
-        vol = Volume(solver)
-        filter = DensityFilter(solver; rmin=2.0)
+        comp = ComplianceFun(solver)
+        vol = VolumeFun(solver)
+        filter = DensityFilterFun(solver; rmin=2.0)
 
         geso = GESO(comp, vol, 0.5, filter; maxiter=10, tol=0.1, p=1.0)
         x0 = fill(0.5, length(solver.vars))
@@ -216,8 +216,8 @@ Random.seed!(42)
             problem = prob_fn()
             solver = FEASolver(DirectSolver, problem; xmin=0.001)
 
-            comp = Compliance(solver)
-            vol = Volume(solver)
+            comp = ComplianceFun(solver)
+            vol = VolumeFun(solver)
 
             # Quick evaluation
             x = fill(0.5, length(solver.vars))
@@ -226,7 +226,7 @@ Random.seed!(42)
 
             @test c > 0
             @test v > 0
-            @test v < 1  # Volume fraction should be less than full
+            @test v < 1  # VolumeFun fraction should be less than full
         end
     end
 
@@ -260,11 +260,11 @@ Random.seed!(42)
         @test problem isa StiffnessTopOptProblem
 
         # Set up solver with SIMP
-        solver = FEASolver(DirectSolver, problem; xmin=0.001, penalty=PowerPenalty(3.0))
+        solver = FEASolver(DirectSolver, problem; xmin=0.001, penalty=PowerPenaltyFun(3.0))
 
         # Create compliance and volume functions
-        comp = Compliance(solver)
-        vol = Volume(solver)
+        comp = ComplianceFun(solver)
+        vol = VolumeFun(solver)
 
         # Set up optimization
         V = 0.1  # Target 10% volume fraction
@@ -293,9 +293,9 @@ Random.seed!(42)
         @test all(0 .<= res.minimizer .<= 1)
 
         final_vol = vol(PseudoDensities(res.minimizer))
-        @test abs(final_vol - V) < 0.05  # Volume constraint satisfied
+        @test abs(final_vol - V) < 0.05  # VolumeFun constraint satisfied
 
-        # Compliance should be finite
+        # ComplianceFun should be finite
         final_comp = comp(PseudoDensities(res.minimizer))
         @test isfinite(final_comp)
         @test final_comp > 0

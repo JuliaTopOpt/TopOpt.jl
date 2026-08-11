@@ -1,6 +1,6 @@
 using TopOpt, Test, LinearAlgebra, StaticArrays, Ferrite
 using TopOpt: RaggedArray, compliance, meandiag, density, sumdiag
-using TopOpt: @params, @forward_property
+using TopOpt.Utilities: @forward_property
 using Ferrite: DofHandler, Grid, getncells
 
 @testset "RaggedArray" begin
@@ -39,42 +39,6 @@ using Ferrite: DofHandler, Grid, getncells
     @test ra_mixed[1] == [1.0, 2.0, 3.0]
     @test ra_mixed[2] == Float64[]
     @test ra_mixed[3] == [4.0]
-end
-
-@testset "@params macro" begin
-    # Test basic struct generation
-    # The @params macro creates type parameters for each field
-    @params struct TestStruct1{T}
-        f1::T
-        f2::AbstractVector{T}
-    end
-
-    # Create instance using default constructor
-    # The macro generates: struct TestStruct1{T, T1<:T, T2<:AbstractVector{T}}
-    ts = TestStruct1(1.0, [2.0, 3.0])
-    @test ts.f1 == 1.0
-    @test ts.f2 == [2.0, 3.0]
-
-    # Test with type bounds - note: need to respect the type hierarchy
-    @params struct TestStruct2{T}
-        f1::T
-        f2::AbstractVector{<:Real}
-        f3
-    end
-
-    ts2 = TestStruct2(1, [2.0, 3.0], "test")
-    @test ts2.f1 == 1
-    @test ts2.f2 == [2.0, 3.0]
-    @test ts2.f3 == "test"
-
-    # Test with inheritance
-    abstract type AbstractTest end
-    @params struct TestStruct3{T} <: AbstractTest
-        f1::T
-    end
-
-    ts3 = TestStruct3(1.0)
-    @test ts3 isa AbstractTest
 end
 
 @testset "compliance" begin

@@ -23,7 +23,7 @@ Re-parametrizes the design in terms of a neural network's weights and biases.
 the network is called on each element's centroid to produce that element's
 design variable.
 """
-struct NeuralNetwork{Tm,Ti1,Tp,Ti2,Tc} <: AbstractMLModel
+struct NeuralNetworkFun{Tm,Ti1,Tp,Ti2,Tc} <: AbstractMLModel
     model::Tm
     init_params::Ti1
     params_to_out::Tp
@@ -37,10 +37,10 @@ end
 Prediction function that applies the neural network to each element centroid
 to produce the design variable. Used for evaluating a trained model.
 """
-struct PredictFunction{Tm<:AbstractMLModel} <: Function
+struct PredictFunctionFun{Tm<:AbstractMLModel} <: Function
     model::Tm
 end
-function (pf::PredictFunction)(in::AbstractVector{<:Real})
+function (pf::PredictFunctionFun)(in::AbstractVector{<:Real})
     return PseudoDensities(pf.model.in_to_out(in))
 end
 
@@ -51,15 +51,15 @@ The training function used in the re-parameterized topology optimization
 formulation. Takes the vector of neural-network weights/biases `p` and returns
 the vector of element-wise design variables `x`.
 """
-struct TrainFunction{Tm<:AbstractMLModel} <: Function
+struct TrainFunctionFun{Tm<:AbstractMLModel} <: Function
     model::Tm
 end
-function (tf::TrainFunction)(p::AbstractVector{<:Real})
+function (tf::TrainFunctionFun)(p::AbstractVector{<:Real})
     return PseudoDensities(tf.model.params_to_out(p))
 end
 
-function (ml::NeuralNetwork)(x::AbstractVector{<:Coordinates})
-    return PredictFunction(ml).(getfield.(x, :coords))
+function (ml::NeuralNetworkFun)(x::AbstractVector{<:Coordinates})
+    return PredictFunctionFun(ml).(getfield.(x, :coords))
 end
-(ml::NeuralNetwork)(x::Coordinates) = PredictFunction(ml)(x.coords)
-(ml::NeuralNetwork)(x::NNParams) = TrainFunction(ml)(x.p)
+(ml::NeuralNetworkFun)(x::Coordinates) = PredictFunctionFun(ml)(x.coords)
+(ml::NeuralNetworkFun)(x::NNParams) = TrainFunctionFun(ml)(x.p)

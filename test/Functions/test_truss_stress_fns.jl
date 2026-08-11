@@ -33,7 +33,7 @@ using CairoMakie
 # using GLMakie
 using ColorSchemes
 
-@testset "TrussStress" begin
+@testset "TrussStressFun" begin
     # Hand calculated result.
     result_stress = [-50 * sqrt(2.0), 50.0000, -50 * sqrt(2.0)]
     # Data input
@@ -61,7 +61,7 @@ using ColorSchemes
     # Set the solver and solve
     solver = FEASolver(DirectSolver, problem; xmin=xmin)
     # Get the stress
-    ts = TrussStress(solver)
+    ts = TrussStressFun(solver)
     σ = ts(PseudoDensities(x))
 
     # Check the result

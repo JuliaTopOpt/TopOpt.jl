@@ -5,8 +5,8 @@ using TopOpt.TopOptProblems:
     get_f,
     ElementFEAInfo,
     GlobalFEAInfo,
-    PowerPenalty,
-    RationalPenalty
+    PowerPenaltyFun,
+    RationalPenaltyFun
 using Test
 using LinearAlgebra
 using SparseArrays
@@ -63,7 +63,7 @@ using Ferrite
         @testset "Custom density variables" begin
             # Test with uniform density of 0.5
             vars = fill(0.5, ncells)
-            penalty = PowerPenalty(3.0)
+            penalty = PowerPenaltyFun(3.0)
             xmin = 0.001
 
             globalinfo = assemble(problem, elementinfo, vars, penalty, xmin)
@@ -76,13 +76,13 @@ using Ferrite
         @testset "Different penalty types" begin
             vars = fill(0.5, ncells)
 
-            # Test with PowerPenalty
-            penalty1 = PowerPenalty(3.0)
+            # Test with PowerPenaltyFun
+            penalty1 = PowerPenaltyFun(3.0)
             globalinfo1 = assemble(problem, elementinfo, vars, penalty1, 0.001)
             @test globalinfo1 isa GlobalFEAInfo
 
-            # Test with RationalPenalty
-            penalty2 = RationalPenalty(3.0)
+            # Test with RationalPenaltyFun
+            penalty2 = RationalPenaltyFun(3.0)
             globalinfo2 = assemble(problem, elementinfo, vars, penalty2, 0.001)
             @test globalinfo2 isa GlobalFEAInfo
         end
@@ -90,7 +90,7 @@ using Ferrite
         @testset "Edge cases" begin
             # Test with minimum densities
             vars = fill(0.001, ncells)
-            globalinfo = assemble(problem, elementinfo, vars, PowerPenalty(3.0), 0.001)
+            globalinfo = assemble(problem, elementinfo, vars, PowerPenaltyFun(3.0), 0.001)
             @test globalinfo isa GlobalFEAInfo
             # K is Symmetric, access .data for the underlying matrix
             K_data = globalinfo.K.data
@@ -103,7 +103,7 @@ using Ferrite
 
             # Test with maximum densities
             vars = ones(ncells)
-            globalinfo = assemble(problem, elementinfo, vars, PowerPenalty(3.0), 0.001)
+            globalinfo = assemble(problem, elementinfo, vars, PowerPenaltyFun(3.0), 0.001)
             @test globalinfo isa GlobalFEAInfo
         end
     end
@@ -118,7 +118,7 @@ using Ferrite
 
         @testset "Basic functionality" begin
             vars = ones(Float64, ncells)
-            penalty = PowerPenalty(3.0)
+            penalty = PowerPenaltyFun(3.0)
             xmin = 0.001
 
             f = assemble_f(problem, elementinfo, vars, penalty, xmin)
@@ -129,7 +129,7 @@ using Ferrite
         end
 
         @testset "Different density values" begin
-            penalty = PowerPenalty(3.0)
+            penalty = PowerPenaltyFun(3.0)
             xmin = 0.001
 
             # Test with uniform density
@@ -147,16 +147,16 @@ using Ferrite
             vars = ones(Float64, ncells)
 
             # Different penalty exponents
-            penalty1 = PowerPenalty(1.0)
+            penalty1 = PowerPenaltyFun(1.0)
             f1 = assemble_f(problem, elementinfo, vars, penalty1, 0.001)
             @test length(f1) == ndofs(problem.ch.dh)
 
-            penalty2 = PowerPenalty(5.0)
+            penalty2 = PowerPenaltyFun(5.0)
             f2 = assemble_f(problem, elementinfo, vars, penalty2, 0.001)
             @test length(f2) == ndofs(problem.ch.dh)
 
             # Different xmin values
-            f3 = assemble_f(problem, elementinfo, vars, PowerPenalty(3.0), 0.0001)
+            f3 = assemble_f(problem, elementinfo, vars, PowerPenaltyFun(3.0), 0.0001)
             @test length(f3) == ndofs(problem.ch.dh)
         end
 
@@ -171,7 +171,7 @@ using Ferrite
                 ncells_f32 = getncells(problem_f32.ch.dh.grid)
 
                 vars_f32 = ones(Float32, ncells_f32)
-                penalty_f32 = PowerPenalty(Float32(3.0))
+                penalty_f32 = PowerPenaltyFun(Float32(3.0))
                 xmin_f32 = Float32(0.001)
 
                 f_f32 = assemble_f(
@@ -192,7 +192,7 @@ using Ferrite
         ncells = getncells(problem.ch.dh.grid)
 
         vars = fill(0.5, ncells)
-        penalty = PowerPenalty(3.0)
+        penalty = PowerPenaltyFun(3.0)
         xmin = 0.001
 
         # Assemble using full assemble function
@@ -217,10 +217,10 @@ using Ferrite
             ncells = getncells(problem.ch.dh.grid)
 
             vars = ones(Float64, ncells)
-            globalinfo = assemble(problem, elementinfo, vars, PowerPenalty(3.0), 0.001)
+            globalinfo = assemble(problem, elementinfo, vars, PowerPenaltyFun(3.0), 0.001)
             @test globalinfo isa GlobalFEAInfo
 
-            f = assemble_f(problem, elementinfo, vars, PowerPenalty(3.0), 0.001)
+            f = assemble_f(problem, elementinfo, vars, PowerPenaltyFun(3.0), 0.001)
             @test length(f) == ndofs(problem.ch.dh)
         end
 
@@ -240,7 +240,7 @@ using Ferrite
             ncells = getncells(problem.ch.dh.grid)
 
             vars = ones(Float64, ncells)
-            globalinfo = assemble(problem, elementinfo, vars, PowerPenalty(3.0), 0.001)
+            globalinfo = assemble(problem, elementinfo, vars, PowerPenaltyFun(3.0), 0.001)
             @test globalinfo isa GlobalFEAInfo
         end
     end
@@ -258,7 +258,7 @@ using Ferrite
             ncells = getncells(problem.ch.dh.grid)
 
             vars = ones(Float64, ncells)
-            globalinfo = assemble(problem, elementinfo, vars, PowerPenalty(3.0), 0.001)
+            globalinfo = assemble(problem, elementinfo, vars, PowerPenaltyFun(3.0), 0.001)
             @test globalinfo isa GlobalFEAInfo
         end
 
@@ -267,7 +267,7 @@ using Ferrite
             elementinfo = ElementFEAInfo(problem, 2, Val{:Matrix})
             ncells = getncells(problem.ch.dh.grid)
             vars = ones(Float64, ncells)
-            globalinfo = assemble(problem, elementinfo, vars, PowerPenalty(3.0), 0.001)
+            globalinfo = assemble(problem, elementinfo, vars, PowerPenaltyFun(3.0), 0.001)
             @test globalinfo isa GlobalFEAInfo
         end
     end

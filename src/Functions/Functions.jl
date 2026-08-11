@@ -16,11 +16,11 @@ using Nonconvex: Nonconvex
 using DifferentiationInterface
 const DI = DifferentiationInterface
 
-export Volume,
-    Compliance,
-    Displacement,
-    MeanCompliance,
-    BlockCompliance,
+export VolumeFun,
+    ComplianceFun,
+    DisplacementFun,
+    MeanComplianceFun,
+    BlockComplianceFun,
     AbstractFunction,
     getfevals,
     getmaxfevals,
@@ -30,27 +30,27 @@ export Volume,
     generate_scenarios,
     hutch_rand!,
     hadamard!,
-    TrussStress,
-    AssembleK,
+    TrussStressFun,
+    AssembleKFun,
     TrussElementKσ,
-    ElementK,
+    ElementKFun,
     apply_boundary_with_zerodiag!,
     apply_boundary_with_meandiag!,
-    NeuralNetwork,
-    TrainFunction,
-    PredictFunction,
+    NeuralNetworkFun,
+    TrainFunctionFun,
+    PredictFunctionFun,
     NNParams,
     Coordinates,
     AbstractMLModel,
     getcentroids,
-    StressTensor,
-    ElementStressTensor,
-    MaterialInterpolation,
-    MultiMaterialVariables,
+    StressTensorFun,
+    ElementStressTensorFun,
+    MaterialInterpolationFun,
+    MultiMaterialVariablesFun,
     element_densities,
     tounit,
-    ThermalCompliance,
-    FixedElementProjector,
+    ThermalComplianceFun,
+    FixedElementProjectorFun,
     get_fixed_element_projector,
     get_free_variables,
     get_free_variable_count
@@ -91,5 +91,61 @@ include("thermal_compliance.jl")
 
 # Fixed element projection for black/white handling
 include("fixed_element.jl")
+
+# `Volume` is kept unexported to avoid colliding with Makie.Volume; the
+# canonical names use a `Fun` suffix.
+const Volume = VolumeFun
+const Compliance = ComplianceFun
+const Displacement = DisplacementFun
+const MeanCompliance = MeanComplianceFun
+const BlockCompliance = BlockComplianceFun
+const ThermalCompliance = ThermalComplianceFun
+const TrussStress = TrussStressFun
+const AssembleK = AssembleKFun
+const TrussElementKσ = TrussElementKσFun
+const ElementK = ElementKFun
+const StressTensor = StressTensorFun
+const ElementStressTensor = ElementStressTensorFun
+const NeuralNetwork = NeuralNetworkFun
+const TrainFunction = TrainFunctionFun
+const PredictFunction = PredictFunctionFun
+const MaterialInterpolation = MaterialInterpolationFun
+const MultiMaterialVariables = MultiMaterialVariablesFun
+const FixedElementProjector = FixedElementProjectorFun
+export Compliance,
+    Displacement,
+    MeanCompliance,
+    BlockCompliance,
+    ThermalCompliance,
+    TrussStress,
+    AssembleK,
+    TrussElementKσ,
+    ElementK,
+    StressTensor,
+    ElementStressTensor,
+    NeuralNetwork,
+    TrainFunction,
+    PredictFunction,
+    MaterialInterpolation,
+    MultiMaterialVariables,
+    FixedElementProjector,
+    VolumeFun,
+    ComplianceFun,
+    DisplacementFun,
+    MeanComplianceFun,
+    BlockComplianceFun,
+    ThermalComplianceFun,
+    TrussStressFun,
+    AssembleKFun,
+    TrussElementKσFun,
+    ElementKFun,
+    StressTensorFun,
+    ElementStressTensorFun,
+    NeuralNetworkFun,
+    TrainFunctionFun,
+    PredictFunctionFun,
+    MaterialInterpolationFun,
+    MultiMaterialVariablesFun,
+    FixedElementProjectorFun
 
 end
