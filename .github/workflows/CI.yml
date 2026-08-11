@@ -227,3 +227,30 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: docs/build/
           destination_dir: stable
+
+  # Deploy PR preview docs to GitHub Pages (on pull_request)
+  deploy-preview:
+    name: "deploy: PR preview docs"
+    needs: assemble-site
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Download final site
+        uses: actions/download-artifact@v4
+        with:
+          name: final-site
+          path: docs/build/
+      - name: Deploy to GitHub Pages (preview)
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: docs/build/
+          destination_dir: preview/PR${{ github.event.pull_request.number }}
+          keep_files: true
+      - name: Post preview URL comment
+        uses: thollander/actions-comment-pull-request@v3
+        with:
+          message: |
+            📖 PR preview docs: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/preview/PR${{ github.event.pull_request.number }}/
+          comment_tag: preview-docs
