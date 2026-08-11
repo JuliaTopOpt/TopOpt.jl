@@ -28,7 +28,6 @@ export AbstractPenalty,
     getprevpenalty,
     setpenalty!,
     getsolver,
-    @params,
     @forward_property
 
 """
