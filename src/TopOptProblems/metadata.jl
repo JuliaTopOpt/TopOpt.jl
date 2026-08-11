@@ -24,7 +24,7 @@ struct Metadata{Tc,Td,Tn1,Tn2}
     node_dofs::Tn2
 end
 
-function Metadata(dh::DofHandler) where {dim}
+function Metadata(dh::DofHandler)
     cell_dofs = get_cell_dofs_matrix(dh)
     dof_cells = get_dof_cells_matrix(dh, cell_dofs)
     #node_first_cells = get_node_first_cells(dh)

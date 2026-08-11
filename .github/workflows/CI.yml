@@ -102,7 +102,7 @@ jobs:
           arch: x64
       - uses: julia-actions/cache@v2
         with:
-          cache-name: tutorials
+          cache-name: tutorials-${{ hashFiles('Project.toml') }}
           cache-artifacts: true
           cache-packages: true
           cache-compiled: true
@@ -138,7 +138,7 @@ jobs:
           version: '1'
       - uses: julia-actions/cache@v2
         with:
-          cache-name: docs
+          cache-name: docs-${{ hashFiles('Project.toml') }}
           cache-artifacts: true
           cache-packages: true
           cache-compiled: true
@@ -188,9 +188,29 @@ jobs:
           path: docs/build/
           retention-days: 7
 
-  # Deploy to GitHub Pages (only on tag push)
-  deploy:
-    name: "deploy: GitHub Pages"
+  # Deploy dev docs to GitHub Pages (on push to master)
+  deploy-dev:
+    name: "deploy: Dev docs"
+    needs: assemble-site
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Download final site
+        uses: actions/download-artifact@v4
+        with:
+          name: final-site
+          path: docs/build/
+      - name: Deploy to GitHub Pages (dev)
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: docs/build/
+          destination_dir: dev
+
+  # Deploy stable docs to GitHub Pages (on tag push)
+  deploy-stable:
+    name: "deploy: Stable docs"
     needs: assemble-site
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
@@ -201,8 +221,9 @@ jobs:
         with:
           name: final-site
           path: docs/build/
-      - name: Deploy to GitHub Pages
+      - name: Deploy to GitHub Pages (stable)
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: docs/build/
+          destination_dir: stable
