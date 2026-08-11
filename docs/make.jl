@@ -8,7 +8,7 @@ makedocs(;
     format=Documenter.HTML(; prettyurls=get(ENV, "CI", nothing) == "true"),
     doctest=true,
     checkdocs=:all,
-    warnonly=[:cross_references],
+    warnonly=false,
     plugins=[bib],
     pages=[
         "Home" => "index.md",
