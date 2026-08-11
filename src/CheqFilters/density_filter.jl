@@ -40,7 +40,8 @@ function (cf::DensityFilter)(x::PseudoDensities{I,P}) where {I,P}
 end
 function ChainRulesCore.rrule(f::DensityFilter, x::PseudoDensities)
     return f(x), Δ -> begin
-        _Δ = hasproperty(Δ, :x) ? Δ.x : Δ
+        _Δ = ChainRulesCore.unthunk(Δ)
+        _Δ = hasproperty(_Δ, :x) ? _Δ.x : _Δ
         (nothing, Tangent{typeof(x)}(; x=f.jacobian' * _Δ))
     end
 end

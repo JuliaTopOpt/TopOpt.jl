@@ -99,6 +99,7 @@ function ChainRulesCore.rrule(ts::TrussStress{T}, x::PseudoDensities) where {T}
     u = u_fn(x)  # DisplacementResult — factorization is now cached in solver
 
     function pullback_fn(Δ)
+        Δ = ChainRulesCore.unthunk(Δ)
         Δx = zeros(T, length(x.x))
 
         # Build the adjoint RHS from dσ_e/du for all elements.

@@ -87,6 +87,7 @@ function ChainRulesCore.rrule(
     K = ak(Kes)
     n_dofs = length(global_dofs)
     function assembleK_pullback(Δ)
+        Δ = ChainRulesCore.unthunk(Δ)
         ΔKes = [zeros(T, n_dofs, n_dofs) for _ in 1:getncells(dh.grid)]
         for (ci, _) in enumerate(CellIterator(dh))
             celldofs!(global_dofs, dh, ci)

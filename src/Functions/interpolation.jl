@@ -82,9 +82,11 @@ function tounit(x::Matrix)
     return mapreduce(x -> tounit(x)', vcat, eachrow(x))
 end
 function ChainRulesCore.rrule(::typeof(tounit), x::Vector)
-    return tounit(x), Δ -> (NoTangent(), ForwardDiff.jacobian(tounit, x)' * Δ)
+    return tounit(x),
+    Δ -> (NoTangent(), ForwardDiff.jacobian(tounit, x)' * ChainRulesCore.unthunk(Δ))
 end
 function ChainRulesCore.rrule(::typeof(tounit), x::Matrix)
-    pb = (x, Δ) -> (ForwardDiff.jacobian(tounit, x)' * Δ)'
-    return tounit(x), Δ -> (NoTangent(), mapreduce(pb, vcat, eachrow(x), eachrow(Δ)))
+    pb = (x, Δ) -> (ForwardDiff.jacobian(tounit, x)' * ChainRulesCore.unthunk(Δ))'
+    return tounit(x),
+    Δ -> (NoTangent(), mapreduce(pb, vcat, eachrow(x), eachrow(ChainRulesCore.unthunk(Δ))))
 end

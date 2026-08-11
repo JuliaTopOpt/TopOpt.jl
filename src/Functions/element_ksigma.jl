@@ -129,6 +129,7 @@ function ChainRulesCore.rrule(
     dh = problem.ch.dh
     Kσes = eksig(u, x)
     function pullback_fn(Δ)
+        Δ = ChainRulesCore.unthunk(Δ)
         Δu = zeros(T, size(u.u))
         Δx = zeros(T, size(x.x))
         for ci in 1:length(x.x)

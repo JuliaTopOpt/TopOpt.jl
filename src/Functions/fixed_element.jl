@@ -69,6 +69,7 @@ function ChainRulesCore.rrule(p::FixedElementProjector, x_free::AbstractVector{T
     y = p(x_free)
 
     function projector_pullback(Δy)
+        Δy = ChainRulesCore.unthunk(Δy)
         # Only free elements contribute to gradient
         ∂x_free = Δy[p.free]
         return (ChainRulesCore.NoTangent(), ∂x_free)

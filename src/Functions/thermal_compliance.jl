@@ -92,7 +92,7 @@ end
 function ChainRulesCore.rrule(tc::ThermalCompliance, x::PseudoDensities)
     out = tc(x)
     out_grad = copy(tc.grad)
-    return out, Δ -> (nothing, Tangent{typeof(x)}(; x=out_grad * Δ))
+    return out, Δ -> (nothing, Tangent{typeof(x)}(; x=out_grad * ChainRulesCore.unthunk(Δ)))
 end
 
 """

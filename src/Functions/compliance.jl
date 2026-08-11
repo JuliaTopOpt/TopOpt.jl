@@ -72,7 +72,7 @@ end
 function ChainRulesCore.rrule(comp::Compliance, x::PseudoDensities)
     out = comp(x)
     out_grad = copy(comp.grad)
-    return out, Δ -> (nothing, Tangent{typeof(x)}(; x=out_grad * Δ))
+    return out, Δ -> (nothing, Tangent{typeof(x)}(; x=out_grad * ChainRulesCore.unthunk(Δ)))
 end
 
 """

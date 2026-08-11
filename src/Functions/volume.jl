@@ -62,7 +62,8 @@ function (v::Volume{T})(x::PseudoDensities) where {T}
 end
 
 function ChainRulesCore.rrule(vol::Volume, x::PseudoDensities)
-    return vol(x), Δ -> (nothing, Tangent{typeof(x)}(; x=Δ * vol.grad))
+    return vol(x),
+    Δ -> (nothing, Tangent{typeof(x)}(; x=ChainRulesCore.unthunk(Δ) * vol.grad))
 end
 
 """

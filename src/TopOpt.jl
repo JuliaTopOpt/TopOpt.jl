@@ -42,7 +42,10 @@ end
 function ChainRulesCore.rrule(
     ::Type{PseudoDensities{I,P,F,T,N,A}}, x
 ) where {I,P,F,T,N,A<:AbstractArray{T,N}}
-    return PseudoDensities{I,P,F,T,N,A}(x), Δ -> (NoTangent(), Δ isa Tangent ? Δ.x : Δ)
+    return PseudoDensities{I,P,F,T,N,A}(x), Δ -> begin
+        Δ = ChainRulesCore.unthunk(Δ)
+        (NoTangent(), Δ isa Tangent ? Δ.x : Δ)
+    end
 end
 
 Base.BroadcastStyle(::Type{T}) where {T<:PseudoDensities} = Broadcast.ArrayStyle{T}()

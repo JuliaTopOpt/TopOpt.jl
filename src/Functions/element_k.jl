@@ -92,6 +92,7 @@ function ChainRulesCore.rrule(ek::ElementK, x::PseudoDensities)
             = Delta[e][i,j] * dK_e_i'j'/dx_e
     """
     function pullback_fn(Δ)
+        Δ = ChainRulesCore.unthunk(Δ)
         Δx = similar(x.x)
         for ci in 1:length(x.x)
             ek_cell_fn = xe -> vec(ek(xe, ci))

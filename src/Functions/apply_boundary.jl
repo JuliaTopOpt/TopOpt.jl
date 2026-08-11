@@ -20,6 +20,7 @@ end
 function ChainRulesCore.rrule(::typeof(apply_boundary_with_zerodiag!), Kσ, ch)
     project_to = ChainRulesCore.ProjectTo(Kσ)
     function pullback_fn(Δ)
+        Δ = ChainRulesCore.unthunk(Δ)
         return NoTangent(), apply_boundary_with_zerodiag!(project_to(Δ), ch), NoTangent()
     end
     return apply_boundary_with_zerodiag!(Kσ, ch), pullback_fn
@@ -104,6 +105,7 @@ function ChainRulesCore.rrule(::typeof(apply_boundary_with_meandiag!), K, ch)
     diagK = diag(K)
     jac_meandiag = sign.(diagK) / length(diagK)
     function pullback_fn(Δ)
+        Δ = ChainRulesCore.unthunk(Δ)
         Δ_ch_diagsum = zero(eltype(K))
         for i in 1:length(ch.prescribed_dofs)
             d = ch.prescribed_dofs[i]

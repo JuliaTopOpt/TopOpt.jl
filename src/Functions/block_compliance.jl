@@ -70,6 +70,7 @@ end
 
 function ChainRulesCore.rrule(bc::BlockCompliance, x::PseudoDensities)
     return bc(x), Δ -> begin
+        Δ = ChainRulesCore.unthunk(Δ)
         @assert Nonconvex.NonconvexCore.getdim(bc) == length(Δ)
         newΔ = similar(Δ, length(x))
         newΔ .= 0

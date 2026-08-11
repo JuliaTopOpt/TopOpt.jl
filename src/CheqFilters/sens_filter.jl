@@ -52,6 +52,7 @@ end
 function ChainRulesCore.rrule(cf::SensFilter, x::PseudoDensities)
     return x,
     Δ -> begin
+        Δ = ChainRulesCore.unthunk(Δ)
         if hasproperty(Δ, :x)
             newΔ = copy(Δ.x)
         else

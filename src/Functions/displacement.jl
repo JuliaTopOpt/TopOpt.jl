@@ -95,6 +95,7 @@ function ChainRulesCore.rrule(dp::Displacement, x::PseudoDensities)
     # Cholesky factorisation
     u = dp(x)
     return u, Δ -> begin # v
+        Δ = ChainRulesCore.unthunk(Δ)
         if hasproperty(Δ, :u)
             solver.rhs .= Δ.u
         else

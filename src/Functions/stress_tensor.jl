@@ -111,6 +111,7 @@ function ChainRulesCore.rrule(
     )
     return _element_stress_tensor(f, u),
     Δ -> begin
+        Δ = ChainRulesCore.unthunk(Δ)
         NoTangent(), NoTangent(), Tangent{typeof(u)}(; u=J' * vec(Δ))
     end
 end
@@ -153,7 +154,7 @@ function ChainRulesCore.rrule(f::ElementStressTensorKernel, u::DisplacementResul
     )
     out_dim = f.dim == 2 ? 3 : f.dim
     return reshape(v, out_dim, out_dim),
-    Δ -> (NoTangent(), Tangent{typeof(u)}(; u=∇' * vec(Δ)))
+    Δ -> (NoTangent(), Tangent{typeof(u)}(; u=∇' * vec(ChainRulesCore.unthunk(Δ))))
 end
 
 function tensor_kernel(f::StressTensor, quad, basef)

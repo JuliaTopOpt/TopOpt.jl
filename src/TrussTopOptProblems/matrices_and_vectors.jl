@@ -159,6 +159,7 @@ function ChainRulesCore.rrule(::typeof(pinv), t::Vec{dim,T}) where {dim,T}
     s = sum(t .^ 2)
     TT = LinearAlgebra.Transpose{T,Vec{dim,T}}
     return TT(t / s), Δ -> begin
+        Δ = ChainRulesCore.unthunk(Δ)
         nothing, TT(Δ)
     end
 end
