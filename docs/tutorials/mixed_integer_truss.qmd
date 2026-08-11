@@ -19,11 +19,13 @@ or absent.
 ```{julia}
 #| output: false
 using TopOpt, LinearAlgebra, StatsFuns
+using NonconvexJuniper, NonconvexIpopt
 using CairoMakie
-Nonconvex.@load Juniper
 ```
 
 ## Load Truss Geometry
+
+Download the truss geometry file: [tim_2d.json](tim_2d.json).
 
 ```{julia}
 #| output: false

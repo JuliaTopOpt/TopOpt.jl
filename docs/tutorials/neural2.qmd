@@ -18,10 +18,6 @@ output for material fraction parametrization.
 
 ```{julia}
 #| output: false
-import Pkg
-Pkg.activate(@__DIR__)
-Pkg.develop(PackageSpec(path=joinpath(@__DIR__, "..", "..")))
-Pkg.instantiate()
 using TopOpt, Zygote, Flux
 using NNlib: leakyrelu
 ```

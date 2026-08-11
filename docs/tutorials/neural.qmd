@@ -23,7 +23,7 @@ constraints).
 using TopOpt, Zygote, ChainRulesCore
 using Flux
 using NNlib: leakyrelu
-Nonconvex.@load Ipopt
+using NonconvexIpopt
 ```
 
 ## Define the Problem

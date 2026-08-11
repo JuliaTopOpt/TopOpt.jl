@@ -20,7 +20,7 @@ using TopOpt
 ## Loading Truss from JSON
 
 Truss data (nodes, connectivity, materials, supports, loads) is stored in
-JSON files:
+JSON files. Download the sample file: [tim_2d.json](tim_2d.json).
 
 ```{julia}
 #| output: false

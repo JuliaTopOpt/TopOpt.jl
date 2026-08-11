@@ -21,11 +21,12 @@ NonconvexSemidefinite.jl with an IPM barrier method.
 ```{julia}
 #| output: false
 using TopOpt, LinearAlgebra, Zygote
-using Nonconvex, NonconvexSemidefinite
-Nonconvex.@load Ipopt
+using Nonconvex, NonconvexSemidefinite, NonconvexIpopt
 ```
 
 ## Load Truss Geometry
+
+Download the truss geometry file: [tim_2d.json](tim_2d.json).
 
 ```{julia}
 #| output: false

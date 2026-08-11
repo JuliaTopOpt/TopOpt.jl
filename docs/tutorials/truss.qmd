@@ -172,6 +172,8 @@ A sample 2D truss JSON file (`tim_2d.json`):
 
 Load it with:
 
+Download the sample truss file: [tim_2d.json](tim_2d.json).
+
 ```{julia}
 #| eval: false
 node_points, elements, mats, crosssecs, fixities, load_cases = load_truss_json(
