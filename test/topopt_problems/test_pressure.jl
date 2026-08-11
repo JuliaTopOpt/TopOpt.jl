@@ -7,7 +7,7 @@ using Ferrite
 using StaticArrays
 using Test
 
-import TopOptProblems: make_Kes_and_fes
+import TopOpt.TopOptProblems: make_Kes_and_fes
 
 @testset "Pressure boundary conditions (pressuredict)" begin
     # TieBeam supports pressure loading

@@ -9,6 +9,7 @@ using Ferrite
 # Import types needed for TrussElementKσ evaluation
 using TopOpt.Functions: DisplacementResult
 using TopOpt: PseudoDensities
+using TopOpt.Utilities: getpenalty, density
 
 # Import make_Kes_and_fes which is exported by TopOptProblems
 using TopOpt.TopOptProblems: make_Kes_and_fes
