@@ -313,10 +313,10 @@ end
 using TopOpt.Utilities: get_ρ, get_ρ_dρ, density
 
 @testset "get_ρ - penalized density computation" begin
-    # Note: PENALTY_BEFORE_INTERPOLATION is a compile-time preference.
+    # Note: TopOpt.PENALTY_BEFORE_INTERPOLATION is a compile-time preference.
     # The tests below verify the function behaves correctly for the current configuration.
     # To test the other mode, restart Julia with the preference changed.
-    @info "Testing get_ρ with PENALTY_BEFORE_INTERPOLATION = $(TopOpt.PENALTY_BEFORE_INTERPOLATION)"
+    @info "Testing get_ρ with TopOpt.PENALTY_BEFORE_INTERPOLATION = $(TopOpt.PENALTY_BEFORE_INTERPOLATION)"
 
     # Test with PowerPenaltyFun
     @testset "PowerPenaltyFun" begin
@@ -535,7 +535,7 @@ using TopOpt.Utilities: get_ρ, get_ρ_dρ, density
 end
 
 @testset "get_ρ_dρ - penalized density with derivative" begin
-    @info "Testing get_ρ_dρ with PENALTY_BEFORE_INTERPOLATION = $(TopOpt.PENALTY_BEFORE_INTERPOLATION)"
+    @info "Testing get_ρ_dρ with TopOpt.PENALTY_BEFORE_INTERPOLATION = $(TopOpt.PENALTY_BEFORE_INTERPOLATION)"
 
     @testset "PowerPenaltyFun derivatives" begin
         penalty = PowerPenaltyFun(3.0)
