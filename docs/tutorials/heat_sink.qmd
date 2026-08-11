@@ -39,7 +39,7 @@ problem = HeatConductionProblem(
     Tleft=100.0, Tright=0.0, heatflux=heatflux
 )
 
-println("Created heat conduction problem with $(Ferrite.getncells(problem)) elements")
+println("Created heat conduction problem with $(TopOpt.getncells(problem)) elements")
 ```
 
 The boundary conditions:
