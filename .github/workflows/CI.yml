@@ -179,7 +179,8 @@ jobs:
           path: docs/tutorials/_site
       - name: Copy tutorials into docs build
         run: |
-          cp -r docs/tutorials/_site docs/build/tutorials/
+          mkdir -p docs/build/tutorials
+          cp docs/tutorials/_site/*.html docs/build/tutorials/
           echo "Copied $(ls docs/build/tutorials/*.html | wc -l) tutorial HTML files"
       - name: Upload final site
         uses: actions/upload-artifact@v4
