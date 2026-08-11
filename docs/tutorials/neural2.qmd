@@ -151,8 +151,10 @@ end
 
 ```{julia}
 #| output: true
-@show obj(w)
-@show constr(w)
+obj_final = w -> comp(todensities(w; filter=true)) / C0
+constr_final = w -> volfrac(todensities(w; filter=false)) / V - 1
+@show obj_final(w)
+@show constr_final(w)
 @show eps
 ```
 
