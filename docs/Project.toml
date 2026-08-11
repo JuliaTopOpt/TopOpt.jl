@@ -21,6 +21,8 @@ Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
 [compat]
 Ferrite = "1"
 Flux = "0.16"
+Nonconvex = "3"
 NonconvexIpopt = "0.6"
 NonconvexSemidefinite = "0.1"
+StatsFuns = "1"
 Zygote = "0.7"
