@@ -159,14 +159,19 @@ Check what's available first:
 
 ## Devops
 
+- **AI-assistance disclosure (always required).** Every public-facing message
+  produced by an agent — PR body, PR comment, GitHub issue, review, or any
+  other visible post — **must** include a disclosure naming the model and
+  harness/tool, placed at the end of the message:
+
+      *Prepared with assistance from <model> via <tool>.*
+
+  Example: *Prepared with assistance from qwen3.6-plus via opencode.*
+  Never wait to be asked; never omit this. Do not present AI-assisted text
+  as the maintainer's own unaided writing.
 - Do not post comments on GitHub without getting explicit approval for the
   exact text. GitHub is also a social media environment; do not represent the
   maintainer without consent.
-- Any post made on the maintainer's behalf (GitHub issue, PR, comment, review,
-  or other public message) must disclose that it was prepared with assistance
-  from AI and name the model and the harness/tool that produced it (e.g.
-  "Prepared with assistance from GLM-5.2 via opencode"). Do not present
-  AI-assisted text as the maintainer's own unaided writing.
 - Comments, docstrings, and commit messages must stand on their own for a
   reader who has only the repository: state what *is* true about the code now,
   not its history, its motivation, or the plan it came from. Re-read the diff's
@@ -181,5 +186,7 @@ Check what's available first:
   in the body of the commit message; that will trigger GitHub to auto-close the
   issue. If a commit closes multiple issues, you cannot provide ranges or
   comma-separated lists of numbers; use "Fixes #abc; fixes #def; ...".
-- For commits written by agents, use "Assisted-by" rather than
-  "Co-authored-by", and fill in the appropriate model/version/email details.
+- For commits written by agents, include an `Assisted-by:` trailer (not
+  `Co-authored-by:`) with the model and tool details:
+
+      Assisted-by: qwen3.6-plus via opencode
