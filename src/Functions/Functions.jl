@@ -92,8 +92,8 @@ include("thermal_compliance.jl")
 # Fixed element projection for black/white handling
 include("fixed_element.jl")
 
-# Backward-compatible non-suffixed aliases. The canonical names use a `Fun`
-# suffix to avoid collisions with Makie (e.g. Makie.Volume vs TopOpt.VolumeFun).
+# `Volume` is kept unexported to avoid colliding with Makie.Volume; the
+# canonical names use a `Fun` suffix.
 const Volume = VolumeFun
 const Compliance = ComplianceFun
 const Displacement = DisplacementFun
@@ -112,8 +112,7 @@ const PredictFunction = PredictFunctionFun
 const MaterialInterpolation = MaterialInterpolationFun
 const MultiMaterialVariables = MultiMaterialVariablesFun
 const FixedElementProjector = FixedElementProjectorFun
-export Volume,
-    Compliance,
+export Compliance,
     Displacement,
     MeanCompliance,
     BlockCompliance,
