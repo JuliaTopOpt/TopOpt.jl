@@ -4242,7 +4242,7 @@ var requirejs,require,define;(function(global,setTimeout){var req,s,head,baseEle
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>S0 <span class="op">=</span> <span class="fu">buckling_matrix_constr</span>(x0)</span>
 <span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="fu">println</span>(<span class="st">&quot;Initial design minimum eigenvalue: </span><span class="sc">$</span>(<span class="fu">minimum</span>(<span class="fu">eigen</span>(S0).values))<span class="st">&quot;</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>Initial design minimum eigenvalue: 0.34125289443461526</code></pre>
+<pre><code>Initial design minimum eigenvalue: 0.3412528944345227</code></pre>
 </div>
 </div>
 <p>The initial all-solid design should have positive eigenvalues (stable).</p>
@@ -4346,12 +4346,12 @@ iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
 Number of Iterations....: 11
 
                                    (scaled)                 (unscaled)
-Objective...............:  -2.3268361058670982e+02   -2.3268361058670982e+02
-Dual infeasibility......:   9.0869483248525691e-10    9.0869483248525691e-10
+Objective...............:  -2.3268361058670968e+02   -2.3268361058670968e+02
+Dual infeasibility......:   9.0860468237565487e-10    9.0860468237565487e-10
 Constraint violation....:   0.0000000000000000e+00    0.0000000000000000e+00
 Variable bound violation:   0.0000000000000000e+00    0.0000000000000000e+00
-Complementarity.........:   1.0000000000000003e-11    1.0000000000000003e-11
-Overall NLP error.......:   9.0869483248525691e-10    9.0869483248525691e-10
+Complementarity.........:   1.0000000000000001e-11    1.0000000000000001e-11
+Overall NLP error.......:   9.0860468237565487e-10    9.0860468237565487e-10
 
 
 Number of objective function evaluations             = 12
@@ -4361,7 +4361,7 @@ Number of inequality constraint evaluations          = 12
 Number of equality constraint Jacobian evaluations   = 0
 Number of inequality constraint Jacobian evaluations = 12
 Number of Lagrangian Hessian evaluations             = 0
-Total seconds in IPOPT                               = 9.727
+Total seconds in IPOPT                               = 10.123
 
 EXIT: Optimal Solution Found.
 This is Ipopt version 3.14.19, running with linear solver MUMPS 5.9.0.
@@ -4394,12 +4394,12 @@ iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
 Number of Iterations....: 8
 
                                    (scaled)                 (unscaled)
-Objective...............:  -2.3259812936628066e+01   -2.3259812936628066e+01
-Dual infeasibility......:   1.0679475584241832e-09    1.0679475584241832e-09
+Objective...............:  -2.3259812936628055e+01   -2.3259812936628055e+01
+Dual infeasibility......:   1.0679504172484743e-09    1.0679504172484743e-09
 Constraint violation....:   0.0000000000000000e+00    0.0000000000000000e+00
 Variable bound violation:   0.0000000000000000e+00    0.0000000000000000e+00
-Complementarity.........:   1.0000000000003599e-11    1.0000000000003599e-11
-Overall NLP error.......:   1.0679475584241832e-09    1.0679475584241832e-09
+Complementarity.........:   1.0000000000003840e-11    1.0000000000003840e-11
+Overall NLP error.......:   1.0679504172484743e-09    1.0679504172484743e-09
 
 
 Number of objective function evaluations             = 9
@@ -4409,7 +4409,7 @@ Number of inequality constraint evaluations          = 9
 Number of equality constraint Jacobian evaluations   = 0
 Number of inequality constraint Jacobian evaluations = 9
 Number of Lagrangian Hessian evaluations             = 0
-Total seconds in IPOPT                               = 0.106
+Total seconds in IPOPT                               = 0.017
 
 EXIT: Optimal Solution Found.
 This is Ipopt version 3.14.19, running with linear solver MUMPS 5.9.0.
@@ -4442,12 +4442,12 @@ iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
 Number of Iterations....: 8
 
                                    (scaled)                 (unscaled)
-Objective...............:  -2.3175099519889870e+00   -2.3175099519889870e+00
-Dual infeasibility......:   1.2330597392128307e-09    1.2330597392128307e-09
+Objective...............:  -2.3175099519889897e+00   -2.3175099519889897e+00
+Dual infeasibility......:   1.2330595622710363e-09    1.2330595622710363e-09
 Constraint violation....:   0.0000000000000000e+00    0.0000000000000000e+00
 Variable bound violation:   0.0000000000000000e+00    0.0000000000000000e+00
-Complementarity.........:   1.0000000000000019e-11    1.0000000000000019e-11
-Overall NLP error.......:   1.2330597392128307e-09    1.2330597392128307e-09
+Complementarity.........:   1.0000000000000085e-11    1.0000000000000085e-11
+Overall NLP error.......:   1.2330595622710363e-09    1.2330595622710363e-09
 
 
 Number of objective function evaluations             = 9
@@ -4457,7 +4457,7 @@ Number of inequality constraint evaluations          = 9
 Number of equality constraint Jacobian evaluations   = 0
 Number of inequality constraint Jacobian evaluations = 9
 Number of Lagrangian Hessian evaluations             = 0
-Total seconds in IPOPT                               = 0.017
+Total seconds in IPOPT                               = 0.016
 
 EXIT: Optimal Solution Found.
 This is Ipopt version 3.14.19, running with linear solver MUMPS 5.9.0.
@@ -4491,12 +4491,12 @@ iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
 Number of Iterations....: 9
 
                                    (scaled)                 (unscaled)
-Objective...............:  -2.2382205830250976e-01   -2.2382205830250976e-01
-Dual infeasibility......:   4.7684536343569227e-09    4.7684536343569227e-09
+Objective...............:  -2.2382205830251009e-01   -2.2382205830251009e-01
+Dual infeasibility......:   4.7684535055537021e-09    4.7684535055537021e-09
 Constraint violation....:   0.0000000000000000e+00    0.0000000000000000e+00
 Variable bound violation:   0.0000000000000000e+00    0.0000000000000000e+00
 Complementarity.........:   1.0000000000001235e-11    1.0000000000001235e-11
-Overall NLP error.......:   4.7684536343569227e-09    4.7684536343569227e-09
+Overall NLP error.......:   4.7684535055537021e-09    4.7684535055537021e-09
 
 
 Number of objective function evaluations             = 10
@@ -4506,7 +4506,7 @@ Number of inequality constraint evaluations          = 10
 Number of equality constraint Jacobian evaluations   = 0
 Number of inequality constraint Jacobian evaluations = 10
 Number of Lagrangian Hessian evaluations             = 0
-Total seconds in IPOPT                               = 0.019
+Total seconds in IPOPT                               = 0.018
 
 EXIT: Optimal Solution Found.
 This is Ipopt version 3.14.19, running with linear solver MUMPS 5.9.0.
@@ -4544,12 +4544,12 @@ iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
 Number of Iterations....: 12
 
                                    (scaled)                 (unscaled)
-Objective...............:  -1.5954029329887525e-02   -1.5954029329887525e-02
-Dual infeasibility......:   8.0383938361402608e-09    8.0383938361402608e-09
+Objective...............:  -1.5954029329887522e-02   -1.5954029329887522e-02
+Dual infeasibility......:   8.0383938352728991e-09    8.0383938352728991e-09
 Constraint violation....:   0.0000000000000000e+00    0.0000000000000000e+00
 Variable bound violation:   0.0000000000000000e+00    0.0000000000000000e+00
 Complementarity.........:   9.9999999999999994e-12    9.9999999999999994e-12
-Overall NLP error.......:   8.0383938361402608e-09    8.0383938361402608e-09
+Overall NLP error.......:   8.0383938352728991e-09    8.0383938352728991e-09
 
 
 Number of objective function evaluations             = 13
@@ -4559,7 +4559,7 @@ Number of inequality constraint evaluations          = 13
 Number of equality constraint Jacobian evaluations   = 0
 Number of inequality constraint Jacobian evaluations = 13
 Number of Lagrangian Hessian evaluations             = 0
-Total seconds in IPOPT                               = 0.025
+Total seconds in IPOPT                               = 0.024
 
 EXIT: Optimal Solution Found.
 This is Ipopt version 3.14.19, running with linear solver MUMPS 5.9.0.
@@ -4595,12 +4595,12 @@ iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
 Number of Iterations....: 10
 
                                    (scaled)                 (unscaled)
-Objective...............:   3.9318503221212461e-03    3.9318503221212461e-03
-Dual infeasibility......:   5.2873032940030749e-09    5.2873032940030749e-09
+Objective...............:   3.9318503221212149e-03    3.9318503221212149e-03
+Dual infeasibility......:   5.2873032923090090e-09    5.2873032923090090e-09
 Constraint violation....:   0.0000000000000000e+00    0.0000000000000000e+00
 Variable bound violation:   0.0000000000000000e+00    0.0000000000000000e+00
-Complementarity.........:   1.0000171411304683e-11    1.0000171411304683e-11
-Overall NLP error.......:   5.2873032940030749e-09    5.2873032940030749e-09
+Complementarity.........:   1.0000171411304677e-11    1.0000171411304677e-11
+Overall NLP error.......:   5.2873032923090090e-09    5.2873032923090090e-09
 
 
 Number of objective function evaluations             = 11
@@ -4610,7 +4610,7 @@ Number of inequality constraint evaluations          = 11
 Number of equality constraint Jacobian evaluations   = 0
 Number of inequality constraint Jacobian evaluations = 11
 Number of Lagrangian Hessian evaluations             = 0
-Total seconds in IPOPT                               = 0.021
+Total seconds in IPOPT                               = 0.020
 
 EXIT: Optimal Solution Found.
 This is Ipopt version 3.14.19, running with linear solver MUMPS 5.9.0.
@@ -4649,46 +4649,43 @@ iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
   15  5.8838141e-03 0.00e+00 1.58e-05  -7.4 3.11e-02    -  5.87e-01 1.00e+00f  1
   16  5.8835513e-03 0.00e+00 5.56e-06  -7.4 1.56e-02    -  1.00e+00 1.00e+00f  1
   17  5.8835411e-03 0.00e+00 2.46e-06  -7.4 1.04e-02    -  1.00e+00 1.00e+00f  1
-  18  5.8835347e-03 0.00e+00 1.51e-06  -7.4 5.97e-03    -  1.00e+00 5.00e-01f  2
-  19  5.8835292e-03 0.00e+00 1.07e-06  -7.4 3.89e-03    -  1.00e+00 1.00e+00h  1
+  18  5.8835389e-03 0.00e+00 3.52e-06  -7.4 5.97e-03    -  1.00e+00 1.00e+00H  1
+  19  5.8835293e-03 0.00e+00 1.02e-06  -7.4 2.98e-03    -  1.00e+00 1.00e+00f  1
 iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
-  20  5.8835335e-03 0.00e+00 1.04e-06  -7.4 2.91e-03    -  1.00e+00 1.00e+00h  1
-  21  5.8835308e-03 0.00e+00 1.04e-06  -7.4 1.52e-03    -  1.00e+00 5.00e-01h  2
-  22  5.8835305e-03 0.00e+00 5.49e-08  -7.4 4.42e-04    -  1.00e+00 1.00e+00h  1
-  23  5.8827356e-03 0.00e+00 8.27e-07  -9.0 6.09e-03    -  1.00e+00 1.00e+00f  1
-  24  5.8827331e-03 0.00e+00 3.04e-06  -9.9 9.74e-03    -  1.00e+00 5.00e-01f  2
-  25  5.8827233e-03 0.00e+00 2.27e-06 -10.8 2.42e-03    -  1.00e+00 1.00e+00f  1
-  26  5.8827155e-03 0.00e+00 1.66e-07 -11.0 2.54e-03    -  1.00e+00 1.00e+00h  1
-  27  5.8827154e-03 0.00e+00 7.80e-08 -11.0 3.61e-04    -  1.00e+00 1.00e+00h  1
-  28  5.8827154e-03 0.00e+00 9.99e-08 -11.0 4.09e-04    -  1.00e+00 1.00e+00h  1
-  29  5.8827154e-03 0.00e+00 1.30e-07 -11.0 3.03e-04    -  1.00e+00 1.00e+00h  1
+  20  5.8835310e-03 0.00e+00 4.34e-07  -7.4 2.10e-03    -  1.00e+00 1.00e+00h  1
+  21  5.8835291e-03 0.00e+00 1.34e-06  -7.4 4.88e-04    -  1.00e+00 1.00e+00h  1
+  22  5.8835302e-03 0.00e+00 3.86e-08  -7.4 3.90e-04    -  1.00e+00 1.00e+00h  1
+  23  5.8827373e-03 0.00e+00 8.36e-07  -9.0 4.24e-03    -  1.00e+00 1.00e+00f  1
+  24  5.8827252e-03 0.00e+00 4.84e-06 -10.6 7.00e-03    -  1.00e+00 1.00e+00f  1
+  25  5.8827218e-03 0.00e+00 2.05e-06 -10.8 4.95e-03    -  1.00e+00 5.00e-01h  2
+  26  5.8827155e-03 0.00e+00 3.20e-07 -11.0 3.72e-03    -  1.00e+00 1.00e+00h  1
+  27  5.8827155e-03 0.00e+00 1.31e-07 -11.0 1.17e-03    -  1.00e+00 2.50e-01h  3
+  28  5.8827154e-03 0.00e+00 3.25e-08 -11.0 5.47e-04    -  1.00e+00 1.00e+00h  1
+  29  5.8827154e-03 0.00e+00 1.30e-07 -11.0 1.39e-04    -  1.00e+00 1.00e+00H  1
 iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
-  30  5.8827154e-03 0.00e+00 1.69e-07 -11.0 2.28e-04    -  1.00e+00 1.00e+00h  1
-  31  5.8827154e-03 0.00e+00 1.35e-07 -11.0 2.02e-04    -  1.00e+00 1.00e+00h  1
-  32  5.8827154e-03 0.00e+00 1.12e-07 -11.0 1.38e-04    -  1.00e+00 1.00e+00h  1
-  33  5.8827154e-03 0.00e+00 4.06e-08 -11.0 8.40e-05    -  1.00e+00 1.00e+00h  1
-  34  5.8827154e-03 0.00e+00 2.92e-08 -11.0 5.14e-05    -  1.00e+00 1.00e+00h  1
-  35  5.8827154e-03 0.00e+00 4.06e-09 -11.0 2.68e-05    -  1.00e+00 1.00e+00h  1
+  30  5.8827154e-03 0.00e+00 1.49e-08 -11.0 1.51e-04    -  1.00e+00 1.00e+00h  1
+  31  5.8827154e-03 0.00e+00 4.37e-08 -11.0 3.90e-05    -  1.00e+00 1.00e+00h  1
+  32  5.8827154e-03 0.00e+00 4.14e-09 -11.0 2.26e-05    -  1.00e+00 1.00e+00h  1
 
-Number of Iterations....: 35
+Number of Iterations....: 32
 
                                    (scaled)                 (unscaled)
-Objective...............:   5.8827154104652887e-03    5.8827154104652887e-03
-Dual infeasibility......:   4.0648262839293220e-09    4.0648262839293220e-09
+Objective...............:   5.8827154104593949e-03    5.8827154104593949e-03
+Dual infeasibility......:   4.1401101236623490e-09    4.1401101236623490e-09
 Constraint violation....:   0.0000000000000000e+00    0.0000000000000000e+00
 Variable bound violation:   0.0000000000000000e+00    0.0000000000000000e+00
-Complementarity.........:   1.0000000014821483e-11    1.0000000014821483e-11
-Overall NLP error.......:   4.0648262839293220e-09    4.0648262839293220e-09
+Complementarity.........:   1.0000000013383056e-11    1.0000000013383056e-11
+Overall NLP error.......:   4.1401101236623490e-09    4.1401101236623490e-09
 
 
-Number of objective function evaluations             = 44
-Number of objective gradient evaluations             = 36
+Number of objective function evaluations             = 43
+Number of objective gradient evaluations             = 33
 Number of equality constraint evaluations            = 0
-Number of inequality constraint evaluations          = 44
+Number of inequality constraint evaluations          = 43
 Number of equality constraint Jacobian evaluations   = 0
-Number of inequality constraint Jacobian evaluations = 36
+Number of inequality constraint Jacobian evaluations = 33
 Number of Lagrangian Hessian evaluations             = 0
-Total seconds in IPOPT                               = 0.071
+Total seconds in IPOPT                               = 0.102
 
 EXIT: Optimal Solution Found.
 This is Ipopt version 3.14.19, running with linear solver MUMPS 5.9.0.
@@ -4708,113 +4705,91 @@ Total number of inequality constraints...............:        1
         inequality constraints with only upper bounds:        1
 
 iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
-   0  6.1339931e-03 0.00e+00 2.32e-02   0.0 0.00e+00    -  0.00e+00 0.00e+00   0
-   1  6.1354984e-03 0.00e+00 2.73e-03  -6.3 5.02e-03    -  9.79e-01 1.00e+00h  1
-   2  6.1342223e-03 0.00e+00 2.91e-05  -8.0 4.10e-04    -  9.89e-01 1.00e+00f  1
-   3  6.1149773e-03 0.00e+00 1.31e-06  -5.8 7.68e-03    -  1.00e+00 1.00e+00f  1
-   4  6.0751692e-03 0.00e+00 5.84e-06  -7.0 1.86e-02    -  9.69e-01 1.00e+00f  1
+   0  6.1339927e-03 0.00e+00 2.32e-02   0.0 0.00e+00    -  0.00e+00 0.00e+00   0
+   1  6.1354980e-03 0.00e+00 2.73e-03  -6.3 5.02e-03    -  9.79e-01 1.00e+00h  1
+   2  6.1342220e-03 0.00e+00 2.91e-05  -8.0 4.10e-04    -  9.89e-01 1.00e+00f  1
+   3  6.1149771e-03 0.00e+00 1.31e-06  -5.8 7.68e-03    -  1.00e+00 1.00e+00f  1
+   4  6.0751690e-03 0.00e+00 5.84e-06  -7.0 1.86e-02    -  9.69e-01 1.00e+00f  1
 Warning: Cutting back alpha due to evaluation error
-   5  6.0729705e-03 0.00e+00 1.02e-05  -8.1 8.65e-02    -  9.99e-01 5.00e-01f  2
+   5  6.0729703e-03 0.00e+00 1.02e-05  -8.1 8.65e-02    -  9.99e-01 5.00e-01f  2
 Warning: Cutting back alpha due to evaluation error
-   6  6.0710991e-03 0.00e+00 2.50e-05  -8.0 6.94e-01    -  1.00e+00 1.75e-01f  2
-   7  6.0707731e-03 0.00e+00 1.89e-05  -7.5 2.74e-01    -  1.00e+00 1.02e-01f  2
+   6  6.0710986e-03 0.00e+00 2.50e-05  -8.0 6.94e-01    -  1.00e+00 1.75e-01f  2
+   7  6.0707728e-03 0.00e+00 1.89e-05  -7.5 2.74e-01    -  9.99e-01 1.02e-01f  2
 Warning: Cutting back alpha due to evaluation error
-   8  6.0701686e-03 0.00e+00 5.87e-05  -7.7 4.71e-02    -  1.00e+00 4.59e-01f  2
-   9  6.0704172e-03 0.00e+00 2.35e-05  -7.1 5.52e-02    -  1.00e+00 2.05e-01f  3
+   8  6.0701677e-03 0.00e+00 5.88e-05  -7.7 4.71e-02    -  1.00e+00 4.59e-01f  2
+   9  6.0704174e-03 0.00e+00 2.35e-05  -7.1 5.52e-02    -  1.00e+00 2.05e-01f  3
 iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
-  10  6.0706567e-03 0.00e+00 5.97e-06  -7.2 2.33e-02    -  1.00e+00 1.00e+00f  1
-  11  6.0706482e-03 0.00e+00 6.80e-06  -7.2 8.19e-03    -  1.00e+00 2.50e-01f  3
-  12  6.0706085e-03 0.00e+00 5.21e-06  -7.2 1.51e-03    -  1.00e+00 1.00e+00h  1
-  13  6.0705974e-03 0.00e+00 2.83e-06  -7.2 8.02e-04    -  1.00e+00 1.00e+00h  1
-  14  6.0705839e-03 0.00e+00 1.18e-06  -7.2 1.22e-03    -  1.00e+00 1.00e+00h  1
-  15  6.0705888e-03 0.00e+00 4.22e-07  -7.2 6.14e-04    -  1.00e+00 1.00e+00h  1
-  16  6.0692750e-03 0.00e+00 1.09e-05  -9.0 4.26e-02    -  9.48e-01 1.00e+00f  1
+  10  6.0706560e-03 0.00e+00 5.99e-06  -7.2 2.33e-02    -  1.00e+00 1.00e+00f  1
+  11  6.0706473e-03 0.00e+00 6.81e-06  -7.2 8.14e-03    -  1.00e+00 2.50e-01f  3
+  12  6.0706078e-03 0.00e+00 5.23e-06  -7.2 1.50e-03    -  1.00e+00 1.00e+00f  1
+  13  6.0705966e-03 0.00e+00 2.83e-06  -7.2 7.94e-04    -  1.00e+00 1.00e+00h  1
+  14  6.0705832e-03 0.00e+00 1.17e-06  -7.2 1.20e-03    -  1.00e+00 1.00e+00h  1
+  15  6.0705880e-03 0.00e+00 4.21e-07  -7.2 6.00e-04    -  1.00e+00 1.00e+00h  1
+  16  6.0692743e-03 0.00e+00 1.09e-05  -9.0 4.22e-02    -  9.49e-01 1.00e+00f  1
 Warning: Cutting back alpha due to evaluation error
-  17  6.0696489e-03 0.00e+00 5.44e-05  -7.8 8.47e-02    -  1.00e+00 2.65e-01f  2
-  18  6.0694796e-03 0.00e+00 1.05e-05  -7.9 2.69e-02    -  9.44e-01 1.00e+00f  1
+  17  6.0696533e-03 0.00e+00 5.51e-05  -7.8 8.46e-02    -  1.00e+00 2.64e-01f  2
+  18  6.0694770e-03 0.00e+00 1.03e-05  -7.9 2.64e-02    -  9.46e-01 1.00e+00f  1
 Warning: Cutting back alpha due to evaluation error
-  19  6.0694740e-03 0.00e+00 2.83e-06  -7.9 2.56e-02    -  1.00e+00 1.25e-01f  4
+  19  6.0694715e-03 0.00e+00 3.09e-06  -7.9 2.25e-02    -  1.00e+00 1.25e-01f  4
 iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
-  20  6.0694737e-03 0.00e+00 4.21e-06  -7.9 5.33e-03    -  1.00e+00 2.50e-01f  3
-  21  6.0694670e-03 0.00e+00 3.28e-06  -7.9 4.68e-03    -  1.00e+00 1.00e+00h  1
-  22  6.0694648e-03 0.00e+00 2.18e-06  -7.9 1.19e-02    -  1.00e+00 6.25e-02f  5
-  23  6.0694662e-03 0.00e+00 1.40e-06  -7.9 1.42e-03    -  1.00e+00 1.00e+00h  1
-  24  6.0694705e-03 0.00e+00 2.14e-06  -7.9 3.24e-03    -  1.00e+00 1.00e+00H  1
-  25  6.0694690e-03 0.00e+00 3.60e-06  -7.9 2.07e-03    -  1.00e+00 1.00e+00h  1
-  26  6.0694631e-03 0.00e+00 2.41e-06  -7.9 3.52e-03    -  1.00e+00 1.00e+00H  1
-  27  6.0694637e-03 0.00e+00 1.64e-06  -7.9 3.27e-03    -  1.00e+00 2.50e-01h  3
-  28  6.0694650e-03 0.00e+00 2.80e-06  -7.9 3.15e-03    -  1.00e+00 5.00e-01h  2
-  29  6.0695106e-03 0.00e+00 9.82e-06  -7.9 1.31e-02    -  1.00e+00 1.00e+00h  1
+  20  6.0694712e-03 0.00e+00 3.68e-06  -7.9 5.48e-03    -  1.00e+00 2.50e-01h  3
+  21  6.0694652e-03 0.00e+00 3.29e-06  -7.9 4.43e-03    -  1.00e+00 1.00e+00h  1
+  22  6.0694974e-03 0.00e+00 1.29e-05  -7.9 1.10e-02    -  1.00e+00 5.00e-01h  2
+  23  6.0694645e-03 0.00e+00 1.55e-06  -7.9 5.07e-03    -  1.00e+00 1.00e+00f  1
+  24  6.0694806e-03 0.00e+00 4.38e-06  -7.9 4.70e-03    -  1.00e+00 1.00e+00H  1
+  25  6.0694648e-03 0.00e+00 1.48e-06  -7.9 3.66e-03    -  1.00e+00 1.00e+00f  1
+  26  6.0694644e-03 0.00e+00 1.18e-06  -7.9 3.05e-03    -  1.00e+00 1.25e-01h  4
+  27  6.0694636e-03 0.00e+00 2.31e-07  -7.9 2.72e-04    -  1.00e+00 1.00e+00h  1
+  28  6.0694639e-03 0.00e+00 8.75e-07  -7.9 1.50e-04    -  1.00e+00 5.00e-01h  2
+  29  6.0694637e-03 0.00e+00 8.08e-08  -7.9 5.40e-05    -  1.00e+00 1.00e+00h  1
 iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
-  30  6.0695106e-03 0.00e+00 9.21e-06  -7.9 1.22e-02    -  1.00e+00 3.05e-05h 16
-  31  6.0695094e-03 0.00e+00 8.06e-06  -7.9 7.32e-02    -  1.00e+00 3.91e-03f  9
-Warning: Cutting back alpha due to evaluation error
-  32  6.0695094e-03 0.00e+00 6.88e-06  -7.9 1.75e-02    -  1.00e+00 1.82e-12h 40
-  33  6.0695094e-03 0.00e+00 9.03e-06  -7.9 1.69e-02    -  1.00e+00 6.10e-05h 15
-  34  6.0695094e-03 0.00e+00 7.57e-06  -7.9 3.73e-02    -  1.00e+00 3.81e-06h 19
-  35  6.0695094e-03 0.00e+00 7.20e-06  -7.9 4.28e-02    -  1.00e+00 1.86e-09h 30
-  36  6.0695092e-03 0.00e+00 7.58e-06  -7.9 3.45e-02    -  1.00e+00 9.77e-04f 11
-  37  6.0695092e-03 0.00e+00 7.43e-06  -7.9 8.84e-03    -  1.00e+00 3.64e-12h 39
-  38  6.0695092e-03 0.00e+00 8.33e-06  -7.9 1.28e-02    -  1.00e+00 1.91e-06h 20
-  39  6.0695066e-03 0.00e+00 1.05e-05  -7.9 4.79e-02    -  1.00e+00 1.56e-02f  7
+  30  6.0692482e-03 0.00e+00 1.31e-06  -9.0 3.36e-03    -  1.00e+00 1.00e+00f  1
+  31  6.0692461e-03 0.00e+00 1.90e-06 -10.3 4.09e-02    -  1.00e+00 6.25e-02f  5
+  32  6.0692303e-03 0.00e+00 3.53e-06 -10.7 4.05e-03    -  1.00e+00 1.00e+00f  1
+  33  6.0692300e-03 0.00e+00 2.63e-06 -11.0 2.67e-02    -  1.00e+00 1.25e-01f  4
+  34  6.0692478e-03 0.00e+00 9.69e-06 -11.0 2.71e-03    -  1.00e+00 1.00e+00h  1
+  35  6.0692267e-03 0.00e+00 7.53e-07 -11.0 3.08e-03    -  1.00e+00 1.00e+00f  1
+  36  6.0692272e-03 0.00e+00 2.98e-06 -11.0 1.47e-03    -  1.00e+00 1.00e+00h  1
+  37  6.0692271e-03 0.00e+00 1.50e-06 -11.0 6.18e-03    -  1.00e+00 6.25e-02h  5
+  38  6.0692270e-03 0.00e+00 1.41e-06 -11.0 1.23e-03    -  1.00e+00 1.00e+00h  1
+  39  6.0692269e-03 0.00e+00 1.31e-06 -11.0 9.18e-04    -  1.00e+00 5.00e-01h  2
 iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
-  40  6.0695983e-03 0.00e+00 2.89e-05  -7.9 2.57e-02    -  1.00e+00 1.00e+00w  1
-  41  6.0697438e-03 0.00e+00 5.01e-05  -7.9 1.10e-02    -  1.00e+00 1.00e+00w  1
-  42  6.0695211e-03 0.00e+00 1.60e-05  -7.9 1.72e-02    -  1.00e+00 1.00e+00w  1
-Warning: Cutting back alpha due to evaluation error
-  43  6.0695066e-03 0.00e+00 9.33e-06  -7.9 1.18e-02    -  1.00e+00 9.31e-10h 30
-  44  6.0695010e-03 0.00e+00 8.79e-06  -7.9 9.40e-03    -  1.00e+00 1.25e-01f  4
-Warning: Cutting back alpha due to evaluation error
-  45  6.0694937e-03 0.00e+00 6.36e-06  -7.9 1.78e-02    -  1.00e+00 1.14e-01f  4
-  46  6.0694663e-03 0.00e+00 9.46e-06  -7.9 1.03e-02    -  1.00e+00 1.00e+00f  1
-  47  6.0694663e-03 0.00e+00 5.73e-06  -7.9 4.22e-03    -  1.00e+00 4.88e-04h 12
-  48  6.0694672e-03 0.00e+00 8.97e-07  -7.9 2.93e-03    -  1.00e+00 1.00e+00f  1
-  49  6.0694660e-03 0.00e+00 1.55e-06  -7.9 3.73e-03    -  1.00e+00 2.50e-01h  3
+  40  6.0692265e-03 0.00e+00 3.93e-07 -11.0 6.23e-04    -  1.00e+00 1.00e+00h  1
+  41  6.0692264e-03 0.00e+00 5.86e-07 -11.0 4.60e-04    -  1.00e+00 2.50e-01h  3
+  42  6.0692264e-03 0.00e+00 7.12e-08 -11.0 8.96e-05    -  1.00e+00 1.00e+00h  1
+  43  6.0692264e-03 0.00e+00 7.38e-08 -11.0 3.00e-05    -  1.00e+00 1.00e+00h  1
+  44  6.0692264e-03 0.00e+00 6.15e-08 -11.0 1.29e-05    -  1.00e+00 1.00e+00h  1
+  45  6.0692264e-03 0.00e+00 3.96e-08 -11.0 3.78e-05    -  1.00e+00 5.00e-01h  2
+  46  6.0692264e-03 0.00e+00 1.57e-08 -11.0 1.23e-05    -  1.00e+00 1.00e+00h  1
+  47  6.0692264e-03 0.00e+00 1.27e-07 -11.0 5.94e-05    -  1.00e+00 1.00e+00h  1
+  48  6.0692264e-03 0.00e+00 4.18e-08 -11.0 2.38e-05    -  1.00e+00 1.00e+00h  1
+  49  6.0692264e-03 0.00e+00 6.14e-08 -11.0 1.71e-05    -  1.00e+00 1.00e+00h  1
 iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
-  50  6.0694657e-03 0.00e+00 6.33e-07  -7.9 1.03e-03    -  1.00e+00 1.25e-01h  4
-  51  6.0694658e-03 0.00e+00 2.21e-07  -7.9 8.75e-05    -  1.00e+00 1.00e+00h  1
-  52  6.0694657e-03 0.00e+00 4.26e-07  -7.9 1.01e-04    -  1.00e+00 1.00e+00h  1
-  53  6.0694658e-03 0.00e+00 6.79e-08  -7.9 4.74e-05    -  1.00e+00 1.00e+00h  1
-  54  6.0692450e-03 0.00e+00 1.74e-06  -9.0 7.86e-03    -  1.00e+00 1.00e+00f  1
-  55  6.0692529e-03 0.00e+00 6.86e-06  -8.7 2.00e-02    -  1.00e+00 1.25e-01h  4
-  56  6.0692553e-03 0.00e+00 3.75e-06  -8.9 1.09e-03    -  1.00e+00 1.00e+00f  1
-  57  6.0692539e-03 0.00e+00 8.39e-07  -8.9 8.12e-04    -  1.00e+00 5.00e-01h  2
-  58  6.0692539e-03 0.00e+00 9.88e-07  -8.9 2.09e-04    -  1.00e+00 1.00e+00h  1
-  59  6.0692537e-03 0.00e+00 2.92e-07  -8.9 2.28e-04    -  1.00e+00 1.00e+00h  1
-iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
-  60  6.0692538e-03 0.00e+00 6.52e-07  -8.9 1.19e-04    -  1.00e+00 1.00e+00h  1
-  61  6.0692538e-03 0.00e+00 2.36e-07  -8.9 5.95e-05    -  1.00e+00 1.00e+00h  1
-  62  6.0692537e-03 0.00e+00 3.09e-08  -8.9 6.15e-05    -  1.00e+00 1.00e+00h  1
-  63  6.0692537e-03 0.00e+00 9.94e-08  -8.9 4.48e-05    -  1.00e+00 1.00e+00h  1
-  64  6.0692537e-03 0.00e+00 6.18e-08  -8.9 1.68e-04    -  1.00e+00 2.50e-01h  3
-  65  6.0692537e-03 0.00e+00 7.77e-08  -8.9 8.14e-05    -  1.00e+00 1.00e+00h  1
-  66  6.0692537e-03 0.00e+00 7.51e-08  -8.9 4.84e-04    -  1.00e+00 2.50e-01h  3
-  67  6.0692537e-03 0.00e+00 6.92e-08  -8.9 2.22e-04    -  1.00e+00 3.12e-02h  6
-  68  6.0692537e-03 0.00e+00 3.48e-07  -8.9 3.44e-05    -  1.00e+00 1.00e+00H  1
-  69  6.0692537e-03 0.00e+00 3.36e-08  -8.9 1.07e-04    -  1.00e+00 1.00e+00h  1
-iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
-  70  6.0692537e-03 0.00e+00 1.48e-07  -8.9 8.42e-05    -  1.00e+00 1.00e+00h  1
-  71  6.0692537e-03 0.00e+00 4.33e-08  -8.9 3.84e-05    -  1.00e+00 1.00e+00h  1
+  50  6.0692264e-03 0.00e+00 6.38e-08 -11.0 1.28e-05    -  1.00e+00 1.00e+00H  1
+  51  6.0692264e-03 0.00e+00 1.43e-08 -11.0 1.03e-05    -  1.00e+00 1.00e+00h  1
+  52  6.0692264e-03 0.00e+00 1.25e-08 -11.0 1.05e-05    -  1.00e+00 1.00e+00h  1
+  53  6.0692264e-03 0.00e+00 2.67e-08 -11.0 1.50e-05    -  1.00e+00 1.00e+00h  1
+  54  6.0692264e-03 0.00e+00 1.53e-08 -11.0 2.75e-05    -  1.00e+00 2.50e-01h  3
 
-Number of Iterations....: 71
+Number of Iterations....: 54
 
                                    (scaled)                 (unscaled)
-Objective...............:   6.0692537024234139e-03    6.0692537024234139e-03
-Dual infeasibility......:   4.3308337127702814e-08    4.3308337127702814e-08
+Objective...............:   6.0692263975224287e-03    6.0692263975224287e-03
+Dual infeasibility......:   1.5267337844452860e-08    1.5267337844452860e-08
 Constraint violation....:   0.0000000000000000e+00    0.0000000000000000e+00
 Variable bound violation:   0.0000000000000000e+00    0.0000000000000000e+00
-Complementarity.........:   1.3683987057298128e-09    1.3683987057298128e-09
-Overall NLP error.......:   4.3308337127702814e-08    4.3308337127702814e-08
+Complementarity.........:   1.0006602473331149e-11    1.0006602473331149e-11
+Overall NLP error.......:   1.5267337844452860e-08    1.5267337844452860e-08
 
 
-Number of objective function evaluations             = 387
-Number of objective gradient evaluations             = 72
+Number of objective function evaluations             = 112
+Number of objective gradient evaluations             = 55
 Number of equality constraint evaluations            = 0
-Number of inequality constraint evaluations          = 387
+Number of inequality constraint evaluations          = 112
 Number of equality constraint Jacobian evaluations   = 0
-Number of inequality constraint Jacobian evaluations = 72
+Number of inequality constraint Jacobian evaluations = 55
 Number of Lagrangian Hessian evaluations             = 0
-Total seconds in IPOPT                               = 0.213
+Total seconds in IPOPT                               = 0.117
 
 EXIT: Solved To Acceptable Level.
 This is Ipopt version 3.14.19, running with linear solver MUMPS 5.9.0.
@@ -4834,244 +4809,179 @@ Total number of inequality constraints...............:        1
         inequality constraints with only upper bounds:        1
 
 iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
-   0  6.1472762e-03 0.00e+00 2.32e-02   0.0 0.00e+00    -  0.00e+00 0.00e+00   0
-   1  6.1485623e-03 0.00e+00 2.96e-03  -6.3 5.48e-03    -  9.78e-01 1.00e+00h  1
-   2  6.1473412e-03 0.00e+00 3.52e-05  -8.0 6.85e-04    -  9.88e-01 1.00e+00f  1
-   3  6.1491245e-03 0.00e+00 6.71e-06  -5.6 1.87e-02    -  9.97e-01 1.00e+00f  1
-   4  6.1561312e-03 0.00e+00 6.00e-05  -5.6 4.84e-01    -  9.16e-01 1.00e+00f  1
-   5  6.1552337e-03 0.00e+00 1.12e-05  -5.6 1.13e-01    -  1.00e+00 2.50e-01f  3
-   6  6.0970001e-03 0.00e+00 7.87e-06  -8.4 1.31e-01    -  5.56e-01 9.64e-01f  1
-   7  6.0971273e-03 0.00e+00 6.29e-05  -6.5 1.80e-01    -  9.94e-01 1.00e+00f  1
-   8  6.0947801e-03 0.00e+00 2.07e-05  -6.6 1.22e-01    -  1.00e+00 5.00e-01f  2
+   0  6.1472663e-03 0.00e+00 2.32e-02   0.0 0.00e+00    -  0.00e+00 0.00e+00   0
+   1  6.1485503e-03 0.00e+00 2.96e-03  -6.3 5.48e-03    -  9.78e-01 1.00e+00h  1
+   2  6.1473293e-03 0.00e+00 3.52e-05  -8.0 6.86e-04    -  9.88e-01 1.00e+00f  1
+   3  6.1491430e-03 0.00e+00 6.86e-06  -5.6 1.87e-02    -  9.97e-01 1.00e+00f  1
+   4  6.1563809e-03 0.00e+00 6.03e-05  -5.6 4.86e-01    -  9.06e-01 1.00e+00f  1
+   5  6.1554676e-03 0.00e+00 1.12e-05  -5.6 1.13e-01    -  1.00e+00 2.50e-01f  3
+   6  6.0970619e-03 0.00e+00 7.96e-06  -8.4 1.30e-01    -  5.54e-01 9.64e-01f  1
+   7  6.0971919e-03 0.00e+00 6.22e-05  -6.5 1.82e-01    -  1.00e+00 1.00e+00f  1
+   8  6.0947969e-03 0.00e+00 2.10e-05  -6.6 1.25e-01    -  1.00e+00 5.00e-01f  2
 Warning: Cutting back alpha due to evaluation error
-   9  6.0912554e-03 0.00e+00 3.11e-05  -7.5 9.41e-02    -  1.00e+00 5.00e-01f  2
-Warning: Cutting back alpha due to evaluation error
-iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
-  10  6.0888437e-03 0.00e+00 9.76e-06  -8.8 1.76e-01    -  1.00e+00 4.05e-01f  2
-  11  6.0885815e-03 0.00e+00 4.35e-05  -8.1 1.08e-01    -  1.00e+00 2.27e-01f  2
-Warning: Cutting back alpha due to evaluation error
-Warning: Cutting back alpha due to evaluation error
-  12  6.0878924e-03 0.00e+00 5.02e-05  -9.0 6.66e-02    -  1.00e+00 2.36e-01f  3
-  13  6.0921387e-03 0.00e+00 3.18e-05  -6.9 1.49e-01    -  1.00e+00 1.00e+00f  1
-  14  6.0920201e-03 0.00e+00 4.46e-05  -6.9 6.10e-02    -  1.00e+00 3.84e-01f  2
-  15  6.0906796e-03 0.00e+00 1.49e-05  -6.9 4.26e-02    -  1.00e+00 1.00e+00f  1
-  16  6.0905677e-03 0.00e+00 2.40e-05  -6.9 2.12e-02    -  1.00e+00 2.50e-01f  3
-  17  6.0904753e-03 0.00e+00 4.98e-06  -6.9 6.61e-03    -  1.00e+00 1.00e+00f  1
-  18  6.0903125e-03 0.00e+00 6.51e-06  -6.9 2.40e-02    -  1.00e+00 5.00e-01f  2
-  19  6.0903029e-03 0.00e+00 5.50e-06  -6.9 1.85e-02    -  1.00e+00 2.50e-01f  3
-iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
-  20  6.0903117e-03 0.00e+00 1.87e-06  -6.9 2.40e-03    -  1.00e+00 1.00e+00h  1
-  21  6.0902952e-03 0.00e+00 9.47e-07  -6.9 2.86e-03    -  1.00e+00 1.00e+00h  1
-Warning: Cutting back alpha due to evaluation error
-  22  6.0882441e-03 0.00e+00 8.83e-06  -9.0 1.06e-01    -  8.55e-01 4.99e-01f  2
-Warning: Cutting back alpha due to evaluation error
-  23  6.0878729e-03 0.00e+00 4.39e-05  -9.0 1.43e-01    -  9.90e-01 1.86e-01f  2
-  24  6.0866599e-03 0.00e+00 2.26e-05  -8.1 3.54e-02    -  1.00e+00 1.00e+00f  1
-  25  6.0866400e-03 0.00e+00 1.95e-05  -7.7 2.45e-02    -  1.00e+00 1.22e-01f  3
-Warning: Cutting back alpha due to evaluation error
-  26  6.0864709e-03 0.00e+00 1.52e-05  -9.3 1.74e-02    -  1.00e+00 5.00e-01f  2
-  27  6.0864659e-03 0.00e+00 2.66e-05  -7.9 3.98e-02    -  1.00e+00 8.24e-02f  3
-Warning: Cutting back alpha due to evaluation error
-  28  6.0865476e-03 0.00e+00 1.53e-05  -7.9 1.15e-02    -  9.93e-01 5.00e-01f  2
-  29  6.0865332e-03 0.00e+00 1.08e-05  -8.1 2.01e-03    -  1.00e+00 5.00e-01f  2
-iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
-  30  6.0865091e-03 0.00e+00 3.76e-06  -8.1 2.19e-03    -  1.00e+00 1.00e+00f  1
-  31  6.0865056e-03 0.00e+00 1.56e-05  -8.1 1.12e-03    -  1.00e+00 1.00e+00H  1
-  32  6.0865045e-03 0.00e+00 4.29e-06  -8.1 4.83e-04    -  1.00e+00 1.00e+00h  1
-  33  6.0865068e-03 0.00e+00 3.87e-06  -8.1 9.35e-04    -  1.00e+00 1.00e+00h  1
-  34  6.0865068e-03 0.00e+00 1.66e-06  -8.1 2.70e-04    -  1.00e+00 5.00e-01h  2
-  35  6.0865046e-03 0.00e+00 1.38e-06  -8.1 6.41e-04    -  1.00e+00 1.00e+00h  1
-  36  6.0865045e-03 0.00e+00 6.00e-07  -8.1 2.03e-03    -  1.00e+00 6.25e-02h  5
-  37  6.0865047e-03 0.00e+00 1.82e-07  -8.1 8.41e-05    -  1.00e+00 1.00e+00h  1
-  38  6.0865046e-03 0.00e+00 3.38e-06  -8.1 8.85e-05    -  1.00e+00 1.00e+00H  1
-  39  6.0865046e-03 0.00e+00 2.73e-06  -8.1 1.71e-04    -  1.00e+00 6.25e-02h  5
-iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
-  40  6.0865047e-03 0.00e+00 5.56e-07  -8.1 1.47e-04    -  1.00e+00 5.00e-01h  2
-  41  6.0865048e-03 0.00e+00 3.22e-07  -8.1 5.46e-05    -  1.00e+00 1.00e+00h  1
-  42  6.0865048e-03 0.00e+00 1.89e-07  -8.1 8.15e-05    -  1.00e+00 2.50e-01h  3
-  43  6.0865049e-03 0.00e+00 1.48e-07  -8.1 3.87e-05    -  1.00e+00 1.00e+00h  1
-  44  6.0865051e-03 0.00e+00 1.03e-06  -8.1 8.67e-05    -  1.00e+00 1.00e+00h  1
-  45  6.0865049e-03 0.00e+00 2.82e-08  -8.1 7.33e-05    -  1.00e+00 1.00e+00h  1
-  46  6.0863531e-03 0.00e+00 1.17e-06  -9.0 6.02e-04    -  1.00e+00 1.00e+00f  1
-Warning: Cutting back alpha due to evaluation error
-  47  6.0863506e-03 0.00e+00 9.92e-06  -9.2 2.25e-02    -  1.00e+00 6.17e-02f  4
-  48  6.0863478e-03 0.00e+00 8.95e-06  -9.1 1.22e-02    -  1.00e+00 1.25e-01f  4
-  49  6.0863446e-03 0.00e+00 1.53e-05  -9.6 9.93e-03    -  1.00e+00 1.25e-01h  4
+   9  6.0913079e-03 0.00e+00 3.13e-05  -7.5 9.26e-02    -  1.00e+00 5.00e-01f  2
 Warning: Cutting back alpha due to evaluation error
 iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
-  50  6.0863362e-03 0.00e+00 1.15e-05 -10.9 2.95e-02    -  1.00e+00 1.55e-01f  3
-Warning: Cutting back alpha due to evaluation error
-  51  6.0863313e-03 0.00e+00 9.69e-06  -9.0 3.24e-02    -  1.00e+00 6.51e-02f  3
-Warning: Cutting back alpha due to evaluation error
-  52  6.0863291e-03 0.00e+00 3.10e-05  -9.1 4.54e-02    -  1.00e+00 8.00e-02f  3
-Warning: Cutting back alpha due to evaluation error
-  53  6.0863695e-03 0.00e+00 2.45e-05  -8.4 9.36e-03    -  1.00e+00 2.37e-01f  2
-  54  6.0863814e-03 0.00e+00 6.93e-06  -8.6 1.05e-02    -  8.82e-01 1.00e+00f  1
-  55  6.0863726e-03 0.00e+00 1.28e-05  -8.6 7.37e-02    -  3.71e-01 1.76e-02f  4
-  56  6.0863664e-03 0.00e+00 1.29e-05  -8.6 7.57e-03    -  1.00e+00 1.00e+00H  1
+  10  6.0888456e-03 0.00e+00 1.00e-05  -8.6 1.72e-01    -  1.00e+00 4.16e-01f  2
+  11  6.0886541e-03 0.00e+00 4.80e-05  -8.0 1.09e-01    -  1.00e+00 2.24e-01f  2
 Warning: Cutting back alpha due to evaluation error
 Warning: Cutting back alpha due to evaluation error
+  12  6.0879062e-03 0.00e+00 6.22e-05  -9.0 6.38e-02    -  1.00e+00 2.49e-01f  3
+  13  6.0933100e-03 0.00e+00 3.30e-05  -6.8 1.91e-01    -  1.00e+00 1.00e+00f  1
+  14  6.0929716e-03 0.00e+00 1.87e-05  -6.8 9.74e-02    -  1.00e+00 2.17e-01f  3
+  15  6.0914869e-03 0.00e+00 1.36e-05  -6.8 7.31e-02    -  1.00e+00 1.00e+00f  1
 Warning: Cutting back alpha due to evaluation error
-  57  6.0863652e-03 0.00e+00 9.86e-06  -8.6 1.02e-02    -  6.00e-01 2.10e-02f  6
-  58  6.0863627e-03 0.00e+00 4.63e-06  -8.6 3.92e-03    -  1.00e+00 1.00e+00f  1
+  16  6.0913617e-03 0.00e+00 1.70e-05  -6.8 6.61e-02    -  7.72e-01 2.24e-01f  3
+  17  6.0913125e-03 0.00e+00 2.05e-05  -6.8 8.27e-03    -  1.00e+00 1.00e+00f  1
+  18  6.0913150e-03 0.00e+00 4.19e-06  -6.8 5.52e-03    -  1.00e+00 1.00e+00f  1
+  19  6.0912725e-03 0.00e+00 1.12e-06  -6.8 1.31e-03    -  1.00e+00 1.00e+00f  1
 Warning: Cutting back alpha due to evaluation error
-Warning: Cutting back alpha due to evaluation error
-Warning: Cutting back alpha due to evaluation error
-Warning: Cutting back alpha due to evaluation error
-  59  6.0863624e-03 0.00e+00 2.70e-06  -8.6 8.17e-03    -  1.00e+00 1.41e-02h  7
 iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
-  60  6.0863612e-03 0.00e+00 5.26e-07  -8.6 7.42e-04    -  1.00e+00 1.00e+00h  1
-  61  6.0863626e-03 0.00e+00 5.49e-06  -8.6 4.82e-03    -  1.00e+00 2.50e-01h  3
-  62  6.0863625e-03 0.00e+00 5.17e-06  -8.6 4.24e-04    -  1.00e+00 1.56e-02h  7
-  63  6.0863609e-03 0.00e+00 5.27e-06  -8.6 5.09e-04    -  1.00e+00 1.00e+00f  1
-  64  6.0863604e-03 0.00e+00 6.27e-06  -8.6 1.74e-03    -  1.00e+00 5.00e-01h  2
-  65  6.0863604e-03 0.00e+00 5.87e-06  -8.6 1.90e-03    -  1.00e+00 3.91e-03h  9
-  66  6.0863604e-03 0.00e+00 6.16e-06  -8.6 2.07e-03    -  1.00e+00 7.81e-03h  8
+  20  6.0888646e-03 0.00e+00 4.33e-06  -9.0 8.99e-02    -  8.55e-01 4.96e-01f  2
+Warning: Cutting back alpha due to evaluation error
+  21  6.0883843e-03 0.00e+00 5.16e-05  -9.0 2.00e-01    -  9.70e-01 2.17e-01f  2
 Warning: Cutting back alpha due to evaluation error
 Warning: Cutting back alpha due to evaluation error
+  22  6.0877868e-03 0.00e+00 3.63e-04  -9.0 7.89e-02    -  7.94e-01 2.50e-01f  3
+  23  6.0877761e-03 0.00e+00 2.12e-05  -7.1 7.47e-02    -  1.00e+00 1.10e-01f  3
+  24  6.0866953e-03 0.00e+00 6.00e-05 -11.0 2.74e-02    -  8.90e-01 9.67e-01f  1
 Warning: Cutting back alpha due to evaluation error
+  25  6.0864184e-03 0.00e+00 2.16e-05 -11.0 5.42e-02    -  8.65e-01 3.61e-01f  2
+  26  6.0863734e-03 0.00e+00 1.43e-05 -11.0 7.19e-02    -  1.93e-01 4.68e-02f  3
+  27  6.0863439e-03 0.00e+00 3.09e-05 -11.0 1.45e-02    -  1.00e+00 5.00e-01f  2
 Warning: Cutting back alpha due to evaluation error
-  67  6.0863600e-03 0.00e+00 3.41e-06  -8.6 1.09e-02    -  1.00e+00 1.39e-02f  7
-  68  6.0863604e-03 0.00e+00 5.50e-07  -8.6 8.38e-04    -  1.00e+00 1.00e+00h  1
-  69  6.0863603e-03 0.00e+00 5.03e-07  -8.6 5.00e-04    -  1.00e+00 1.25e-01h  4
-iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
-  70  6.0863602e-03 0.00e+00 3.64e-07  -8.6 8.59e-05    -  1.00e+00 1.00e+00h  1
-  71  6.0863602e-03 0.00e+00 3.29e-07  -8.6 3.54e-04    -  1.00e+00 6.25e-02h  5
-  72  6.0863600e-03 0.00e+00 1.61e-07  -8.6 1.21e-04    -  1.00e+00 1.00e+00h  1
-  73  6.0863598e-03 0.00e+00 8.48e-07  -8.6 8.73e-03    -  1.00e+00 6.25e-02h  5
-  74  6.0863600e-03 0.00e+00 2.95e-06  -8.6 1.51e-03    -  1.00e+00 6.25e-02h  5
-  75  6.0863597e-03 0.00e+00 1.46e-07  -8.6 2.07e-04    -  1.00e+00 1.00e+00h  1
-  76  6.0863597e-03 0.00e+00 1.13e-06  -8.6 8.25e-05    -  1.00e+00 1.00e+00H  1
-  77  6.0863597e-03 0.00e+00 6.63e-08  -8.6 8.00e-05    -  1.00e+00 1.00e+00h  1
-  78  6.0863597e-03 0.00e+00 1.37e-07  -8.6 3.89e-05    -  1.00e+00 1.00e+00h  1
-  79  6.0863600e-03 0.00e+00 3.45e-06  -8.6 1.41e-04    -  1.00e+00 1.00e+00h  1
-iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
-  80  6.0863597e-03 0.00e+00 1.74e-07  -8.6 1.43e-04    -  1.00e+00 1.00e+00h  1
-  81  6.0863597e-03 0.00e+00 8.97e-07  -8.6 1.54e-04    -  1.00e+00 5.00e-01h  2
-  82  6.0863597e-03 0.00e+00 5.23e-07  -8.6 5.98e-05    -  1.00e+00 1.00e+00H  1
-  83  6.0863597e-03 0.00e+00 2.24e-07  -8.6 2.62e-04    -  1.00e+00 2.50e-01h  3
-  84  6.0863597e-03 0.00e+00 2.64e-07  -8.6 7.59e-05    -  1.00e+00 2.50e-01h  3
-  85  6.0863597e-03 0.00e+00 1.14e-08  -8.6 3.32e-05    -  1.00e+00 1.00e+00h  1
-  86  6.0863295e-03 0.00e+00 1.69e-06  -9.0 1.32e-03    -  1.00e+00 1.00e+00h  1
-Warning: Cutting back alpha due to evaluation error
-  87  6.0863785e-03 0.00e+00 1.95e-05  -9.0 2.45e-02    -  1.00e+00 4.81e-01h  2
-Warning: Cutting back alpha due to evaluation error
-Warning: Cutting back alpha due to evaluation error
-  88  6.0863660e-03 0.00e+00 2.06e-05  -9.0 2.31e-03    -  1.00e+00 2.50e-01f  3
-  89  6.0863599e-03 0.00e+00 2.30e-05  -9.0 1.03e-02    -  1.00e+00 1.00e+00f  1
+  28  6.0863304e-03 0.00e+00 1.32e-05 -11.0 6.07e-02    -  2.88e-01 1.07e-01f  3
+  29  6.0865147e-03 0.00e+00 2.37e-05  -8.3 2.10e-02    -  1.00e+00 1.00e+00f  1
 Warning: Cutting back alpha due to evaluation error
 Warning: Cutting back alpha due to evaluation error
 Warning: Cutting back alpha due to evaluation error
 iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
-  90  6.0863497e-03 0.00e+00 1.13e-05  -9.0 1.27e-01    -  1.36e-01 4.43e-02f  4
-  91  6.0863456e-03 0.00e+00 1.15e-05  -9.0 2.02e-02    -  2.72e-01 2.14e-02f  5
-  92  6.0863325e-03 0.00e+00 1.10e-05  -9.0 4.03e-03    -  1.00e+00 1.00e+00h  1
+  30  6.0865070e-03 0.00e+00 4.99e-05  -8.3 3.67e-02    -  3.97e-01 3.22e-02f  4
+  31  6.0864887e-03 0.00e+00 2.24e-05  -8.3 4.54e-03    -  1.00e+00 5.00e-01f  2
+  32  6.0864247e-03 0.00e+00 1.19e-05  -8.3 1.20e-02    -  1.00e+00 1.00e+00f  1
+  33  6.0864199e-03 0.00e+00 1.50e-05  -8.3 1.20e-02    -  1.00e+00 1.13e-01f  4
+  34  6.0864164e-03 0.00e+00 1.17e-05  -8.3 1.99e-03    -  1.00e+00 1.00e+00f  1
+  35  6.0864135e-03 0.00e+00 4.90e-06  -8.3 3.45e-03    -  1.00e+00 1.00e+00f  1
+  36  6.0864509e-03 0.00e+00 3.01e-05  -8.3 1.78e-03    -  1.00e+00 1.00e+00h  1
 Warning: Cutting back alpha due to evaluation error
+  37  6.0864228e-03 0.00e+00 9.74e-05  -8.3 1.87e-03    -  1.00e+00 5.00e-01f  2
 Warning: Cutting back alpha due to evaluation error
-Warning: Cutting back alpha due to evaluation error
-  93  6.0863303e-03 0.00e+00 2.59e-05  -9.0 5.20e-02    -  1.00e+00 4.27e-02f  4
-  94  6.0864100e-03 0.00e+00 2.46e-05  -9.0 5.09e-03    -  1.00e+00 1.00e+00H  1
-  95  6.0863361e-03 0.00e+00 8.37e-06  -9.0 1.33e-03    -  1.00e+00 1.00e+00f  1
-  96  6.0863304e-03 0.00e+00 5.60e-06  -9.0 9.15e-03    -  1.00e+00 5.00e-01h  2
-Warning: Cutting back alpha due to evaluation error
-Warning: Cutting back alpha due to evaluation error
-Warning: Cutting back alpha due to evaluation error
-Warning: Cutting back alpha due to evaluation error
-  97  6.0863300e-03 0.00e+00 4.89e-06  -9.0 1.32e-02    -  4.13e-01 2.66e-02f  6
-  98  6.0863291e-03 0.00e+00 2.49e-06  -9.0 4.70e-04    -  1.00e+00 1.00e+00h  1
-  99  6.0863292e-03 0.00e+00 5.49e-06  -9.0 7.71e-04    -  1.00e+00 1.00e+00h  1
+  38  6.0864097e-03 0.00e+00 6.69e-06  -8.3 1.02e-02    -  3.93e-01 5.90e-02f  5
+  39  6.0864079e-03 0.00e+00 2.38e-06  -8.3 5.29e-04    -  1.00e+00 1.00e+00h  1
 iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
- 100  6.0863289e-03 0.00e+00 5.17e-06  -9.0 1.18e-03    -  1.00e+00 1.00e+00h  1
-Warning: Cutting back alpha due to evaluation error
-Warning: Cutting back alpha due to evaluation error
- 101  6.0863307e-03 0.00e+00 4.59e-06  -8.8 1.12e-02    -  1.00e+00 6.25e-02h  5
- 102  6.0863371e-03 0.00e+00 7.02e-06  -8.9 2.15e-03    -  1.00e+00 1.00e+00H  1
- 103  6.0863362e-03 0.00e+00 4.76e-06  -8.9 2.81e-03    -  1.00e+00 5.00e-01f  2
- 104  6.0863489e-03 0.00e+00 1.49e-05  -8.9 4.25e-03    -  1.00e+00 1.00e+00h  1
- 105  6.0863383e-03 0.00e+00 9.78e-06  -8.9 3.56e-03    -  1.00e+00 5.00e-01f  2
-Warning: Cutting back alpha due to evaluation error
-Warning: Cutting back alpha due to evaluation error
- 106  6.0863382e-03 0.00e+00 1.02e-05  -8.9 1.75e-02    -  1.00e+00 1.00e-03h 10
- 107  6.0863372e-03 0.00e+00 7.87e-06  -8.9 4.84e-03    -  1.00e+00 6.25e-02h  5
-Warning: Cutting back alpha due to evaluation error
-Warning: Cutting back alpha due to evaluation error
- 108  6.0863369e-03 0.00e+00 1.82e-05  -8.9 3.15e-02    -  7.69e-01 1.25e-01f  4
- 109  6.0863356e-03 0.00e+00 6.09e-06  -8.9 7.97e-02    -  4.58e-01 1.26e-02f  7
+  40  6.0864092e-03 0.00e+00 3.38e-06  -8.3 4.29e-04    -  1.00e+00 1.00e+00H  1
+  41  6.0864084e-03 0.00e+00 1.71e-06  -8.3 2.31e-04    -  1.00e+00 1.00e+00h  1
+  42  6.0864085e-03 0.00e+00 1.27e-06  -8.3 2.93e-05    -  1.00e+00 1.00e+00h  1
+  43  6.0864089e-03 0.00e+00 1.09e-06  -8.3 2.44e-04    -  1.00e+00 1.00e+00h  1
+  44  6.0864092e-03 0.00e+00 9.73e-07  -8.3 6.65e-04    -  1.00e+00 2.50e-01h  3
+  45  6.0864096e-03 0.00e+00 9.97e-07  -8.3 4.44e-04    -  1.00e+00 5.00e-01h  2
+  46  6.0864096e-03 0.00e+00 1.22e-06  -8.3 8.72e-05    -  1.00e+00 5.00e-01h  2
+  47  6.0864092e-03 0.00e+00 4.84e-07  -8.3 3.62e-04    -  1.00e+00 5.00e-01h  2
+  48  6.0864093e-03 0.00e+00 7.55e-07  -8.3 2.99e-04    -  1.00e+00 2.50e-01h  3
+  49  6.0864094e-03 0.00e+00 1.33e-07  -8.3 7.93e-05    -  1.00e+00 1.00e+00h  1
 iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
- 110  6.0863375e-03 0.00e+00 8.57e-06  -8.9 7.11e-04    -  1.00e+00 5.00e-01h  2
- 111  6.0863331e-03 0.00e+00 9.12e-07  -8.9 1.93e-03    -  1.00e+00 1.00e+00f  1
- 112  6.0863330e-03 0.00e+00 1.02e-06  -8.9 1.61e-03    -  1.00e+00 6.25e-02h  5
- 113  6.0863328e-03 0.00e+00 1.97e-06  -8.9 7.69e-04    -  1.00e+00 5.00e-01h  2
- 114  6.0863452e-03 0.00e+00 1.38e-05  -8.9 3.98e-03    -  1.00e+00 5.00e-01h  2
- 115  6.0863448e-03 0.00e+00 1.36e-05  -8.9 2.82e-03    -  1.00e+00 1.56e-02h  7
+  50  6.0864094e-03 0.00e+00 4.39e-07  -8.3 5.79e-05    -  1.00e+00 2.50e-01h  3
+  51  6.0864094e-03 0.00e+00 3.14e-08  -8.3 1.05e-05    -  1.00e+00 1.00e+00h  1
+  52  6.0863337e-03 0.00e+00 1.95e-06  -9.0 2.01e-03    -  1.00e+00 1.00e+00f  1
+Warning: Cutting back alpha due to evaluation error
+  53  6.0863380e-03 0.00e+00 1.34e-05  -9.0 2.51e-02    -  1.00e+00 7.20e-02h  4
+  54  6.0863366e-03 0.00e+00 1.36e-05  -9.0 3.57e-03    -  1.00e+00 5.00e-01h  2
+Warning: Cutting back alpha due to evaluation error
+Warning: Cutting back alpha due to evaluation error
+  55  6.0863336e-03 0.00e+00 8.69e-06  -9.0 2.93e-03    -  7.02e-01 2.50e-01f  3
+  56  6.0863315e-03 0.00e+00 2.85e-06  -9.0 1.15e-03    -  1.00e+00 1.00e+00h  1
+  57  6.0863305e-03 0.00e+00 2.41e-06  -9.0 5.59e-04    -  1.00e+00 1.00e+00h  1
+  58  6.0863364e-03 0.00e+00 1.67e-05  -9.0 9.61e-04    -  1.00e+00 1.00e+00H  1
+  59  6.0863363e-03 0.00e+00 1.64e-05  -9.0 2.22e-03    -  1.00e+00 3.91e-03h  9
+iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
+  60  6.0863343e-03 0.00e+00 1.64e-05  -9.0 3.30e-03    -  9.88e-01 6.25e-02h  5
+  61  6.0863287e-03 0.00e+00 3.07e-06  -9.0 2.07e-03    -  1.00e+00 5.00e-01h  2
+  62  6.0863959e-03 0.00e+00 2.35e-05  -9.6 2.00e-03    -  1.00e+00 1.00e+00h  1
+  63  6.0863141e-03 0.00e+00 3.01e-06  -9.7 1.48e-03    -  1.00e+00 1.00e+00f  1
+  64  6.0863101e-03 0.00e+00 1.06e-05 -11.0 4.13e-04    -  1.00e+00 1.00e+00h  1
+  65  6.0863098e-03 0.00e+00 3.86e-06 -11.0 1.18e-03    -  1.00e+00 5.00e-01h  2
+  66  6.0863346e-03 0.00e+00 1.84e-05 -11.0 4.60e-03    -  1.00e+00 1.00e+00H  1
+  67  6.0863148e-03 0.00e+00 1.01e-05 -11.0 4.43e-03    -  1.00e+00 1.00e+00f  1
 Warning: Cutting back alpha due to evaluation error
 Warning: Cutting back alpha due to evaluation error
 Warning: Cutting back alpha due to evaluation error
- 116  6.0863449e-03 0.00e+00 1.14e-05  -8.9 1.13e-02    -  6.87e-01 4.28e-02f  5
- 117  6.0863337e-03 0.00e+00 4.50e-06  -8.9 3.56e-03    -  1.00e+00 1.00e+00f  1
- 118  6.0863337e-03 0.00e+00 4.74e-06  -8.9 5.47e-03    -  1.00e+00 3.05e-05h 16
- 119  6.0863336e-03 0.00e+00 4.46e-06  -8.9 2.15e-03    -  1.00e+00 7.81e-03h  8
+  68  6.0863136e-03 0.00e+00 6.56e-06 -11.0 2.87e-02    -  3.44e-01 6.25e-02f  5
+Warning: Cutting back alpha due to evaluation error
+  69  6.0863225e-03 0.00e+00 5.67e-05 -11.0 2.10e-03    -  1.00e+00 5.00e-01h  2
 iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
- 120  6.0863334e-03 0.00e+00 3.35e-06  -8.9 1.29e-03    -  1.00e+00 1.00e+00f  1
- 121  6.0863333e-03 0.00e+00 2.67e-06  -8.9 3.50e-03    -  1.00e+00 1.56e-02h  7
- 122  6.0863329e-03 0.00e+00 8.50e-07  -8.9 1.57e-04    -  1.00e+00 1.00e+00h  1
- 123  6.0863329e-03 0.00e+00 2.07e-06  -8.9 1.14e-04    -  1.00e+00 2.50e-01h  3
- 124  6.0863328e-03 0.00e+00 8.01e-08  -8.9 2.35e-05    -  1.00e+00 1.00e+00h  1
- 125  6.0863328e-03 0.00e+00 2.28e-08  -8.9 2.32e-06    -  1.00e+00 1.00e+00h  1
- 126  6.0863328e-03 0.00e+00 1.17e-07  -8.9 1.31e-05    -  1.00e+00 1.00e+00h  1
- 127  6.0863329e-03 0.00e+00 2.43e-07  -8.9 9.48e-05    -  1.00e+00 1.00e+00h  1
- 128  6.0863329e-03 0.00e+00 1.99e-07  -8.9 3.45e-05    -  1.00e+00 2.50e-01h  3
- 129  6.0863328e-03 0.00e+00 1.54e-07  -8.9 9.17e-05    -  1.00e+00 1.00e+00h  1
+  70  6.0863102e-03 0.00e+00 7.23e-06 -11.0 8.30e-04    -  1.00e+00 1.00e+00f  1
+  71  6.0863161e-03 0.00e+00 1.51e-05 -11.0 3.41e-03    -  1.00e+00 1.00e+00H  1
+  72  6.0863190e-03 0.00e+00 1.41e-05 -11.0 1.02e-02    -  1.00e+00 2.50e-01h  3
+  73  6.0863187e-03 0.00e+00 1.05e-05 -11.0 1.46e-02    -  1.00e+00 8.34e-03h  7
+  74  6.0863119e-03 0.00e+00 4.08e-06 -11.0 7.66e-03    -  1.00e+00 5.00e-01f  2
+  75  6.0863108e-03 0.00e+00 2.69e-06 -11.0 1.11e-02    -  1.00e+00 6.25e-02f  5
+  76  6.0863100e-03 0.00e+00 3.07e-06 -11.0 4.56e-03    -  1.00e+00 5.00e-01h  2
+Warning: Cutting back alpha due to evaluation error
+Warning: Cutting back alpha due to evaluation error
+  77  6.0863099e-03 0.00e+00 4.68e-06 -11.0 1.12e-02    -  1.00e+00 3.12e-02h  5
+  78  6.0863099e-03 0.00e+00 3.30e-06 -11.0 3.22e-03    -  9.79e-01 1.25e-01h  4
+  79  6.0863099e-03 0.00e+00 3.13e-06 -11.0 5.11e-04    -  1.00e+00 5.00e-01h  2
 iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
- 130  6.0863328e-03 0.00e+00 1.43e-07  -8.9 9.72e-05    -  1.00e+00 1.95e-03h 10
- 131  6.0863328e-03 0.00e+00 1.36e-06  -8.9 1.68e-05    -  1.00e+00 1.00e+00h  1
- 132  6.0863328e-03 0.00e+00 2.49e-07  -8.9 4.20e-05    -  1.00e+00 1.00e+00h  1
- 133  6.0863328e-03 0.00e+00 7.96e-08  -8.9 2.19e-05    -  1.00e+00 2.50e-01h  3
- 134  6.0863328e-03 0.00e+00 1.27e-08  -8.9 1.11e-05    -  1.00e+00 1.00e+00h  1
- 135  6.0863328e-03 0.00e+00 1.98e-08  -8.9 1.17e-05    -  1.00e+00 5.00e-01h  2
- 136  6.0863328e-03 0.00e+00 9.20e-08  -8.9 3.45e-05    -  1.00e+00 1.00e+00H  1
- 137  6.0863328e-03 0.00e+00 8.99e-08  -8.9 2.16e-05    -  1.00e+00 1.56e-02h  7
- 138  6.0863328e-03 0.00e+00 8.79e-08  -8.9 1.02e-04    -  1.00e+00 6.10e-05h 15
- 139  6.0863328e-03 0.00e+00 8.99e-08  -8.9 1.64e-04    -  1.00e+00 3.05e-05h 16
+  80  6.0863093e-03 0.00e+00 2.43e-06 -11.0 6.74e-04    -  1.00e+00 1.00e+00h  1
+  81  6.0863108e-03 0.00e+00 1.19e-05 -11.0 3.55e-03    -  1.00e+00 5.80e-02h  5
+  82  6.0863093e-03 0.00e+00 9.33e-07 -11.0 2.31e-04    -  1.00e+00 1.00e+00h  1
+  83  6.0863093e-03 0.00e+00 3.14e-07 -11.0 7.69e-06    -  1.00e+00 1.00e+00h  1
+  84  6.0863092e-03 0.00e+00 2.52e-07 -11.0 6.57e-06    -  1.00e+00 1.00e+00h  1
+  85  6.0863095e-03 0.00e+00 2.21e-06 -11.0 9.21e-04    -  1.00e+00 5.00e-01h  2
+  86  6.0863099e-03 0.00e+00 2.68e-06 -11.0 2.47e-04    -  1.00e+00 1.00e+00H  1
+  87  6.0863093e-03 0.00e+00 7.05e-07 -11.0 4.11e-04    -  1.00e+00 1.00e+00H  1
+  88  6.0863093e-03 0.00e+00 6.19e-07 -11.0 7.65e-04    -  1.00e+00 6.25e-02h  5
+  89  6.0863093e-03 0.00e+00 1.25e-06 -11.0 6.05e-04    -  1.00e+00 1.00e+00H  1
 iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
- 140  6.0863328e-03 0.00e+00 1.42e-07  -8.9 3.98e-05    -  1.00e+00 1.25e-01h  4
- 141  6.0863328e-03 0.00e+00 1.18e-06  -8.9 1.80e-04    -  1.00e+00 1.00e+00H  1
- 142  6.0863328e-03 0.00e+00 2.18e-07  -8.9 1.40e-04    -  1.00e+00 1.00e+00H  1
- 143  6.0863328e-03 0.00e+00 7.51e-08  -8.9 1.20e-04    -  1.00e+00 2.50e-01h  3
- 144  6.0863328e-03 0.00e+00 6.97e-08  -8.9 1.36e-05    -  1.00e+00 1.00e+00h  1
- 145  6.0863328e-03 0.00e+00 8.73e-08  -8.9 3.14e-05    -  1.00e+00 5.00e-01h  2
- 146  6.0863328e-03 0.00e+00 6.42e-08  -8.9 1.33e-05    -  1.00e+00 2.50e-01h  3
- 147  6.0863328e-03 0.00e+00 6.81e-08  -8.9 1.06e-05    -  1.00e+00 1.00e+00h  1
- 148  6.0863328e-03 0.00e+00 1.03e-07  -8.9 1.40e-04    -  1.00e+00 6.25e-02h  5
- 149  6.0863328e-03 0.00e+00 1.33e-08  -8.9 6.92e-06    -  1.00e+00 1.00e+00h  1
+  90  6.0863093e-03 0.00e+00 1.24e-06 -11.0 7.08e-04    -  1.00e+00 9.54e-07h 21
+  91  6.0863093e-03 0.00e+00 1.17e-06 -11.0 7.69e-04    -  1.00e+00 1.49e-08h 27
+  92  6.0863092e-03 0.00e+00 8.03e-07 -11.0 1.17e-03    -  1.00e+00 2.50e-01h  3
+  93  6.0863092e-03 0.00e+00 7.25e-07 -11.0 7.64e-04    -  1.00e+00 6.25e-02h  5
+  94  6.0863092e-03 0.00e+00 5.61e-07 -11.0 1.52e-04    -  1.00e+00 1.00e+00H  1
+  95  6.0863092e-03 0.00e+00 1.05e-06 -11.0 1.51e-04    -  1.00e+00 2.50e-01h  3
+  96  6.0863092e-03 0.00e+00 2.20e-08 -11.0 6.96e-05    -  1.00e+00 1.00e+00h  1
+  97  6.0863092e-03 0.00e+00 9.93e-07 -11.0 1.67e-05    -  1.00e+00 1.00e+00h  1
+  98  6.0863092e-03 0.00e+00 7.79e-08 -11.0 2.04e-05    -  1.00e+00 1.00e+00h  1
+  99  6.0863092e-03 0.00e+00 2.09e-07 -11.0 2.95e-05    -  1.00e+00 1.00e+00h  1
 iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
- 150  6.0863328e-03 0.00e+00 9.84e-08  -8.9 8.70e-06    -  1.00e+00 1.00e+00H  1
- 151  6.0863328e-03 0.00e+00 1.18e-08  -8.9 6.21e-06    -  1.00e+00 1.00e+00h  1
- 152  6.0863328e-03 0.00e+00 2.18e-08  -8.9 3.39e-06    -  1.00e+00 5.00e-01h  2
- 153  6.0863328e-03 0.00e+00 1.23e-08  -8.9 1.50e-06    -  1.00e+00 1.00e+00h  1
- 154  6.0863328e-03 0.00e+00 2.55e-08  -8.9 2.12e-06    -  1.00e+00 5.00e-01h  2
- 155  6.0863328e-03 0.00e+00 1.31e-08  -8.9 4.57e-06    -  1.00e+00 5.00e-01h  2
- 156  6.0863328e-03 0.00e+00 5.52e-09  -8.9 6.02e-07    -  1.00e+00 1.00e+00h  1
+ 100  6.0863092e-03 0.00e+00 2.67e-08 -11.0 3.50e-05    -  1.00e+00 1.00e+00h  1
+ 101  6.0863092e-03 0.00e+00 1.18e-07 -11.0 2.35e-05    -  1.00e+00 1.00e+00h  1
+ 102  6.0863092e-03 0.00e+00 1.50e-07 -11.0 4.15e-05    -  1.00e+00 1.00e+00h  1
+ 103  6.0863092e-03 0.00e+00 1.30e-07 -11.0 1.67e-04    -  1.00e+00 2.50e-01h  3
+ 104  6.0863096e-03 0.00e+00 4.03e-06 -11.0 4.26e-04    -  1.00e+00 1.00e+00h  1
+ 105  6.0863096e-03 0.00e+00 4.02e-06 -11.0 4.10e-04    -  1.00e+00 1.53e-05h 17
+Warning: Cutting back alpha due to evaluation error
+Warning: Cutting back alpha due to evaluation error
+ 106  6.0863096e-03 0.00e+00 4.37e-06 -11.0 4.23e-03    -  1.00e+00 9.77e-04h 11
+ 107  6.0863096e-03 0.00e+00 4.11e-06 -11.0 4.60e-04    -  1.00e+00 3.81e-06h 19
+ 108  6.0863093e-03 0.00e+00 8.36e-07 -11.0 5.00e-04    -  1.00e+00 1.00e+00H  1
+ 109  6.0863093e-03 0.00e+00 6.82e-07 -11.0 3.18e-04    -  1.00e+00 2.50e-01h  3
+iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
+ 110  6.0863092e-03 0.00e+00 4.50e-08 -11.0 1.22e-04    -  1.00e+00 1.00e+00h  1
+ 111  6.0863092e-03 0.00e+00 4.29e-08 -11.0 2.38e-05    -  1.00e+00 2.50e-01h  3
+ 112  6.0863092e-03 0.00e+00 7.94e-08 -11.0 4.90e-06    -  1.00e+00 1.00e+00h  1
+ 113  6.0863092e-03 0.00e+00 2.41e-08 -11.0 1.51e-05    -  1.00e+00 6.25e-02h  5
+ 114  6.0863092e-03 0.00e+00 8.17e-09 -11.0 1.53e-06    -  1.00e+00 1.00e+00h  1
 
-Number of Iterations....: 156
+Number of Iterations....: 114
 
                                    (scaled)                 (unscaled)
-Objective...............:   6.0863328076560521e-03    6.0863328076560521e-03
-Dual infeasibility......:   5.5201371834903334e-09    5.5201371834903334e-09
+Objective...............:   6.0863092230988179e-03    6.0863092230988179e-03
+Dual infeasibility......:   8.1741129043757860e-09    8.1741129043757860e-09
 Constraint violation....:   0.0000000000000000e+00    0.0000000000000000e+00
 Variable bound violation:   0.0000000000000000e+00    0.0000000000000000e+00
-Complementarity.........:   1.1540964576340208e-09    1.1540964576340208e-09
-Overall NLP error.......:   5.5201371834903334e-09    5.5201371834903334e-09
+Complementarity.........:   1.0000000765313916e-11    1.0000000765313916e-11
+Overall NLP error.......:   8.1741129043757860e-09    8.1741129043757860e-09
 
 
-Number of objective function evaluations             = 519
-Number of objective gradient evaluations             = 157
+Number of objective function evaluations             = 376
+Number of objective gradient evaluations             = 115
 Number of equality constraint evaluations            = 0
-Number of inequality constraint evaluations          = 519
+Number of inequality constraint evaluations          = 376
 Number of equality constraint Jacobian evaluations   = 0
-Number of inequality constraint Jacobian evaluations = 157
+Number of inequality constraint Jacobian evaluations = 115
 Number of Lagrangian Hessian evaluations             = 0
-Total seconds in IPOPT                               = 0.391
+Total seconds in IPOPT                               = 0.297
 
 EXIT: Optimal Solution Found.
 This is Ipopt version 3.14.19, running with linear solver MUMPS 5.9.0.
@@ -5091,170 +5001,244 @@ Total number of inequality constraints...............:        1
         inequality constraints with only upper bounds:        1
 
 iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
-   0  6.1440172e-03 0.00e+00 2.32e-02   0.0 0.00e+00    -  0.00e+00 0.00e+00   0
-   1  6.1457076e-03 0.00e+00 4.19e-03  -6.3 7.79e-03    -  9.73e-01 1.00e+00h  1
-   2  6.1446675e-03 0.00e+00 5.48e-05  -7.9 8.40e-04    -  9.87e-01 1.00e+00f  1
-   3  6.1620625e-03 0.00e+00 1.94e-06  -5.4 1.37e-02    -  1.00e+00 1.00e+00f  1
-   4  6.2074485e-03 0.00e+00 1.14e-03  -5.5 8.45e-01    -  4.71e-01 7.28e-01f  1
-   5  6.1746683e-03 0.00e+00 5.77e-05  -5.5 1.64e-01    -  3.15e-02 1.00e+00f  1
-   6  6.1685694e-03 0.00e+00 2.69e-05  -5.5 7.11e-02    -  1.00e+00 1.00e+00f  1
-   7  6.1018781e-03 0.00e+00 1.48e-05  -8.3 7.04e-02    -  6.96e-01 9.49e-01f  1
-   8  6.1028585e-03 0.00e+00 2.76e-05  -6.5 1.34e-01    -  9.78e-01 1.00e+00f  1
-   9  6.1006307e-03 0.00e+00 3.90e-05  -6.6 1.11e-01    -  1.00e+00 1.00e+00f  1
+   0  6.1437699e-03 0.00e+00 2.32e-02   0.0 0.00e+00    -  0.00e+00 0.00e+00   0
+   1  6.1454853e-03 0.00e+00 4.25e-03  -6.3 7.91e-03    -  9.72e-01 1.00e+00h  1
+   2  6.1444539e-03 0.00e+00 5.58e-05  -7.9 8.45e-04    -  9.87e-01 1.00e+00f  1
+   3  6.1625989e-03 0.00e+00 1.92e-06  -5.4 1.32e-02    -  1.00e+00 1.00e+00f  1
+   4  6.2104947e-03 0.00e+00 1.15e-03  -5.5 8.76e-01    -  4.20e-01 6.91e-01f  1
+   5  6.1755449e-03 0.00e+00 5.66e-05  -5.5 1.73e-01    -  3.17e-02 1.00e+00f  1
+   6  6.1694232e-03 0.00e+00 2.71e-05  -5.5 6.64e-02    -  1.00e+00 1.00e+00f  1
+   7  6.1016420e-03 0.00e+00 1.46e-05  -8.3 7.28e-02    -  6.94e-01 9.48e-01f  1
+   8  6.1030181e-03 0.00e+00 2.86e-05  -6.5 1.34e-01    -  9.77e-01 1.00e+00f  1
+   9  6.1007068e-03 0.00e+00 3.70e-05  -6.5 1.07e-01    -  1.00e+00 1.00e+00f  1
 iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
-  10  6.0956615e-03 0.00e+00 9.40e-05  -7.2 6.30e-02    -  1.00e+00 1.00e+00f  1
-  11  6.0978561e-03 0.00e+00 3.15e-05  -6.7 5.88e-02    -  1.00e+00 1.00e+00f  1
-  12  6.0952548e-03 0.00e+00 2.22e-05  -6.8 4.78e-02    -  1.00e+00 1.00e+00f  1
-  13  6.0927631e-03 0.00e+00 2.63e-05  -7.2 1.46e-01    -  1.00e+00 4.02e-01f  2
-  14  6.0910306e-03 0.00e+00 2.48e-05  -8.0 1.99e-01    -  1.00e+00 2.44e-01f  2
-  15  6.1069332e-03 0.00e+00 2.75e-05  -6.4 3.49e-01    -  1.00e+00 1.00e+00f  1
-  16  6.1014060e-03 0.00e+00 5.13e-05  -6.4 2.22e-01    -  1.00e+00 1.00e+00f  1
-  17  6.1000880e-03 0.00e+00 2.65e-05  -6.4 1.41e-01    -  9.14e-01 3.15e-01f  2
-  18  6.0993925e-03 0.00e+00 1.44e-05  -6.4 6.05e-02    -  1.00e+00 1.00e+00f  1
-  19  6.0995930e-03 0.00e+00 1.07e-05  -6.4 2.62e-02    -  1.00e+00 5.00e-01f  2
-iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
-  20  6.0995344e-03 0.00e+00 3.22e-06  -6.4 9.10e-03    -  1.00e+00 1.00e+00f  1
-  21  6.0896715e-03 0.00e+00 1.47e-05  -9.0 1.10e-01    -  8.16e-01 9.83e-01f  1
+  10  6.0970722e-03 0.00e+00 1.70e-04  -7.2 6.61e-02    -  9.99e-01 1.00e+00f  1
+  11  6.0988121e-03 0.00e+00 4.90e-05  -6.7 6.57e-02    -  1.00e+00 1.00e+00f  1
+  12  6.0968249e-03 0.00e+00 2.35e-05  -6.8 5.10e-02    -  6.31e-01 5.00e-01f  2
+Warning: Cutting back alpha due to evaluation error
+  13  6.0942707e-03 0.00e+00 2.32e-05  -7.6 7.56e-02    -  1.00e+00 5.00e-01f  2
+Warning: Cutting back alpha due to evaluation error
+  14  6.0936857e-03 0.00e+00 3.17e-05  -6.8 3.86e-01    -  1.00e+00 1.21e-01f  3
+  15  6.0917955e-03 0.00e+00 2.06e-05  -7.2 1.07e-01    -  1.00e+00 4.57e-01f  2
+Warning: Cutting back alpha due to evaluation error
+  16  6.0906237e-03 0.00e+00 2.34e-05  -7.8 2.06e-01    -  1.00e+00 2.57e-01f  2
 Warning: Cutting back alpha due to evaluation error
 Warning: Cutting back alpha due to evaluation error
-  22  6.0894364e-03 0.00e+00 2.23e-05  -8.3 1.64e-01    -  1.00e+00 1.16e-01f  3
+  17  6.0901015e-03 0.00e+00 1.18e-05  -8.5 2.13e-01    -  1.00e+00 1.10e-01f  3
 Warning: Cutting back alpha due to evaluation error
 Warning: Cutting back alpha due to evaluation error
 Warning: Cutting back alpha due to evaluation error
 Warning: Cutting back alpha due to evaluation error
 Warning: Cutting back alpha due to evaluation error
-  23  6.0893604e-03 0.00e+00 1.79e-05  -9.0 1.24e-01    -  1.00e+00 3.12e-02f  6
-  24  6.0935720e-03 0.00e+00 9.69e-04  -7.0 1.01e-01    -  1.00e+00 4.13e-01f  1
-Warning: Cutting back alpha due to evaluation error
-  25  6.0900806e-03 0.00e+00 1.82e-04  -7.2 1.04e-01    -  1.40e-02 3.89e-01f  2
-Warning: Cutting back alpha due to evaluation error
-  26  6.0895928e-03 0.00e+00 8.04e-05  -7.2 2.19e-02    -  5.32e-01 3.41e-01f  2
-  27  6.0898247e-03 0.00e+00 6.26e-05  -7.2 1.47e-02    -  1.00e+00 1.00e+00f  1
-  28  6.0898400e-03 0.00e+00 3.57e-05  -7.2 3.30e-02    -  7.29e-01 2.50e-01f  3
-  29  6.0900396e-03 0.00e+00 4.91e-05  -7.2 2.23e-02    -  1.00e+00 1.00e+00f  1
-iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
-  30  6.0900127e-03 0.00e+00 2.17e-05  -7.2 3.57e-02    -  1.00e+00 2.50e-01f  3
-  31  6.0899612e-03 0.00e+00 2.39e-05  -7.2 2.88e-03    -  1.00e+00 1.00e+00f  1
-  32  6.0899254e-03 0.00e+00 1.60e-05  -7.2 4.55e-03    -  1.00e+00 1.00e+00f  1
-  33  6.0899701e-03 0.00e+00 1.52e-05  -7.2 4.67e-02    -  9.40e-01 2.50e-01f  3
-  34  6.0901010e-03 0.00e+00 1.08e-05  -7.2 1.05e-02    -  1.00e+00 1.00e+00f  1
-  35  6.0900895e-03 0.00e+00 7.81e-06  -7.2 1.35e-02    -  1.00e+00 5.00e-01f  2
-  36  6.0900389e-03 0.00e+00 8.25e-06  -7.2 7.39e-03    -  1.00e+00 1.00e+00f  1
-  37  6.0899893e-03 0.00e+00 2.77e-06  -7.2 4.11e-03    -  1.00e+00 1.00e+00f  1
-  38  6.0900040e-03 0.00e+00 2.69e-06  -7.2 4.26e-03    -  1.00e+00 1.00e+00h  1
-  39  6.0900078e-03 0.00e+00 2.64e-06  -7.2 2.45e-03    -  1.00e+00 1.00e+00h  1
-iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
-  40  6.0900059e-03 0.00e+00 8.75e-07  -7.2 4.84e-03    -  1.00e+00 5.00e-01h  2
-  41  6.0900019e-03 0.00e+00 6.75e-07  -7.2 2.09e-03    -  1.00e+00 1.00e+00h  1
-Warning: Cutting back alpha due to evaluation error
-Warning: Cutting back alpha due to evaluation error
-Warning: Cutting back alpha due to evaluation error
-  42  6.0897538e-03 0.00e+00 5.94e-06  -9.0 4.28e-02    -  9.40e-01 1.25e-01f  4
-Warning: Cutting back alpha due to evaluation error
-Warning: Cutting back alpha due to evaluation error
-Warning: Cutting back alpha due to evaluation error
-Warning: Cutting back alpha due to evaluation error
-  43  6.0896563e-03 0.00e+00 4.98e-06  -9.0 1.60e-01    -  1.00e+00 3.26e-02f  5
-Warning: Cutting back alpha due to evaluation error
-  44  6.0892990e-03 0.00e+00 2.69e-05  -9.0 1.71e-01    -  1.00e+00 2.54e-01f  2
-Warning: Cutting back alpha due to evaluation error
-  45  6.0886327e-03 0.00e+00 3.41e-05  -8.2 5.60e-02    -  1.00e+00 4.29e-01f  2
-  46  6.0886472e-03 0.00e+00 2.34e-05  -7.4 8.66e-02    -  6.12e-01 6.12e-02f  3
-Warning: Cutting back alpha due to evaluation error
-Warning: Cutting back alpha due to evaluation error
-  47  6.0885928e-03 0.00e+00 1.80e-05  -7.7 2.86e-02    -  9.00e-01 2.50e-01f  3
-Warning: Cutting back alpha due to evaluation error
-  48  6.0884279e-03 0.00e+00 4.82e-05  -8.7 3.91e-02    -  1.00e+00 2.30e-01f  2
-Warning: Cutting back alpha due to evaluation error
-Warning: Cutting back alpha due to evaluation error
-Warning: Cutting back alpha due to evaluation error
-Warning: Cutting back alpha due to evaluation error
-  49  6.0883906e-03 0.00e+00 3.70e-05  -9.9 4.03e-02    -  1.00e+00 4.12e-02f  5
-iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
-  50  6.0883839e-03 0.00e+00 3.25e-05  -7.8 4.18e-02    -  1.00e+00 1.25e-01f  4
-Warning: Cutting back alpha due to evaluation error
-  51  6.0880989e-03 0.00e+00 3.04e-05  -9.1 2.91e-02    -  1.00e+00 5.00e-01f  2
-  52  6.0880662e-03 0.00e+00 4.74e-05 -10.3 3.37e-02    -  1.00e+00 2.14e-01f  2
-Warning: Cutting back alpha due to evaluation error
-Warning: Cutting back alpha due to evaluation error
-Warning: Cutting back alpha due to evaluation error
-  53  6.0880273e-03 0.00e+00 4.35e-05 -11.0 3.95e-02    -  1.00e+00 8.25e-02f  4
-Warning: Cutting back alpha due to evaluation error
-Warning: Cutting back alpha due to evaluation error
-Warning: Cutting back alpha due to evaluation error
-  54  6.0880142e-03 0.00e+00 1.83e-03 -11.0 8.65e-02    -  5.05e-01 2.28e-02f  4
-Warning: Cutting back alpha due to evaluation error
-  55  6.0880046e-03 0.00e+00 9.97e-05  -8.7 4.04e-02    -  9.08e-01 3.64e-02f  4
-  56  6.0879578e-03 0.00e+00 2.64e-05  -8.5 1.05e-02    -  1.00e+00 1.00e+00f  1
-Warning: Cutting back alpha due to evaluation error
-Warning: Cutting back alpha due to evaluation error
-  57  6.0879290e-03 0.00e+00 3.66e-05  -9.8 4.06e-02    -  1.00e+00 1.06e-01f  3
-Warning: Cutting back alpha due to evaluation error
-  58  6.0879176e-03 0.00e+00 3.54e-05 -10.3 2.63e-02    -  4.84e-01 6.53e-02f  2
-Warning: Cutting back alpha due to evaluation error
-Warning: Cutting back alpha due to evaluation error
-Warning: Cutting back alpha due to evaluation error
-  59  6.0879026e-03 0.00e+00 1.27e-04 -11.0 1.52e-02    -  9.59e-01 1.25e-01f  4
+  18  6.0900256e-03 0.00e+00 9.62e-06  -9.3 7.31e-02    -  1.00e+00 3.10e-02f  6
+  19  6.0899165e-03 0.00e+00 3.38e-05  -7.2 6.18e-02    -  1.00e+00 1.17e-01f  3
 Warning: Cutting back alpha due to evaluation error
 iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
-  60  6.0878905e-03 0.00e+00 6.47e-05  -8.5 1.75e+00    -  3.70e-02 7.64e-03f  3
-Warning: Cutting back alpha due to evaluation error
-  61  6.0878941e-03 0.00e+00 3.18e-05  -8.2 2.13e-02    -  1.00e+00 3.13e-02f  4
-  62  6.0879232e-03 0.00e+00 3.07e-05  -8.4 4.48e-03    -  1.00e+00 1.00e+00f  1
+  20  6.0889473e-03 0.00e+00 3.10e-05  -8.1 8.97e-02    -  1.00e+00 5.00e-01f  2
 Warning: Cutting back alpha due to evaluation error
 Warning: Cutting back alpha due to evaluation error
+  21  6.0892349e-03 0.00e+00 3.40e-05  -7.1 9.70e-02    -  6.82e-01 1.64e-01f  3
+  22  6.0891647e-03 0.00e+00 2.29e-05  -7.4 8.91e-03    -  1.00e+00 5.00e-01f  2
+  23  6.0891206e-03 0.00e+00 1.36e-05  -7.4 5.60e-03    -  1.00e+00 1.00e+00f  1
+  24  6.0891090e-03 0.00e+00 1.12e-05  -7.4 3.75e-03    -  1.00e+00 1.00e+00f  1
 Warning: Cutting back alpha due to evaluation error
 Warning: Cutting back alpha due to evaluation error
-  63  6.0879227e-03 0.00e+00 6.08e-04  -8.4 2.89e-02    -  1.00e+00 3.11e-02f  5
 Warning: Cutting back alpha due to evaluation error
-  64  6.0879202e-03 0.00e+00 1.46e-04  -8.4 1.37e-02    -  1.00e+00 6.08e-02f  5
-  65  6.0879228e-03 0.00e+00 7.32e-05  -8.4 3.21e-03    -  9.69e-01 2.50e-01f  3
-  66  6.0879538e-03 0.00e+00 6.58e-05  -8.4 5.26e-03    -  1.00e+00 1.00e+00h  1
-  67  6.0879287e-03 0.00e+00 7.47e-05  -8.4 2.51e-03    -  1.00e+00 1.00e+00f  1
-  68  6.0879273e-03 0.00e+00 7.02e-05  -8.4 7.74e-03    -  1.00e+00 1.25e-01h  4
-  69  6.0879247e-03 0.00e+00 4.52e-05  -8.4 4.25e-03    -  1.00e+00 5.00e-01h  2
+  25  6.0890964e-03 0.00e+00 4.88e-06  -7.4 3.73e-03    -  1.00e+00 1.25e-01h  4
+  26  6.0890704e-03 0.00e+00 3.41e-06  -7.4 4.82e-03    -  1.00e+00 5.00e-01h  2
+Warning: Cutting back alpha due to evaluation error
+Warning: Cutting back alpha due to evaluation error
+  27  6.0890626e-03 0.00e+00 1.17e-04  -7.4 2.68e-03    -  1.00e+00 2.50e-01h  3
+  28  6.0890606e-03 0.00e+00 2.42e-05  -7.4 3.39e-03    -  1.00e+00 6.25e-02h  5
+  29  6.0890654e-03 0.00e+00 1.49e-05  -7.4 1.29e-03    -  1.00e+00 5.00e-01h  2
 iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
-  70  6.0879732e-03 0.00e+00 6.68e-05  -8.4 1.03e-02    -  1.00e+00 4.93e-01h  2
+  30  6.0890625e-03 0.00e+00 1.44e-05  -7.4 4.74e-04    -  1.00e+00 1.00e+00h  1
+  31  6.0890645e-03 0.00e+00 1.01e-05  -7.4 6.39e-04    -  1.00e+00 1.00e+00h  1
+  32  6.0890628e-03 0.00e+00 8.23e-06  -7.4 2.23e-04    -  1.00e+00 1.00e+00h  1
+  33  6.0890627e-03 0.00e+00 6.25e-06  -7.4 1.36e-04    -  1.00e+00 1.00e+00h  1
+  34  6.0890637e-03 0.00e+00 5.56e-06  -7.4 1.12e-04    -  1.00e+00 1.00e+00h  1
+  35  6.0890635e-03 0.00e+00 1.84e-06  -7.4 1.58e-03    -  1.00e+00 6.25e-02h  5
+  36  6.0890639e-03 0.00e+00 2.08e-07  -7.4 9.78e-05    -  1.00e+00 5.00e-01h  2
 Warning: Cutting back alpha due to evaluation error
-  71  6.0879506e-03 0.00e+00 6.26e-05  -8.4 1.28e-02    -  1.00e+00 2.50e-01f  3
-Warning: Cutting back alpha due to evaluation error
-Warning: Cutting back alpha due to evaluation error
-Warning: Cutting back alpha due to evaluation error
-Warning: Cutting back alpha due to evaluation error
-  72  6.0879506e-03 0.00e+00 5.85e-05  -8.4 9.82e-03    -  3.98e-01 3.69e-10h 32
-Warning: Cutting back alpha due to evaluation error
-  73  6.0879506e-03 0.00e+00 6.05e-05  -8.4 3.89e-02    -  4.67e-01 7.63e-06h 18
-Warning: Cutting back alpha due to evaluation error
+  37  6.0886253e-03 0.00e+00 5.43e-06  -9.0 7.54e-03    -  1.00e+00 5.00e-01f  2
 Warning: Cutting back alpha due to evaluation error
 Warning: Cutting back alpha due to evaluation error
-  74  6.0879500e-03 0.00e+00 6.02e-05  -8.4 2.77e-02    -  1.00e+00 1.83e-03f  9
+  38  6.0885487e-03 0.00e+00 6.88e-05  -8.8 1.45e-01    -  1.00e+00 6.68e-02f  3
 Warning: Cutting back alpha due to evaluation error
 Warning: Cutting back alpha due to evaluation error
 Warning: Cutting back alpha due to evaluation error
-  75  6.0879426e-03 0.00e+00 1.04e-04  -8.4 1.65e-02    -  5.13e-01 1.25e-01f  4
 Warning: Cutting back alpha due to evaluation error
 Warning: Cutting back alpha due to evaluation error
 Warning: Cutting back alpha due to evaluation error
-  76  6.0879420e-03 0.00e+00 4.24e-05  -8.4 1.85e-02    -  5.50e-01 7.81e-03f  8
-  77  6.0879420e-03 0.00e+00 4.60e-05  -8.4 1.87e-03    -  1.00e+00 4.77e-07h 22
-  78  6.0879664e-03 0.00e+00 4.24e-05  -8.4 1.25e-02    -  1.00e+00 1.00e+00w  1
-Warning: Cutting back alpha due to evaluation error
-  79  6.0879362e-03 0.00e+00 3.83e-05  -8.4 3.64e-02    -  1.00e+00 1.25e-01f  3
+  39  6.0885408e-03 0.00e+00 2.13e-04  -8.4 5.57e-02    -  1.00e+00 9.50e-03f  7
 Warning: Cutting back alpha due to evaluation error
 iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
-  80  6.0879362e-03 0.00e+00 3.57e-05  -8.4 3.59e-02    -  1.53e-01 7.88e-06h 16
-  81  6.0879322e-03 0.00e+00 3.43e-05  -8.4 2.73e-03    -  1.00e+00 1.25e-01f  4
+  40  6.0884214e-03 0.00e+00 2.72e-05  -8.9 8.68e-02    -  1.00e+00 2.30e-01f  2
+Warning: Cutting back alpha due to evaluation error
+  41  6.0883426e-03 0.00e+00 2.41e-05  -7.8 1.42e-02    -  1.00e+00 5.00e-01f  2
+Warning: Cutting back alpha due to evaluation error
+  42  6.0886270e-03 0.00e+00 1.25e-04  -7.5 2.78e-02    -  1.00e+00 5.00e-01f  2
+  43  6.0886659e-03 0.00e+00 5.76e-05  -7.7 1.97e-02    -  5.05e-01 1.00e+00f  1
+  44  6.0885979e-03 0.00e+00 2.16e-05  -7.7 2.19e-02    -  3.02e-01 1.60e-01f  3
+  45  6.0884740e-03 0.00e+00 1.23e-05  -7.7 8.93e-03    -  1.00e+00 1.00e+00f  1
+  46  6.0884736e-03 0.00e+00 2.84e-05  -7.7 5.95e-03    -  1.00e+00 6.25e-02f  5
+Warning: Cutting back alpha due to evaluation error
+  47  6.0884535e-03 0.00e+00 5.92e-06  -7.7 3.46e-03    -  1.00e+00 5.00e-01h  2
+  48  6.0884469e-03 0.00e+00 1.88e-05  -7.7 1.31e-02    -  1.00e+00 6.25e-02f  5
+Warning: Cutting back alpha due to evaluation error
+  49  6.0884371e-03 0.00e+00 2.38e-06  -7.7 2.26e-03    -  1.00e+00 5.00e-01h  2
+Warning: Cutting back alpha due to evaluation error
+iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
+  50  6.0884272e-03 0.00e+00 2.88e-05  -7.7 3.39e-03    -  1.00e+00 5.00e-01h  2
+  51  6.0884258e-03 0.00e+00 1.62e-05  -7.7 1.94e-03    -  1.00e+00 1.00e+00h  1
+  52  6.0884247e-03 0.00e+00 1.55e-05  -7.7 2.68e-03    -  1.00e+00 5.00e-01f  2
+  53  6.0884278e-03 0.00e+00 5.63e-06  -7.7 1.12e-03    -  1.00e+00 1.00e+00h  1
+  54  6.0884152e-03 0.00e+00 5.68e-06  -7.7 3.05e-03    -  1.00e+00 5.00e-01h  2
+  55  6.0884570e-03 0.00e+00 2.62e-05  -7.7 2.06e-03    -  1.00e+00 1.00e+00h  1
 Warning: Cutting back alpha due to evaluation error
 Warning: Cutting back alpha due to evaluation error
-  82  6.0879295e-03 0.00e+00 3.91e-05  -8.4 5.28e-03    -  7.71e-01 1.25e-01f  4
+  56  6.0884570e-03 0.00e+00 2.59e-05  -7.7 3.39e-03    -  1.00e+00 2.38e-07h 23
+  57  6.0884570e-03 0.00e+00 2.55e-05  -7.7 7.70e-03    -  1.00e+00 9.77e-04f 11
 Warning: Cutting back alpha due to evaluation error
 Warning: Cutting back alpha due to evaluation error
-  83  6.0879295e-03 0.00e+00 1.49e-05  -8.4 3.19e-03    -  9.31e-01 7.09e-03f  8
-  84  6.0879204e-03 0.00e+00 7.44e-06  -8.4 6.14e-04    -  1.00e+00 1.00e+00h  1
-  85  6.0879208e-03 0.00e+00 3.70e-06  -8.4 1.21e-03    -  1.00e+00 1.00e+00h  1
+Warning: Cutting back alpha due to evaluation error
+Warning: Cutting back alpha due to evaluation error
+Warning: Cutting back alpha due to evaluation error
+  58  6.0884569e-03 0.00e+00 2.71e-05  -7.7 1.87e-02    -  1.00e+00 3.90e-04f 12
+Warning: Cutting back alpha due to evaluation error
+  59  6.0884568e-03 0.00e+00 2.50e-05  -7.7 3.50e-03    -  1.00e+00 9.77e-04h 11
+Warning: Cutting back alpha due to evaluation error
+Warning: Cutting back alpha due to evaluation error
+iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
+  60  6.0884567e-03 0.00e+00 2.62e-05  -7.7 3.76e-03    -  1.00e+00 4.88e-04h 12
+Warning: Cutting back alpha due to evaluation error
+Warning: Cutting back alpha due to evaluation error
+  61  6.0884366e-03 0.00e+00 1.88e-05  -7.7 3.68e-03    -  1.00e+00 2.50e-01f  3
+  62  6.0884227e-03 0.00e+00 2.48e-05  -7.7 5.85e-03    -  1.00e+00 5.00e-01f  2
+Warning: Cutting back alpha due to evaluation error
+Warning: Cutting back alpha due to evaluation error
+  63  6.0884074e-03 0.00e+00 9.76e-06  -7.7 3.86e-03    -  1.00e+00 2.50e-01f  3
+Warning: Cutting back alpha due to evaluation error
+Warning: Cutting back alpha due to evaluation error
+  64  6.0884048e-03 0.00e+00 4.45e-06  -7.7 8.57e-04    -  1.00e+00 2.50e-01h  3
+  65  6.0884229e-03 0.00e+00 2.35e-05  -7.7 2.25e-03    -  1.00e+00 5.00e-01h  2
+  66  6.0884074e-03 0.00e+00 1.32e-05  -7.7 7.61e-04    -  1.00e+00 1.00e+00f  1
+Warning: Cutting back alpha due to evaluation error
+  67  6.0884060e-03 0.00e+00 1.75e-05  -7.7 3.26e-04    -  1.00e+00 5.00e-01h  2
+  68  6.0884066e-03 0.00e+00 7.84e-06  -7.7 1.13e-04    -  1.00e+00 1.00e+00h  1
+  69  6.0884064e-03 0.00e+00 4.06e-06  -7.7 4.39e-05    -  1.00e+00 1.00e+00h  1
+iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
+  70  6.0884066e-03 0.00e+00 6.85e-06  -7.7 1.37e-04    -  1.00e+00 1.00e+00h  1
+  71  6.0884067e-03 0.00e+00 2.90e-06  -7.7 2.22e-04    -  1.00e+00 1.00e+00h  1
+  72  6.0884071e-03 0.00e+00 5.76e-06  -7.7 1.51e-04    -  1.00e+00 1.00e+00h  1
+  73  6.0884072e-03 0.00e+00 5.36e-07  -7.7 1.55e-04    -  1.00e+00 1.00e+00h  1
+  74  6.0884077e-03 0.00e+00 1.24e-05  -7.7 2.60e-04    -  1.00e+00 1.00e+00h  1
+  75  6.0884077e-03 0.00e+00 1.16e-05  -7.7 4.32e-04    -  1.00e+00 6.25e-02h  5
+  76  6.0884076e-03 0.00e+00 1.09e-05  -7.7 8.97e-04    -  1.00e+00 1.56e-02h  7
+  77  6.0884078e-03 0.00e+00 1.03e-06  -7.7 4.18e-04    -  1.00e+00 1.00e+00h  1
+Warning: Cutting back alpha due to evaluation error
+Warning: Cutting back alpha due to evaluation error
+  78  6.0884078e-03 0.00e+00 3.38e-06  -7.7 1.80e-03    -  1.00e+00 6.25e-02h  5
+  79  6.0884090e-03 0.00e+00 3.70e-06  -7.7 7.89e-04    -  1.00e+00 5.00e-01h  2
+iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
+  80  6.0884090e-03 0.00e+00 4.68e-06  -7.7 4.48e-04    -  1.00e+00 3.12e-02h  6
+  81  6.0884092e-03 0.00e+00 7.61e-06  -7.7 6.22e-04    -  1.00e+00 1.00e+00H  1
+  82  6.0884090e-03 0.00e+00 2.21e-06  -7.7 3.85e-04    -  1.00e+00 5.00e-01h  2
+  83  6.0884082e-03 0.00e+00 3.44e-06  -7.7 6.35e-04    -  1.00e+00 1.00e+00h  1
+  84  6.0884086e-03 0.00e+00 2.38e-06  -7.7 2.11e-04    -  1.00e+00 5.00e-01h  2
+  85  6.0884091e-03 0.00e+00 2.07e-06  -7.7 8.98e-04    -  1.00e+00 2.50e-01h  3
+  86  6.0884083e-03 0.00e+00 3.76e-06  -7.7 6.09e-04    -  1.00e+00 5.00e-01h  2
+  87  6.0884086e-03 0.00e+00 8.77e-07  -7.7 1.07e-03    -  1.00e+00 1.25e-01h  4
+  88  6.0884086e-03 0.00e+00 2.90e-07  -7.7 8.08e-05    -  1.00e+00 1.00e+00h  1
+  89  6.0884086e-03 0.00e+00 2.46e-06  -7.7 5.27e-05    -  1.00e+00 1.00e+00h  1
+iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
+  90  6.0884086e-03 0.00e+00 4.81e-07  -7.7 2.68e-04    -  1.00e+00 5.00e-01h  2
+  91  6.0884089e-03 0.00e+00 2.63e-06  -7.7 3.36e-04    -  1.00e+00 2.50e-01h  3
+  92  6.0884089e-03 0.00e+00 2.27e-06  -7.7 2.56e-04    -  1.00e+00 1.56e-02h  7
+  93  6.0884088e-03 0.00e+00 2.82e-06  -7.7 2.11e-04    -  1.00e+00 1.25e-01h  4
+  94  6.0884089e-03 0.00e+00 4.99e-07  -7.7 1.00e-03    -  1.00e+00 6.25e-02h  5
+  95  6.0884089e-03 0.00e+00 2.28e-07  -7.7 6.49e-05    -  1.00e+00 5.00e-01h  2
+  96  6.0884090e-03 0.00e+00 2.66e-07  -7.7 7.23e-05    -  1.00e+00 2.50e-01h  3
+  97  6.0884091e-03 0.00e+00 8.03e-07  -7.7 6.49e-05    -  1.00e+00 2.50e-01h  3
+  98  6.0884092e-03 0.00e+00 6.58e-07  -7.7 4.70e-04    -  1.00e+00 1.25e-01h  4
+  99  6.0884095e-03 0.00e+00 2.91e-07  -7.7 5.60e-04    -  1.00e+00 1.25e-01h  4
+iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
+ 100  6.0884108e-03 0.00e+00 2.21e-06  -7.7 3.14e-04    -  1.00e+00 1.00e+00w  1
+ 101  6.0884106e-03 0.00e+00 2.95e-05  -7.7 3.24e-04    -  1.00e+00 1.00e+00w  1
+ 102  6.0884119e-03 0.00e+00 8.03e-06  -7.7 5.99e-04    -  1.00e+00 1.00e+00w  1
+ 103  6.0884098e-03 0.00e+00 7.33e-07  -7.7 1.46e-03    -  1.00e+00 2.50e-01h  2
+ 104  6.0884097e-03 0.00e+00 9.35e-07  -7.7 5.40e-05    -  1.00e+00 1.00e+00h  1
+ 105  6.0884097e-03 0.00e+00 1.82e-07  -7.7 2.23e-04    -  1.00e+00 6.25e-02h  5
+ 106  6.0880151e-03 0.00e+00 1.43e-05  -9.0 8.03e-03    -  1.00e+00 1.00e+00f  1
+Warning: Cutting back alpha due to evaluation error
+Warning: Cutting back alpha due to evaluation error
+Warning: Cutting back alpha due to evaluation error
+Warning: Cutting back alpha due to evaluation error
+ 107  6.0880063e-03 0.00e+00 1.68e-05  -9.6 1.96e-01    -  1.00e+00 1.24e-02f  5
+ 108  6.0880039e-03 0.00e+00 3.27e-05  -8.9 1.04e-01    -  1.00e+00 4.83e-02f  3
+Warning: Cutting back alpha due to evaluation error
+ 109  6.0881276e-03 0.00e+00 1.93e-05  -7.9 1.26e-02    -  1.00e+00 5.00e-01f  2
+Warning: Cutting back alpha due to evaluation error
+iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
+ 110  6.0881144e-03 0.00e+00 5.61e-05  -8.1 1.30e-02    -  1.00e+00 5.00e-01f  2
+ 111  6.0881126e-03 0.00e+00 1.58e-05  -8.1 2.93e-02    -  1.00e+00 2.50e-01f  3
+Warning: Cutting back alpha due to evaluation error
+Warning: Cutting back alpha due to evaluation error
+ 112  6.0881116e-03 0.00e+00 8.25e-06  -8.1 3.03e-03    -  1.00e+00 2.50e-01h  3
+ 113  6.0880977e-03 0.00e+00 2.45e-05  -8.1 2.76e-02    -  1.00e+00 2.50e-01f  3
+ 114  6.0880926e-03 0.00e+00 2.25e-05  -8.1 7.16e-03    -  1.00e+00 1.25e-01f  4
+Warning: Cutting back alpha due to evaluation error
+Warning: Cutting back alpha due to evaluation error
+Warning: Cutting back alpha due to evaluation error
+ 115  6.0880854e-03 0.00e+00 6.62e-06  -8.1 1.30e-02    -  1.00e+00 1.25e-01f  4
+Warning: Cutting back alpha due to evaluation error
+Warning: Cutting back alpha due to evaluation error
+Warning: Cutting back alpha due to evaluation error
+Warning: Cutting back alpha due to evaluation error
+ 116  6.0880848e-03 0.00e+00 4.20e-05  -8.1 2.75e-02    -  1.00e+00 6.25e-02f  5
+Warning: Cutting back alpha due to evaluation error
+ 117  6.0880809e-03 0.00e+00 6.70e-06  -8.1 1.38e-02    -  1.00e+00 3.94e-02f  5
+ 118  6.0880824e-03 0.00e+00 1.48e-05  -8.1 2.72e-02    -  1.00e+00 1.25e-01h  4
+Warning: Cutting back alpha due to evaluation error
+Warning: Cutting back alpha due to evaluation error
+ 119  6.0880764e-03 0.00e+00 9.48e-06  -8.1 2.14e-02    -  1.00e+00 1.02e-01h  4
+Warning: Cutting back alpha due to evaluation error
+iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
+ 120  6.0880709e-03 0.00e+00 1.53e-05  -8.1 3.13e-02    -  1.00e+00 5.39e-02f  4
+ 121  6.0880611e-03 0.00e+00 1.35e-05  -8.1 8.89e-03    -  1.00e+00 2.50e-01f  3
+Warning: Cutting back alpha due to evaluation error
+ 122  6.0880526e-03 0.00e+00 6.46e-06  -8.1 7.41e-03    -  1.00e+00 2.50e-01h  3
+Warning: Cutting back alpha due to evaluation error
+Warning: Cutting back alpha due to evaluation error
+Warning: Cutting back alpha due to evaluation error
+ 123  6.0880511e-03 0.00e+00 1.92e-04  -8.1 6.95e-03    -  1.00e+00 1.25e-01h  4
+ 124  6.0880497e-03 0.00e+00 6.08e-05  -8.1 1.05e-02    -  1.00e+00 6.25e-02h  5
+ 125  6.0880510e-03 0.00e+00 2.52e-05  -8.1 6.03e-03    -  1.00e+00 1.25e-01f  4
+ 126  6.0880384e-03 0.00e+00 2.67e-05  -8.1 3.10e-03    -  1.00e+00 1.00e+00h  1
+ 127  6.0880381e-03 0.00e+00 2.44e-05  -8.1 1.17e-03    -  1.00e+00 6.25e-02h  5
+ 128  6.0880430e-03 0.00e+00 1.73e-05  -8.1 1.16e-03    -  1.00e+00 1.00e+00h  1
+ 129  6.0880499e-03 0.00e+00 9.39e-06  -8.1 5.98e-04    -  1.00e+00 1.00e+00h  1
+iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
+ 130  6.0880407e-03 0.00e+00 4.46e-06  -8.1 4.12e-03    -  1.00e+00 1.00e+00F  1
+ 131  6.0880420e-03 0.00e+00 1.20e-05  -8.1 2.58e-03    -  1.00e+00 2.50e-01h  3
+Warning: Cutting back alpha due to evaluation error
+Warning: Cutting back alpha due to evaluation error
+Warning: Cutting back alpha due to evaluation error
+Warning: Cutting back alpha due to evaluation error
+ 132  6.0880420e-03 0.00e+00 1.10e-05  -8.1 8.08e-03    -  1.00e+00 1.53e-05h 17
+ 133  6.0880417e-03 0.00e+00 1.29e-05  -8.1 5.06e-02    -  1.00e+00 3.91e-03h  9
+Warning: Cutting back alpha due to evaluation error
+Warning: Cutting back alpha due to evaluation error
+ 134  6.0880416e-03 0.00e+00 1.13e-05  -8.1 1.46e-02    -  1.00e+00 7.81e-03h  8
+ 135  6.0880416e-03 0.00e+00 1.21e-05  -8.1 4.31e-03    -  1.00e+00 3.12e-02h  6
+Warning: Cutting back alpha due to evaluation error
+Warning: Cutting back alpha due to evaluation error
+Warning: Cutting back alpha due to evaluation error
+Warning: Cutting back alpha due to evaluation error
+ 136  6.0880409e-03 0.00e+00 6.69e-06  -8.1 2.80e-02    -  1.00e+00 6.25e-02f  5
 Buckling-constrained result:
-  obj = 0.006088090114746645
-  vol = -2.3092344774711115e-6</code></pre>
+  obj = 0.006087973737295718
+  vol = -8.77306768343189e-8</code></pre>
 </div>
 </div>
 <p>The <code>SDPBarrierAlg</code> uses an interior-point method with log-barrier for PSD constraints. IPOPT solves the continuous subproblems.</p>
@@ -5272,8 +5256,8 @@ Buckling-constrained result:
 <span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a><span class="fu">println</span>(<span class="st">&quot;Buckling-constrained min eigenvalue: </span><span class="sc">$</span>(<span class="fu">minimum</span>(ev2))<span class="st">&quot;</span>)</span>
 <span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a><span class="fu">println</span>(<span class="st">&quot;Design is stable: </span><span class="sc">$</span>(<span class="fu">minimum</span>(ev2) <span class="op">≥</span> <span class="op">-</span><span class="fl">1e-6</span>)<span class="st">&quot;</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>ComplianceFun-only min eigenvalue: -1.7999557695228199
-Buckling-constrained min eigenvalue: 0.0017642759244268199
+<pre><code>ComplianceFun-only min eigenvalue: -1.7999557695227362
+Buckling-constrained min eigenvalue: 8.177758090264977e-9
 Design is stable: true</code></pre>
 </div>
 </div>
@@ -5289,10 +5273,10 @@ Design is stable: true</code></pre>
 <div class="cell-output cell-output-stdout">
 <div class="ansi-escaped-output">
 <pre><span class="ansi-green-fg ansi-bold">Precompiling</span> packages...
-   6791.3 ms<span class="ansi-green-fg">  ✓ </span>QuartoNotebookWorkerMakieExt<span class="ansi-bright-black-fg"> (serial)</span>
+   6592.9 ms<span class="ansi-green-fg">  ✓ </span>QuartoNotebookWorkerMakieExt<span class="ansi-bright-black-fg"> (serial)</span>
   1 dependency successfully precompiled in 7 seconds
 <span class="ansi-green-fg ansi-bold">Precompiling</span> packages...
-   5777.6 ms<span class="ansi-green-fg">  ✓ </span>QuartoNotebookWorkerCairoMakieExt<span class="ansi-bright-black-fg"> (serial)</span>
+   5388.5 ms<span class="ansi-green-fg">  ✓ </span>QuartoNotebookWorkerCairoMakieExt<span class="ansi-bright-black-fg"> (serial)</span>
   1 dependency successfully precompiled in 6 seconds
 </pre>
 </div>
@@ -5300,7 +5284,7 @@ Design is stable: true</code></pre>
 <div id="fig-buckling" class="cell-output cell-output-display quarto-float quarto-figure quarto-figure-center anchored" data-execution_count="1">
 <figure class="quarto-float quarto-float-fig figure">
 <div aria-describedby="fig-buckling-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
-<img role="img" width="672" height="480" style="object-fit: contain; height: auto;" src="data:image/png;base64, iVBORw0KGgoAAAANSUhEUgAAAqAAAAHgCAYAAAB6jN80AAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAgY0hSTQAAeiYAAICEAAD6AAAAgOgAAHUwAADqYAAAOpgAABdwnLpRPAAAAAlwSFlzAAAOxAAADsQBlSsOGwAAIABJREFUeAHswQlAlXWi9/HvgT/nsAkogoCKirnnkllZopWWlba5TN7M5taI9bqUawrqVFqgNktZalM6zqR1bzWpuaa4pWCLZk1alprmkitigGwK5zzve7ov3ePWMugzyvl9Psb6fxARERERsYlBRERERMRGBhERERERGxlERERERGxkEBERERGxkUFERERExEYGEREREREbGUREREREbGQQEREREbGRQURERETERgYRERERERsZRERERERsZBARERERsZFBRERERMRGBhERERERGxlERERERGxkEBERERGxkUFERERExEYGEREREREbGUREREREbGQQEREREbGRQURERETERgYRERERERsZRERERERsZBARERERsZFBRERERMRGBhERERERGxlERERERGxkEBERERGxkUFERERExEYGEREREREbGUREREREbGQQEREREbGRQURERETERgYRERERERsZRERERERsZBARERERsZFBRERERMRGBhERERERGxlERERERGxkEBERERGxkUFERERExEYGEREREREbGUREREREbGQQEREREbGRQURERETERgYRERERERsZRERERERsZBARERERsZFBRERERMRGBhERERERGxlERERERGxkEBERERGxkUFERERExEYGEREREREbGUREREREbGQQEREREbGRQURERETERgYRERERERsZRERERERsZBARERERsZFBRERERMRGBhERERERGxlERERERGxkEBERERGxkUFERERExEYGEREREREbGUREREREbGQQEREREbGRQURERETERgYRERERERsZRERERERsZBARERERsZFBRERERMRGBhERERERGxlERERERGxkEBERERGxkUFERERExEYGEREREREbGUREREREbGQQEREREbGRQURERETERgYRERERERsZRERERERsZBARERERsZFBRERERMRGBhERERERGxlERERERGxkEBERERGxkUFERERExEYGEREREREbGUREREREbGQQEREREbGRQURERETERgYRERERERsZRERERERsZBARERERsZFBRERERMRGBhERERERGxlERERERGxkEBERERGxkUFERERExEYGEREREREbGUREREREbGQQEREREbGRQURERETERgYRERERERsZRERERERsZBARERERsZFBRERERMRGBhERERERGxlERERERGxkEBERERGxkUFERERExEYGEREREREbGUREREREbGQQEREREbGRQURERETERgYRERERERsZLiMzZsxg69at1K9fHxERERGx3549e2jZsiWDBg3iX2W4jHz00Ufs3r2byMhI7FBSUoIxhqCgIMS/FRUVERwcTGBgIOLfCgsLCQ0NJSAgAPFvBQUFREREIFJQUEBERAT+YuvWrRQVFTFo0CD+VYbLSFJSEklJSTz99NPY4dixY4SGhhIaGor4tyNHjhAVFYXL5UL828GDB4mNjcUYg/i3/fv3U6dOHRwOB+K/LMviu+++o27duviLp59+msoyiIiIiIjYyCDnVTMzhh/0tRARERGRC8Mg57bvHX50Mhdc0YiIiIhI5RkukNmzZ9OoUSM6duzIT/n888/57//+b4qKirj77ru59dZbueQU7YXs3/CjeTWhrwdwICIiIiKVY7gA9u3bx7hx4/jDH/5Ax44dOZ+NGzfSpUsX+vTpQ3R0NPfeey+vvPIK/fr145KysD5e5VYAxuHhBydzwVUTEREREakcQyUUFBTQpUsXPv/8c8rKyvg5kyZNok+fPsyaNQuv2rVrM2HCBPr168el5IuOH/B/1v+djafCCKGM1iVH+Sb1aQ5eM534jx/DgwN/UjsmhgM5Ofiz2Kgojubl4e9qRkVxLC8Pf5YQHc3B3Fz8XVhwMEWlpfiz2tHRHMjNReS3rVrxh/79kV/OUAlhYWHMnDkTr27duvFTLMvivffeY8GCBVTo3bs3Q4cOZfv27TRp0oRLQVFpPneumcteTzW8ynCRFVKX65P24nXoupeo9cGDHC0LocqrVg0KCwktK+NoaSn+zOV2c7S0FH8XcPIkR0tL8WdhbjdHS0vxd9UcDk6UluLPIiyLo6WliOSXlLAvJ4e7XniBGf360aFZM+SnGSohMDCQNm3a4OV0Ovkpx48f5+TJkyQmJlIhISEBYwyHDh2iSZMm+Nq8eTObN2/G16FDh4iOjqawsJCLZfm2d9jr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2267jauvvpqkpCSys7Np0qQJAwcORH6eQc7StWtXPvvsM9auXUtUVBS33HILERERiH958sknGTp0KGcKCwtD/NuECRNwuVyIf/rDH/5A7969+fTTT3nwwQe5/fbbCQkJQfxL69at2bFjB8uXL+fIkSM8+uijdOnSBYfDgfw8g5xTgwYNaNCgAeK/rrrqKkTOpUWLFoh/u+6667juuusQ/xYREcF9992H/HoGEREREREbGUREREREbGQQEREREbGRQURERETERgYRERERERsZRERERERsZBARERERsZFBRERERMRGBhERERERGxlERERERGxkEBERERGxkUFERERExEYGEREREREbGUREREREbGQQEREREbGRQURERETERgYRERERERsZRERERERsZBARERERsZFBRERERMRGBhERERERGxlERERERGxkEBERERGxkUFERERExEYGEREREREbGUREREREbGQQEREREbGRQURERETERgYRERERERsZRERERERsZBARERERsZFBRERERMRGBhERERERGxlERERERGxkEBERERGxkUFERERExEYGEREREREbGUREREREbGQQEREREbGRQURERETERgYRERERERsZRERERERsZBARERERsZFBRERERMRGBhERERERGxlERERERGxkEBERERGxkUFERERExEYGEREREREbGUREREREbGQQEREREbGRQURERETERgYRERERERsZRERERERsZBARERERsZFBRERERMRGBhERERERGxlERERERGxkEBERERGxkUFERERExEYGEREREREbGUREREREbGQQEREREbGRQURERETERgYRERERERsZRERERERsZBARERERsZFBRERERMRGBhERERERGxlERERERGxkEBERERGxkUFERERExEYGEREREREbGUREREREbGQQEREREbGRQURERETERgYRERERERsZRERERERsZBARERERsZFBRERERMRGBhERERERGxlERERERGxkEBERERGxkUFERERExEYGEREREREbGUREREREbGQQEREREbGRQURERETERgYRERERERsZRERERERsZBARERERsZFBRERERMRGBhERERERGxlERERERGxkEBERERGxkUFERERExEYGEREREREbGUREREREbGQQEREREbGRQURERETERgYRERERERsZRERERERsZBARERERsZFBRERERMRGBhERERERGxlERERERGxkEBERERGxkUFERERExEYGEREREREbGUREREREbGQQEREREbGRQURERETERgYRERERERsZRERERERsZBARERERsZFBRERERMRGBhERERERGxlERERERGxkEBERERGxkUFERERExEYGEREREREbGUREREREbGQQEREREbGRQURERETERgYRERERERsZqqBt27YRFxdHjRo1uJxs27aNuLg4atSowaVo8+bNtGjRguDgYHwVFBSwZ88eWrVqhZ1OnnKDw0GAAxHxA6WnPJhAB8HOAEQuRZZl4XA4cDgcyE8zVEF9+/Zl1KhR9OvXj0vJZ599htvtpl27dpxL3759GTVqFP369aNVq1bcd999jB8/Hjts376dLl268Nprr9GlSxfO5brrruOf//wnV155JStWrKBZs2YkJibywQcfkJKSwnfffcfFVlTq5qtvT3Aot5Ryt4WIVG2WBV/tO8n2/ScpKPbgFRMZyI2tw+h2TRiBgQ5ELjUBAQE4nU5cLhd2O3XqFOPHj2f58uU4HA4ee+wxUlJSOJ8NGzYwYcIEvv32W9q3b8/UqVOpUaMGFWbNmsWsWbMoKiri3nvvZcKECQQEBFBZBrHNa6+9RmlpKe3atePn3H333bRq1Qq7REZG0rt3b+Lj4/klxowZQ2pqKomJidglr7CM7M9zKSu3EJGqz2NZvP/PIvbnlOMrJ9/NO+sL2LbnJCN61yDIOBC5lHg8HkpLS3G73YSGhmKnBx54gEOHDvHnP/+Zr776ioEDBxIfH0/37t05065du+jatSsjR45k3LhxZGRk0K1bNz766CO83nzzTYYNG8Zf/vIXoqOjGThwIGVlZUyePJnKMlymiouLmT9/Pjt37qRFixb07NkTYwznsn//fpYsWUJOTg433XQTnTp1osL7779P06ZN+fLLL/nwww9p3bo1d911F5s3b2bFihVERUXx0EMPERoaSoVly5bxySefEBsbS58+fahevTpeX3zxBZZlERERwaJFiyguLqZPnz7Ur1+fzz//nG+++YZTp06xZs0aOnfuzE/p0qULDRo0wGvt2rU0a9aM7777jpUrVxIVFUW/fv2oVq0aFfbv38+SJUvIycnhpptuolOnTni99957NG3alAYNGuC1du1agoKCSE5Oxmvnzp3s2rWLrl27kpycTL169ajwwQcf8P777xMfH0/v3r2psGrVKvLz8/n4449p0aIFFfLz83nnnXc4cOAAXbp0oUOHDlxIn36dT1m5hYj4h50HTrE/p5zz2bbvJCs/LaLbteGIXIrKyso4deoUTqcTO2zfvp2FCxfy3XffERsbyy233EJJSQl79+7lXGbNmsU111zDxIkT8WrRogVxcXF88skntGvXjqlTpzJq1Cj69euH1/PPP09KSgoTJkzA5XJRGYbLUE5ODjfeeCPVqlXj6quvJjU1lfnz5/Pmm29ypuzsbO6++246depETEwM3bt357nnnmPgwIF4jR8/HpfLRWRkJOHh4UycOJF7772XAwcO0LZtW/785z/z4YcfMnfuXLx+85vfsGnTJrp168Z7773H888/z8cff0xUVBSvv/4627Zt49ixY1x//fWsXbuWKVOmsH37dr788kt2796N2+0mKyuLzp0781PS0tJISUkhJSWFtLQ0mjVrxp49e2jVqhXTp0/nv/7rv8jKysIrOzubu+++m06dOhETE0P37t157rnnGDhwIK+++ip16tThpZdewuPx0KtXL0JCQjhw4ABeGRkZFBcXc9NNN/Gb3/yGnTt3csUVV/CnP/2JsWPH0qtXLzZu3MhLL72EZVl4rV+/nvz8fD799FPat29PZGQkxcXF3HnnnbRt25Zvv/2Wp556itWrV9O5c2cuhLwTZeQXlSEi/mPXgTJ+TvYXJXS7NhyRS9WpU6dwOp3YYcmSJbRv357Y2FiOHj2Ky+Vi9OjRnM8HH3zALbfcQoWaNWvSqlUrNmzYwFVXXcXGjRt57rnnqNClSxeOHz/O119/TevWrakMw2UoPT2devXqsWzZMhwOBwUFBbRo0YI5c+bw29/+Fl9DhgzhiSeeIC0tDa9HH32U5ORkunbtSsOGDakwf/58vEpLS/nkk0/4+uuvcTqdNGrUiBdeeAGvd999l+zsbLZt20b16tWxLIsePXowYsQIZs+ejde6dev45ptviImJoaCggISEBDZt2kTfvn3ZuHEjpaWlPPXUU/xaO3fuZP369QQEBHD33Xdzyy23UFRURFhYGEOGDOGJJ54gLS0Nr0cffZTk5GS6du1Kt27deP755/HasmULoaGh5ObmsmPHDho3bszatWt55pln8HX06FF+//vf89prr/Ef//Ef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" class="figure-img">
+<img role="img" width="672" height="480" style="object-fit: contain; height: auto;" src="data:image/png;base64, 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JmHdunVUVlbSokUL9hZdW+UxuOFfmFLEP9SigtRV5dCJv4u9cDn7vcpKWLqUv8vKQpIk7dqvLrmErq1a0e/EE4nFYujbBXbDaaedxsMPP8wvfvELYrEYK1eu5G9/+xu9e/dmR7FYjN69e/Pkk09y6qmnkjBnzhzatGlDp06d+C4++eQTPv30UyZOnMielEtjLluzhPfWrWLL1q3UD81JidXhRysuJuFUNpFM0lau5MDKSpJZdXExHVJSiMViJLPU8nIOqaoimVW//z7tU1NJdillZVRXV5PMqt99lwNCQCpfsoSJEyeScOurr7K/W7RoEa1atWJ3BHbDpZdeyuTJk7nssss4+eSTueuuu7j44os58MADSRgzZgwPP/wwK1euJGHkyJGcfvrpNG7cmJycHG688UYmTJhASkoK30WnTp0oKyvj66+/Zk9rktGKDWXlNGrUiAYNGqDk9s4779C6dWvq1q2Lkttf//pXOnfuTEZGBkpur732GocdcQSpqakoeVVVVfHmm2/SskEDkkXDhg3p1KkTuyOwGxo2bEhhYSFTp07lqaee4tJLL2Xw4MFsc+KJJ1KvXj22ycvL4+mnn+bBBx/kgw8+4Le//S3nnHMO39X1119PlPr27cvpp5/Oeeedh5Jbjx49GDVqFMcffzxKbgceeCBTp06lffv2KLnVrVuXJ554gjp16qDktWnTJpo3b86zzz6LvrvAbsrNzWX8+PHsTO/evenduzc1de/ene7duyNJkqTkFJAkSZIiFJAkSZIiFNAunXfeeXTo0AGpX79+tGzZEumKK64gJycH6ZprriE9PR0lt/T0dK655hr0/QS0S5dccglSwqBBg5ASrrvuOqSEW265BSk9PZ1bbrkFfT8BSZIkKUIBSZIkKUIBSZIkKUIBSZIkKUIB7dTs2bOZM2cO9evXp1+/fnTu3Bkln40bN3LPPffw7rvv0rRpU372s5/RpUsXlNx+85vfkJGRwaWXXoqS05NPPsm8efOIxWIMGDCAQw89FCWfjz76iPvuu48vvviCbt26ccUVV5CVlYX+uYC+4e6772b06NFceeWVrFq1iuOPP57CwkK6dOmCksfWrVvp3r07devW5YILLmDZsmUcccQRzJkzh169eqHk9MorrzBkyBAGDx6MktPEiRO588476d+/P++99x7HHHMMr732GocccghKHu+99x5HH300eXl5HHXUUfzmN7/hkUceYdGiRYQQ0LcLaDsVFRWMHTuWKVOm0K9fPxL69u3LHXfcwbRp01DyePzxx1mzZg2vvvoqderUISErK4tbbrmFXr16oeRTUlJCv379aN68OUpO69ev56abbuKll17iiCOOIOHss8/moYceYsKECSh53H///bRt25a5c+eS8L/+1/+iY8eOLF68mOOPPx59u4C289prr1FUVMS5557LNhdccAHXXnstSi6lpaVccskl1KlTh23atWvHM888g5LTlVdeyTnnnMOqVatQcnrsscfo1KkTRxxxBNvMnDkTJZ+srCyqq6vZprq6moSsrCz0zwW0nS+++IL69etTp04dtmndujVr166lqqqK1NRUlBx+/vOfU9O6deu4//77Oe2001DymT59OsuWLeP+++/n4osvRsnpo48+om3bttxwww08/vjjZGRk8LOf/YyhQ4eSkpKCkseVV17JrFmzOOmkkzj66KOZMWMGgwcPplu3buifC2g7JSUl1K5dm5rq1KlDdXU1JSUl1K9fHyWfGTNmMHz4cNq1a8f48eNRcvnoo4+47rrrWLBgAenp6Sh5ffnll8yePZtmzZoxbdo0VqxYwdVXX01KSgpDhw5FyaOyspL09HSqqqpYv3498Xic9PR0qqqqCCGgbxfQdho2bEhJSQk1bdiwgRAC9erVQ8llzZo19O/fn7feeotbbrmF/v37E4vFUHIZOHAgZ555JkVFRRQWFlJUVERKSgqFhYX06NGDWCyGkkPt2rXp1KkT99xzDwnHHXccq1at4sEHH2To0KEoeVxxxRUcffTRTJ48mYTy8nK6du3KwQcfTP/+/dG3C2g7bdq0YcOGDaxfv55GjRqRsGLFCnJzc0lJSUHJo6SkhFNOOYVjjjmGDz74gDp16qDkVFVVxTPPPMMzzzxDwrp160hNTWXx4sW8//77ZGRkoOTQsmVLmjdvTk0tWrSguLgYJZeXX36ZgQMHsk2tWrXo0aMHL7/8Mv3790ffLqDtdOvWjQ4dOvDQQw8xbNgw4vE4Dz/8MBdeeCFKLvfddx9VVVX8z//8D7FYDCWv559/npouuOACcnNzufPOO1FyOe+88ygoKGD58uUcdNBBVFVV8cc//pEePXqg5HLooYcye/ZszjnnHBJKSkp44YUXuPrqq9E/F9A3TJo0iQsvvJDXXnuNTz/9lKKiIoYPH46SS2FhIR999BF169alpoMPPpjFixcjKfl07tyZQYMGcfTRR3PKKafw/vvvU1lZyf3334+Sy1133cVpp53GkUceSbt27SgsLKRjx44MGjQI/XMBfUPv3r156623WLBgATk5OZx66qlkZ2ej5HLjjTdy9dVXs6PatWuj5DZ27FgyMjJQcvrVr37FBRdcwJtvvskll1zCj3/8Y2rVqoWSS7du3fjggw+YO3cuX375JVdccQW9evUiFouhfy6gnWrbti1t27ZFyevwww9H2pkuXbqg5Hbsscdy7LHHouSWnZ3NhRdeiL6/gCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShgCRJkhShwH7o3XffpVmzZjRo0IB9ybvvvkuzZs1o0KABe6M33niDLl26kJmZSU0lJSWsXLmSrl27EqUtW6sgFiMlhqQksHlrNSE1RmZ6CtLeKB6PE4vFiMVi6NsF9kMXX3wxI0aMoF+/fuxN3nrrLaqqqjjqqKPYmYsvvpgRI0bQr18/unbtyoUXXsgNN9xAFN5//3169erFAw88QK9evdiZY489lr/+9a8ccsghzJs3j86dO9O6dWteeuklBgwYwGeffcaeVrq5ivc+3sgXRZuprIojaf8Wj8N7n2zh/U+3UFJWTULjeqmc2K02fY6uTWpqDGlvk5KSQnp6OhkZGURt69at3HDDDcydO5dYLMZVV13FgAED2JVFixYxduxYPv74Y7p3785dd91FgwYN2GbatGlMmzaN0tJSzj33XMaOHUtKSgq7K6DIPPDAA2zevJmjjjqKf+bss8+ma9euRKVevXpccMEFNG/enO9i5MiR5Ofn07p1a6KyYVMFhW8XUVEZR9L+rzoe5/m/lvLpukpqWldcxZ9fLOHdlVsYfkED0kIMaW9SXV3N5s2bqaqqIisriyj99Kc/5YsvvuDXv/417733HoMGDaJ58+acccYZ7GjFihX07t2ba6+9ljFjxlBQUECfPn145ZVXSHjkkUcYNmwY//3f/03Dhg0ZNGgQFRUVTJgwgd0V2EeVlZUxY8YMli9fTpcuXejbty8hBHbm008/Zfbs2axbt46TTjqJE044gW2ef/55OnXqxDvvvMPLL79Mt27dOOuss3jjjTeYN28eOTk5XHrppWRlZbHNnDlzeP3112nSpAkXXXQR9evXJ2HZsmXE43Gys7OZOXMmZWVlXHTRRRxwwAG8/fbbfPjhh2zdupXnnnuOU045hW/Tq1cv2rZtS8KCBQvo3Lkzn332GU8//TQ5OTn069ePunXrss2nn37K7NmzWbduHSeddBInnHACCU899RSdOnWibdu2JCxYsIC0tDTy8vJIWL58OStWrKB3797k5eXRpk0btnnppZd4/vnnad68ORdccAHbPPPMMxQXF/Pqq6/SpUsXtikuLubPf/4zn3/+Ob169aJHjx78kN78WzEVlXEkJYfln2/l03WV7Mq7n2zh6TdL6XNMHaS9UUVFBVu3biU9PZ0ovP/++zzxxBN89tlnNGnShFNPPZXy8nJWrVrFzkybNo2jjz6aW265hYQuXbrQrFkzXn/9dY466ijuuusuRowYQb9+/Ui44447GDBgAGPHjiUjI4PdEdgHrVu3jhNPPJG6dety5JFHkp+fz4wZM3jkkUfYUWFhIWeffTYnnHACjRs35owzzuDWW29l0KBBJNxwww1kZGRQr1496tSpwy233MK5557L559/zhFHHMGvf/1rXn75ZaZPn07CT37yE1577TX69OnDU089xR133MGrr75KTk4ODz30EO+++y7r16/nuOOOY8GCBUycOJH333+fd955h48++oiqqioWLlzIKaecwrcZNWoUAwYMYMCAAYwaNYrOnTuzcuVKunbtytSpU/n973/PwoULSSgsLOTss8/mhBNOoHHjxpxxxhnceuutDBo0iHvvvZfc3FwmT55MdXU1559/PrVq1eLzzz8noaCggLKyMk466SR+8pOfsHz5cg488EBuv/12Ro8ezfnnn8/ixYuZPHky8XichBdffJHi4mLefPNNunfvTr169SgrK+PMM8/kiCOO4OOPP+amm27i2Wef5ZRTTuGHsGFjBcWlFUhKHis+r+CfKVxWTp9j6iDtrbZu3Up6ejpRmD17Nt27d6dJkyasXbuWjIwMrr/+enblpZde4tRTT2WbRo0a0bVrVxYtWsThhx/O4sWLufXWW9mmV69efPXVV/ztb3+jW7du7I7APmjcuHG0adOGOXPmEIvFKCkpoUuXLjz44IP87Gc/o6YhQ4Zw3XXXMWrUKBKuuOIK8vLy6N27N+3bt2ebGTNmkLB582Zef/11/va3v5Gens5BBx3EnXfeScJf/vIXCgsLeffdd6lfvz7xeJzzzjuP4cOHc//995Pwwgsv8OGHH9K4cWNKSkpo0aIFr732GhdffDGLFy9m8+bN3HTTTXxfy5cv58UXXyQlJYWzzz6bU089ldLSUmrXrs2QIUO47rrrGDVqFAlXXHEFeXl59O7dmz59+nDHHXeQsGTJErKysigqKuKDDz6gQ4cOLFiwgF/84hfUtHbtWv7rv/6LBx54gP/4j/8g4ZZbbuGtt94i4ZZbbmHmzJkMGjSIiy66iLlz5/L1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I82bN8dsNvPdd9+h2rhxI4mJidStW5f4+HgMBgMqi8VCSkoKp0+fpmbNmiQlJeHq6orqxIkTWK1WPDw8+O677ygsLCQ5OZkaNWrwIFevXmXjxo3cunWL2NhY2rVrh+rkyZNkZWURFxeHzebNm6lbty516tShrKyMDRs2cPToUYxGIx07dqR58+bYFBQUsHbtWjIzM+nSpQsGg4GioiKaNGmC6urVq6xfvx6tVktSUhLnz5+nZs2ahISEoCosLCQlJYVz587RoEEDnn76aRRFQbVjxw7q169PRkYGly5dYsiQIeTl5fHNN9/w+++/4+vrS1JSEtWrV8dsNvPdd9+h2rhxI4mJiTRr1oyioiJsLBYLKSkpnD59mpo1a5KUlISrqyuqEydOYLVa8fDw4LvvvqOwsJDk5GRq1KhBZdmdfpdDZwp4kNz8clZtu8foHj4IIYSouiwWCyUlJTg5OeEIP//8M7///juHDh3CxcWFdu3asW3bNr788kvGjRtHRcuXL6d58+a8+eabqBo0aEBgYCCHDh2iWbNmvP/++4wbN44BAwagWrhwIc8//zwzZ87EycmJv0OhCtq1axddu3YlOjqakJAQFixYgFarxSYtLY3u3bvTrl07/Pz86Nq1K++88w4jR47k119/JTc3l2PHjnHs2DGaNm3KhAkT+PTTT+nVqxd79+5l8uTJbNq0iZiYGI4cOcLkyZNxdnamuLiYjh07Mm3aNJycnPD09MTNzY0333yTHj16cP36dR5//HEWLFjAr7/+ypdffolqyJAhbN26lc6dO3Pr1i1ef/111q9fT1xcHFu2bEH1888/07x5czIzMxk2bBjXrl3DbDYTGxvLzZs3efLJJ9mwYQOzZ89mz549+Pr68tVXX3Hq1Clu375Nq1at2LFjB/PmzePMmTP4+flRUVpaGt27d6ddu3b4+fnRtWtX3nnnHUaOHIm7uztt2rRh/fr1dOjQgdTUVF566SWOHz+OasiQIWzdupXOnTtz69YtXn/9ddavX0+3bt34448/iImJQafTER0dTVJSEsHBwURERLB06VKOHDlCx44dadmyJQEBASxZsgStVsv06dPp06cPt27don379ri7u9O0aVMmTZpESkoKX3/9NarJkyfTuHFjUlJSGDRoEIWFhTRv3hy9Xk9MTAxbt27ljTfe4OTJk3h7e7NlyxZUP//8M82bN2fNmjVcu3aNr776CrPZTGxsLDdv3uTJJ59kw4YNzJ49mz179uDr68tXX33FqVOnuH37Nq1atWLHjh3MmzePM2fO4OfnR2XYduQe/86RCyUUl1oxGjQIIYSousxmM05OTjjC3r17admyJS4uLtjExcWxZ88exo0bR0V79+6lY8eO2Pj6+tKoUSP27NlDkyZNOHDgAO+88w42cXFx3Llzh4yMDB577DH+DoUqaMyYMfTv35+lS5ei2rVrF+3bt8dm1KhRjB8/nsmTJ6MaPnw4MTExxMfHM2nSJFJTUxk6dChDhw4lIyODBQsWsG/fPpo1a4ZqzJgxjB07lv3796NKT0/niy++YODAgdhLSUlBVVxczKFDh8jIyMBgMFC3bl0WLVqEymw2k56ezrfffkvbtm1R9e7dm82bN9OtWzc++ugj1qxZw/vvv09gYCCZmZnYrFy5ksuXL5ORkYG7uztms5k2bdowf/585s2bh2rnzp2cP38ePz8/8vLyCAoK4uDBg3Tp0oWKRo0axfjx45k8eTKq4cOHExMTQ3x8PLVr12bhwoU899xz/PLLL4wcOZLPPvsMHx8fzGYz6enpfPvtt7Rt2xZV79692bx5M926deODDz5Aq9Wyf/9+9Ho9N27coE6dOkRERKCaOHEiffr04cMPP0SVmppKz549sZk9ezZhYWH88MMPaDQa8vLyaNCgAV988QWDBg1CtX//fi5cuIC7uzsHDhzA2dmZnTt34unpicViISwsjD179tC7d28++ugj1qxZw/vvv09gYCBr1qzBZuXKlVy+fJmMjAzc3d0xm820adOG+fPnM2/ePFQ7d+7k/Pnz+Pn5kZeXR1BQEAcPHqRLly5Uhlv3zPw7ZWVWcvLKCPZVEEIIUXWVl5fjKFlZWfj7+2PP39+fffv2cT9ZWVn4+/tjz9/fn+zsbG7evEl5eTn+/v7YeHh4YDQayc7O5u9SqGKKioo4cuQIy5cvx6Zdu3aEh4ejysnJ4ejRo4wZM4YtW7Zg4+Xlxf79+6lduzb29u7dS2RkJM2aNcNm8ODBLF68mJKSElTOzs4MHDgQe927d8cmPDwcnU6HwWBAFR4eTmlpKSq9Xs/x48cxm82cOXOG48ePc+TIEdq3b8+/k5aWxtNPP427uzsqvV5Pv379WLt2LTZt27bFz88PlYeHByEhIZSWllJRTk4OR48eZcyYMWzZsgUbLy8v9u/fT+3atRk6dCjr16+nSZMm9OvXj06dOqHS6/UcP34cs9nMmTNnOH78OEeOHKF9+/aotm/fTt++fdHr9aiCgoJ44oknUJWXl7Nz507eeustbJ566inc3d2x2bZtG/Hx8fz444/YREZGkpaWxqBBg1D16dMHd3d3VC1atCA9PZ2CggLS09PZv38/t2/fprS0lH8nLS2Np59+Gnd3d1R6vZ5+/fqxdu1abNq2bYufnx8qDw8PQkJCKC0tpbLodRr+Cr2CEEII8ZeVlpai1+uxp9frKSoq4n5KS0vR6/XY0+v1FBUVUVpaikqv12NPURSKior4uxSqmLt372K1WvHz88Oer68vquzsbFSpqanodDpsYmJi8PPzo6Lbt29jMpmw5+vrS3l5OTk5Oah8fHyoyMnJCXs6nY77KS8vZ+bMmSxevJhatWoRGRlJtWrV+Ctu375NrVq1sOfr68vNmzex8fLy4q/Izs5GlZqaik6nwyYmJgY/Pz9sevTowffff09CQgI25eXlzJw5k8WLF1OrVi0iIyOpVq0aNjdv3sRkMmHP19cXxV8/VwAACUZJREFU1d27dyktLcVkMmGj0Wjw8fHBJjs7m/379/P7779j4+HhQf369bExmUzY3L17lxdeeIGtW7fSsGFDoqKi8Pf356+4ffs2tWrVwp6vry83b97ExsvLi4cpLMCJy1ml/Bk3Zy0mDx1CCCGqNp1Oh6MEBARw8uRJ7OXm5hIYGMj9BAQEkJubi73c3FwCAwMJCAhAlZubi43FYiE/P5/AwED+LoUqJiAgACcnJ06fPk1ISAiqsrIyLly4gCo0NBTV3LlziYiIwObAgQNERkZSUWhoKBcuXMBqtaLRaFCdPXsWJycnAgMDOXbsGH/Hzp07mTdvHidPnqR27dqohg8fTllZGf9OaGgo586dw97Zs2cJCwvjPxUaGopq7ty5REREYHPgwAEiIyNR3bhxg0mTJjFq1ChefPFFjh8/joeHBzt37mTevHmcPHmS2rVroxo+fDhlZWWowsLCOHfuHPYuXLhAgwYN8PHxwd3dnXPnzlG7dm1UhYWFZGZmYhMWFsaAAQMYMWIENqdPn8bDw4P7WbhwIWfPnuXGjRs4Ozuj2rZtG39FaGgo586dw97Zs2cJCwvDUZ5u50vaiT8oK+OBnnzcFZ1WgxBCiKrNyckJR4mMjGTVqlXYO3LkCPXq1eN+IiMjOXLkCDYWi4UTJ04wbtw4jEYjNWrU4MiRIzRt2hTVkSNHUBSF2rVr83cpVDFarZbevXszdepUmjRpgslkYu7cuWRnZ6Nyc3MjMTGRKVOmsGrVKgwGA4sXL2bGjBlcv36dijp16sTIkSNZsGABY8eO5d69e8yYMYNnnnkGrVbL35WdnY3RaMTf3x/VwYMHWb9+PU8++SQqjUaDKj8/n4r69OlDQkICL774Im3atCEjI4Nly5YxZ84c/lNubm4kJiYyZcoUVq1ahcFgYPHixcyYMYPr16+jevbZZxk4cCDvvfce58+fZ8yYMfzP//wP2dnZGI1G/P39UR08eJD169fz5JNPourbty+vvPIKQ4YMISIigo0bN7J3716ioqJQ9enTh1mzZtG6dWvc3d154403MJvNaDQaVH369GHBggV07dqV6tWrs3fvXjp06MBPP/1EcHAwFWVnZ+Pn54ezszNms5lvvvmGc+fOUVRUhEqj0aDKz8+noj59+pCQkMCLL75ImzZtyMjIYNmyZcyZMwdHCQs08kKXAJb/cBNLmZWKWtRzplsrN4QQQlRtRqMRRVFwlKSkJEaNGsXq1avp168fv/32G9u2bWP27NmoLl68SEpKCkOHDsVkMjF48GC6devGmTNnqFevHp988gkGg4EuXbqgGjx4MEuWLKFfv344Ozvz7rvvkpiYiK+vL3+XQhU0f/58evXqRWBgIK6urjRv3pw+ffpgs3TpUpKTkzGZTBgMBlxcXFi7di3u7u5U5O3tzddff83AgQOZPXs2BQUFtG3blvfee4/KkJiYSL169ahWrRpeXl4EBgYybdo0JkyYQIsWLXjllVdo06YNUVFRpKamYi82NpaZM2fSoUMHvL29ycnJ4aWXXmLIkCH8byxdupTk5GRMJhMGgwEXFxfWrl2Lu7s7H374IRcvXmT9+vWoli1bRsOGDenVqxeJiYnUq1ePatWq4eXlRWBgINOmTWPChAm0aNGCl19+mX379tGgQQNMJhN169ZlxIgReHp6opo7dy69evXCz88PV1dXkpOTad26Nd7e3qhGjx5NRkYGtWrVwsvLi4KCAmbNmkX79u25n5deeon4+HgCAgIwm80kJCTw8ssvM3r0aBo3bkzz5s1p06YNUVFRpKamYi82NpaZM2fSoUMHvL29ycnJ4aWXXmLIkCE4UkJLHyJquLD2l9tcuFGMRgNBPgqt6zvTrJ4LGg1CCCGqEKvVitVqRafTodPpMBgM6HQ6HMnNzY21a9eSnJzMtGnTyMrKYv78+TRu3BjVqVOnGD9+PAkJCZhMJmJjY5k4cSJNmjQhICCA/Px8UlNTMRgMqCZNmkR6ejpBQUE4OTkRHBzMpk2bqAwKVVBAQAC7d+/m2rVrWK1Wqlevjr3g4GDS0tK4ceMG9+7do06dOuj1emz27duHvU6dOpGZmcn58+fx8vIiICAAm4SEBK5du4a9tLQ07L311lvYS0hI4Nq1a6jc3NzYt28f586dw9nZmerVq6N67rnnMBqNqNLS0sjNzcXLywuNRsO1a9ewmThxIi+//DIXLlwgLCwMd3d3bN5++20qysjI4EGCg4NJS0vjxo0b3Lt3jzp16qDX61G99NJLvPTSS9iEhoZy7949bPbt28e5c+dwdnamevXqqJ577jmMRiM3b95k8uTJvPHGG9y7d4+aNWsyYMAAIiIiUOXl5ZGamsrdu3dxdXXFZDIRGhpKtWrVUBkMBj799FPeffddrly5Qs2aNXFzc8Nm37592GvYsCGXLl3i/PnzhISE4OXlhWrWrFm4u7ujSktLIzc3Fy8vLxISErA3ceJEXn75ZS5cuEBYWBju7u7YvP3221SUkZHBw1Aj0Mi4PiEIIYQQlaVTp07cvn2bc+fOUaNGDZydnbFJTEzEarVib9q0aYwZM4arV68SHh6OVqvFxmg0kpqays2bNyksLKRGjRpUFoUqLCQkhD8TFBREUFAQf4VOp6NevXo8DBqNhvDwcOy5urpiz9vbmwdxdnYmKiqKyhIUFERQUBD/CY1GQ3h4OPZcXV1RrV+/nunTp7N3717q1KnDrl272LBhA3PmzEE1efJkbt++zb/+9S88PDxYsGABrq6uREVFYc/T05OGDRvyVxiNRqKiorDn7u6OPW9vbx7E2dmZqKgohBBCiP82iqIQGRnJX+Xq6kpERAQP4u/vT2VTEOJveuGFFzh58iSNGzemvLwcPz8/li1bRmhoKKpFixYxdOhQAgMD0ev1REREsHr1ajQaDUIIIYR49CgI8TfpdDo++OADPvjgA0pLSzEYDNgLDAxk8+bNlJWVYbVaURQFIYQQQjy6FISoRAaDgQfR6XQIIYQQQigIIYQQQgjhQApCCCGEEEI4kIIQQgghhBAOpCCEEEIIIYQDKQghhBBCCOFACkIIIYQQQjiQghBCCCGEEA6kIIQQQgghhAMpCCGEEEII4UAKQgghhBBCOJCCEEIIIYQQDqQghBBCCCGEAykIIYQQQgjhQApCCCGEEEI40P8DYZSPvB5UgUIAAAAASUVORK5CYII=" class="figure-img">
 </div>
 <figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-buckling-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 Figure 1: Buckling-constrained truss design (top) vs compliance-only (bottom)
