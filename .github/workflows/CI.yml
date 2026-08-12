@@ -173,7 +173,7 @@ jobs:
           arch: x64
       - uses: julia-actions/cache@v2
         with:
-          cache-name: tutorials-${{ hashFiles('Project.toml') }}
+          cache-name: tutorials
           cache-artifacts: true
           cache-packages: true
           cache-compiled: true
@@ -213,7 +213,7 @@ jobs:
           version: '1'
       - uses: julia-actions/cache@v2
         with:
-          cache-name: docs-${{ hashFiles('Project.toml') }}
+          cache-name: docs
           cache-artifacts: true
           cache-packages: true
           cache-compiled: true
