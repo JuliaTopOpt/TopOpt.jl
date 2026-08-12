@@ -2,6 +2,7 @@ using TopOpt, Zygote, FiniteDifferences, LinearAlgebra, Test, Random, SparseArra
 const FDM = FiniteDifferences
 using Ferrite: ndofs_per_cell, getncells
 using TopOpt: ndofs
+using TopOpt.Utilities: getpenalty
 using Arpack
 include("..//truss_topopt_problems//utils.jl")
 

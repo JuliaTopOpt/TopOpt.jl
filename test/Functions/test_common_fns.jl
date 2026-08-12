@@ -2,7 +2,7 @@ using TopOpt,
     Zygote, FiniteDifferences, LinearAlgebra, Test, Random, SparseArrays, ForwardDiff
 const FDM = FiniteDifferences
 using TopOpt: ndofs
-using Ferrite: ndofs_per_cell, getncells
+using Ferrite: ndofs, ndofs_per_cell, getncells
 using NonconvexCore: getdim
 
 Random.seed!(1)
@@ -145,7 +145,7 @@ end
     base_problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
     dense_load_inds = vec(TopOpt.TopOptProblems.get_surface_dofs(base_problem))
     dense_rank = 3
-    F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
+    F = spzeros(ndofs(base_problem.ch.dh), nloads)
     Fsize = size(F)
     for i in 1:dense_rank
         F +=
