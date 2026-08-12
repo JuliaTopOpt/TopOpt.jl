@@ -89,6 +89,41 @@ jobs:
           file: lcov.info
           token: ${{ secrets.CODECOV_TOKEN }}
 
+  # Cross-platform smoke test: run Core_Tests on macOS and Windows to catch
+  # platform-specific regressions without running the full matrix.
+  smoke-test:
+    name: "smoke: ${{ matrix.os }}"
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - macos-latest
+          - windows-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: '1'
+          arch: x64
+      - uses: julia-actions/cache@v2
+        with:
+          cache-name: smoke-${{ matrix.os }}
+          cache-artifacts: true
+          cache-packages: true
+          cache-compiled: true
+      - name: Use General git registry (avoids CDN lag for new versions)
+        shell: bash
+        run: |
+          rm -rf ~/.julia/registries/General.toml ~/.julia/registries/General.tar.gz
+          julia -e 'using Pkg; Pkg.Registry.add(RegistrySpec(url="https://github.com/JuliaRegistries/General.git"))'
+      - name: Instantiate test environment
+        run: julia --project=test -e 'using Pkg; Pkg.develop(PackageSpec(path=".")); Pkg.instantiate(); Pkg.precompile()'
+      - name: Run Core_Tests
+        env:
+          GROUP: Core_Tests
+        run: julia --project=test --color=yes --check-bounds=yes --depwarn=yes -e 'include("test/runtests.jl")'
+
   # One CI job per tutorial .qmd file (dynamic matrix from scan-tutorials)
   tutorials:
     name: "tutorial: ${{ matrix.tutorial }}"
