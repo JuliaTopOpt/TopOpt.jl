@@ -5,7 +5,11 @@ bib = CitationBibliography(joinpath(@__DIR__, "biblio", "ref.bib"))
 
 makedocs(;
     sitename="TopOpt.jl",
-    format=Documenter.HTML(; prettyurls=get(ENV, "CI", nothing) == "true"),
+    format=Documenter.HTML(;
+        prettyurls=get(ENV, "CI", nothing) == "true",
+        logo="assets/logo-light.png",
+        logo-dark="assets/logo-dark.png",
+    ),
     doctest=true,
     checkdocs=:all,
     plugins=[bib],

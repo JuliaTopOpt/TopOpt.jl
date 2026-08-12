@@ -7,11 +7,11 @@ execute:
 
 website:
   title: "TopOpt.jl"
-  image: "../assets/logo.png"
+  image: "../../assets/logo.png"
   sidebar:
     style: "docked"
     background: light
-    logo: "../assets/logo.png"
+    logo: "../../assets/logo.png"
   navbar:
     right:
       - text: "Back to Docs"
