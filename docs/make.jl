@@ -1,5 +1,6 @@
 using Documenter, TopOpt
 using DocumenterCitations
+using DocumenterCodeBlocks
 
 bib = CitationBibliography(joinpath(@__DIR__, "biblio", "ref.bib"))
 
@@ -10,7 +11,7 @@ makedocs(;
     ),
     doctest=true,
     checkdocs=:all,
-    plugins=[bib],
+    plugins=[bib, CodeBlocks()],
     pages=[
         "Home" => "index.md",
         "Tutorials" => "tutorials/index.md",
