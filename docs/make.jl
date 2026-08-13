@@ -1,8 +1,8 @@
-using Documenter, TopOpt
+using Documenter,TopOpt
 using DocumenterCitations
 using DocumenterCodeBlocks
 
-bib = CitationBibliography(joinpath(@__DIR__, "biblio", "ref.bib"))
+bib = CitationBibliography(joinpath(@__DIR__,"biblio","ref.bib"))
 
 makedocs(;
     sitename="TopOpt.jl",

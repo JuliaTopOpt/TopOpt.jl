@@ -17,27 +17,6 @@ using TopOpt.TopOptProblems:
 using TopOpt.TrussTopOptProblems: TrussProblem
 using Ferrite
 
-################################
-# Credit to Simon Danisch for the conversion code below
-
-# https://github.com/JuliaPlots/AbstractPlotting.jl/blob/f16321dee2c77ac9c753fed9b1074a2df7b10db8/src/utilities/utilities.jl#L188
-# https://github.com/JuliaPlots/AbstractPlotting.jl/blob/444813136a506eba8b5b03e2125c7a5f24e825cb/src/conversions.jl#L522
-function Makie.to_vertices(nodes::Vector{<:Ferrite.Node})
-    return Point3f.([n.x for n in nodes])
-end
-
-function Makie.to_triangles(cells::AbstractVector{<:Ferrite.AbstractCell})
-    # Ferrite 1.x: concrete cell types (Quadrilateral, Hexahedron, ...) are
-    # subtypes of AbstractCell, not the legacy `Cell` alias, so dispatch on
-    # AbstractCell to cover all cell kinds.
-    tris = TriangleFace{Int}[]
-    for cell in cells
-        to_triangle(tris, cell)
-    end
-    return tris
-end
-
-# https://github.com/JuliaPlots/AbstractPlotting.jl/blob/444813136a506eba8b5b03e2125c7a5f24e825cb/src/conversions.jl#L505
 function to_triangle(tris, cell::Union{Ferrite.Hexahedron,QuadraticHexahedron})
     nodes = cell.nodes
     push!(tris, TriangleFace{Int}(nodes[1], nodes[2], nodes[5]))

@@ -35,18 +35,18 @@ end
 YoungsModulus(p) = getE(p)
 PoissonRatio(p) = getν(p)
 
-function compliance(Ke, u, dofs)
+function compliance(Ke,u,dofs)
     comp = zero(eltype(u))
     for i in eachindex(dofs)
         for j in eachindex(dofs)
-            comp += u[dofs[i]] * Ke[i, j] * u[dofs[j]]
+            comp += u[dofs[i]]*Ke[i, j]*u[dofs[j]]
         end
     end
     return comp
 end
 
 function meandiag(K::AbstractMatrix)
-    z = zero(eltype(K))
+        z = zero(eltype(K))
     for i in axes(K, 1)
         z += abs(K[i, i])
     end

@@ -1,8 +1,8 @@
 using TopOpt,
-    Zygote, FiniteDifferences, LinearAlgebra, Test, Random, SparseArrays, ForwardDiff
+    Zygote,FiniteDifferences,LinearAlgebra,Test,Random,SparseArrays,ForwardDiff
 const FDM = FiniteDifferences
 using TopOpt: ndofs
-using Ferrite: ndofs, ndofs_per_cell, getncells
+using Ferrite: ndofs,ndofs_per_cell,getncells
 using NonconvexCore: getdim
 
 Random.seed!(1)
@@ -10,7 +10,7 @@ Random.seed!(1)
 get_pen_T(::PseudoDensities{<:Any,T,<:Any}) where {T} = T
 
 @testset "Projections and penalties" begin
-    for proj in (HeavisideProjectionFun(5.0), SigmoidProjectionFun(4.0))
+    for proj in (HeavisideProjectionFun(5.0),SigmoidProjectionFun(4.0))
         for T1 in (true, false), T2 in (true, false), T3 in (true, false)
             x = PseudoDensities{T1,T2,T3}(rand(4))
             @test typeof(proj(x)) === typeof(x)
@@ -19,7 +19,7 @@ get_pen_T(::PseudoDensities{<:Any,T,<:Any}) where {T} = T
         end
     end
 
-    for pen in (PowerPenaltyFun(3.0), RationalPenaltyFun(3.0), SinhPenaltyFun(3.0))
+    for pen in (PowerPenaltyFun(3.0),RationalPenaltyFun(3.0),SinhPenaltyFun(3.0))
         for T1 in (true, false), T2 in (true, false), T3 in (true, false)
             x = PseudoDensities{T1,T2,T3}(rand(4))
             @test get_pen_T(pen(x)) === true

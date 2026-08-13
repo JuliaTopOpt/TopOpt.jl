@@ -1,10 +1,12 @@
 using JSON
 
 # Read two JET JSON reports and produce a markdown diff.
-# Usage: julia jet_compare.jl master.json pr.json
+# Usage: julia jet_compare.jl master.json pr.json [--full]
+# With --full, also lists all issues on master and PR. Without it, only the diff.
 
 master_file = ARGS[1]
 pr_file = ARGS[2]
+full_report = "--full" in ARGS
 
 master = JSON.parsefile(master_file)
 pr = JSON.parsefile(pr_file)
@@ -83,47 +85,48 @@ if isempty(new_issues) && isempty(fixed_issues)
     push!(lines, "No new or fixed issues.")
 end
 
-# All issues on master
-all_master_issues = sort(collect(values(master_issues)); by=i -> i["signature"])
-if !isempty(all_master_issues)
-    push!(lines, "")
-    push!(lines, "#### 📋 All issues on master ($(length(all_master_issues)))")
-    push!(lines, "")
-    for (i, issue) in enumerate(all_master_issues)
-        sig = issue["signature"]
-        msg = issue["message"]
-        if length(msg) > 500
-            msg = msg[1:500] * "…"
+# Full issue lists only when --full is passed (push to master)
+if full_report
+    all_master_issues = sort(collect(values(master_issues)); by=i -> i["signature"])
+    if !isempty(all_master_issues)
+        push!(lines, "")
+        push!(lines, "#### 📋 All issues on master ($(length(all_master_issues)))")
+        push!(lines, "")
+        for (i, issue) in enumerate(all_master_issues)
+            sig = issue["signature"]
+            msg = issue["message"]
+            if length(msg) > 500
+                msg = msg[1:500] * "…"
+            end
+            push!(lines, "<details><summary>$(i). $(issue["type"]) — $(basename(sig))</summary>")
+            push!(lines, "")
+            push!(lines, "```")
+            push!(lines, msg)
+            push!(lines, "```")
+            push!(lines, "</details>")
+            push!(lines, "")
         end
-        push!(lines, "<details><summary>$(i). $(issue["type"]) — $(basename(sig))</summary>")
-        push!(lines, "")
-        push!(lines, "```")
-        push!(lines, msg)
-        push!(lines, "```")
-        push!(lines, "</details>")
-        push!(lines, "")
     end
-end
 
-# All issues in PR
-all_pr_issues = sort(collect(values(pr_issues)); by=i -> i["signature"])
-if !isempty(all_pr_issues)
-    push!(lines, "")
-    push!(lines, "#### 📋 All issues in PR ($(length(all_pr_issues)))")
-    push!(lines, "")
-    for (i, issue) in enumerate(all_pr_issues)
-        sig = issue["signature"]
-        msg = issue["message"]
-        if length(msg) > 500
-            msg = msg[1:500] * "…"
+    all_pr_issues = sort(collect(values(pr_issues)); by=i -> i["signature"])
+    if !isempty(all_pr_issues)
+        push!(lines, "")
+        push!(lines, "#### 📋 All issues in PR ($(length(all_pr_issues)))")
+        push!(lines, "")
+        for (i, issue) in enumerate(all_pr_issues)
+            sig = issue["signature"]
+            msg = issue["message"]
+            if length(msg) > 500
+                msg = msg[1:500] * "…"
+            end
+            push!(lines, "<details><summary>$(i). $(issue["type"]) — $(basename(sig))</summary>")
+            push!(lines, "")
+            push!(lines, "```")
+            push!(lines, msg)
+            push!(lines, "```")
+            push!(lines, "</details>")
+            push!(lines, "")
         end
-        push!(lines, "<details><summary>$(i). $(issue["type"]) — $(basename(sig))</summary>")
-        push!(lines, "")
-        push!(lines, "```")
-        push!(lines, msg)
-        push!(lines, "```")
-        push!(lines, "</details>")
-        push!(lines, "")
     end
 end
 

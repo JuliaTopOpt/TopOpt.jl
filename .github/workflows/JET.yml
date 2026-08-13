@@ -78,43 +78,28 @@ jobs:
         run: julia --project=test test/jet_compare.jl ../master_jet.json ../pr_jet.json
         working-directory: pr
 
+      - name: Compare JET reports (full, for master push)
+        if: github.event_name == 'push'
+        run: julia --project=test test/jet_compare.jl ../master_jet.json ../pr_jet.json --full
+        working-directory: pr
+
       - name: Post JET comparison comment (PR)
         if: github.event_name == 'pull_request'
         uses: thollander/actions-comment-pull-request@v3
         with:
-          file: pr/jet_diff.md
-          comment_tag: jet-report
+          file-path: pr/jet_diff.md
+          comment-tag: jet-report
 
       - name: Post JET report comment (push to master)
         if: github.event_name == 'push'
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const fs = require('fs');
-            const report = JSON.parse(fs.readFileSync('master_jet.json', 'utf8'));
-            const lines = [
-              '### JET Report (master)',
-              '',
-              `Total issues: ${report.total_issues}`,
-              `  Errors: ${report.errors}`,
-              `  Warnings: ${report.warnings}`,
-              '',
-            ];
-            for (const issue of report.issues) {
-              const sig = issue.signature;
-              const msg = issue.message;
-              const short = msg.length > 500 ? msg.slice(0, 500) + '…' : msg;
-              lines.push(`<details><summary>${issue.type} — ${sig.split('/').pop()}</summary>`);
-              lines.push('');
-              lines.push('```');
-              lines.push(short);
-              lines.push('```');
-              lines.push('</details>');
-              lines.push('');
-            }
+            const body = fs.readFileSync('pr/jet_diff.md', 'utf8');
             await github.rest.repos.createCommitComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
               commit_sha: context.sha,
-              body: lines.join('\n'),
+              body,
             });

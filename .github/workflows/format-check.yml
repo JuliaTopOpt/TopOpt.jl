@@ -21,11 +21,51 @@ jobs:
       - name: Install JuliaFormatter
         run: julia -e 'import Pkg; Pkg.add("JuliaFormatter")'
       - name: Check formatting
+        id: check
         run: |
           julia -e '
             using JuliaFormatter
-            needs_formatting = format(".", BlueStyle(); dry=true)
-            if needs_formatting
-              error("Code is not formatted. Run the following locally and commit the changes:\n  julia -e '\''using JuliaFormatter; format(\".\", BlueStyle())'\''")
+            bad = String[]
+            for (root, dirs, files) in walkdir(".")
+              root == joinpath(".", ".git") && continue
+              startswith(root, joinpath(".", ".git", "")) && continue
+              for f in files
+                path = joinpath(root, f)
+                endswith(path, ".jl") || continue
+                try
+                  format(path, BlueStyle(); overwrite=false) || push!(bad, path)
+                catch
+                end
+              end
+            end
+            if !isempty(bad)
+              println("The following files need formatting:")
+              for p in bad; println("  ", p); end
+              write("format_comment.md", join([
+                "### Formatting issues",
+                "",
+                "Thank you for contributing! The following files need formatting:",
+                "",
+                join(["- `" * p * "`" for p in bad], "\n"),
+                "",
+                "To fix, run the following from the repository root:",
+                "",
+                "```bash",
+                "cd <your-local-clone>",
+                "julia -e '\''using JuliaFormatter; format(\".\", BlueStyle())'\''",
+                "```",
+                "",
+                "Then commit and push the changes.",
+              ], "\n"))
+              exit(1)
+            else
+              write("format_comment.md", "### Formatting check passed\n\nThank you for contributing! All files are correctly formatted.")
             end
           '
+
+      - name: Post formatting comment
+        if: always() && github.event_name == 'pull_request'
+        uses: thollander/actions-comment-pull-request@v3
+        with:
+          file-path: format_comment.md
+          comment-tag: formatting
