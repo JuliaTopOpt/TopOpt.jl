@@ -87,13 +87,13 @@ Note: x is the full density vector (after projection if using FixedElementProjec
 Uses the shared compute_element_energy kernel.
 """
 function compute_compliance(
-    cell_comp::Vector{T},grad,cell_dofs,Kes,u,x,penalty,xmin
+    cell_comp::Vector{T}, grad, cell_dofs, Kes, u, x, penalty, xmin
 ) where {T}
     return compute_element_energy(cell_comp, grad, cell_dofs, Kes, u, x, penalty, xmin)
 end
 
 function compute_inner(inner, u1, u2, solver)
-    @unpack elementinfo,u,xmin = solver
+    @unpack elementinfo, u, xmin = solver
     @unpack metadata, Kes = elementinfo
     @unpack cell_dofs = metadata
     penalty = getpenalty(solver)

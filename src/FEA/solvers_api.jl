@@ -301,7 +301,7 @@ end
 # Unified solver call operator
 function (s::GenericFEASolver{T,Physics,Solver})(
     reuse_fact::Bool=false,
-    ::Type{Val{safe}}=Val{false};
+    (::Type{Val{safe}})=Val{false};
     assemble_f=true,
     rhs=assemble_f ? s.globalinfo.f : s.rhs,
     lhs=assemble_f ? s.u : s.lhs,

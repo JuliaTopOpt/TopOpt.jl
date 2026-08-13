@@ -18,8 +18,12 @@ end
 master_issues = Dict(issue_key(i) => i for i in master["issues"])
 pr_issues = Dict(issue_key(i) => i for i in pr["issues"])
 
-new_issues = [i for k in keys(pr_issues) if !haskey(master_issues, k) for i in [pr_issues[k]]]
-fixed_issues = [i for k in keys(master_issues) if !haskey(pr_issues, k) for i in [master_issues[k]]]
+new_issues = [
+    i for k in keys(pr_issues) if !haskey(master_issues, k) for i in [pr_issues[k]]
+]
+fixed_issues = [
+    i for k in keys(master_issues) if !haskey(pr_issues, k) for i in [master_issues[k]]
+]
 
 # Sort by file for readability
 sort!(new_issues; by=i -> i["signature"])
@@ -37,9 +41,14 @@ push!(lines, "### JET Report Comparison")
 push!(lines, "")
 push!(lines, "| | Master | PR | Δ |")
 push!(lines, "|---|---|---|---|")
-push!(lines, "| Total issues | $(master_total) | $(pr_total) | $(pr_total - master_total) |")
+push!(
+    lines, "| Total issues | $(master_total) | $(pr_total) | $(pr_total - master_total) |"
+)
 push!(lines, "| Errors | $(master_errors) | $(pr_errors) | $(pr_errors - master_errors) |")
-push!(lines, "| Warnings | $(master_warnings) | $(pr_warnings) | $(pr_warnings - master_warnings) |")
+push!(
+    lines,
+    "| Warnings | $(master_warnings) | $(pr_warnings) | $(pr_warnings - master_warnings) |",
+)
 push!(lines, "")
 
 if !isempty(new_issues)
@@ -52,7 +61,9 @@ if !isempty(new_issues)
         if length(msg) > 500
             msg = msg[1:500] * "…"
         end
-        push!(lines, "<details><summary>$(i). $(issue["type"]) — $(basename(sig))</summary>")
+        push!(
+            lines, "<details><summary>$(i). $(issue["type"]) — $(basename(sig))</summary>"
+        )
         push!(lines, "")
         push!(lines, "```")
         push!(lines, msg)
@@ -67,7 +78,9 @@ if !isempty(fixed_issues)
     push!(lines, "")
     for (i, issue) in enumerate(fixed_issues)
         sig = issue["signature"]
-        push!(lines, "<details><summary>$(i). $(issue["type"]) — $(basename(sig))</summary>")
+        push!(
+            lines, "<details><summary>$(i). $(issue["type"]) — $(basename(sig))</summary>"
+        )
         push!(lines, "")
         push!(lines, "```")
         msg = issue["message"]
@@ -98,7 +111,10 @@ if full_report
             if length(msg) > 500
                 msg = msg[1:500] * "…"
             end
-            push!(lines, "<details><summary>$(i). $(issue["type"]) — $(basename(sig))</summary>")
+            push!(
+                lines,
+                "<details><summary>$(i). $(issue["type"]) — $(basename(sig))</summary>",
+            )
             push!(lines, "")
             push!(lines, "```")
             push!(lines, msg)
@@ -119,7 +135,10 @@ if full_report
             if length(msg) > 500
                 msg = msg[1:500] * "…"
             end
-            push!(lines, "<details><summary>$(i). $(issue["type"]) — $(basename(sig))</summary>")
+            push!(
+                lines,
+                "<details><summary>$(i). $(issue["type"]) — $(basename(sig))</summary>",
+            )
             push!(lines, "")
             push!(lines, "```")
             push!(lines, msg)

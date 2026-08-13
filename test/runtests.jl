@@ -1,4 +1,4 @@
-using Test,SafeTestsets
+using Test, SafeTestsets
 
 const GROUP = get(ENV, "GROUP", "All")
 
