@@ -26,6 +26,7 @@ DisplacementFun
 StressTensorFun
 ElementStressTensorFun
 von_mises_stress_function
+epsilon_relaxed
 TrussStressFun
 ```
 

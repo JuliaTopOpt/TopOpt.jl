@@ -43,7 +43,7 @@ that all produce the signature feature of stress-constrained design: the
 
 ```{julia}
 #| output: false
-using TopOpt, LinearAlgebra, Printf
+using TopOpt, LinearAlgebra
 using StatsFuns: logsumexp
 ```
 
@@ -124,7 +124,7 @@ function run_chunks(
         options = MMAOptions(; maxiter, tol, keep_best)
         r = optimize(model, alg, x; options)
         x = r.minimizer
-        @printf("%s chunk %d: V=%.3f  constr=%.4f\n", label, j, obj(x), constr(x))
+        println("$label chunk $j: V=$(round(obj(x), digits=3)), constr=$(round(constr(x), digits=4))")
     end
     return x
 end
@@ -223,9 +223,10 @@ function report(label, x)
     srel = σ_rel(filter(PseudoDensities(x)))
     smic = σ_micro(filter(PseudoDensities(x)))
     solid = topo .> 0.5
-    @printf(
-        "%s: V = %.3f, max relaxed σ = %.3f, max microscopic σ (solid elements) = %.3f, σlim = %.3f\n",
-        label, obj(x), maximum(srel), maximum(smic[solid]), σlim
+    println(
+        "$label: V = $(round(obj(x), digits=3)), max relaxed σ = $(round(maximum(srel), digits=3)), " *
+        "max microscopic σ (solid elements) = $(round(maximum(smic[solid]), digits=3)), " *
+        "σlim = $(round(σlim, digits=3))",
     )
     return topo
 end

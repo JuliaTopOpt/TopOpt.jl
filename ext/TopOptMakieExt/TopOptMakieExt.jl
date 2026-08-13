@@ -208,6 +208,23 @@ function TopOpt.visualize(
     given_u = u !== undef
     cloaddict = cloaddict === undef ? getcloaddict(problem) : cloaddict
 
+    # Cairo crashes cryptically on NaN linewidths/coordinates; fail fast with
+    # the actual cause (e.g. a failed optimization returning a NaN minimizer)
+    if topology !== undef
+        all(isfinite, topology) || throw(
+            ArgumentError(
+                "visualize: topology contains non-finite values ($(count(!isfinite, topology)) of $(length(topology))) — the optimization likely failed",
+            ),
+        )
+    end
+    if given_u
+        all(isfinite, u) || throw(
+            ArgumentError(
+                "visualize: u contains non-finite values ($(count(!isfinite, u)) of $(length(u))) — the FEA solve likely failed (e.g. singular stiffness matrix)",
+            ),
+        )
+    end
+
     mesh_cells = mesh.cells
     topology = topology == undef ? ones(T, length(mesh_cells)) : topology
     nodes = Vector{Ferrite.Node}(undef, nnodes)
@@ -450,6 +467,21 @@ function TopOpt.visualize(
     nnodes = Ferrite.getnnodes(problem)
     given_u = u !== undef
     topology = topology == undef ? ones(T, ncells) : topology
+
+    # Cairo crashes cryptically on NaN linewidths; fail fast with the cause
+    # (e.g. a failed optimization returning a NaN minimizer)
+    all(isfinite, topology) || throw(
+        ArgumentError(
+            "visualize: topology contains non-finite values ($(count(!isfinite, topology)) of $(length(topology))) — the optimization likely failed",
+        ),
+    )
+    if given_u
+        all(isfinite, u) || throw(
+            ArgumentError(
+                "visualize: u contains non-finite values ($(count(!isfinite, u)) of $(length(u))) — the FEA solve likely failed",
+            ),
+        )
+    end
 
     fig = Figure()
     if ndim == 2

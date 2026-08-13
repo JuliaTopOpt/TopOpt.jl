@@ -39,6 +39,7 @@ if ACTUAL_GROUP in ("All", "Core_Tests_1")
         include("topopt_problems/test_assemble_functions.jl")
         include("topopt_problems/test_multiload.jl")
         include("topopt_problems/test_pressure.jl")
+        include("topopt_problems/test_visualize.jl")
     end
     @safetestset "Functions" begin
         include("Functions/test_common_fns.jl")

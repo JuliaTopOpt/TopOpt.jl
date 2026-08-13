@@ -57,7 +57,7 @@ Asymmetric temperature BCs (T=100 left, T=0 right), distributed flux from top, a
 ::: {.tutorial-card}
 **[Global Stress Constraints](global_stress.html)**
 
-P-norm stress aggregation (p=5) for gradient-based optimization. Minimizes volume subject to a single global stress constraint.
+Stress-constrained L-bracket with relaxed stress and p-norm/KS/ε-relaxation aggregation. Minimizes volume subject to a global stress constraint, reproducing the classic rounded-corner design.
 :::
 
 ::: {.tutorial-card}
