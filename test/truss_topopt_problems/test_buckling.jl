@@ -99,7 +99,7 @@ gm_ins_dir = joinpath(@__DIR__, "instances", "ground_meshes");
 
 #             assemble_k = AssembleKFun(problem)
 #             element_k = ElementKFun(solver)
-#             truss_element_kσ = TrussElementKσ(problem, solver)
+#             truss_element_kσ = TrussElementKσFun(problem, solver)
 
 #             # reaction force in global coordinate
 #             Fr = solver.globalinfo.K * u1

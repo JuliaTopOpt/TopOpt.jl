@@ -118,7 +118,7 @@ function buckling(
     for (i, cell) in enumerate(celliterator)
         celldofs!(global_dofs, dh, i)
         Kσ_e = Kσs[i]
-        # Apply the same density interpolation as TrussElementKσ. With the
+        # Apply the same density interpolation as TrussElementKσFun. With the
         # default penalty PowerPenaltyFun(1), ρ = density(x^1, xmin) = density(x, xmin).
         ρ_e = (1 - xmin) * vars[i] + xmin
         Kσ_e = ρ_e * Kσ_e

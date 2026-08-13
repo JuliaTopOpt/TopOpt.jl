@@ -53,7 +53,6 @@ export PointLoadCantilever,
     rawmatrix,
     bcmatrix,
     save_mesh,
-    RandomMagnitude,
     RandomMagnitudeFun,
     MultiLoad
 

@@ -58,11 +58,11 @@ comp = ComplianceFun(solver)
 ```{julia}
 #| output: false
 # Interpolation 1: Young's moduli for compliance (penalty=3.0)
-penalty1 = PowerPenalty(3.0)
+penalty1 = PowerPenaltyFun(3.0)
 interp1 = MaterialInterpolationFun(Es, penalty1)
 
 # Interpolation 2: Physical densities for mass constraint (penalty=1.0)
-penalty2 = PowerPenalty(1.0)
+penalty2 = PowerPenaltyFun(1.0)
 interp2 = MaterialInterpolationFun(densities, penalty2)
 ```
 

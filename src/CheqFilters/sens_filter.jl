@@ -1,5 +1,5 @@
 """
-    SensFilter(solver; rmin)
+    SensFilterFun(solver; rmin)
 
 Sensitivity chequerboard filter with radius `rmin`. Smooths the objective
 gradient by weighting each element's sensitivity with the sensitivities of

@@ -1,11 +1,11 @@
 """
-    Displacement(solver::AbstractFEASolver)
+    DisplacementFun(solver::AbstractFEASolver)
 
 Differentiable nodal displacement function. Solves the FEA system and returns
 the displacement vector `u`. Useful for displacement-constrained optimization
 and as input to stress functions.
 
-Construct with `Displacement(solver)`. Call as `u = disp(PseudoDensities(x))`.
+Construct with `DisplacementFun(solver)`. Call as `u = disp(PseudoDensities(x))`.
 
 The adjoint-based gradient solves `K λ = Δ` (reusing the factorization) and
 computes `du/dx_e = -dρ_e/dx_e · u_eᵀ K_e λ`. See [BendsoeSigmund2003](@cite)
@@ -41,12 +41,12 @@ Base.getindex(u::DisplacementResult, i::CartesianIndex) = u.u[i]
 Base.sum(u::DisplacementResult) = sum(u.u)
 
 """
-    Displacement()
+    DisplacementFun(solver)
 
-Construct the Displacement function struct.
+Construct the DisplacementFun function struct.
 """
 function DisplacementFun(solver::AbstractFEASolver; maxfevals=10^8)
-    # Displacement is only valid for structural (LinearElasticity) problems
+    # DisplacementFun is only valid for structural (LinearElasticity) problems
     solver.problem isa StiffnessTopOptProblem || throw(
         ArgumentError(
             "DisplacementFun can only be used with StiffnessTopOptProblem (structural mechanics). Got $(typeof(solver.problem))",

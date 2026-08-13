@@ -7,17 +7,11 @@ function getE end
 function getν end
 
 export AbstractPenalty,
-    PowerPenalty,
     PowerPenaltyFun,
-    RationalPenalty,
     RationalPenaltyFun,
-    SinhPenalty,
     SinhPenaltyFun,
-    HeavisideProjection,
     HeavisideProjectionFun,
-    SigmoidProjection,
     SigmoidProjectionFun,
-    ProjectedPenalty,
     ProjectedPenaltyFun,
     RaggedArray,
     @debug,

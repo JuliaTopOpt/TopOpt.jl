@@ -17,7 +17,7 @@ end
 # For heat transfer: fes is zeros (no body forces), fixedload contains heat source (not penalized)
 # 
 # Note: ρ should be a full density vector (length = nel) with values already accounting for 
-# black (density=1) and white (density=xmin) elements. Use FixedElementProjector to map 
+# black (density=1) and white (density=xmin) elements. Use FixedElementProjectorFun to map 
 # free variables to full densities.
 function assemble!(
     globalinfo::GlobalFEAInfo,

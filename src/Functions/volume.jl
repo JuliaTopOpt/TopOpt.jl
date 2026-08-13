@@ -1,11 +1,11 @@
 """
-    Volume(solver::AbstractFEASolver; fraction=true)
+    VolumeFun(solver::AbstractFEASolver; fraction=true)
 
 Differentiable volume (or volume fraction) function. When `fraction=true`
 (default) returns `V/total_volume`; otherwise returns the absolute volume
 `V = Σ x_e * cellvolume_e`.
 
-Construct with `Volume(solver)`. Call as `vol(PseudoDensities(x))`.
+Construct with `VolumeFun(solver)`. Call as `vol(PseudoDensities(x))`.
 
 The volume constraint is the standard resource constraint in SIMP topology
 optimization; see [BendsoeSigmund2003](@cite) §2.1.
@@ -71,7 +71,7 @@ end
 
 Compute volume: V = Σ x_e * V_e where x_e is density and V_e is element volume.
 
-Note: x is the full density vector (after projection if using FixedElementProjector).
+Note: x is the full density vector (after projection if using FixedElementProjectorFun).
 Black/white elements are handled by the projector - this function receives the
 already-projected densities.
 """

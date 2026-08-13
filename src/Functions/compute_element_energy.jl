@@ -11,7 +11,7 @@ Gradient: dJ/dx_e = -dρ_e/dx_e * u_e^T Ke u_e
 This function is shared between structural compliance and thermal compliance,
 differing only in the physics interpretation (strain energy vs thermal energy).
 
-Note: x is the full density vector (after projection if using FixedElementProjector).
+Note: x is the full density vector (after projection if using FixedElementProjectorFun).
 Black/white elements are handled by the projector - this function receives the
 already-projected densities.
 """

@@ -4,7 +4,7 @@ All the following functions are defined in a differentiable way and you can use 
 
 ## Naming convention
 
-Every differentiable callable struct type uses a `Fun` suffix in its canonical name (e.g. `VolumeFun`, `ComplianceFun`, `DensityFilterFun`, `PowerPenaltyFun`). This distinguishes them from plotting types in Makie.jl (such as `Makie.Volume`) and avoids name collisions when both `TopOpt` and a Makie backend are loaded in the same session. Each `Fun`-suffixed name also has a non-suffixed alias (e.g. `Volume`, `Compliance`) for backward compatibility, but the `Fun`-suffixed form is preferred in new code.
+Every differentiable callable struct type uses a `Fun` suffix in its name (e.g. `VolumeFun`, `ComplianceFun`, `DensityFilterFun`, `PowerPenaltyFun`). This distinguishes them from plotting types in Makie.jl (such as `Makie.Volume`) and avoids name collisions when both `TopOpt` and a Makie backend are loaded in the same session.
 
 ## Density filter
   - **Function name**: `DensityFilterFun`
@@ -80,7 +80,7 @@ optimization. The workflow is:
    design, then `AssembleKFun` to assemble them into the global stiffness matrix
    `K`. Apply Dirichlet BCs with `apply_boundary_with_meandiag!` (preserves
    non-singularity).
-3. Use `TrussElementKσ` (truss) or `get_Kσs` (continuum) to compute per-element
+3. Use `TrussElementKσFun` (truss) or `get_Kσs` (continuum) to compute per-element
    geometric stiffness matrices `Kσs` from `u` and the design, then `AssembleKFun`
    to assemble them into `Kσ`. Apply Dirichlet BCs with
    `apply_boundary_with_zerodiag!`.
@@ -124,11 +124,11 @@ end-to-end demonstration.
   - **Usage example**: `Kout = apply_boundary_with_meandiag!(Kin, problem.ch)`
 
 ## Macroscopic truss element stress/geometric stiffness matrices
-  - **Function name**: `TrussElementKσ`
+  - **Function name**: `TrussElementKσFun`
   - **Description**: A function which computes the element-wise stress/geometric stiffness matrices for truss domains. This is useful in buckling-constrained truss optimization.
   - **Input(s)**: (1) The nodal displacement vector `u::Vector{<:Real}` computed from the `DisplacementFun` function, and (2) the filtered, penalized, optionally projected and interpolated design `ρ::Vector{<:Real}`.
   - **Output**: The macroscopic element-wise stress/geometric stiffness matrices, `Kσs::Vector{<:Matrix{<:Real}}`. This is a vector of symmetric matrices, one matrix for each element.
-  - **Constructor example**: `Kσsf = TrussElementKσ(problem, solver)`
+  - **Constructor example**: `Kσsf = TrussElementKσFun(problem, solver)`
   - **Usage example**: `Kσs = Kσsf(u, ρ)`
 
 ## Neural network re-parameterization

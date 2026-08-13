@@ -71,7 +71,7 @@ densities to the power of 3.0, strongly penalizing intermediate densities and
 pushing the solution toward 0/1 (void/solid):
 
 ```{julia}
-penalty = PowerPenalty(3.0)  # ρ³ penalty
+penalty = PowerPenaltyFun(3.0)  # ρ³ penalty
 solver = FEASolver(DirectSolver, problem; xmin=xmin, penalty=penalty)
 ```
 
@@ -90,7 +90,7 @@ filter = DensityFilterFun(solver; rmin=rmin)  # smooths density field
 obj = x -> comp(filter(PseudoDensities(x)))  # compose: filter → compliance
 ```
 
-The `DensityFilter` applies a convolution with a hat kernel over elements within
+The `DensityFilterFun` applies a convolution with a hat kernel over elements within
 the filter radius. This ensures that small changes in design variables produce
 smooth changes in the filtered densities, enabling gradient-based optimization.
 

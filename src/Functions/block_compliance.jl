@@ -1,5 +1,5 @@
 """
-    BlockCompliance(solver, scenarios)
+    BlockComplianceFun(solver, scenarios)
 
 Per-load-case compliance vector for multi-load problems. Returns a vector of
 compliance values, one per load case.
@@ -26,7 +26,7 @@ function BlockComplianceFun(
     decay=1.0,
     kwargs...,
 )
-    # BlockCompliance is only valid for structural (LinearElasticity) problems
+    # BlockComplianceFun is only valid for structural (LinearElasticity) problems
     solver.problem isa StiffnessTopOptProblem || throw(
         ArgumentError(
             "BlockComplianceFun can only be used with StiffnessTopOptProblem (structural mechanics). Got $(typeof(solver.problem))",

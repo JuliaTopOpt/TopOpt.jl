@@ -1,9 +1,9 @@
 """
-    Compliance(solver::AbstractFEASolver)
+    ComplianceFun(solver::AbstractFEASolver)
 
 Differentiable structural compliance objective `J = Fᵀ U = Σ ρ_e u_eᵀ K_e u_e`.
 
-Construct with `Compliance(solver)`. Call as `comp(PseudoDensities(x))` where `x`
+Construct with `ComplianceFun(solver)`. Call as `comp(PseudoDensities(x))` where `x`
 is the filtered, optionally projected design. The closed-form gradient
 `dJ/dx_e = -u_eᵀ K_e u_e · dρ_e/dx_e` is propagated via a `ChainRulesCore.rrule`.
 
@@ -83,7 +83,7 @@ where ρ_e is the penalized density (material stiffness).
 
 Gradient: dJ/dx_e = -u_e^T Ke u_e * dρ_e/dx_e
 
-Note: x is the full density vector (after projection if using FixedElementProjector).
+Note: x is the full density vector (after projection if using FixedElementProjectorFun).
 Uses the shared compute_element_energy kernel.
 """
 function compute_compliance(
