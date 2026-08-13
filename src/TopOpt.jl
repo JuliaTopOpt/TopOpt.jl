@@ -62,9 +62,10 @@ end
 
 Base.length(x::PseudoDensities) = length(x.x)
 Base.size(x::PseudoDensities, i...) = size(x.x, i...)
-Base.getindex(x::PseudoDensities, i...) = x.x[i...]
+Base.getindex(x::PseudoDensities, i::Integer...) = x.x[i...]
+Base.getindex(x::PseudoDensities, i::CartesianIndex) = x.x[i]
 Base.sum(x::PseudoDensities) = sum(x.x)
-LinearAlgebra.dot(x::PseudoDensities, weights::AbstractArray) = dot(x.x, weights)
+LinearAlgebra.dot(x::PseudoDensities, weights::AbstractVector) = dot(x.x, weights)
 
 export PseudoDensities
 

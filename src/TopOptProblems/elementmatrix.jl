@@ -53,7 +53,8 @@ end
 end
 
 Base.size(m::ElementMatrix) = size(m.matrix)
-Base.getindex(m::ElementMatrix, i...) = m.matrix[i...]
+Base.getindex(m::ElementMatrix, i::Integer...) = m.matrix[i...]
+Base.getindex(m::ElementMatrix, i::CartesianIndex) = m.matrix[i]
 
 """
     convert(::Type{Vector{<:ElementMatrix}}, Kes::Vector{<:AbstractMatrix})

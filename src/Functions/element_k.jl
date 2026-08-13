@@ -3,7 +3,8 @@ struct ElementStiffnessMatrix{T<:Real,M<:AbstractMatrix{T}} <: AbstractMatrix{T}
 end
 Base.length(x::ElementStiffnessMatrix) = length(x.Ke)
 Base.size(x::ElementStiffnessMatrix, i...) = size(x.Ke, i...)
-Base.getindex(x::ElementStiffnessMatrix, i...) = x.Ke[i...]
+Base.getindex(x::ElementStiffnessMatrix, i::Integer...) = x.Ke[i...]
+Base.getindex(x::ElementStiffnessMatrix, i::CartesianIndex) = x.Ke[i]
 Base.:*(x::ElementStiffnessMatrix, y::Number) = ElementStiffnessMatrix(x.Ke * y)
 
 """
@@ -72,11 +73,8 @@ end
 function (ek::ElementKFun{T})(x::PseudoDensities) where {T}
     @unpack solver, Kes = ek
     ncells = getncells(solver.problem.ch.dh.grid)
-    ncells == length(x) || throw(
-        DimensionMismatch(
-            "ElementKFun: expected $(ncells) cells, got $(length(x))",
-        ),
-    )
+    ncells == length(x) ||
+        throw(DimensionMismatch("ElementKFun: expected $(ncells) cells, got $(length(x))"))
     for ci in eachindex(x)
         Kes[ci] = ek(x.x[ci], ci)
     end
@@ -88,7 +86,7 @@ function ChainRulesCore.rrule(ek::ElementKFun, x::PseudoDensities)
     ncells = getncells(solver.problem.ch.dh.grid)
     ncells == length(x.x) || throw(
         DimensionMismatch(
-            "ElementKFun rrule: expected $(ncells) cells, got $(length(x.x))",
+            "ElementKFun rrule: expected $(ncells) cells, got $(length(x.x))"
         ),
     )
     Kes = ek(x)

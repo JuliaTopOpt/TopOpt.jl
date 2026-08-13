@@ -12,9 +12,12 @@ using Aqua, TopOpt
 # dependencies used only in the TopOptMakieExt extension. Aqua does not
 # understand PackageExtensions and incorrectly flags them as stale.
 #
-# deps_compat is disabled: stdlib packages (LinearAlgebra, Pkg, Random,
-# SparseArrays, Test) do not need compat entries — they are always available
-# at the running Julia version.
+# ambiguities is disabled: 11 method ambiguities remain between TopOpt's custom
+# `dot` methods (needed for correctness — `adjoint(PseudoDensities)` returns
+# `adjoint(x.x)`, not a `PseudoDensities`) and third-party vector types from
+# SparseArrays, ReverseDiff, and FillArrays. These are external ambiguities
+# that only arise when those packages are loaded alongside TopOpt, and cannot
+# be resolved without adding explicit methods for each third-party type.
 #
 # piracies is disabled: the `similar` method for `PseudoDensities` broadcast
 # style extends `Base.similar` for `Base.Broadcast.Broadcasted`, which is
@@ -27,7 +30,6 @@ Aqua.test_all(
     ambiguities=false,
     unbound_args=false,
     stale_deps=false,
-    deps_compat=false,
     piracies=false,
     persistent_tasks=false,
 )

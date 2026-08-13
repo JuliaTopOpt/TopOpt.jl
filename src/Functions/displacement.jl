@@ -36,9 +36,10 @@ end
 
 Base.length(u::DisplacementResult) = length(u.u)
 Base.size(u::DisplacementResult, i...) = size(u.u, i...)
-Base.getindex(u::DisplacementResult, i...) = u.u[i...]
+Base.getindex(u::DisplacementResult, i::Integer...) = u.u[i...]
+Base.getindex(u::DisplacementResult, i::CartesianIndex) = u.u[i]
 Base.sum(u::DisplacementResult) = sum(u.u)
-LinearAlgebra.dot(u::DisplacementResult, weights::AbstractArray) = dot(u.u, weights)
+LinearAlgebra.dot(u::DisplacementResult, weights::AbstractVector) = dot(u.u, weights)
 
 """
     Displacement()
