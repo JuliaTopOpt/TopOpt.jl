@@ -84,7 +84,7 @@ function compute_exact_ec(ec, x, grad, F, n)
     T = eltype(grad)
     obj = zero(T)
     grad .= 0
-    for i in 1:size(F, 2)
+    for i in axes(F, 2)
         @views solver.rhs .= F[:, i]
         solver(; assemble_f=false, reuse_fact=(i > 1))
         u = solver.lhs

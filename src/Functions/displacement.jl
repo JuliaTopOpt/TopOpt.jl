@@ -103,7 +103,7 @@ function ChainRulesCore.rrule(dp::DisplacementFun, x::PseudoDensities)
         end
         solver(; reuse_fact=true, assemble_f=false)
         dudx_tmp .= 0
-        for e in 1:length(x.x)
+        for e in eachindex(x.x)
             _, dρe = get_ρ_dρ(x.x[e], penalty, xmin)
             celldofs!(global_dofs, dh, e)
             Keu = bcmatrix(Kes[e]) * u.u[global_dofs]

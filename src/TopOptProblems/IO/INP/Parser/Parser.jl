@@ -99,7 +99,7 @@ function extract_inp(filepath_with_ext)
             celltype = String(m[1])
             cellsetname = String(m[2])
             cells, offset, line = extract_cells(file)
-            cellsets[cellsetname] = collect(1:length(cells))
+            cellsets[cellsetname] = collect(eachindex(cells))
             continue
         end
         m = match(nodeset_heading_pattern, line)

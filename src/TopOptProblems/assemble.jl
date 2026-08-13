@@ -113,7 +113,7 @@ function assemble_f!(
 end
 
 function update_f!(f::Vector, fes, fixedload, dof_cells, ρ, penalty, xmin)
-    @inbounds for dofidx in 1:length(f)
+    @inbounds for dofidx in eachindex(f)
         f[dofidx] = fixedload[dofidx]
         r = dof_cells.offsets[dofidx]:(dof_cells.offsets[dofidx + 1] - 1)
         for i in r
@@ -138,7 +138,7 @@ function assemble_f!(f::AbstractVector, problem, dloads)
 end
 
 function update_f!(f::Vector, dof_cells, dloads)
-    for dofidx in 1:length(f)
+    for dofidx in eachindex(f)
         r = dof_cells.offsets[dofidx]:(dof_cells.offsets[dofidx + 1] - 1)
         for i in r
             cellidx, localidx = dof_cells.values[i]

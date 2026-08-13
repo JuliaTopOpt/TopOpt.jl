@@ -105,8 +105,8 @@ function inp_to_ferrite(problem::InpContent)
     ch = ConstraintHandler(dh)
     for k in keys(problem.nodedbcs)
         vec = problem.nodedbcs[k]
-        f(x, t) = [vec[i][2] for i in 1:length(vec)]
-        components = [vec[i][1] for i in 1:length(vec)]
+        f(x, t) = [vec[i][2] for i in eachindex(vec)]
+        components = [vec[i][1] for i in eachindex(vec)]
         dbc = Dirichlet(:u, getnodeset(grid, k), f, components)
         add!(ch, dbc)
     end

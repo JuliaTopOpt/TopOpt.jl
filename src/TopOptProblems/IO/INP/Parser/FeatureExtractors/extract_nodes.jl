@@ -18,8 +18,11 @@ function extract_nodes(file, (::Type{TF})=Float64, (::Type{TI})=Int) where {TF,T
 end
 
 function _extract_nodes!(
-    node_coords::AbstractVector{NTuple{dim,TF}}, file, prev_node_idx::TI
-) where {dim,TF,TI}
+    node_coords::AbstractVector{<:NTuple}, file, prev_node_idx
+)
+    dim = length(first(node_coords))
+    TF = eltype(first(node_coords))
+    TI = typeof(prev_node_idx)
     if dim === 2
         pattern = r"(\d+)\s*,\s*(-?\d+\.?\d*(e[-\+]?\d*)?)\s*,\s*(-?\d+\.?\d*(e[-\+]?\d*)?)"
     elseif dim === 3

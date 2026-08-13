@@ -75,7 +75,7 @@ function Base.convert(
             element_Kes[cellid] = new_Ke
         end
     end
-    for e in 1:length(element_Kes)
+    for e in eachindex(element_Kes)
         Ke = element_Kes[e]
         matrix = Kes[e]
         Ke = @set Ke.matrix = matrix
@@ -98,7 +98,7 @@ function Base.convert(
             element_Kes[cellid] = Symmetric(new_Ke)
         end
     end
-    for e in 1:length(element_Kes)
+    for e in eachindex(element_Kes)
         Ke = element_Kes[e].data
         matrix = Kes[e].data
         Ke = @set Ke.matrix = matrix

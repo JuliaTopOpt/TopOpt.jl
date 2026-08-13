@@ -94,7 +94,8 @@ using Ferrite: getncells
 export getncells
 
 using ForwardDiff, IterativeSolvers#, Preconditioners
-@reexport using VTKDataTypes
+using VTKDataTypes
+using VTKDataTypes: VTKUnstructuredData
 
 const DEBUG = Base.RefValue(false)
 
@@ -116,7 +117,6 @@ using .Algorithms
 
 export TopOpt,
     simulate,
-    TopOptTrace,
     SensFilter,
     SensFilterFun,
     DensityFilter,

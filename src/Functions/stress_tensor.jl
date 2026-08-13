@@ -43,7 +43,7 @@ function ChainRulesCore.rrule(::typeof(reinit!), st::StressTensorFun, cellidx)
 end
 
 function (f::StressTensorFun)(dofs::DisplacementResult)
-    return map(1:length(f.cells)) do cellidx
+    return map(eachindex(f.cells)) do cellidx
         cf = f[cellidx]
         return cf(dofs)
     end

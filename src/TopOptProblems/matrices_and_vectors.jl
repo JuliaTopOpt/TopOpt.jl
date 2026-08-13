@@ -236,7 +236,7 @@ function _make_dloads(fes, problem::StiffnessTopOptProblem, facetvalues)
     dloads = deepcopy(fes)
     eltype(dloads) <: StaticArray ||
         throw("Expected dloads to be StaticArrays for stiffness problems.")
-    for i in 1:length(dloads)
+    for i in eachindex(dloads)
         if eltype(dloads) <: SArray
             dloads[i] = zero(eltype(dloads))
         else
@@ -285,7 +285,7 @@ function _make_dloads(fes, problem::HeatTransferTopOptProblem, facetvalues)
     T = floattype(problem)
     # Initialize with zeros
     dloads = deepcopy(fes)
-    for i in 1:length(dloads)
+    for i in eachindex(dloads)
         if eltype(dloads) <: SArray
             dloads[i] = zero(eltype(dloads))
         else

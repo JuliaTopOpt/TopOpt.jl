@@ -70,7 +70,7 @@ function (ts::TrussStressFun{T})(x::PseudoDensities) where {T}
     u = u_fn(x)
     As = getA(problem)
     @unpack Kes = solver.elementinfo
-    for e in 1:length(x)
+    for e in eachindex(x)
         # Ke = R' * K_local * R
         # F = R * (R' * K_local * R) * u
         celldofs!(global_dofs, dh, e)
@@ -106,7 +106,7 @@ function ChainRulesCore.rrule(ts::TrussStressFun{T}, x::PseudoDensities) where {
         # σ_e = -(R_e · Ke_e · u_e)[1] / A_e
         # dσ_e/du[global_dofs] = -(R_e · Ke_e)[1, :] / A_e
         adj_rhs = zeros(T, length(u.u))
-        for e in 1:length(x.x)
+        for e in eachindex(x.x)
             celldofs!(global_dofs, dh, e)
             Ke = rawmatrix(Kes[e])
             grad_u = (transf_matrices[e] * Ke)[1, :] / As[e]
@@ -124,7 +124,7 @@ function ChainRulesCore.rrule(ts::TrussStressFun{T}, x::PseudoDensities) where {
         #   2. Through u: Σ_e Δ_e * (dσ_e/du · du/dx_j)
         #      du/dx_j = -K⁻¹ · dρ/dx · Ke_0_j · u
         #      => adjoint term = -dρ/dx * dot(Ke_0_j · u_j, λ_j)
-        for j in 1:length(x.x)
+        for j in eachindex(x.x)
             _, dρ_dx = get_ρ_dρ(x.x[j], penalty, xmin)
             celldofs!(global_dofs, dh, j)
             Ke_0_u = rawmatrix(Kes[j]) * u.u[global_dofs]

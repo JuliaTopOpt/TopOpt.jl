@@ -87,11 +87,11 @@ function mul!(y::TV, A::MatrixFreeOperator, x::TV) where {TV<:AbstractVector}
         xes[i] = px * (bcmatrix(Kes[i]).data * xe)
     end
 
-    for i in 1:length(fixed_dofs)
+    for i in eachindex(fixed_dofs)
         dof = fixed_dofs[i]
         y[dof] = meandiag * x[dof]
     end
-    for i in 1:length(free_dofs)
+    for i in eachindex(free_dofs)
         dof = free_dofs[i]
         yi = zero(T)
         r = dof_cells.offsets[dof]:(dof_cells.offsets[dof + 1] - 1)

@@ -113,13 +113,13 @@ function (b::BESO)(x0=copy(b.comp.solver.vars); black=BitVector(), white=BitVect
     end
 
     # Initialize the topology (work with full design variables)
-    for i in 1:length(topology)
+    for i in eachindex(topology)
         topology[i] = round(x0[i])
         vars[i] = topology[i]
     end
 
     # Initialize black elements to 1 (solid) and white elements to 0 (void)
-    @inbounds for i in 1:length(topology)
+    @inbounds for i in eachindex(topology)
         if !isempty(black) && black[i]
             topology[i] = T(1)
             vars[i] = T(1)
@@ -155,7 +155,7 @@ function (b::BESO)(x0=copy(b.comp.solver.vars); black=BitVector(), white=BitVect
         l1, l2 = minimum(sens), maximum(sens)
         while (l2 - l1) / l2 > sens_tol
             th = (l1 + l2) / 2
-            for i in 1:length(topology)
+            for i in eachindex(topology)
                 # Skip updating black and white elements
                 if !isempty(black) && black[i]
                     continue

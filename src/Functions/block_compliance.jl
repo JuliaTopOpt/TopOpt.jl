@@ -27,7 +27,11 @@ function BlockComplianceFun(
     kwargs...,
 )
     # BlockCompliance is only valid for structural (LinearElasticity) problems
-    @assert solver.problem isa StiffnessTopOptProblem "BlockComplianceFun can only be used with StiffnessTopOptProblem (structural mechanics). Got $(typeof(solver.problem))"
+    solver.problem isa StiffnessTopOptProblem || throw(
+        ArgumentError(
+            "BlockComplianceFun can only be used with StiffnessTopOptProblem (structural mechanics). Got $(typeof(solver.problem))",
+        ),
+    )
     comp = ComplianceFun(solver; kwargs...)
     if method == :exact
         method = ExactDiagonal(problem.F, length(comp.grad))
@@ -100,7 +104,7 @@ function compute_jtvp!_bc(out, bc, method::ExactDiagonal, w)
     @unpack Y, temp = method
     @unpack solver = bc.compliance
     out .= 0
-    for i in 1:size(Y, 2)
+    for i in axes(Y, 2)
         temp .= 0
         if w[i] != 0
             @views compute_inner(temp, Y[:, i], Y[:, i], solver)
@@ -118,7 +122,7 @@ function compute_exact_svd_bc(bc, F, US, V, Q, Y)
     @unpack solver = compliance
     raw_val .= 0
     solver(; assemble_f=false, rhs=US, lhs=Q)
-    for i in 1:length(raw_val)
+    for i in eachindex(raw_val)
         raw_val[i] = (F[:, i]' * Q) * V[i, :]
     end
     return raw_val

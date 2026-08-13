@@ -64,8 +64,8 @@ Returns
 function get_dof_cells_matrix(dh, cell_dofs)
     dof_cells_vecofvecs = [Vector{Tuple{Int,Int}}() for i in 1:ndofs(dh)]
     l = 0
-    for cellidx in 1:size(cell_dofs, 2)
-        for localidx in 1:size(cell_dofs, 1)
+    for cellidx in axes(cell_dofs, 2)
+        for localidx in axes(cell_dofs, 1)
             dofidx = cell_dofs[localidx, cellidx]
             push!(dof_cells_vecofvecs[dofidx], (cellidx, localidx))
             l += 1

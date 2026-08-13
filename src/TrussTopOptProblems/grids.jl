@@ -41,7 +41,7 @@ function TrussGrid(
     elseif crosssecs isa TrussFEACrossSec
         crosssecs = [convert(TrussFEACrossSec{T}, crosssecs) for i in 1:ncells]
     else
-        error("Invalid crossecs: $(crossecs)")
+        error("Invalid crosssecs: $(crosssecs)")
     end
     return TrussGrid(grid, crosssecs)
 end
@@ -59,7 +59,7 @@ function TrussGrid(
     elseif crosssecs isa TrussFEACrossSec
         crosssecs = [convert(TrussFEACrossSec{T}, crosssecs) for i in 1:ncells]
     else
-        error("Invalid crossecs: $(crossecs)")
+        error("Invalid crosssecs: $(crosssecs)")
     end
     return TrussGrid(grid, crosssecs)
 end

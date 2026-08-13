@@ -28,7 +28,7 @@ gm_ins_dir = joinpath(@__DIR__, "..", "truss_topopt_problems", "instances", "gro
         grad3 = FDM.grad(central_fdm(5, 1), f, Kes)[1]
         @test val1 == val2
         @test norm(grad1 - grad2) == 0
-        map(1:length(grad2)) do i
+        map(eachindex(grad2)) do i
             g1 = grad2[i]
             _g2 = grad3[i]
             g2 = (_g2' + _g2) / 2
@@ -58,7 +58,7 @@ end
         vs = [rand(T, k, k) for i in 1:N]
         f = x -> begin
             Kes = ek(PseudoDensities(x))
-            sum([sum(Kes[i] * vs[i]) for i in 1:length(x)])
+            sum([sum(Kes[i] * vs[i]) for i in eachindex(x)])
         end
 
         x = clamp.(rand(prod(nels)), 0.1, 1.0)
@@ -108,7 +108,7 @@ end
         f =
             x -> begin
                 Keσs = esigk(TopOpt.Functions.DisplacementResult(u), PseudoDensities(x))
-                sum([sum(Keσs[i] * vs[i]) for i in 1:length(x)])
+                sum([sum(Keσs[i] * vs[i]) for i in eachindex(x)])
             end
 
         x = clamp.(rand(nels), 0.1, 1.0)

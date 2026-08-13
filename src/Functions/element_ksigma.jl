@@ -113,7 +113,7 @@ function (eksig::TrussElementKσFun)(u::DisplacementResult, x::PseudoDensities)
     dh = problem.ch.dh
     @assert getncells(dh.grid) == length(x.x)
     @assert ndofs(dh) == length(u.u)
-    for ci in 1:length(x.x)
+    for ci in eachindex(x.x)
         celldofs!(global_dofs, dh, ci)
         # Apply the same penalty/interpolation as ElementK and the stiffness assembly
         ρ_e, _ = get_ρ_dρ(x.x[ci], penalty, xmin)
@@ -132,7 +132,7 @@ function ChainRulesCore.rrule(
         Δ = ChainRulesCore.unthunk(Δ)
         Δu = zeros(T, size(u.u))
         Δx = zeros(T, size(x.x))
-        for ci in 1:length(x.x)
+        for ci in eachindex(x.x)
             celldofs!(global_dofs, dh, ci)
             # Jacobian with respect to (u_e, ρ_e)
             function vec_eksig_fn(uρ_vec)

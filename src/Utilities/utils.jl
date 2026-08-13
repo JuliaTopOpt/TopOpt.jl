@@ -14,21 +14,22 @@ function RaggedArray(vv::Vector{Vector{T}}) where {T}
 end
 
 function Base.getindex(ra::RaggedArray, i)
-    @assert 1 <= i < length(ra.offsets)
+    1 <= i < length(ra.offsets) || throw(BoundsError(ra, i))
     r = ra.offsets[i]:(ra.offsets[i + 1] - 1)
-    @assert 1 <= r.start && r.stop <= length(ra.values)
+    1 <= r.start && r.stop <= length(ra.values) ||
+        throw(BoundsError(ra, (i, r)))
     return @view ra.values[r]
 end
 function Base.getindex(ra::RaggedArray, i, j)
-    @assert 1 <= j < length(ra.offsets)
+    1 <= j < length(ra.offsets) || throw(BoundsError(ra, j))
     r = ra.offsets[j]:(ra.offsets[j + 1] - 1)
-    @assert 1 <= i <= length(r)
+    1 <= i <= length(r) || throw(BoundsError(ra, (i, j)))
     return ra.values[r[i]]
 end
 function Base.setindex!(ra::RaggedArray, v, i, j)
-    @assert 1 <= j < length(ra.offsets)
+    1 <= j < length(ra.offsets) || throw(BoundsError(ra, j))
     r = ra.offsets[j]:(ra.offsets[j + 1] - 1)
-    @assert 1 <= i <= length(r)
+    1 <= i <= length(r) || throw(BoundsError(ra, (i, j)))
     return ra.values[r[i]] = v
 end
 
@@ -37,8 +38,8 @@ PoissonRatio(p) = getν(p)
 
 function compliance(Ke, u, dofs)
     comp = zero(eltype(u))
-    for i in 1:length(dofs)
-        for j in 1:length(dofs)
+    for i in eachindex(dofs)
+        for j in eachindex(dofs)
             comp += u[dofs[i]] * Ke[i, j] * u[dofs[j]]
         end
     end
@@ -47,7 +48,7 @@ end
 
 function meandiag(K::AbstractMatrix)
     z = zero(eltype(K))
-    for i in 1:size(K, 1)
+    for i in axes(K, 1)
         z += abs(K[i, i])
     end
     return z / size(K, 1)

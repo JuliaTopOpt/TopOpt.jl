@@ -1,17 +1,17 @@
 module Functions
 
-using ..TopOpt: dim, TopOpt, PENALTY_BEFORE_INTERPOLATION, PseudoDensities
+using ..TopOpt: TopOpt, PENALTY_BEFORE_INTERPOLATION, PseudoDensities
 using ..TopOptProblems, ..TrussTopOptProblems
 using ..TopOptProblems: initialize_K, getdh
 using ..FEA, ..CheqFilters
 using ..Utilities, ForwardDiff, LinearAlgebra
+using ..Utilities: get_ρ, get_ρ_dρ
 using ..TrussTopOptProblems: getA, compute_local_axes
 using IterativeSolvers: cg!
 using Preconditioners: UpdatePreconditioner!
 
 using Parameters: @unpack
-using TimerOutputs, Ferrite, StaticArrays, StatsFuns
-using SparseArrays, Statistics, ChainRulesCore, Zygote
+using Ferrite, StaticArrays, SparseArrays, Statistics, ChainRulesCore
 using Nonconvex: Nonconvex
 using DifferentiationInterface
 const DI = DifferentiationInterface
@@ -22,11 +22,7 @@ export VolumeFun,
     MeanComplianceFun,
     BlockComplianceFun,
     AbstractFunction,
-    getfevals,
-    getmaxfevals,
-    maxedfevals,
     von_mises_stress_function,
-    project,
     generate_scenarios,
     hutch_rand!,
     hadamard!,
@@ -55,11 +51,8 @@ export VolumeFun,
     get_free_variables,
     get_free_variable_count
 
-const to = TimerOutput()
-
 abstract type AbstractFunction{T} <: Nonconvex.NonconvexCore.AbstractFunction end
 
-include("function_utils.jl")
 include("compliance.jl")
 include("displacement.jl")
 include("volume.jl")

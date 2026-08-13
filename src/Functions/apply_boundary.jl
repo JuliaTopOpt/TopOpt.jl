@@ -10,7 +10,7 @@ https://github.com/JuliaTopOpt/TopOpt.jl/wiki/Applying-boundary-conditions-to-th
 function apply_boundary_with_zerodiag!(Kσ, ch)
     T = eltype(Kσ)
     Ferrite.apply!(Kσ, T[], ch, true)
-    for i in 1:length(ch.prescribed_dofs)
+    for i in eachindex(ch.prescribed_dofs)
         d = ch.prescribed_dofs[i]
         Kσ[d, d] = zero(T)
     end
@@ -107,13 +107,13 @@ function ChainRulesCore.rrule(::typeof(apply_boundary_with_meandiag!), K, ch)
     function pullback_fn(Δ)
         Δ = ChainRulesCore.unthunk(Δ)
         Δ_ch_diagsum = zero(eltype(K))
-        for i in 1:length(ch.prescribed_dofs)
+    for i in eachindex(ch.prescribed_dofs)
             d = ch.prescribed_dofs[i]
             Δ_ch_diagsum += Δ[d, d]
         end
         ΔK = project_to(Δ)
         apply_boundary_with_zerodiag!(ΔK, ch)
-        for i in 1:size(K, 1)
+        for i in axes(K, 1)
             ΔK[i, i] += Δ_ch_diagsum * jac_meandiag[i]
         end
         return NoTangent(), ΔK, NoTangent()

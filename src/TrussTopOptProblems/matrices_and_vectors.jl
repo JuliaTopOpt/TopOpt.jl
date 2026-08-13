@@ -243,7 +243,7 @@ function truss_reinit!(
     @assert length(x) == n_geom_basefuncs
     isa(cv, CellVectorValues) && (n_func_basefuncs *= xdim)
 
-    @inbounds for i in 1:length(cv.qr_weights)
+    @inbounds for i in eachindex(cv.qr_weights)
         w = cv.qr_weights[i]
         dxdξ = zero(Tensor{1,xdim})
         for j in 1:n_geom_basefuncs
