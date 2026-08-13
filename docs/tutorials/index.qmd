@@ -92,6 +92,20 @@ Softmax parametrization for distributing 3+ candidate materials with mass constr
 6-layer MLP with Adam optimizer and continuation on penalty and constraint aggregation weight.
 :::
 
+## Truss optimization
+
+::: {.tutorial-card}
+**[Truss Topology Optimization](truss.html)**
+
+Compliance minimization on bar structures with JSON-defined geometry, power-law penalization, and MMA87 optimizer.
+:::
+
+::: {.tutorial-card}
+**[Mixed-Integer Truss Optimization](mixed_integer_truss.html)**
+
+Binary (0/1) truss design via Juniper.jl branch-and-bound with IPOPT relaxation — crisp layouts with no intermediate densities.
+:::
+
 ## Problem types
 
 ::: {.tutorial-card}
