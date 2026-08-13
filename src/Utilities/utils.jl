@@ -16,8 +16,7 @@ end
 function Base.getindex(ra::RaggedArray, i)
     1 <= i < length(ra.offsets) || throw(BoundsError(ra, i))
     r = ra.offsets[i]:(ra.offsets[i + 1] - 1)
-    1 <= r.start && r.stop <= length(ra.values) ||
-        throw(BoundsError(ra, (i, r)))
+    1 <= r.start && r.stop <= length(ra.values) || throw(BoundsError(ra, (i, r)))
     return @view ra.values[r]
 end
 function Base.getindex(ra::RaggedArray, i, j)

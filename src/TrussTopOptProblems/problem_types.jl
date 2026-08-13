@@ -49,7 +49,11 @@ function TrussProblem(
         truss_grid = TrussGrid(node_points, elements; crosssecs)
         geom_order = 1
     else
-        throw(ArgumentError("TrussProblem: cell type :$CellType not implemented (only :Linear supported)"))
+        throw(
+            ArgumentError(
+                "TrussProblem: cell type :$CellType not implemented (only :Linear supported)",
+            ),
+        )
     end
     # reference domain dimension for a line element
     ξdim = 1
@@ -58,7 +62,7 @@ function TrussProblem(
     if mats isa Vector
         length(mats) == ncells || throw(
             DimensionMismatch(
-                "TrussProblem: expected $(ncells) materials, got $(length(mats))",
+                "TrussProblem: expected $(ncells) materials, got $(length(mats))"
             ),
         )
         mats = convert(Vector{TrussFEAMaterial{T}}, mats)
@@ -102,7 +106,11 @@ function TrussProblem(
         add!(dh, :u, ip^xdim)
     else
         # TODO truss 2-order
-        throw(ArgumentError("TrussProblem: quadratic elements not implemented for truss problems"))
+        throw(
+            ArgumentError(
+                "TrussProblem: quadratic elements not implemented for truss problems"
+            ),
+        )
         # ip = Lagrange{2, RefCube, 2}()
         # add!(dh, :u, ip^xdim)
     end

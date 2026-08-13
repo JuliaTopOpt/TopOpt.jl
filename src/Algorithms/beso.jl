@@ -103,19 +103,16 @@ function (b::BESO)(x0=copy(b.comp.solver.vars); black=BitVector(), white=BitVect
 
     # Validate black and white vectors
     if !isempty(black)
-        length(black) == nel || throw(
-            DimensionMismatch("black must have length $nel (got $(length(black)))"),
-        )
+        length(black) == nel ||
+            throw(DimensionMismatch("black must have length $nel (got $(length(black)))"))
     end
     if !isempty(white)
-        length(white) == nel || throw(
-            DimensionMismatch("white must have length $nel (got $(length(white)))"),
-        )
+        length(white) == nel ||
+            throw(DimensionMismatch("white must have length $nel (got $(length(white)))"))
     end
     if !isempty(black) && !isempty(white)
-        any(black .& white) && throw(
-            ArgumentError("elements cannot be both black and white"),
-        )
+        any(black .& white) &&
+            throw(ArgumentError("elements cannot be both black and white"))
     end
 
     # Initialize the topology (work with full design variables)

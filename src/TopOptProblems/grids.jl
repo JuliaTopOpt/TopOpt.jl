@@ -130,10 +130,14 @@ function LGrid(
     ::Type{Val{CellType}}, ::Type{T}; length=100, height=100, upperslab=50, lowerslab=50
 ) where {T,CellType}
     length > upperslab || throw(
-        ArgumentError("LGrid: length ($length) must be greater than upperslab ($upperslab)"),
+        ArgumentError(
+            "LGrid: length ($length) must be greater than upperslab ($upperslab)"
+        ),
     )
     height > lowerslab || throw(
-        ArgumentError("LGrid: height ($height) must be greater than lowerslab ($lowerslab)"),
+        ArgumentError(
+            "LGrid: height ($height) must be greater than lowerslab ($lowerslab)"
+        ),
     )
     return LGrid(
         Val{CellType},
@@ -182,7 +186,9 @@ function _LinearLGrid(
     nel1::NTuple{2,Int}, nel2::NTuple{2,Int}, LL::Vec{2,T}, UR::Vec{2,T}, MR::Vec{2,T}
 ) where {T}
     nel1[2] > nel2[2] || throw(
-        ArgumentError("_LinearLGrid: nel1[2] ($(nel1[2])) must be greater than nel2[2] ($(nel2[2]))"),
+        ArgumentError(
+            "_LinearLGrid: nel1[2] ($(nel1[2])) must be greater than nel2[2] ($(nel2[2]))",
+        ),
     )
 
     midpointindy = round(Int, nel2[2] / 2) + 1
@@ -342,7 +348,9 @@ function _QuadraticLGrid(
     nel1::NTuple{2,Int}, nel2::NTuple{2,Int}, LL::Vec{2,T}, UR::Vec{2,T}, MR::Vec{2,T}
 ) where {T}
     nel1[2] > nel2[2] || throw(
-        ArgumentError("_QuadraticLGrid: nel1[2] ($(nel1[2])) must be greater than nel2[2] ($(nel2[2]))"),
+        ArgumentError(
+            "_QuadraticLGrid: nel1[2] ($(nel1[2])) must be greater than nel2[2] ($(nel2[2]))",
+        ),
     )
 
     midpointindy = round(Int, nel2[2] / 2) + 1

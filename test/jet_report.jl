@@ -24,9 +24,9 @@ end
 report = JET.report_package(TopOpt; target_modules=(TopOpt,))
 
 # Print summary
-println("=" ^ 60)
+println("="^60)
 println("JET Analysis Report for TopOpt.jl")
-println("=" ^ 60)
+println("="^60)
 println("Date: ", Dates.now())
 println("Julia version: ", VERSION)
 println("JET version: ", pkgversion(JET))
@@ -88,7 +88,7 @@ if output_file !== nothing
                 "signature" => string(r.sig),
                 "message" => string(r),
             ) for r in report.reports
-        ]
+        ],
     )
     write(output_file, JSON.json(json_report, 2))
     println("JSON report written to: ", output_file)

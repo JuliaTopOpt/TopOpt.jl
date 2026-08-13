@@ -107,7 +107,7 @@ function ChainRulesCore.rrule(::typeof(apply_boundary_with_meandiag!), K, ch)
     function pullback_fn(Δ)
         Δ = ChainRulesCore.unthunk(Δ)
         Δ_ch_diagsum = zero(eltype(K))
-    for i in eachindex(ch.prescribed_dofs)
+        for i in eachindex(ch.prescribed_dofs)
             d = ch.prescribed_dofs[i]
             Δ_ch_diagsum += Δ[d, d]
         end

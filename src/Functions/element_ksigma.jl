@@ -51,7 +51,7 @@ function TrussElementKσFun(
     n_basefuncs = getnbasefunctions(cellvalues)
     ndof_pc == xdim * n_basefuncs || throw(
         DimensionMismatch(
-            "TrussElementKσFun: expected ndof_pc=$(xdim * n_basefuncs), got $ndof_pc",
+            "TrussElementKσFun: expected ndof_pc=$(xdim * n_basefuncs), got $ndof_pc"
         ),
     )
     n_basefuncs == 2 || throw(
@@ -122,12 +122,12 @@ function (eksig::TrussElementKσFun)(u::DisplacementResult, x::PseudoDensities)
     ncells = getncells(dh.grid)
     ncells == length(x.x) || throw(
         DimensionMismatch(
-            "TrussElementKσFun: expected $(ncells) cells, got $(length(x.x))",
+            "TrussElementKσFun: expected $(ncells) cells, got $(length(x.x))"
         ),
     )
     ndofs(dh) == length(u.u) || throw(
         DimensionMismatch(
-            "TrussElementKσFun: expected $(ndofs(dh)) DOFs, got $(length(u.u))",
+            "TrussElementKσFun: expected $(ndofs(dh)) DOFs, got $(length(u.u))"
         ),
     )
     for ci in eachindex(x.x)

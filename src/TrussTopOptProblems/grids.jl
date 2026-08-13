@@ -38,7 +38,7 @@ function TrussGrid(
     if crosssecs isa Vector
         length(crosssecs) == ncells || throw(
             DimensionMismatch(
-                "TrussGrid: expected $(ncells) cross sections, got $(length(crosssecs))",
+                "TrussGrid: expected $(ncells) cross sections, got $(length(crosssecs))"
             ),
         )
         crosssecs = convert(Vector{TrussFEACrossSec{T}}, crosssecs)
@@ -60,7 +60,7 @@ function TrussGrid(
     if crosssecs isa Vector
         length(crosssecs) == ncells || throw(
             DimensionMismatch(
-                "TrussGrid: expected $(ncells) cross sections, got $(length(crosssecs))",
+                "TrussGrid: expected $(ncells) cross sections, got $(length(crosssecs))"
             ),
         )
         crosssecs = convert(Vector{TrussFEACrossSec{T}}, crosssecs)
@@ -78,10 +78,12 @@ function _LinearTrussGrid(node_points::Matrix{T}, elements::Matrix{iT}) where {T
 
     # * Generate cells, Line2d or Line3d
     xdim ∈ (2, 3) || throw(
-        ArgumentError("_LinearTrussGrid: expected 2D or 3D truss, got $xdim dimensions"),
+        ArgumentError("_LinearTrussGrid: expected 2D or 3D truss, got $xdim dimensions")
     )
     nconnect == 2 || throw(
-        ArgumentError("_LinearTrussGrid: expected 2-node elements, got $nconnect nodes per element"),
+        ArgumentError(
+            "_LinearTrussGrid: expected 2-node elements, got $nconnect nodes per element",
+        ),
     )
     CellType = Line
     cells = Vector{CellType}(undef, n_elems)
@@ -105,7 +107,7 @@ function _LinearTrussGrid(
 
     # * Generate cells, Line2d or Line3d
     xdim ∈ (2, 3) || throw(
-        ArgumentError("_LinearTrussGrid: expected 2D or 3D truss, got $xdim dimensions"),
+        ArgumentError("_LinearTrussGrid: expected 2D or 3D truss, got $xdim dimensions")
     )
     CellType = Line
     cells = Vector{CellType}(undef, length(elements))

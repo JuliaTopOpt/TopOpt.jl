@@ -80,20 +80,20 @@ end
 function compute_local_axes(end_vert_u, end_vert_v)
     length(end_vert_u) == length(end_vert_v) || throw(
         DimensionMismatch(
-            "compute_local_axes: end_vert_u and end_vert_v must have the same length",
+            "compute_local_axes: end_vert_u and end_vert_v must have the same length"
         ),
     )
     xdim = length(end_vert_u)
-    xdim == 2 || xdim == 3 || throw(
-        ArgumentError(
-            "compute_local_axes: expected 2D or 3D truss, got $xdim dimensions",
-        ),
-    )
+    xdim == 2 ||
+        xdim == 3 ||
+        throw(
+            ArgumentError(
+                "compute_local_axes: expected 2D or 3D truss, got $xdim dimensions"
+            ),
+        )
     L = norm(end_vert_u - end_vert_v)
     L > eps() || throw(
-        ArgumentError(
-            "compute_local_axes: element length is zero (coincident nodes)",
-        ),
+        ArgumentError("compute_local_axes: element length is zero (coincident nodes)")
     )
     # by convention, the new x axis is along the element's direction
     # directional cosine of the new x axis in the global world frame

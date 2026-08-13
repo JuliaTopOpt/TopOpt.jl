@@ -73,7 +73,8 @@ function (bc::BlockComplianceFun{T})(x::PseudoDensities) where {T}
 end
 
 function ChainRulesCore.rrule(bc::BlockComplianceFun, x::PseudoDensities)
-    return bc(x), Δ -> begin
+    return bc(x),
+    Δ -> begin
         Δ = ChainRulesCore.unthunk(Δ)
         Nonconvex.NonconvexCore.getdim(bc) == length(Δ) || throw(
             DimensionMismatch(
