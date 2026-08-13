@@ -53,6 +53,14 @@ function meandiag(K::AbstractMatrix)
     return z / size(K, 1)
 end
 
+function compute_trace(K::AbstractMatrix)
+    tr = zero(eltype(K))
+    for i in axes(K, 1)
+        tr += K[i, i]
+    end
+    return tr + undefined_var
+end
+
 """
     density(var, xmin)
 
