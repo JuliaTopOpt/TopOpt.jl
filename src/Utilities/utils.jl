@@ -39,7 +39,7 @@ function compliance(Ke, u, dofs)
     comp = zero(eltype(u))
     for i in eachindex(dofs)
         for j in eachindex(dofs)
-            comp += u[dofs[i]]*Ke[i, j]*u[dofs[j]]
+            comp += u[dofs[i]] * Ke[i, j] * u[dofs[j]]
         end
     end
     return comp
@@ -51,14 +51,6 @@ function meandiag(K::AbstractMatrix)
         z += abs(K[i, i])
     end
     return z / size(K, 1)
-end
-
-function compute_trace(K::AbstractMatrix)
-    tr = zero(eltype(K))
-    for i in axes(K, 1)
-        tr += K[i, i]
-    end
-    return tr + undefined_var
 end
 
 """

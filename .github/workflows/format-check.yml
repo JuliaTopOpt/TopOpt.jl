@@ -70,7 +70,6 @@ jobs:
           script: |
             const fs = require('fs');
             const body = fs.readFileSync('format_comment.md', 'utf8');
-            const isPassed = body.includes('Formatting check passed');
             const tagged = body + '\n\n<!-- auto-pr-comment: formatting -->';
 
             const comments = await github.rest.issues.listComments({
@@ -81,7 +80,11 @@ jobs:
             const last = comments.data.pop();
 
             if (last && (last.body.includes('Formatting check passed') || last.body.includes('Formatting issues') || last.body.includes('<!-- auto-pr-comment: formatting -->'))) {
-              // Last comment is from the formatting checker — update it
+              // Last comment is from the formatting checker
+              if (last.body === tagged) {
+                console.log('Comment unchanged — skipping.');
+                return;
+              }
               await github.rest.issues.updateComment({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
@@ -89,7 +92,6 @@ jobs:
                 body: tagged,
               });
             } else {
-              // Last comment is something else — create a new one
               await github.rest.issues.createComment({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
