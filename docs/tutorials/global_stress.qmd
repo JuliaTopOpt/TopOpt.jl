@@ -1,156 +1,302 @@
 ---
-title: "Global Stress: P-Norm Aggregation for Stress Constraints"
+title: "Global Stress: Relaxation and Aggregation for Stress Constraints"
 toc: true
 ---
 
 ## Description
 
-This tutorial demonstrates topology optimization with global stress constraints
-using p-norm aggregation. Instead of constraining stress at every element
-(thousands of constraints), we aggregate von Mises stresses into a single
-global measure using the p-norm with p=5. This approach enables efficient
-gradient-based optimization while controlling peak stresses.
+This tutorial solves the classical stress-constrained topology optimization
+problem: minimize volume subject to a von Mises stress limit,
 
-The tutorial optimizes volume fraction minimization subject to a stress
-threshold, demonstrating stress-driven design for cantilever and Half MBB
-benchmarks.
+$$\min_{\rho}\; V(\rho) \quad \text{s.t.} \quad \sigma^{vm}_e \le \sigma_{\lim} \;\; \forall e$$
+
+Stress constraints are fundamentally harder than compliance constraints for
+two independent reasons (Verbart et al., 2017; Le et al., 2010):
+
+1. **Singular optima.** The microscopic stress $\sigma = C_0 : \varepsilon$
+   stays finite as an element's density $\rho \to 0$, so the stress constraint
+   blocks any gradient-driven path that removes a load-bearing member: the
+   true optima lie in degenerate subspaces that gradient methods cannot reach
+   (Sved & Ginos, 1968; Cheng & Guo, 1997).
+2. **Locality.** Stress is an element-wise state variable, giving thousands of
+   local constraints — as many as there are design variables — which is
+   expensive to handle directly (see the `local_stress` tutorial).
+
+The standard toolkit, demonstrated here, combines:
+
+- **Relaxation** to remove the singularity: the *qp-approach* uses a relaxed
+  stress $\tilde\sigma_e = \rho_e^{q}\,\sigma_e$ with $q < p$ (Bruggi, 2008;
+  Le et al., 2010 use $q = 1/2$ with SIMP $p = 3$), while *ε-relaxation*
+  replaces the constraint by $\rho_e(\sigma_e/\sigma_{\lim} - 1) \le \epsilon$
+  (Cheng & Guo, 1997; Duysinx & Bendsøe, 1998). Both make the constraint
+  automatically satisfied at sufficiently low density.
+- **Aggregation** to collapse the local constraints into one global smooth
+  measure: the p-norm (Duysinx & Sigmund, 1998) or the
+  Kreisselmeier–Steinhauser (KS) function (Yang & Chen, 1996), with adaptive
+  normalization to control the true maximum (Le et al., 2010).
+
+We compare three formulations on the classical L-bracket benchmark and show
+that all produce the signature feature of stress-constrained design: the
+**rounded re-entrant corner**, which a compliance-driven design keeps sharp.
 
 ## Setup
 
 ```{julia}
 #| output: false
-using TopOpt, LinearAlgebra
+using TopOpt, LinearAlgebra, Printf
+using StatsFuns: logsumexp
 ```
 
-## Define the Problem
+## The benchmark problem
+
+The L-bracket: fixed top edge, downward load at the end of the horizontal arm.
+The re-entrant corner is a stress concentrator, which is what makes this the
+standard stress benchmark.
+
+A point force on a continuum produces a singular stress field that the mesh
+regularizes to `~f / element_size`; the resulting "peak stress" is a
+mesh-dependent load-introduction artifact, not a property of the topology.
+We therefore distribute the load over 5 nodes with `load_width`, which removes
+the singularity. (Alternatives used in the literature: exclude a fixed region
+around the load from the aggregation, or use regional stress measures.)
 
 ```{julia}
 #| output: false
-E = 1.0 # Young's modulus
-v = 0.3 # Poisson's ratio
-f = 1.0 # downward force
-rmin = 3.0 # filter radius
-
-problems = Any[
-    PointLoadCantilever(Val{:Linear}, (60, 20), (1.0, 1.0), E, v, f),
-    HalfMBB(Val{:Linear}, (60, 20), (1.0, 1.0), E, v, f),
-]
-problem_names = ["Cantilever beam", "Half MBB beam"]
-
-i = 1  # Select problem (1 or 2)
-println(problem_names[i])
-problem = problems[i]
-```
-
-## Parameter Settings
-
-```{julia}
-#| output: false
-V = 0.5 # volume fraction
-xmin = 0.001 # minimum density
-convcriteria = Nonconvex.KKTCriteria()
-penalty = PowerPenaltyFun(1.0)  # start with no penalization
-
-solver = FEASolver(DirectSolver, problem; xmin=xmin, penalty=penalty)
-```
-
-## Stress Objective
-
-```{julia}
-#| output: false
-# von Mises stress function (automatically differentiable via Zygote)
-stress = von_mises_stress_function(solver)
-
-filter = if problem isa TopOpt.TopOptProblems.TieBeam
-    identity
-else
-    DensityFilterFun(solver; rmin=rmin)
-end
-
+E, ν, f = 1.0, 0.3, 1.0
+problem = LBeam(
+    Val{:Linear};
+    length=50, height=50, upperslab=25, lowerslab=25, E=E, ν=ν, force=f,
+    load_width=5,  # distribute the load over 5 nodes
+)
+xmin = 1e-3
+# Fixed SIMP exponent p = 3, as standard for stress problems (Le et al., 2010)
+solver = FEASolver(DirectSolver, problem; xmin=xmin, penalty=PowerPenaltyFun(3.0))
+filter = DensityFilterFun(solver; rmin=2.0)
 volfrac = VolumeFun(solver)
-comp = ComplianceFun(solver)
-
-x0 = ones(length(solver.vars))
-# Stress threshold: 2× the initial peak stress of the fully-solid design
-threshold = 2 * maximum(stress(filter(PseudoDensities(x0))))
-
-# Minimize volume with a compliance regularization term. The regularizer
-# steers the optimizer toward stiff layouts, preventing the trivial
-# all-void solution that pure volume minimization would produce.
-λ = 1e-4
-obj = x -> volfrac(filter(PseudoDensities(x))) + λ * comp(filter(PseudoDensities(x)))
-constr = x -> norm(stress(filter(PseudoDensities(x))), 5) - threshold
-```
-
-The p-norm with p=5 aggregates element stresses into a global measure:
-`‖σ‖₅ = (Σ σᵢ⁵)^(1/5)`. This smooth approximation enables efficient gradient
-computation while capturing peak stress behavior. The threshold is set just
-above the initial peak stress so the constraint stays active throughout
-optimization. The compliance regularizer (`λ·uᵀKu`) penalizes overly
-compliant (near-void) designs, keeping the optimization away from the
-degenerate empty-domain solution.
-
-## Optimization Setup
-
-```{julia}
-#| output: false
 N = length(solver.vars)
-x0 = fill(0.5, N)
-
-model = Model(obj)
-addvar!(model, zeros(N), ones(N))
-add_ineq_constraint!(model, constr)
-alg = MMA87()
 ```
 
-## Continuation Strategy
+## Microscopic vs. relaxed stress
 
-Volume minimization with a loose stress constraint collapses to the trivial
-all-void design. We ramp the SIMP penalty exponent from 1.0 to 3.0 so the
-optimizer must commit material to satisfy the stress constraint, with
-decaying KKT tolerances for accurate subproblem solves:
-
-```{julia}
-#| output: false
-ps = [1.0, 2.0, 3.0]
-tols = [1e-2, 1e-3, 1e-4]
-
-x = copy(x0)
-```
-
-## Run Optimization
+`von_mises_stress_function` computes the *microscopic* stress
+$\sigma = C_0 : \varepsilon$ with the base Young's modulus (the physically
+consistent choice for porous materials; Duysinx & Bendsøe, 1998). Because it
+is finite at zero density, it exhibits the singularity problem. Passing
+`stress_exponent = q > 0` returns instead the relaxed stress
+$\tilde\sigma_e = \rho_e^q \sigma_e$, which vanishes at zero density and
+thereby makes singular optima reachable. The relaxation acts on the physical
+density (not the penalized stiffness density), so it is independent of the
+SIMP exponent `p` used for the stiffness.
 
 ```{julia}
 #| output: true
-for j in eachindex(ps)
-    global x, convcriteria, r
-    p = ps[j]
-    tol = tols[j]
-    setpenalty!(solver, p)
-    options = MMAOptions(; maxiter=50, tol=Tolerance(; kkt=tol), convcriteria)
-    r = optimize(model, alg, x; options)
-    global x = r.minimizer
-    println("Step $j: penalty=$p, tol=$tol, obj=$(obj(x)), constr=$(constr(x))")
+σ_micro = von_mises_stress_function(solver)
+σ_rel = von_mises_stress_function(solver; stress_exponent=0.5)
+
+x_solid = ones(N)
+σ_solid = σ_rel(filter(PseudoDensities(x_solid)))
+println("peak stress of the solid L-bracket: ", maximum(σ_solid))
+```
+
+## The stress limit
+
+The stress limit is a material property, not a multiple of the solid design's
+average stress: fully-stressed low-volume designs run *hotter* than the solid
+block. Here we set σ_lim to 1.75× the solid block's peak, which places the
+optimum at roughly 40–60% volume — the interesting regime for this benchmark.
+
+```{julia}
+#| output: false
+σlim = 1.75 * maximum(σ_solid)
+obj = x -> volfrac(filter(PseudoDensities(x)))
+alg = MMA87(; dualoptimizer=ConjugateGradient())
+
+function run_chunks(
+    constr, x0, chunks, maxiter; update! = (x, j) -> nothing, label = "", keep_best = true
+)
+    model = Model(obj)
+    addvar!(model, zeros(N), ones(N))
+    add_ineq_constraint!(model, constr)
+    x = copy(x0)
+    for j in 1:chunks
+        update!(x, j)
+        tol = j == chunks ? Nonconvex.Tolerance(; kkt=1e-4) : Nonconvex.Tolerance(; kkt=1e-3)
+        options = MMAOptions(; maxiter, tol, keep_best)
+        r = optimize(model, alg, x; options)
+        x = r.minimizer
+        @printf("%s chunk %d: V=%.3f  constr=%.4f\n", label, j, obj(x), constr(x))
+    end
+    return x
 end
 ```
 
-## Results
+## Approach 1: relaxed stress + normalized p-norm + adaptive normalization
+
+The normalized p-norm $\sigma_{PN} = \big(\frac{1}{N}\sum_e \tilde\sigma_e^P\big)^{1/P}$
+is a *lower* bound on the maximum stress (equality only for a uniform stress
+state), so it cannot be constrained directly. Following Le et al. (2010), we
+rescale it by an adaptive factor $c \approx \max(\tilde\sigma)/\sigma_{PN}$
+— updated between optimization chunks — so that $c\,\sigma_{PN}$ tracks the
+true maximum. The p-norm's gradient is spread over all moderately stressed
+elements, which makes this the most robust of the three formulations in
+practice.
 
 ```{julia}
 #| output: true
-@show obj(r.minimizer)
-@show constr(r.minimizer)
+P = 8
+c = Ref(maximum(σ_solid) / (norm(σ_solid, P) / N^(1 / P)))
+constr_pnorm = x -> begin
+    s = σ_rel(filter(PseudoDensities(x)))
+    c[] * (norm(s, P) / N^(1 / P)) / σlim - 1
+end
+# Adaptive normalization: c tracks max(σ̃)/σ_PN between chunks
+update_pnorm! = x -> begin
+    s = σ_rel(filter(PseudoDensities(x)))
+    c[] = maximum(s) / (norm(s, P) / N^(1 / P))
+end
+x1 = run_chunks(constr_pnorm, x_solid, 4, 70; update! = (x, j) -> update_pnorm!(x), label = "p-norm")
 ```
 
-The optimized design minimizes material usage while keeping aggregated stress
-below the threshold.
+## Approach 2: relaxed stress + KS aggregation
 
-## Visualization
+The KS function $\sigma_{KS} = \max(s) + \log\sum_e e^{\gamma(s_e - \max(s))}/\gamma$
+is an *upper* bound on the maximum, with slack at most $\log(N)/\gamma$ — so
+no normalization factor is needed, and $\sigma_{KS} \le 1$ certifies
+$\max(\tilde\sigma) \le \sigma_{\lim}$. The price is conservatism (the design
+below keeps extra material) and sharper gradients: large `γ` tightens the
+bound but concentrates the gradient on the few peak elements, which
+destabilizes MMA. We use a moderate `γ = 20` and warm-start from the p-norm
+design.
+
+```{julia}
+#| output: true
+γ = 20.0
+constr_ks = x -> begin
+    s = σ_rel(filter(PseudoDensities(x))) ./ σlim
+    logsumexp(γ .* s) / γ - 1
+end
+# keep_best=false: the warm start is infeasible under the conservative KS
+# measure, and we want MMA to move (it converges to feasibility). A single
+# chunk: restarting MMA between chunks on the sharp KS constraint makes the
+# trajectory oscillate.
+x2 = run_chunks(constr_ks, x1, 1, 80; label = "KS", keep_best = false)
+```
+
+## Approach 3: ε-relaxation of the microscopic stress
+
+ε-relaxation acts on the constraint rather than the stress measure:
+$g_e = \rho_e(\sigma_e/\sigma_{\lim} - 1) - \epsilon \le 0$, with the true
+microscopic stress. At zero density the constraint reads $-\epsilon \le 0$ —
+always satisfied — and as $\epsilon \to 0$ the original local constraints are
+recovered. We pass the raw filtered densities (no `xmin` floor): `g` is linear
+in `ρ`, which keeps it AD-safe and floor-independent. The relaxed values are
+signed, so we aggregate them with the KS function (a p-norm is inappropriate
+for signed values); dividing by `ε` first keeps the KS slack
+$\log(N)/\gamma$ small relative to `ε`. We run a single fixed `ε = 0.25`.
+Driving `ε → 0` tightens the *true* stress bound
+$\sigma_{\lim}(1 + \epsilon)$ on solid elements, but needs a slow
+continuation with many iterations — the global optimum of the relaxed problem
+can jump discontinuously as `ε → 0` (Stolpe & Svanberg, 2001) — which is why
+production codes pair ε-relaxation with augmented-Lagrangian solvers
+(Fancello & Pereira, 2006) rather than plain MMA.
+
+```{julia}
+#| output: true
+ε = 0.25
+constr_eps = x -> begin
+    xfil = filter(PseudoDensities(x))
+    g = epsilon_relaxed(σ_micro(xfil), xfil.x, σlim, ε) ./ ε
+    logsumexp(γ .* g) / γ
+end
+x3 = run_chunks(constr_eps, x_solid, 1, 120; label = "ε-relaxed")
+```
+
+## Results and verification
+
+All three formulations converge to the same topology family — a diagonal
+strut feeding the load into a smoothly rounded re-entrant corner:
+
+```{julia}
+#| output: true
+function report(label, x)
+    topo = filter(PseudoDensities(x)).x
+    srel = σ_rel(filter(PseudoDensities(x)))
+    smic = σ_micro(filter(PseudoDensities(x)))
+    solid = topo .> 0.5
+    @printf(
+        "%s: V = %.3f, max relaxed σ = %.3f, max microscopic σ (solid elements) = %.3f, σlim = %.3f\n",
+        label, obj(x), maximum(srel), maximum(smic[solid]), σlim
+    )
+    return topo
+end
+topo1 = report("p-norm   ", x1)
+topo2 = report("KS       ", x2)
+topo3 = report("ε-relaxed", x3)
+```
+
+The microscopic stress is reported over solid elements only: with a density
+filter, the gray boundary layer is penalized material whose true stress
+exceeds the relaxed measure by $\rho^{-q}$, a well-documented artifact of
+filtered SIMP stress evaluation (da Silva et al., 2019).
 
 ```{julia}
 #| label: fig-global-stress
-#| fig-cap: "Global stress-constrained optimization with p-norm aggregation (p=5)"
+#| fig-cap: "Stress-constrained L-bracket, relaxed stress + p-norm (approach 1)"
 using CairoMakie
-fig = visualize(problem; topology=r.minimizer)
-
+fig = visualize(problem; topology=topo1, default_exagg_scale=0.0)
 ```
+
+```{julia}
+#| label: fig-global-stress-ks
+#| fig-cap: "Stress-constrained L-bracket, relaxed stress + KS (approach 2)"
+fig = visualize(problem; topology=topo2, default_exagg_scale=0.0)
+```
+
+```{julia}
+#| label: fig-global-stress-eps
+#| fig-cap: "Stress-constrained L-bracket, ε-relaxation (approach 3)"
+fig = visualize(problem; topology=topo3, default_exagg_scale=0.0)
+```
+
+## Discussion
+
+- **Relaxation is not optional.** Without `stress_exponent` (or
+  `epsilon_relaxed`), the microscopic stress is finite in vanishing material
+  and the stress-constrained problem has singular optima that MMA cannot
+  reach — the optimization stalls or collapses.
+- **Aggregation needs normalization.** The raw p-norm `norm(σ, P)` scales with
+  `N^(1/P)` and mixes bulk and peak stress; constrain the normalized
+  `N^(-1/P) * norm(σ, P)` plus an adaptive factor, or the KS function.
+- **The KS slack** `log(N)/γ` is conservative by design (approach 2 uses more
+  material); the p-norm with adaptive `c` is tighter but needs the
+  normalization update.
+- **Point loads and supports** are singular stress sources; distribute them
+  (`load_width` here) or exclude their vicinity from the aggregation.
+- Deeper discussion of the theory and the failure modes of the naive
+  formulation: see `STRESS_CONSTRAINED_TO.md` in the repository root.
+
+## References
+
+- Le, Norato, Bruns, Ha & Tortorelli (2010). *Stress-based topology
+  optimization for continua*. Struct. Multidiscip. Optim. 41:605–620.
+- Duysinx & Bendsøe (1998). *Topology optimization of continuum structures
+  with local stress constraints*. Int. J. Numer. Meth. Eng. 43:1453–1478.
+- Cheng & Guo (1997). *ε-relaxed approach in structural topology
+  optimization*. Struct. Optim. 13:258–266.
+- Bruggi (2008). *On an alternative approach to stress constraints relaxation
+  in topology optimization*. Struct. Multidiscip. Optim. 36:125–141.
+- Duysinx & Sigmund (1998). *New developments in handling stress constraints
+  in optimal material distribution*. 7th AIAA/USAF/NASA/ISSMo Symp.
+- Yang & Chen (1996). *Stress-based topology optimization*. Struct. Optim.
+  12:98–105.
+- Verbart, Langelaar & van Keulen (2017). *A unified aggregation and
+  relaxation approach for stress-constrained topology optimization*. Struct.
+  Multidiscip. Optim. 55:663–679.
+- Stolpe & Svanberg (2001). *On the trajectories of the epsilon-relaxation
+  approach for stress-constrained truss topology optimization*. Struct.
+  Multidiscip. Optim. 21:140–151.
+- da Silva, Beck & Sigmund (2019). *Stress-constrained topology optimization
+  considering uniform manufacturing uncertainties*. Comput. Methods Appl.
+  Mech. Eng. 344:512–537.
+- Sved & Ginos (1968). *Structural optimization under multiple loading*. Int.
+  J. Mech. Sci. 10:803–805.
