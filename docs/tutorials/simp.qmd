@@ -60,7 +60,7 @@ The `FEASolver` handles stiffness matrix assembly and linear system solution. We
 
 ```{julia}
 #| output: false
-penalty = PowerPenalty(3.0)  # ρ³ penalty
+penalty = PowerPenaltyFun(3.0)  # ρ³ penalty
 solver = FEASolver(DirectSolver, problem; xmin=xmin, penalty=penalty)
 ```
 

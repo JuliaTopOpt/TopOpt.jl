@@ -64,11 +64,22 @@ Every differentiable callable struct type uses a `Fun` suffix in its name (e.g. 
 
 ## Element-wise microscopic von Mises stress
   - **Function name**: `von_mises_stress_function`
-  - **Description**: A function which applies the penalty and interpolation, solves the finite element analysis and computes the microscopic von Mises stress value for each element. The microscopic von Mises stress uses the base Young's modulus to compute the stiffness tensor and calculate the stress tensor from the strain tensor.
+  - **Description**: A function which applies the penalty and interpolation, solves the finite element analysis and computes the microscopic von Mises stress value for each element. The microscopic von Mises stress uses the base Young's modulus to compute the stiffness tensor and calculate the stress tensor from the strain tensor. With the keyword `stress_exponent = q > 0` (e.g. `q = 0.5`), the relaxed stress `σ̃_e = ρ_e^q σ_e` is returned instead, which vanishes at zero density and thereby removes the stress-singularity problem (Le et al., 2010; Bruggi, 2008).
   - **Input(s)**: Filtered and optionally projected design `x::Vector{<:Real`
   - **Output**: Element-wise von Mises stress values `σv::Vector{<:Real}`
-  - **Constructor example**: `σvf = von_mises_stress_function(solver)`
+  - **Constructor example**: `σvf = von_mises_stress_function(solver; stress_exponent=0.5)`
   - **Usage example**: `σv = σvf(x)`
+
+## ε-relaxed stress constraints
+  - **Function name**: `epsilon_relaxed`
+  - **Description**: Element-wise ε-relaxed stress constraint values `g_e = ρ_e (σ_e / σ_lim - 1) - ε` (each must be ≤ 0), the relaxation of Cheng & Guo (1997) and Duysinx & Bendsøe (1998) that makes singular optima reachable by gradient-based optimizers. Pass the raw (filtered) densities as `ρ`; the values are signed, so aggregate them with a signed-safe smooth maximum such as `logsumexp(γ .* g) / γ` (KS function), not a p-norm.
+  - **Input(s)**: element stresses `σv`, densities `ρ`, stress limit `σlim`, relaxation `ε`
+  - **Output**: Constraint values `g::Vector{<:Real}`, one per element
+  - **Usage example**: `g = epsilon_relaxed(σv, x̃, σlim, 0.1)`
+
+See `STRESS_CONSTRAINED_TO.md` in the repository root for a review of
+stress-constrained topology optimization (singularity, relaxation,
+aggregation) and how these functions fit into it.
 
 ## Buckling-constrained optimization
 

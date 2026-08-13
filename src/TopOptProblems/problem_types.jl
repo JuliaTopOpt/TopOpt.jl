@@ -381,12 +381,18 @@ function Base.show(io::IO, ::MIME{Symbol("text/plain")}, ::LBeam)
 end
 
 """
-    LBeam(::Type{Val{CellType}}, ::Type{T}=Float64; length = 100, height = 100, upperslab = 50, lowerslab = 50, E = 1.0, ν = 0.3, force = 1.0) where {T, CellType}
+    LBeam(::Type{Val{CellType}}, ::Type{T}=Float64; length = 100, height = 100, upperslab = 50, lowerslab = 50, E = 1.0, ν = 0.3, force = 1.0, load_width = nothing) where {T, CellType}
 
 - `T`: number type for computations and coordinates
 - `E`: Young's modulus
 - `ν`: Poisson's ration
 - `force`: force at the center right of the cantilever beam (positive is downward)
+- `load_width`: if an integer `w ≥ 1`, the force is distributed equally over
+  `w` consecutive nodes of the right edge centered on the midpoint, instead of
+  the default single midpoint node. Distributing the load removes the
+  point-load stress singularity, which otherwise dominates stress-based
+  optimization (a mesh-dependent artifact of load introduction, not of the
+  topology).
 - `length`, `height`, `upperslab` and `lowerslab` are explained in [`LGrid`](@ref).
 - `CellType`: can be either `:Linear` or `:Quadratic` to determine the order of the geometric and field basis functions and element type. Only isoparametric elements are supported for now.
 
@@ -415,6 +421,7 @@ function LBeam(
     E=1.0,
     ν=0.3,
     force=1.0,
+    load_width=nothing,
 ) where {T,CellType}
     # Create displacement field u
     grid = LGrid(
@@ -424,6 +431,7 @@ function LBeam(
         height=height,
         upperslab=upperslab,
         lowerslab=lowerslab,
+        load_width=load_width,
     )
 
     dh = DofHandler(grid)
@@ -502,9 +510,11 @@ end
 nnodespercell(p::LBeam{T,N}) where {T,N} = N
 getdim(::LBeam) = 2
 function getcloaddict(p::LBeam{T}) where {T}
-    f = T[0, -p.force]
-    fnode = Tuple(getnodeset(getdh(p).grid, "load"))[1]
-    return Dict{Int,Vector{T}}(fnode => f)
+    load_nodes = getnodeset(getdh(p).grid, "load")
+    # Equal split of the resultant force over the load node(s); one node
+    # unless the grid was built with `load_width` (distributed load).
+    f = T[0, -p.force / length(load_nodes)]
+    return Dict{Int,Vector{T}}(n => copy(f) for n in load_nodes)
 end
 
 """

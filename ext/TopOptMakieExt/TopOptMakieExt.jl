@@ -208,6 +208,23 @@ function TopOpt.visualize(
     given_u = u !== undef
     cloaddict = cloaddict === undef ? getcloaddict(problem) : cloaddict
 
+    # Cairo crashes cryptically on NaN linewidths/coordinates; fail fast with
+    # the actual cause (e.g. a failed optimization returning a NaN minimizer)
+    if topology !== undef
+        all(isfinite, topology) || throw(
+            ArgumentError(
+                "visualize: topology contains non-finite values ($(count(!isfinite, topology)) of $(length(topology))) — the optimization likely failed",
+            ),
+        )
+    end
+    if given_u
+        all(isfinite, u) || throw(
+            ArgumentError(
+                "visualize: u contains non-finite values ($(count(!isfinite, u)) of $(length(u))) — the FEA solve likely failed (e.g. singular stiffness matrix)",
+            ),
+        )
+    end
+
     mesh_cells = mesh.cells
     topology = topology == undef ? ones(T, length(mesh_cells)) : topology
     nodes = Vector{Ferrite.Node}(undef, nnodes)
@@ -379,7 +396,19 @@ function TopOpt.visualize(
                 push!(support_vectors, [0.0, 0.0, 1.0])
             end
             node_ids = dbc.facets
-            fixed_nodes = Point3f.(nodes[node_ind].x for node_ind in node_ids)
+            # Node-based BCs store node indices directly; facet-based BCs
+            # (e.g. LBeam) store FacetIndex values — expand them to the facet
+            # nodes so the supports can be drawn at node positions.
+            support_ids = if eltype(node_ids) <: Ferrite.FacetIndex
+                unique(
+                    Iterators.flatten(
+                        Ferrite.facets(getcells(mesh, fi[1]))[fi[2]] for fi in node_ids
+                    ),
+                )
+            else
+                collect(node_ids)
+            end
+            fixed_nodes = Point3f.(nodes[node_ind].x for node_ind in support_ids)
             # draw one axis for all nodes in the set each time
             for v in support_vectors
                 if dim == 2
@@ -387,7 +416,7 @@ function TopOpt.visualize(
                         ax1,
                         [Point2f(p[1], p[2]) for p in fixed_nodes],
                         lift(condition_lsgrid.sliders[1].value) do s
-                            return [Vec2f(s * v[1], s * v[2]) for _ in node_ids]
+                            return [Vec2f(s * v[1], s * v[2]) for _ in support_ids]
                         end;
                         color=:orange,
                         lengthscale=vector_arrowsize,
@@ -397,7 +426,9 @@ function TopOpt.visualize(
                         ax1,
                         fixed_nodes,
                         lift(condition_lsgrid.sliders[1].value) do s
-                            return [Vec3f(s * v[1], s * v[2], s * v[3]) for _ in node_ids]
+                            return [
+                                Vec3f(s * v[1], s * v[2], s * v[3]) for _ in support_ids
+                            ]
                         end;
                         color=:orange,
                         lengthscale=vector_arrowsize,
@@ -436,6 +467,21 @@ function TopOpt.visualize(
     nnodes = Ferrite.getnnodes(problem)
     given_u = u !== undef
     topology = topology == undef ? ones(T, ncells) : topology
+
+    # Cairo crashes cryptically on NaN linewidths; fail fast with the cause
+    # (e.g. a failed optimization returning a NaN minimizer)
+    all(isfinite, topology) || throw(
+        ArgumentError(
+            "visualize: topology contains non-finite values ($(count(!isfinite, topology)) of $(length(topology))) — the optimization likely failed",
+        ),
+    )
+    if given_u
+        all(isfinite, u) || throw(
+            ArgumentError(
+                "visualize: u contains non-finite values ($(count(!isfinite, u)) of $(length(u))) — the FEA solve likely failed",
+            ),
+        )
+    end
 
     fig = Figure()
     if ndim == 2

@@ -139,7 +139,13 @@ LGrid(Val{:Linear}, (2, 4), (2, 2), Vec{2,Float64}((0.0,0.0)), Vec{2,Float64}((2
 ```
 """
 function LGrid(
-    ::Type{Val{CellType}}, ::Type{T}; length=100, height=100, upperslab=50, lowerslab=50
+    ::Type{Val{CellType}},
+    ::Type{T};
+    length=100,
+    height=100,
+    upperslab=50,
+    lowerslab=50,
+    load_width=nothing,
 ) where {T,CellType}
     length > upperslab || throw(
         ArgumentError(
@@ -157,7 +163,8 @@ function LGrid(
         (length - upperslab, lowerslab),
         Vec{2,T}((0.0, 0.0)),
         Vec{2,T}((T(upperslab), T(height))),
-        Vec{2,T}((T(length), T(lowerslab))),
+        Vec{2,T}((T(length), T(lowerslab)));
+        load_width=load_width,
     )
 end
 function LGrid(
@@ -166,13 +173,36 @@ function LGrid(
     nel2::NTuple{2,Int},
     LL::Vec{2,T},
     UR::Vec{2,T},
-    MR::Vec{2,T},
+    MR::Vec{2,T};
+    load_width=nothing,
 ) where {CellType,T}
     if CellType === :Linear
-        return _LinearLGrid(nel1, nel2, LL, UR, MR)
+        return _LinearLGrid(nel1, nel2, LL, UR, MR; load_width=load_width)
     else
-        return _QuadraticLGrid(nel1, nel2, LL, UR, MR)
+        return _QuadraticLGrid(nel1, nel2, LL, UR, MR; load_width=load_width)
     end
+end
+
+"""
+    _load_nodes!(nodeset, node_array, midpointindy, load_width)
+
+Populate the "load" node set of an L-shaped grid: a single midpoint node of
+the right edge when `load_width === nothing`, otherwise `load_width`
+consecutive nodes centered on the midpoint (clamped to the edge).
+"""
+function _load_nodes!(nodeset, node_array, midpointindy, load_width)
+    if load_width === nothing
+        push!(nodeset, node_array[end, midpointindy])
+        return nodeset
+    end
+    load_width isa Integer && load_width >= 1 ||
+        throw(ArgumentError("load_width must be a positive integer, got $load_width"))
+    first = max(1, midpointindy - load_width ÷ 2)
+    last = min(size(node_array, 2), first + load_width - 1)
+    for j in first:last
+        push!(nodeset, node_array[end, j])
+    end
+    return nodeset
 end
 
 function _generate_2d_nodes!(nodes, nx, ny, LL, LR, UR, UL)
@@ -195,7 +225,12 @@ function _generate_2d_nodes!(nodes, nx, ny, LL, LR, UR, UL)
 end
 
 function _LinearLGrid(
-    nel1::NTuple{2,Int}, nel2::NTuple{2,Int}, LL::Vec{2,T}, UR::Vec{2,T}, MR::Vec{2,T}
+    nel1::NTuple{2,Int},
+    nel2::NTuple{2,Int},
+    LL::Vec{2,T},
+    UR::Vec{2,T},
+    MR::Vec{2,T};
+    load_width=nothing,
 ) where {T}
     nel1[2] > nel2[2] || throw(
         ArgumentError(
@@ -297,7 +332,7 @@ function _LinearLGrid(
         end
     end
 
-    push!(nodesets["load"], node_array2[end, midpointindy])
+    _load_nodes!(nodesets["load"], node_array2, midpointindy, load_width)
 
     # Upper left rectangle
     offsetstep = (UR[2] - MR[2]) / (nel1[2] - nel2[2])
@@ -357,7 +392,12 @@ function _LinearLGrid(
 end
 
 function _QuadraticLGrid(
-    nel1::NTuple{2,Int}, nel2::NTuple{2,Int}, LL::Vec{2,T}, UR::Vec{2,T}, MR::Vec{2,T}
+    nel1::NTuple{2,Int},
+    nel2::NTuple{2,Int},
+    LL::Vec{2,T},
+    UR::Vec{2,T},
+    MR::Vec{2,T};
+    load_width=nothing,
 ) where {T}
     nel1[2] > nel2[2] || throw(
         ArgumentError(
@@ -474,7 +514,7 @@ function _QuadraticLGrid(
         end
     end
 
-    push!(nodesets["load"], node_array2[end, midpointindy])
+    _load_nodes!(nodesets["load"], node_array2, midpointindy, load_width)
 
     # Upper left rectangle
     offsetstep = (UR[2] - MR[2]) / (nel1[2] - nel2[2]) / 2

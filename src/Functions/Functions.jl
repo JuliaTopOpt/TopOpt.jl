@@ -41,6 +41,7 @@ export VolumeFun,
     getcentroids,
     StressTensorFun,
     ElementStressTensorFun,
+    epsilon_relaxed,
     MaterialInterpolationFun,
     MultiMaterialVariablesFun,
     element_densities,
@@ -62,6 +63,9 @@ include("block_compliance.jl")
 
 # stress
 include("stress_tensor.jl")
+
+# ε-relaxation of stress constraints
+include("stress_relaxation.jl")
 
 # buckling
 include("apply_boundary.jl")
