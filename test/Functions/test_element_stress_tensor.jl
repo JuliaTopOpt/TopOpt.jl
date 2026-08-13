@@ -1,7 +1,11 @@
 using TopOpt, Zygote, LinearAlgebra, Test, Random, SparseArrays, ForwardDiff, ChainRulesCore
 using Ferrite: ndofs_per_cell, getncells, celldofs!
 using TopOpt.Functions:
-    StressTensorFun, DisplacementResult, ElementStressTensorFun, reinit!, _element_stress_tensor
+    StressTensorFun,
+    DisplacementResult,
+    ElementStressTensorFun,
+    reinit!,
+    _element_stress_tensor
 
 Random.seed!(1)
 

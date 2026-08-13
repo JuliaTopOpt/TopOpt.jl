@@ -387,7 +387,7 @@ function TopOpt.visualize(
                         ax1,
                         [Point2f(p[1], p[2]) for p in fixed_nodes],
                         lift(condition_lsgrid.sliders[1].value) do s
-                            [Vec2f(s * v[1], s * v[2]) for _ in node_ids]
+                            return [Vec2f(s * v[1], s * v[2]) for _ in node_ids]
                         end;
                         color=:orange,
                         lengthscale=vector_arrowsize,
@@ -397,7 +397,7 @@ function TopOpt.visualize(
                         ax1,
                         fixed_nodes,
                         lift(condition_lsgrid.sliders[1].value) do s
-                            [Vec3f(s * v[1], s * v[2], s * v[3]) for _ in node_ids]
+                            return [Vec3f(s * v[1], s * v[2], s * v[3]) for _ in node_ids]
                         end;
                         color=:orange,
                         lengthscale=vector_arrowsize,
@@ -585,7 +585,7 @@ function TopOpt.visualize(
                         ax1,
                         fixed_nodes,
                         lift(condition_lsgrid.sliders[1].value) do s
-                            [Vec2f(s * v[1], s * v[2]) for _ in node_ids]
+                            return [Vec2f(s * v[1], s * v[2]) for _ in node_ids]
                         end;
                         color=:orange,
                         lengthscale=vector_arrowsize,
@@ -595,7 +595,7 @@ function TopOpt.visualize(
                         ax1,
                         fixed_nodes,
                         lift(condition_lsgrid.sliders[1].value) do s
-                            [Vec3f(s * v[1], s * v[2], s * v[3]) for _ in node_ids]
+                            return [Vec3f(s * v[1], s * v[2], s * v[3]) for _ in node_ids]
                         end;
                         color=:orange,
                         lengthscale=vector_arrowsize,

@@ -185,7 +185,9 @@ end
         )
         mc_exact = MeanComplianceFun(problem, solver_exact; method=:exact)
 
-        solver_svd = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(2.0))
+        solver_svd = FEASolver(
+            DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(2.0)
+        )
         mc_svd = MeanComplianceFun(problem, solver_svd; method=:exact_svd)
 
         x = fill(0.5, length(solver_exact.vars))
@@ -267,7 +269,9 @@ end
         problem = MultiLoad(base_problem, F)
 
         # Reference with full density, p=1
-        solver_ref = FEASolver(DirectSolver, problem; xmin=0.001, penalty=PowerPenaltyFun(1.0))
+        solver_ref = FEASolver(
+            DirectSolver, problem; xmin=0.001, penalty=PowerPenaltyFun(1.0)
+        )
         mc_ref = MeanComplianceFun(problem, solver_ref; method=:exact)
         C_full = mc_ref(PseudoDensities(ones(length(solver_ref.vars))))
 
@@ -276,7 +280,9 @@ end
         x_uniform = fill(rho, length(solver_ref.vars))
 
         for p in [1.0, 2.0, 3.0]
-            solver = FEASolver(DirectSolver, problem; xmin=0.001, penalty=PowerPenaltyFun(p))
+            solver = FEASolver(
+                DirectSolver, problem; xmin=0.001, penalty=PowerPenaltyFun(p)
+            )
             mc = MeanComplianceFun(problem, solver; method=:exact)
             C_uniform = mc(PseudoDensities(x_uniform))
 
@@ -311,7 +317,9 @@ end
         problem = MultiLoad(base_problem, F)
 
         for method in [:exact, :exact_svd]
-            solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(2.0))
+            solver = FEASolver(
+                DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(2.0)
+            )
             mc = MeanComplianceFun(problem, solver; method=method)
             f = x -> mc(PseudoDensities(x))
 
@@ -433,7 +441,9 @@ end
         problem = MultiLoad(base_problem, F)
 
         for method in [:exact, :exact_svd, :trace]
-            solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(2.0))
+            solver = FEASolver(
+                DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(2.0)
+            )
             mc = MeanComplianceFun(problem, solver; method=method, nv=5)
 
             # Test at multiple densities
@@ -468,7 +478,9 @@ end
         values = Float64[]
 
         for sample_method in [:hutch, :hadamard]
-            solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(2.0))
+            solver = FEASolver(
+                DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(2.0)
+            )
             mc = MeanComplianceFun(
                 problem, solver; method=:trace, nv=15, sample_method=sample_method
             )

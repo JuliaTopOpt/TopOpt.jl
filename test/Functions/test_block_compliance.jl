@@ -143,7 +143,9 @@ end
         F[right_dofs[end], 2] = 0.5
 
         problem = MultiLoad(base_problem, F)
-        solver_ml = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(3.0))
+        solver_ml = FEASolver(
+            DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(3.0)
+        )
         bc = BlockComplianceFun(problem, solver_ml; method=:exact)
 
         x = fill(0.5, prod(nels))
@@ -203,7 +205,9 @@ end
         )
         bc_exact = BlockComplianceFun(problem, solver_exact; method=:exact)
 
-        solver_svd = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(3.0))
+        solver_svd = FEASolver(
+            DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(3.0)
+        )
         bc_svd = BlockComplianceFun(problem, solver_svd; method=:exact_svd)
 
         x = fill(0.5, prod(nels))
@@ -271,7 +275,9 @@ end
         results = []
 
         for sample_method in [:hutch, :hadamard]
-            solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(3.0))
+            solver = FEASolver(
+                DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(3.0)
+            )
             bc = BlockComplianceFun(
                 problem, solver; method=:approx, nv=10, sample_method=sample_method
             )
@@ -371,7 +377,9 @@ end
         w = [0.5, 0.5]
 
         for method in [:exact, :exact_svd]
-            solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(3.0))
+            solver = FEASolver(
+                DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(3.0)
+            )
             bc = BlockComplianceFun(problem, solver; method=method)
 
             f = x -> sum(w .* bc(PseudoDensities(x)))
@@ -478,7 +486,9 @@ end
         problem = MultiLoad(base_problem, F)
 
         # Reference with full density
-        solver_ref = FEASolver(DirectSolver, problem; xmin=0.001, penalty=PowerPenaltyFun(1.0))
+        solver_ref = FEASolver(
+            DirectSolver, problem; xmin=0.001, penalty=PowerPenaltyFun(1.0)
+        )
         bc_ref = BlockComplianceFun(problem, solver_ref; method=:exact)
         result_ref = bc_ref(PseudoDensities(ones(prod(nels))))
 
@@ -487,7 +497,9 @@ end
         x_uniform = fill(rho, prod(nels))
 
         for p in [1.0, 2.0, 3.0]
-            solver = FEASolver(DirectSolver, problem; xmin=0.001, penalty=PowerPenaltyFun(p))
+            solver = FEASolver(
+                DirectSolver, problem; xmin=0.001, penalty=PowerPenaltyFun(p)
+            )
             bc = BlockComplianceFun(problem, solver; method=:exact)
             result_uniform = bc(PseudoDensities(x_uniform))
 
@@ -516,7 +528,9 @@ end
 
         for method in [:exact, :exact_svd, :approx]
             nv = method == :approx ? 5 : nothing
-            solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(3.0))
+            solver = FEASolver(
+                DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(3.0)
+            )
             bc = BlockComplianceFun(problem, solver; method=method, nv=nv)
 
             for vf in [0.3, 0.5, 0.7]
