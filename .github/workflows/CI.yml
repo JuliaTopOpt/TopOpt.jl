@@ -43,6 +43,7 @@ jobs:
           - x64
         group:
           - Core_Tests
+          - Aqua_Tests
           - WCSMO14_1
           - WCSMO14_2
     steps:
@@ -103,7 +104,7 @@ jobs:
             Pkg.instantiate()
             using Preferences
             Preferences.set_preferences!(
-              (Base.UUID("a6e80f52-281a-4a51-a3c5-60a2513022d0"), "TopOpt"),
+              (Base.UUID("53a1e1a5-51bb-58a9-8a02-02056cc81109"), "TopOpt"),
               "penalty_before_interpolation" => "false";
               force=true
             )
