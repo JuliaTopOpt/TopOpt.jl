@@ -19,7 +19,7 @@ end
 # Strip the _Opposite_Preference suffix to get the actual test group
 const ACTUAL_GROUP = replace(GROUP, "_Opposite_Preference" => "")
 
-if ACTUAL_GROUP in ("All", "Core_Tests")
+if ACTUAL_GROUP in ("All", "Core_Tests_1")
     @safetestset "Ferrite Upgrade Behavior" begin
         include("ferrite_upgrade_behavior.jl")
     end
@@ -62,6 +62,9 @@ if ACTUAL_GROUP in ("All", "Core_Tests")
         include("Functions/test_stress_tensor_rrule.jl")
         include("Functions/test_truss_stress_rrule.jl")
     end
+end
+
+if ACTUAL_GROUP in ("All", "Core_Tests_2")
     @safetestset "Solver" begin
         include("FEA/solvers.jl")
         include("FEA/test_convergence.jl")
@@ -94,76 +97,6 @@ if ACTUAL_GROUP in ("All", "Core_Tests")
     end
     @safetestset "Integration" begin
         include("integration/test_end_to_end.jl")
-    end
-end
-
-if ACTUAL_GROUP in ("All", "Core_Tests_Cross")
-    @safetestset "Ferrite Upgrade Behavior" begin
-        include("ferrite_upgrade_behavior.jl")
-    end
-    @safetestset "InpParser Tests" begin
-        include("inp_parser/parser.jl")
-        include("inp_parser/test_inpstiffness.jl")
-    end
-    @safetestset "TopOptProblems Tests" begin
-        include("topopt_problems/problems.jl")
-        include("topopt_problems/metadata.jl")
-        include("topopt_problems/test_io.jl")
-        include("topopt_problems/test_grids.jl")
-        include("topopt_problems/test_assembly.jl")
-        include("topopt_problems/test_show.jl")
-        include("topopt_problems/element_stiffness_matrix.jl")
-        include("topopt_problems/test_elementmatrix.jl")
-        include("topopt_problems/test_assemble_functions.jl")
-    end
-    @safetestset "Functions" begin
-        include("Functions/test_common_fns.jl")
-        include("Functions/test_fixed_element.jl")
-        include("Functions/test_buckling_fns.jl")
-        include("Functions/test_truss_stress_fns.jl")
-        include("Functions/test_mean_compliance.jl")
-        include("Functions/test_thermal_compliance.jl")
-        include("Functions/test_interpolation.jl")
-        include("Functions/test_neural.jl")
-        include("Functions/test_show.jl")
-        include("Functions/test_function_utils.jl")
-        include("Functions/test_trace.jl")
-        include("Functions/test_block_compliance.jl")
-        include("Functions/test_compute_mean_compliance_svd.jl")
-        include("Functions/test_element_stress_tensor.jl")
-        include("Functions/test_generate_scenarios.jl")
-        include("Functions/test_getdim.jl")
-        include("Functions/test_hadamard.jl")
-    end
-    @safetestset "Solver" begin
-        include("FEA/solvers.jl")
-        include("FEA/test_convergence.jl")
-        include("FEA/test_simulate.jl")
-        include("FEA/test_cg_energy_criteria.jl")
-        include("FEA/test_operator.jl")
-        include("FEA/misc.jl")
-        include("FEA/test_cg_assembly_safe.jl")
-        include("FEA/test_preconditioner.jl")
-    end
-    @safetestset "Utilities" begin
-        include("Utilities/test_utils.jl")
-        include("Utilities/test_penalties.jl")
-        include("Utilities/test_show.jl")
-    end
-    @safetestset "CheqFilters" begin
-        include("CheqFilters/test_filters.jl")
-    end
-    @safetestset "Truss Problem" begin
-        include("truss_topopt_problems/test_problem.jl")
-        include("truss_topopt_problems/test_fea.jl")
-        include("truss_topopt_problems/test_buckling.jl")
-        include("truss_topopt_problems/test_buckling_optimize.jl")
-        include("truss_topopt_problems/test_simulate_truss.jl")
-        include("truss_topopt_problems/utils.jl")
-    end
-    @safetestset "BESO" begin
-        include("Algorithms/test_beso.jl")
-        include("Algorithms/test_geso.jl")
     end
 end
 
