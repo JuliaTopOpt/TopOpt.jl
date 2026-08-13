@@ -75,7 +75,11 @@ end
 function ChainRulesCore.rrule(bc::BlockComplianceFun, x::PseudoDensities)
     return bc(x), Δ -> begin
         Δ = ChainRulesCore.unthunk(Δ)
-        @assert Nonconvex.NonconvexCore.getdim(bc) == length(Δ)
+        Nonconvex.NonconvexCore.getdim(bc) == length(Δ) || throw(
+            DimensionMismatch(
+                "BlockComplianceFun rrule: expected dim $(Nonconvex.NonconvexCore.getdim(bc)), got $(length(Δ))",
+            ),
+        )
         newΔ = similar(Δ, length(x))
         newΔ .= 0
         @unpack compliance = bc

@@ -31,8 +31,18 @@ function IterativeSolvers.isconverged(
     xtr = dot(it.x, it.r)
     xAx = dot(it.A.f, it.x) - xtr
     energy_change = xAx - conv.energy
-    @assert !isnan(energy_change) && !isnan(xAx)
-    @assert xAx >= 0
+    (isnan(energy_change) || isnan(xAx)) && throw(
+        DomainError(
+            xAx,
+            "EnergyCriteria: NaN detected in energy_change=$energy_change or xAx=$xAx",
+        ),
+    )
+    xAx < 0 && throw(
+        DomainError(
+            xAx,
+            "EnergyCriteria: expected non-negative xAx, got $xAx",
+        ),
+    )
     converged = abs(energy_change) / xAx ≤ it.tol && abs(xtr) / xAx ≤ it.tol
     conv.energy = xAx
     return converged

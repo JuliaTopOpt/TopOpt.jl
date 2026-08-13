@@ -328,13 +328,19 @@ function (b::GESO)(
 
     # Validate black and white vectors
     if !isempty(black)
-        @assert length(black) == nel "black must have length $nel (got $(length(black)))"
+        length(black) == nel || throw(
+            DimensionMismatch("black must have length $nel (got $(length(black)))"),
+        )
     end
     if !isempty(white)
-        @assert length(white) == nel "white must have length $nel (got $(length(white)))"
+        length(white) == nel || throw(
+            DimensionMismatch("white must have length $nel (got $(length(white)))"),
+        )
     end
     if !isempty(black) && !isempty(white)
-        @assert !any(black .& white) "elements cannot be both black and white"
+        any(black .& white) && throw(
+            ArgumentError("elements cannot be both black and white"),
+        )
     end
 
     # Set seed

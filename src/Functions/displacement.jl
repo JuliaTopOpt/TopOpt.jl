@@ -47,7 +47,11 @@ Construct the Displacement function struct.
 """
 function DisplacementFun(solver::AbstractFEASolver; maxfevals=10^8)
     # Displacement is only valid for structural (LinearElasticity) problems
-    @assert solver.problem isa StiffnessTopOptProblem "DisplacementFun can only be used with StiffnessTopOptProblem (structural mechanics). Got $(typeof(solver.problem))"
+    solver.problem isa StiffnessTopOptProblem || throw(
+        ArgumentError(
+            "DisplacementFun can only be used with StiffnessTopOptProblem (structural mechanics). Got $(typeof(solver.problem))",
+        ),
+    )
     T = eltype(solver.u)
     dh = solver.problem.ch.dh
     k = ndofs_per_cell(dh)
@@ -69,7 +73,11 @@ function (dp::DisplacementFun{T})(x::PseudoDensities) where {T}
     @unpack solver, global_dofs = dp
     @unpack penalty, problem, xmin = solver
     dp.fevals += 1
-    @assert length(global_dofs) == ndofs_per_cell(solver.problem.ch.dh)
+    length(global_dofs) == ndofs_per_cell(solver.problem.ch.dh) || throw(
+        DimensionMismatch(
+            "DisplacementFun: global_dofs length $(length(global_dofs)) != ndofs_per_cell $(ndofs_per_cell(solver.problem.ch.dh))",
+        ),
+    )
     solver.vars .= x.x
     solver()
     return DisplacementResult(copy(solver.u))

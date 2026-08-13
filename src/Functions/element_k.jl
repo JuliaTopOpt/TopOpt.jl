@@ -71,7 +71,12 @@ end
 
 function (ek::ElementKFun{T})(x::PseudoDensities) where {T}
     @unpack solver, Kes = ek
-    @assert getncells(solver.problem.ch.dh.grid) == length(x)
+    ncells = getncells(solver.problem.ch.dh.grid)
+    ncells == length(x) || throw(
+        DimensionMismatch(
+            "ElementKFun: expected $(ncells) cells, got $(length(x))",
+        ),
+    )
     for ci in eachindex(x)
         Kes[ci] = ek(x.x[ci], ci)
     end
@@ -80,7 +85,12 @@ end
 
 function ChainRulesCore.rrule(ek::ElementKFun, x::PseudoDensities)
     @unpack solver, Kes = ek
-    @assert getncells(solver.problem.ch.dh.grid) == length(x.x)
+    ncells = getncells(solver.problem.ch.dh.grid)
+    ncells == length(x.x) || throw(
+        DimensionMismatch(
+            "ElementKFun rrule: expected $(ncells) cells, got $(length(x.x))",
+        ),
+    )
     Kes = ek(x)
 
     """

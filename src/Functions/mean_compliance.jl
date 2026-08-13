@@ -23,7 +23,11 @@ function MeanComplianceFun(
     kwargs...,
 )
     # MeanCompliance is only valid for structural (LinearElasticity) problems
-    @assert solver.problem isa StiffnessTopOptProblem "MeanComplianceFun can only be used with StiffnessTopOptProblem (structural mechanics). Got $(typeof(solver.problem))"
+    solver.problem isa StiffnessTopOptProblem || throw(
+        ArgumentError(
+            "MeanComplianceFun can only be used with StiffnessTopOptProblem (structural mechanics). Got $(typeof(solver.problem))",
+        ),
+    )
     if method == :exact
         method = ExactMean(problem.F)
     elseif method == :exact_svd
