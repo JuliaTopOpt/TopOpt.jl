@@ -340,16 +340,16 @@ using Ferrite: getncells
         x0 = fill(0.5, length(solver.vars))
 
         black_wrong = falses(nel + 5)
-        @test_throws AssertionError geso(x0; black=black_wrong, seed=100)
+        @test_throws DimensionMismatch geso(x0; black=black_wrong, seed=100)
 
         white_wrong = falses(nel + 5)
-        @test_throws AssertionError geso(x0; white=white_wrong, seed=101)
+        @test_throws DimensionMismatch geso(x0; white=white_wrong, seed=101)
 
         black_overlap = falses(nel)
         white_overlap = falses(nel)
         black_overlap[1:3] .= true
         white_overlap[1:3] .= true
-        @test_throws AssertionError geso(
+        @test_throws ArgumentError geso(
             x0; black=black_overlap, white=white_overlap, seed=102
         )
     end
