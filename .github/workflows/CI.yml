@@ -45,7 +45,6 @@ jobs:
           - Core_Tests
           - WCSMO14_1
           - WCSMO14_2
-          - Core_Tests_Opposite_Preference
     steps:
       - uses: actions/checkout@v6
       - uses: julia-actions/setup-julia@v2
@@ -54,7 +53,7 @@ jobs:
           arch: ${{ matrix.arch }}
       - uses: julia-actions/cache@v2
         with:
-          cache-name: ${{ contains(matrix.group, 'Opposite_Preference') && 'test-opposite' || 'test' }}
+          cache-name: test
           cache-artifacts: true
           cache-packages: true
           cache-compiled: true
@@ -62,8 +61,41 @@ jobs:
         run: |
           rm -rf ~/.julia/registries/General.toml ~/.julia/registries/General.tar.gz
           julia -e 'using Pkg; Pkg.Registry.add(RegistrySpec(url="https://github.com/JuliaRegistries/General.git"))'
-      - name: Set preference for opposite preference jobs
-        if: contains(matrix.group, 'Opposite_Preference')
+      - name: Instantiate test environment
+        run: julia --project=test -e 'using Pkg; Pkg.develop(PackageSpec(path=".")); Pkg.instantiate(); Pkg.precompile()'
+      - name: Run tests
+        env:
+          GROUP: ${{ matrix.group }}
+        run: julia --project=test --color=yes --check-bounds=yes --depwarn=yes --code-coverage=@. -e 'include("test/runtests.jl")'
+      - uses: julia-actions/julia-processcoverage@v1
+      - uses: codecov/codecov-action@v5
+        with:
+          file: lcov.info
+          token: ${{ secrets.CODECOV_TOKEN }}
+
+  # Run Core_Tests with penalty_before_interpolation = false to verify
+  # the package works correctly under the opposite preference setting.
+  # Separate job with its own cache to avoid cache-key collisions.
+  test-opposite:
+    name: "test: Core_Tests (opposite preference)"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: '1'
+          arch: x64
+      - uses: julia-actions/cache@v2
+        with:
+          cache-name: test-opposite
+          cache-artifacts: true
+          cache-packages: true
+          cache-compiled: true
+      - name: Use General git registry (avoids CDN lag for new versions)
+        run: |
+          rm -rf ~/.julia/registries/General.toml ~/.julia/registries/General.tar.gz
+          julia -e 'using Pkg; Pkg.Registry.add(RegistrySpec(url="https://github.com/JuliaRegistries/General.git"))'
+      - name: Set opposite preference
         run: |
           julia --project=test -e '
             using Pkg
@@ -79,15 +111,50 @@ jobs:
           '
       - name: Instantiate test environment
         run: julia --project=test -e 'using Pkg; Pkg.develop(PackageSpec(path=".")); Pkg.instantiate(); Pkg.precompile()'
-      - name: Run tests
+      - name: Run Core_Tests
         env:
-          GROUP: ${{ matrix.group }}
+          GROUP: Core_Tests_Opposite_Preference
         run: julia --project=test --color=yes --check-bounds=yes --depwarn=yes --code-coverage=@. -e 'include("test/runtests.jl")'
       - uses: julia-actions/julia-processcoverage@v1
       - uses: codecov/codecov-action@v5
         with:
           file: lcov.info
           token: ${{ secrets.CODECOV_TOKEN }}
+
+  # Cross-platform smoke test: run Core_Tests on macOS and Windows to catch
+  # platform-specific regressions without running the full matrix.
+  smoke-test:
+    name: "smoke: ${{ matrix.os }}"
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - macos-latest
+          - windows-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: '1'
+          arch: x64
+      - uses: julia-actions/cache@v2
+        with:
+          cache-name: smoke-${{ matrix.os }}
+          cache-artifacts: true
+          cache-packages: true
+          cache-compiled: true
+      - name: Use General git registry (avoids CDN lag for new versions)
+        shell: bash
+        run: |
+          rm -rf ~/.julia/registries/General.toml ~/.julia/registries/General.tar.gz
+          julia -e 'using Pkg; Pkg.Registry.add(RegistrySpec(url="https://github.com/JuliaRegistries/General.git"))'
+      - name: Instantiate test environment
+        run: julia --project=test -e 'using Pkg; Pkg.develop(PackageSpec(path=".")); Pkg.instantiate(); Pkg.precompile()'
+      - name: Run Core_Tests
+        env:
+          GROUP: Core_Tests
+        run: julia --project=test --color=yes --check-bounds=yes --depwarn=yes -e 'include("test/runtests.jl")'
 
   # One CI job per tutorial .qmd file (dynamic matrix from scan-tutorials)
   tutorials:
@@ -106,7 +173,7 @@ jobs:
           arch: x64
       - uses: julia-actions/cache@v2
         with:
-          cache-name: tutorials-${{ hashFiles('Project.toml') }}
+          cache-name: tutorials
           cache-artifacts: true
           cache-packages: true
           cache-compiled: true
@@ -146,7 +213,7 @@ jobs:
           version: '1'
       - uses: julia-actions/cache@v2
         with:
-          cache-name: docs-${{ hashFiles('Project.toml') }}
+          cache-name: docs
           cache-artifacts: true
           cache-packages: true
           cache-compiled: true
