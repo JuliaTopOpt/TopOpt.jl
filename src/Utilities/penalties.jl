@@ -128,4 +128,3 @@ function get_ρ_dρ(x_e::T, penalty::AbstractPenalty{T}, xmin::T) where {T<:Real
     g = p.partials[1]
     return p.value, g
 end
-
