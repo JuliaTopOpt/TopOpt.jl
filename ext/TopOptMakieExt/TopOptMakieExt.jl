@@ -1,8 +1,8 @@
 module TopOptMakieExt
 
 using LinearAlgebra: norm
-using Makie: Makie, lift, cam3d!, Point3f, Vec3f, Figure, Auto, RGBAf
-using Makie: DataAspect, Axis, LScene, SliderGrid, linesegments!, Point2f
+using Makie: Makie,lift,cam3d!,Point3f,Vec3f,Figure,Auto,RGBAf
+using Makie: DataAspect,Axis,LScene,SliderGrid,linesegments!,Point2f
 using Makie: ColorSchemes
 using GeometryBasics
 using GeometryBasics: TriangleFace
@@ -38,7 +38,7 @@ function Makie.to_triangles(cells::AbstractVector{<:Ferrite.AbstractCell})
 end
 
 # https://github.com/JuliaPlots/AbstractPlotting.jl/blob/444813136a506eba8b5b03e2125c7a5f24e825cb/src/conversions.jl#L505
-function to_triangle(tris, cell::Union{Ferrite.Hexahedron,QuadraticHexahedron})
+function to_triangle(tris,cell::Union{Ferrite.Hexahedron,QuadraticHexahedron})
     nodes = cell.nodes
     push!(tris, TriangleFace{Int}(nodes[1], nodes[2], nodes[5]))
     push!(tris, TriangleFace{Int}(nodes[5], nodes[2], nodes[6]))
