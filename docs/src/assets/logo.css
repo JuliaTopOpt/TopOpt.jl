@@ -1,0 +1,18 @@
+/* Add logo next to the package name in the sidebar */
+.docs-package-name {
+    display: flex;
+    align-items: center;
+    gap: 0.4em;
+}
+
+.docs-package-name::before {
+    content: "";
+    display: inline-block;
+    height: 1.4em;
+    width: 1.4em;
+    background-image: url("../assets/logo.png");
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    flex-shrink: 0;
+}
