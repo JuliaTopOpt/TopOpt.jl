@@ -83,5 +83,49 @@ if isempty(new_issues) && isempty(fixed_issues)
     push!(lines, "No new or fixed issues.")
 end
 
+# All issues on master
+all_master_issues = sort(collect(values(master_issues)); by=i -> i["signature"])
+if !isempty(all_master_issues)
+    push!(lines, "")
+    push!(lines, "#### 📋 All issues on master ($(length(all_master_issues)))")
+    push!(lines, "")
+    for (i, issue) in enumerate(all_master_issues)
+        sig = issue["signature"]
+        msg = issue["message"]
+        if length(msg) > 500
+            msg = msg[1:500] * "…"
+        end
+        push!(lines, "<details><summary>$(i). $(issue["type"]) — $(basename(sig))</summary>")
+        push!(lines, "")
+        push!(lines, "```")
+        push!(lines, msg)
+        push!(lines, "```")
+        push!(lines, "</details>")
+        push!(lines, "")
+    end
+end
+
+# All issues in PR
+all_pr_issues = sort(collect(values(pr_issues)); by=i -> i["signature"])
+if !isempty(all_pr_issues)
+    push!(lines, "")
+    push!(lines, "#### 📋 All issues in PR ($(length(all_pr_issues)))")
+    push!(lines, "")
+    for (i, issue) in enumerate(all_pr_issues)
+        sig = issue["signature"]
+        msg = issue["message"]
+        if length(msg) > 500
+            msg = msg[1:500] * "…"
+        end
+        push!(lines, "<details><summary>$(i). $(issue["type"]) — $(basename(sig))</summary>")
+        push!(lines, "")
+        push!(lines, "```")
+        push!(lines, msg)
+        push!(lines, "```")
+        push!(lines, "</details>")
+        push!(lines, "")
+    end
+end
+
 write("jet_diff.md", join(lines, "\n"))
 println(join(lines, "\n"))
