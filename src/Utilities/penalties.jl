@@ -136,7 +136,15 @@ const SinhPenalty = SinhPenaltyFun
 const ProjectedPenalty = ProjectedPenaltyFun
 const HeavisideProjection = HeavisideProjectionFun
 const SigmoidProjection = SigmoidProjectionFun
-export PowerPenalty, RationalPenalty, SinhPenalty, ProjectedPenalty,
-    HeavisideProjection, SigmoidProjection,
-    PowerPenaltyFun, RationalPenaltyFun, SinhPenaltyFun, ProjectedPenaltyFun,
-    HeavisideProjectionFun, SigmoidProjectionFun
+export PowerPenalty,
+    RationalPenalty,
+    SinhPenalty,
+    ProjectedPenalty,
+    HeavisideProjection,
+    SigmoidProjection,
+    PowerPenaltyFun,
+    RationalPenaltyFun,
+    SinhPenaltyFun,
+    ProjectedPenaltyFun,
+    HeavisideProjectionFun,
+    SigmoidProjectionFun

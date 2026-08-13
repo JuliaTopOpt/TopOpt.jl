@@ -40,7 +40,9 @@ Random.seed!(42)
         @test size(mc.method.V, 2) == 5
 
         # Test with sample_method=:hadamard
-        mc = MeanComplianceFun(problem, solver; method=:trace, nv=5, sample_method=:hadamard)
+        mc = MeanComplianceFun(
+            problem, solver; method=:trace, nv=5, sample_method=:hadamard
+        )
         @test mc.method isa TopOpt.Functions.TraceEstimationMean
         @test mc.method.sample_once == true  # hadamard forces sample_once=true
 
@@ -82,7 +84,9 @@ Random.seed!(42)
         @test mc.method.sample_once == true  # hadamard forces sample_once=true
 
         # Test with sample_method=:hutch
-        mc = MeanComplianceFun(problem, solver; method=:svd_trace, nv=4, sample_method=:hutch)
+        mc = MeanComplianceFun(
+            problem, solver; method=:svd_trace, nv=4, sample_method=:hutch
+        )
         @test mc.method isa TopOpt.Functions.TraceEstimationSVDMean
     end
 
@@ -146,7 +150,9 @@ Random.seed!(42)
         solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(2.0))
 
         # Test hadamard symbol conversion for TraceEstimationMean
-        mc = MeanComplianceFun(problem, solver; method=:trace, nv=3, sample_method=:hadamard)
+        mc = MeanComplianceFun(
+            problem, solver; method=:trace, nv=3, sample_method=:hadamard
+        )
         @test mc.method.sample_method === TopOpt.Functions.hadamard!
 
         # Test hutch symbol conversion for TraceEstimationMean
@@ -160,7 +166,9 @@ Random.seed!(42)
         @test mc.method.sample_method === TopOpt.Functions.hadamard!
 
         # Test hutch symbol conversion for TraceEstimationSVDMean
-        mc = MeanComplianceFun(problem, solver; method=:svd_trace, nv=3, sample_method=:hutch)
+        mc = MeanComplianceFun(
+            problem, solver; method=:svd_trace, nv=3, sample_method=:hutch
+        )
         @test mc.method.sample_method === TopOpt.Functions.hutch_rand!
     end
 
@@ -209,7 +217,9 @@ Random.seed!(42)
         @test isfinite(val_trace)
 
         # Test TraceEstimationSVDMean
-        solver_svd = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(2.0))
+        solver_svd = FEASolver(
+            DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(2.0)
+        )
         mc_svd = MeanComplianceFun(problem, solver_svd; method=:svd_trace, nv=10)
         val_svd = mc_svd(PseudoDensities(x))
         @test val_svd > 0
@@ -230,7 +240,9 @@ Random.seed!(42)
         @test mean(grad_trace) < 0  # Gradient should be negative (more material = lower compliance)
 
         # Test TraceEstimationSVDMean gradient
-        solver_svd = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(2.0))
+        solver_svd = FEASolver(
+            DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(2.0)
+        )
         mc_svd = MeanComplianceFun(problem, solver_svd; method=:svd_trace, nv=10)
         grad_svd = Zygote.gradient(x -> mc_svd(PseudoDensities(x)), x)[1]
         @test length(grad_svd) == length(x)

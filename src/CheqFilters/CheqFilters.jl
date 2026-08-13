@@ -125,7 +125,11 @@ include("density_filter.jl")
 const DensityFilter = DensityFilterFun
 const SensFilter = SensFilterFun
 const ProjectedDensityFilter = ProjectedDensityFilterFun
-export DensityFilter, SensFilter, ProjectedDensityFilter,
-    DensityFilterFun, SensFilterFun, ProjectedDensityFilterFun
+export DensityFilter,
+    SensFilter,
+    ProjectedDensityFilter,
+    DensityFilterFun,
+    SensFilterFun,
+    ProjectedDensityFilterFun
 
 end

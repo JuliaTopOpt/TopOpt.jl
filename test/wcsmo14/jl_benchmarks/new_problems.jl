@@ -13,12 +13,12 @@ struct NewPointLoadCantilever{
     T,
     N,
     M,
-    T1 <: RectilinearGrid{dim,T,N,M},
-    T2 <: T,
-    T3 <: T,
-    T4 <: ConstraintHandler{<:DofHandler{dim,<:Cell{dim,N,M},T},T},
-    T5 <: Dict{Int,Vector{T}},
-    T6 <: Metadata,
+    T1<:RectilinearGrid{dim,T,N,M},
+    T2<:T,
+    T3<:T,
+    T4<:ConstraintHandler{<:DofHandler{dim,<:Cell{dim,N,M},T},T},
+    T5<:Dict{Int,Vector{T}},
+    T6<:Metadata,
 } <: StiffnessTopOptProblem{dim,T}
     rect_grid::T1
     E::T2

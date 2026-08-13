@@ -279,7 +279,9 @@ end
 
     @testset "getpressuredict(::TieBeam)" begin
         force = 2.5
-        problem = TopOpt.TopOptProblems.TieBeam(Val{:Linear}, Float64; refine=1, force=force)
+        problem = TopOpt.TopOptProblems.TieBeam(
+            Val{:Linear}, Float64; refine=1, force=force
+        )
 
         pd = TopOpt.TopOptProblems.getpressuredict(problem)
         @test pd isa Dict{String,Float64}

@@ -65,7 +65,9 @@ Reverse-mode AD rule for `FixedElementProjector`.
 The pullback propagates gradients only through free elements, with zero
 gradient through fixed (black/white) elements.
 """
-function ChainRulesCore.rrule(p::FixedElementProjectorFun, x_free::AbstractVector{T}) where {T}
+function ChainRulesCore.rrule(
+    p::FixedElementProjectorFun, x_free::AbstractVector{T}
+) where {T}
     y = p(x_free)
 
     function projector_pullback(Δy)
