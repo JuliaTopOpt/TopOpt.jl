@@ -10,6 +10,7 @@
 [![Documentation (dev)](https://img.shields.io/badge/docs-dev-blue.svg)](https://juliatopopt.github.io/TopOpt.jl/dev)
 [![codecov](https://codecov.io/gh/juliatopopt/TopOpt.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/juliatopopt/TopOpt.jl)
 [![Aqua QA](https://raw.githubusercontent.com/JuliaTesting/Aqua.jl/master/badge.svg)](https://github.com/JuliaTesting/Aqua.jl)
+[![Code Style: Blue](https://img.shields.io/badge/code%20style-Blue-4473c9.svg)](https://github.com/invenia/BlueStyle)
 [![JET](https://img.shields.io/badge/%F0%9F%9B%A9%EF%B8%8F_tested_with-JET.jl-233f9a)](https://github.com/aviatesk/JET.jl)
 
 `TopOpt` is a topology optimization package written in [Julia](https://github.com/JuliaLang/julia). To learn more and see some examples, visit the [documentation](https://juliatopopt.github.io/TopOpt.jl/stable) ([dev](https://juliatopopt.github.io/TopOpt.jl/dev)) and the [tutorials](https://juliatopopt.github.io/TopOpt.jl/stable/tutorials/) ([dev](https://juliatopopt.github.io/TopOpt.jl/dev/tutorials/)). Numerous examples can also be found in the `test/examples` and `test/wcsmo14` directories.
