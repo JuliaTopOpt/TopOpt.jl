@@ -47,7 +47,19 @@ rectgrid = RectilinearGrid((60,20), (1.0,1.0))
 ```
 """
 function RectilinearGrid(
-    ::Type{Val{:Linear}}, nels::NTuple{dim,Int}, sizes::NTuple{dim,T}
+    ::Type{Val{:Linear}}, nels::NTuple{<:Any,Int}, sizes::NTuple{<:Any}
+)
+    return _RectilinearGrid_Linear(Val(length(nels)), eltype(sizes), nels, sizes)
+end
+
+function RectilinearGrid(
+    ::Type{Val{:Quadratic}}, nels::NTuple{<:Any,Int}, sizes::NTuple{<:Any}
+)
+    return _RectilinearGrid_Quadratic(Val(length(nels)), eltype(sizes), nels, sizes)
+end
+
+function _RectilinearGrid_Linear(
+    ::Val{dim}, ::Type{T}, nels::NTuple{dim,Int}, sizes::NTuple{dim,T}
 ) where {dim,T}
     geoshape = dim === 2 ? Quadrilateral : Hexahedron
     corner1 = Vec{dim}(fill(T(0), dim))
@@ -57,11 +69,13 @@ function RectilinearGrid(
     N = nnodes(geoshape)
     M = Ferrite.nfacets(Ferrite.getrefshape(geoshape))
     ncells = prod(nels)
-    return RectilinearGrid{dim,T,N,M,typeof(grid)}(grid, nels, sizes, (corner1, corner2))
+    return RectilinearGrid{dim,T,N,M,typeof(grid)}(
+        grid, nels, sizes, (corner1, corner2)
+    )
 end
 
-function RectilinearGrid(
-    ::Type{Val{:Quadratic}}, nels::NTuple{dim,Int}, sizes::NTuple{dim,T}
+function _RectilinearGrid_Quadratic(
+    ::Val{dim}, ::Type{T}, nels::NTuple{dim,Int}, sizes::NTuple{dim,T}
 ) where {dim,T}
     geoshape = dim === 2 ? QuadraticQuadrilateral : Hexahedron
     corner1 = Vec{dim}(fill(T(0), dim))
@@ -71,7 +85,9 @@ function RectilinearGrid(
     N = nnodes(geoshape)
     M = Ferrite.nfacets(Ferrite.getrefshape(geoshape))
     ncells = prod(nels)
-    return RectilinearGrid{dim,T,N,M,typeof(grid)}(grid, nels, sizes, (corner1, corner2))
+    return RectilinearGrid{dim,T,N,M,typeof(grid)}(
+        grid, nels, sizes, (corner1, corner2)
+    )
 end
 
 nnodespercell(::RectilinearGrid{dim,T,N,M}) where {dim,T,N,M} = N
