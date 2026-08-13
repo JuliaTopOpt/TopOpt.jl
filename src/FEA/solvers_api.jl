@@ -139,7 +139,7 @@ function solve_system!(
 ) where {T,Physics}
     if safe
         m = meandiag(K)
-        for i in 1:size(K, 1)
+        for i in axes(K, 1)
             if K[i, i] ≈ zero(T)
                 K[i, i] = m
             end
@@ -177,7 +177,7 @@ function solve_system!(
 ) where {T,Physics}
     if safe
         m = meandiag(K)
-        for i in 1:size(K, 1)
+        for i in axes(K, 1)
             if K[i, i] ≈ zero(T)
                 K[i, i] = m
             end
@@ -322,7 +322,7 @@ function (s::GenericFEASolver{T,Physics,Solver})(
         )
 
         # Solve for each column of the matrix RHS
-        for j in 1:size(rhs, 2)
+        for j in axes(rhs, 2)
             # Get the RHS for this column - use the provided matrix columns
             # Apply boundary conditions to the column
             rhs_j = copy(rhs[:, j])
@@ -544,7 +544,7 @@ function FEASolver(
         meandiag = mapreduce(f, +, elementinfo.Kes; init=zero(T))
         xes = deepcopy(elementinfo.fes)
         fixed_dofs = problem.ch.prescribed_dofs
-        free_dofs = setdiff(1:length(u), fixed_dofs)
+        free_dofs = setdiff(eachindex(u), fixed_dofs)
     else
         meandiag = zero(T)
         xes = Vector{Vector{T}}[]
@@ -611,3 +611,53 @@ end
 
 # Export new FEASolver methods
 export FEASolver
+
+# simulate convenience wrapper
+struct LinearElasticityResult{Tc,Tu}
+    comp::Tc
+    u::Tu
+end
+function Base.show(io::IO, ::MIME{Symbol("text/plain")}, ::LinearElasticityResult)
+    return println(io, "TopOpt linear elasticity result")
+end
+
+"""
+    simulate(solver, x)
+
+Run a forward FEA solve for the design `x` and return the displacement/temperature
+field. Convenience wrapper around the solver call operator.
+"""
+function simulate(
+    problem::StiffnessTopOptProblem,
+    topology=ones(getncells(TopOptProblems.getdh(problem).grid));
+    round=true,
+    hard=true,
+    xmin=0.001,
+    safe=true,
+)
+    if round
+        if hard
+            solver = FEASolver(DirectSolver, problem; xmin=0.0)
+        else
+            solver = FEASolver(DirectSolver, problem; xmin=xmin)
+        end
+    else
+        solver = FEASolver(DirectSolver, problem; xmin=xmin)
+    end
+    vars = solver.vars
+    fill_vars!(vars, topology; round=round)
+    solver(false, Val{safe})
+    comp = dot(solver.u, solver.globalinfo.f)
+    return LinearElasticityResult(comp, copy(solver.u))
+end
+
+function fill_vars!(vars::Array, topology; round)
+    if round
+        vars .= Base.round.(topology)
+    else
+        copyto!(vars, topology)
+    end
+    return vars
+end
+
+export simulate

@@ -47,17 +47,21 @@ rectgrid = RectilinearGrid((60,20), (1.0,1.0))
 ```
 """
 function RectilinearGrid(
-    ::Type{Val{CellType}}, nels::NTuple{dim,Int}, sizes::NTuple{dim,T}
-) where {dim,T,CellType}
-    if dim === 2
-        if CellType === :Linear
-            geoshape = Quadrilateral
-        else
-            geoshape = QuadraticQuadrilateral
-        end
-    else
-        geoshape = Hexahedron
-    end
+    ::Type{Val{:Linear}}, nels::NTuple{<:Any,Int}, sizes::NTuple{<:Any}
+)
+    return _RectilinearGrid_Linear(Val(length(nels)), eltype(sizes), nels, sizes)
+end
+
+function RectilinearGrid(
+    ::Type{Val{:Quadratic}}, nels::NTuple{<:Any,Int}, sizes::NTuple{<:Any}
+)
+    return _RectilinearGrid_Quadratic(Val(length(nels)), eltype(sizes), nels, sizes)
+end
+
+function _RectilinearGrid_Linear(
+    ::Val{dim}, ::Type{T}, nels::NTuple{dim,Int}, sizes::NTuple{dim,T}
+) where {dim,T}
+    geoshape = dim === 2 ? Quadrilateral : Hexahedron
     corner1 = Vec{dim}(fill(T(0), dim))
     corner2 = Vec{dim}((nels .* sizes))
     grid = generate_grid(geoshape, nels, corner1, corner2)
@@ -65,7 +69,25 @@ function RectilinearGrid(
     N = nnodes(geoshape)
     M = Ferrite.nfacets(Ferrite.getrefshape(geoshape))
     ncells = prod(nels)
-    return RectilinearGrid{dim,T,N,M,typeof(grid)}(grid, nels, sizes, (corner1, corner2))
+    return RectilinearGrid{dim,T,N,M,typeof(grid)}(
+        grid, nels, sizes, (corner1, corner2)
+    )
+end
+
+function _RectilinearGrid_Quadratic(
+    ::Val{dim}, ::Type{T}, nels::NTuple{dim,Int}, sizes::NTuple{dim,T}
+) where {dim,T}
+    geoshape = dim === 2 ? QuadraticQuadrilateral : Hexahedron
+    corner1 = Vec{dim}(fill(T(0), dim))
+    corner2 = Vec{dim}((nels .* sizes))
+    grid = generate_grid(geoshape, nels, corner1, corner2)
+
+    N = nnodes(geoshape)
+    M = Ferrite.nfacets(Ferrite.getrefshape(geoshape))
+    ncells = prod(nels)
+    return RectilinearGrid{dim,T,N,M,typeof(grid)}(
+        grid, nels, sizes, (corner1, corner2)
+    )
 end
 
 nnodespercell(::RectilinearGrid{dim,T,N,M}) where {dim,T,N,M} = N
@@ -123,8 +145,16 @@ LGrid(Val{:Linear}, (2, 4), (2, 2), Vec{2,Float64}((0.0,0.0)), Vec{2,Float64}((2
 function LGrid(
     ::Type{Val{CellType}}, ::Type{T}; length=100, height=100, upperslab=50, lowerslab=50
 ) where {T,CellType}
-    @assert length > upperslab
-    @assert height > lowerslab
+    length > upperslab || throw(
+        ArgumentError(
+            "LGrid: length ($length) must be greater than upperslab ($upperslab)"
+        ),
+    )
+    height > lowerslab || throw(
+        ArgumentError(
+            "LGrid: height ($height) must be greater than lowerslab ($lowerslab)"
+        ),
+    )
     return LGrid(
         Val{CellType},
         (upperslab, height),
@@ -171,7 +201,11 @@ end
 function _LinearLGrid(
     nel1::NTuple{2,Int}, nel2::NTuple{2,Int}, LL::Vec{2,T}, UR::Vec{2,T}, MR::Vec{2,T}
 ) where {T}
-    @assert nel1[2] > nel2[2]
+    nel1[2] > nel2[2] || throw(
+        ArgumentError(
+            "_LinearLGrid: nel1[2] ($(nel1[2])) must be greater than nel2[2] ($(nel2[2]))",
+        ),
+    )
 
     midpointindy = round(Int, nel2[2] / 2) + 1
     nodes = Node{2,T}[]
@@ -329,7 +363,11 @@ end
 function _QuadraticLGrid(
     nel1::NTuple{2,Int}, nel2::NTuple{2,Int}, LL::Vec{2,T}, UR::Vec{2,T}, MR::Vec{2,T}
 ) where {T}
-    @assert nel1[2] > nel2[2]
+    nel1[2] > nel2[2] || throw(
+        ArgumentError(
+            "_QuadraticLGrid: nel1[2] ($(nel1[2])) must be greater than nel2[2] ($(nel2[2]))",
+        ),
+    )
 
     midpointindy = round(Int, nel2[2] / 2) + 1
     nodes = Node{2,T}[]

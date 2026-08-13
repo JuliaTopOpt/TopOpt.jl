@@ -20,11 +20,11 @@ function compute_element_energy(
 ) where {T}
     obj = zero(T)
     grad .= 0
-    @inbounds for i in 1:size(cell_dofs, 2)
+    @inbounds for i in axes(cell_dofs, 2)
         cell_energy[i] = zero(T)
         Ke = rawmatrix(Kes[i])
-        for w in 1:size(Ke, 2)
-            for v in 1:size(Ke, 1)
+        for w in axes(Ke, 2)
+            for v in axes(Ke, 1)
                 cell_energy[i] += u[cell_dofs[v, i]] * Ke[v, w] * u[cell_dofs[w, i]]
             end
         end

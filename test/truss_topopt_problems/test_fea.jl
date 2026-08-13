@@ -21,7 +21,7 @@ u_solutions = [
 ]
 ins_dir = joinpath(@__DIR__, "instances", "fea_examples");
 
-@testset "Truss problem solve - $(problem_json[i])" for i in 1:length(problem_json)
+@testset "Truss problem solve - $(problem_json[i])" for i in eachindex(problem_json)
     # i = 3
     file_name = problem_json[i]
     problem_file = joinpath(ins_dir, file_name)

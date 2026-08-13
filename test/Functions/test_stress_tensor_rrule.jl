@@ -47,7 +47,7 @@ Random.seed!(1)
     end
 
     @testset "rrule for different cell indices" begin
-        for cellidx in 1:length(st.cells)
+        for cellidx in eachindex(st.cells)
             y, pullback = ChainRulesCore.rrule(reinit!, st, cellidx)
 
             @test y === st

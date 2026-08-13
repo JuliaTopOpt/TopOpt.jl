@@ -3,8 +3,8 @@ module TopOptMakieExt
 using LinearAlgebra: norm
 using Makie: Makie, lift, cam3d!, Point3f, Vec3f, Figure, Auto, RGBAf
 using Makie: DataAspect, Axis, LScene, SliderGrid, linesegments!, Point2f
+using Makie: ColorSchemes
 using GeometryBasics
-using ColorSchemes
 using GeometryBasics: TriangleFace
 using TopOpt: TopOpt
 using TopOpt.TopOptProblems:

@@ -79,7 +79,7 @@ Random.seed!(42)
 
             # Compute trace estimate manually
             estimate = 0.0
-            for i in 1:size(V, 2)
+            for i in axes(V, 2)
                 v = V[:, i]
                 estimate += dot(v, Matrix(F)' * Matrix(F) * v)
             end
@@ -113,7 +113,7 @@ Random.seed!(42)
                 tem = TraceEstimationMean(F, nv)
                 V = tem.V
                 estimate = 0.0
-                for i in 1:size(V, 2)
+                for i in axes(V, 2)
                     v = V[:, i]
                     estimate += dot(v, Matrix(F)' * Matrix(F) * v)
                 end
@@ -142,7 +142,7 @@ Random.seed!(42)
         V_h = tem_hadamard.V
 
         estimate_h = 0.0
-        for i in 1:size(V_h, 2)
+        for i in axes(V_h, 2)
             v = V_h[:, i]
             estimate_h += dot(v, Matrix(F)' * Matrix(F) * v)
         end
@@ -155,7 +155,7 @@ Random.seed!(42)
             V_r = tem_rademacher.V
 
             estimate_r = 0.0
-            for i in 1:size(V_r, 2)
+            for i in axes(V_r, 2)
                 v = V_r[:, i]
                 estimate_r += dot(v, Matrix(F)' * Matrix(F) * v)
             end

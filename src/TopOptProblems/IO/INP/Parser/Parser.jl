@@ -65,11 +65,14 @@ include(joinpath("inp_to_ferrite.jl"))
 function extract_inp(filepath_with_ext)
     file = open(filepath_with_ext, "r")
 
-    local node_coords
-    local celltype, cells, offset
+    node_coords = nothing
+    celltype = nothing
+    cells = nothing
+    offset = 0
     nodesets = Dict{String,Vector{Int}}()
     cellsets = Dict{String,Vector{Int}}()
-    local E, mu
+    E = nothing
+    mu = nothing
     nodedbcs = Dict{String,Vector{Tuple{Int,Float64}}}()
     cloads = Dict{Int,Vector{Float64}}()
     facesets = Dict{String,Vector{Tuple{Int,Int}}}()
@@ -86,37 +89,37 @@ function extract_inp(filepath_with_ext)
     dload_heading_pattern = r"\*DLOAD"
 
     line = readline(file)
-    local dim
+    dim = 0
     while !eof(file)
         m = match(node_heading_pattern, line)
-        if m != nothing && m[1] == "Nall"
+        if m != nothing && something(m[1]) == "Nall"
             node_coords, line = extract_nodes(file)
             dim = length(node_coords[1])
             continue
         end
         m = match(cell_heading_pattern, line)
         if m != nothing
-            celltype = String(m[1])
-            cellsetname = String(m[2])
+            celltype = String(something(m[1]))
+            cellsetname = String(something(m[2]))
             cells, offset, line = extract_cells(file)
-            cellsets[cellsetname] = collect(1:length(cells))
+            cellsets[cellsetname] = collect(eachindex(cells))
             continue
         end
         m = match(nodeset_heading_pattern, line)
         if m != nothing
-            nodesetname = String(m[1])
+            nodesetname = String(something(m[1]))
             line = extract_set!(nodesets, nodesetname, file)
             continue
         end
         m = match(cellset_heading_pattern, line)
         if m != nothing
-            cellsetname = String(m[1])
+            cellsetname = String(something(m[1]))
             line = extract_set!(cellsets, cellsetname, file, offset)
             continue
         end
         m = match(material_heading_pattern, line)
         if m != nothing
-            material_name = String(m[1])
+            material_name = String(something(m[1]))
             E, mu, line = extract_material(file)
             continue
         end
@@ -139,6 +142,14 @@ function extract_inp(filepath_with_ext)
     end
 
     close(file)
+
+    node_coords === nothing && throw(ArgumentError("INP file missing *Node section"))
+    celltype === nothing && throw(ArgumentError("INP file missing *Element section"))
+    cells === nothing && throw(ArgumentError("INP file missing *Element section"))
+    E === nothing && throw(ArgumentError("INP file missing *Material section"))
+    mu === nothing && throw(ArgumentError("INP file missing *Material section"))
+    dim == 0 &&
+        throw(ArgumentError("INP file missing *Node section (cannot determine dimension)"))
 
     return InpContent(
         node_coords,

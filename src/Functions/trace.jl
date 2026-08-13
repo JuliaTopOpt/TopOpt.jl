@@ -22,8 +22,8 @@ function ExactSVDMean(F::SparseMatrixCSC)
     I = Int[]
     J = Int[]
     V = eltype(F)[]
-    for j in 1:length(inds)
-        for i in 1:length(rows)
+    for j in eachindex(inds)
+        for i in eachindex(rows)
             push!(I, rows[i])
             push!(J, inds[j])
             push!(V, US_dense[i, j])
@@ -105,8 +105,8 @@ function ExactSVDDiagonal(F::SparseMatrixCSC, nE::Int)
     I = Int[]
     J = Int[]
     vals = eltype(F)[]
-    for j in 1:length(inds)
-        for i in 1:length(rows)
+    for j in eachindex(inds)
+        for i in eachindex(rows)
             push!(I, rows[i])
             push!(J, inds[j])
             push!(vals, US_dense[i, j])

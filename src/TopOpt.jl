@@ -51,7 +51,7 @@ end
 Base.BroadcastStyle(::Type{T}) where {T<:PseudoDensities} = Broadcast.ArrayStyle{T}()
 function Base.similar(
     bc::Broadcast.Broadcasted{Broadcast.ArrayStyle{T}}, ::Type{ElType}
-) where {T,ElType}
+) where {T<:PseudoDensities,ElType}
     return similar(T, axes(bc))
 end
 function Base.similar(
@@ -62,9 +62,16 @@ end
 
 Base.length(x::PseudoDensities) = length(x.x)
 Base.size(x::PseudoDensities, i...) = size(x.x, i...)
-Base.getindex(x::PseudoDensities, i...) = x.x[i...]
+Base.getindex(x::PseudoDensities, i::Integer...) = x.x[i...]
+Base.getindex(x::PseudoDensities, i::CartesianIndex) = x.x[i]
 Base.sum(x::PseudoDensities) = sum(x.x)
-LinearAlgebra.dot(x::PseudoDensities, weights::AbstractArray) = dot(x.x, weights)
+
+# Resolve ambiguity with Base.similar(::Type{<:AbstractArray}, ::NTuple{N,Int})
+function Base.similar(
+    ::Type{TV}, dims::Tuple{Int,Vararg{Int}}
+) where {I,P,F,T,N,A,TV<:PseudoDensities{I,P,F,T,N,A}}
+    return PseudoDensities{I,P,F}(similar(A, dims))
+end
 
 export PseudoDensities
 
@@ -94,7 +101,8 @@ using Ferrite: getncells
 export getncells
 
 using ForwardDiff, IterativeSolvers#, Preconditioners
-@reexport using VTKDataTypes
+using VTKDataTypes
+using VTKDataTypes: VTKUnstructuredData
 
 const DEBUG = Base.RefValue(false)
 
@@ -116,7 +124,6 @@ using .Algorithms
 
 export TopOpt,
     simulate,
-    TopOptTrace,
     SensFilter,
     SensFilterFun,
     DensityFilter,

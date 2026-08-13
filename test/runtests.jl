@@ -19,7 +19,7 @@ end
 # Strip the _Opposite_Preference suffix to get the actual test group
 const ACTUAL_GROUP = replace(GROUP, "_Opposite_Preference" => "")
 
-if ACTUAL_GROUP in ("All", "Core_Tests")
+if ACTUAL_GROUP in ("All", "Core_Tests_1")
     @safetestset "Ferrite Upgrade Behavior" begin
         include("ferrite_upgrade_behavior.jl")
     end
@@ -62,6 +62,9 @@ if ACTUAL_GROUP in ("All", "Core_Tests")
         include("Functions/test_stress_tensor_rrule.jl")
         include("Functions/test_truss_stress_rrule.jl")
     end
+end
+
+if ACTUAL_GROUP in ("All", "Core_Tests_2")
     @safetestset "Solver" begin
         include("FEA/solvers.jl")
         include("FEA/test_convergence.jl")
@@ -97,6 +100,12 @@ if ACTUAL_GROUP in ("All", "Core_Tests")
     end
 end
 
+if ACTUAL_GROUP in ("All", "Aqua_Tests")
+    @safetestset "Aqua" begin
+        include("aqua.jl")
+    end
+end
+
 # Tutorial tests are now run via Quarto render in CI (tutorials job)
 # Each .qmd file is executed during rendering, catching any execution errors.
 # No separate test runner needed - Quarto render serves as the test.
@@ -115,5 +124,11 @@ if ACTUAL_GROUP in ("All", "WCSMO14_2")
     @safetestset "Truss 3d demos" begin
         include("wcsmo14/demos/truss/truss_compliance_3d1.jl")
         include("wcsmo14/demos/truss/truss_compliance_3d2.jl")
+    end
+end
+
+if ACTUAL_GROUP in ("All", "JET_Tests")
+    @safetestset "JET" begin
+        include("jet.jl")
     end
 end

@@ -73,7 +73,7 @@ function update_nodal_grad!(
     nodal_grad::AbstractVector, node_cells, cell_weights, cells, cellvolumes, grad
 )
     T = eltype(nodal_grad)
-    for n in 1:length(nodal_grad)
+    for n in eachindex(nodal_grad)
         nodal_grad[n] = zero(T)
         cell_weights[n] = zero(T)
         r = node_cells.offsets[n]:(node_cells.offsets[n + 1] - 1)
@@ -88,7 +88,7 @@ function update_nodal_grad!(
 end
 
 function normalize_grad!(nodal_grad::AbstractVector, cell_weights)
-    for n in 1:length(nodal_grad)
+    for n in eachindex(nodal_grad)
         if cell_weights[n] > 0
             nodal_grad[n] /= cell_weights[n]
         end

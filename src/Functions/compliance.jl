@@ -103,12 +103,12 @@ function compute_inner(
     inner::AbstractVector{T}, u1, u2, cell_dofs, Kes, x, penalty, xmin
 ) where {T}
     obj = zero(T)
-    @inbounds for i in 1:size(cell_dofs, 2)
+    @inbounds for i in axes(cell_dofs, 2)
         inner[i] = zero(T)
         cell_comp = zero(T)
         Ke = rawmatrix(Kes[i])
-        for w in 1:size(Ke, 2)
-            for v in 1:size(Ke, 1)
+        for w in axes(Ke, 2)
+            for v in axes(Ke, 1)
                 cell_comp += u1[cell_dofs[v, i]] * Ke[v, w] * u2[cell_dofs[w, i]]
             end
         end

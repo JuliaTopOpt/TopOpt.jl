@@ -1,16 +1,17 @@
 using Documenter, TopOpt
 using DocumenterCitations
+using DocumenterCodeBlocks
 
 bib = CitationBibliography(joinpath(@__DIR__, "biblio", "ref.bib"))
 
 makedocs(;
-    sitename="<img src=\"../assets/logo.png\" alt=\"TopOpt.jl\" style=\"height:1.4em;vertical-align:middle;margin-right:0.4em\">TopOpt.jl",
+    sitename="TopOpt.jl",
     format=Documenter.HTML(;
         prettyurls=get(ENV, "CI", nothing) == "true",
     ),
     doctest=true,
     checkdocs=:all,
-    plugins=[bib],
+    plugins=[bib, CodeBlocks()],
     pages=[
         "Home" => "index.md",
         "Tutorials" => "tutorials/index.md",

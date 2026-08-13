@@ -1,0 +1,158 @@
+name: JET Report
+
+on:
+  pull_request:
+    branches:
+      - master
+  push:
+    branches:
+      - master
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+  commits: write
+
+jobs:
+  jet-report-pr:
+    name: "JET: Report vs master"
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          path: pr
+
+      - uses: actions/checkout@v6
+        with:
+          ref: master
+          path: master
+
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: '1'
+          arch: x64
+
+      - uses: julia-actions/cache@v2
+        with:
+          cache-name: jet-report
+          cache-artifacts: true
+          cache-packages: true
+          cache-compiled: true
+
+      - name: Use General git registry
+        run: |
+          rm -rf ~/.julia/registries/General.toml ~/.julia/registries/General.tar.gz
+          julia -e 'using Pkg; Pkg.Registry.add(RegistrySpec(url="https://github.com/JuliaRegistries/General.git"))'
+
+      - name: Instantiate PR environment
+        run: |
+          julia --project=pr/test -e '
+            using Pkg
+            Pkg.develop(PackageSpec(path="pr"))
+            Pkg.instantiate()
+            Pkg.precompile()'
+
+      - name: Instantiate master environment
+        run: |
+          julia --project=master/test -e '
+            using Pkg
+            Pkg.develop(PackageSpec(path="master"))
+            Pkg.instantiate()
+            Pkg.precompile()'
+
+      - name: Run JET on PR branch
+        run: julia --project=test test/jet_report.jl --output ../pr_jet.json
+        working-directory: pr
+
+      - name: Copy JET script to master checkout
+        run: cp pr/test/jet_report.jl master/test/jet_report.jl
+
+      - name: Run JET on master
+        run: julia --project=test test/jet_report.jl --output ../master_jet.json
+        working-directory: master
+
+      - name: Compare JET reports
+        run: julia --project=test test/jet_compare.jl ../master_jet.json ../pr_jet.json
+        working-directory: pr
+
+      - name: Post JET comparison comment
+        uses: thollander/actions-comment-pull-request@v3
+        with:
+          file: pr/jet_diff.md
+          comment_tag: jet-report
+
+  jet-report-master:
+    name: "JET: Report on master"
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          path: master
+
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: '1'
+          arch: x64
+
+      - uses: julia-actions/cache@v2
+        with:
+          cache-name: jet-report
+          cache-artifacts: true
+          cache-packages: true
+          cache-compiled: true
+
+      - name: Use General git registry
+        run: |
+          rm -rf ~/.julia/registries/General.toml ~/.julia/registries/General.tar.gz
+          julia -e 'using Pkg; Pkg.Registry.add(RegistrySpec(url="https://github.com/JuliaRegistries/General.git"))'
+
+      - name: Instantiate master environment
+        run: |
+          julia --project=master/test -e '
+            using Pkg
+            Pkg.develop(PackageSpec(path="master"))
+            Pkg.instantiate()
+            Pkg.precompile()'
+
+      - name: Run JET on master
+        run: julia --project=test test/jet_report.jl --output ../master_jet.json
+        working-directory: master
+
+      - name: Post JET report comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const report = JSON.parse(fs.readFileSync('master/master_jet.json', 'utf8'));
+            const lines = [
+              '### JET Report (master)',
+              '',
+              `Total issues: ${report.total_issues}`,
+              `  Errors: ${report.errors}`,
+              `  Warnings: ${report.warnings}`,
+              '',
+            ];
+            for (const issue of report.issues) {
+              const sig = issue.signature;
+              const msg = issue.message;
+              const short = msg.length > 500 ? msg.slice(0, 500) + '…' : msg;
+              lines.push(`<details><summary>${issue.type} — ${sig.split('/').pop()}</summary>`);
+              lines.push('');
+              lines.push('```');
+              lines.push(short);
+              lines.push('```');
+              lines.push('</details>');
+              lines.push('');
+            }
+            await github.rest.repos.createCommitComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              commit_sha: context.sha,
+              body: lines.join('\n'),
+            });

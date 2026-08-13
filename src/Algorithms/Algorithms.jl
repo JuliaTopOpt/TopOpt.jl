@@ -3,10 +3,16 @@ module Algorithms
 using Nonconvex, ..Functions, Parameters
 using ..TopOpt: PseudoDensities
 using ..CheqFilters: AbstractCheqFilter
-using Setfield, StaticArrays
 using Parameters: @unpack, @pack!
-using ..Utilities, Ferrite
-using LinearAlgebra, Zygote, Random
+using ..Utilities
+using LinearAlgebra: dot
+using Random: rand, seed!
+using Zygote: pullback
+using Ferrite: getncells
+using StaticArrays: MVector
+using Ferrite
+using Zygote
+using Random
 
 export BESO, GESO, TopOptAlgorithm
 

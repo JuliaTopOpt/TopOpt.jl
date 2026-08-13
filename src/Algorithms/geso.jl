@@ -132,7 +132,7 @@ function get_probs(b::GESO, Prg)
 end
 
 function crossover!(children, genotypes, i, j)
-    for k in 1:size(genotypes, 1)
+    for k in axes(genotypes, 1)
         r = rand()
         if r < 0.5
             children[k, i] = genotypes[k, i]
@@ -256,7 +256,7 @@ function update!(
             if !isempty(white) && white[i]
                 continue
             end
-            for j in 1:size(genotypes, 1)
+            for j in axes(genotypes, 1)
                 r = rand()
                 if r < Pm && !genotypes[j, i]
                     genotypes[j, i] = !genotypes[j, i]
@@ -275,7 +275,7 @@ function update!(
             if !isempty(white) && white[i]
                 continue
             end
-            for j in 1:size(genotypes, 1)
+            for j in axes(genotypes, 1)
                 r = rand()
                 if r < Pm && genotypes[j, i]
                     genotypes[j, i] = !genotypes[j, i]
@@ -294,7 +294,7 @@ function update!(
             if !isempty(white) && white[i]
                 continue
             end
-            for j in 1:size(genotypes, 1)
+            for j in axes(genotypes, 1)
                 r = rand()
                 if r < Pm && genotypes[j, i]
                     genotypes[j, i] = !genotypes[j, i]
@@ -328,38 +328,41 @@ function (b::GESO)(
 
     # Validate black and white vectors
     if !isempty(black)
-        @assert length(black) == nel "black must have length $nel (got $(length(black)))"
+        length(black) == nel ||
+            throw(DimensionMismatch("black must have length $nel (got $(length(black)))"))
     end
     if !isempty(white)
-        @assert length(white) == nel "white must have length $nel (got $(length(white)))"
+        length(white) == nel ||
+            throw(DimensionMismatch("white must have length $nel (got $(length(white)))"))
     end
     if !isempty(black) && !isempty(white)
-        @assert !any(black .& white) "elements cannot be both black and white"
+        any(black .& white) &&
+            throw(ArgumentError("elements cannot be both black and white"))
     end
 
     # Set seed
     isnan(seed) || Random.seed!(seed)
 
     # Initialize the topology (work with full design variables)
-    for i in 1:length(topology)
+    for i in eachindex(topology)
         topology[i] = round(x0[i])
         vars[i] = topology[i]
     end
 
     # Initialize black elements to 1 (solid) and white elements to 0 (void)
-    @inbounds for i in 1:length(topology)
+    @inbounds for i in eachindex(topology)
         if !isempty(black) && black[i]
             topology[i] = T(1)
             vars[i] = T(1)
             var_black[i] = true
-            for j in 1:size(genotypes, 1)
+            for j in axes(genotypes, 1)
                 genotypes[j, i] = true
             end
         elseif !isempty(white) && white[i]
             topology[i] = T(0)
             vars[i] = T(0)
             var_black[i] = false
-            for j in 1:size(genotypes, 1)
+            for j in axes(genotypes, 1)
                 genotypes[j, i] = false
             end
         end
@@ -426,7 +429,7 @@ function (b::GESO)(
         end
     end
 
-    for i in 1:length(topology)
+    for i in eachindex(topology)
         topology[i] = vars[i]
     end
 

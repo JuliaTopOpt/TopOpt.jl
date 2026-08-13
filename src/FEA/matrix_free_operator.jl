@@ -17,7 +17,7 @@ LinearAlgebra.mul!(c, op::MatrixOperator, b) = mul!(c, op.K, b)
 Base.size(op::MatrixOperator) = (size(op.K, 1), size(op, 2))
 Base.size(op::MatrixOperator, i) = size(op.K, i)
 Base.eltype(op::MatrixOperator) = eltype(op.K)
-LinearAlgebra.:*(op::MatrixOperator, b) = mul!(similar(b), op.K, b)
+LinearAlgebra.:*(op::MatrixOperator, b::AbstractVector) = mul!(similar(b), op.K, b)
 
 """
     MatrixFreeOperator
@@ -57,7 +57,7 @@ Base.eltype(op::MatrixFreeOperator{<:Any,T}) where {T} = T
 
 import LinearAlgebra: *, mul!
 
-function *(A::MatrixFreeOperator, x)
+function *(A::MatrixFreeOperator, x::AbstractVector)
     y = similar(x)
     mul!(y, A::MatrixFreeOperator, x)
     return y
@@ -87,11 +87,11 @@ function mul!(y::TV, A::MatrixFreeOperator, x::TV) where {TV<:AbstractVector}
         xes[i] = px * (bcmatrix(Kes[i]).data * xe)
     end
 
-    for i in 1:length(fixed_dofs)
+    for i in eachindex(fixed_dofs)
         dof = fixed_dofs[i]
         y[dof] = meandiag * x[dof]
     end
-    for i in 1:length(free_dofs)
+    for i in eachindex(free_dofs)
         dof = free_dofs[i]
         yi = zero(T)
         r = dof_cells.offsets[dof]:(dof_cells.offsets[dof + 1] - 1)

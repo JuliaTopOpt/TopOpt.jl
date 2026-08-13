@@ -141,11 +141,11 @@ function compute_thermal_compliance!(tc, solver)
     solve_adjoint!(solver, adjoint_sol, adjoint_rhs)
 
     # Per-element gradient: grad_e = (λ_e^T Ke T_e) · dρ_e/dx_e
-    @inbounds for i in 1:size(cell_dofs, 2)
+    @inbounds for i in axes(cell_dofs, 2)
         Ke = rawmatrix(Kes[i])
         cell_energy = zero(obj)
-        for w in 1:size(Ke, 2)
-            for v in 1:size(Ke, 1)
+        for w in axes(Ke, 2)
+            for v in axes(Ke, 1)
                 cell_energy += adjoint_sol[cell_dofs[v, i]] * Ke[v, w] * u[cell_dofs[w, i]]
             end
         end

@@ -27,9 +27,9 @@ function extract_dload!(
         end
         m = match(pattern, line)
         if m != nothing
-            cellidx = parse(TI, m[1]) - offset
-            faceidx = parse(TI, m[2])
-            load = parse(TF, m[3])
+            cellidx = parse(TI, something(m[1])) - offset
+            faceidx = parse(TI, something(m[2]))
+            load = parse(TF, something(m[3]))
             if !first && prevload != load
                 throw("Loads in the same DLOAD set are not equal.")
             end

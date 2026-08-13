@@ -103,23 +103,26 @@ function (b::BESO)(x0=copy(b.comp.solver.vars); black=BitVector(), white=BitVect
 
     # Validate black and white vectors
     if !isempty(black)
-        @assert length(black) == nel "black must have length $nel (got $(length(black)))"
+        length(black) == nel ||
+            throw(DimensionMismatch("black must have length $nel (got $(length(black)))"))
     end
     if !isempty(white)
-        @assert length(white) == nel "white must have length $nel (got $(length(white)))"
+        length(white) == nel ||
+            throw(DimensionMismatch("white must have length $nel (got $(length(white)))"))
     end
     if !isempty(black) && !isempty(white)
-        @assert !any(black .& white) "elements cannot be both black and white"
+        any(black .& white) &&
+            throw(ArgumentError("elements cannot be both black and white"))
     end
 
     # Initialize the topology (work with full design variables)
-    for i in 1:length(topology)
+    for i in eachindex(topology)
         topology[i] = round(x0[i])
         vars[i] = topology[i]
     end
 
     # Initialize black elements to 1 (solid) and white elements to 0 (void)
-    @inbounds for i in 1:length(topology)
+    @inbounds for i in eachindex(topology)
         if !isempty(black) && black[i]
             topology[i] = T(1)
             vars[i] = T(1)
@@ -134,7 +137,11 @@ function (b::BESO)(x0=copy(b.comp.solver.vars); black=BitVector(), white=BitVect
     # Main loop
     change = T(1)
     iter = 0
-    @assert typeof(solver.penalty) === typeof(b.penalty)
+    typeof(solver.penalty) === typeof(b.penalty) || throw(
+        ArgumentError(
+            "BESO: solver penalty type $(typeof(solver.penalty)) must match algorithm penalty type $(typeof(b.penalty))",
+        ),
+    )
     setpenalty!(solver, b.penalty.p)
     f = x -> b.comp(b.filter(PseudoDensities(x)))
     while (change > tol || true_vol > V) && iter < maxiter
@@ -155,7 +162,7 @@ function (b::BESO)(x0=copy(b.comp.solver.vars); black=BitVector(), white=BitVect
         l1, l2 = minimum(sens), maximum(sens)
         while (l2 - l1) / l2 > sens_tol
             th = (l1 + l2) / 2
-            for i in 1:length(topology)
+            for i in eachindex(topology)
                 # Skip updating black and white elements
                 if !isempty(black) && black[i]
                     continue

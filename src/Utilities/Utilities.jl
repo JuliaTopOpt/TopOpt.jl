@@ -2,6 +2,10 @@ module Utilities
 
 using ForwardDiff, Ferrite, IterativeSolvers, StaticArrays, LinearAlgebra
 
+# Forward declarations extended by TopOptProblems
+function getE end
+function getν end
+
 export AbstractPenalty,
     PowerPenalty,
     PowerPenaltyFun,
@@ -15,7 +19,6 @@ export AbstractPenalty,
     SigmoidProjectionFun,
     ProjectedPenalty,
     ProjectedPenaltyFun,
-    setpenalty,
     RaggedArray,
     @debug,
     compliance,

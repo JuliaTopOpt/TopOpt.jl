@@ -23,7 +23,11 @@ end
 function StressTensorFun(solver)
     problem = solver.problem
     # StressTensor is only valid for structural (LinearElasticity) problems
-    @assert problem isa StiffnessTopOptProblem "StressTensorFun can only be used with StiffnessTopOptProblem (structural mechanics). Got $(typeof(problem))"
+    problem isa StiffnessTopOptProblem || throw(
+        ArgumentError(
+            "StressTensorFun can only be used with StiffnessTopOptProblem (structural mechanics). Got $(typeof(problem))",
+        ),
+    )
     dh = problem.ch.dh
     n = ndofs_per_cell(dh)
     global_dofs = zeros(Int, n)
@@ -43,7 +47,7 @@ function ChainRulesCore.rrule(::typeof(reinit!), st::StressTensorFun, cellidx)
 end
 
 function (f::StressTensorFun)(dofs::DisplacementResult)
-    return map(1:length(f.cells)) do cellidx
+    return map(eachindex(f.cells)) do cellidx
         cf = f[cellidx]
         return cf(dofs)
     end

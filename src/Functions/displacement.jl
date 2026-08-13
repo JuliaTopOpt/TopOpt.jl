@@ -36,9 +36,9 @@ end
 
 Base.length(u::DisplacementResult) = length(u.u)
 Base.size(u::DisplacementResult, i...) = size(u.u, i...)
-Base.getindex(u::DisplacementResult, i...) = u.u[i...]
+Base.getindex(u::DisplacementResult, i::Integer...) = u.u[i...]
+Base.getindex(u::DisplacementResult, i::CartesianIndex) = u.u[i]
 Base.sum(u::DisplacementResult) = sum(u.u)
-LinearAlgebra.dot(u::DisplacementResult, weights::AbstractArray) = dot(u.u, weights)
 
 """
     Displacement()
@@ -47,7 +47,11 @@ Construct the Displacement function struct.
 """
 function DisplacementFun(solver::AbstractFEASolver; maxfevals=10^8)
     # Displacement is only valid for structural (LinearElasticity) problems
-    @assert solver.problem isa StiffnessTopOptProblem "DisplacementFun can only be used with StiffnessTopOptProblem (structural mechanics). Got $(typeof(solver.problem))"
+    solver.problem isa StiffnessTopOptProblem || throw(
+        ArgumentError(
+            "DisplacementFun can only be used with StiffnessTopOptProblem (structural mechanics). Got $(typeof(solver.problem))",
+        ),
+    )
     T = eltype(solver.u)
     dh = solver.problem.ch.dh
     k = ndofs_per_cell(dh)
@@ -69,7 +73,11 @@ function (dp::DisplacementFun{T})(x::PseudoDensities) where {T}
     @unpack solver, global_dofs = dp
     @unpack penalty, problem, xmin = solver
     dp.fevals += 1
-    @assert length(global_dofs) == ndofs_per_cell(solver.problem.ch.dh)
+    length(global_dofs) == ndofs_per_cell(solver.problem.ch.dh) || throw(
+        DimensionMismatch(
+            "DisplacementFun: global_dofs length $(length(global_dofs)) != ndofs_per_cell $(ndofs_per_cell(solver.problem.ch.dh))",
+        ),
+    )
     solver.vars .= x.x
     solver()
     return DisplacementResult(copy(solver.u))
@@ -103,7 +111,7 @@ function ChainRulesCore.rrule(dp::DisplacementFun, x::PseudoDensities)
         end
         solver(; reuse_fact=true, assemble_f=false)
         dudx_tmp .= 0
-        for e in 1:length(x.x)
+        for e in eachindex(x.x)
             _, dρe = get_ρ_dρ(x.x[e], penalty, xmin)
             celldofs!(global_dofs, dh, e)
             Keu = bcmatrix(Kes[e]) * u.u[global_dofs]

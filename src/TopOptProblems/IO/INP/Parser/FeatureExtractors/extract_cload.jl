@@ -7,9 +7,9 @@ function extract_cload!(
     while m isa Nothing
         m = match(pattern, line)
         if m != nothing
-            nodeidx = parse(TI, m[1])
-            dof = parse(Int, m[2])
-            load = parse(TF, m[3])
+            nodeidx = parse(TI, something(m[1]))
+            dof = parse(Int, something(m[2]))
+            load = parse(TF, something(m[3]))
             if haskey(cloads, nodeidx)
                 cloads[nodeidx][dof] += load
             else

@@ -46,7 +46,7 @@ function update_f!(
     vars,
     M,
 ) where {T}
-    for ind in 1:length(values)
+    for ind in eachindex(values)
         d = prescribed_dofs[ind]
         v = values[ind]
         m = size(Kes[ind], 1)

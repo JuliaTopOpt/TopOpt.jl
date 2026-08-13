@@ -49,8 +49,16 @@ function TrussElementKσFun(
     cellvalues = solver.elementinfo.cellvalues
     ndof_pc = ndofs_per_cell(dh)
     n_basefuncs = getnbasefunctions(cellvalues)
-    @assert ndof_pc == xdim * n_basefuncs "$ndof_pc, $n_basefuncs"
-    @assert n_basefuncs == 2
+    ndof_pc == xdim * n_basefuncs || throw(
+        DimensionMismatch(
+            "TrussElementKσFun: expected ndof_pc=$(xdim * n_basefuncs), got $ndof_pc"
+        ),
+    )
+    n_basefuncs == 2 || throw(
+        ArgumentError(
+            "TrussElementKσFun: expected 2 base functions for truss element, got $n_basefuncs",
+        ),
+    )
 
     global_dofs = zeros(Int, ndof_pc)
     δmat = zeros(T, ndof_pc, ndof_pc)
@@ -111,9 +119,18 @@ end
 function (eksig::TrussElementKσFun)(u::DisplacementResult, x::PseudoDensities)
     @unpack problem, Kσes, global_dofs, penalty, xmin = eksig
     dh = problem.ch.dh
-    @assert getncells(dh.grid) == length(x.x)
-    @assert ndofs(dh) == length(u.u)
-    for ci in 1:length(x.x)
+    ncells = getncells(dh.grid)
+    ncells == length(x.x) || throw(
+        DimensionMismatch(
+            "TrussElementKσFun: expected $(ncells) cells, got $(length(x.x))"
+        ),
+    )
+    ndofs(dh) == length(u.u) || throw(
+        DimensionMismatch(
+            "TrussElementKσFun: expected $(ndofs(dh)) DOFs, got $(length(u.u))"
+        ),
+    )
+    for ci in eachindex(x.x)
         celldofs!(global_dofs, dh, ci)
         # Apply the same penalty/interpolation as ElementK and the stiffness assembly
         ρ_e, _ = get_ρ_dρ(x.x[ci], penalty, xmin)
@@ -132,7 +149,7 @@ function ChainRulesCore.rrule(
         Δ = ChainRulesCore.unthunk(Δ)
         Δu = zeros(T, size(u.u))
         Δx = zeros(T, size(x.x))
-        for ci in 1:length(x.x)
+        for ci in eachindex(x.x)
             celldofs!(global_dofs, dh, ci)
             # Jacobian with respect to (u_e, ρ_e)
             function vec_eksig_fn(uρ_vec)

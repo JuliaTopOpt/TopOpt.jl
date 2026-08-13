@@ -22,7 +22,7 @@ Converting a Ferrite grid to a VTKUnstructuredData from [VTKDataTypes](https://g
 """
 function VTKDataTypes.VTKUnstructuredData(grid::Ferrite.Grid{dim,C,T}) where {dim,C,T}
     celltype = ferrite_to_vtk[eltype(grid.cells)]
-    celltypes = [celltype for i in 1:length(grid.cells)]
+    celltypes = [celltype for _ in eachindex(grid.cells)]
     # Ferrite 1.x: `nnodes` is only defined for cell instances, not for the
     # cell Type, so call it on the first cell instead of `eltype(grid.cells)`.
     N = Ferrite.nnodes(first(grid.cells))
@@ -68,7 +68,7 @@ function GeometryBasics.Mesh(
     inds = findall(isequal(0), topology)
     deleteat!(mesh.cell_connectivity, inds)
     deleteat!(mesh.cell_types, inds)
-    topology = topology[setdiff(1:length(topology), inds)]
+    topology = topology[setdiff(eachindex(topology), inds)]
     mesh.cell_data["topology"] = topology
     glmesh = GLMesh(mesh; color="topology", kwargs...)
     return GeometryBasics.Mesh(glmesh)

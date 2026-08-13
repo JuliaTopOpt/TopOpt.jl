@@ -17,7 +17,7 @@ function extract_set!(
         else
             m = match(pattern_subset, line)
             if m !== nothing
-                subsetname = String(m[1])
+                subsetname = String(something(m[1]))
                 if haskey(sets, subsetname)
                     append!(vector, sets[subsetname])
                 end

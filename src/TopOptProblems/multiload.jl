@@ -62,7 +62,8 @@ function find_nearest_dofs(problem, p)
             closest = i
         end
     end
-    @assert closest != 0
+    closest != 0 ||
+        throw(ArgumentError("MultiLoad: no node found near the specified coordinates"))
     return problem.metadata.node_dofs[:, closest]
 end
 
