@@ -180,10 +180,8 @@ jobs:
           julia -e 'using Pkg; Pkg.Registry.add(RegistrySpec(url="https://github.com/JuliaRegistries/General.git"))'
       - name: Instantiate test environment
         run: julia --project=test -e 'using Pkg; Pkg.develop(PackageSpec(path=".")); Pkg.instantiate(); Pkg.precompile()'
-      - name: Run JET tests
-        env:
-          GROUP: JET_Tests
-        run: julia --project=test --color=yes -e 'include("test/runtests.jl")'
+      - name: Run JET report
+        run: julia --project=test --color=yes -e 'include("test/jet_report.jl")'
 
   # One CI job per tutorial .qmd file (dynamic matrix from scan-tutorials)
   tutorials:
