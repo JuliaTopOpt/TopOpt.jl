@@ -7,10 +7,10 @@ function extract_nodedbcs!(node_dbcs::Dict{String,Vector{Tuple{TI,TF}}}, file) w
     while m isa Nothing
         m = match(pattern_other, line)
         if m != nothing
-            nodesetname = m[1]
-            dof1 = parse(TI, m[2])
-            dof2 = parse(TI, m[3])
-            val = parse(TF, m[4])
+            nodesetname = something(m[1])
+            dof1 = parse(TI, something(m[2]))
+            dof2 = parse(TI, something(m[3]))
+            val = parse(TF, something(m[4]))
             if haskey(node_dbcs, nodesetname)
                 for dof in dof1:dof2
                     push!(node_dbcs[nodesetname], (dof, val))
@@ -27,9 +27,9 @@ function extract_nodedbcs!(node_dbcs::Dict{String,Vector{Tuple{TI,TF}}}, file) w
         end
         m = match(pattern_range, line)
         if m != nothing
-            nodesetname = m[1]
-            dof1 = parse(TI, m[2])
-            dof2 = parse(TI, m[3])
+            nodesetname = something(m[1])
+            dof1 = parse(TI, something(m[2]))
+            dof2 = parse(TI, something(m[3]))
             if haskey(node_dbcs, nodesetname)
                 for dof in dof1:dof2
                     push!(node_dbcs[nodesetname], (dof, zero(TF)))
@@ -46,8 +46,8 @@ function extract_nodedbcs!(node_dbcs::Dict{String,Vector{Tuple{TI,TF}}}, file) w
         end
         m = match(pattern_zero, line)
         if m != nothing
-            nodesetname = m[1]
-            dof = parse(TI, m[2])
+            nodesetname = something(m[1])
+            dof = parse(TI, something(m[2]))
             if haskey(node_dbcs, nodesetname)
                 push!(node_dbcs[nodesetname], (dof, zero(TF)))
             else

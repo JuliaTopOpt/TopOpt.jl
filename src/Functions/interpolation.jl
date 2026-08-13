@@ -1,4 +1,7 @@
 assert_eq(x1, x2) = x1 == x2 || throw(DimensionMismatch("assert_eq failed: $x1 != $x2"))
+
+logistic(x) = one(x) / (one(x) + exp(-x))
+
 function ChainRulesCore.rrule(::typeof(assert_eq), x1, x2)
     return assert_eq(x1, x2), _ -> (NoTangent(), NoTangent(), NoTangent())
 end

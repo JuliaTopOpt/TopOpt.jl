@@ -147,8 +147,9 @@ end
 function GlobalFEAInfo(
     K::Union{AbstractSparseMatrix,Symmetric{<:Any,<:AbstractSparseMatrix}}, f
 )
-    chol = cholesky(spdiagm(0 => ones(size(K, 1))))
-    qrfact = qr(spdiagm(0 => ones(size(K, 1))))
+    n = Int(size(K, 1))
+    chol = cholesky(spdiagm(0 => ones(n)))
+    qrfact = qr(spdiagm(0 => ones(n)))
     return GlobalFEAInfo{eltype(K),typeof(K),typeof(f),typeof(chol),typeof(qrfact)}(
         K, f, chol, qrfact
     )

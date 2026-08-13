@@ -646,6 +646,7 @@ function Ferrite.getncells(problem::HeatTransferTopOptProblem)
     return Ferrite.getncells(getdh(problem).grid)
 end
 getgeomorder(p::HeatTransferTopOptProblem) = nnodespercell(p) in (9, 27) ? 2 : 1
+getdensity(::HeatTransferTopOptProblem{dim,T}) where {dim,T} = T(0)
 getcloaddict(p::HeatTransferTopOptProblem{dim,T}) where {dim,T} = Dict{Int,Vector{T}}()
 
 """

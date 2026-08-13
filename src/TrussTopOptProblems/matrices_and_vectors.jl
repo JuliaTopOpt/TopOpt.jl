@@ -82,6 +82,8 @@ struct GenericCellScalarValues{ξdim,xdim,T,refshape} <: AbstractCellValues
     qr_weights::Vector{T}
 end
 
+const TrussCellScalarValues = GenericCellScalarValues
+
 function GenericCellScalarValues(
     quad_rule::QuadratureRule,
     func_interpol::Interpolation,
@@ -98,14 +100,14 @@ function GenericCellScalarValues(
     xdim=Ferrite.getrefdim(shape),
 ) where {T,shape<:Ferrite.AbstractRefShape}
     Ferrite.getrefdim(getrefshape(func_interpol)) ==
-        Ferrite.getrefdim(getrefshape(geom_interpol)) || throw(
+    Ferrite.getrefdim(getrefshape(geom_interpol)) || throw(
         DimensionMismatch(
             "TrussCellScalarValues: func_interpol and geom_interpol must have the same refdim",
         ),
     )
     getrefshape(func_interpol) == getrefshape(geom_interpol) == shape || throw(
         DimensionMismatch(
-            "TrussCellScalarValues: func_interpol and geom_interpol must both be $shape",
+            "TrussCellScalarValues: func_interpol and geom_interpol must both be $shape"
         ),
     )
     ξdim = Ferrite.getrefdim(shape)
