@@ -6,17 +6,17 @@ execute:
   enabled: false
 
 website:
-  title: "TopOpt.jl"
+  title: "TopOpt.jl Tutorials"
   image: "../../assets/logo.png"
-  sidebar:
-    style: "docked"
+  navbar:
     background: light
     logo: "../../assets/logo.png"
-  navbar:
-    logo: "../../assets/logo.png"
+    logo-alt: "TopOpt.jl logo"
+    title: "Tutorials"
     right:
-      - text: "Back to Docs"
+      - text: "Documentation"
         href: "../index.html"
+        icon: book
       - icon: github
         href: "https://github.com/JuliaTopOpt/TopOpt.jl"
 
@@ -27,3 +27,4 @@ format:
     toc-floating: true
     embed-resources: true
     self-contained-math: true
+    css: documenter-style.css
