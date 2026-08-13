@@ -9,7 +9,7 @@ Usage:
     julia --project=test jet_report.jl [--output file.json]
 """
 
-using JET, TopOpt
+using JET, TopOpt, Dates
 
 output_file = nothing
 for arg in ARGS
