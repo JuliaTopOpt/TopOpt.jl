@@ -13,6 +13,7 @@ website:
     background: light
     logo: "../../assets/logo.png"
   navbar:
+    logo: "../../assets/logo.png"
     right:
       - text: "Back to Docs"
         href: "../index.html"
