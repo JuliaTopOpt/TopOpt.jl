@@ -1,5 +1,5 @@
 """
-    TrussStress(problem, solver)
+    TrussStressFun(problem, solver)
 
 Element-wise macroscopic axial stress for truss problems. Computes the axial
 stress in each truss member from nodal displacements and the penalized design.
@@ -27,12 +27,12 @@ function Base.show(io::IO, ::MIME{Symbol("text/plain")}, ::TrussStressFun)
 end
 
 """
-    TrussStress(solver; maxfevals=10^8)
+    TrussStressFun(solver; maxfevals=10^8)
 
-Construct the TrussStress function struct.
+Construct the TrussStressFun function struct.
 """
 function TrussStressFun(solver::AbstractFEASolver; maxfevals=10^8)
-    # TrussStress is only valid for truss problems
+    # TrussStressFun is only valid for truss problems
     solver.problem isa TrussProblem || throw(
         ArgumentError(
             "TrussStressFun can only be used with TrussProblem. Got $(typeof(solver.problem))",
@@ -84,7 +84,7 @@ function (ts::TrussStressFun{T})(x::PseudoDensities) where {T}
 end
 
 """
-    rrule for TrussStress
+    rrule for TrussStressFun
 
 Adjoint-based differentiation. The stress σ_e = -(R_e · Ke_e · u_e)[1] / A_e
 depends on x through both the penalized stiffness Ke_e = ρ(x)_e · Ke_0_e and the

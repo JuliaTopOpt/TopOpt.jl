@@ -301,7 +301,7 @@ end
 # Unified solver call operator
 function (s::GenericFEASolver{T,Physics,Solver})(
     reuse_fact::Bool=false,
-    ::Type{Val{safe}}=Val{false};
+    (::Type{Val{safe}})=Val{false};
     assemble_f=true,
     rhs=assemble_f ? s.globalinfo.f : s.rhs,
     lhs=assemble_f ? s.u : s.lhs,
@@ -514,7 +514,7 @@ function FEASolver(
     lhs = similar(u)
     rhs = similar(u)
     # vars stores the full density vector (length = number of elements)
-    # Use FixedElementProjector to map free variables to this full vector
+    # Use FixedElementProjectorFun to map free variables to this full vector
     vars = fill(one(T), getncells(problem.ch.dh.grid))
 
     # Build CG state variables for CG-based solvers

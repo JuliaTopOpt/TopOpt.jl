@@ -1,10 +1,10 @@
 """
-    StressTensor(solver::AbstractFEASolver)
+    StressTensorFun(solver::AbstractFEASolver)
 
 Element-wise microscopic stress tensor. Computes the symmetric stress tensor
 for each element from the nodal displacements using the base Young's modulus.
 Call as `σ = σf(u)` where `u` is the displacement vector (e.g. from
-`Displacement`). Returns a vector of symmetric matrices, one per element.
+`DisplacementFun`). Returns a vector of symmetric matrices, one per element.
 
 For 2D problems the stress is computed with the plane-strain constitutive
 law (σzz = λ·(εxx + εyy) ≠ 0), consistent with the stiffness matrix assembly.
@@ -22,7 +22,7 @@ struct StressTensorFun{T,Tp,Ts,Tc1,Tc2} <: AbstractFunction{T}
 end
 function StressTensorFun(solver)
     problem = solver.problem
-    # StressTensor is only valid for structural (LinearElasticity) problems
+    # StressTensorFun is only valid for structural (LinearElasticity) problems
     problem isa StiffnessTopOptProblem || throw(
         ArgumentError(
             "StressTensorFun can only be used with StiffnessTopOptProblem (structural mechanics). Got $(typeof(problem))",
@@ -54,7 +54,7 @@ function (f::StressTensorFun)(dofs::DisplacementResult)
 end
 
 """
-    ElementStressTensor(solver::AbstractFEASolver)
+    ElementStressTensorFun(solver::AbstractFEASolver)
 
 Element stress tensor operator that also stores per-element metadata for use
 in stress-constrained optimization and ML applications.
@@ -179,7 +179,7 @@ end
     von_mises(σ::AbstractMatrix)
 
 Compute the von Mises equivalent stress from a 3×3 symmetric stress tensor.
-For 2D problems, the stress tensor from `StressTensor` / `ElementStressTensorKernel`
+For 2D problems, the stress tensor from `StressTensorFun` / `ElementStressTensorKernel`
 includes the plane-strain out-of-plane component `σzz = λ·(εxx + εyy)`, so
 the full 3D von Mises formula is used:
 

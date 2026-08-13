@@ -11,8 +11,8 @@ combined stiffness matrix `K + c·Kσ` remains positive semidefinite — i.e.,
 the structure does not buckle under the applied load scaled by buckling
 factor `c`.
 
-We use differentiable building blocks (`ElementK`, `AssembleK`,
-`TrussElementKσ`, `apply_boundary_with_zerodiag!`, `apply_boundary_with_meandiag!`)
+We use differentiable building blocks (`ElementKFun`, `AssembleKFun`,
+`TrussElementKσFun`, `apply_boundary_with_zerodiag!`, `apply_boundary_with_meandiag!`)
 and enforce the PSD constraint via semidefinite programming (SDP) using
 NonconvexSemidefinite.jl with an IPM barrier method.
 
@@ -70,16 +70,16 @@ comp = ComplianceFun(solver)
 dp = DisplacementFun(solver)
 assemble_k = AssembleKFun(problem)
 element_k = ElementKFun(solver)
-truss_element_kσ = TrussElementKσ(problem, solver)
+truss_element_kσ = TrussElementKσFun(problem, solver)
 ```
 
 Five differentiable building blocks:
 
-1. **Compliance** — objective to minimize
-2. **Displacement** — solves `K·u = f` for displacements
-3. **ElementK** — per-element stiffness matrices
-4. **AssembleK** — assembles global sparse matrix
-5. **TrussElementKσ** — geometric (stress) stiffness matrices
+1. **ComplianceFun** — objective to minimize
+2. **DisplacementFun** — solves `K·u = f` for displacements
+3. **ElementKFun** — per-element stiffness matrices
+4. **AssembleKFun** — assembles global sparse matrix
+5. **TrussElementKσFun** — geometric (stress) stiffness matrices
 
 ## Buckling Constraint Function
 

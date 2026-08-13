@@ -1,5 +1,5 @@
 """
-    FixedElementProjector
+    FixedElementProjectorFun
 
 Callable struct that maps free design variables to a full density vector.
 Implements the projection with ChainRulesCore.rrule for automatic differentiation.
@@ -60,7 +60,7 @@ end
 """
     ChainRulesCore.rrule(p::FixedElementProjectorFun, x_free)
 
-Reverse-mode AD rule for `FixedElementProjector`.
+Reverse-mode AD rule for `FixedElementProjectorFun`.
 
 The pullback propagates gradients only through free elements, with zero
 gradient through fixed (black/white) elements.
@@ -95,7 +95,7 @@ Return the number of free design variables.
 get_free_variable_count(p::FixedElementProjectorFun) = count(p.free)
 
 """
-    get_fixed_element_projector(problem, black_cells, white_cells) -> FixedElementProjector
+    get_fixed_element_projector(problem, black_cells, white_cells) -> FixedElementProjectorFun
 
 Create a projector that maps free design variables to a full density vector.
 
@@ -105,7 +105,7 @@ Create a projector that maps free design variables to a full density vector.
 - `white_cells`: Indices of elements fixed to void (density = 0)
 
 # Returns
-- `FixedElementProjector`: A callable struct that maps `x_free -> ρ_full`
+- `FixedElementProjectorFun`: A callable struct that maps `x_free -> ρ_full`
 
 # Example
 ```julia
@@ -136,7 +136,7 @@ function get_fixed_element_projector(
 end
 
 """
-    get_fixed_element_projector(nel::Int, black_cells, white_cells) -> FixedElementProjector
+    get_fixed_element_projector(nel::Int, black_cells, white_cells) -> FixedElementProjectorFun
 
 Create a projector given the total number of elements.
 
@@ -146,7 +146,7 @@ Create a projector given the total number of elements.
 - `white_cells`: Indices of elements fixed to void (density = 0)
 
 # Returns
-- `FixedElementProjector`: A callable struct that maps `x_free -> ρ_full`
+- `FixedElementProjectorFun`: A callable struct that maps `x_free -> ρ_full`
 """
 function get_fixed_element_projector(
     nel::Int, black_cells::AbstractVector{<:Integer}, white_cells::AbstractVector{<:Integer}

@@ -3,7 +3,7 @@
 
 Multi-load-case wrapper that generates stochastic load scenarios for robust
 topology optimization. `scenarios` is the number of random load cases to draw.
-Use with `MeanCompliance` or `BlockCompliance`.
+Use with `MeanComplianceFun` or `BlockComplianceFun`.
 
 Usage example:
 
@@ -68,7 +68,7 @@ function find_nearest_dofs(problem, p)
 end
 
 """
-    RandomMagnitude
+    RandomMagnitudeFun
 
 Random load-magnitude sampler used inside `MultiLoad`.
 """
@@ -77,8 +77,6 @@ struct RandomMagnitudeFun{Tf,Tdist} <: Function
     dist::Tdist
 end
 (rm::RandomMagnitudeFun)() = rm.f .* rand(rm.dist)
-
-const RandomMagnitude = RandomMagnitudeFun
 
 function random_direction()
     theta = rand() * 2 * π

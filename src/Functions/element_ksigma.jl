@@ -4,7 +4,7 @@ using ..TopOpt: PENALTY_BEFORE_INTERPOLATION
 using ..Utilities: density, getpenalty
 
 """
-    TrussElementKσ(problem, solver)
+    TrussElementKσFun(problem, solver)
 
 Element-wise stress/geometric stiffness matrices for truss domains. Used in
 buckling-constrained truss optimization.
@@ -91,7 +91,7 @@ function TrussElementKσFun(
     end
     penalty = getpenalty(solver)
     xmin = solver.xmin
-    return TrussElementKσ(problem, Kσes, EALγ_s, δmat_s, L_s, global_dofs, penalty, xmin)
+    return TrussElementKσFun(problem, Kσes, EALγ_s, δmat_s, L_s, global_dofs, penalty, xmin)
 end
 
 """
@@ -132,7 +132,7 @@ function (eksig::TrussElementKσFun)(u::DisplacementResult, x::PseudoDensities)
     )
     for ci in eachindex(x.x)
         celldofs!(global_dofs, dh, ci)
-        # Apply the same penalty/interpolation as ElementK and the stiffness assembly
+        # Apply the same penalty/interpolation as ElementKFun and the stiffness assembly
         ρ_e, _ = get_ρ_dρ(x.x[ci], penalty, xmin)
         Kσes[ci] = eksig(u.u[global_dofs], ρ_e, ci)
     end

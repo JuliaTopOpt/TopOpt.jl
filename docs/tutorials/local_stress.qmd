@@ -46,7 +46,7 @@ xmin = 0.0001  # minimum density
 
 x0 = fill(0.5, 160 * 40)  # initial design
 N = length(x0)
-penalty = PowerPenalty(1.0)  # start with no penalization
+penalty = PowerPenaltyFun(1.0)  # start with no penalization
 
 solver = FEASolver(DirectSolver, problem; xmin=xmin, penalty=penalty)
 stress = von_mises_stress_function(solver)

@@ -58,11 +58,11 @@ driving the design toward black/white (solid/void) solutions:
 
 ```{julia}
 #| output: false
-solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(3.0))
+solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(3.0))
 ```
 
 - `xmin=0.01` prevents numerical singularity by keeping a minimum stiffness
-- `penalty=PowerPenalty(3.0)` applies the SIMP-style penalty ρ³ to element
+- `penalty=PowerPenaltyFun(3.0)` applies the SIMP-style penalty ρ³ to element
   stiffnesses
 
 ## Define the compliance objective and volume constraint

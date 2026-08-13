@@ -1,0 +1,101 @@
+name: Format Check
+
+on:
+  pull_request:
+    branches:
+      - master
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  format-check:
+    name: "format: Check JuliaFormatter"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: '1'
+      - name: Install JuliaFormatter
+        run: julia -e 'import Pkg; Pkg.add("JuliaFormatter")'
+      - name: Check formatting
+        id: check
+        run: |
+          julia -e '
+            using JuliaFormatter
+            bad = String[]
+            for (root, dirs, files) in walkdir(".")
+              root == joinpath(".", ".git") && continue
+              startswith(root, joinpath(".", ".git", "")) && continue
+              for f in files
+                path = joinpath(root, f)
+                endswith(path, ".jl") || continue
+                try
+                  format(path, BlueStyle(); overwrite=false) || push!(bad, path)
+                catch
+                end
+              end
+            end
+            if !isempty(bad)
+              println("The following files need formatting:")
+              for p in bad; println("  ", p); end
+              write("format_comment.md", join([
+                "### Formatting issues",
+                "",
+                "Thank you for contributing! The following files need formatting:",
+                "",
+                join(["- `" * p * "`" for p in bad], "\n"),
+                "",
+                "To fix, run the following from the repository root:",
+                "",
+                "```bash",
+                "cd <your-local-clone>",
+                "julia -e '\''using JuliaFormatter; format(\".\", BlueStyle())'\''",
+                "```",
+                "",
+                "Then commit and push the changes.",
+              ], "\n"))
+              exit(1)
+            else
+              write("format_comment.md", "### Formatting check passed\n\nThank you for contributing! All files are correctly formatted.")
+            end
+          '
+
+      - name: Post formatting comment
+        if: always() && github.event_name == 'pull_request'
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const fs = require('fs');
+            const body = fs.readFileSync('format_comment.md', 'utf8');
+            const tagged = body + '\n\n<!-- auto-pr-comment: formatting -->';
+
+            const comments = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            const last = comments.data.pop();
+
+            if (last && (last.body.includes('Formatting check passed') || last.body.includes('Formatting issues') || last.body.includes('<!-- auto-pr-comment: formatting -->'))) {
+              // Last comment is from the formatting checker
+              if (last.body === tagged) {
+                console.log('Comment unchanged — skipping.');
+                return;
+              }
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: last.id,
+                body: tagged,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: tagged,
+              });
+            }

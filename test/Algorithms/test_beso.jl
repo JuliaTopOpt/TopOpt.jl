@@ -486,18 +486,18 @@ using Ferrite: getncells
         # Test with wrong length black vector
         black_wrong = falses(nel + 5)
         x0 = fill(0.5, length(solver.vars))
-        @test_throws AssertionError beso(x0; black=black_wrong)
+        @test_throws DimensionMismatch beso(x0; black=black_wrong)
 
         # Test with wrong length white vector
         white_wrong = falses(nel + 5)
-        @test_throws AssertionError beso(x0; white=white_wrong)
+        @test_throws DimensionMismatch beso(x0; white=white_wrong)
 
         # Test with overlapping black and white
         black_overlap = falses(nel)
         white_overlap = falses(nel)
         black_overlap[1:3] .= true
         white_overlap[1:3] .= true
-        @test_throws AssertionError beso(x0; black=black_overlap, white=white_overlap)
+        @test_throws ArgumentError beso(x0; black=black_overlap, white=white_overlap)
     end
 
     @testset "BESO with black elements - different volume fractions" begin

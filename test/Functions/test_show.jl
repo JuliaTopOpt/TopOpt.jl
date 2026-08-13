@@ -46,7 +46,7 @@ using TopOpt, Test
         @test output == "TopOpt displacement function\n"
     end
 
-    @testset "TrussElementKσ show method" begin
+    @testset "TrussElementKσFun show method" begin
         # Create a truss problem for this test
         nels_truss = (6, 4)
         sizes = (1.0, 1.0)
@@ -55,7 +55,7 @@ using TopOpt, Test
             DirectSolver, truss_problem; xmin=0.001, penalty=PowerPenaltyFun(1.0)
         )
 
-        ksigma_fn = TrussElementKσ(truss_problem, truss_solver)
+        ksigma_fn = TrussElementKσFun(truss_problem, truss_solver)
         io = IOBuffer()
         show(io, MIME("text/plain"), ksigma_fn)
         output = String(take!(io))

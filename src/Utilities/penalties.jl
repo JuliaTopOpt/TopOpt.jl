@@ -4,8 +4,8 @@ import ..TopOpt: PseudoDensities, PENALTY_BEFORE_INTERPOLATION
     AbstractPenalty{T}
 
 Abstract type for SIMP-style penalties applied to density variables. `T` is the
-numeric type. Concrete subtypes: `PowerPenalty`, `RationalPenalty`, `SinhPenalty`,
-`ProjectedPenalty`.
+numeric type. Concrete subtypes: `PowerPenaltyFun`, `RationalPenaltyFun`,
+`SinhPenaltyFun`, `ProjectedPenaltyFun`.
 """
 abstract type AbstractPenalty{T} end
 abstract type AbstractCPUPenalty{T} <: AbstractPenalty{T} end
@@ -13,7 +13,7 @@ abstract type AbstractCPUPenalty{T} <: AbstractPenalty{T} end
     AbstractProjection
 
 Abstract type for projection functions that push densities toward 0/1.
-Subtypes: `HeavisideProjection`, `SigmoidProjection`.
+Subtypes: `HeavisideProjectionFun`, `SigmoidProjectionFun`.
 """
 abstract type AbstractProjection end
 
@@ -36,7 +36,7 @@ end
     RationalPenaltyFun(p)
 
 Rational SIMP penalty: `x / (1 + p * (1 - x))`. Produces a smoother penalty
-than `PowerPenalty` for the same exponent.
+than `PowerPenaltyFun` for the same exponent.
 """
 mutable struct RationalPenaltyFun{T} <: AbstractCPUPenalty{T}
     p::T
@@ -128,23 +128,3 @@ function get_ρ_dρ(x_e::T, penalty::AbstractPenalty{T}, xmin::T) where {T<:Real
     g = p.partials[1]
     return p.value, g
 end
-
-# Backward-compatible non-suffixed aliases.
-const PowerPenalty = PowerPenaltyFun
-const RationalPenalty = RationalPenaltyFun
-const SinhPenalty = SinhPenaltyFun
-const ProjectedPenalty = ProjectedPenaltyFun
-const HeavisideProjection = HeavisideProjectionFun
-const SigmoidProjection = SigmoidProjectionFun
-export PowerPenalty,
-    RationalPenalty,
-    SinhPenalty,
-    ProjectedPenalty,
-    HeavisideProjection,
-    SigmoidProjection,
-    PowerPenaltyFun,
-    RationalPenaltyFun,
-    SinhPenaltyFun,
-    ProjectedPenaltyFun,
-    HeavisideProjectionFun,
-    SigmoidProjectionFun
