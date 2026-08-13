@@ -4,8 +4,10 @@ using DocumenterCitations
 bib = CitationBibliography(joinpath(@__DIR__, "biblio", "ref.bib"))
 
 makedocs(;
-    sitename="TopOpt.jl",
-    format=Documenter.HTML(; prettyurls=get(ENV, "CI", nothing) == "true"),
+    sitename="<img src=\"../assets/logo.png\" alt=\"TopOpt.jl\" style=\"height:1.4em;vertical-align:middle;margin-right:0.4em\">TopOpt.jl",
+    format=Documenter.HTML(;
+        prettyurls=get(ENV, "CI", nothing) == "true",
+    ),
     doctest=true,
     checkdocs=:all,
     plugins=[bib],
