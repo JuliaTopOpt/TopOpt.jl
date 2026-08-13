@@ -69,9 +69,7 @@ function _RectilinearGrid_Linear(
     N = nnodes(geoshape)
     M = Ferrite.nfacets(Ferrite.getrefshape(geoshape))
     ncells = prod(nels)
-    return RectilinearGrid{dim,T,N,M,typeof(grid)}(
-        grid, nels, sizes, (corner1, corner2)
-    )
+    return RectilinearGrid{dim,T,N,M,typeof(grid)}(grid, nels, sizes, (corner1, corner2))
 end
 
 function _RectilinearGrid_Quadratic(
@@ -85,9 +83,7 @@ function _RectilinearGrid_Quadratic(
     N = nnodes(geoshape)
     M = Ferrite.nfacets(Ferrite.getrefshape(geoshape))
     ncells = prod(nels)
-    return RectilinearGrid{dim,T,N,M,typeof(grid)}(
-        grid, nels, sizes, (corner1, corner2)
-    )
+    return RectilinearGrid{dim,T,N,M,typeof(grid)}(grid, nels, sizes, (corner1, corner2))
 end
 
 nnodespercell(::RectilinearGrid{dim,T,N,M}) where {dim,T,N,M} = N
