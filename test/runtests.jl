@@ -60,6 +60,7 @@ if ACTUAL_GROUP in ("All", "Core_Tests_1")
         include("Functions/test_hadamard.jl")
         include("Functions/test_mean_compliance_branches.jl")
         include("Functions/test_stress_tensor_rrule.jl")
+        include("Functions/test_stress_relaxation.jl")
         include("Functions/test_truss_stress_rrule.jl")
     end
 end

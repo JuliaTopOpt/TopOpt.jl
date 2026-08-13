@@ -141,6 +141,61 @@ end
     # Quadratic LGrid
     lgrid_quad = LGrid(Val{:Quadratic}, (2, 4), (2, 2), LL, UR, MR)
     @test lgrid_quad isa Ferrite.Grid
+
+    # Distributed load: `load_width` nodes share the force equally
+    lgrid_pt = LGrid(
+        Val{:Linear}, Float64; length=20, height=20, upperslab=10, lowerslab=10
+    )
+    @test length(getnodeset(lgrid_pt, "load")) == 1
+    lgrid_dist = LGrid(
+        Val{:Linear},
+        Float64;
+        length=20,
+        height=20,
+        upperslab=10,
+        lowerslab=10,
+        load_width=5,
+    )
+    load_nodes = getnodeset(lgrid_dist, "load")
+    @test length(load_nodes) == 5
+    # All load nodes lie on the right edge of the lower arm
+    @test all(n -> lgrid_dist.nodes[n].x[1] == 20.0, load_nodes)
+    # Centered on the single-node default location
+    @test sum(lgrid_dist.nodes[n].x[2] for n in load_nodes) / 5 ≈
+        lgrid_pt.nodes[only(getnodeset(lgrid_pt, "load"))].x[2]
+
+    # Force split conserves the resultant
+    problem_pt = LBeam(
+        Val{:Linear}; length=20, height=20, upperslab=10, lowerslab=10, force=2.0
+    )
+    problem_dist = LBeam(
+        Val{:Linear};
+        length=20,
+        height=20,
+        upperslab=10,
+        lowerslab=10,
+        force=2.0,
+        load_width=5,
+    )
+    cload_pt = getcloaddict(problem_pt)
+    cload_dist = getcloaddict(problem_dist)
+    @test length(cload_pt) == 1
+    @test length(cload_dist) == 5
+    @test sum(v -> v[2], values(cload_dist)) ≈ -2.0
+    @test sum(v -> v[2], values(cload_pt)) ≈ -2.0
+    # Same resultant at the same center => identical total torque about the origin
+    torque(cl) = sum(((n, f),) -> lgrid_dist.nodes[n].x[1] * f[2], collect(cl))
+    @test torque(cload_dist) ≈ torque(cload_pt)
+
+    @test_throws ArgumentError LGrid(
+        Val{:Linear},
+        Float64;
+        length=20,
+        height=20,
+        upperslab=10,
+        lowerslab=10,
+        load_width=0,
+    )
 end
 
 @testset "TieBeamGrid Construction" begin

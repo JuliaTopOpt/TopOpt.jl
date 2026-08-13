@@ -208,18 +208,42 @@ function von_mises(σ::AbstractMatrix)
 end
 
 """
-    von_mises_stress_function(solver::AbstractFEASolver)
+    von_mises_stress_function(solver::AbstractFEASolver; stress_exponent=0)
 
-Return a function that computes the element-wise microscopic von Mises stress
-from the design. Applies the penalty and interpolation, solves the FEA system,
-and computes the von Mises stress for each element using the base Young's
-modulus.
+Return a function that computes the element-wise von Mises stress from the
+design. Applies the penalty and interpolation, solves the FEA system, and
+computes the von Mises stress for each element using the base Young's modulus.
 
 Call as `σv = σvf(PseudoDensities(x))`. Returns a vector of von Mises stress
 values, one per element.
+
+With `stress_exponent = 0` (default) the returned stress is the microscopic
+stress `σ = C_0 : ε` of [DuysinxBendsøe1998](@cite), which is finite at zero
+density and therefore exhibits the stress-singularity phenomenon: optimal
+designs with vanishing members are unreachable for gradient-based optimizers.
+With `stress_exponent = q > 0` the returned stress is the relaxed (penalized)
+stress `σ̃_e = ρ_e^q σ_e`, where `ρ_e` is the physical density
+(`xmin + (1 - xmin) x_e`). The relaxation acts on the physical density, not
+the penalized stiffness density, so it is independent of the SIMP penalty and
+of the `PENALTY_BEFORE_INTERPOLATION` preference; the `xmin` floor keeps `ρ_e^q`
+finite and differentiable at zero density. Because `σ̃_e → 0` as `ρ_e → 0`,
+low-density elements automatically satisfy any stress bound, which removes the
+singular optima. `q = 0.5` with SIMP stiffness exponent `p = 3` is the choice of
+[Le2010](@cite); the equivalent constraint-side formulation is the qp-approach
+of [Bruggi2008](@cite) with relaxation `ε_qp = p - q`. See also
+[ChengGuo1997](@cite) for the alternative ε-relaxation (available here as
+[`epsilon_relaxed`](@ref)) and [Verbart2017](@cite) for a review of both.
 """
-function von_mises_stress_function(solver::AbstractFEASolver)
+function von_mises_stress_function(solver::AbstractFEASolver; stress_exponent=0)
     st = StressTensorFun(solver)
     dp = DisplacementFun(solver)
-    return x -> von_mises.(st(dp(x)))
+    if iszero(stress_exponent)
+        return x -> von_mises.(st(dp(x)))
+    end
+    xmin = solver.xmin
+    return x -> begin
+        σv = von_mises.(st(dp(x)))
+        ρ = density.(x.x, xmin)
+        return ρ .^ stress_exponent .* σv
+    end
 end
