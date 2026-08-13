@@ -6,7 +6,7 @@ using LinearAlgebra
 using SparseArrays
 using Ferrite
 
-# Import types needed for TrussElementKσ evaluation
+# Import types needed for TrussElementKσFun evaluation
 using TopOpt.Functions: DisplacementResult
 using TopOpt: PseudoDensities
 using TopOpt.Utilities: getpenalty, density
@@ -196,8 +196,8 @@ end
     end
 end
 
-# Test TrussElementKσ for truss problems
-@testset "Truss buckling - TrussElementKσ" begin
+# Test TrussElementKσFun for truss problems
+@testset "Truss buckling - TrussElementKσFun" begin
     using TopOpt.TrussTopOptProblems
     using TopOpt.TrussTopOptProblems: getE, getA, compute_local_axes
 
@@ -221,18 +221,18 @@ end
         solver = FEASolver(DirectSolver, problem)
         solver()
 
-        # Create TrussElementKσ
-        @testset "TrussElementKσ construction" begin
-            eksig = TrussElementKσ(problem, solver)
+        # Create TrussElementKσFun
+        @testset "TrussElementKσFun construction" begin
+            eksig = TrussElementKσFun(problem, solver)
 
-            @test eksig isa TopOpt.Functions.TrussElementKσ
+            @test eksig isa TopOpt.Functions.TrussElementKσFun
             @test hasfield(typeof(eksig), :problem)
             @test hasfield(typeof(eksig), :Kσes)
             @test hasfield(typeof(eksig), :EALγ_s)
         end
 
-        @testset "TrussElementKσ evaluation" begin
-            eksig = TrussElementKσ(problem, solver)
+        @testset "TrussElementKσFun evaluation" begin
+            eksig = TrussElementKσFun(problem, solver)
 
             # Test with displacement result - wrap in proper types
             u_result = TopOpt.Functions.DisplacementResult(solver.u)
@@ -256,15 +256,15 @@ end
             end
         end
 
-        @testset "TrussElementKσ show method" begin
-            eksig = TrussElementKσ(problem, solver)
+        @testset "TrussElementKσFun show method" begin
+            eksig = TrussElementKσFun(problem, solver)
             io = IOBuffer()
             show(io, MIME("text/plain"), eksig)
             output = String(take!(io))
             @test occursin("stress stiffness", output) || occursin("Kσ", output)
         end
     else
-        @warn "Truss problem file not found, skipping TrussElementKσ tests"
+        @warn "Truss problem file not found, skipping TrussElementKσFun tests"
     end
 end
 

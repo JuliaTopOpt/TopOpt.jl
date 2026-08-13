@@ -72,7 +72,7 @@ end
     end
 end
 
-@testset "TrussElementKσ $problem_dim" for problem_dim in ["2d", "3d"]
+@testset "TrussElementKσFun $problem_dim" for problem_dim in ["2d", "3d"]
     file_name = "tim_$(problem_dim).json"
     problem_file = joinpath(gm_ins_dir, file_name)
 
@@ -90,7 +90,7 @@ end
     solver()
     u = solver.u
 
-    esigk = TrussElementKσ(problem, solver)
+    esigk = TrussElementKσFun(problem, solver)
     nels = length(solver.vars)
     dh = problem.ch.dh
     T = eltype(u)
@@ -99,7 +99,7 @@ end
 
     # * check geometric stiffness matrix consistency
     Kσs_0 = get_truss_Kσs(problem, u, solver.elementinfo.cellvalues)
-    # The solver's penalty and xmin are used by TrussElementKσ to scale Kσ
+    # The solver's penalty and xmin are used by TrussElementKσFun to scale Kσ
     penalty = getpenalty(solver)
     xmin = solver.xmin
 
@@ -115,7 +115,7 @@ end
 
         Kσs_1 = esigk(TopOpt.Functions.DisplacementResult(u), PseudoDensities(x))
         for (ci, (k1, k0)) in enumerate(zip(Kσs_1, Kσs_0))
-            # TrussElementKσ now applies the penalty: ρ = density(penalty(x), xmin)
+            # TrussElementKσFun now applies the penalty: ρ = density(penalty(x), xmin)
             ρ_e = TopOpt.Utilities.density(penalty(x[ci]), xmin)
             @test k1 ≈ k0 * ρ_e
         end
@@ -129,8 +129,8 @@ end
     end
 end
 
-@testset "TrussElementKσ API Test" begin
-    # Test TrussElementKσ with DisplacementResult and PseudoDensities
+@testset "TrussElementKσFun API Test" begin
+    # Test TrussElementKσFun with DisplacementResult and PseudoDensities
     problem_file = joinpath(gm_ins_dir, "tim_2d.json")
 
     mats = TrussFEAMaterial(1.0, 0.3)
@@ -145,8 +145,8 @@ end
     solver = FEASolver(DirectSolver, problem)
     solver()
 
-    # Test TrussElementKσ construction
-    esigk = TrussElementKσ(problem, solver)
+    # Test TrussElementKσFun construction
+    esigk = TrussElementKσFun(problem, solver)
     n_cells = length(solver.vars)
     n_dofs = length(solver.u)
 
@@ -161,7 +161,7 @@ end
     @test all(k -> size(k, 1) == size(k, 2), Kσs)
 
     # Test buckling (truss problems use different API)
-    # Truss problems don't have get_Kσs, they use TrussElementKσ operator
+    # Truss problems don't have get_Kσs, they use TrussElementKσFun operator
     K, G = buckling(
         problem, solver.globalinfo, solver.elementinfo, x.x, solver.xmin; u=solver.u
     )
@@ -235,7 +235,7 @@ end
     dp = DisplacementFun(solver)
     assemble_k = AssembleKFun(problem)
     element_k = ElementKFun(solver)
-    truss_element_kσ = TrussElementKσ(problem, solver)
+    truss_element_kσ = TrussElementKσFun(problem, solver)
 
     # * comliance minimization objective
     obj = comp

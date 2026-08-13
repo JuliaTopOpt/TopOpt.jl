@@ -15,7 +15,7 @@ end
 abstract type AbstractMLModel end
 
 """
-    NeuralNetwork(nn, problem)
+    NeuralNetworkFun(nn, problem)
 
 Re-parametrizes the design in terms of a neural network's weights and biases.
 `nn` is a `Flux.jl` model whose first layer takes 2 (or 3) coordinates for 2D
@@ -32,7 +32,7 @@ struct NeuralNetworkFun{Tm,Ti1,Tp,Ti2,Tc} <: AbstractMLModel
 end
 
 """
-    PredictFunction(nn_model)
+    PredictFunctionFun(nn_model)
 
 Prediction function that applies the neural network to each element centroid
 to produce the design variable. Used for evaluating a trained model.
@@ -45,7 +45,7 @@ function (pf::PredictFunctionFun)(in::AbstractVector{<:Real})
 end
 
 """
-    TrainFunction(nn_model)
+    TrainFunctionFun(nn_model)
 
 The training function used in the re-parameterized topology optimization
 formulation. Takes the vector of neural-network weights/biases `p` and returns

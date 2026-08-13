@@ -28,7 +28,7 @@ export VolumeFun,
     hadamard!,
     TrussStressFun,
     AssembleKFun,
-    TrussElementKσ,
+    TrussElementKσFun,
     ElementKFun,
     apply_boundary_with_zerodiag!,
     apply_boundary_with_meandiag!,
@@ -76,7 +76,7 @@ include("neural.jl")
 
 include("interpolation.jl")
 
-# Shared element energy kernel (used by Compliance and ThermalCompliance)
+# Shared element energy kernel (used by ComplianceFun and ThermalComplianceFun)
 include("compute_element_energy.jl")
 
 # Thermal compliance for heat transfer problems
@@ -84,61 +84,5 @@ include("thermal_compliance.jl")
 
 # Fixed element projection for black/white handling
 include("fixed_element.jl")
-
-# `Volume` is kept unexported to avoid colliding with Makie.Volume; the
-# canonical names use a `Fun` suffix.
-const Volume = VolumeFun
-const Compliance = ComplianceFun
-const Displacement = DisplacementFun
-const MeanCompliance = MeanComplianceFun
-const BlockCompliance = BlockComplianceFun
-const ThermalCompliance = ThermalComplianceFun
-const TrussStress = TrussStressFun
-const AssembleK = AssembleKFun
-const TrussElementKσ = TrussElementKσFun
-const ElementK = ElementKFun
-const StressTensor = StressTensorFun
-const ElementStressTensor = ElementStressTensorFun
-const NeuralNetwork = NeuralNetworkFun
-const TrainFunction = TrainFunctionFun
-const PredictFunction = PredictFunctionFun
-const MaterialInterpolation = MaterialInterpolationFun
-const MultiMaterialVariables = MultiMaterialVariablesFun
-const FixedElementProjector = FixedElementProjectorFun
-export Compliance,
-    Displacement,
-    MeanCompliance,
-    BlockCompliance,
-    ThermalCompliance,
-    TrussStress,
-    AssembleK,
-    TrussElementKσ,
-    ElementK,
-    StressTensor,
-    ElementStressTensor,
-    NeuralNetwork,
-    TrainFunction,
-    PredictFunction,
-    MaterialInterpolation,
-    MultiMaterialVariables,
-    FixedElementProjector,
-    VolumeFun,
-    ComplianceFun,
-    DisplacementFun,
-    MeanComplianceFun,
-    BlockComplianceFun,
-    ThermalComplianceFun,
-    TrussStressFun,
-    AssembleKFun,
-    TrussElementKσFun,
-    ElementKFun,
-    StressTensorFun,
-    ElementStressTensorFun,
-    NeuralNetworkFun,
-    TrainFunctionFun,
-    PredictFunctionFun,
-    MaterialInterpolationFun,
-    MultiMaterialVariablesFun,
-    FixedElementProjectorFun
 
 end

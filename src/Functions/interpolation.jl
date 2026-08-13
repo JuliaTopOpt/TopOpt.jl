@@ -7,10 +7,10 @@ function ChainRulesCore.rrule(::typeof(assert_eq), x1, x2)
 end
 
 """
-    MultiMaterialVariables(y, nmats)
+    MultiMaterialVariablesFun(y, nmats)
 
 Wraps the raw per-cell, per-material decision variables `y` (length
-`ncells * (nmats - 1)`) for use with `MaterialInterpolation`.
+`ncells * (nmats - 1)`) for use with `MaterialInterpolationFun`.
 """
 struct MultiMaterialVariablesFun{M<:AbstractMatrix}
     x::M
@@ -34,7 +34,7 @@ function Base.sum(x::MultiMaterialVariablesFun; dims)
 end
 
 """
-    MaterialInterpolation(values, penalty)
+    MaterialInterpolationFun(values, penalty)
 
 Maps a softmax over per-material decision variables to a physical material
 property (e.g. Young's modulus or density). `values` is a vector of material
@@ -62,7 +62,7 @@ end
 """
     tounit(mv::MultiMaterialVariablesFun)
 
-Convert `MultiMaterialVariables` to unit-sum densities via softmax, so the
+Convert `MultiMaterialVariablesFun` to unit-sum densities via softmax, so the
 per-cell material fractions sum to 1.
 """
 tounit(x::MultiMaterialVariablesFun) = PseudoDensities(tounit(x.x))

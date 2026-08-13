@@ -49,7 +49,7 @@ problem = problems[i]
 V = 0.5 # volume fraction
 xmin = 0.001 # minimum density
 convcriteria = Nonconvex.KKTCriteria()
-penalty = PowerPenalty(1.0)  # start with no penalization
+penalty = PowerPenaltyFun(1.0)  # start with no penalization
 
 solver = FEASolver(DirectSolver, problem; xmin=xmin, penalty=penalty)
 ```

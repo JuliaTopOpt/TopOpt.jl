@@ -63,7 +63,7 @@ xmin = 0.001   # minimum density (prevents singular stiffness)
 rmin = 3.0     # density filter radius
 
 x0 = fill(V, getncells(problem))  # start from uniform design
-penalty = PowerPenalty(1.0)       # start with no penalization
+penalty = PowerPenaltyFun(1.0)       # start with no penalization
 solver = FEASolver(DirectSolver, problem; xmin=xmin, penalty=penalty)
 comp = ComplianceFun(solver)
 

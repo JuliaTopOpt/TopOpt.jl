@@ -67,7 +67,7 @@ The rendered output is generated during CI with real code execution and plots.
 
 - **[Multi-Material Optimization](multimaterial.html)** —
   Softmax parametrization for distributing 3+ candidate materials with
-  mass constraints and MaterialInterpolation.
+  mass constraints and MaterialInterpolationFun.
 
 - **[Neural Network Parametrization (IPOPT)](neural.html)** —
   4-layer MLP parametrization with feasibility restoration and

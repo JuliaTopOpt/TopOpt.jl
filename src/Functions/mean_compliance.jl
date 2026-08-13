@@ -1,5 +1,5 @@
 """
-    MeanCompliance(solver, scenarios)
+    MeanComplianceFun(solver, scenarios)
 
 Mean compliance over multiple load cases. Returns the average of the
 per-scenario compliance values. `scenarios` is typically produced by
@@ -22,7 +22,7 @@ function MeanComplianceFun(
     sample_method=:hutch,
     kwargs...,
 )
-    # MeanCompliance is only valid for structural (LinearElasticity) problems
+    # MeanComplianceFun is only valid for structural (LinearElasticity) problems
     solver.problem isa StiffnessTopOptProblem || throw(
         ArgumentError(
             "MeanComplianceFun can only be used with StiffnessTopOptProblem (structural mechanics). Got $(typeof(solver.problem))",

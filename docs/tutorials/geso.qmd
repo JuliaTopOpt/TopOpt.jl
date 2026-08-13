@@ -42,7 +42,7 @@ problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), E, v, f)
 The FEA solver uses power-law penalization to drive toward 0/1 designs:
 
 ```{julia}
-solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenalty(3.0))
+solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(3.0))
 ```
 
 ## Define the compliance objective and volume constraint

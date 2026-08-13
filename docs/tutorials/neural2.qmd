@@ -48,7 +48,7 @@ delta_alpha = 10.0
 alpha_max = 100   # maximum constraint weight
 
 # Initial solver and compliance for C0 (normalization constant)
-penalty = PowerPenalty(p)
+penalty = PowerPenaltyFun(p)
 solver = FEASolver(DirectSolver, problem; xmin, penalty)
 cheqfilter = DensityFilterFun(solver; rmin)
 comp = ComplianceFun(solver)
@@ -88,7 +88,7 @@ clip_alg = Flux.Optimise.ClipValue(1.0)
 w = copy(w0)
 
 # Heaviside projection with nonzero steepness pushes densities toward 0/1.
-proj = HeavisideProjection(2.0)
+proj = HeavisideProjectionFun(2.0)
 
 # Termination criteria
 eps = Inf

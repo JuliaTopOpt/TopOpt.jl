@@ -8,7 +8,7 @@ Base.getindex(x::ElementStiffnessMatrix, i::CartesianIndex) = x.Ke[i]
 Base.:*(x::ElementStiffnessMatrix, y::Number) = ElementStiffnessMatrix(x.Ke * y)
 
 """
-    ElementK(solver::AbstractFEASolver)
+    ElementKFun(solver::AbstractFEASolver)
 
 Element-wise stiffness matrices from the input design variables. Applies the
 penalty and interpolation, then computes each element stiffness matrix via
@@ -92,7 +92,7 @@ function ChainRulesCore.rrule(ek::ElementKFun, x::PseudoDensities)
     Kes = ek(x)
 
     """
-    g(F(x)), where F = ElementK
+    g(F(x)), where F = ElementKFun
 
     Want: dg/dK_e_ij -> dg/dx_e
 

@@ -50,7 +50,7 @@ xmin = 1e-3   # minimum density
 rmin = 2.0    # density filter radius
 
 x0 = fill(V, getncells(problem))  # start from uniform 30% density
-solver = FEASolver(DirectSolver, problem; xmin=xmin, penalty=PowerPenalty(1.0))
+solver = FEASolver(DirectSolver, problem; xmin=xmin, penalty=PowerPenaltyFun(1.0))
 comp = ThermalComplianceFun(solver)
 filter = DensityFilterFun(solver; rmin=rmin)
 ```

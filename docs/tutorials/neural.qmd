@@ -41,7 +41,7 @@ xmin = 0.0001 # minimum density
 rmin = 4.0    # filter radius
 
 # Start with no penalization (p=1) and ramp up via continuation.
-penalty = PowerPenalty(1.0)
+penalty = PowerPenaltyFun(1.0)
 solver = FEASolver(DirectSolver, problem; xmin, penalty)
 filter = DensityFilterFun(solver; rmin)
 comp = ComplianceFun(solver)

@@ -514,7 +514,7 @@ function FEASolver(
     lhs = similar(u)
     rhs = similar(u)
     # vars stores the full density vector (length = number of elements)
-    # Use FixedElementProjector to map free variables to this full vector
+    # Use FixedElementProjectorFun to map free variables to this full vector
     vars = fill(one(T), getncells(problem.ch.dh.grid))
 
     # Build CG state variables for CG-based solvers

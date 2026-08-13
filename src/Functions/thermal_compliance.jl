@@ -38,7 +38,7 @@ optimization.
 heatflux = Dict{String,Float64}("top" => 100.0)  # heat flux on boundary (W/m²)
 problem = HeatConductionProblem(Val{:Linear}, nels, sizes, k; Tleft=0.0, Tright=0.0, heatflux=heatflux)
 solver = FEASolver(DirectSolver, problem; xmin=0.001)
-comp = ThermalCompliance(solver)
+comp = ThermalComplianceFun(solver)
 val = comp(PseudoDensities(ones(length(solver.vars))))
 ```
 """
@@ -183,7 +183,7 @@ function solve_adjoint!(
     _K = K isa Symmetric ? K.data : K
     op = MatrixOperator(_K, rhs, solver.conv)
     # Zero `lhs` so the `initially_zero=true` contract with cg! holds (lhs is
-    # `adjoint_sol`, reused across ThermalCompliance evaluations).
+    # `adjoint_sol`, reused across ThermalComplianceFun evaluations).
     fill!(lhs, zero(T))
     if solver.preconditioner === identity
         cg!(

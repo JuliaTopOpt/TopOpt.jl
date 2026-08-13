@@ -1,5 +1,5 @@
 """
-    DensityFilter(solver; rmin)
+    DensityFilterFun(solver; rmin)
 
 Density chequerboard filter with radius `rmin`. Produces a filtered design
 where each element's density is a weighted average of neighboring densities
@@ -109,7 +109,7 @@ function scalecols!(A::SparseMatrixCSC)
 end
 
 """
-    ProjectedDensityFilter
+    ProjectedDensityFilterFun
 
 Density filter followed by a projection (e.g. Heaviside) to push the design
 toward 0/1. Useful for producing near-binary designs. See
