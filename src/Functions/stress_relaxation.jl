@@ -20,8 +20,8 @@ constraint residual by `ρ_e`
 widens the degenerate subspaces of the feasible domain: for sufficiently small
 `ρ_e` the constraint is satisfied regardless of the stress, which makes the
 singular optima of stress-constrained topology optimization [SvedGinos1968](@cite)
-reachable by gradient-based optimizers [ChengGuo1997](@cite,
-[DuysinxBendsøe1998](@cite)). As `ε → 0` the original constraints
+reachable by gradient-based optimizers [ChengGuo1997](@cite) and
+[DuysinxBendsøe1998](@cite). As `ε → 0` the original constraints
 `σ_e ≤ σ_lim` on the material domain are recovered; a continuation strategy
 decreasing `ε` between optimization runs is common, though the global optimum
 of the relaxed problem can jump discontinuously with `ε`
