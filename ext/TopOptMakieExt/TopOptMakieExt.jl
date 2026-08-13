@@ -1,8 +1,8 @@
 module TopOptMakieExt
 
 using LinearAlgebra: norm
-using Makie: Makie,lift,cam3d!,Point3f,Vec3f,Figure,Auto,RGBAf
-using Makie: DataAspect,Axis,LScene,SliderGrid,linesegments!,Point2f
+using Makie: Makie, lift, cam3d!, Point3f, Vec3f, Figure, Auto, RGBAf
+using Makie: DataAspect, Axis, LScene, SliderGrid, linesegments!, Point2f
 using Makie: ColorSchemes
 using GeometryBasics
 using GeometryBasics: TriangleFace
@@ -38,7 +38,7 @@ function Makie.to_triangles(cells::AbstractVector{<:Ferrite.AbstractCell})
 end
 
 # https://github.com/JuliaPlots/AbstractPlotting.jl/blob/444813136a506eba8b5b03e2125c7a5f24e825cb/src/conversions.jl#L505
-function to_triangle(tris,cell::Union{Ferrite.Hexahedron,QuadraticHexahedron})
+function to_triangle(tris, cell::Union{Ferrite.Hexahedron,QuadraticHexahedron})
     nodes = cell.nodes
     push!(tris, TriangleFace{Int}(nodes[1], nodes[2], nodes[5]))
     push!(tris, TriangleFace{Int}(nodes[5], nodes[2], nodes[6]))
@@ -231,7 +231,7 @@ function TopOpt.visualize(
         # https://jkrumbiegel.github.io/MakieLayout.jl/v0.3/layoutables/#LScene-1
         # https://makie.juliaplots.org/stable/cameras.html#D-Camera
         # ax1 = layout[1, 1] = LScene(scene, camera = cam3d!, raw = false)
-        ax1 = LScene(fig[1, 1]; scenekw=(camera=cam3d!, raw=false)) # , height=750
+        ax1 = LScene(fig[1, 1]; scenekw=(camera=(cam3d!), raw=false)) # , height=750
     end
 
     # * support / load appearance / deformatione exaggeration control
@@ -444,7 +444,7 @@ function TopOpt.visualize(
         # ax1.aspect = AxisAspect(1)
         ax1.aspect = DataAspect()
     else
-        ax1 = LScene(fig[1, 1]; scenekw=(camera=cam3d!, raw=false)) #, height=750)
+        ax1 = LScene(fig[1, 1]; scenekw=(camera=(cam3d!), raw=false)) #, height=750)
     end
 
     # * linewidth scaling / support / load appearance / deformatione exaggeration control
@@ -669,7 +669,7 @@ function TopOpt.visualize(
         ax1 = Axis(fig[1, 1])
         ax1.aspect = DataAspect()
     else
-        ax1 = LScene(fig[1, 1]; scenekw=(camera=cam3d!, raw=false))
+        ax1 = LScene(fig[1, 1]; scenekw=(camera=(cam3d!), raw=false))
     end
 
     # Explode nodes and cells for per-cell coloring
