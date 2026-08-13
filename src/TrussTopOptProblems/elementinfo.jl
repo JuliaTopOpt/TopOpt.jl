@@ -78,11 +78,23 @@ end
     https://people.duke.edu/~hpgavin/cee421/truss-finite-def.pdf
 """
 function compute_local_axes(end_vert_u, end_vert_v)
-    @assert length(end_vert_u) == length(end_vert_v)
-    @assert length(end_vert_u) == 2 || length(end_vert_u) == 3
+    length(end_vert_u) == length(end_vert_v) || throw(
+        DimensionMismatch(
+            "compute_local_axes: end_vert_u and end_vert_v must have the same length",
+        ),
+    )
     xdim = length(end_vert_u)
+    xdim == 2 || xdim == 3 || throw(
+        ArgumentError(
+            "compute_local_axes: expected 2D or 3D truss, got $xdim dimensions",
+        ),
+    )
     L = norm(end_vert_u - end_vert_v)
-    @assert L > eps()
+    L > eps() || throw(
+        ArgumentError(
+            "compute_local_axes: element length is zero (coincident nodes)",
+        ),
+    )
     # by convention, the new x axis is along the element's direction
     # directional cosine of the new x axis in the global world frame
     c_x = (end_vert_v[1] - end_vert_u[1]) / L

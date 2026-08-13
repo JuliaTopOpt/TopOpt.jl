@@ -97,9 +97,17 @@ function GenericCellScalarValues(
     geom_interpol::Interpolation=func_interpol;
     xdim=Ferrite.getrefdim(shape),
 ) where {T,shape<:Ferrite.AbstractRefShape}
-    @assert Ferrite.getrefdim(getrefshape(func_interpol)) ==
-        Ferrite.getrefdim(getrefshape(geom_interpol))
-    @assert getrefshape(func_interpol) == getrefshape(geom_interpol) == shape
+    Ferrite.getrefdim(getrefshape(func_interpol)) ==
+        Ferrite.getrefdim(getrefshape(geom_interpol)) || throw(
+        DimensionMismatch(
+            "TrussCellScalarValues: func_interpol and geom_interpol must have the same refdim",
+        ),
+    )
+    getrefshape(func_interpol) == getrefshape(geom_interpol) == shape || throw(
+        DimensionMismatch(
+            "TrussCellScalarValues: func_interpol and geom_interpol must both be $shape",
+        ),
+    )
     ξdim = Ferrite.getrefdim(shape)
     n_qpoints = length(getweights(quad_rule))
     # * Function interpolation
@@ -240,7 +248,11 @@ function truss_reinit!(
 ) where {ξdim,xdim,T}
     n_geom_basefuncs = getngeobasefunctions(cv)
     n_func_basefuncs = getn_scalarbasefunctions(cv)
-    @assert length(x) == n_geom_basefuncs
+    length(x) == n_geom_basefuncs || throw(
+        DimensionMismatch(
+            "truss_reinit!: expected $(n_geom_basefuncs) nodal coordinates, got $(length(x))",
+        ),
+    )
     isa(cv, CellVectorValues) && (n_func_basefuncs *= xdim)
 
     @inbounds for i in eachindex(cv.qr_weights)

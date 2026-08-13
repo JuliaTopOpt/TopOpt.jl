@@ -36,7 +36,11 @@ function TrussGrid(
     grid = _LinearTrussGrid(node_points, elements)
     ncells = getncells(grid)
     if crosssecs isa Vector
-        @assert length(crosssecs) == ncells
+        length(crosssecs) == ncells || throw(
+            DimensionMismatch(
+                "TrussGrid: expected $(ncells) cross sections, got $(length(crosssecs))",
+            ),
+        )
         crosssecs = convert(Vector{TrussFEACrossSec{T}}, crosssecs)
     elseif crosssecs isa TrussFEACrossSec
         crosssecs = [convert(TrussFEACrossSec{T}, crosssecs) for i in 1:ncells]
@@ -54,7 +58,11 @@ function TrussGrid(
     grid = _LinearTrussGrid(node_points, elements)
     ncells = getncells(grid)
     if crosssecs isa Vector
-        @assert length(crosssecs) == ncells
+        length(crosssecs) == ncells || throw(
+            DimensionMismatch(
+                "TrussGrid: expected $(ncells) cross sections, got $(length(crosssecs))",
+            ),
+        )
         crosssecs = convert(Vector{TrussFEACrossSec{T}}, crosssecs)
     elseif crosssecs isa TrussFEACrossSec
         crosssecs = [convert(TrussFEACrossSec{T}, crosssecs) for i in 1:ncells]
@@ -69,8 +77,12 @@ function _LinearTrussGrid(node_points::Matrix{T}, elements::Matrix{iT}) where {T
     nconnect, n_elems = size(elements)
 
     # * Generate cells, Line2d or Line3d
-    @assert xdim ∈ [2, 3]
-    @assert nconnect == 2
+    xdim ∈ (2, 3) || throw(
+        ArgumentError("_LinearTrussGrid: expected 2D or 3D truss, got $xdim dimensions"),
+    )
+    nconnect == 2 || throw(
+        ArgumentError("_LinearTrussGrid: expected 2-node elements, got $nconnect nodes per element"),
+    )
     CellType = Line
     cells = Vector{CellType}(undef, n_elems)
     for e_ind in 1:n_elems
@@ -92,7 +104,9 @@ function _LinearTrussGrid(
     n_nodes = length(node_points)
 
     # * Generate cells, Line2d or Line3d
-    @assert xdim ∈ [2, 3]
+    xdim ∈ (2, 3) || throw(
+        ArgumentError("_LinearTrussGrid: expected 2D or 3D truss, got $xdim dimensions"),
+    )
     CellType = Line
     cells = Vector{CellType}(undef, length(elements))
     for (e_ind, element) in elements
