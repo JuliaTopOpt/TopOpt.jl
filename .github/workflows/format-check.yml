@@ -63,38 +63,37 @@ jobs:
             end
           '
 
-      - name: Post formatting comment (issues)
-        if: failure() && github.event_name == 'pull_request'
-        uses: thollander/actions-comment-pull-request@v3
-        with:
-          file-path: format_comment.md
-          comment-tag: formatting
-
-      - name: Post formatting comment (passed)
-        if: success() && github.event_name == 'pull_request'
+      - name: Post formatting comment
+        if: always() && github.event_name == 'pull_request'
         uses: actions/github-script@v8
         with:
           script: |
+            const fs = require('fs');
+            const body = fs.readFileSync('format_comment.md', 'utf8');
+            const isPassed = body.includes('Formatting check passed');
+            const tagged = body + '\n\n<!-- auto-pr-comment: formatting -->';
+
             const comments = await github.rest.issues.listComments({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.issue.number,
             });
-            const prev = comments.data
-              .filter(c =>
-                c.body.includes('<!-- auto-pr-comment: formatting -->') ||
-                c.body.includes('Formatting check passed')
-              )
-              .pop();
-            if (prev && prev.body.includes('Formatting check passed')) {
-              console.log('Previous comment already says formatting passed — skipping.');
-              return;
+            const last = comments.data.pop();
+
+            if (last && (last.body.includes('Formatting check passed') || last.body.includes('Formatting issues') || last.body.includes('<!-- auto-pr-comment: formatting -->'))) {
+              // Last comment is from the formatting checker — update it
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: last.id,
+                body: tagged,
+              });
+            } else {
+              // Last comment is something else — create a new one
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: tagged,
+              });
             }
-            const fs = require('fs');
-            const body = fs.readFileSync('format_comment.md', 'utf8');
-            await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-              body,
-            });

@@ -85,10 +85,35 @@ jobs:
 
       - name: Post JET comparison comment (PR)
         if: github.event_name == 'pull_request'
-        uses: thollander/actions-comment-pull-request@v3
+        uses: actions/github-script@v8
         with:
-          file-path: pr/jet_diff.md
-          comment-tag: jet-report
+          script: |
+            const fs = require('fs');
+            const body = fs.readFileSync('pr/jet_diff.md', 'utf8');
+            const tagged = body + '\n\n<!-- auto-pr-comment: jet-report -->';
+
+            const comments = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            const last = comments.data.pop();
+
+            if (last && (last.body.includes('JET Report Comparison') || last.body.includes('<!-- auto-pr-comment: jet-report -->'))) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: last.id,
+                body: tagged,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: tagged,
+              });
+            }
 
       - name: Post JET report comment (push to master)
         if: github.event_name == 'push'
