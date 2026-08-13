@@ -1,0 +1,78 @@
+name: JET Report
+
+on:
+  pull_request:
+    branches:
+      - master
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  jet-report:
+    name: "JET: Report vs master"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          path: pr
+
+      - uses: actions/checkout@v6
+        with:
+          ref: master
+          path: master
+
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: '1'
+          arch: x64
+
+      - uses: julia-actions/cache@v2
+        with:
+          cache-name: jet-report
+          cache-artifacts: true
+          cache-packages: true
+          cache-compiled: true
+
+      - name: Use General git registry
+        run: |
+          rm -rf ~/.julia/registries/General.toml ~/.julia/registries/General.tar.gz
+          julia -e 'using Pkg; Pkg.Registry.add(RegistrySpec(url="https://github.com/JuliaRegistries/General.git"))'
+
+      - name: Instantiate PR environment
+        run: |
+          julia --project=pr/test -e '
+            using Pkg
+            Pkg.develop(PackageSpec(path="pr"))
+            Pkg.instantiate()
+            Pkg.precompile()'
+
+      - name: Instantiate master environment
+        run: |
+          julia --project=master/test -e '
+            using Pkg
+            Pkg.develop(PackageSpec(path="master"))
+            Pkg.instantiate()
+            Pkg.precompile()'
+
+      - name: Run JET on PR branch
+        run: julia --project=test test/jet_report.jl --output ../pr_jet.json
+        working-directory: pr
+
+      - name: Copy JET script to master checkout
+        run: cp pr/test/jet_report.jl master/test/jet_report.jl
+
+      - name: Run JET on master
+        run: julia --project=test test/jet_report.jl --output ../master_jet.json
+        working-directory: master
+
+      - name: Compare JET reports
+        run: julia --project=test test/jet_compare.jl ../master_jet.json ../pr_jet.json
+        working-directory: pr
+
+      - name: Post JET comparison comment
+        uses: thollander/actions-comment-pull-request@v3
+        with:
+          file: pr/jet_diff.md
+          comment_tag: jet-report
