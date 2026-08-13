@@ -91,7 +91,7 @@ jobs:
         with:
           script: |
             const fs = require('fs');
-            const report = JSON.parse(fs.readFileSync('master/master_jet.json', 'utf8'));
+            const report = JSON.parse(fs.readFileSync('master_jet.json', 'utf8'));
             const lines = [
               '### JET Report (master)',
               '',
