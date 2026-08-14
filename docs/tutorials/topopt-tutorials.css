@@ -48,15 +48,17 @@ body {
   background: var(--white) !important;
   border-bottom: 1px solid var(--gray-200) !important;
   box-shadow: var(--shadow-sm) !important;
-  padding: 0 1rem !important;
+  padding: 0.25rem 1rem !important;
 }
 .navbar .navbar-brand {
   color: var(--gray-900) !important;
   font-weight: 700 !important;
-  font-size: 1.05rem !important;
+  font-size: 1.25rem !important;
   display: flex !important;
   align-items: center !important;
   gap: 0.75rem !important;
+  padding-top: 0.25rem !important;
+  padding-bottom: 0.25rem !important;
 }
 .navbar .navbar-brand img {
   height: 34px !important;
@@ -65,7 +67,7 @@ body {
 .navbar .nav-link {
   color: var(--gray-600) !important;
   font-weight: 500 !important;
-  font-size: 0.9rem !important;
+  font-size: 1rem !important;
   padding: 0.4rem 0.75rem !important;
   border-radius: 6px !important;
   transition: all 0.15s ease !important;
@@ -128,7 +130,7 @@ body {
   text-align: center;
   font-size: 1.1rem;
   line-height: 1.7;
-  max-width: 55rem;
+  max-width: 48rem;
 }
 .hero-logo {
   display: block;
@@ -215,6 +217,19 @@ body:not(:has(.tutorial-grid)) .margin-sidebar {
   gap: 1.25rem !important;
   margin-bottom: 1.5rem !important;
 }
+.tutorial-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background: var(--white) !important;
+  border: 1px solid var(--gray-200) !important;
+  border-left: 3px solid var(--purple-500) !important;
+  border-radius: 0 var(--radius) var(--radius) 0 !important;
+  padding: 1.25rem 1.5rem !important;
+  margin: 0 !important;
+  transition: box-shadow 0.2s ease, border-left-color 0.2s ease !important;
+  box-shadow: var(--shadow-sm) !important;
+}
 
 .tutorial-card {
   position: relative;
@@ -228,6 +243,7 @@ body:not(:has(.tutorial-grid)) .margin-sidebar {
   margin: 0 !important;
   transition: box-shadow 0.2s ease, border-left-color 0.2s ease !important;
   box-shadow: var(--shadow-sm) !important;
+  height: 100% !important;
 }
 .tutorial-card:hover {
   border-left-color: var(--purple-700) !important;
@@ -278,6 +294,52 @@ body:not(:has(.tutorial-grid)) .margin-sidebar {
 @media (max-width: 768px) {
   .tutorial-grid {
     grid-template-columns: 1fr !important;
+  }
+  /* Landing page: stack TOC below content */
+  body:has(.tutorial-grid) .quarto-container.page-layout-article {
+    display: block !important;
+    padding: 0 1rem !important;
+  }
+  body:has(.tutorial-grid) .content {
+    padding: 0.5rem 1rem 2rem !important;
+  }
+  body:has(.tutorial-grid) #quarto-margin-sidebar {
+    position: static !important;
+    width: 100% !important;
+    padding: 1rem 0 !important;
+  }
+  /* Tutorial pages: stack TOC above content */
+  body:not(:has(.tutorial-grid)) .quarto-container.page-columns {
+    display: block !important;
+    padding: 0 1rem !important;
+  }
+  body:not(:has(.tutorial-grid)) .margin-sidebar {
+    width: 100% !important;
+    min-width: unset !important;
+    padding: 1rem 0 !important;
+  }
+  body:not(:has(.tutorial-grid)) .content {
+    padding-right: 1rem !important;
+  }
+  /* Banner: full width on mobile */
+  .hero-section {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    max-width: none !important;
+  }
+  .page-logo {
+    max-width: 100px !important;
+  }
+  /* Navbar: smaller brand on mobile */
+  .navbar .navbar-brand {
+    font-size: 1.05rem !important;
+  }
+  .navbar .nav-link {
+    font-size: 0.95rem !important;
+  }
+  /* Equal-height cards on mobile */
+  .tutorial-grid {
+    grid-auto-rows: auto !important;
   }
 }
 
