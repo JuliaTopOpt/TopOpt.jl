@@ -3,11 +3,13 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --purple-700: #6b3fa0;
-  --purple-600: #7b4fbf;
-  --purple-500: #9558b2;
-  --purple-100: #f3eef8;
-  --purple-50: #faf7fd;
+  --purple-700: #2c5282;
+  --purple-600: #396491;
+  --purple-500: #4a7ab5;
+  --purple-300: #8bb4d9;
+  --purple-200: #b8d4eb;
+  --purple-100: #e5f0f8;
+  --purple-50: #f5f9fc;
   --blue-600: #4063d8;
   --green-600: #389826;
   --red-600: #cb3c33;
@@ -28,7 +30,7 @@
   --shadow-md: 0 4px 6px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.06);
   --radius: 8px;
   --radius-lg: 12px;
-  --doc-max-width: 55rem;
+  --doc-max-width: 85rem;
   --doc-font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --doc-font-mono: 'JuliaMono', 'SFMono-Regular', 'Menlo', 'Consolas', monospace;
 }
@@ -107,16 +109,35 @@ body {
   color: var(--gray-400) !important;
 }
 
+/* ── Page logo ── */
+.page-logo {
+  display: block;
+  max-width: 150px;
+  height: auto;
+  margin: 2rem auto 1.5rem;
+  background: transparent;
+}
+
 /* ── Hero section ── */
 .hero-section {
   background: linear-gradient(135deg, var(--purple-700) 0%, var(--purple-500) 100%);
   color: var(--white);
-  padding: 2rem 1.5rem;
+  padding: 1rem 1.5rem;
   border-radius: var(--radius-lg);
-  margin-bottom: 2rem;
+  margin: 0 auto 2rem;
   text-align: center;
   font-size: 1.1rem;
   line-height: 1.7;
+  max-width: 55rem;
+}
+.hero-logo {
+  display: block;
+  margin: 0 auto 0.75rem;
+  max-width: 60px;
+  height: auto;
+  background: transparent;
+  border-radius: var(--radius);
+  padding: 0.25rem;
 }
 
 /* ── Title ── */
@@ -126,48 +147,118 @@ body {
   color: var(--gray-900) !important;
   letter-spacing: -0.01em !important;
   line-height: 1.3 !important;
+  margin-top: 0.5rem !important;
 }
 
-/* ── Tutorial cards ── */
+/* ── Page layout: wider content ── */
+.quarto-container.page-layout-article {
+  max-width: 100vw !important;
+  width: 100% !important;
+  margin: 0 !important;
+  padding: 0 2rem !important;
+}
+.quarto-container.page-layout-article .content {
+  max-width: 100% !important;
+}
+#quarto-document-content {
+  max-width: 100% !important;
+}
+
+/* Landing page: symmetric layout, TOC on right, flexible width */
+body:has(.tutorial-grid) .quarto-container.page-layout-article {
+  display: grid !important;
+  grid-template-columns: 2rem minmax(0, 1fr) 14rem 2rem !important;
+  padding: 0 !important;
+}
+body:has(.tutorial-grid) .quarto-title-block {
+  display: none !important;
+}
+body:has(.tutorial-grid) #quarto-margin-sidebar {
+  grid-column: 3 / 4 !important;
+  padding: 1rem 0.5rem 1rem 1rem !important;
+}
+body:has(.tutorial-grid) .content {
+  grid-column: 2 / 3 !important;
+  padding: 0 1rem 2rem !important;
+  margin-top: 1rem !important;
+}
+
+/* Tutorial pages: more gap between TOC (left) and content */
+body:not(:has(.tutorial-grid)) .quarto-container.page-layout-article .content {
+  padding-left: 2rem !important;
+}
+
+/* ── Tutorial cards — clean 2-column list ── */
+.tutorial-grid {
+  display: grid !important;
+  grid-template-columns: repeat(3, 1fr) !important;
+  gap: 1.25rem !important;
+  margin-bottom: 1.5rem !important;
+}
+
 .tutorial-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
   background: var(--white) !important;
   border: 1px solid var(--gray-200) !important;
-  border-radius: var(--radius-lg) !important;
+  border-left: 3px solid var(--purple-500) !important;
+  border-radius: 0 var(--radius) var(--radius) 0 !important;
   padding: 1.25rem 1.5rem !important;
-  margin-bottom: 0.75rem !important;
-  transition: all 0.2s ease !important;
+  margin: 0 !important;
+  transition: box-shadow 0.2s ease, border-left-color 0.2s ease !important;
   box-shadow: var(--shadow-sm) !important;
 }
 .tutorial-card:hover {
-  border-color: var(--purple-500) !important;
+  border-left-color: var(--purple-700) !important;
   box-shadow: var(--shadow-md) !important;
-  transform: translateY(-2px) !important;
+}
+.tutorial-card > p:first-child {
+  margin: 0 0 0.5rem !important;
 }
 .tutorial-card a {
-  font-weight: 600 !important;
+  font-weight: 700 !important;
   color: var(--gray-900) !important;
   font-size: 1rem !important;
-  position: relative;
-  padding-left: 1rem;
+  line-height: 1.4 !important;
+  text-decoration: none !important;
+  position: static;
+  padding-left: 0;
 }
-.tutorial-card a::before {
-  content: "→";
+.tutorial-card:hover a {
+  color: var(--purple-600) !important;
+}
+/* Stretched link: the whole card is clickable */
+.tutorial-card > p:first-child a::after {
+  content: "";
   position: absolute;
-  left: 0;
-  color: var(--purple-500);
-  opacity: 0;
-  transform: translateX(-4px);
-  transition: all 0.2s ease;
+  inset: 0;
+  z-index: 1;
 }
-.tutorial-card:hover a::before {
-  opacity: 1;
-  transform: translateX(0);
-}
-.tutorial-card p {
+.tutorial-card > p:last-child {
+  position: relative;
+  z-index: 2;
   color: var(--gray-500) !important;
-  font-size: 0.875rem !important;
-  margin-top: 0.35rem !important;
+  font-size: 0.88rem !important;
+  line-height: 1.55 !important;
+  margin-top: 0 !important;
   margin-bottom: 0 !important;
+}
+.tutorial-card code {
+  position: relative;
+  z-index: 2;
+}
+
+/* Responsive: 2 columns on medium, single column on narrow screens */
+@media (max-width: 1200px) {
+  .tutorial-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+@media (max-width: 768px) {
+  .tutorial-grid {
+    grid-template-columns: 1fr !important;
+  }
 }
 
 /* ── Headings ── */
@@ -212,27 +303,57 @@ code:not(pre code) {
   color: var(--purple-700) !important;
 }
 
-/* ── TOC (right sidebar) ── */
-nav[role="doc-toc"] {
+/* ── TOC (sidebar) — minimal, sticky ── */
+#quarto-margin-sidebar nav[role="doc-toc"] {
+  position: sticky !important;
+  top: 5rem !important;
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
+  box-shadow: none !important;
   font-size: 0.82rem !important;
-}
-nav[role="doc-toc"] a {
-  color: var(--gray-500) !important;
-}
-nav[role="doc-toc"] a:hover,
-nav[role="doc-toc"] a.active {
-  color: var(--purple-600) !important;
-}
-nav[role="doc-toc"] > ul {
-  border-left: 2px solid var(--gray-200) !important;
-  padding-left: 0.75rem !important;
 }
 #toc-title {
   font-size: 0.7rem !important;
-  font-weight: 700 !important;
+  font-weight: 600 !important;
   text-transform: uppercase !important;
   letter-spacing: 0.06em !important;
-  color: var(--gray-400) !important;
+  color: var(--gray-500) !important;
+  margin: 0 0 0.5rem !important;
+  padding-bottom: 0.4rem !important;
+  border-bottom: 1px solid var(--gray-200) !important;
+}
+nav[role="doc-toc"] ul {
+  list-style: none !important;
+  padding-left: 0 !important;
+  margin: 0 !important;
+  border-left: 2px solid var(--gray-200) !important;
+}
+nav[role="doc-toc"] li {
+  margin: 0 !important;
+}
+nav[role="doc-toc"] a {
+  display: block !important;
+  color: var(--gray-600) !important;
+  font-size: 0.82rem !important;
+  font-weight: 400 !important;
+  line-height: 1.5 !important;
+  padding: 0.25rem 0.75rem !important;
+  border-radius: 0 !important;
+  border-left: 2px solid transparent !important;
+  margin-left: -2px !important;
+  transition: color 0.15s ease, border-color 0.15s ease !important;
+}
+nav[role="doc-toc"] a:hover {
+  color: var(--purple-600) !important;
+  border-left-color: var(--purple-300) !important;
+}
+nav[role="doc-toc"] a.active,
+nav[role="doc-toc"] a.active:hover {
+  color: var(--purple-700) !important;
+  font-weight: 600 !important;
+  border-left-color: var(--purple-600) !important;
 }
 
 /* ── Footer ── */
