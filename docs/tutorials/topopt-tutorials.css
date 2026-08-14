@@ -184,8 +184,12 @@ body:has(.tutorial-grid) .content {
 
 /* Tutorial pages: less right white space, TOC stays on left */
 body:not(:has(.tutorial-grid)) .quarto-container.page-columns {
-  grid-template-columns: [screen-start] 1em [screen-start-inset page-start page-start-inset body-start-outset] 14rem [body-start] 1.5em [body-content-start] minmax(0, 1fr) [body-content-end] 1.5em [body-end body-end-outset page-end-inset page-end screen-end-inset] 1em [screen-end] !important;
-  padding-right: 2rem !important;
+  grid-template-columns: [screen-start] 1em [screen-start-inset page-start page-start-inset body-start-outset] 14rem [body-start] 1.5em [body-content-start] minmax(0, 1fr) [body-content-end] 1.5em [body-end body-end-outset page-end-inset] 10rem [page-end screen-end-inset] 1em [screen-end] !important;
+  padding-right: 0 !important;
+}
+body:not(:has(.tutorial-grid)) .content {
+  grid-column: body-content-start / body-content-end !important;
+  padding-right: 8rem !important;
 }
 body:not(:has(.tutorial-grid)) #quarto-sidebar {
   grid-column: body-start-outset / body-start !important;
@@ -197,8 +201,11 @@ body:not(:has(.tutorial-grid)) .content {
   grid-column: body-content-start / body-content-end !important;
   padding-right: 0 !important;
 }
-body:not(:has(.tutorial-grid)) #quarto-margin-sidebar {
+body:not(:has(.tutorial-grid)) .margin-sidebar {
+  grid-column: body-end / screen-end !important;
   padding-top: 5rem !important;
+  min-width: 24rem !important;
+  max-width: 24rem !important;
 }
 
 /* ── Tutorial cards — clean 2-column list ── */
