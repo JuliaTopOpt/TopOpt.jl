@@ -24,3 +24,4 @@ format:
     toc: true
     toc-location: left
     css: topopt-tutorials.css
+    embed-resources: true
