@@ -1,6 +1,12 @@
 ---
-title: "Tutorials"
+title: "TopOpt.jl Tutorials"
+format:
+  html:
+    toc: true
+    toc-location: right
 ---
+
+![](logo.png){.page-logo}
 
 ::: {.hero-section}
 Interactive, executable examples that walk through complete topology optimization workflows — from problem setup to visualization.
@@ -8,118 +14,141 @@ Interactive, executable examples that walk through complete topology optimizatio
 
 ## Density-based methods
 
+::: {.tutorial-grid}
 ::: {.tutorial-card}
-**[BESO: Bi-directional Evolutionary Structural Optimization](beso.html)**
+[**BESO: Bi-directional Evolutionary Structural Optimization**](beso.html)
 
 2D compliance minimization on the HalfMBB beam with problem setup, FEA solver, sensitivity filtering, and BESO algorithm loop.
 :::
 
 ::: {.tutorial-card}
-**[SIMP: Solid Isotropic Material with Penalization](simp.html)**
+[**SIMP: Solid Isotropic Material with Penalization**](simp.html)
 
 3D compliance minimization on a cantilever with density filtering, Nonconvex.jl + MMA87, and Makie visualization.
 :::
 
 ::: {.tutorial-card}
-**[GESO: Genetic Evolutionary Structural Optimization](geso.html)**
+[**GESO: Genetic Evolutionary Structural Optimization**](geso.html)
 
 2D compliance minimization with genetic algorithm — binary encoding, crossover, and mutation for global search.
 :::
 
 ::: {.tutorial-card}
-**[Continuation SIMP](csimp.html)**
+[**Continuation SIMP**](csimp.html)
 
 Penalty ramp (1.0 → 5.0) for improved convergence on cantilever, Half MBB, L-beam, and tie-beam benchmarks.
 :::
 
 ::: {.tutorial-card}
-**[TOBS: Topological Optimization of Binary Structures](tobs.html)**
+[**TOBS: Topological Optimization of Binary Structures**](tobs.html)
 
 Binary (0/1) topology optimization with sequential linearization and Cbc.jl branch-and-cut for 16,000+ variables.
+:::
 :::
 
 ## Heat conduction
 
+::: {.tutorial-grid}
 ::: {.tutorial-card}
-**[Heat Conduction: Conductivity Tree](heat_tree.html)**
+[**Heat Conduction: Conductivity Tree**](heat_tree.html)
 
 Thermal compliance minimization with the classic branching tree benchmark — heat flux on top, fixed temperature at bottom.
 :::
 
 ::: {.tutorial-card}
-**[Heat Sink with Temperature BCs](heat_sink.html)**
+[**Heat Sink with Temperature BCs**](heat_sink.html)
 
 Asymmetric temperature BCs (T=100 left, T=0 right), distributed flux from top, and Zygote gradient verification.
+:::
 :::
 
 ## Stress and buckling
 
+::: {.tutorial-grid}
 ::: {.tutorial-card}
-**[Global Stress Constraints](global_stress.html)**
+[**Global Stress Constraints**](global_stress.html)
 
 Stress-constrained L-bracket with relaxed stress and p-norm/KS/ε-relaxation aggregation. Minimizes volume subject to a global stress constraint, reproducing the classic rounded-corner design.
 :::
 
 ::: {.tutorial-card}
-**[Local Stress Constraints](local_stress.html)**
+[**Local Stress Constraints**](local_stress.html)
 
 Element-wise stress limits using Percival.jl for large-scale constrained optimization with continuation SIMP.
 :::
 
 ::: {.tutorial-card}
-**[Buckling-Constrained Truss Optimization](buckling.html)**
+[**Buckling-Constrained Truss Optimization**](buckling.html)
 
 Semidefinite programming (SDP) constraints for stability via NonconvexSemidefinite.jl. Enforces K + c·Kσ ≽ 0.
+:::
 :::
 
 ## Advanced parametrization
 
+::: {.tutorial-grid}
 ::: {.tutorial-card}
-**[Multi-Material Optimization](multimaterial.html)**
+[**Multi-Material Optimization**](multimaterial.html)
 
 Softmax parametrization for distributing 3+ candidate materials with mass constraints and MaterialInterpolation.
 :::
 
 ::: {.tutorial-card}
-**[Neural Network Parametrization (IPOPT)](neural.html)**
+[**Neural Network Parametrization (IPOPT)**](neural.html)
 
 4-layer MLP parametrization with feasibility restoration and augmented-Lagrangian refinement using IPOPT.
 :::
 
 ::: {.tutorial-card}
-**[Neural Network Parametrization (Adam)](neural2.html)**
+[**Neural Network Parametrization (Adam)**](neural2.html)
 
 6-layer MLP with Adam optimizer and continuation on penalty and constraint aggregation weight.
+:::
 :::
 
 ## Truss optimization
 
+::: {.tutorial-grid}
 ::: {.tutorial-card}
-**[Truss Topology Optimization](truss.html)**
+[**Truss Topology Optimization**](truss.html)
 
 Compliance minimization on bar structures with JSON-defined geometry, power-law penalization, and MMA87 optimizer.
 :::
 
 ::: {.tutorial-card}
-**[Mixed-Integer Truss Optimization](mixed_integer_truss.html)**
+[**Mixed-Integer Truss Optimization**](mixed_integer_truss.html)
 
 Binary (0/1) truss design via Juniper.jl branch-and-bound with IPOPT relaxation — crisp layouts with no intermediate densities.
+:::
 :::
 
 ## Problem types
 
+::: {.tutorial-grid}
 ::: {.tutorial-card}
-**[Continuum Problem Types](problems_continuum.html)**
+[**Continuum Problem Types**](problems_continuum.html)
 
 Standard benchmarks: point load cantilever (2D/3D), Half MBB, L-beam, tie-beam, and INP file import from CAD.
 :::
 
 ::: {.tutorial-card}
-**[Truss Problem Types](problems_truss.html)**
+[**Truss Problem Types**](problems_truss.html)
 
 Ground structure via JSON files, programmatic truss cantilever construction, and 2D vs 3D truss differences.
+:::
 :::
 
 ---
 
 [← Back to TopOpt.jl documentation](../index.html)
+
+```{=html}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const cards = document.querySelectorAll('.tutorial-card');
+  let maxH = 0;
+  cards.forEach(c => { maxH = Math.max(maxH, c.offsetHeight); });
+  cards.forEach(c => { c.style.minHeight = maxH + 'px'; });
+});
+</script>
+```

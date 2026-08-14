@@ -1,5 +1,9 @@
 # Quarto render output
 /_site/
+/site_libs/
+
+# Rendered HTML (built from .qmd)
+*.html
 
 # Quarto cache and freeze (execution results)
 /.quarto/

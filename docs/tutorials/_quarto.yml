@@ -1,30 +1,26 @@
 project:
   type: website
   output-dir: _site
+  render:
+    - "*.qmd"
 
 execute:
-  enabled: false
+  freeze: auto
 
 website:
   title: "TopOpt.jl Tutorials"
-  image: "../../assets/logo.png"
   navbar:
     background: light
-    logo: "../../assets/logo.png"
-    logo-alt: "TopOpt.jl logo"
-    title: "Tutorials"
+    logo: logo.png
+    logo-alt: "TopOpt.jl Logo"
+    title: "TopOpt.jl Tutorials"
     right:
       - text: "Documentation"
         href: "../index.html"
         icon: book
-      - icon: github
-        href: "https://github.com/JuliaTopOpt/TopOpt.jl"
 
 format:
   html:
     toc: true
-    toc-location: right
-    toc-floating: true
-    embed-resources: true
-    self-contained-math: true
-    css: documenter-style.css
+    toc-location: left
+    css: topopt-tutorials.css
