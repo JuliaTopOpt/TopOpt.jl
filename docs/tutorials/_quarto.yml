@@ -5,7 +5,6 @@ project:
     - "*.qmd"
 
 execute:
-  eval: false
   freeze: auto
 
 website:

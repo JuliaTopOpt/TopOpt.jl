@@ -114,7 +114,7 @@ body {
   display: block;
   max-width: 150px;
   height: auto;
-  margin: 2rem auto 1.5rem;
+  margin: 1rem auto 1.5rem;
   background: transparent;
 }
 
@@ -175,12 +175,11 @@ body:has(.tutorial-grid) .quarto-title-block {
 }
 body:has(.tutorial-grid) #quarto-margin-sidebar {
   grid-column: 3 / 4 !important;
-  padding: 1rem 0.5rem 1rem 1rem !important;
+  padding: 0 0.5rem 1rem 1rem !important;
 }
 body:has(.tutorial-grid) .content {
   grid-column: 2 / 3 !important;
-  padding: 0 1rem 2rem !important;
-  margin-top: 1rem !important;
+  padding: 0.5rem 3rem 3rem !important;
 }
 
 /* Tutorial pages: more gap between TOC (left) and content */
