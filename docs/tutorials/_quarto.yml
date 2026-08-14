@@ -22,4 +22,4 @@ format:
   html:
     toc: true
     toc-location: left
-    css: documenter-style.css
+    css: topopt-tutorials.css
