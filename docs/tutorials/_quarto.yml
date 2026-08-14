@@ -17,6 +17,7 @@ website:
     right:
       - text: "Documentation"
         href: "../index.html"
+        icon: book
 
 format:
   html:

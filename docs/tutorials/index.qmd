@@ -141,3 +141,14 @@ Ground structure via JSON files, programmatic truss cantilever construction, and
 ---
 
 [← Back to TopOpt.jl documentation](../index.html)
+
+```{=html}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const cards = document.querySelectorAll('.tutorial-card');
+  let maxH = 0;
+  cards.forEach(c => { maxH = Math.max(maxH, c.offsetHeight); });
+  cards.forEach(c => { c.style.minHeight = maxH + 'px'; });
+});
+</script>
+```
