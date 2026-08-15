@@ -119,8 +119,9 @@ The optimization typically converges in 40-60 iterations for this problem, achie
 ```{julia}
 #| label: fig-simp
 #| fig-cap: "SIMP optimization result: 3D cantilever with 30% volume fraction"
-app = visualize_static(
+app = visualize(
     problem;
+    static=true,
     topology=r.minimizer,
     # default_exagg_scale=0.07,   # exaggerate displacements for visibility
     # scale_range=10.0,           # color scale range
@@ -128,4 +129,4 @@ app = visualize_static(
 )
 ```
 
-The visualization shows the optimized 3D structure — typically an L-shaped or curved truss-like form that efficiently transfers the load from the free end to the fixed support while using only 30% of the material volume. `visualize_static` wraps the figure in a `Bonito.App` whose camera controls (Reset, view presets, orthographic toggle, zoom-to-cursor, and the cross-button zoom/pan) run in client-side JavaScript — so they keep working in the exported HTML alongside mouse rotate and zoom.
+The visualization shows the optimized 3D structure — typically an L-shaped or curved truss-like form that efficiently transfers the load from the free end to the fixed support while using only 30% of the material volume. Passing `static=true` to `visualize` returns a `Bonito.App` whose camera controls (Reset, view presets, orthographic toggle, zoom-to-cursor, and the cross-button zoom/pan) run in client-side JavaScript — so they keep working in the exported HTML alongside mouse rotate and zoom. The dedicated `visualize_static(problem; kwargs...)` entry point remains available as an equivalent convenience method.

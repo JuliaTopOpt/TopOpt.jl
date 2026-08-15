@@ -284,7 +284,7 @@ function _setup_lighting!(ax, lighting::Symbol)
     if lighting === :none
         return nothing
     elseif lighting === :default
-        scene = ax isa Makie.LScene ? ax.scene : ax
+        scene = ax.scene
         if !any(l -> l isa Makie.AmbientLight, scene.lights)
             push!(scene.lights, Makie.AmbientLight(RGBf(0.55, 0.55, 0.6)))
         end
@@ -506,6 +506,7 @@ So we recommend using `GLMakie` backend until you are satisfied, and switch back
 - `default_exagg_scale=1.0` : default deformation exaggeration scale.
 - `exagg_range=10.0` : the upper limit of the slider controlling the deformation exaggeration slider.
 - `kw...` : optional keyword argument passed to [Makie.mesh!](https://docs.makie.org/stable/api/#mesh!) function.
+- `static=false` : when `true`, return a `Bonito.App` with client-side camera controls instead of a `Makie.Figure`.
 
 # Returns
 - `Makie.Figure` handle
