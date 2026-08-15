@@ -1390,6 +1390,7 @@ function TopOpt.visualize_static(
     WGLMakie = backend
     Bonito = WGLMakie.Bonito
     D = Bonito.DOM
+    Bonito.Page(; exportable=true, offline=true)
     # The js"..." macro resolves its module at parse time, which is impossible
     # here (Bonito is only reachable at runtime through the backend module),
     # so the JS is built as raw JSCode with values inlined as JS literals.

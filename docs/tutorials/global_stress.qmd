@@ -243,20 +243,20 @@ filtered SIMP stress evaluation (da Silva et al., 2019).
 ```{julia}
 #| label: fig-global-stress
 #| fig-cap: "Stress-constrained L-bracket, relaxed stress + p-norm (approach 1)"
-using CairoMakie
-fig = visualize(problem; topology=topo1, default_exagg_scale=0.0)
+using WGLMakie
+fig = visualize(problem; static=true, topology=topo1, default_exagg_scale=0.0)
 ```
 
 ```{julia}
 #| label: fig-global-stress-ks
 #| fig-cap: "Stress-constrained L-bracket, relaxed stress + KS (approach 2)"
-fig = visualize(problem; topology=topo2, default_exagg_scale=0.0)
+fig = visualize(problem; static=true, topology=topo2, default_exagg_scale=0.0)
 ```
 
 ```{julia}
 #| label: fig-global-stress-eps
 #| fig-cap: "Stress-constrained L-bracket, ε-relaxation (approach 3)"
-fig = visualize(problem; topology=topo3, default_exagg_scale=0.0)
+fig = visualize(problem; static=true, topology=topo3, default_exagg_scale=0.0)
 ```
 
 ## Discussion

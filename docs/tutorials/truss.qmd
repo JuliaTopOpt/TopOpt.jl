@@ -25,7 +25,7 @@ Load the required packages:
 
 ```{julia}
 using TopOpt, LinearAlgebra
-using CairoMakie
+using WGLMakie
 ```
 
 ## Load the truss problem from JSON
@@ -135,7 +135,7 @@ large-scale nonlinear problem.
 #| eval: false
 #| label: fig-truss
 #| fig-cap: "Optimized truss structure with cross-sectional areas proportional to bar thickness"
-fig = visualize(problem; solver.u, topology=r.minimizer, default_exagg_scale=0.0)
+fig = visualize(problem; static=true, u=solver.u, topology=r.minimizer, default_exagg_scale=0.0)
 
 ```
 

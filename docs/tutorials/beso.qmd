@@ -113,8 +113,8 @@ problem size.
 ```{julia}
 #| label: fig-beso
 #| fig-cap: "BESO optimization result showing the evolved beam structure"
-using CairoMakie
-fig = visualize(problem; topology=result.topology)
+using WGLMakie
+fig = visualize(problem; static=true, topology=result.topology)
 ```
 
 The visualization shows the final material distribution — a truss-like structure

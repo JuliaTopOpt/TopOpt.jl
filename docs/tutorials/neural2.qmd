@@ -163,7 +163,7 @@ constr_final = w -> volfrac(todensities(w; filter=false)) / V - 1
 ```{julia}
 #| label: fig-neural2
 #| fig-cap: "Adam-optimized neural network design (6-layer MLP)"
-using CairoMakie
+using WGLMakie
 topology = todensities(w; filter=true)
-fig = visualize(problem; topology=topology)
+fig = visualize(problem; static=true, topology=topology)
 ```

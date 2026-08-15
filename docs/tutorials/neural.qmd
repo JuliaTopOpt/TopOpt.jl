@@ -157,9 +157,9 @@ println("All gradients finite: $(all(isfinite, grad_obj))")
 ```{julia}
 #| label: fig-neural
 #| fig-cap: "Neural network-parametrized design (4-layer MLP, 20 neurons/layer)"
-using CairoMakie
+using WGLMakie
 topology = filter(tf(res2.minimizer))
-fig = visualize(problem; topology=topology)
+fig = visualize(problem; static=true, topology=topology)
 ```
 
 The result shows a smooth design parametrized by the neural network — the

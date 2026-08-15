@@ -111,8 +111,8 @@ println("  Mean density: $(sum(x_opt) / length(x_opt))")
 ```{julia}
 #| label: fig-heat-sink
 #| fig-cap: "Heat sink optimization: conduction paths from top flux to left/right temperature fins"
-using CairoMakie
-fig = visualize(problem; topology=result.minimizer)
+using WGLMakie
+fig = visualize(problem; static=true, topology=result.minimizer)
 
 ```
 

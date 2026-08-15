@@ -119,9 +119,9 @@ designs without intermediate densities.
 ```{julia}
 #| label: fig-tobs
 #| fig-cap: "TOBS optimization result showing binary (0/1) material distribution"
-using CairoMakie
+using WGLMakie
 topology = r.minimizer
-fig = visualize(problem; topology=topology)
+fig = visualize(problem; static=true, topology=topology)
 
 ```
 

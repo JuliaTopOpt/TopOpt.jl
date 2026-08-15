@@ -145,10 +145,10 @@ isolation.
 ```{julia}
 #| label: fig-multimaterial
 #| fig-cap: "Multi-material design: void (white), soft material (gray), stiff material (black)"
-using CairoMakie
+using WGLMakie
 x = tounit(MultiMaterialVariablesFun(y, nmats))  # ncells × nmats, rows sum to 1
 rhos = x.x * densities  # physical density per cell, used for transparency
-fig = visualize(problem; topology=rhos, cell_colors=interp1(x).x, draw_legend=true)
+fig = visualize(problem; static=true, topology=rhos, cell_colors=interp1(x).x, draw_legend=true)
 ```
 
 Here `topology=rhos` sets each cell's alpha to its physical density (0 for
@@ -161,14 +161,14 @@ topology and mask the others:
 #| label: fig-multimaterial-stiff
 #| fig-cap: "Stiff material (E=4.0) distribution only"
 stiff_frac = x.x[:, 3]  # fraction of stiff material per cell
-fig_stiff = visualize(problem; topology=stiff_frac)
+fig_stiff = visualize(problem; static=true, topology=stiff_frac)
 ```
 
 ```{julia}
 #| label: fig-multimaterial-soft
 #| fig-cap: "Soft material (E=1.0) distribution only"
 soft_frac = x.x[:, 2]  # fraction of soft material per cell
-fig_soft = visualize(problem; topology=soft_frac)
+fig_soft = visualize(problem; static=true, topology=soft_frac)
 ```
 
 The combined view shows optimal material distribution — stiff material
