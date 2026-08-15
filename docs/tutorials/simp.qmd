@@ -17,10 +17,14 @@ This tutorial solves a 3D cantilever beam problem: a beam fixed at one end with 
 
 ## Setup
 
-Load TopOpt, which builds on Ferrite.jl for FEA and Nonconvex.jl for optimization:
+Load WGLMakie before TopOpt so the Makie extension is available to the tutorial:
 
 ```{julia}
 #| output: false
+using WGLMakie
+WGLMakie.activate!()
+using Bonito
+Bonito.Page(exportable=true, offline=true)
 using TopOpt
 ```
 
@@ -99,10 +103,7 @@ addvar!(model, zeros(length(x0)), ones(length(x0)))  # box: 0 ≤ x ≤ 1
 add_ineq_constraint!(model, constr)  # g(x) ≤ 0
 alg = MMA87()                       # Method of Moving Asymptotes
 convcriteria = Nonconvex.KKTCriteria()  # KKT conditions for convergence
-options = MMAOptions(;
-    maxiter=200, 
-    tol=Nonconvex.Tolerance(; x=1e-3, f=1e-3, kkt=0.001)
-)
+options = MMAOptions(; maxiter=200, tol=Nonconvex.Tolerance(; x=1e-3, f=1e-3, kkt=0.001))
 r = optimize(model, alg, x0; options)
 ```
 
@@ -118,14 +119,13 @@ The optimization typically converges in 40-60 iterations for this problem, achie
 ```{julia}
 #| label: fig-simp
 #| fig-cap: "SIMP optimization result: 3D cantilever with 30% volume fraction"
-using CairoMakie
-fig = visualize(
+app = visualize_static(
     problem;
     topology=r.minimizer,
-    default_exagg_scale=0.07,  # exaggerate displacements for visibility
-    scale_range=10.0,          # color scale range
-    vector_arrowsize=0.5,      # arrow size for load vectors
+    # default_exagg_scale=0.07,   # exaggerate displacements for visibility
+    # scale_range=10.0,           # color scale range
+    # vector_arrowsize=0.5,       # arrow size for load vectors
 )
 ```
 
-The visualization shows the optimized 3D structure — typically an L-shaped or curved truss-like form that efficiently transfers the load from the free end to the fixed support while using only 30% of the material volume.
+The visualization shows the optimized 3D structure — typically an L-shaped or curved truss-like form that efficiently transfers the load from the free end to the fixed support while using only 30% of the material volume. `visualize_static` wraps the figure in a `Bonito.App` whose camera controls (Reset, view presets, orthographic toggle, zoom-to-cursor, and the cross-button zoom/pan) run in client-side JavaScript — so they keep working in the exported HTML alongside mouse rotate and zoom.

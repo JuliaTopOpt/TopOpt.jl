@@ -80,8 +80,39 @@ include(joinpath("Utilities", "Utilities.jl"))
 using .Utilities
 
 function visualize(arg::T; kwargs...) where {T}
+    # Heuristic: if a Makie backend is loaded but the extension still hasn't
+    # precompiled (e.g. the user's precompile cache predates their current
+    # Makie version), surface `retry_load_extensions!` so the fix is one line.
+    if isdefined(Main, :Makie) ||
+        isdefined(Main, :WGLMakie) ||
+        isdefined(Main, :GLMakie) ||
+        isdefined(Main, :CairoMakie)
+        Base.retry_load_extensions()
+    end
     return error(
-        "`visualize` is not defined for input type `$T`. This may be because the input to the function is incorrect or because you forgot to load `Makie` in your code. You can load `Makie` with `using Makie`. To see the available methods of `visualize` and their documentation, you can run `? visualize` in the Julia REPL.",
+        "`visualize` is not defined for input type `$T`. The Makie-backed " *
+        "methods of `visualize` live in the `TopOptMakieExt` extension, " *
+        "which loads automatically when a Makie backend (or `using Makie`) is " *
+        "in your active environment alongside `using TopOpt`. Common fixes:" *
+        "\n  · `using TopOpt` then `using Makie` (or `using WGLMakie`) in the " *
+        "same session\n  · `using TopOpt, WGLMakie` to load both at once\n" *
+        "  · Run `Base.retry_load_extensions()` if both are loaded but the " *
+        "extension still isn't active.",
+    )
+end
+
+function visualize_static(arg::T; kwargs...) where {T}
+    if isdefined(Main, :Makie) ||
+        isdefined(Main, :WGLMakie) ||
+        isdefined(Main, :GLMakie) ||
+        isdefined(Main, :CairoMakie)
+        Base.retry_load_extensions()
+    end
+    return error(
+        "`visualize_static` is not defined for input type `$T`. " *
+        "It requires the WGLMakie backend: load it with `using WGLMakie` " *
+        "(after `using TopOpt`). For static (non-live) rendering pass " *
+        "`exportable=true, offline=true` to `Bonito.Page` first.",
     )
 end
 
@@ -149,5 +180,6 @@ export TopOpt,
     SigmoidProjectionFun,
     ProjectedPenaltyFun,
     setpenalty!,
-    visualize
+    visualize,
+    visualize_static
 end
