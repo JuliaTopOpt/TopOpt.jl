@@ -361,7 +361,7 @@ Derive sensible default arrow parameters from the mesh characteristic
 length L (the bounding-box diagonal).
 """
 function _auto_arrow_params(L, dim)
-    arrow_size = clamp(0.1 * L, 0.01, 100.0)
+    arrow_size = clamp(0.08 * L, 0.01, 100.0)
     arrow_linewidth = dim == 2 ? 2.0 : max(arrow_size / 56, 0.016)
     default_scale = clamp(1.0, 0.001, 1000.0)
     scale_range = clamp(20.0 * default_scale, 0.1, 10000.0)
@@ -426,6 +426,8 @@ function _plot_arrows!(
             color=arrow_color,
             shaftwidth=arrow_linewidth,
             lengthscale=arrow_size,
+            overdraw=true,
+            depth_shift=-1.0f-3,
         )
     else
         Makie.arrows3d!(
@@ -436,6 +438,8 @@ function _plot_arrows!(
             quality=arrow_quality,
             lengthscale=arrow_size,
             shaftradius=arrow_linewidth,
+            overdraw=true,
+            depth_shift=-1.0f-3,
         )
     end
     Makie.scatter!(
@@ -445,6 +449,8 @@ function _plot_arrows!(
         markersize=dim == 2 ? 6 : 7,
         strokecolor=:white,
         strokewidth=1.0,
+        overdraw=true,
+        depth_shift=-1.0f-3,
     )
     return nothing
 end
@@ -1639,7 +1645,7 @@ function TopOpt.visualize_static(
             );
             style=join([
                 "position:absolute;",
-                "right:20px;",
+                "right:35px;",
                 "bottom:50px;",
                 "z-index:20;",
                 "width:220px;",
