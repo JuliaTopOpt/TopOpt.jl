@@ -244,6 +244,8 @@ filtered SIMP stress evaluation (da Silva et al., 2019).
 #| label: fig-global-stress
 #| fig-cap: "Stress-constrained L-bracket, relaxed stress + p-norm (approach 1)"
 using WGLMakie
+using Bonito
+Bonito.Page(exportable=true, offline=true)
 fig = visualize(problem; static=true, topology=topo1, default_exagg_scale=0.0)
 ```
 

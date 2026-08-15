@@ -141,6 +141,8 @@ that efficiently conducts heat from the top to the bottom boundary.
 #| label: fig-heat-tree
 #| fig-cap: "Conductivity tree: optimal heat conduction paths from top flux to bottom sink"
 using WGLMakie
+using Bonito
+Bonito.Page(exportable=true, offline=true)
 fig = visualize(problem; static=true, topology=res.minimizer)
 
 ```

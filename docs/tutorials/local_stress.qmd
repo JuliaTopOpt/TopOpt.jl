@@ -147,6 +147,8 @@ println("stress constraint satisfied: $((max_solid - thr) / thr < 0.01)")
 #| label: fig-local-stress
 #| fig-cap: "Local stress-constrained design with element-wise relaxed stress limits"
 using WGLMakie
+using Bonito
+Bonito.Page(exportable=true, offline=true)
 fig = visualize(
     problem;
     static=true,

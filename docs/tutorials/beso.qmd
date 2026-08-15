@@ -114,6 +114,8 @@ problem size.
 #| label: fig-beso
 #| fig-cap: "BESO optimization result showing the evolved beam structure"
 using WGLMakie
+using Bonito
+Bonito.Page(exportable=true, offline=true)
 fig = visualize(problem; static=true, topology=result.topology)
 ```
 

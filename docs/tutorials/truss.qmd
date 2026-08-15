@@ -26,6 +26,8 @@ Load the required packages:
 ```{julia}
 using TopOpt, LinearAlgebra
 using WGLMakie
+using Bonito
+Bonito.Page(exportable=true, offline=true)
 ```
 
 ## Load the truss problem from JSON

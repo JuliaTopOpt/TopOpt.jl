@@ -21,6 +21,8 @@ or absent.
 using TopOpt, LinearAlgebra, StatsFuns
 using NonconvexJuniper, NonconvexIpopt
 using WGLMakie
+using Bonito
+Bonito.Page(exportable=true, offline=true)
 ```
 
 ## Load Truss Geometry

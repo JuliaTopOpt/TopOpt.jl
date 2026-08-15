@@ -120,6 +120,8 @@ designs without intermediate densities.
 #| label: fig-tobs
 #| fig-cap: "TOBS optimization result showing binary (0/1) material distribution"
 using WGLMakie
+using Bonito
+Bonito.Page(exportable=true, offline=true)
 topology = r.minimizer
 fig = visualize(problem; static=true, topology=topology)
 

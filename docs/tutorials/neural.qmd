@@ -158,6 +158,8 @@ println("All gradients finite: $(all(isfinite, grad_obj))")
 #| label: fig-neural
 #| fig-cap: "Neural network-parametrized design (4-layer MLP, 20 neurons/layer)"
 using WGLMakie
+using Bonito
+Bonito.Page(exportable=true, offline=true)
 topology = filter(tf(res2.minimizer))
 fig = visualize(problem; static=true, topology=topology)
 ```

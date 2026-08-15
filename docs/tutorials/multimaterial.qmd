@@ -146,6 +146,8 @@ isolation.
 #| label: fig-multimaterial
 #| fig-cap: "Multi-material design: void (white), soft material (gray), stiff material (black)"
 using WGLMakie
+using Bonito
+Bonito.Page(exportable=true, offline=true)
 x = tounit(MultiMaterialVariablesFun(y, nmats))  # ncells × nmats, rows sum to 1
 rhos = x.x * densities  # physical density per cell, used for transparency
 fig = visualize(problem; static=true, topology=rhos, cell_colors=interp1(x).x, draw_legend=true)

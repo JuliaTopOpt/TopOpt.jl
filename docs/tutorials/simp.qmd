@@ -23,6 +23,8 @@ Load WGLMakie before TopOpt so the Makie extension is available to the tutorial:
 #| output: false
 using WGLMakie
 WGLMakie.activate!()
+using Bonito
+Bonito.Page(exportable=true, offline=true)
 using TopOpt
 ```
 

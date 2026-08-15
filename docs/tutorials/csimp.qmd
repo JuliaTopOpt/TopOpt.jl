@@ -141,6 +141,8 @@ minimized compliance. The continuation strategy typically produces cleaner
 #| label: fig-csimp
 #| fig-cap: "Continuation SIMP optimization result with penalty ramp from 1.0 to 5.0"
 using WGLMakie
+using Bonito
+Bonito.Page(exportable=true, offline=true)
 fig = visualize(
     problem;
     static=true,

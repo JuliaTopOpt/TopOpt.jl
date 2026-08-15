@@ -92,6 +92,8 @@ stochastic nature, but can find better global optima for complex problems.
 #| label: fig-geso
 #| fig-cap: "GESO optimization result showing the evolved beam structure"
 using WGLMakie
+using Bonito
+Bonito.Page(exportable=true, offline=true)
 fig = visualize(problem; static=true, topology=result.topology)
 ```
 
