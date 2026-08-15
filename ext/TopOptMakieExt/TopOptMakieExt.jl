@@ -171,7 +171,7 @@ function _texture_modulation(
     elseif pattern === :hatch
         return _rect_wave(pa * c + pb * s, period)
     elseif pattern === :crosshatch
-        return min(
+        return max(
             _rect_wave(pa * c + pb * s, period), _rect_wave(-pa * s + pb * c, period)
         )
     else
@@ -286,12 +286,12 @@ function _setup_lighting!(ax, lighting::Symbol)
     elseif lighting === :default
         scene = ax.scene
         if !any(l -> l isa Makie.AmbientLight, scene.lights)
-            push!(scene.lights, Makie.AmbientLight(RGBf(0.55, 0.55, 0.6)))
+            push!(scene.lights, Makie.AmbientLight(RGBf(0.95, 0.96, 1.0)))
         end
         if !any(l -> l isa Makie.DirectionalLight, scene.lights)
             push!(
                 scene.lights,
-                Makie.DirectionalLight(RGBf(0.9, 0.9, 0.85), Vec3f(-0.4, -0.5, -0.7)),
+                Makie.DirectionalLight(RGBf(0.95, 0.95, 0.9), Vec3f(-0.2, -0.3, -1.0)),
             )
         end
         return nothing
@@ -353,7 +353,7 @@ requiring the caller to thread the color through `kw...`.
 """
 function _default_und_mesh_color(problem)
     dim = getdim(problem)
-    return dim == 2 ? RGBAf(0.35, 0.35, 0.35, 1.0) : RGBAf(0.6, 0.6, 0.6, 0.85)
+    return dim == 2 ? RGBAf(0.35, 0.35, 0.35, 1.0) : RGBAf(0.52, 0.68, 0.86, 1.0)
 end
 
 """
@@ -361,12 +361,47 @@ Derive sensible default arrow parameters from the mesh characteristic
 length L (the bounding-box diagonal).
 """
 function _auto_arrow_params(L, dim)
-    arrow_size = clamp(0.05 * L, 0.01, 100.0)
-    arrow_linewidth = dim == 2 ? 4.0 : max(arrow_size / 20, 0.05)
+    arrow_size = clamp(0.1 * L, 0.01, 100.0)
+    arrow_linewidth = dim == 2 ? 2.0 : max(arrow_size / 56, 0.016)
     default_scale = clamp(1.0, 0.001, 1000.0)
     scale_range = clamp(20.0 * default_scale, 0.1, 10000.0)
     arrow_quality = 20
     return (; arrow_size, arrow_linewidth, default_scale, scale_range, arrow_quality)
+end
+
+function _plot_voxel_edges!(ax, nodes, cells, colors)
+    edges = (
+        (1, 2),
+        (2, 3),
+        (3, 4),
+        (4, 1),
+        (5, 6),
+        (6, 7),
+        (7, 8),
+        (8, 5),
+        (1, 5),
+        (2, 6),
+        (3, 7),
+        (4, 8),
+    )
+    segments = Point3f[]
+    for cell in cells
+        ids = cell.nodes
+        length(ids) == 8 || continue
+        maximum(colors[id].alpha for id in ids) < 1e-3 && continue
+        for (i, j) in edges
+            push!(segments, Point3f(nodes[ids[i]].x...))
+            push!(segments, Point3f(nodes[ids[j]].x...))
+        end
+    end
+    isempty(segments) || Makie.linesegments!(
+        ax,
+        segments;
+        color=RGBAf(0.08, 0.14, 0.24, 0.5),
+        linewidth=0.8,
+        transparency=true,
+    )
+    return nothing
 end
 
 """
@@ -403,19 +438,25 @@ function _plot_arrows!(
             shaftradius=arrow_linewidth,
         )
     end
-    Makie.scatter!(ax, points; color=arrow_color, markersize=4)
+    Makie.scatter!(
+        ax,
+        points;
+        color=arrow_color,
+        markersize=dim == 2 ? 6 : 7,
+        strokecolor=:white,
+        strokewidth=1.0,
+    )
     return nothing
 end
 
 """
-Add a legend identifying the undeformed mesh, deformed mesh, load
-arrows, and support arrows. Skipped on the CairoMakie backend (Legend
+Add a legend identifying the undeformed mesh, load arrows, and support
+arrows. Skipped on the CairoMakie backend (Legend
 blocks render inconsistently in PDF/SVG exports).
 """
 function _add_legend!(
     fig,
     undeformed_mesh_color,
-    deformed_mesh_color,
     load_arrow_color,
     support_arrow_color;
     has_colorbar::Bool=false,
@@ -423,21 +464,31 @@ function _add_legend!(
     _is_cairo_backend() && return fig
     elements = [
         Makie.PolyElement(; color=undeformed_mesh_color),
-        Makie.PolyElement(; color=deformed_mesh_color),
         Makie.MarkerElement(; marker=:circle, color=load_arrow_color),
         Makie.MarkerElement(; marker=:circle, color=support_arrow_color),
     ]
-    labels = ["undeformed mesh", "deformed mesh", "load", "support"]
+    labels = ["undeformed mesh", "load arrows", "support arrows"]
+    legend_slot = has_colorbar ? fig[1, 3] : fig[1, 2]
     Makie.Legend(
-        fig[1, 1],
+        legend_slot,
         elements,
         labels;
         tellheight=false,
-        tellwidth=false,
+        tellwidth=true,
         framevisible=true,
         backgroundcolor=RGBAf(1, 1, 1, 0.85),
-        position=(1, 1),
+        halign=:left,
+        valign=:top,
+        margin=(7, 5, 7, 5),
     )
+    Makie.colsize!(fig.layout, 1, Makie.Fixed(960))
+    if has_colorbar
+        Makie.colsize!(fig.layout, 2, Makie.Fixed(90))
+        Makie.colsize!(fig.layout, 3, Makie.Fixed(260))
+    else
+        Makie.colsize!(fig.layout, 2, Makie.Fixed(220))
+    end
+    Makie.rowsize!(fig.layout, 1, Makie.Fixed(640))
     return fig
 end
 
@@ -449,24 +500,24 @@ end
         topology=undef,
         cloaddict=undef,
         undeformed_mesh_color=dim == 2 ? RGBAf(0.35, 0.35, 0.35, 1.0) :
-            RGBAf(0.6, 0.6, 0.6, 0.85),
+            RGBAf(0.52, 0.68, 0.86, 1.0),
         cell_colors=undef,
         draw_legend=false,
         colormap=ColorSchemes.Spectral_10,
         deformed_mesh_color=RGBAf(0, 1, 1, 0.4),
-        surface_texture=:none,
+        surface_texture=:crosshatch,
         texture_period=Auto,
         texture_angle=45.0,
-        texture_color=RGBAf(0.0, 0.0, 0.0, 1.0),
-        texture_strength=0.2,
+        texture_color=RGBAf(0.18, 0.26, 0.4, 1.0),
+        texture_strength=0.06,
         density_threshold=0.5,
         alpha_from_density=true,
         interactive=true,
         vector_arrowsize=Auto,
         # Red loads and blue supports remain legible without overpowering the
         # density colormap or lighting.
-        load_arrow_color=RGBAf(0.85, 0.12, 0.08, 1.0),
-        support_arrow_color=RGBAf(0.08, 0.28, 0.75, 1.0),
+        load_arrow_color=RGBAf(0.72, 0.12, 0.1, 1.0),
+        support_arrow_color=RGBAf(0.72, 0.5, 0.02, 1.0),
         load_arrow_linewidth=Auto,
         support_arrow_linewidth=Auto,
         arrow_quality=Auto,
@@ -527,19 +578,19 @@ function TopOpt.visualize(
     draw_legend=false,
     colormap=ColorSchemes.Spectral_10,
     deformed_mesh_color=RGBAf(0, 1, 1, 0.4),
-    surface_texture=:none,
+    surface_texture=:crosshatch,
     texture_period=Auto,
     texture_angle=45.0,
-    texture_color=RGBAf(0.0, 0.0, 0.0, 1.0),
-    texture_strength=0.4,
+    texture_color=RGBAf(0.18, 0.26, 0.4, 1.0),
+    texture_strength=0.06,
     density_threshold=0.5,
     alpha_from_density=true,
     interactive=true,
     display_supports=true,
-    lighting=:default,
+    lighting=:none,
     vector_arrowsize=Auto,
-    load_arrow_color=RGBAf(0.85, 0.12, 0.08, 1.0),
-    support_arrow_color=RGBAf(0.08, 0.28, 0.75, 1.0),
+    load_arrow_color=RGBAf(0.72, 0.12, 0.1, 1.0),
+    support_arrow_color=RGBAf(0.72, 0.5, 0.02, 1.0),
     load_arrow_linewidth=Auto,
     support_arrow_linewidth=Auto,
     arrow_quality=Auto,
@@ -558,7 +609,7 @@ function TopOpt.visualize(
             cloaddict,
             undeformed_mesh_color,
             cell_colors,
-            draw_legend,
+            draw_legend=true,
             colormap,
             deformed_mesh_color,
             surface_texture,
@@ -568,7 +619,7 @@ function TopOpt.visualize(
             texture_strength,
             density_threshold,
             alpha_from_density,
-            interactive,
+            interactive=false,
             display_supports,
             lighting,
             vector_arrowsize,
@@ -651,7 +702,7 @@ function TopOpt.visualize(
     end
 
     # * initialize the makie scene
-    fig = Figure()
+    fig = Figure(; size=dim == 3 ? (1180, 740) : (800, 600))
 
     if dim == 2
         ax1 = Axis(fig[1, 1])
@@ -741,6 +792,16 @@ function TopOpt.visualize(
         else
             Float64(texture_period)
         end
+        bbox_lo3 = if dim == 2
+            (Float64(bbox_lo[1]), Float64(bbox_lo[2]), 0.0)
+        else
+            (Float64.(bbox_lo)...,)
+        end
+        bbox_hi3 = if dim == 2
+            (Float64(bbox_hi[1]), Float64(bbox_hi[2]), 0.0)
+        else
+            (Float64.(bbox_hi)...,)
+        end
         _apply_surface_texture!(
             undeformed_mesh_colors,
             dup_nodes,
@@ -749,8 +810,8 @@ function TopOpt.visualize(
             texture_angle,
             texture_color,
             texture_strength,
-            (Float64.(bbox_lo)...,),
-            (Float64.(bbox_hi)...,),
+            bbox_lo3,
+            bbox_hi3,
         )
     end
     if cell_colors !== undef && draw_legend
@@ -769,6 +830,7 @@ function TopOpt.visualize(
         shininess=32.0f0,
         mesh_kwargs...,
     )
+    dim == 3 && _plot_voxel_edges!(ax1, dup_nodes, dup_cells, undeformed_mesh_colors)
 
     # * deformed mesh
     if given_u
@@ -897,9 +959,9 @@ function TopOpt.visualize(
                         end
                     end;
                     arrow_color=support_arrow_color,
-                    arrow_linewidth=support_arrow_linewidth,
+                    arrow_linewidth=0.75 * support_arrow_linewidth,
                     arrow_quality=arrow_quality,
-                    arrow_size=vector_arrowsize,
+                    arrow_size=0.65 * vector_arrowsize,
                     dim=dim,
                 )
             end
@@ -909,10 +971,10 @@ function TopOpt.visualize(
             Makie.scatter!(
                 ax1,
                 fixed_pts;
-                color=support_arrow_color,
+                color=RGBAf(1.0, 0.9, 0.45, 1.0),
                 strokecolor=:black,
-                strokewidth=2.0,
-                markersize=5,
+                strokewidth=1.0,
+                markersize=3.5,
             )
         end
     end # end if display_supports
@@ -922,7 +984,6 @@ function TopOpt.visualize(
         _add_legend!(
             fig,
             undeformed_mesh_color,
-            deformed_mesh_color,
             load_arrow_color,
             support_arrow_color;
             has_colorbar=cell_colors !== undef,
@@ -960,7 +1021,7 @@ function TopOpt.visualize(
             topology,
             undeformed_mesh_color,
             cell_colors,
-            draw_legend,
+            draw_legend=true,
             colormap,
             deformed_mesh_color,
             display_supports,
@@ -996,7 +1057,7 @@ function TopOpt.visualize(
         )
     end
 
-    fig = Figure()
+    fig = Figure(; size=xdim == 3 ? (1180, 740) : (800, 600))
     if ndim == 2
         ax1 = Axis(fig[1, 1])
         # tightlimits!(ax1)
@@ -1204,19 +1265,19 @@ function TopOpt.visualize(
     undeformed_mesh_color=if dim == 2
         RGBAf(0.35, 0.35, 0.35, 1.0)
     else
-        RGBAf(0.6, 0.6, 0.6, 0.85)
+        RGBAf(0.52, 0.68, 0.86, 1.0)
     end,
     cell_colors=undef,
     draw_legend=false,
     colormap=ColorSchemes.Spectral_10,
-    surface_texture=:none,
+    surface_texture=:crosshatch,
     texture_period=Auto,
     texture_angle=45.0,
-    texture_color=RGBAf(0.0, 0.0, 0.0, 1.0),
-    texture_strength=0.4,
+    texture_color=RGBAf(0.18, 0.26, 0.4, 1.0),
+    texture_strength=0.06,
     density_threshold=0.5,
     alpha_from_density=true,
-    lighting=:default,
+    lighting=:none,
     kw...,
 ) where {dim,T}
     if static
@@ -1225,7 +1286,7 @@ function TopOpt.visualize(
             topology,
             undeformed_mesh_color,
             cell_colors,
-            draw_legend,
+            draw_legend=true,
             colormap,
             surface_texture,
             texture_period,
@@ -1257,7 +1318,7 @@ function TopOpt.visualize(
     end
 
     # Initialize Makie figure
-    fig = Figure()
+    fig = Figure(; size=dim == 3 ? (1180, 740) : (800, 600))
 
     if dim == 2
         ax1 = Axis(fig[1, 1])
@@ -1304,6 +1365,16 @@ function TopOpt.visualize(
         else
             Float64(texture_period)
         end
+        bbox_lo3 = if dim == 2
+            (Float64(bbox_lo[1]), Float64(bbox_lo[2]), 0.0)
+        else
+            (Float64.(bbox_lo)...,)
+        end
+        bbox_hi3 = if dim == 2
+            (Float64(bbox_hi[1]), Float64(bbox_hi[2]), 0.0)
+        else
+            (Float64.(bbox_hi)...,)
+        end
         _apply_surface_texture!(
             undeformed_mesh_colors,
             dup_nodes,
@@ -1312,8 +1383,8 @@ function TopOpt.visualize(
             texture_angle,
             texture_color,
             texture_strength,
-            (Float64.(bbox_lo)...,),
-            (Float64.(bbox_hi)...,),
+            bbox_lo3,
+            bbox_hi3,
         )
     end
     if cell_colors !== undef && draw_legend
@@ -1333,6 +1404,7 @@ function TopOpt.visualize(
         specular=0.4f0,
         shininess=32.0f0,
     )
+    dim == 3 && _plot_voxel_edges!(ax1, dup_nodes, dup_cells, undeformed_mesh_colors)
 
     return fig
 end
@@ -1376,9 +1448,10 @@ function TopOpt.visualize_static(
     # to `visualize` keeps the rendered colors the same as without
     # `visualize_static`.
     undeformed_mesh_color=_default_und_mesh_color(problem),
-    load_arrow_color=RGBAf(0.85, 0.12, 0.08, 1.0),
-    support_arrow_color=RGBAf(0.08, 0.28, 0.75, 1.0),
-    lighting=:default,
+    load_arrow_color=RGBAf(0.72, 0.12, 0.1, 1.0),
+    support_arrow_color=RGBAf(0.72, 0.5, 0.02, 1.0),
+    lighting=:none,
+    draw_legend=true,
     kw...,
 )
     backend = current_backend()
@@ -1400,6 +1473,7 @@ function TopOpt.visualize_static(
             problem;
             interactive=false,
             undeformed_mesh_color=undeformed_mesh_color,
+            draw_legend=draw_legend,
             load_arrow_color=load_arrow_color,
             support_arrow_color=support_arrow_color,
             lighting=lighting,
@@ -1425,7 +1499,7 @@ function TopOpt.visualize_static(
         # angles span −180..180 ("−180.0") and positions can reach ±999.9.
         num = "font-size:11px;width:7em;padding:1px 2px;"
         lab = "font-size:11px;user-select:none;cursor:pointer;white-space:nowrap;"
-        row = "display:flex;flex-wrap:wrap;gap:3px;align-items:center;margin:2px 0;"
+        row = "display:flex;flex-wrap:wrap;gap:3px;align-items:center;justify-content:center;margin:2px 0;"
         cross_btn = btn * "width:24px;"
 
         # Bounds for the eye-position fields: generous but finite, so typing
@@ -1456,7 +1530,14 @@ function TopOpt.visualize_static(
         az = 45.0
         dir_xyz = (cosd(el) * cosd(az), cosd(el) * sind(az), sind(el))
         eye_dist = 1.7 * max_span
-        lookat = center
+        camera_right = (dir_xyz[2], -dir_xyz[1], 0.0)
+        camera_right_norm = sqrt(camera_right[1]^2 + camera_right[2]^2)
+        screen_offset = 0.08 * max_span
+        lookat = (
+            center[1] - screen_offset * camera_right[1] / camera_right_norm,
+            center[2] - screen_offset * camera_right[2] / camera_right_norm,
+            center[3],
+        )
 
         # Reset defaults to one `−`-button step further out than the
         # canonical framing: leaves a margin of empty space around the
@@ -1464,9 +1545,9 @@ function TopOpt.visualize_static(
         # either lands the eye in the same place.
         zoom_step_out = 1.125
         eye0 = (
-            center[1] + dir_xyz[1] * eye_dist * zoom_step_out,
-            center[2] + dir_xyz[2] * eye_dist * zoom_step_out,
-            center[3] + dir_xyz[3] * eye_dist * zoom_step_out,
+            lookat[1] + dir_xyz[1] * eye_dist * zoom_step_out,
+            lookat[2] + dir_xyz[2] * eye_dist * zoom_step_out,
+            lookat[3] + dir_xyz[3] * eye_dist * zoom_step_out,
         )
         cam.lookat[] = Vec3f(lookat...)
         cam.eyeposition[] = Vec3f(eye0...)
@@ -1532,78 +1613,87 @@ function TopOpt.visualize_static(
                 ),
                 button("Save", "tv-save");
                 style=row,
-            ),
+            );
+            style="position:relative;z-index:100;width:calc(100% - 38px);max-width:960px;flex:0 0 auto;overflow:visible;margin-top:6px;transform:translateX(-110px);",
         )
 
-        # Zoom/pan cross anchored to the **3D viewport** (the LScene canvas),
-        # not the browser viewport — so the buttons ride along with the
-        # figure inside its column instead of floating to the page edges.
-        # Compact: tight padding, small radius.
+        # Zoom/pan controls occupy a dedicated column beside the viewport.
         cross = D.div(
             D.div(
                 button("−", "tv-zoomout"),
                 button("+", "tv-zoomin");
-                style="display:flex;gap:2px;justify-content:center;",
+                style="display:flex;gap:6px;justify-content:center;margin-bottom:4px;",
             ),
             D.div(
                 D.button("↑"; class="tv-panup", style=cross_btn);
-                style="display:flex;justify-content:center;margin-top:2px;",
+                style="display:flex;justify-content:center;margin-top:5px;margin-bottom:5px;",
             ),
             D.div(
                 D.button("←"; class="tv-panleft", style=cross_btn),
                 D.button("→"; class="tv-panright", style=cross_btn);
-                style="display:flex;gap:24px;justify-content:center;",
+                style="display:flex;gap:12px;justify-content:center;",
             ),
             D.div(
                 D.button("↓"; class="tv-pandown", style=cross_btn);
-                style="display:flex;justify-content:center;",
+                style="display:flex;justify-content:center;margin-top:5px;",
             );
             style=join([
                 "position:absolute;",
-                "bottom:6px;",
-                "right:6px;",
+                "right:20px;",
+                "bottom:50px;",
                 "z-index:20;",
-                "background:rgba(255,255,255,0.85);",
-                "padding:3px 5px;",
-                "border-radius:3px;",
-                "box-shadow:0 1px 3px rgba(0,0,0,0.15);",
+                "width:220px;",
+                "padding:4px 0;",
+                "display:flex;",
+                "flex-direction:column;",
+                "align-items:center;",
             ]),
         )
 
-        # No legend in the Bonito app — the design / load / support swatches
-        # were dropped at the user's request, leaving just the controls
-        # above and the figure (with the bottom-right zoom/pan cross) below.
-
-        # Figure wrapper: `position:relative` so the absolutely-positioned
-        # cross overlays the rendered 3D viewport (the LScene canvas) rather
-        # than the browser chrome.
+        # The cross stays outside the rendered viewport while remaining in the
+        # app layout; the Makie legend is inside the saved figure itself.
         figure = D.div(
-            fig,
+            fig;
+            style=join([
+                "flex:1 1 auto;",
+                "min-width:0;",
+                "min-height:0;",
+                "width:calc(100% - 38px);",
+                "max-width:1180px;",
+                "display:flex;",
+                "justify-content:center;",
+                "line-height:0;",
+            ]),
+        )
+        viewport = D.div(
+            figure,
             cross;
             style=join([
                 "position:relative;",
+                "display:flex;",
+                "align-items:flex-end;",
+                "justify-content:center;",
+                "width:min(100%, 1218px);",
                 "min-width:0;",
-                "flex-shrink:1;",
-                "display:inline-block;",
-                "line-height:0;",  # collapse any baseline gap from the canvas
+                "min-height:0;",
+                "flex:1 1 auto;",
+                "gap:6px;",
+                "margin:0 auto;",
+                "transform:translateX(clamp(0px, 7vw, 84px));",
             ]),
         )
-
         container = D.div(
-            # Compact layout: controls on top, figure below. The cross
-            # sits inside the figure wrapper as `position:absolute` so it
-            # rides along with the canvas when the figure is resized.
             controls,
-            figure;
+            viewport;
             style=join([
                 "position:fixed;",
                 "top:0;left:0;right:0;bottom:0;",
                 "display:flex;",
                 "flex-direction:column;",
-                "justify-content:center;",
+                "justify-content:flex-start;",
                 "align-items:center;",
-                "gap:8px;",                 # tighter vertical pitch
-                "padding:8px;",             # tighter padding
+                "gap:8px;",
+                "padding:8px;",
                 "box-sizing:border-box;",
                 "overflow:auto;",
             ]),
