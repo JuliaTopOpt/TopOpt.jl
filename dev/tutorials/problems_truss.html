@@ -209,7 +209,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>crossecs <span class="op">=</span> <span class="fu">TrussFEACrossSec</span>(<span class="fl">800.0</span>)    <span class="co"># Cross-sectional area</span></span>
 <span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>node_points, elements, _, _, fixities, load_cases <span class="op">=</span> <span class="fu">load_truss_json</span>(path_to_file)</span>
 <span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>loads <span class="op">=</span> load_cases[<span class="st">"0"</span>]</span>
-<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>problem <span class="op">=</span> <span class="fu">TrussProblem</span>(<span class="dt">Val</span>{<span class="op">:</span>Linear}, node_points, elements, loads, fixities, mats, crossecs)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>problem <span class="op">=</span> <span class="fu">TrussProblem</span>(node_points, elements, loads, fixities, mats, crossecs)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>The <code>load_truss_json</code> function parses all required data structures.</p>
 </section>
@@ -302,7 +302,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb4-25"><a href="#cb4-25" aria-hidden="true" tabindex="-1"></a><span class="co"># Downward force at node 4</span></span>
 <span id="cb4-26"><a href="#cb4-26" aria-hidden="true" tabindex="-1"></a>loads <span class="op">=</span> <span class="fu">Dict</span>(<span class="fl">4</span> <span class="op">=&gt;</span> <span class="fu">SVector</span>(<span class="fl">0.0</span>, <span class="op">-</span><span class="fl">1.0</span>))</span>
 <span id="cb4-27"><a href="#cb4-27" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-28"><a href="#cb4-28" aria-hidden="true" tabindex="-1"></a>problem <span class="op">=</span> <span class="fu">TrussProblem</span>(<span class="dt">Val</span>{<span class="op">:</span>Linear}, node_points, elements, loads, fixities, mats, crosssecs)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb4-28"><a href="#cb4-28" aria-hidden="true" tabindex="-1"></a>problem <span class="op">=</span> <span class="fu">TrussProblem</span>(node_points, elements, loads, fixities, mats, crosssecs)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>For 3D trusses, use 3-element coordinate vectors and 3 DOFs per node.</p>
 

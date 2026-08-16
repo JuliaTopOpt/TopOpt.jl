@@ -210,10 +210,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>f <span class="op">=</span> <span class="fl">1.0</span>     <span class="co"># downward force in N (negative is upward)</span></span>
 <span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>nels <span class="op">=</span> (<span class="fl">160</span>, <span class="fl">40</span>)        <span class="co"># 2D: 160×40 elements</span></span>
 <span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>elsizes <span class="op">=</span> (<span class="fl">1.0</span>, <span class="fl">1.0</span>)    <span class="co"># element size in mm</span></span>
-<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>order <span class="op">=</span> <span class="op">:</span>Linear         <span class="co"># shape function order</span></span>
-<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>problem_2d <span class="op">=</span> <span class="fu">PointLoadCantilever</span>(<span class="dt">Val</span>{order}, nels, elsizes, E, ν, f)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>problem_2d <span class="op">=</span> <span class="fu">PointLoadCantilever</span>(nels, elsizes, E, ν, f; celltype<span class="op">=:</span>Linear)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<p>The <code>Val{order}</code> specifies shape function order:</p>
+<p>The <code>celltype</code> keyword specifies shape function order:</p>
 <ul>
 <li><code>:Linear</code> — bilinear (2D) or trilinear (3D) elements</li>
 <li><code>:Quadratic</code> — biquadratic (2D) or triquadratic (3D) elements</li>
@@ -222,7 +221,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div id="6" class="cell" data-execution_count="1">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>nels_3d <span class="op">=</span> (<span class="fl">160</span>, <span class="fl">40</span>, <span class="fl">40</span>)     <span class="co"># 3D: 160×40×40 elements</span></span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>elsizes_3d <span class="op">=</span> (<span class="fl">1.0</span>, <span class="fl">1.0</span>, <span class="fl">2.0</span>) <span class="co"># element size in mm</span></span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>problem_3d <span class="op">=</span> <span class="fu">PointLoadCantilever</span>(<span class="dt">Val</span>{order}, nels_3d, elsizes_3d, E, ν, f)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>problem_3d <span class="op">=</span> <span class="fu">PointLoadCantilever</span>(nels_3d, elsizes_3d, E, ν, f; celltype<span class="op">=:</span>Linear)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </section>
 <section id="d-and-3d-half-mbb-beam" class="level2">
@@ -231,8 +230,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div id="8" class="cell" data-execution_count="1">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>nels <span class="op">=</span> (<span class="fl">60</span>, <span class="fl">20</span>)</span>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>elsizes <span class="op">=</span> (<span class="fl">1.0</span>, <span class="fl">1.0</span>)</span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>order <span class="op">=</span> <span class="op">:</span>Quadratic</span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>problem <span class="op">=</span> <span class="fu">HalfMBB</span>(<span class="dt">Val</span>{order}, nels, elsizes, E, ν, f)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>problem <span class="op">=</span> <span class="fu">HalfMBB</span>(nels, elsizes, E, ν, f; celltype<span class="op">=:</span>Quadratic)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>Boundary conditions:</p>
 <ul>
@@ -246,17 +244,16 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h2 class="anchored" data-anchor-id="d-l-beam-problem">2D L-Beam Problem</h2>
 <p>The L-beam shows stress concentration effects at the re-entrant corner:</p>
 <div id="10" class="cell" data-execution_count="1">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>order <span class="op">=</span> <span class="op">:</span>Quadratic</span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>problem <span class="op">=</span> <span class="fu">LBeam</span>(</span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>    <span class="dt">Val</span>{order};</span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>    length<span class="op">=</span><span class="fl">100</span>,</span>
-<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>    height<span class="op">=</span><span class="fl">100</span>,</span>
-<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>    upperslab<span class="op">=</span><span class="fl">50</span>,</span>
-<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>    lowerslab<span class="op">=</span><span class="fl">50</span>,</span>
-<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>    E<span class="op">=</span><span class="fl">1.0</span>,</span>
-<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>    ν<span class="op">=</span><span class="fl">0.3</span>,</span>
-<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>    force<span class="op">=</span><span class="fl">1.0</span></span>
-<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>problem <span class="op">=</span> <span class="fu">LBeam</span>(</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>    ; celltype<span class="op">=:</span>Quadratic,</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>    length<span class="op">=</span><span class="fl">100</span>,</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>    height<span class="op">=</span><span class="fl">100</span>,</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>    upperslab<span class="op">=</span><span class="fl">50</span>,</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>    lowerslab<span class="op">=</span><span class="fl">50</span>,</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>    E<span class="op">=</span><span class="fl">1.0</span>,</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>    ν<span class="op">=</span><span class="fl">0.3</span>,</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>    force<span class="op">=</span><span class="fl">1.0</span></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>Geometry:</p>
 <pre><code>        upperslab   
@@ -277,8 +274,7 @@ height .          .
 <h2 class="anchored" data-anchor-id="d-tie-beam-problem">2D Tie-Beam Problem</h2>
 <p>The tie-beam has distributed loading on specified elements:</p>
 <div id="12" class="cell" data-execution_count="1">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>order <span class="op">=</span> <span class="op">:</span>Quadratic</span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>problem <span class="op">=</span> <span class="fu">TieBeam</span>(<span class="dt">Val</span>{order})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>problem <span class="op">=</span> <span class="fu">TieBeam</span>(; celltype<span class="op">=:</span>Quadratic)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <ul>
 <li>Fixed supports at both ends</li>

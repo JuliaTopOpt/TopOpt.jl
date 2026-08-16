@@ -222,19 +222,19 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="cell-output cell-output-stdout">
 <div class="ansi-escaped-output">
 <pre><span class="ansi-green-fg ansi-bold">Precompiling</span> packages...
-   2373.9 ms<span class="ansi-green-fg">  ✓ </span>QuartoNotebookWorkerTablesExt<span class="ansi-bright-black-fg"> (serial)</span>
+   2496.2 ms<span class="ansi-green-fg">  ✓ </span>QuartoNotebookWorkerTablesExt<span class="ansi-bright-black-fg"> (serial)</span>
   1 dependency successfully precompiled in 3 seconds
 <span class="ansi-green-fg ansi-bold">Precompiling</span> packages...
-   1246.3 ms<span class="ansi-green-fg">  ✓ </span>QuartoNotebookWorkerJSONExt<span class="ansi-bright-black-fg"> (serial)</span>
+   1295.5 ms<span class="ansi-green-fg">  ✓ </span>QuartoNotebookWorkerJSONExt<span class="ansi-bright-black-fg"> (serial)</span>
+  1 dependency successfully precompiled in 1 seconds
+<span class="ansi-green-fg ansi-bold">Precompiling</span> packages...
+   1267.6 ms<span class="ansi-green-fg">  ✓ </span>QuartoNotebookWorkerJSON3Ext<span class="ansi-bright-black-fg"> (serial)</span>
   1 dependency successfully precompiled in 2 seconds
 <span class="ansi-green-fg ansi-bold">Precompiling</span> packages...
-   1223.8 ms<span class="ansi-green-fg">  ✓ </span>QuartoNotebookWorkerJSON3Ext<span class="ansi-bright-black-fg"> (serial)</span>
+   1191.6 ms<span class="ansi-green-fg">  ✓ </span>QuartoNotebookWorkerLaTeXStringsExt<span class="ansi-bright-black-fg"> (serial)</span>
   1 dependency successfully precompiled in 1 seconds
 <span class="ansi-green-fg ansi-bold">Precompiling</span> packages...
-   1161.3 ms<span class="ansi-green-fg">  ✓ </span>QuartoNotebookWorkerLaTeXStringsExt<span class="ansi-bright-black-fg"> (serial)</span>
-  1 dependency successfully precompiled in 1 seconds
-<span class="ansi-green-fg ansi-bold">Precompiling</span> packages...
-   6688.6 ms<span class="ansi-green-fg">  ✓ </span>QuartoNotebookWorkerMakieExt<span class="ansi-bright-black-fg"> (serial)</span>
+   6754.6 ms<span class="ansi-green-fg">  ✓ </span>QuartoNotebookWorkerMakieExt<span class="ansi-bright-black-fg"> (serial)</span>
   1 dependency successfully precompiled in 7 seconds
 </pre>
 </div>
@@ -271,10 +271,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h2 class="anchored" data-anchor-id="create-the-trussproblem">Create the TrussProblem</h2>
 <div id="6" class="cell" data-execution_count="0">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>problem <span class="op">=</span> <span class="fu">TrussProblem</span>(</span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>    <span class="dt">Val</span>{<span class="op">:</span>Linear}, node_points, elements, loads, fixities, mats, crosssecs</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>    node_points, elements, loads, fixities, mats, crosssecs</span>
 <span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<p>The <code>Val{:Linear}</code> specifies linear truss elements (axial deformation only). The problem object assembles the global stiffness matrix and applies boundary conditions.</p>
+<p>The default <code>celltype=:Linear</code> specifies linear truss elements (axial deformation only). The problem object assembles the global stiffness matrix and applies boundary conditions.</p>
 </section>
 <section id="define-design-variables-and-constraints" class="level2">
 <h2 class="anchored" data-anchor-id="define-design-variables-and-constraints">Define design variables and constraints</h2>
