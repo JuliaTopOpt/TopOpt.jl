@@ -1,5 +1,4 @@
 [deps]
-Bonito = "824d6782-a2ef-11e9-3a09-e5662e0c26f8"
 CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
 Cbc = "9961bab8-2fa3-5c5a-9d89-47fab24efd76"
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
@@ -18,11 +17,9 @@ NonconvexSemidefinite = "9e21ff56-eb25-42d3-b86f-5b0612f555e7"
 NonconvexTOBS = "6c0b5230-d4c9-466e-bfd4-b31e6272ab65"
 StatsFuns = "4c63d2b9-4356-54db-8cca-17b64c39e42c"
 TopOpt = "53a1e1a5-51bb-58a9-8a02-02056cc81109"
-WGLMakie = "276b4fcb-3e11-5398-bf8b-a0c2d153d008"
 Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
 
 [compat]
-Bonito = "4"
 CairoMakie = "0.14"
 Cbc = "1"
 Documenter = "1"
