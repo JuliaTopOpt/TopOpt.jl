@@ -62,6 +62,22 @@ function save_mesh(filename::AbstractString, problem::HeatTransferTopOptProblem)
     return outfiles = WriteVTK.vtk_save(vtkfile)
 end
 
+"""
+    save_mesh(filename, problem::HeatTransferTopOptProblem, vars, temperature)
+
+Save the design topology and the nodal `temperature` field (e.g. from
+[`TemperatureFun`](@ref)) as a VTK (.vtu) mesh file.
+"""
+function save_mesh(
+    filename::AbstractString,
+    problem::HeatTransferTopOptProblem,
+    vars::AbstractVector,
+    temperature::AbstractVector,
+)
+    vtkfile = WriteVTK.vtk_grid(filename, problem, vars, temperature)
+    return outfiles = WriteVTK.vtk_save(vtkfile)
+end
+
 function WriteVTK.vtk_grid(
     filename::AbstractString,
     problem::HeatTransferTopOptProblem{dim,T},
@@ -88,6 +104,24 @@ function WriteVTK.vtk_grid(
     end
     coords = reshape(reinterpret(T, Ferrite.getnodes(grid)), (dim, Ferrite.getnnodes(grid)))
     return vtk_grid(filename, coords, cls)
+end
+
+function WriteVTK.vtk_grid(
+    filename::AbstractString,
+    problem::HeatTransferTopOptProblem{dim,T},
+    ρ::AbstractVector{T},
+    temperature::AbstractVector,
+) where {dim,T}
+    grid = problem.ch.dh.grid
+    nnodes = Ferrite.getnnodes(grid)
+    length(temperature) == nnodes || throw(
+        DimensionMismatch(
+            "Temperature vector must have length equal to number of nodes ($nnodes), got $(length(temperature))",
+        ),
+    )
+    vtkfile = WriteVTK.vtk_grid(filename, problem, ρ)
+    WriteVTK.vtk_point_data(vtkfile, temperature, "temperature")
+    return vtkfile
 end
 
 end

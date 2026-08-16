@@ -113,6 +113,28 @@ end
             @test any(f -> occursin("test_heat", f), files)
         end
 
+        @testset "Heat problem VTK export with temperature" begin
+            nels = (4, 4)
+            problem = HeatConductionProblem(
+                nels, (1.0, 1.0), 1.0; Tleft=0.0, Tright=0.0, heatflux=Dict("top" => 1.0)
+            )
+            solver = FEASolver(DirectSolver, problem; xmin=0.01)
+            tf = TemperatureFun(solver)
+            T = tf(PseudoDensities(ones(prod(nels))))
+            vtk_path = joinpath(tmpdir, "test_heat_temp")
+
+            @test_nowarn TopOpt.TopOptProblems.InputOutput.save_mesh(
+                vtk_path, problem, solver.vars, T
+            )
+            files = readdir(tmpdir)
+            @test any(f -> occursin("test_heat_temp", f), files)
+
+            # A temperature field of the wrong length fails fast.
+            @test_throws DimensionMismatch TopOpt.TopOptProblems.InputOutput.save_mesh(
+                vtk_path * "_bad", problem, solver.vars, zeros(3)
+            )
+        end
+
         @testset "VTK with cell data" begin
             problem = PointLoadCantilever((4, 4), (1.0, 1.0), 1.0, 0.3, 1.0)
             vtk_path = joinpath(tmpdir, "test_with_data")
