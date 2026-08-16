@@ -22,7 +22,13 @@ convergence tolerances to ensure each subproblem is solved accurately.
 ```{julia}
 #| output: false
 using TopOpt
+using WGLMakie
+WGLMakie.activate!()
+using Bonito
+Bonito.Page(exportable=true, offline=true)
 ```
+
+`WGLMakie.activate!()` selects the browser renderer. `Bonito.Page(exportable=true, offline=true)` embeds the assets needed by `visualize(...; static=true)` in the Quarto output, so the visualization does not require a running Julia process.
 
 ## Define the Problem
 
@@ -140,9 +146,6 @@ minimized compliance. The continuation strategy typically produces cleaner
 ```{julia}
 #| label: fig-csimp
 #| fig-cap: "Continuation SIMP optimization result with penalty ramp from 1.0 to 5.0"
-using WGLMakie
-using Bonito
-Bonito.Page(exportable=true, offline=true)
 fig = visualize(
     problem;
     static=true,

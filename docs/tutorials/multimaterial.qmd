@@ -20,7 +20,13 @@ We optimize a cantilever beam with 3 materials: void (E=1e-5), soft material
 ```{julia}
 #| output: false
 using TopOpt, Zygote, Test
+using WGLMakie
+WGLMakie.activate!()
+using Bonito
+Bonito.Page(exportable=true, offline=true)
 ```
+
+`WGLMakie.activate!()` selects the browser renderer. `Bonito.Page(exportable=true, offline=true)` embeds the assets needed by `visualize(...; static=true)` in the Quarto output, so the visualization does not require a running Julia process.
 
 ## Define the Problem
 
@@ -145,9 +151,6 @@ isolation.
 ```{julia}
 #| label: fig-multimaterial
 #| fig-cap: "Multi-material design: void (white), soft material (gray), stiff material (black)"
-using WGLMakie
-using Bonito
-Bonito.Page(exportable=true, offline=true)
 x = tounit(MultiMaterialVariablesFun(y, nmats))  # ncells × nmats, rows sum to 1
 rhos = x.x * densities  # physical density per cell, used for transparency
 fig = visualize(problem; static=true, topology=rhos, cell_colors=interp1(x).x, draw_legend=true)

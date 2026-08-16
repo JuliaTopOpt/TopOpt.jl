@@ -24,7 +24,13 @@ using TopOpt, Zygote, ChainRulesCore
 using Flux
 using NNlib: leakyrelu
 using NonconvexIpopt
+using WGLMakie
+WGLMakie.activate!()
+using Bonito
+Bonito.Page(exportable=true, offline=true)
 ```
+
+`WGLMakie.activate!()` selects the browser renderer. `Bonito.Page(exportable=true, offline=true)` embeds the assets needed by `visualize(...; static=true)` in the Quarto output, so the visualization does not require a running Julia process.
 
 ## Define the Problem
 
@@ -157,9 +163,6 @@ println("All gradients finite: $(all(isfinite, grad_obj))")
 ```{julia}
 #| label: fig-neural
 #| fig-cap: "Neural network-parametrized design (4-layer MLP, 20 neurons/layer)"
-using WGLMakie
-using Bonito
-Bonito.Page(exportable=true, offline=true)
 topology = filter(tf(res2.minimizer))
 fig = visualize(problem; static=true, topology=topology)
 ```

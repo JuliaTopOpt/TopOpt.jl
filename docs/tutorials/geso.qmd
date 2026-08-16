@@ -22,7 +22,13 @@ Load the TopOpt package:
 
 ```{julia}
 using TopOpt
+using WGLMakie
+WGLMakie.activate!()
+using Bonito
+Bonito.Page(exportable=true, offline=true)
 ```
+
+`WGLMakie.activate!()` selects the browser renderer. `Bonito.Page(exportable=true, offline=true)` embeds the assets needed by `visualize(...; static=true)` in the Quarto output, so the visualization does not require a running Julia process.
 
 ## Define the problem
 
@@ -91,9 +97,6 @@ stochastic nature, but can find better global optima for complex problems.
 ```{julia}
 #| label: fig-geso
 #| fig-cap: "GESO optimization result showing the evolved beam structure"
-using WGLMakie
-using Bonito
-Bonito.Page(exportable=true, offline=true)
 fig = visualize(problem; static=true, topology=result.topology)
 ```
 

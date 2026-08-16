@@ -19,7 +19,13 @@ The network uses 6 hidden layers with sigmoid output for density parametrization
 #| output: false
 using TopOpt, Zygote, Flux
 using NNlib: leakyrelu
+using WGLMakie
+WGLMakie.activate!()
+using Bonito
+Bonito.Page(exportable=true, offline=true)
 ```
+
+`WGLMakie.activate!()` selects the browser renderer. `Bonito.Page(exportable=true, offline=true)` embeds the assets needed by `visualize(...; static=true)` in the Quarto output, so the visualization does not require a running Julia process.
 
 ## Problem Definition
 
@@ -163,9 +169,6 @@ constr_final = w -> volfrac(todensities(w; filter=false)) / V - 1
 ```{julia}
 #| label: fig-neural2
 #| fig-cap: "Adam-optimized neural network design (6-layer MLP)"
-using WGLMakie
-using Bonito
-Bonito.Page(exportable=true, offline=true)
 topology = todensities(w; filter=true)
 fig = visualize(problem; static=true, topology=topology)
 ```

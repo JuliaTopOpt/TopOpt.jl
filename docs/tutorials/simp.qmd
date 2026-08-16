@@ -21,12 +21,14 @@ Load WGLMakie before TopOpt so the Makie extension is available to the tutorial:
 
 ```{julia}
 #| output: false
+using TopOpt
 using WGLMakie
 WGLMakie.activate!()
 using Bonito
 Bonito.Page(exportable=true, offline=true)
-using TopOpt
 ```
+
+`WGLMakie.activate!()` selects the browser renderer. `Bonito.Page(exportable=true, offline=true)` embeds the assets needed by `visualize(...; static=true)` in the Quarto output, so the visualization does not require a running Julia process.
 
 ## Define the 3D cantilever problem
 
