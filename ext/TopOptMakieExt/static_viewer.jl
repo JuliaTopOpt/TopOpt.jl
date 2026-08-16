@@ -122,9 +122,8 @@ function TopOpt._static_visualization(
         ax1_candidates = [c for c in fig.content if c isa LScene]
         # 2D problems use an Axis, not an LScene; there is no 3D camera to
         # control, so return the bare figure with the legend overlay.
-        isempty(ax1_candidates) && return D.div(
-            fig, draw_legend ? legend : no_legend; style="position:relative;"
-        )
+        isempty(ax1_candidates) &&
+            return D.div(fig, draw_legend ? legend : no_legend; style="position:relative;")
         ax1 = first(ax1_candidates)
 
         scene_id = WGLMakie.js_uuid(ax1.scene)
@@ -205,12 +204,7 @@ function TopOpt._static_visualization(
                 D.span("Camera"; style=lab * "margin-left:8px;"),
                 D.span("φ"; style=lab),
                 D.input(;
-                    type="number",
-                    class="tv-phi",
-                    style=num,
-                    min=-180,
-                    max=180,
-                    step="1",
+                    type="number", class="tv-phi", style=num, min=-180, max=180, step="1"
                 ),
                 D.span("θ"; style=lab),
                 D.input(;
