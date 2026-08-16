@@ -41,7 +41,7 @@ the internal constructors.
 function _celltype_tag(celltype::Symbol)
     celltype === :Linear && return Val(:Linear)
     celltype === :Quadratic && return Val(:Quadratic)
-    throw(ArgumentError("celltype must be :Linear or :Quadratic, got :$celltype"))
+    return throw(ArgumentError("celltype must be :Linear or :Quadratic, got :$celltype"))
 end
 
 """

@@ -342,12 +342,7 @@ function TopOpt._static_visualization(
                 D.span("Camera"; style=lab * "margin-left:8px;"),
                 D.span("φ"; style=lab),
                 D.input(;
-                    type="number",
-                    class="tv-phi",
-                    style=num,
-                    min=-180,
-                    max=180,
-                    step="1",
+                    type="number", class="tv-phi", style=num, min=-180, max=180, step="1"
                 ),
                 D.span("θ"; style=lab),
                 D.input(;
@@ -515,7 +510,7 @@ function TopOpt._static_visualization(
         end
         cam_cmd = Bonito.Observable(Float64[])
         cam_state = Bonito.Observable(state_vec())
-        sync_state!(_...) = (cam_state[] = state_vec(); nothing)
+        sync_state!(_...) = (cam_state[]=state_vec(); nothing)
         on(cam_cmd) do v
             isempty(v) && return nothing
             op = Int(v[1])
