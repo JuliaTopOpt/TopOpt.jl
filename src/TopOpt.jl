@@ -101,7 +101,7 @@ function visualize(arg::T; kwargs...) where {T}
     )
 end
 
-function visualize_static(arg::T; kwargs...) where {T}
+function _static_visualization(arg::T; kwargs...) where {T}
     if isdefined(Main, :Makie) ||
         isdefined(Main, :WGLMakie) ||
         isdefined(Main, :GLMakie) ||
@@ -109,10 +109,9 @@ function visualize_static(arg::T; kwargs...) where {T}
         Base.retry_load_extensions()
     end
     return error(
-        "`visualize_static` is not defined for input type `$T`. " *
+        "`visualize(...; static=true)` is not defined for input type `$T`. " *
         "It requires the WGLMakie backend: load it with `using WGLMakie` " *
-        "(after `using TopOpt`). For static (non-live) rendering pass " *
-        "`exportable=true, offline=true` to `Bonito.Page` first.",
+        "(after `using TopOpt`) and configure `Bonito.Page(exportable=true, offline=true)` for static output.",
     )
 end
 
@@ -180,6 +179,5 @@ export TopOpt,
     SigmoidProjectionFun,
     ProjectedPenaltyFun,
     setpenalty!,
-    visualize,
-    visualize_static
+    visualize
 end

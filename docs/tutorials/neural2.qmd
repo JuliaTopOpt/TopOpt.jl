@@ -20,12 +20,12 @@ The network uses 6 hidden layers with sigmoid output for density parametrization
 using TopOpt, Zygote, Flux
 using NNlib: leakyrelu
 using WGLMakie
-WGLMakie.activate!()
+WGLMakie.activate!(; resize_to=:parent)
 using Bonito
 Bonito.Page(exportable=true, offline=true)
 ```
 
-`WGLMakie.activate!()` selects the browser renderer. `Bonito.Page(exportable=true, offline=true)` embeds the assets needed by `visualize(...; static=true)` in the Quarto output, so the visualization does not require a running Julia process.
+`WGLMakie.activate!(; resize_to=:parent)` selects the browser renderer and fills the Quarto output column. `Bonito.Page(exportable=true, offline=true)` embeds the assets needed by `visualize(...; static=true)` in the Quarto output, so the visualization does not require a running Julia process.
 
 ## Problem Definition
 

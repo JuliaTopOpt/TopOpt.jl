@@ -35,12 +35,12 @@ stress-constrained designs.
 #| output: false
 using TopOpt, LinearAlgebra
 using WGLMakie
-WGLMakie.activate!()
+WGLMakie.activate!(; resize_to=:parent)
 using Bonito
 Bonito.Page(exportable=true, offline=true)
 ```
 
-`WGLMakie.activate!()` selects the browser renderer. `Bonito.Page(exportable=true, offline=true)` embeds the assets needed by `visualize(...; static=true)` in the Quarto output, so the visualization does not require a running Julia process.
+`WGLMakie.activate!(; resize_to=:parent)` selects the browser renderer and fills the Quarto output column. `Bonito.Page(exportable=true, offline=true)` embeds the assets needed by `visualize(...; static=true)` in the Quarto output, so the visualization does not require a running Julia process.
 
 ## Define the Problem
 

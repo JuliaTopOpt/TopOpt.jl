@@ -347,7 +347,7 @@ end
 """
 Return the same dim-aware default undeformed-mesh color used by the
 Stiffness and HeatTransfer `visualize` calls: lighter gray for 2D problems,
-slightly translucent lighter gray for 3D. Used by `visualize_static` to
+slightly translucent lighter gray for 3D. Used by the static viewer to
 keep the legend swatches consistent with the rendered mesh without
 requiring the caller to thread the color through `kw...`.
 """
@@ -485,16 +485,17 @@ function _add_legend!(
         backgroundcolor=RGBAf(1, 1, 1, 0.85),
         halign=:left,
         valign=:top,
-        margin=(7, 5, 7, 5),
+        margin=(0, 0, 0, 0),
     )
-    Makie.colsize!(fig.layout, 1, Makie.Fixed(960))
     if has_colorbar
-        Makie.colsize!(fig.layout, 2, Makie.Fixed(90))
-        Makie.colsize!(fig.layout, 3, Makie.Fixed(260))
+        Makie.colsize!(fig.layout, 1, Makie.Fixed(520))
+        Makie.colsize!(fig.layout, 2, Makie.Fixed(60))
+        Makie.colsize!(fig.layout, 3, Makie.Fixed(180))
     else
-        Makie.colsize!(fig.layout, 2, Makie.Fixed(220))
+        Makie.colsize!(fig.layout, 1, Makie.Fixed(580))
+        Makie.colsize!(fig.layout, 2, Makie.Fixed(180))
     end
-    Makie.rowsize!(fig.layout, 1, Makie.Fixed(640))
+    Makie.rowsize!(fig.layout, 1, Makie.Fixed(387))
     return fig
 end
 
@@ -608,7 +609,7 @@ function TopOpt.visualize(
     kw...,
 ) where {dim,T}
     if static
-        return TopOpt.visualize_static(
+        return TopOpt._static_visualization(
             problem;
             u,
             topology,
@@ -708,7 +709,7 @@ function TopOpt.visualize(
     end
 
     # * initialize the makie scene
-    fig = Figure(; size=dim == 3 ? (1180, 740) : (800, 600))
+    fig = Figure(; size=dim == 3 ? (760, 510) : (800, 600))
 
     if dim == 2
         ax1 = Axis(fig[1, 1])
@@ -1020,7 +1021,7 @@ function TopOpt.visualize(
     kw...,
 ) where {xdim,T}
     if static
-        return TopOpt.visualize_static(
+        return TopOpt._static_visualization(
             problem;
             u,
             topology,
@@ -1062,7 +1063,7 @@ function TopOpt.visualize(
         )
     end
 
-    fig = Figure(; size=xdim == 3 ? (1180, 740) : (800, 600))
+    fig = Figure(; size=xdim == 3 ? (760, 510) : (800, 600))
     if ndim == 2
         ax1 = Axis(fig[1, 1])
         # tightlimits!(ax1)
@@ -1286,7 +1287,7 @@ function TopOpt.visualize(
     kw...,
 ) where {dim,T}
     if static
-        return TopOpt.visualize_static(
+        return TopOpt._static_visualization(
             problem;
             topology,
             undeformed_mesh_color,
@@ -1323,7 +1324,7 @@ function TopOpt.visualize(
     end
 
     # Initialize Makie figure
-    fig = Figure(; size=dim == 3 ? (1180, 740) : (800, 600))
+    fig = Figure(; size=dim == 3 ? (760, 510) : (800, 600))
 
     if dim == 2
         ax1 = Axis(fig[1, 1])
@@ -1413,16 +1414,16 @@ function TopOpt.visualize(
     return fig
 end
 
-# -- visualize_static --------------------------------------------------------
+# -- static viewer ------------------------------------------------------------
 
-# Handle to the figure of the most recently built `visualize_static` app.
+# Handle to the figure of the most recently built static-viewer app.
 # The figure lives inside the Bonito session handler and is otherwise
 # unreachable from Julia; this enables inspection of a live-served app
 # (used by tests to verify the JS->Julia camera command channel).
 const _last_static_fig = Ref{Any}(nothing)
 
 """
-    visualize_static(problem; kwargs...)
+    _static_visualization(problem; kwargs...)
 
 Build a `Bonito.App` around `visualize(problem; interactive=false, kwargs...)`
 with a full camera-control UI implemented in client-side JavaScript, so it
@@ -1445,12 +1446,12 @@ The whole app is centered in the browser viewport (both axes). Requires the
 WGLMakie backend (`using WGLMakie`). For a self-contained page, call
 `Bonito.Page(exportable=true, offline=true)` first.
 """
-function TopOpt.visualize_static(
+function TopOpt._static_visualization(
     problem::AbstractTopOptProblem;
     # Pulled out of kwargs so the in-app legend swatches can reference
     # them — matching the Stiffness visualize defaults. Passing them on
     # to `visualize` keeps the rendered colors the same as without
-    # `visualize_static`.
+    # the static viewer.
     undeformed_mesh_color=_default_und_mesh_color(problem),
     load_arrow_color=RGBAf(0.72, 0.12, 0.1, 1.0),
     support_arrow_color=RGBAf(0.72, 0.5, 0.02, 1.0),
@@ -1461,7 +1462,7 @@ function TopOpt.visualize_static(
     backend = current_backend()
     occursin("WGL", string(backend)) || throw(
         ArgumentError(
-            "visualize_static requires the WGLMakie backend (found $(backend)); load it with `using WGLMakie`",
+            "`visualize(...; static=true)` requires the WGLMakie backend (found $(backend)); load it with `using WGLMakie`",
         ),
     )
     WGLMakie = backend
@@ -1496,15 +1497,14 @@ function TopOpt.visualize_static(
         lookat = Float64.(cam.lookat[])
         persp_fov = Float64(cam.fov[])
 
-        # Compact styles sized for embedding contexts (Quarto's content
-        # column, VSCode preview): small fonts, tight gaps, flex-wrap rows.
-        btn = "font-size:11px;padding:2px 7px;margin:0;cursor:pointer;"
+        # Two fixed control rows fit the inline Quarto viewer without wrapping.
+        btn = "font-size:10px;padding:1px 3px;margin:0;cursor:pointer;"
         # `num` width fits an optional sign + 3 integer digits + 1 decimal:
         # angles span −180..180 ("−180.0") and positions can reach ±999.9.
-        num = "font-size:11px;width:7em;padding:1px 2px;"
-        lab = "font-size:11px;user-select:none;cursor:pointer;white-space:nowrap;"
-        row = "display:flex;flex-wrap:wrap;gap:3px;align-items:center;justify-content:center;margin:2px 0;"
-        cross_btn = btn * "width:24px;"
+        num = "font-size:10px;width:4.5em;padding:1px 2px;"
+        lab = "font-size:10px;user-select:none;cursor:pointer;white-space:nowrap;"
+        row = "display:flex;flex-wrap:nowrap;gap:3px;align-items:center;justify-content:center;margin:2px 0;"
+        cross_btn = "font-size:10px;padding:0;margin:0;cursor:pointer;width:22px;height:20px;"
 
         # Bounds for the eye-position fields: generous but finite, so typing
         # or spinning cannot fling the camera to numerically absurd places.
@@ -1613,19 +1613,19 @@ function TopOpt.visualize_static(
                     type="text",
                     value="topopt_view.png",
                     class="tv-savename",
-                    style="font-size:11px;width:10em;padding:1px 3px;margin-left:8px;",
+                    style="font-size:10px;width:7em;padding:1px 2px;margin-left:5px;",
                 ),
                 button("Save", "tv-save");
                 style=row,
             );
-            style="position:relative;z-index:100;width:calc(100% - 38px);max-width:960px;flex:0 0 auto;overflow:visible;margin-top:6px;transform:translateX(-110px);",
+            style="position:relative;z-index:100;width:580px;flex:0 0 auto;overflow:visible;margin-top:6px;transform:translateX(-135px);",
         )
 
         # Zoom/pan controls occupy a dedicated column beside the viewport.
         cross = D.div(
             D.div(
-                button("−", "tv-zoomout"),
-                button("+", "tv-zoomin");
+                D.button("−"; class="tv-zoomout", style=cross_btn),
+                D.button("+"; class="tv-zoomin", style=cross_btn);
                 style="display:flex;gap:6px;justify-content:center;margin-bottom:4px;",
             ),
             D.div(
@@ -1643,10 +1643,10 @@ function TopOpt.visualize_static(
             );
             style=join([
                 "position:absolute;",
-                "right:35px;",
-                "bottom:50px;",
+                "right:0;",
+                "bottom:40px;",
                 "z-index:20;",
-                "width:220px;",
+                "width:180px;",
                 "padding:4px 0;",
                 "display:flex;",
                 "flex-direction:column;",
@@ -1659,11 +1659,10 @@ function TopOpt.visualize_static(
         figure = D.div(
             fig;
             style=join([
-                "flex:1 1 auto;",
+                "flex:0 0 auto;",
                 "min-width:0;",
                 "min-height:0;",
-                "width:calc(100% - 38px);",
-                "max-width:1180px;",
+                "width:100%;",
                 "display:flex;",
                 "justify-content:center;",
                 "line-height:0;",
@@ -1677,21 +1676,20 @@ function TopOpt.visualize_static(
                 "display:flex;",
                 "align-items:flex-end;",
                 "justify-content:center;",
-                "width:min(100%, 1218px);",
+                "width:100%;",
                 "min-width:0;",
                 "min-height:0;",
-                "flex:1 1 auto;",
+                "flex:0 0 auto;",
                 "gap:6px;",
-                "margin:0 auto;",
-                "transform:translateX(clamp(0px, 7vw, 84px));",
+                "margin:0;",
+                "transform:translateX(-90px);",
             ]),
         )
         container = D.div(
             controls,
             viewport;
             style=join([
-                "position:fixed;",
-                "top:0;left:0;right:0;bottom:0;",
+                "position:relative;",
                 "display:flex;",
                 "flex-direction:column;",
                 "justify-content:flex-start;",
@@ -1699,7 +1697,10 @@ function TopOpt.visualize_static(
                 "gap:8px;",
                 "padding:8px;",
                 "box-sizing:border-box;",
-                "overflow:auto;",
+                "width:100%;",
+                "max-width:1218px;",
+                "margin:0;",
+                "overflow:visible;",
             ]),
         )
 
