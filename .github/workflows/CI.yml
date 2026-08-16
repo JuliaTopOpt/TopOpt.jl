@@ -282,7 +282,14 @@ jobs:
             for page in "$site"/*.html; do
               [ -e "$page" ] || continue
               name=$(basename "$page")
-              [ "$name" = index.html ] && continue
+              # Only the tutorial-index artifact carries the real landing
+              # page; every other artifact's index.html is a Quarto redirect
+              # stub. Overwrite the Documenter stub with the real page.
+              if [ "$name" = index.html ]; then
+                [ "$(basename "$artifact")" = tutorial-index ] || continue
+                cp "$page" "docs/build/tutorials/index.html"
+                continue
+              fi
               target="docs/build/tutorials/$name"
               [ ! -e "$target" ] || { echo "Tutorial page collision: $target"; exit 1; }
               cp "$page" "$target"
