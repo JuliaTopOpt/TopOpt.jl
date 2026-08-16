@@ -1018,9 +1018,9 @@ function TopOpt.visualize(
     colormap=ColorSchemes.Spectral_10,
     deformed_mesh_color=RGBAf(0, 1, 1, 0.4),
     display_supports=true,
-    vector_arrowsize=10.0,
-    default_support_scale=1e-2,
-    default_load_scale=1e-2,
+    vector_arrowsize=Auto,
+    default_support_scale=Auto,
+    default_load_scale=Auto,
     scale_range=1.0,
     default_exagg_scale=1.0,
     exagg_range=10.0,
@@ -1071,6 +1071,15 @@ function TopOpt.visualize(
         )
     end
 
+    # Auto-scale arrow sizes and scales from the truss bounding-box diagonal
+    # so loads and supports are a reasonable fraction of the structure.
+    nodes = problem.truss_grid.grid.nodes
+    _L = _mesh_scale(nodes, ndim)
+    vector_arrowsize =
+        vector_arrowsize === Auto ? clamp(0.08 * _L, 0.01, 100.0) : vector_arrowsize
+    default_support_scale = default_support_scale === Auto ? 1.0 : default_support_scale
+    default_load_scale = default_load_scale === Auto ? 1.0 : default_load_scale
+
     fig = Figure(; size=xdim == 3 ? (1020, 510) : (800, 600))
     if ndim == 2
         ax1 = Axis(fig[1, 1])
@@ -1081,50 +1090,15 @@ function TopOpt.visualize(
         ax1 = LScene(fig[1, 1]; scenekw=(camera=(cam3d!), raw=false)) #, height=750)
     end
 
-    # * linewidth scaling / support / load appearance / deformatione exaggeration control
-    linewidth_lsgrid = SliderGrid(
-        fig[2, 1],
-        (
-            label="element linewidth",
-            range=0.0:0.01:element_linewidth_range,
-            format="{:.2f}",
-            startvalue=default_element_linewidth_scale,
-        );
-        width=Auto(),
-    )
-    if display_supports
-        condition_lsgrid = SliderGrid(
-            fig[3, 1],
-            (
-                label="support scale",
-                range=0.0:0.01:scale_range,
-                format="{:.2f}",
-                startvalue=default_support_scale,
-            ),
-            (
-                label="load scale",
-                range=0.0:0.01:scale_range,
-                format="{:.2f}",
-                startvalue=default_load_scale,
-            );
-            width=Auto(),
-        )
-    end
-    if given_u
-        deform_lsgrid = SliderGrid(
-            fig[4, 1],
-            (
-                label="deformation exaggeration",
-                range=0.0:0.01:exagg_range,
-                format="{:.2f}",
-                startvalue=default_exagg_scale,
-            );
-            width=Auto(),
-        )
-    end
+    # Fixed appearance values replace the interactive sliders in the static
+    # export; the auto-scaled defaults above keep them proportional to the
+    # structure size.
+    linewidth_value = Observable(default_element_linewidth_scale)
+    support_scale_value = Observable(default_support_scale)
+    load_scale_value = Observable(default_load_scale)
+    exagg_scale_value = Observable(default_exagg_scale)
 
     # * undeformed truss elements
-    nodes = problem.truss_grid.grid.nodes
     PtT = ndim == 2 ? Point2f : Point3f
     edges_pts = [
         PtT(nodes[cell.nodes[1]].x) => PtT(nodes[cell.nodes[2]].x) for
@@ -1154,9 +1128,7 @@ function TopOpt.visualize(
         topology_linewidth[(2 * i - 1):(2 * i)] .= topology[i]
         undeformed_mesh_colors[(2 * i - 1):(2 * i)] .= ccolor
     end
-    element_linewidth = lift(
-        s -> topology_linewidth .* s, linewidth_lsgrid.sliders[1].value
-    )
+    element_linewidth = lift(s -> topology_linewidth .* s, linewidth_value)
     linesegments!(ax1, edges_pts; linewidth=element_linewidth, color=undeformed_mesh_colors)
 
     # # * deformed truss elements
@@ -1169,7 +1141,7 @@ function TopOpt.visualize(
                     PtT(nodes[cell.nodes[2]].x) + PtT(u[node_dofs[:, cell.nodes[2]]] * s) for
                 cell in problem.truss_grid.grid.cells
             ],
-            deform_lsgrid.sliders[1].value,
+            exagg_scale_value,
         )
         linesegments!(
             ax1, exagg_edge_pts; linewidth=element_linewidth, color=deformed_mesh_color
@@ -1180,9 +1152,7 @@ function TopOpt.visualize(
         # * load vectors
         loaded_nodes = [PtT(nodes[node_id].x) for node_id in keys(problem.force)]
         load_dirs = [PtT(force / norm(force)) for force in values(problem.force)]
-        scaled_load_dirs = lift(
-            s -> [dir * s for dir in load_dirs], condition_lsgrid.sliders[2].value
-        )
+        scaled_load_dirs = lift(s -> [dir * s for dir in load_dirs], load_scale_value)
         if ndim == 2
             dirs_obs = lift(dirs -> Vec2f.(dirs), scaled_load_dirs)
             Makie.arrows2d!(
@@ -1218,7 +1188,7 @@ function TopOpt.visualize(
                     Makie.arrows2d!(
                         ax1,
                         fixed_nodes,
-                        lift(condition_lsgrid.sliders[1].value) do s
+                        lift(support_scale_value) do s
                             return [Vec2f(s * v[1], s * v[2]) for _ in node_ids]
                         end;
                         color=:orange,
@@ -1228,7 +1198,7 @@ function TopOpt.visualize(
                     Makie.arrows3d!(
                         ax1,
                         fixed_nodes,
-                        lift(condition_lsgrid.sliders[1].value) do s
+                        lift(support_scale_value) do s
                             return [Vec3f(s * v[1], s * v[2], s * v[3]) for _ in node_ids]
                         end;
                         color=:orange,
