@@ -1,6 +1,6 @@
 module TopOptMakieExt
 
-using LinearAlgebra: norm
+using LinearAlgebra: cross, norm, normalize
 using Makie: Makie, lift, cam3d!, Point3f, Vec3f, Figure, Auto, RGBAf
 using Makie: DataAspect, Axis, LScene, SliderGrid, linesegments!, Point2f
 using Makie: ColorSchemes
@@ -401,6 +401,26 @@ function _plot_voxel_edges!(ax, nodes, cells, colors)
         linewidth=0.8,
         transparency=true,
     )
+    return nothing
+end
+
+function _billboard_axis_text!(ax)
+    axis = ax.scene[Makie.OldAxis]
+    cam = ax.scene.camera_controls
+    update_rotation = function (eye, lookat, up)
+        view = normalize(Vec3f(lookat) - Vec3f(eye))
+        right = normalize(cross(view, normalize(Vec3f(up))))
+        screen_up = normalize(cross(right, view))
+        first_up = Makie.rotation_between(Vec3f(1, 0, 0), right) * Vec3f(0, 1, 0)
+        twist = atan(dot(cross(first_up, screen_up), right), dot(first_up, screen_up))
+        rotation =
+            Makie.qrotation(right, twist) * Makie.rotation_between(Vec3f(1, 0, 0), right)
+        axis[:names][:rotation][] = (rotation, rotation, rotation)
+        axis[:ticks][:rotation][] = (rotation, rotation, rotation)
+        return nothing
+    end
+    update_rotation(cam.eyeposition[], cam.lookat[], cam.upvector[])
+    Makie.onany(update_rotation, cam.eyeposition, cam.lookat, cam.upvector)
     return nothing
 end
 
@@ -995,6 +1015,7 @@ function TopOpt.visualize(
             has_colorbar=cell_colors !== undef,
         )
     end
+    dim == 3 && _billboard_axis_text!(ax1)
 
     return fig
 end
@@ -1232,6 +1253,7 @@ function TopOpt.visualize(
         end
     end # end if display_supports
 
+    xdim == 3 && _billboard_axis_text!(ax1)
     return fig
 end
 
@@ -1411,6 +1433,7 @@ function TopOpt.visualize(
         shininess=32.0f0,
     )
     dim == 3 && _plot_voxel_edges!(ax1, dup_nodes, dup_cells, undeformed_mesh_colors)
+    dim == 3 && _billboard_axis_text!(ax1)
 
     return fig
 end
