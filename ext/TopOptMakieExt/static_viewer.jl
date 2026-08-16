@@ -119,11 +119,150 @@ function TopOpt._static_visualization(
         )
         no_legend = D.div()
 
+        # Open the live app in the operating system's default browser. The
+        # offline export has no Julia process, so the frontend falls back to
+        # opening the current page in a new tab instead.
+        open_browser_cmd = Bonito.Observable(false)
+        on(open_browser_cmd) do v
+            v || return nothing
+            Bonito.browser_display()
+            display(app_ref[])
+            open_browser_cmd[] = false
+            return nothing
+        end
+
+        # Legend entries (label, css color, swatch shape) for compositing onto
+        # the saved PNG. The zoom/pan controls are deliberately excluded.
+        legend_entries = [
+            ("undeformed mesh", css_color(undeformed_mesh_color), "square"),
+            ("load arrows", css_color(load_arrow_color), "circle"),
+            ("support arrows", css_color(support_arrow_color), "circle"),
+        ]
+        legend_js =
+            "[" *
+            join(
+                (
+                    "{label:\"$(e[1])\",color:\"$(e[2])\",shape:\"$(e[3])\"}" for
+                    e in legend_entries
+                ),
+                ",",
+            ) *
+            "]"
+
+        # Shared JS that draws the legend swatches/labels onto a 2D canvas
+        # context (`ctx`) before saving the PNG. Used by the 2D and 3D viewers.
+        legend_composite_js = """
+            if (legend_entries.length) {
+                const pad = 6, gap = 4, sw = 12, sh = 12, gapX = 5, radius = 4;
+                ctx.font = '11px sans-serif';
+                const textW = legend_entries.map(e => ctx.measureText(e.label).width);
+                const rowW = legend_entries.map((e, i) => sw + gapX + textW[i]);
+                const lineH = Math.max(sh, 14);
+                const boxW = Math.max(...rowW) + pad * 2;
+                const boxH = legend_entries.length * lineH + (legend_entries.length - 1) * gap + pad * 2;
+                const x0 = canvas.width - boxW - 10;
+                const y0 = 8;
+                ctx.beginPath();
+                ctx.moveTo(x0 + radius, y0);
+                ctx.arcTo(x0 + boxW, y0, x0 + boxW, y0 + boxH, radius);
+                ctx.arcTo(x0 + boxW, y0 + boxH, x0, y0 + boxH, radius);
+                ctx.arcTo(x0, y0 + boxH, x0, y0, radius);
+                ctx.arcTo(x0, y0, x0 + boxW, y0, radius);
+                ctx.closePath();
+                ctx.fillStyle = 'rgba(255,255,255,0.85)';
+                ctx.fill();
+                ctx.strokeStyle = 'rgba(0,0,0,0.12)';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+                legend_entries.forEach((e, i) => {
+                    const cy = y0 + pad + i * (lineH + gap) + lineH / 2;
+                    const cx = x0 + pad + sw / 2;
+                    ctx.fillStyle = e.color;
+                    if (e.shape === 'circle') {
+                        ctx.beginPath();
+                        ctx.arc(cx, cy, sw / 2, 0, 2 * Math.PI);
+                        ctx.fill();
+                    } else {
+                        ctx.fillRect(x0 + pad, cy - sh / 2, sw, sh);
+                    }
+                    ctx.fillStyle = '#333';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(e.label, x0 + pad + sw + gapX, cy);
+                });
+            }
+            """
+
         ax1_candidates = [c for c in fig.content if c isa LScene]
-        # 2D problems use an Axis, not an LScene; there is no 3D camera to
-        # control, so return the bare figure with the legend overlay.
-        isempty(ax1_candidates) &&
-            return D.div(fig, draw_legend ? legend : no_legend; style="position:relative;")
+        # 2D problems use an Axis rather than an LScene, so there is no 3D
+        # camera to control. They still get the legend, Save, and Browser
+        # buttons plus native mouse zoom/pan in the same static wrapper.
+        if isempty(ax1_candidates)
+            btn2 = "font-size:10px;padding:1px 3px;margin:0;cursor:pointer;"
+            row2 = "display:flex;flex-wrap:nowrap;gap:3px;align-items:center;justify-content:center;margin:2px 0;"
+            controls2 = D.div(
+                D.input(;
+                    type="text",
+                    value="topopt_view.png",
+                    class="tv-savename",
+                    style="font-size:10px;width:10em;padding:1px 2px;margin-left:5px;",
+                ),
+                D.button("Save"; class="tv-save", style=btn2),
+                D.button(
+                    "Browser";
+                    class="tv-browser",
+                    style=btn2,
+                    onclick=Bonito.JSCode([
+                        Bonito.JSString("event => { try { "),
+                        open_browser_cmd,
+                        Bonito.JSString(
+                            ".notify(true); } catch (e) { window.open(window.location.href, '_blank'); } }",
+                        ),
+                    ],),
+                );
+                style=row2,
+            )
+            viewport2 = D.div(
+                fig, draw_legend ? legend : no_legend; style="position:relative;"
+            )
+            return D.div(
+                controls2,
+                viewport2,
+                D.script(
+                    """
+                    function initialize_static_view_2d(container) {
+                        const legend_entries = $(legend_js);
+                        const save = () => {
+                            const canvas = container.querySelector('canvas');
+                            if (!canvas) return;
+                            const save_box = container.querySelector('.tv-savename');
+                            const out = document.createElement('canvas');
+                            out.width = canvas.width;
+                            out.height = canvas.height;
+                            const ctx = out.getContext('2d');
+                            ctx.drawImage(canvas, 0, 0);
+                            $(legend_composite_js)
+                            const a = document.createElement('a');
+                            a.download = (save_box && save_box.value) || 'topopt_view.png';
+                            a.href = out.toDataURL('image/png');
+                            a.click();
+                        };
+                        const poll = setInterval(() => {
+                            const save_el = container.querySelector('.tv-save');
+                            const canvas = container.querySelector('canvas');
+                            if (!save_el || !canvas) return;
+                            clearInterval(poll);
+                            save_el.addEventListener('click', save);
+                        }, 100);
+                    }
+                    const self = [...document.scripts].find(s =>
+                        s.textContent.includes('initialize_static_view_2d'));
+                    initialize_static_view_2d(self ? self.parentElement : document.body);
+                    """;
+                    type="module",
+                );
+                style="display:flex;flex-direction:column;align-items:center;gap:8px;padding:8px;",
+            )
+        end
         ax1 = first(ax1_candidates)
 
         scene_id = WGLMakie.js_uuid(ax1.scene)
@@ -140,18 +279,6 @@ function TopOpt._static_visualization(
         lab = "font-size:10px;user-select:none;cursor:pointer;white-space:nowrap;"
         row = "display:flex;flex-wrap:nowrap;gap:3px;align-items:center;justify-content:center;margin:2px 0;"
         cross_btn = "font-size:10px;padding:0;margin:0;cursor:pointer;width:22px;height:20px;"
-
-        # Open the live app in the operating system's default browser. The
-        # offline export has no Julia process, so the frontend falls back to
-        # opening the current page in a new tab instead.
-        open_browser_cmd = Bonito.Observable(false)
-        on(open_browser_cmd) do v
-            v || return nothing
-            Bonito.browser_display()
-            display(app_ref[])
-            open_browser_cmd[] = false
-            return nothing
-        end
 
         # Bounds for the eye-position fields: generous but finite, so typing
         # or spinning cannot fling the camera to numerically absurd places.
@@ -671,23 +798,6 @@ function TopOpt._static_visualization(
         la0_js = jsvec_inline(lookat)
         fov_js = string(persp_fov)
         scene_id_js = string(scene_id)
-        # Legend entries (label, css color, swatch shape) for compositing onto
-        # the saved PNG. The zoom/pan controls are deliberately excluded.
-        legend_entries = [
-            ("undeformed mesh", css_color(undeformed_mesh_color), "square"),
-            ("load arrows", css_color(load_arrow_color), "circle"),
-            ("support arrows", css_color(support_arrow_color), "circle"),
-        ]
-        legend_js =
-            "[" *
-            join(
-                (
-                    "{label:\"$(e[1])\",color:\"$(e[2])\",shape:\"$(e[3])\"}" for
-                    e in legend_entries
-                ),
-                ",",
-            ) *
-            "]"
 
         container = D.div(
             container,
@@ -951,44 +1061,7 @@ function TopOpt._static_visualization(
                             out.height = canvas.height;
                             const ctx = out.getContext('2d');
                             ctx.drawImage(canvas, 0, 0);
-                            if (legend_entries.length) {
-                                const pad = 6, gap = 4, sw = 12, sh = 12, gapX = 5, radius = 4;
-                                ctx.font = '11px sans-serif';
-                                const textW = legend_entries.map(e => ctx.measureText(e.label).width);
-                                const rowW = legend_entries.map((e, i) => sw + gapX + textW[i]);
-                                const lineH = Math.max(sh, 14);
-                                const boxW = Math.max(...rowW) + pad * 2;
-                                const boxH = legend_entries.length * lineH + (legend_entries.length - 1) * gap + pad * 2;
-                                const x0 = canvas.width - boxW - 10;
-                                const y0 = 8;
-                                ctx.beginPath();
-                                ctx.moveTo(x0 + radius, y0);
-                                ctx.arcTo(x0 + boxW, y0, x0 + boxW, y0 + boxH, radius);
-                                ctx.arcTo(x0 + boxW, y0 + boxH, x0, y0 + boxH, radius);
-                                ctx.arcTo(x0, y0 + boxH, x0, y0, radius);
-                                ctx.arcTo(x0, y0, x0 + boxW, y0, radius);
-                                ctx.closePath();
-                                ctx.fillStyle = 'rgba(255,255,255,0.85)';
-                                ctx.fill();
-                                ctx.strokeStyle = 'rgba(0,0,0,0.12)';
-                                ctx.lineWidth = 1;
-                                ctx.stroke();
-                                legend_entries.forEach((e, i) => {
-                                    const cy = y0 + pad + i * (lineH + gap) + lineH / 2;
-                                    const cx = x0 + pad + sw / 2;
-                                    ctx.fillStyle = e.color;
-                                    if (e.shape === 'circle') {
-                                        ctx.beginPath();
-                                        ctx.arc(cx, cy, sw / 2, 0, 2 * Math.PI);
-                                        ctx.fill();
-                                    } else {
-                                        ctx.fillRect(x0 + pad, cy - sh / 2, sw, sh);
-                                    }
-                                    ctx.fillStyle = '#333';
-                                    ctx.textBaseline = 'middle';
-                                    ctx.fillText(e.label, x0 + pad + sw + gapX, cy);
-                                });
-                            }
+                            $(legend_composite_js)
                             const a = document.createElement('a');
                             a.download = (save_box && save_box.value) || 'topopt_view.png';
                             a.href = out.toDataURL('image/png');

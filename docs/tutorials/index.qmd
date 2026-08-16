@@ -120,6 +120,12 @@ Compliance minimization on bar structures with JSON-defined geometry, power-law 
 
 Binary (0/1) truss design via Juniper.jl branch-and-bound with IPOPT relaxation — crisp layouts with no intermediate densities.
 :::
+
+::: {.tutorial-card}
+[**3D Truss Topology Optimization**](truss_3d.html)
+
+Compliance minimization on a 3D space truss with the interactive static browser viewer and camera controls.
+:::
 :::
 
 ## Problem types
