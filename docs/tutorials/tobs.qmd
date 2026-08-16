@@ -22,7 +22,18 @@ and-cut solving.
 ```{julia}
 #| output: false
 using NonconvexTOBS, TopOpt
+using WGLMakie
+WGLMakie.activate!(; resize_to=:parent)
+using Bonito
+if haskey(ENV, "QUARTO_PROJECT_DIR")
+    Bonito.Page(exportable=true, offline=true)
+else
+    Bonito.browser_display()
+end
+display_app(app) = display(app)
 ```
+
+`WGLMakie.activate!(; resize_to=:parent)` selects the browser renderer and fills the Quarto output column. `Bonito.Page(exportable=true, offline=true)` embeds the assets needed by `visualize(...; static=true)` in the Quarto output, so the visualization does not require a running Julia process.
 
 ## Problem Definition
 
@@ -119,9 +130,9 @@ designs without intermediate densities.
 ```{julia}
 #| label: fig-tobs
 #| fig-cap: "TOBS optimization result showing binary (0/1) material distribution"
-using CairoMakie
 topology = r.minimizer
-fig = visualize(problem; topology=topology)
+fig = visualize(problem; static=true, topology=topology)
+display_app(fig)
 
 ```
 

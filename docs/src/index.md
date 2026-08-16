@@ -77,6 +77,11 @@ fig = visualize(problem; topology=result.minimizer)
 Makie.display(fig)
 ```
 
+For an interactive camera-control app suitable for static HTML export, use
+`visualize(problem; static=true, topology=result.minimizer)` with WGLMakie and
+initialize Bonito with `Bonito.Page(exportable=true, offline=true)` first. This
+returns a `Bonito.App`.
+
 ## Problem types
 
 TopOpt.jl provides several pre-defined problem types for common test cases:

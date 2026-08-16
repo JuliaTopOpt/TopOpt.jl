@@ -206,12 +206,18 @@ jobs:
         working-directory: docs/tutorials
         env:
           JULIA_PROJECT: ${{ github.workspace }}/docs/tutorials
-        run: quarto render ${{ matrix.tutorial }}.qmd --execute
+        run: |
+          set -o pipefail
+          quarto render ${{ matrix.tutorial }}.qmd --execute 2>&1 | tee render-${{ matrix.tutorial }}.log
       - name: Upload rendered tutorial
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: tutorial-${{ matrix.tutorial }}
-          path: docs/tutorials/_site/${{ matrix.tutorial }}.html
+          path: |
+            docs/tutorials/_site/
+            docs/tutorials/render-${{ matrix.tutorial }}.log
+          if-no-files-found: warn
           retention-days: 1
 
   # Build main docs site (parallel to tutorials, doesn't wait for them)
@@ -266,17 +272,48 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           pattern: tutorial-*
-          merge-multiple: true
-          path: docs/tutorials/_site
+          path: docs/tutorials/artifacts
       - name: Copy tutorials into docs build
         run: |
           mkdir -p docs/build/tutorials
-          # Copy Quarto-rendered HTML files (overwrites Documenter stubs)
-          cp docs/tutorials/_site/*.html docs/build/tutorials/
-          # Copy Quarto assets (CSS, JS, etc.) needed for tutorial styling
-          if [ -d docs/tutorials/_site/site_libs ]; then
-            cp -r docs/tutorials/_site/site_libs docs/build/tutorials/
-          fi
+          for artifact in docs/tutorials/artifacts/tutorial-*; do
+            site="$artifact/_site"
+            [ -d "$site" ] || continue
+            for page in "$site"/*.html; do
+              [ -e "$page" ] || continue
+              name=$(basename "$page")
+              # Only the tutorial-index artifact carries the real landing
+              # page; every other artifact's index.html is a Quarto redirect
+              # stub. Overwrite the Documenter stub with the real page.
+              if [ "$name" = index.html ]; then
+                [ "$(basename "$artifact")" = tutorial-index ] || continue
+                cp "$page" "docs/build/tutorials/index.html"
+                continue
+              fi
+              target="docs/build/tutorials/$name"
+              [ ! -e "$target" ] || { echo "Tutorial page collision: $target"; exit 1; }
+              cp "$page" "$target"
+            done
+            if [ -d "$site/site_libs" ]; then
+              if [ -d docs/build/tutorials/site_libs ]; then
+                diff -qr docs/build/tutorials/site_libs "$site/site_libs"
+              else
+                cp -r "$site/site_libs" docs/build/tutorials/
+              fi
+            fi
+            for resource in "$site"/*; do
+              name=$(basename "$resource")
+              case "$name" in
+                *.html|site_libs|search.json) continue ;;
+              esac
+              target="docs/build/tutorials/$name"
+              if [ -e "$target" ]; then
+                diff -qr "$target" "$resource"
+              else
+                cp -r "$resource" "$target"
+              fi
+            done
+          done
           echo "Copied $(ls docs/build/tutorials/*.html | wc -l) tutorial HTML files"
       - name: Upload final site
         uses: actions/upload-artifact@v4

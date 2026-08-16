@@ -20,7 +20,18 @@ top to the bottom boundary — analogous to structural force flow paths.
 ```{julia}
 #| output: false
 using TopOpt
+using WGLMakie
+WGLMakie.activate!(; resize_to=:parent)
+using Bonito
+if haskey(ENV, "QUARTO_PROJECT_DIR")
+    Bonito.Page(exportable=true, offline=true)
+else
+    Bonito.browser_display()
+end
+display_app(app) = display(app)
 ```
+
+`WGLMakie.activate!(; resize_to=:parent)` selects the browser renderer and fills the Quarto output column. `Bonito.Page(exportable=true, offline=true)` embeds the assets needed by `visualize(...; static=true)` in the Quarto output, so the visualization does not require a running Julia process.
 
 ## Define the Problem
 
@@ -140,8 +151,8 @@ that efficiently conducts heat from the top to the bottom boundary.
 ```{julia}
 #| label: fig-heat-tree
 #| fig-cap: "Conductivity tree: optimal heat conduction paths from top flux to bottom sink"
-using CairoMakie
-fig = visualize(problem; topology=res.minimizer)
+fig = visualize(problem; static=true, topology=res.minimizer)
+display_app(fig)
 
 ```
 

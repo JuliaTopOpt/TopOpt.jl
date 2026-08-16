@@ -22,7 +22,18 @@ Load the TopOpt package:
 
 ```{julia}
 using TopOpt
+using WGLMakie
+WGLMakie.activate!(; resize_to=:parent)
+using Bonito
+if haskey(ENV, "QUARTO_PROJECT_DIR")
+    Bonito.Page(exportable=true, offline=true)
+else
+    Bonito.browser_display()
+end
+display_app(app) = display(app)
 ```
+
+`WGLMakie.activate!(; resize_to=:parent)` selects the browser renderer and fills the Quarto output column. `Bonito.Page(exportable=true, offline=true)` embeds the assets needed by `visualize(...; static=true)` in the Quarto output, so the visualization does not require a running Julia process.
 
 ## Define the problem
 
@@ -91,8 +102,8 @@ stochastic nature, but can find better global optima for complex problems.
 ```{julia}
 #| label: fig-geso
 #| fig-cap: "GESO optimization result showing the evolved beam structure"
-using CairoMakie
-fig = visualize(problem; topology=result.topology)
+fig = visualize(problem; static=true, topology=result.topology)
+display_app(fig)
 ```
 
 The result shows a truss-like structure optimized for minimum compliance under

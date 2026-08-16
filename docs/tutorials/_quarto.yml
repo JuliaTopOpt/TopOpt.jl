@@ -5,7 +5,7 @@ project:
     - "*.qmd"
 
 execute:
-  freeze: auto
+  freeze: false
 
 website:
   title: "TopOpt.jl Tutorials"
@@ -24,4 +24,4 @@ format:
     toc: true
     toc-location: left
     css: topopt-tutorials.css
-    embed-resources: true
+    embed-resources: false

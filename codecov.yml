@@ -1,3 +1,6 @@
+ignore:
+  - "ext/TopOptMakieExt/static_viewer.jl"
+
 coverage:
   status:
     project:

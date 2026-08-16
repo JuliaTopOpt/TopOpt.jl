@@ -97,17 +97,23 @@ jobs:
               repo: context.repo.repo,
               issue_number: context.issue.number,
             });
-            const last = comments.data.pop();
+            // Find this checker's own previous comment (newest first), not the
+            // last comment overall, so the formatting checker's comment is ignored.
+            const myTag = '<!-- auto-pr-comment: jet-report -->';
+            const existing = comments.data
+              .slice()
+              .reverse()
+              .find(c => c.body && c.body.includes(myTag));
 
-            if (last && (last.body.includes('JET Report Comparison') || last.body.includes('<!-- auto-pr-comment: jet-report -->'))) {
-              if (last.body === tagged) {
+            if (existing) {
+              if (existing.body === tagged) {
                 console.log('Comment unchanged — skipping.');
                 return;
               }
               await github.rest.issues.updateComment({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                comment_id: last.id,
+                comment_id: existing.id,
                 body: tagged,
               });
             } else {

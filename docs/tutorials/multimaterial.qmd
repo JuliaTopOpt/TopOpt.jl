@@ -20,7 +20,18 @@ We optimize a cantilever beam with 3 materials: void (E=1e-5), soft material
 ```{julia}
 #| output: false
 using TopOpt, Zygote, Test
+using WGLMakie
+WGLMakie.activate!(; resize_to=:parent)
+using Bonito
+if haskey(ENV, "QUARTO_PROJECT_DIR")
+    Bonito.Page(exportable=true, offline=true)
+else
+    Bonito.browser_display()
+end
+display_app(app) = display(app)
 ```
+
+`WGLMakie.activate!(; resize_to=:parent)` selects the browser renderer and fills the Quarto output column. `Bonito.Page(exportable=true, offline=true)` embeds the assets needed by `visualize(...; static=true)` in the Quarto output, so the visualization does not require a running Julia process.
 
 ## Define the Problem
 
@@ -145,10 +156,10 @@ isolation.
 ```{julia}
 #| label: fig-multimaterial
 #| fig-cap: "Multi-material design: void (white), soft material (gray), stiff material (black)"
-using CairoMakie
 x = tounit(MultiMaterialVariablesFun(y, nmats))  # ncells × nmats, rows sum to 1
 rhos = x.x * densities  # physical density per cell, used for transparency
-fig = visualize(problem; topology=rhos, cell_colors=interp1(x).x, draw_legend=true)
+fig = visualize(problem; static=true, topology=rhos, cell_colors=interp1(x).x, draw_legend=true)
+display_app(fig)
 ```
 
 Here `topology=rhos` sets each cell's alpha to its physical density (0 for
@@ -161,14 +172,16 @@ topology and mask the others:
 #| label: fig-multimaterial-stiff
 #| fig-cap: "Stiff material (E=4.0) distribution only"
 stiff_frac = x.x[:, 3]  # fraction of stiff material per cell
-fig_stiff = visualize(problem; topology=stiff_frac)
+fig_stiff = visualize(problem; static=true, topology=stiff_frac)
+display_app(fig_stiff)
 ```
 
 ```{julia}
 #| label: fig-multimaterial-soft
 #| fig-cap: "Soft material (E=1.0) distribution only"
 soft_frac = x.x[:, 2]  # fraction of soft material per cell
-fig_soft = visualize(problem; topology=soft_frac)
+fig_soft = visualize(problem; static=true, topology=soft_frac)
+display_app(fig_soft)
 ```
 
 The combined view shows optimal material distribution — stiff material

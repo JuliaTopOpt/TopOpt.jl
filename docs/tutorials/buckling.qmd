@@ -22,7 +22,18 @@ NonconvexSemidefinite.jl with an IPM barrier method.
 #| output: false
 using TopOpt, LinearAlgebra, Zygote
 using Nonconvex, NonconvexSemidefinite, NonconvexIpopt
+using WGLMakie
+WGLMakie.activate!(; resize_to=:parent)
+using Bonito
+if haskey(ENV, "QUARTO_PROJECT_DIR")
+    Bonito.Page(exportable=true, offline=true)
+else
+    Bonito.browser_display()
+end
+display_app(app) = display(app)
 ```
+
+`WGLMakie.activate!(; resize_to=:parent)` selects the browser renderer and fills the Quarto output column. `Bonito.Page(exportable=true, offline=true)` embeds the assets needed by `visualize(...; static=true)` in the Quarto output, so the visualization does not require a running Julia process.
 
 ## Load Truss Geometry
 
@@ -187,10 +198,12 @@ eigenvalues (unstable).
 ```{julia}
 #| label: fig-buckling
 #| fig-cap: "Buckling-constrained truss design (top) vs compliance-only (bottom)"
-using Makie, CairoMakie
+using Makie, WGLMakie
 
-fig1 = visualize(problem; solver.u, topology=r1.minimizer, default_exagg_scale=0.0)
-fig2 = visualize(problem; solver.u, topology=r2.minimizer, default_exagg_scale=0.0)
+fig1 = visualize(problem; static=true, u=solver.u, topology=r1.minimizer, default_exagg_scale=0.0)
+fig2 = visualize(problem; static=true, u=solver.u, topology=r2.minimizer, default_exagg_scale=0.0)
+display_app(fig1)
+display_app(fig2)
 ```
 
 The buckling-constrained design typically shows thicker compression

@@ -1,0 +1,109 @@
+---
+title: "3D Truss Topology Optimization"
+toc: true
+---
+
+## Description
+
+Truss topology optimization finds the optimal layout of bar elements in three
+dimensions. This tutorial minimizes compliance of a 3D space truss loaded from
+JSON, then visualizes the result with the interactive static browser viewer.
+
+The problem is a 3D ground structure with 41 nodes and 172 bar elements. The
+cross-sectional area of each bar is a design variable: bars driven to zero are
+removed, leaving the stiffest load-bearing layout for a 50% volume fraction.
+
+## Setup
+
+Load WGLMakie before TopOpt so the Makie extension is available, and configure
+Bonito for both interactive and static rendering:
+
+```{julia}
+#| output: false
+using TopOpt, LinearAlgebra
+using WGLMakie
+WGLMakie.activate!(; resize_to=:parent)
+using Bonito
+if haskey(ENV, "QUARTO_PROJECT_DIR")
+    Bonito.Page(exportable=true, offline=true)
+else
+    Bonito.browser_display()
+end
+display_app(app) = display(app)
+```
+
+`WGLMakie.activate!(; resize_to=:parent)` selects the browser renderer and fills
+the Quarto output column. `Bonito.Page(exportable=true, offline=true)` embeds
+the assets needed by `visualize(...; static=true)` so the visualization works
+without a running Julia process.
+
+## Load the 3D truss problem
+
+```{julia}
+#| output: false
+node_points, elements, mats, crosssecs, fixities, load_cases = load_truss_json(
+    joinpath(@__DIR__, "tim_3d.json")
+)
+nnodes = length(node_points)
+ncells = length(elements)
+loads = load_cases["0"]
+```
+
+The JSON file describes the node coordinates, element connectivity, materials,
+cross sections, fixities, and load cases.
+
+## Create the TrussProblem
+
+```{julia}
+#| output: false
+problem = TrussProblem(
+    Val{:Linear}, node_points, elements, loads, fixities, mats, crosssecs
+)
+```
+
+## Optimize for minimum compliance
+
+```{julia}
+#| output: false
+xmin = 0.0001       # minimum cross-sectional area (avoids a singular matrix)
+x0 = fill(1.0, ncells) # initial design: uniform bars
+p = 4.0             # power-law penalty exponent
+V = 0.5             # maximum volume fraction
+
+solver = FEASolver(DirectSolver, problem; xmin=xmin)
+comp = ComplianceFun(solver)
+
+obj(x) = comp(PseudoDensities(x))
+constr(x) = sum(x) / length(x) - V
+
+m = Model(obj)
+addvar!(m, zeros(ncells), ones(ncells))
+Nonconvex.add_ineq_constraint!(m, constr)
+
+options = MMAOptions(; maxiter=1000, tol=Tolerance(; kkt=1e-4, f=1e-4))
+setpenalty!(solver, p)
+r = Nonconvex.optimize(
+    m, MMA87(; dualoptimizer=ConjugateGradient()), x0; options=options
+)
+```
+
+## Visualize the optimized 3D truss
+
+```{julia}
+#| label: fig-truss-3d
+#| fig-cap: "Optimized 3D truss with cross-sectional areas proportional to bar thickness"
+fig = visualize(
+    problem;
+    static=true,
+    u=solver.u,
+    topology=r.minimizer,
+    default_exagg_scale=0.0,
+    exagg_range=100.0,
+)
+display_app(fig)
+```
+
+`visualize(...; static=true)` returns a `Bonito.App` with the 3D camera controls
+(reset, view presets, orthographic toggle, zoom-to-cursor, and the pan/zoom
+cross), a legend, and Save/Browser buttons. Passing `static=true` keeps the
+controls working in the exported HTML.

@@ -22,7 +22,18 @@ convergence tolerances to ensure each subproblem is solved accurately.
 ```{julia}
 #| output: false
 using TopOpt
+using WGLMakie
+WGLMakie.activate!(; resize_to=:parent)
+using Bonito
+if haskey(ENV, "QUARTO_PROJECT_DIR")
+    Bonito.Page(exportable=true, offline=true)
+else
+    Bonito.browser_display()
+end
+display_app(app) = display(app)
 ```
+
+`WGLMakie.activate!(; resize_to=:parent)` selects the browser renderer and fills the Quarto output column. `Bonito.Page(exportable=true, offline=true)` embeds the assets needed by `visualize(...; static=true)` in the Quarto output, so the visualization does not require a running Julia process.
 
 ## Define the Problem
 
@@ -140,14 +151,15 @@ minimized compliance. The continuation strategy typically produces cleaner
 ```{julia}
 #| label: fig-csimp
 #| fig-cap: "Continuation SIMP optimization result with penalty ramp from 1.0 to 5.0"
-using CairoMakie
 fig = visualize(
     problem;
+    static=true,
     topology=x,
     default_exagg_scale=0.07,
     scale_range=10.0,
     vector_arrowsize=0.5,
 )
+display_app(fig)
 ```
 
 The visualization shows the final material distribution after the full

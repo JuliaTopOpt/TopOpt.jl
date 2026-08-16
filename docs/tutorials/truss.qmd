@@ -25,8 +25,18 @@ Load the required packages:
 
 ```{julia}
 using TopOpt, LinearAlgebra
-using CairoMakie
+using WGLMakie
+WGLMakie.activate!(; resize_to=:parent)
+using Bonito
+if haskey(ENV, "QUARTO_PROJECT_DIR")
+    Bonito.Page(exportable=true, offline=true)
+else
+    Bonito.browser_display()
+end
+display_app(app) = display(app)
 ```
+
+`WGLMakie.activate!(; resize_to=:parent)` selects the browser renderer and fills the Quarto output column. `Bonito.Page(exportable=true, offline=true)` embeds the assets needed by `visualize(...; static=true)` in the Quarto output, so the visualization does not require a running Julia process.
 
 ## Load the truss problem from JSON
 
@@ -135,7 +145,8 @@ large-scale nonlinear problem.
 #| eval: false
 #| label: fig-truss
 #| fig-cap: "Optimized truss structure with cross-sectional areas proportional to bar thickness"
-fig = visualize(problem; solver.u, topology=r.minimizer, default_exagg_scale=0.0)
+fig = visualize(problem; static=true, u=solver.u, topology=r.minimizer, default_exagg_scale=0.0)
+display_app(fig)
 
 ```
 

@@ -45,7 +45,18 @@ that all produce the signature feature of stress-constrained design: the
 #| output: false
 using TopOpt, LinearAlgebra
 using StatsFuns: logsumexp
+using WGLMakie
+WGLMakie.activate!(; resize_to=:parent)
+using Bonito
+if haskey(ENV, "QUARTO_PROJECT_DIR")
+    Bonito.Page(exportable=true, offline=true)
+else
+    Bonito.browser_display()
+end
+display_app(app) = display(app)
 ```
+
+`WGLMakie.activate!(; resize_to=:parent)` selects the browser renderer and fills the Quarto output column. `Bonito.Page(exportable=true, offline=true)` embeds the assets needed by `visualize(...; static=true)` in the Quarto output, so the visualization does not require a running Julia process.
 
 ## The benchmark problem
 
@@ -243,20 +254,22 @@ filtered SIMP stress evaluation (da Silva et al., 2019).
 ```{julia}
 #| label: fig-global-stress
 #| fig-cap: "Stress-constrained L-bracket, relaxed stress + p-norm (approach 1)"
-using CairoMakie
-fig = visualize(problem; topology=topo1, default_exagg_scale=0.0)
+fig = visualize(problem; static=true, topology=topo1, default_exagg_scale=0.0)
+display_app(fig)
 ```
 
 ```{julia}
 #| label: fig-global-stress-ks
 #| fig-cap: "Stress-constrained L-bracket, relaxed stress + KS (approach 2)"
-fig = visualize(problem; topology=topo2, default_exagg_scale=0.0)
+fig = visualize(problem; static=true, topology=topo2, default_exagg_scale=0.0)
+display_app(fig)
 ```
 
 ```{julia}
 #| label: fig-global-stress-eps
 #| fig-cap: "Stress-constrained L-bracket, ε-relaxation (approach 3)"
-fig = visualize(problem; topology=topo3, default_exagg_scale=0.0)
+fig = visualize(problem; static=true, topology=topo3, default_exagg_scale=0.0)
+display_app(fig)
 ```
 
 ## Discussion
