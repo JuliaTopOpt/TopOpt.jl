@@ -53,10 +53,10 @@ v = 0.3 # Poisson's ratio
 f = 1.0 # downward force magnitude
 
 nels = (160, 40)  # 160 elements in x, 40 in y
-problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), E, v, f)
+problem = HalfMBB(nels, (1.0, 1.0), E, v, f)
 ```
 
-The `Val{:Linear}` specifies linear (bilinear) quadrilateral elements. The
+The default `celltype=:Linear` specifies linear (bilinear) quadrilateral elements. The
 problem object contains the finite element mesh, boundary conditions, and load
 definition.
 

@@ -31,7 +31,7 @@ end
 
 @testset "ComplianceFun" begin
     nels = (2, 2)
-    problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
+    problem = HalfMBB(nels, (1.0, 1.0), 1.0, 0.3, 1.0)
     for p in (1.0, 2.0, 3.0)
         solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(p))
         comp = ComplianceFun(solver)
@@ -50,7 +50,7 @@ end
 
 @testset "ComplianceFun - Vector input warning" begin
     nels = (2, 2)
-    problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
+    problem = HalfMBB(nels, (1.0, 1.0), 1.0, 0.3, 1.0)
     solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(3.0))
     comp = ComplianceFun(solver)
 
@@ -68,7 +68,7 @@ end
 
 @testset "DisplacementFun" begin
     nels = (2, 2)
-    problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
+    problem = HalfMBB(nels, (1.0, 1.0), 1.0, 0.3, 1.0)
     for p in (1.0, 2.0, 3.0)
         solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(p))
         dp = DisplacementFun(solver)
@@ -89,7 +89,7 @@ end
 
 @testset "VolumeFun" begin
     nels = (2, 2)
-    problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
+    problem = HalfMBB(nels, (1.0, 1.0), 1.0, 0.3, 1.0)
     for p in (1.0, 2.0, 3.0)
         solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(p))
         vol = VolumeFun(solver)
@@ -108,7 +108,7 @@ end
 
 @testset "DensityFilterFun" begin
     nels = (2, 2)
-    problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
+    problem = HalfMBB(nels, (1.0, 1.0), 1.0, 0.3, 1.0)
     for p in (1.0, 2.0, 3.0)
         solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(p))
         filter = DensityFilterFun(solver; rmin=4.0)
@@ -128,7 +128,7 @@ end
 
 @testset "SensFilterFun" begin
     nels = (2, 2)
-    problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0))
+    problem = PointLoadCantilever(nels, (1.0, 1.0))
     solver = FEASolver(DirectSolver, problem; xmin=1e-3, penalty=PowerPenaltyFun(3.0))
     sensfilter = SensFilterFun(solver; rmin=4.0)
     f = x -> sensfilter(PseudoDensities(x))
@@ -142,7 +142,7 @@ end
 @testset "Block compliance" begin
     nels = (2, 2)
     nloads = 10
-    base_problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
+    base_problem = PointLoadCantilever(nels, (1.0, 1.0), 1.0, 0.3, 1.0)
     dense_load_inds = vec(TopOpt.TopOptProblems.get_surface_dofs(base_problem))
     dense_rank = 3
     F = spzeros(ndofs(base_problem.ch.dh), nloads)
@@ -177,7 +177,7 @@ end
 
 @testset "Stress tensor" begin
     nels = (2, 2)
-    problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
+    problem = HalfMBB(nels, (1.0, 1.0), 1.0, 0.3, 1.0)
     for p in (1.0, 2.0, 3.0)
         solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(p))
         st = StressTensorFun(solver)
@@ -208,7 +208,7 @@ end
 
 @testset "getdim for Functions" begin
     nels = (2, 2)
-    problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
+    problem = HalfMBB(nels, (1.0, 1.0), 1.0, 0.3, 1.0)
     solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(3.0))
 
     @testset "ComplianceFun getdim" begin
@@ -225,7 +225,7 @@ end
 @testset "Comprehensive getdim Tests" begin
     @testset "getdim for basic functions" begin
         nels = (2, 2)
-        problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
+        problem = HalfMBB(nels, (1.0, 1.0), 1.0, 0.3, 1.0)
         solver = FEASolver(DirectSolver, problem; xmin=0.001, penalty=PowerPenaltyFun(3.0))
 
         @testset "VolumeFun getdim" begin
@@ -242,7 +242,7 @@ end
     @testset "getdim with different problem types" begin
         @testset "PointLoadCantilever" begin
             nels = (2, 2)
-            problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
+            problem = PointLoadCantilever(nels, (1.0, 1.0), 1.0, 0.3, 1.0)
             solver = FEASolver(DirectSolver, problem; xmin=0.001)
 
             vol = VolumeFun(solver)
@@ -254,7 +254,7 @@ end
 
         @testset "InpStiffness problem" begin
             nels = (2, 2)
-            problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
+            problem = HalfMBB(nels, (1.0, 1.0), 1.0, 0.3, 1.0)
             solver = FEASolver(DirectSolver, problem; xmin=0.001)
 
             vol = VolumeFun(solver)
@@ -265,7 +265,7 @@ end
 
 @testset "VolumeFun project function" begin
     nels = (3, 3)
-    problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
+    problem = HalfMBB(nels, (1.0, 1.0), 1.0, 0.3, 1.0)
     solver = FEASolver(DirectSolver, problem; xmin=0.001, penalty=PowerPenaltyFun(3.0))
 
     @testset "Basic binary projection with fraction=true" begin

@@ -32,9 +32,7 @@ ins_dir = joinpath(@__DIR__, "instances", "fea_examples");
     ndim, nnodes, ncells = length(node_points[1]), length(node_points), length(elements)
     loads = load_cases["0"]
 
-    problem = TrussProblem(
-        Val{:Linear}, node_points, elements, loads, fixities, mats, crosssecs
-    )
+    problem = TrussProblem(node_points, elements, loads, fixities, mats, crosssecs)
 
     @test getdim(problem) == ndim
     @test Ferrite.getncells(problem) == ncells

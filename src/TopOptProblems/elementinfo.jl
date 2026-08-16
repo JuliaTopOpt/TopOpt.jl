@@ -147,13 +147,19 @@ end
 function GlobalFEAInfo(
     K::Union{AbstractSparseMatrix,Symmetric{<:Any,<:AbstractSparseMatrix}}, f
 )
-    n = Int(size(K, 1))
+    n = _sparse_size1(K)
     chol = cholesky(spdiagm(0 => ones(n)))
     qrfact = qr(spdiagm(0 => ones(n)))
     return GlobalFEAInfo{eltype(K),typeof(K),typeof(f),typeof(chol),typeof(qrfact)}(
         K, f, chol, qrfact
     )
 end
+
+# `size(K, 1)` on a `Symmetric` wrapper infers through StaticArrays' `Size`
+# trait as possibly `Dynamic`; dispatch on the wrapper form so the size of the
+# parent sparse matrix is a plain `Int`.
+_sparse_size1(K::Symmetric{<:Any,<:AbstractSparseMatrix}) = size(K.data, 1)
+_sparse_size1(K::AbstractSparseMatrix) = size(K, 1)
 
 """
     GlobalFEAInfo(K, f)
@@ -171,7 +177,7 @@ end
 
 Calculates an approximation of the element volumes by approximating the volume integral of 1 over each element using Gaussian quadrature. `cellvalues` is a `Ferrite` struct that facilitates the computation of the integral. To initialize `cellvalues` for an element with index `cell`, `Ferrite.reinit!(cellvalues, cell)` can be called. Calling `Ferrite.getdetJdV(cellvalues, q_point)` then computes the value of the determinant of the Jacobian of the geometric basis functions at the point `q_point` in the reference element. The sum of such values for all integration points is the volume approximation.
 """
-function get_cell_volumes(sp::AbstractTopOptProblem, cellvalues)
+function get_cell_volumes(sp::AbstractTopOptProblem, cellvalues::Ferrite.CellValues)
     dh = sp.ch.dh
     T = floattype(sp)
     cellvolumes = zeros(T, getncells(dh.grid))

@@ -353,7 +353,7 @@ requiring the caller to thread the color through `kw...`.
 """
 function _default_und_mesh_color(problem)
     dim = getdim(problem)
-    return dim == 2 ? RGBAf(0.35, 0.35, 0.35, 1.0) : RGBAf(0.52, 0.68, 0.86, 1.0)
+    return dim == 2 ? RGBAf(0.35, 0.35, 0.35, 1.0) : RGBAf(0.6, 0.6, 0.6, 0.85)
 end
 
 """
@@ -508,11 +508,12 @@ end
 
 """
     function visualize(problem::StiffnessTopOptProblem{dim,T};
+        static=false,
         u=undef,
         topology=undef,
         cloaddict=undef,
         undeformed_mesh_color=dim == 2 ? RGBAf(0.35, 0.35, 0.35, 1.0) :
-            RGBAf(0.52, 0.68, 0.86, 1.0),
+            RGBAf(0.6, 0.6, 0.6, 0.85),
         cell_colors=undef,
         draw_legend=false,
         colormap=ColorSchemes.Spectral_10,
@@ -525,9 +526,9 @@ end
         density_threshold=0.5,
         alpha_from_density=true,
         interactive=true,
+        display_supports=true,
+        lighting=:none,
         vector_arrowsize=Auto,
-        # Red loads and blue supports remain legible without overpowering the
-        # density colormap or lighting.
         load_arrow_color=RGBAf(0.72, 0.12, 0.1, 1.0),
         support_arrow_color=RGBAf(0.72, 0.5, 0.02, 1.0),
         load_arrow_linewidth=Auto,
@@ -553,6 +554,7 @@ So we recommend using `GLMakie` backend until you are satisfied, and switch back
 
 # Optional arguments
 
+- `static=false` : when `true`, return a `Bonito.App` with client-side camera controls instead of a `Makie.Figure`.
 - `u=undef`: nodal displacement vector (dim `n_dof`). 
     Usually got from `solver.vars = x_you_want; solver(); u = solver.u;`. If `undef`, assumed to be a zero vector.
 - `topology=undef` : desired topology density vector (dim `n_cells`). If `undef`, assume all cells are included. 
@@ -563,13 +565,15 @@ So we recommend using `GLMakie` backend until you are satisfied, and switch back
 - `draw_legend=false` : draw the color legend for cell_colors.
 - `colormap=ColorSchemes.Spectral_10` : color map used to show `cell_color`. See [catalog](https://juliagraphics.github.io/ColorSchemes.jl/stable/catalogue/) for more options.
 - `deformed_mesh_color` : color used for displaying deformed mesh if `u` is specified.
-- `vector_arrowsize=10.0` : the vector arrow size used for displaying loads and supports vectors.- `default_support_scale=1.0` : the default support scale used in the slider.
-- `default_load_scale=1.0` : the default load scale used in the slider.
-- `scale_range=1.0` : the upper limit of the sliders controlling the support and load scale sliders.
-- `default_exagg_scale=1.0` : default deformation exaggeration scale.
+- `display_supports=true` : draw the support (Dirichlet BC) markers and arrows.
+- `lighting=:none` : lighting mode for the 3D scene (`:none` or `:default`).
+- `vector_arrowsize=Auto` : the vector arrow size used for displaying loads and supports vectors.
+- `default_support_scale=Auto` : the default support scale used in the slider.
+- `default_load_scale=Auto` : the default load scale used in the slider.
+- `scale_range=Auto` : the upper limit of the sliders controlling the support and load scale sliders.
+- `default_exagg_scale=Auto` : default deformation exaggeration scale.
 - `exagg_range=10.0` : the upper limit of the slider controlling the deformation exaggeration slider.
 - `kw...` : optional keyword argument passed to [Makie.mesh!](https://docs.makie.org/stable/api/#mesh!) function.
-- `static=false` : when `true`, return a `Bonito.App` with client-side camera controls instead of a `Makie.Figure`.
 
 # Returns
 - `Makie.Figure` handle
@@ -1007,6 +1011,58 @@ function TopOpt.visualize(
     return fig
 end
 
+"""
+    visualize(problem::TrussProblem{xdim,T};
+        static=false,
+        u=undef,
+        topology=undef,
+        undeformed_mesh_color=RGBAf(0, 0, 0, 1.0),
+        cell_colors=undef,
+        draw_legend=false,
+        colormap=ColorSchemes.Spectral_10,
+        deformed_mesh_color=RGBAf(0, 1, 1, 0.4),
+        display_supports=true,
+        vector_arrowsize=Auto,
+        default_support_scale=Auto,
+        default_load_scale=Auto,
+        scale_range=1.0,
+        default_exagg_scale=1.0,
+        exagg_range=10.0,
+        default_element_linewidth_scale=6.0,
+        element_linewidth_range=10.0,
+        kw...
+    ) where {xdim,T}
+
+Visualize a truss topology optimization problem. Loads and supports are drawn
+as arrows, and the element line width and color can encode the design density.
+
+# Inputs
+
+- `problem`: truss topopt problem
+
+# Optional arguments
+
+- `static=false`: when `true`, return a `Bonito.App` with client-side camera controls instead of a `Makie.Figure`.
+- `u=undef`: nodal displacement vector. If `undef`, assumed to be a zero vector.
+- `topology=undef`: desired topology density vector. If `undef`, assume all cells are included.
+- `undeformed_mesh_color`: color used for displaying the undeformed elements.
+- `cell_colors=undef`: Vector of a value per cell to show the color map. If used, `undeformed_mesh_color` is ignored.
+- `draw_legend=false`: draw the color legend for cell_colors.
+- `colormap=ColorSchemes.Spectral_10`: color map used to show `cell_colors`.
+- `deformed_mesh_color`: color used for displaying the deformed mesh if `u` is specified.
+- `display_supports=true`: draw the support (Dirichlet BC) markers and arrows.
+- `vector_arrowsize=Auto`: arrow size used for displaying loads and supports vectors.
+- `default_support_scale=Auto`, `default_load_scale=Auto`: default support/load arrow scale.
+- `scale_range=1.0`: upper limit of the sliders controlling the support and load scale sliders.
+- `default_exagg_scale=1.0`: default deformation exaggeration scale.
+- `exagg_range=10.0`: upper limit of the slider controlling the deformation exaggeration slider.
+- `default_element_linewidth_scale=6.0`, `element_linewidth_range=10.0`: default and range of the element line-width slider.
+- `kw...`: optional keyword argument passed to Makie.mesh! function.
+
+# Returns
+- `Makie.Figure` handle
+
+"""
 function TopOpt.visualize(
     problem::TrussProblem{xdim,T};
     static=false,
@@ -1215,11 +1271,21 @@ end
 
 """
     function visualize(problem::HeatTransferTopOptProblem{dim,T};
+        static=false,
         topology=undef,
-        undeformed_mesh_color=dim==2 ? RGBAf(0,0,0,1.0) : RGBAf(0.5,0.5,0.5,0.4),
+        undeformed_mesh_color=dim == 2 ? RGBAf(0.35, 0.35, 0.35, 1.0) :
+            RGBAf(0.6, 0.6, 0.6, 0.85),
         cell_colors=undef,
         draw_legend=false,
         colormap=ColorSchemes.Spectral_10,
+        surface_texture=:crosshatch,
+        texture_period=Auto,
+        texture_angle=45.0,
+        texture_color=RGBAf(0.18, 0.26, 0.4, 1.0),
+        texture_strength=0.06,
+        density_threshold=0.5,
+        alpha_from_density=true,
+        lighting=:none,
         kw...
     ) where {dim,T}
 
@@ -1231,11 +1297,15 @@ Visualize a heat transfer topology optimization problem.
 
 # Optional arguments
 
+- `static=false`: when `true`, return a `Bonito.App` with client-side camera controls instead of a `Makie.Figure`.
 - `topology=undef`: desired topology density vector. If `undef`, assume all cells are included.
 - `undeformed_mesh_color`: color used for displaying the mesh.
-- `cell_colors=undef`: Vector of a value per cell to show the color map.
+- `cell_colors=undef`: Vector of a value per cell to show the color map. Pass the
+  per-cell temperature (e.g. `cell_temperature(TemperatureFun(solver)(x), problem)`)
+  to color the elements by temperature.
 - `draw_legend=false`: draw the color legend for cell_colors.
 - `colormap=ColorSchemes.Spectral_10`: color map used to show `cell_color`.
+- `lighting=:none`: lighting mode for the 3D scene (`:none` or `:default`).
 - `kw...`: optional keyword argument passed to Makie.mesh! function.
 
 # Returns
@@ -1249,7 +1319,7 @@ function TopOpt.visualize(
     undeformed_mesh_color=if dim == 2
         RGBAf(0.35, 0.35, 0.35, 1.0)
     else
-        RGBAf(0.52, 0.68, 0.86, 1.0)
+        RGBAf(0.6, 0.6, 0.6, 0.85)
     end,
     cell_colors=undef,
     draw_legend=false,

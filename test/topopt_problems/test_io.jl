@@ -6,7 +6,7 @@ using LinearAlgebra
 
 @testset "VTK I/O" begin
     # Create a simple problem
-    problem = PointLoadCantilever(Val{:Linear}, (10, 6), (1.0, 1.0), 1.0, 0.3, 1.0)
+    problem = PointLoadCantilever((10, 6), (1.0, 1.0), 1.0, 0.3, 1.0)
 
     # Test save_mesh function exists
     @test isdefined(TopOpt.TopOptProblems.InputOutput, :save_mesh)
@@ -33,7 +33,7 @@ end
 
 @testset "Mesh types" begin
     # Test grid dimensions and properties - Ferrite grids are the mesh type
-    problem = PointLoadCantilever(Val{:Linear}, (10, 6), (1.0, 1.0), 1.0, 0.3, 1.0)
+    problem = PointLoadCantilever((10, 6), (1.0, 1.0), 1.0, 0.3, 1.0)
     grid = problem.ch.dh.grid
     @test getncells(grid) == 60
     @test length(grid.nodes) == 77
@@ -62,7 +62,7 @@ end
     mktempdir() do tmpdir
         @testset "Standard problem VTK export" begin
             # 2D problem
-            problem = PointLoadCantilever(Val{:Linear}, (4, 4), (1.0, 1.0), 1.0, 0.3, 1.0)
+            problem = PointLoadCantilever((4, 4), (1.0, 1.0), 1.0, 0.3, 1.0)
             vtk_path = joinpath(tmpdir, "test_2d")
             densities = fill(0.7, getncells(problem.ch.dh.grid))
 
@@ -82,9 +82,7 @@ end
 
         @testset "3D problem VTK export" begin
             # Skip if 3D problems not available or too slow
-            problem_3d = PointLoadCantilever(
-                Val{:Linear}, (4, 4, 2), (1.0, 1.0, 1.0), 1.0, 0.3, 1.0
-            )
+            problem_3d = PointLoadCantilever((4, 4, 2), (1.0, 1.0, 1.0), 1.0, 0.3, 1.0)
             vtk_path = joinpath(tmpdir, "test_3d")
 
             @test_nowarn TopOpt.TopOptProblems.InputOutput.save_mesh(vtk_path, problem_3d)
@@ -97,9 +95,7 @@ end
             # Create a heat conduction problem
             nels = (4, 4)
             sizes = (1.0, 1.0)
-            problem = HeatConductionProblem(
-                Val{:Linear}, nels, sizes, 1.0; Tleft=0.0, Tright=0.0
-            )
+            problem = HeatConductionProblem(nels, sizes, 1.0; Tleft=0.0, Tright=0.0)
             vtk_path = joinpath(tmpdir, "test_heat")
 
             # Heat problems should also be exportable
@@ -118,7 +114,7 @@ end
         end
 
         @testset "VTK with cell data" begin
-            problem = PointLoadCantilever(Val{:Linear}, (4, 4), (1.0, 1.0), 1.0, 0.3, 1.0)
+            problem = PointLoadCantilever((4, 4), (1.0, 1.0), 1.0, 0.3, 1.0)
             vtk_path = joinpath(tmpdir, "test_with_data")
             densities = rand(Float64, getncells(problem.ch.dh.grid))
 

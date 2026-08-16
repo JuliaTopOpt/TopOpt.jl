@@ -24,7 +24,6 @@ function BlockComplianceFun(
     V=nothing,
     sample_method=:hutch,
     decay=1.0,
-    kwargs...,
 )
     # BlockComplianceFun is only valid for structural (LinearElasticity) problems
     solver.problem isa StiffnessTopOptProblem || throw(
@@ -32,7 +31,7 @@ function BlockComplianceFun(
             "BlockComplianceFun can only be used with StiffnessTopOptProblem (structural mechanics). Got $(typeof(solver.problem))",
         ),
     )
-    comp = ComplianceFun(solver; kwargs...)
+    comp = ComplianceFun(solver)
     if method == :exact
         method = ExactDiagonal(problem.F, length(comp.grad))
     elseif method == :exact_svd

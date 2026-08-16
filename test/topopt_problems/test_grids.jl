@@ -22,10 +22,21 @@ using Test
 
 # Tests for RectilinearGrid
 @testset "RectilinearGrid Basic Construction" begin
+    # Invalid cell types fail fast with a descriptive error
+    @test_throws ArgumentError RectilinearGrid((4, 4), (1.0, 1.0); celltype=:Cubic)
+    @test_throws ArgumentError LGrid(
+        (2, 4),
+        (2, 2),
+        Vec{2,Float64}((0.0, 0.0)),
+        Vec{2,Float64}((2.0, 4.0)),
+        Vec{2,Float64}((4.0, 2.0));
+        celltype=:Cubic,
+    )
+
     # 2D grid
     nels = (10, 5)
     sizes = (1.0, 1.0)
-    grid = RectilinearGrid(Val{:Linear}, nels, sizes)
+    grid = RectilinearGrid(nels, sizes)
 
     @test grid.nels == nels
     @test grid.sizes == sizes
@@ -37,7 +48,7 @@ using Test
     # 3D grid
     nels3d = (4, 3, 2)
     sizes3d = (0.5, 0.5, 0.5)
-    grid3d = RectilinearGrid(Val{:Linear}, nels3d, sizes3d)
+    grid3d = RectilinearGrid(nels3d, sizes3d)
 
     @test grid3d.nels == nels3d
     @test grid3d.sizes == sizes3d
@@ -45,23 +56,23 @@ end
 
 @testset "RectilinearGrid Linear vs Quadratic" begin
     # Linear 2D grid
-    grid_linear = RectilinearGrid(Val{:Linear}, (6, 4), (1.0, 1.0))
+    grid_linear = RectilinearGrid((6, 4), (1.0, 1.0))
     @test nnodespercell(grid_linear) == 4  # Quadrilateral
     @test nfacespercell(grid_linear) == 4
 
     # Quadratic 2D grid
-    grid_quad = RectilinearGrid(Val{:Quadratic}, (6, 4), (1.0, 1.0))
+    grid_quad = RectilinearGrid((6, 4), (1.0, 1.0); celltype=:Quadratic)
     @test nnodespercell(grid_quad) == 9  # QuadraticQuadrilateral
     @test nfacespercell(grid_quad) == 4
 
     # 3D Linear grid (Hexahedron)
-    grid_3d = RectilinearGrid(Val{:Linear}, (4, 3, 2), (1.0, 1.0, 1.0))
+    grid_3d = RectilinearGrid((4, 3, 2), (1.0, 1.0, 1.0))
     @test nnodespercell(grid_3d) == 8  # Hexahedron
     @test nfacespercell(grid_3d) == 6
 end
 
 @testset "RectilinearGrid Position Methods" begin
-    grid = RectilinearGrid(Val{:Linear}, (10, 5), (1.0, 2.0))
+    grid = RectilinearGrid((10, 5), (1.0, 2.0))
 
     # left: x[1] ≈ corners[1][1]
     @test left(grid, Ferrite.Vec{2}((0.0, 3.0))) == true
@@ -89,7 +100,7 @@ end
 end
 
 @testset "RectilinearGrid 3D Position Methods" begin
-    grid3d = RectilinearGrid(Val{:Linear}, (10, 5, 4), (1.0, 1.0, 0.5))
+    grid3d = RectilinearGrid((10, 5, 4), (1.0, 1.0, 0.5))
 
     # back: x[3] ≈ corners[1][3]
     @test back(grid3d, Ferrite.Vec{3}((3.0, 2.0, 0.0))) == true
@@ -106,11 +117,11 @@ end
 
 @testset "RectilinearGrid Cell Properties" begin
     # Test nnodespercell and nfacespercell
-    grid2d = RectilinearGrid(Val{:Linear}, (6, 4), (1.0, 1.0))
+    grid2d = RectilinearGrid((6, 4), (1.0, 1.0))
     @test nnodespercell(grid2d) == 4  # Quadrilateral
     @test nfacespercell(grid2d) == 4
 
-    grid3d = RectilinearGrid(Val{:Linear}, (4, 3, 2), (1.0, 1.0, 1.0))
+    grid3d = RectilinearGrid((4, 3, 2), (1.0, 1.0, 1.0))
     @test nnodespercell(grid3d) == 8  # Hexahedron
     @test nfacespercell(grid3d) == 6
 
@@ -126,7 +137,7 @@ end
 
 @testset "LGrid Construction" begin
     # Default LGrid with keyword arguments
-    lgrid = LGrid(Val{:Linear}, Float64; upperslab=30, lowerslab=70)
+    lgrid = LGrid(Float64; upperslab=30, lowerslab=70)
     @test lgrid isa Ferrite.Grid
 
     # Custom LGrid with explicit parameters
@@ -135,26 +146,18 @@ end
     MR = Ferrite.Vec{2,Float64}((4.0, 2.0))
 
     # Linear LGrid
-    lgrid_linear = LGrid(Val{:Linear}, (2, 4), (2, 2), LL, UR, MR)
+    lgrid_linear = LGrid((2, 4), (2, 2), LL, UR, MR)
     @test lgrid_linear isa Ferrite.Grid
 
     # Quadratic LGrid
-    lgrid_quad = LGrid(Val{:Quadratic}, (2, 4), (2, 2), LL, UR, MR)
+    lgrid_quad = LGrid((2, 4), (2, 2), LL, UR, MR; celltype=:Quadratic)
     @test lgrid_quad isa Ferrite.Grid
 
     # Distributed load: `load_width` nodes share the force equally
-    lgrid_pt = LGrid(
-        Val{:Linear}, Float64; length=20, height=20, upperslab=10, lowerslab=10
-    )
+    lgrid_pt = LGrid(Float64; length=20, height=20, upperslab=10, lowerslab=10)
     @test length(getnodeset(lgrid_pt, "load")) == 1
     lgrid_dist = LGrid(
-        Val{:Linear},
-        Float64;
-        length=20,
-        height=20,
-        upperslab=10,
-        lowerslab=10,
-        load_width=5,
+        Float64; length=20, height=20, upperslab=10, lowerslab=10, load_width=5
     )
     load_nodes = getnodeset(lgrid_dist, "load")
     @test length(load_nodes) == 5
@@ -165,17 +168,9 @@ end
         lgrid_pt.nodes[only(getnodeset(lgrid_pt, "load"))].x[2]
 
     # Force split conserves the resultant
-    problem_pt = LBeam(
-        Val{:Linear}; length=20, height=20, upperslab=10, lowerslab=10, force=2.0
-    )
-    problem_dist = LBeam(
-        Val{:Linear};
-        length=20,
-        height=20,
-        upperslab=10,
-        lowerslab=10,
-        force=2.0,
-        load_width=5,
+    problem_pt = LBeam(; length=20, height=20, upperslab=10, lowerslab=10, force=2.0)
+    problem_dist = LBeam(;
+        length=20, height=20, upperslab=10, lowerslab=10, force=2.0, load_width=5
     )
     cload_pt = getcloaddict(problem_pt)
     cload_dist = getcloaddict(problem_dist)
@@ -188,32 +183,26 @@ end
     @test torque(cload_dist) ≈ torque(cload_pt)
 
     @test_throws ArgumentError LGrid(
-        Val{:Linear},
-        Float64;
-        length=20,
-        height=20,
-        upperslab=10,
-        lowerslab=10,
-        load_width=0,
+        Float64; length=20, height=20, upperslab=10, lowerslab=10, load_width=0
     )
 end
 
 @testset "TieBeamGrid Construction" begin
     # Linear TieBeamGrid
-    tb_linear = TieBeamGrid(Val{:Linear}, Float64; refine=1)
+    tb_linear = TieBeamGrid(Float64; refine=1)
     @test tb_linear isa Ferrite.Grid
 
     # Quadratic TieBeamGrid
-    tb_quad = TieBeamGrid(Val{:Quadratic}, Float64; refine=1)
+    tb_quad = TieBeamGrid(Float64; celltype=:Quadratic, refine=1)
     @test tb_quad isa Ferrite.Grid
 
     # Default type parameter (no refine, defaults to 1)
-    tb_default = TieBeamGrid(Val{:Linear})
+    tb_default = TieBeamGrid()
     @test tb_default isa Ferrite.Grid
 end
 
 @testset "Grid Boundary Conditions" begin
-    lgrid = LGrid(Val{:Linear}, Float64; upperslab=30, lowerslab=70)
+    lgrid = LGrid(Float64; upperslab=30, lowerslab=70)
 
     # Check that expected face sets exist
     @test haskey(lgrid.facetsets, "right")
@@ -222,7 +211,7 @@ end
     # Check that load nodeset exists
     @test haskey(lgrid.nodesets, "load")
 
-    tbgrid = TieBeamGrid(Val{:Linear}, Float64; refine=1)
+    tbgrid = TieBeamGrid(Float64; refine=1)
     @test haskey(tbgrid.facetsets, "leftfixed")
     @test haskey(tbgrid.facetsets, "toproller")
     @test haskey(tbgrid.facetsets, "rightload")
@@ -237,7 +226,7 @@ end
     ν = 0.3
     force = 1.0
 
-    problem = PointLoadCantilever(Val{:Linear}, nels, sizes, E, ν, force)
+    problem = PointLoadCantilever(nels, sizes, E, ν, force)
 
     # Test 1: Default topology (all ones)
     topology = RectilinearTopology(problem)

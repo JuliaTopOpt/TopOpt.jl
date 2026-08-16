@@ -36,7 +36,7 @@ end
     force = 1.0
 
     @testset "find_nearest_dofs" begin
-        problem = PointLoadCantilever(Val{:Linear}, nels, sizes, E, ν, force)
+        problem = PointLoadCantilever(nels, sizes, E, ν, force)
 
         # Test finding nearest dofs to a point inside the domain
         # The point should be somewhere within the grid bounds [0, 10] x [0, 6]
@@ -105,7 +105,7 @@ end
     end
 
     @testset "get_node_first_cells" begin
-        problem = PointLoadCantilever(Val{:Linear}, nels, sizes, E, ν, force)
+        problem = PointLoadCantilever(nels, sizes, E, ν, force)
         dh = problem.ch.dh
 
         # Call get_node_first_cells directly
@@ -137,7 +137,7 @@ end
     end
 
     @testset "get_node_dofs" begin
-        problem = PointLoadCantilever(Val{:Linear}, nels, sizes, E, ν, force)
+        problem = PointLoadCantilever(nels, sizes, E, ν, force)
         dh = problem.ch.dh
 
         # Get node DOFs using the DofHandler (get_node_dofs takes DofHandler, not Metadata)
@@ -158,7 +158,7 @@ end
     end
 
     @testset "get_node_cells" begin
-        problem = PointLoadCantilever(Val{:Linear}, nels, sizes, E, ν, force)
+        problem = PointLoadCantilever(nels, sizes, E, ν, force)
         dh = problem.ch.dh
 
         # Get node cells from DofHandler (get_node_cells takes DofHandler, not Metadata)
@@ -184,7 +184,7 @@ end
 
     @testset "get_surface_dofs" begin
         # Create problem
-        problem = PointLoadCantilever(Val{:Linear}, nels, sizes, E, ν, force)
+        problem = PointLoadCantilever(nels, sizes, E, ν, force)
 
         # Get surface DOFs - no string argument needed
         surface_dofs = get_surface_dofs(problem)
@@ -200,7 +200,7 @@ end
     @testset "getcloaddict default implementation" begin
         # Test with TieBeam which uses the default StiffnessTopOptProblem fallback:
         # getcloaddict(p::StiffnessTopOptProblem{dim,T}) where {dim,T} = Dict{String,Vector{T}}()
-        problem = TieBeam(Val{:Linear}, Float64; refine=1, force=1.0, E=1.0, ν=0.3)
+        problem = TieBeam(Float64; refine=1, force=1.0, E=1.0, ν=0.3)
 
         cload_dict = getcloaddict(problem)
 
@@ -213,7 +213,7 @@ end
 
     @testset "getcloaddict with custom implementation" begin
         # Create a basic StiffnessTopOptProblem with custom getcloaddict
-        problem = PointLoadCantilever(Val{:Linear}, nels, sizes, E, ν, force)
+        problem = PointLoadCantilever(nels, sizes, E, ν, force)
 
         # Test getcloaddict - returns a dict with load info
         cload_dict = getcloaddict(problem)
@@ -228,7 +228,7 @@ end
     end
 
     @testset "getfacesets default implementation" begin
-        problem = PointLoadCantilever(Val{:Linear}, nels, sizes, E, ν, force)
+        problem = PointLoadCantilever(nels, sizes, E, ν, force)
 
         # Test getfacesets
         facesets = getfacesets(problem)
@@ -243,7 +243,7 @@ end
         @test isdefined(TopOptProblems, :MultiLoad)
 
         # Create a basic problem
-        problem = PointLoadCantilever(Val{:Linear}, nels, sizes, E, ν, force)
+        problem = PointLoadCantilever(nels, sizes, E, ν, force)
 
         # Create MultiLoad using load rules constructor with explicit positions
         # This bypasses the buggy generate_random_loads function
@@ -265,7 +265,7 @@ end
     end
 
     @testset "generate_random_loads" begin
-        problem = PointLoadCantilever(Val{:Linear}, nels, sizes, E, ν, force)
+        problem = PointLoadCantilever(nels, sizes, E, ν, force)
 
         # Test generating random loads with a distribution
         nloads = 5
@@ -294,7 +294,7 @@ end
 
     @testset "Integration test: Full multiload workflow" begin
         # Create a problem
-        problem = PointLoadCantilever(Val{:Linear}, nels, sizes, E, ν, force)
+        problem = PointLoadCantilever(nels, sizes, E, ν, force)
 
         # Create load rules for specific positions
         f1 = RandomMagnitudeFun([0.0, -1.0], Uniform(0.5, 1.5))

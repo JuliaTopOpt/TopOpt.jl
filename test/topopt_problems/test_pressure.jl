@@ -11,7 +11,7 @@ import TopOpt.TopOptProblems: make_Kes_and_fes
 
 @testset "Pressure boundary conditions (pressuredict)" begin
     # TieBeam supports pressure loading
-    problem = TieBeam(Val{:Linear}, Float64; refine=1, force=1.0, E=1.0, ν=0.3)
+    problem = TieBeam(Float64; refine=1, force=1.0, E=1.0, ν=0.3)
 
     # Test getpressuredict
     pd = getpressuredict(problem)
@@ -31,7 +31,7 @@ import TopOpt.TopOptProblems: make_Kes_and_fes
     @test TopOpt.TopOptProblems.getfacesets(problem) === getdh(problem).grid.facetsets
 
     # Create another problem with different force value
-    problem2 = TieBeam(Val{:Linear}, Float64; refine=2, force=5.0)
+    problem2 = TieBeam(Float64; refine=2, force=5.0)
     pd2 = getpressuredict(problem2)
     @test pd2["rightload"] == 10.0  # 2 * force
     @test pd2["bottomload"] == -5.0  # -force
@@ -41,16 +41,16 @@ import TopOpt.TopOptProblems: make_Kes_and_fes
     # Must have even number of elements along y and z axes
     nels = (10, 6)
     sizes = (1.0, 1.0)
-    cantilever = PointLoadCantilever(Val{:Linear}, nels, sizes, 1.0, 0.3, 1.0)
+    cantilever = PointLoadCantilever(nels, sizes, 1.0, 0.3, 1.0)
     @test getpressuredict(cantilever) == Dict{String,Float64}()
 
     # HalfMBB doesn't support pressure - uses concentrated loads
     # Must have even number of elements along y and z axes
-    half_mbb = HalfMBB(Val{:Linear}, (10, 6), (1.0, 1.0), 1.0, 0.3, 1.0)
+    half_mbb = HalfMBB((10, 6), (1.0, 1.0), 1.0, 0.3, 1.0)
     @test getpressuredict(half_mbb) == Dict{String,Float64}()
 
     # Test with quadratic elements
-    problem_quad = TieBeam(Val{:Quadratic}, Float64; refine=1, force=3.0)
+    problem_quad = TieBeam(Float64; celltype=:Quadratic, refine=1, force=3.0)
     pd_quad = getpressuredict(problem_quad)
     @test pd_quad["rightload"] == 6.0
     @test pd_quad["bottomload"] == -3.0
@@ -58,7 +58,7 @@ end
 
 @testset "Pressure BC integration with FEA" begin
     # Create TieBeam problem with pressure loading
-    problem = TieBeam(Val{:Linear}, Float64; refine=1, force=1.0)
+    problem = TieBeam(Float64; refine=1, force=1.0)
 
     # Test integration with make_Kes_and_fes
     Kes, weights, dloads, cellvalues, facevalues = make_Kes_and_fes(problem, 2)
@@ -81,7 +81,7 @@ end
     # Positive pressure should act as traction pointing INTO the domain
     # Negative pressure (suction) points outward
 
-    problem = TieBeam(Val{:Linear}, Float64; refine=1, force=1.0)
+    problem = TieBeam(Float64; refine=1, force=1.0)
     pd = getpressuredict(problem)
 
     # rightload: positive pressure on right face (acts leftward, into domain)
@@ -94,7 +94,7 @@ end
 
 @testset "Pressure loop - _make_dloads implementation" begin
     # Create problem and get FEA components
-    problem = TieBeam(Val{:Linear}, Float64; refine=2, force=2.0)
+    problem = TieBeam(Float64; refine=2, force=2.0)
 
     # Get FEA components
     Kes, weights, dloads, cellvalues, facevalues = make_Kes_and_fes(problem, 2)
@@ -120,7 +120,7 @@ end
 
 @testset "Pressure loop - quadrature integration" begin
     # Test that pressure is integrated correctly over faces
-    problem = TieBeam(Val{:Linear}, Float64; refine=1, force=1.0)
+    problem = TieBeam(Float64; refine=1, force=1.0)
 
     # Verify facesets exist via problem's getfacesets
     fs = TopOpt.TopOptProblems.getfacesets(problem)
@@ -136,7 +136,7 @@ end
 end
 
 @testset "Pressure loop - boundary validation" begin
-    problem = TieBeam(Val{:Linear}, Float64; refine=1, force=1.0)
+    problem = TieBeam(Float64; refine=1, force=1.0)
 
     # This should run without error - validates boundary faces
     Kes, weights, dloads, cellvalues, facevalues = make_Kes_and_fes(problem, 2)
@@ -158,7 +158,7 @@ end
     # Must have even number of elements along y and z axes
     nels = (20, 10)
     sizes = (1.0, 1.0)
-    cantilever = PointLoadCantilever(Val{:Linear}, nels, sizes, 1.0, 0.3, 1.0)
+    cantilever = PointLoadCantilever(nels, sizes, 1.0, 0.3, 1.0)
 
     # Should have concentrated loads, not pressure
     cloads = getcloaddict(cantilever)
@@ -166,7 +166,7 @@ end
     @test isempty(getpressuredict(cantilever))  # No pressure
 
     # TieBeam uses pressure (distributed loads)
-    tie_beam = TieBeam(Val{:Linear}, Float64; refine=1, force=1.0)
+    tie_beam = TieBeam(Float64; refine=1, force=1.0)
 
     # Should have pressure, not concentrated loads
     @test !isempty(getpressuredict(tie_beam))  # Has pressure
@@ -175,7 +175,7 @@ end
 
 @testset "Pressure with different refine levels" begin
     for refine in 1:3
-        problem = TieBeam(Val{:Linear}, Float64; refine=refine, force=1.0)
+        problem = TieBeam(Float64; refine=refine, force=1.0)
 
         # Verify problem is created successfully
         @test getpressuredict(problem)["rightload"] == 2.0
@@ -188,7 +188,7 @@ end
 
 @testset "Pressure compatibility with multiload" begin
     # Test that pressure works with MultiLoad wrapper
-    problem = TieBeam(Val{:Linear}, Float64; refine=1, force=2.0)
+    problem = TieBeam(Float64; refine=1, force=2.0)
     nloads = 2
 
     # Create multiload problem - correct API is MultiLoad(problem, nloads)

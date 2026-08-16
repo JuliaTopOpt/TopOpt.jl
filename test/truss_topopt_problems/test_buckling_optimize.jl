@@ -24,7 +24,7 @@ gm_ins_dir = joinpath(@__DIR__, "instances", "ground_meshes");
 #     ndim, nnodes, ncells = length(node_points[1]), length(node_points), length(elements)
 #     loads = load_cases["0"]
 
-#     problem = TrussProblem(Val{:Linear}, node_points, elements, loads, fixities, mats, crossecs);
+#     problem = TrussProblem(node_points, elements, loads, fixities, mats, crossecs);
 
 #     xmin = 0.0001 # minimum density
 #     p = 4.0 # penalty
@@ -96,9 +96,7 @@ gm_ins_dir = joinpath(@__DIR__, "instances", "ground_meshes");
     ndim, nnodes, ncells = length(node_points[1]), length(node_points), length(elements)
     loads = load_cases["0"]
 
-    problem = TrussProblem(
-        Val{:Linear}, node_points, elements, loads, fixities, mats, crossecs
-    )
+    problem = TrussProblem(node_points, elements, loads, fixities, mats, crossecs)
 
     xmin = 0.0001 # minimum density
     p = 1.0 # penalty

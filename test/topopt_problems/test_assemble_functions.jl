@@ -17,7 +17,7 @@ using Ferrite
 
     # Helper function to create a simple test problem
     function create_simple_problem(; nels=(4, 2), sizes=(1.0, 1.0), E=1.0, ν=0.3, force=1.0)
-        return PointLoadCantilever(Val{:Linear}, nels, sizes, E, ν, force)
+        return PointLoadCantilever(nels, sizes, E, ν, force)
     end
 
     # ============================================
@@ -165,7 +165,7 @@ using Ferrite
             # The problem type supports Float32 but Ferrite's generate_grid doesn't convert properly
             @test_skip begin
                 problem_f32 = PointLoadCantilever(
-                    Val{:Linear}, (4, 2), (1.0f0, 1.0f0), 1.0f0, 0.3f0, 1.0f0
+                    (4, 2), (1.0f0, 1.0f0), 1.0f0, 0.3f0, 1.0f0
                 )
                 elementinfo_f32 = ElementFEAInfo(problem_f32, 2, Val{:Static})
                 ncells_f32 = getncells(problem_f32.ch.dh.grid)
@@ -212,7 +212,7 @@ using Ferrite
     # ============================================
     @testset "Different problem types" begin
         @testset "HalfMBB" begin
-            problem = HalfMBB(Val{:Linear}, (4, 2), (1.0, 1.0), 1.0, 0.3, 1.0)
+            problem = HalfMBB((4, 2), (1.0, 1.0), 1.0, 0.3, 1.0)
             elementinfo = ElementFEAInfo(problem, 2, Val{:Static})
             ncells = getncells(problem.ch.dh.grid)
 
@@ -226,7 +226,6 @@ using Ferrite
 
         @testset "LBeam" begin
             problem = LBeam(
-                Val{:Linear},
                 Float64;
                 length=10,
                 height=10,

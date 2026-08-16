@@ -14,7 +14,7 @@ Random.seed!(42)
         # SIMP optimization using continuation with MMA
         # Based on the approach in csimp.jl
         nels = (20, 10)
-        problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
+        problem = PointLoadCantilever(nels, (1.0, 1.0), E, ν, force)
         solver = FEASolver(DirectSolver, problem; xmin=0.001, penalty=PowerPenaltyFun(1.0))
 
         # Set up optimization
@@ -57,7 +57,7 @@ Random.seed!(42)
     @testset "Filtered sensitivity workflow" begin
         # Test that filtering produces smooth topologies
         nels = (16, 8)
-        problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
+        problem = PointLoadCantilever(nels, (1.0, 1.0), E, ν, force)
         solver = FEASolver(DirectSolver, problem; xmin=0.001)
 
         # Create filtered compliance
@@ -81,7 +81,7 @@ Random.seed!(42)
     @testset "Multi-load optimization workflow" begin
         # Complete multi-load mean compliance optimization
         nels = (12, 6)
-        base_problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
+        base_problem = PointLoadCantilever(nels, (1.0, 1.0), E, ν, force)
 
         # Create multiple load cases
         nloads = 3
@@ -130,7 +130,7 @@ Random.seed!(42)
         heatflux = Dict{String,Float64}("top" => 1.0)
 
         problem = HeatConductionProblem(
-            Val{:Linear}, nels, sizes, k; Tleft=0.0, Tright=0.0, heatflux=heatflux
+            nels, sizes, k; Tleft=0.0, Tright=0.0, heatflux=heatflux
         )
 
         solver = FEASolver(DirectSolver, problem; xmin=0.001, penalty=PowerPenaltyFun(2.0))
@@ -161,7 +161,7 @@ Random.seed!(42)
     @testset "BESO + DensityFilterFun integration" begin
         # BESO with filtering
         nels = (12, 6)
-        problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
+        problem = PointLoadCantilever(nels, (1.0, 1.0), E, ν, force)
         solver = FEASolver(DirectSolver, problem; xmin=0.001)
 
         comp = ComplianceFun(solver)
@@ -185,7 +185,7 @@ Random.seed!(42)
     @testset "GESO + DensityFilterFun integration" begin
         # GESO with filtering
         nels = (10, 4)
-        problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
+        problem = PointLoadCantilever(nels, (1.0, 1.0), E, ν, force)
         solver = FEASolver(DirectSolver, problem; xmin=0.001)
 
         comp = ComplianceFun(solver)
@@ -206,10 +206,10 @@ Random.seed!(42)
         problems = [
             (
                 "PointLoadCantilever",
-                () -> PointLoadCantilever(Val{:Linear}, (8, 4), (1.0, 1.0), E, ν, force),
+                () -> PointLoadCantilever((8, 4), (1.0, 1.0), E, ν, force),
             ),
-            ("HalfMBB", () -> HalfMBB(Val{:Linear}, (8, 4), (1.0, 1.0), E, ν, force)),
-            ("LBeam", () -> LBeam(Val{:Linear}, Float64; force=force)),
+            ("HalfMBB", () -> HalfMBB((8, 4), (1.0, 1.0), E, ν, force)),
+            ("LBeam", () -> LBeam(Float64; force=force)),
         ]
 
         for (name, prob_fn) in problems
@@ -233,7 +233,7 @@ Random.seed!(42)
     @testset "Solver type consistency" begin
         # Different solvers should give similar results
         nels = (8, 4)
-        problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
+        problem = PointLoadCantilever(nels, (1.0, 1.0), E, ν, force)
 
         results = Dict()
 

@@ -15,8 +15,8 @@ x0 = fill(1.0, prod(problem_size)) # initial design
 p = 4.0 # penalty
 compliance_threshold = 800 # maximum compliance
 
-problem = PointLoadCantilever(Val{:Linear}, problem_size, (1.0, 1.0), E, v, f)
-#problem = HalfMBB(Val{:Linear}, problem_size, (1.0, 1.0), E, v, f)
+problem = PointLoadCantilever(problem_size, (1.0, 1.0), E, v, f)
+#problem = HalfMBB(problem_size, (1.0, 1.0), E, v, f)
 
 solver = FEASolver(DirectSolver, problem; xmin=xmin)
 

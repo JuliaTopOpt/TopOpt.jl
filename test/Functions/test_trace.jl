@@ -309,7 +309,7 @@ end
         force = 1.0
         nels = (6, 4)
 
-        base_problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
+        base_problem = PointLoadCantilever(nels, (1.0, 1.0), E, ν, force)
 
         # Create a simple fixed load pattern at known dofs
         nloads = 2
@@ -369,7 +369,7 @@ end
         force = 1.0
         nels = (4, 4)
 
-        base_problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
+        base_problem = PointLoadCantilever(nels, (1.0, 1.0), E, ν, force)
 
         nloads = 2
         ndofs = Ferrite.ndofs(base_problem.ch.dh)

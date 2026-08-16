@@ -22,7 +22,7 @@ and [CookMalkusPlesha1989](@cite) §13 for the geometric stiffness matrix.
 function get_Kσs(
     sp::StiffnessTopOptProblem{xdim,TT},
     u_dofs,
-    cellvalues,
+    cellvalues::Ferrite.CellValues,
     vars=ones(TT, getncells(sp.ch.dh.grid)),
     penalty=PowerPenaltyFun{TT}(1),
     xmin=TT(1//1000),

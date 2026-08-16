@@ -8,7 +8,7 @@ using Ferrite: getncells
 
     @testset "GESO Construction" begin
         nels = (20, 10)
-        problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
+        problem = PointLoadCantilever(nels, (1.0, 1.0), E, ν, force)
         solver = FEASolver(DirectSolver, problem; xmin=0.001)
         comp = ComplianceFun(solver)
         vol = VolumeFun(solver)
@@ -36,7 +36,7 @@ using Ferrite: getncells
 
     @testset "GESO Result Structure" begin
         nels = (10, 4)
-        problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
+        problem = PointLoadCantilever(nels, (1.0, 1.0), E, ν, force)
         solver = FEASolver(DirectSolver, problem; xmin=0.001)
         comp = ComplianceFun(solver)
         vol = VolumeFun(solver)
@@ -58,7 +58,7 @@ using Ferrite: getncells
 
     @testset "GESO Convergence" begin
         nels = (10, 4)
-        problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
+        problem = PointLoadCantilever(nels, (1.0, 1.0), E, ν, force)
         solver = FEASolver(DirectSolver, problem; xmin=0.001)
         comp = ComplianceFun(solver)
         vol = VolumeFun(solver)
@@ -78,7 +78,7 @@ using Ferrite: getncells
 
     @testset "GESO Topology Validity" begin
         nels = (8, 4)
-        problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
+        problem = PointLoadCantilever(nels, (1.0, 1.0), E, ν, force)
         solver = FEASolver(DirectSolver, problem; xmin=0.001)
         comp = ComplianceFun(solver)
         vol = VolumeFun(solver)
@@ -100,7 +100,7 @@ using Ferrite: getncells
 
     @testset "GESO with different volume fractions" begin
         nels = (10, 4)
-        problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
+        problem = PointLoadCantilever(nels, (1.0, 1.0), E, ν, force)
 
         for V_target in [0.3, 0.5, 0.7]
             solver = FEASolver(DirectSolver, problem; xmin=0.001)
@@ -120,7 +120,7 @@ using Ferrite: getncells
 
     @testset "GESO with LBeam problem" begin
         # Test GESO with a different problem type
-        problem = LBeam(Val{:Linear}, Float64; force=force)
+        problem = LBeam(Float64; force=force)
         solver = FEASolver(DirectSolver, problem; xmin=0.001)
         comp = ComplianceFun(solver)
         vol = VolumeFun(solver)
@@ -136,7 +136,7 @@ using Ferrite: getncells
 
     @testset "GESO setpenalty!" begin
         nels = (10, 4)
-        problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
+        problem = PointLoadCantilever(nels, (1.0, 1.0), E, ν, force)
         solver = FEASolver(DirectSolver, problem; xmin=0.001, penalty=PowerPenaltyFun(1.0))
         comp = ComplianceFun(solver)
         vol = VolumeFun(solver)
@@ -156,7 +156,7 @@ using Ferrite: getncells
 
     @testset "GESO with HalfMBB" begin
         nels = (10, 4)
-        problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
+        problem = HalfMBB(nels, (1.0, 1.0), E, ν, force)
         solver = FEASolver(DirectSolver, problem; xmin=0.001)
         comp = ComplianceFun(solver)
         vol = VolumeFun(solver)
@@ -172,7 +172,7 @@ using Ferrite: getncells
 
     @testset "GESO Result fields consistency" begin
         nels = (8, 4)
-        problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
+        problem = PointLoadCantilever(nels, (1.0, 1.0), E, ν, force)
         solver = FEASolver(DirectSolver, problem; xmin=0.001)
         comp = ComplianceFun(solver)
         vol = VolumeFun(solver)
@@ -200,7 +200,7 @@ using Ferrite: getncells
     @testset "GESO internal functions" begin
         # Test internal helper functions if accessible
         nels = (10, 4)
-        problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
+        problem = PointLoadCantilever(nels, (1.0, 1.0), E, ν, force)
         solver = FEASolver(DirectSolver, problem; xmin=0.001)
         comp = ComplianceFun(solver)
         vol = VolumeFun(solver)
@@ -228,7 +228,7 @@ using Ferrite: getncells
 
     @testset "GESO show methods" begin
         nels = (10, 4)
-        problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
+        problem = PointLoadCantilever(nels, (1.0, 1.0), E, ν, force)
         solver = FEASolver(DirectSolver, problem; xmin=0.001)
         comp = ComplianceFun(solver)
         vol = VolumeFun(solver)
@@ -256,7 +256,7 @@ using Ferrite: getncells
 
     @testset "GESO with black elements (fixed solid)" begin
         nels = (10, 4)
-        problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
+        problem = PointLoadCantilever(nels, (1.0, 1.0), E, ν, force)
         solver = FEASolver(DirectSolver, problem; xmin=0.001)
         comp = ComplianceFun(solver)
         vol = VolumeFun(solver)
@@ -278,7 +278,7 @@ using Ferrite: getncells
 
     @testset "GESO with white elements (fixed void)" begin
         nels = (10, 4)
-        problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
+        problem = PointLoadCantilever(nels, (1.0, 1.0), E, ν, force)
         solver = FEASolver(DirectSolver, problem; xmin=0.001)
         comp = ComplianceFun(solver)
         vol = VolumeFun(solver)
@@ -300,7 +300,7 @@ using Ferrite: getncells
 
     @testset "GESO with mixed black and white elements" begin
         nels = (12, 6)
-        problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
+        problem = PointLoadCantilever(nels, (1.0, 1.0), E, ν, force)
         solver = FEASolver(DirectSolver, problem; xmin=0.001)
         comp = ComplianceFun(solver)
         vol = VolumeFun(solver)
@@ -329,7 +329,7 @@ using Ferrite: getncells
 
     @testset "GESO black/white element validation" begin
         nels = (8, 4)
-        problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
+        problem = PointLoadCantilever(nels, (1.0, 1.0), E, ν, force)
         solver = FEASolver(DirectSolver, problem; xmin=0.001)
         comp = ComplianceFun(solver)
         vol = VolumeFun(solver)
@@ -356,7 +356,7 @@ using Ferrite: getncells
 
     @testset "GESO with black elements - different volume fractions" begin
         nels = (10, 4)
-        problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
+        problem = PointLoadCantilever(nels, (1.0, 1.0), E, ν, force)
 
         nel = getncells(problem)
         black = falses(nel)
@@ -378,7 +378,7 @@ using Ferrite: getncells
     end
 
     @testset "GESO with black elements on LBeam" begin
-        problem = LBeam(Val{:Linear}, Float64; force=force)
+        problem = LBeam(Float64; force=force)
         solver = FEASolver(DirectSolver, problem; xmin=0.001)
         comp = ComplianceFun(solver)
         vol = VolumeFun(solver)

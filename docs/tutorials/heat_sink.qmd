@@ -46,7 +46,7 @@ V = 0.5                 # volume fraction constraint
 # Tleft=100 and Tright=0 fix temperatures at left and right edges
 # (heat-sink fins), while flux enters from the top
 problem = HeatConductionProblem(
-    Val{:Linear}, nels, sizes, k;
+    nels, sizes, k;
     Tleft=100.0, Tright=0.0, heatflux=heatflux
 )
 

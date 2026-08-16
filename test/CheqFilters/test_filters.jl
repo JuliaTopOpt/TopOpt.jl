@@ -7,7 +7,7 @@ using NonconvexCore: getdim
 @testset "Filter Tests" begin
     @testset "DensityFilterFun Construction" begin
         nels = (5, 5)
-        problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
+        problem = HalfMBB(nels, (1.0, 1.0), 1.0, 0.3, 1.0)
 
         solver = FEASolver(DirectSolver, problem; xmin=0.001, penalty=PowerPenaltyFun(3.0))
 
@@ -19,7 +19,7 @@ using NonconvexCore: getdim
     end
 
     nels = (5, 5)
-    problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
+    problem = HalfMBB(nels, (1.0, 1.0), 1.0, 0.3, 1.0)
     solver = FEASolver(DirectSolver, problem; xmin=0.001, penalty=PowerPenaltyFun(3.0))
     rmin = 2.0
 
@@ -75,7 +75,7 @@ using NonconvexCore: getdim
 
     @testset "Filter radius effects" begin
         nels = (10, 10)
-        problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
+        problem = HalfMBB(nels, (1.0, 1.0), 1.0, 0.3, 1.0)
 
         solver = FEASolver(DirectSolver, problem; xmin=0.001, penalty=PowerPenaltyFun(3.0))
 
@@ -97,7 +97,7 @@ using NonconvexCore: getdim
 
     @testset "Filter with uniform density" begin
         nels = (5, 5)
-        problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
+        problem = HalfMBB(nels, (1.0, 1.0), 1.0, 0.3, 1.0)
 
         solver = FEASolver(DirectSolver, problem; xmin=0.001, penalty=PowerPenaltyFun(3.0))
 
@@ -114,7 +114,7 @@ using NonconvexCore: getdim
 
     @testset "Filter gradient check" begin
         nels = (3, 3)
-        problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
+        problem = HalfMBB(nels, (1.0, 1.0), 1.0, 0.3, 1.0)
 
         solver = FEASolver(DirectSolver, problem; xmin=0.001, penalty=PowerPenaltyFun(3.0))
 
@@ -131,7 +131,7 @@ using NonconvexCore: getdim
 
     @testset "DensityFilterFun values and gradients with transpose" begin
         nels = (5, 5)
-        problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
+        problem = HalfMBB(nels, (1.0, 1.0), 1.0, 0.3, 1.0)
 
         solver = FEASolver(DirectSolver, problem; xmin=0.001, penalty=PowerPenaltyFun(3.0))
 
@@ -171,7 +171,7 @@ using NonconvexCore: getdim
 
     @testset "SensFilterFun only filters gradients" begin
         nels = (5, 5)
-        problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
+        problem = HalfMBB(nels, (1.0, 1.0), 1.0, 0.3, 1.0)
 
         solver = FEASolver(DirectSolver, problem; xmin=0.001, penalty=PowerPenaltyFun(3.0))
 
@@ -217,7 +217,7 @@ using NonconvexCore: getdim
 
     @testset "Combined filter with sum function" begin
         nels = (5, 5)
-        problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
+        problem = HalfMBB(nels, (1.0, 1.0), 1.0, 0.3, 1.0)
 
         solver = FEASolver(DirectSolver, problem; xmin=0.001, penalty=PowerPenaltyFun(3.0))
 
@@ -268,7 +268,7 @@ using NonconvexCore: getdim
 
     @testset "Gradient filtering comparison" begin
         nels = (5, 5)
-        problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
+        problem = HalfMBB(nels, (1.0, 1.0), 1.0, 0.3, 1.0)
 
         solver = FEASolver(DirectSolver, problem; xmin=0.001, penalty=PowerPenaltyFun(3.0))
 
@@ -308,7 +308,7 @@ using NonconvexCore: getdim
 
     @testset "Multiple filters on same grid" begin
         nels = (5, 5)
-        problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
+        problem = HalfMBB(nels, (1.0, 1.0), 1.0, 0.3, 1.0)
 
         solver = FEASolver(DirectSolver, problem; xmin=0.001, penalty=PowerPenaltyFun(3.0))
 
@@ -328,7 +328,7 @@ using NonconvexCore: getdim
 
     @testset "ProjectedDensityFilterFun construction" begin
         nels = (5, 5)
-        problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
+        problem = HalfMBB(nels, (1.0, 1.0), 1.0, 0.3, 1.0)
 
         solver = FEASolver(DirectSolver, problem; xmin=0.001, penalty=PowerPenaltyFun(3.0))
 
@@ -371,7 +371,7 @@ using NonconvexCore: getdim
 
     @testset "ProjectedDensityFilterFun getdim" begin
         nels = (5, 5)
-        problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
+        problem = HalfMBB(nels, (1.0, 1.0), 1.0, 0.3, 1.0)
 
         solver = FEASolver(DirectSolver, problem; xmin=0.001, penalty=PowerPenaltyFun(3.0))
 
@@ -405,7 +405,7 @@ using NonconvexCore: getdim
 
     @testset "ProjectedDensityFilterFun application" begin
         nels = (5, 5)
-        problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
+        problem = HalfMBB(nels, (1.0, 1.0), 1.0, 0.3, 1.0)
 
         solver = FEASolver(DirectSolver, problem; xmin=0.001, penalty=PowerPenaltyFun(3.0))
 
@@ -466,7 +466,7 @@ using NonconvexCore: getdim
 
     @testset "ProjectedDensityFilterFun with uniform density" begin
         nels = (5, 5)
-        problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
+        problem = HalfMBB(nels, (1.0, 1.0), 1.0, 0.3, 1.0)
 
         solver = FEASolver(DirectSolver, problem; xmin=0.001, penalty=PowerPenaltyFun(3.0))
 
@@ -496,7 +496,7 @@ using NonconvexCore: getdim
 
     @testset "ProjectedDensityFilterFun output type" begin
         nels = (5, 5)
-        problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
+        problem = HalfMBB(nels, (1.0, 1.0), 1.0, 0.3, 1.0)
 
         solver = FEASolver(DirectSolver, problem; xmin=0.001, penalty=PowerPenaltyFun(3.0))
 

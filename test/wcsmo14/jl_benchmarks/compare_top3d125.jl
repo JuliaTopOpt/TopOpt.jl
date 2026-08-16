@@ -27,9 +27,7 @@ rmin = sqrt(3); # density filter radius
 
 nels = (48, 24, 24)
 sizes = (1.0, 1.0, 1.0)
-@timeit to "problem def" problem = NewPointLoadCantilever(
-    Val{:Linear}, nels, sizes, E, v, f
-);
+@timeit to "problem def" problem = NewPointLoadCantilever(nels, sizes, E, v, f);
 
 # Define a finite element solver
 @timeit to "penalty def" penalty = PowerPenaltyFun(3.0)

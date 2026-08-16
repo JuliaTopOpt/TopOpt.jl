@@ -11,7 +11,7 @@ const Preconditioners = TopOpt.FEA.Preconditioners
         E = 1.0
         ν = 0.3
         force = -1.0
-        problem = PointLoadCantilever(Val{:Linear}, nels, sizes, E, ν, force)
+        problem = PointLoadCantilever(nels, sizes, E, ν, force)
 
         # Create a diagonal preconditioner (all ones on diagonal - acts like identity)
         # but is NOT === identity
@@ -60,7 +60,7 @@ const Preconditioners = TopOpt.FEA.Preconditioners
         E = 1.0
         ν = 0.3
         force = -1.0
-        problem = PointLoadCantilever(Val{:Linear}, nels, sizes, E, ν, force)
+        problem = PointLoadCantilever(nels, sizes, E, ν, force)
 
         # Create a diagonal preconditioner (all ones on diagonal - acts like identity)
         # but is NOT === identity
@@ -109,7 +109,7 @@ const Preconditioners = TopOpt.FEA.Preconditioners
         E = 1.0
         ν = 0.3
         force = -1.0
-        problem = PointLoadCantilever(Val{:Linear}, nels, sizes, E, ν, force)
+        problem = PointLoadCantilever(nels, sizes, E, ν, force)
 
         # Create a diagonal preconditioner with slightly varying diagonal values
         # This exercises the preconditioner update code path
@@ -150,7 +150,7 @@ const Preconditioners = TopOpt.FEA.Preconditioners
         E = 1.0
         ν = 0.3
         force = -1.0
-        problem = PointLoadCantilever(Val{:Linear}, nels, sizes, E, ν, force)
+        problem = PointLoadCantilever(nels, sizes, E, ν, force)
 
         # Direct solver (exact solution)
         solver_direct = FEASolver(DirectSolver, problem)

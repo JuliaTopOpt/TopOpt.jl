@@ -52,7 +52,7 @@ using TopOpt
 
 # Problem setup (2D)
 nels = (60, 20)
-problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
+problem = PointLoadCantilever(nels, (1.0, 1.0), 1.0, 0.3, 1.0)
 
 # FEA solver with a power-law penalty
 solver = FEASolver(DirectSolver, problem; xmin=1e-6, penalty=PowerPenaltyFun(3.0))

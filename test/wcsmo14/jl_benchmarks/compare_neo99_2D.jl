@@ -23,7 +23,7 @@ rmin = 2.0; # density filter radius
 
 nels = (300, 100)
 sizes = (1.0, 1.0)
-@timeit to "problem def" problem = HalfMBB(Val{:Linear}, nels, sizes, E, v, f);
+@timeit to "problem def" problem = HalfMBB(nels, sizes, E, v, f);
 
 # Define a finite element solver
 @timeit to "penalty def" penalty = PowerPenaltyFun(3.0)

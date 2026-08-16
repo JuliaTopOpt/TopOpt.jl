@@ -31,11 +31,10 @@ E = 1.0     # Young's modulus in MPa
 f = 1.0     # downward force in N (negative is upward)
 nels = (160, 40)        # 2D: 160×40 elements
 elsizes = (1.0, 1.0)    # element size in mm
-order = :Linear         # shape function order
-problem_2d = PointLoadCantilever(Val{order}, nels, elsizes, E, ν, f)
+problem_2d = PointLoadCantilever(nels, elsizes, E, ν, f; celltype=:Linear)
 ```
 
-The `Val{order}` specifies shape function order:
+The `celltype` keyword specifies shape function order:
 
 - `:Linear` — bilinear (2D) or trilinear (3D) elements
 - `:Quadratic` — biquadratic (2D) or triquadratic (3D) elements
@@ -46,7 +45,7 @@ For 3D problems:
 #| output: false
 nels_3d = (160, 40, 40)     # 3D: 160×40×40 elements
 elsizes_3d = (1.0, 1.0, 2.0) # element size in mm
-problem_3d = PointLoadCantilever(Val{order}, nels_3d, elsizes_3d, E, ν, f)
+problem_3d = PointLoadCantilever(nels_3d, elsizes_3d, E, ν, f; celltype=:Linear)
 ```
 
 ## 2D and 3D Half MBB Beam
@@ -58,8 +57,7 @@ with a central point load. Only half the beam is modeled (symmetry):
 #| output: false
 nels = (60, 20)
 elsizes = (1.0, 1.0)
-order = :Quadratic
-problem = HalfMBB(Val{order}, nels, elsizes, E, ν, f)
+problem = HalfMBB(nels, elsizes, E, ν, f; celltype=:Quadratic)
 ```
 
 Boundary conditions:
@@ -76,9 +74,8 @@ The L-beam shows stress concentration effects at the re-entrant corner:
 
 ```{julia}
 #| output: false
-order = :Quadratic
 problem = LBeam(
-    Val{order};
+    ; celltype=:Quadratic,
     length=100,
     height=100,
     upperslab=50,
@@ -114,8 +111,7 @@ The tie-beam has distributed loading on specified elements:
 
 ```{julia}
 #| output: false
-order = :Quadratic
-problem = TieBeam(Val{order})
+problem = TieBeam(; celltype=:Quadratic)
 ```
 
 - Fixed supports at both ends

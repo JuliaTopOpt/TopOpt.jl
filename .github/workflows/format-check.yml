@@ -25,6 +25,8 @@ jobs:
         run: |
           julia -e '
             using JuliaFormatter
+            ver = string(pkgversion(JuliaFormatter))
+            println("JuliaFormatter version: ", ver)
             bad = String[]
             for (root, dirs, files) in walkdir(".")
               root == joinpath(".", ".git") && continue
@@ -48,10 +50,12 @@ jobs:
                 "",
                 join(["- `" * p * "`" for p in bad], "\n"),
                 "",
-                "To fix, run the following from the repository root:",
+                "To fix, run the following from the repository root using " *
+                "JuliaFormatter v$(ver) (the exact version this check uses):",
                 "",
                 "```bash",
                 "cd <your-local-clone>",
+                "julia -e '\''import Pkg; Pkg.add(PackageSpec(name=\"JuliaFormatter\", version=\"$(ver)\"))'\''",
                 "julia -e '\''using JuliaFormatter; format(\".\", BlueStyle())'\''",
                 "```",
                 "",
@@ -59,7 +63,7 @@ jobs:
               ], "\n"))
               exit(1)
             else
-              write("format_comment.md", "### Formatting check passed\n\nThank you for contributing! All files are correctly formatted.")
+              write("format_comment.md", "### Formatting check passed\n\nThank you for contributing! All files are correctly formatted (JuliaFormatter v$(ver), BlueStyle).")
             end
           '
 

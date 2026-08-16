@@ -7,7 +7,7 @@ using TopOpt, Test, LinearAlgebra, Ferrite
         E = 1.0
         ν = 0.3
         force = -1.0
-        problem = PointLoadCantilever(Val{:Linear}, nels, sizes, E, ν, force)
+        problem = PointLoadCantilever(nels, sizes, E, ν, force)
 
         # Create different solvers
         solver_direct = FEASolver(DirectSolver, problem)
@@ -36,7 +36,7 @@ using TopOpt, Test, LinearAlgebra, Ferrite
         E = 1.0
         ν = 0.3
         force = -1.0
-        problem = PointLoadCantilever(Val{:Linear}, nels, sizes, E, ν, force)
+        problem = PointLoadCantilever(nels, sizes, E, ν, force)
 
         solver_safe = FEASolver(CGAssemblySolver, problem; abstol=1e-7)
         solver_normal = FEASolver(CGAssemblySolver, problem; abstol=1e-7)
@@ -60,7 +60,7 @@ using TopOpt, Test, LinearAlgebra, Ferrite
         E = 1.0
         ν = 0.3
         force = -1.0
-        problem = PointLoadCantilever(Val{:Linear}, nels, sizes, E, ν, force)
+        problem = PointLoadCantilever(nels, sizes, E, ν, force)
 
         # Test multiple RHS with DirectSolver
         num_rhs = 3
@@ -86,7 +86,7 @@ using TopOpt, Test, LinearAlgebra, Ferrite
         E = 1.0
         ν = 0.3
         force = -1.0
-        problem = PointLoadCantilever(Val{:Linear}, nels, sizes, E, ν, force)
+        problem = PointLoadCantilever(nels, sizes, E, ν, force)
 
         # Test that show methods don't error
         solver_direct = FEASolver(DirectSolver, problem)
@@ -110,7 +110,7 @@ using TopOpt, Test, LinearAlgebra, Ferrite
         E = 1.0
         ν = 0.3
         force = -1.0
-        problem = PointLoadCantilever(Val{:Linear}, nels, sizes, E, ν, force)
+        problem = PointLoadCantilever(nels, sizes, E, ν, force)
 
         num_rhs = 3
 
@@ -226,7 +226,7 @@ using TopOpt, Test, LinearAlgebra, Ferrite
             k = 1.0
             heatflux = Dict{String,Float64}("top" => 1.0)
             problem = HeatConductionProblem(
-                Val{:Linear}, nels, sizes, k; Tleft=0.0, Tright=0.0, heatflux=heatflux
+                nels, sizes, k; Tleft=0.0, Tright=0.0, heatflux=heatflux
             )
 
             solver = FEASolver(DirectSolver, problem)
@@ -294,7 +294,7 @@ using TopOpt, Test, LinearAlgebra, Ferrite
         heatflux = Dict{String,Float64}("top" => 1.0)
 
         problem = HeatConductionProblem(
-            Val{:Linear}, nels, sizes, k; Tleft=0.0, Tright=0.0, heatflux=heatflux
+            nels, sizes, k; Tleft=0.0, Tright=0.0, heatflux=heatflux
         )
 
         # Create different solvers for heat transfer
@@ -326,13 +326,7 @@ using TopOpt, Test, LinearAlgebra, Ferrite
         # constructor fails fast on that combination (tested separately).
         nels = (4, 4)
         problem = HeatConductionProblem(
-            Val{:Linear},
-            nels,
-            (1.0, 1.0),
-            1.0;
-            Tleft=100.0,
-            Tright=0.0,
-            heatflux=Dict("top" => 1.0),
+            nels, (1.0, 1.0), 1.0; Tleft=100.0, Tright=0.0, heatflux=Dict("top" => 1.0)
         )
 
         solver_direct = FEASolver(DirectSolver, problem)
@@ -359,24 +353,12 @@ using TopOpt, Test, LinearAlgebra, Ferrite
         # Fail-fast guard: the matrix-free meandiag mismatch would silently
         # corrupt prescribed DOFs, so the constructor throws instead.
         problem = HeatConductionProblem(
-            Val{:Linear},
-            (4, 4),
-            (1.0, 1.0),
-            1.0;
-            Tleft=100.0,
-            Tright=0.0,
-            heatflux=Dict("top" => 1.0),
+            (4, 4), (1.0, 1.0), 1.0; Tleft=100.0, Tright=0.0, heatflux=Dict("top" => 1.0)
         )
         @test_throws ArgumentError FEASolver(CGMatrixFreeSolver, problem)
         # Homogeneous Dirichlet is still supported.
         problem_homog = HeatConductionProblem(
-            Val{:Linear},
-            (4, 4),
-            (1.0, 1.0),
-            1.0;
-            Tleft=0.0,
-            Tright=0.0,
-            heatflux=Dict("top" => 1.0),
+            (4, 4), (1.0, 1.0), 1.0; Tleft=0.0, Tright=0.0, heatflux=Dict("top" => 1.0)
         )
         @test FEASolver(CGMatrixFreeSolver, problem_homog) isa TopOpt.FEA.GenericFEASolver
     end

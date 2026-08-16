@@ -45,7 +45,6 @@ nu = 0.3  # Poisson's ratio
 f = 1.0   # downward force
 
 problem = PointLoadCantilever(
-    Val{:Linear},    # linear elements
     (160, 40),       # 160×40 mesh
     (1.0, 1.0),      # element size
     1.0,             # base Young's modulus

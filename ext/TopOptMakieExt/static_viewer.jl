@@ -231,6 +231,17 @@ function TopOpt._static_visualization(
                     """
                     function initialize_static_view_2d(container) {
                         const legend_entries = $(legend_js);
+                        function live() {
+                            return typeof Bonito !== 'undefined' &&
+                                   Bonito.can_send_to_julia &&
+                                   Bonito.can_send_to_julia();
+                        }
+                        // In an offline export (e.g. `quarto render`) the page
+                        // is already open in a browser and there is no live
+                        // Julia process to re-open, so hide the "Browser" button.
+                        if (!live()) {
+                            container.querySelectorAll('.tv-browser').forEach(b => b.style.display = 'none');
+                        }
                         const save = () => {
                             const canvas = container.querySelector('canvas');
                             if (!canvas) return;
@@ -816,6 +827,13 @@ function TopOpt._static_visualization(
                         return typeof Bonito !== 'undefined' &&
                                Bonito.can_send_to_julia &&
                                Bonito.can_send_to_julia();
+                    }
+
+                    // In an offline export (e.g. `quarto render`) the page is
+                    // already open in a browser and there is no live Julia
+                    // process to re-open, so the "Browser" button is hidden.
+                    if (!live()) {
+                        container.querySelectorAll('.tv-browser').forEach(b => b.style.display = 'none');
                     }
 
                     const sub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];

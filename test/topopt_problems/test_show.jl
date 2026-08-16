@@ -8,7 +8,7 @@ using TopOpt, Test, LinearAlgebra
         E = 1.0
         ν = 0.3
         force = 1.0
-        problem = HalfMBB(Val{:Linear}, nels, sizes, E, ν, force)
+        problem = HalfMBB(nels, sizes, E, ν, force)
 
         io = IOBuffer()
         show(io, MIME("text/plain"), problem)
@@ -22,7 +22,7 @@ using TopOpt, Test, LinearAlgebra
         # Get element matrix from problem using ElementFEAInfo
         nels = (2, 2)
         sizes = (1.0, 1.0)
-        problem = HalfMBB(Val{:Linear}, nels, sizes, 1.0, 0.3, 1.0)
+        problem = HalfMBB(nels, sizes, 1.0, 0.3, 1.0)
 
         einfo = ElementFEAInfo(problem)
         # Kes is wrapped in Symmetric, need to unwrap to get ElementMatrix
@@ -37,7 +37,7 @@ using TopOpt, Test, LinearAlgebra
         # Create a problem to get ElementFEAInfo
         nels = (2, 2)
         sizes = (1.0, 1.0)
-        problem = HalfMBB(Val{:Linear}, nels, sizes, 1.0, 0.3, 1.0)
+        problem = HalfMBB(nels, sizes, 1.0, 0.3, 1.0)
 
         einfo = ElementFEAInfo(problem)
         io = IOBuffer()
@@ -58,7 +58,7 @@ using TopOpt, Test, LinearAlgebra
         # Create a GlobalFEAInfo from a problem
         nels = (2, 2)
         sizes = (1.0, 1.0)
-        problem = HalfMBB(Val{:Linear}, nels, sizes, 1.0, 0.3, 1.0)
+        problem = HalfMBB(nels, sizes, 1.0, 0.3, 1.0)
 
         ginfo = GlobalFEAInfo(problem)
         io = IOBuffer()

@@ -8,7 +8,7 @@ using Ferrite: getncells
 
     @testset "BESO Construction" begin
         nels = (20, 10)
-        problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
+        problem = PointLoadCantilever(nels, (1.0, 1.0), E, ν, force)
         solver = FEASolver(DirectSolver, problem; xmin=0.001)
         comp = ComplianceFun(solver)
         vol = VolumeFun(solver)
@@ -30,7 +30,7 @@ using Ferrite: getncells
 
     @testset "BESO Result Structure" begin
         nels = (10, 4)
-        problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
+        problem = PointLoadCantilever(nels, (1.0, 1.0), E, ν, force)
         solver = FEASolver(DirectSolver, problem; xmin=0.001)
         comp = ComplianceFun(solver)
         vol = VolumeFun(solver)
@@ -52,7 +52,7 @@ using Ferrite: getncells
 
     @testset "BESO Convergence" begin
         nels = (10, 4)
-        problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
+        problem = PointLoadCantilever(nels, (1.0, 1.0), E, ν, force)
         solver = FEASolver(DirectSolver, problem; xmin=0.001)
         comp = ComplianceFun(solver)
         vol = VolumeFun(solver)
@@ -72,7 +72,7 @@ using Ferrite: getncells
 
     @testset "BESO Topology Validity" begin
         nels = (8, 4)
-        problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
+        problem = PointLoadCantilever(nels, (1.0, 1.0), E, ν, force)
         solver = FEASolver(DirectSolver, problem; xmin=0.001)
         comp = ComplianceFun(solver)
         vol = VolumeFun(solver)
@@ -94,7 +94,7 @@ using Ferrite: getncells
 
     @testset "BESO with different volume fractions" begin
         nels = (10, 4)
-        problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
+        problem = PointLoadCantilever(nels, (1.0, 1.0), E, ν, force)
 
         for V_target in [0.3, 0.5, 0.7]
             solver = FEASolver(DirectSolver, problem; xmin=0.001)
@@ -114,7 +114,7 @@ using Ferrite: getncells
 
     @testset "BESO with LBeam problem" begin
         # Test BESO with a different problem type
-        problem = LBeam(Val{:Linear}, Float64; force=force)
+        problem = LBeam(Float64; force=force)
         solver = FEASolver(DirectSolver, problem; xmin=0.001)
         comp = ComplianceFun(solver)
         vol = VolumeFun(solver)
@@ -130,7 +130,7 @@ using Ferrite: getncells
 
     @testset "BESO with HalfMBB" begin
         nels = (10, 4)
-        problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
+        problem = HalfMBB(nels, (1.0, 1.0), E, ν, force)
         solver = FEASolver(DirectSolver, problem; xmin=0.001)
         comp = ComplianceFun(solver)
         vol = VolumeFun(solver)
@@ -146,7 +146,7 @@ using Ferrite: getncells
 
     @testset "BESO Result fields consistency" begin
         nels = (8, 4)
-        problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
+        problem = PointLoadCantilever(nels, (1.0, 1.0), E, ν, force)
         solver = FEASolver(DirectSolver, problem; xmin=0.001)
         comp = ComplianceFun(solver)
         vol = VolumeFun(solver)
@@ -175,7 +175,7 @@ using Ferrite: getncells
         # Reducing material volume increases compliance
         # C(V2) > C(V1) for V2 < V1 (worse performance with less material)
         nels = (16, 8)
-        problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
+        problem = PointLoadCantilever(nels, (1.0, 1.0), E, ν, force)
 
         compliances = Float64[]
         vol_fracs = [0.3, 0.5, 0.7]
@@ -201,7 +201,7 @@ using Ferrite: getncells
 
     @testset "BESO with different filter radii" begin
         nels = (12, 6)
-        problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
+        problem = PointLoadCantilever(nels, (1.0, 1.0), E, ν, force)
 
         for rmin in [1.5, 2.0, 3.0]
             solver = FEASolver(DirectSolver, problem; xmin=0.001)
@@ -221,7 +221,7 @@ using Ferrite: getncells
 
     @testset "BESO setpenalty! functionality" begin
         nels = (10, 4)
-        problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
+        problem = PointLoadCantilever(nels, (1.0, 1.0), E, ν, force)
         solver = FEASolver(DirectSolver, problem; xmin=0.001, penalty=PowerPenaltyFun(1.0))
         comp = ComplianceFun(solver)
         vol = VolumeFun(solver)
@@ -241,7 +241,7 @@ using Ferrite: getncells
 
     @testset "BESO convergence criteria" begin
         nels = (8, 4)
-        problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
+        problem = PointLoadCantilever(nels, (1.0, 1.0), E, ν, force)
         solver = FEASolver(DirectSolver, problem; xmin=0.001)
         comp = ComplianceFun(solver)
         vol = VolumeFun(solver)
@@ -267,7 +267,7 @@ using Ferrite: getncells
 
     @testset "BESO with quadratic elements" begin
         nels = (6, 4)
-        problem = PointLoadCantilever(Val{:Quadratic}, nels, (1.0, 1.0), E, ν, force)
+        problem = PointLoadCantilever(nels, (1.0, 1.0), E, ν, force; celltype=:Quadratic)
         solver = FEASolver(DirectSolver, problem; xmin=0.001)
         comp = ComplianceFun(solver)
         vol = VolumeFun(solver)
@@ -283,7 +283,7 @@ using Ferrite: getncells
 
     @testset "BESO evolutionary rate effects" begin
         nels = (10, 4)
-        problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
+        problem = PointLoadCantilever(nels, (1.0, 1.0), E, ν, force)
 
         # Test with different evolutionary rates
         for er in [0.01, 0.02, 0.05]
@@ -303,7 +303,7 @@ using Ferrite: getncells
 
     @testset "BESO material interpolation powers" begin
         nels = (10, 4)
-        problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
+        problem = PointLoadCantilever(nels, (1.0, 1.0), E, ν, force)
 
         # Test with different penalization powers
         for p in [1.0, 2.0, 3.0]
@@ -323,7 +323,7 @@ using Ferrite: getncells
 
     @testset "BESO initialization with different starting designs" begin
         nels = (10, 4)
-        problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
+        problem = PointLoadCantilever(nels, (1.0, 1.0), E, ν, force)
         solver = FEASolver(DirectSolver, problem; xmin=0.001)
         comp = ComplianceFun(solver)
         vol = VolumeFun(solver)
@@ -355,7 +355,7 @@ using Ferrite: getncells
 
     @testset "BESO volume tracking accuracy" begin
         nels = (10, 4)
-        problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
+        problem = PointLoadCantilever(nels, (1.0, 1.0), E, ν, force)
         solver = FEASolver(DirectSolver, problem; xmin=0.001)
         comp = ComplianceFun(solver)
         vol = VolumeFun(solver)
@@ -378,7 +378,7 @@ using Ferrite: getncells
 
     @testset "BESO with black elements (fixed solid)" begin
         nels = (10, 4)
-        problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
+        problem = PointLoadCantilever(nels, (1.0, 1.0), E, ν, force)
         solver = FEASolver(DirectSolver, problem; xmin=0.001)
         comp = ComplianceFun(solver)
         vol = VolumeFun(solver)
@@ -406,7 +406,7 @@ using Ferrite: getncells
 
     @testset "BESO with white elements (fixed void)" begin
         nels = (10, 4)
-        problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
+        problem = PointLoadCantilever(nels, (1.0, 1.0), E, ν, force)
         solver = FEASolver(DirectSolver, problem; xmin=0.001)
         comp = ComplianceFun(solver)
         vol = VolumeFun(solver)
@@ -434,7 +434,7 @@ using Ferrite: getncells
 
     @testset "BESO with mixed black and white elements" begin
         nels = (12, 6)
-        problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
+        problem = PointLoadCantilever(nels, (1.0, 1.0), E, ν, force)
         solver = FEASolver(DirectSolver, problem; xmin=0.001)
         comp = ComplianceFun(solver)
         vol = VolumeFun(solver)
@@ -474,7 +474,7 @@ using Ferrite: getncells
 
     @testset "BESO black/white element validation" begin
         nels = (8, 4)
-        problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
+        problem = PointLoadCantilever(nels, (1.0, 1.0), E, ν, force)
         solver = FEASolver(DirectSolver, problem; xmin=0.001)
         comp = ComplianceFun(solver)
         vol = VolumeFun(solver)
@@ -502,7 +502,7 @@ using Ferrite: getncells
 
     @testset "BESO with black elements - different volume fractions" begin
         nels = (10, 4)
-        problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
+        problem = PointLoadCantilever(nels, (1.0, 1.0), E, ν, force)
 
         nel = getncells(problem)
         black = falses(nel)
@@ -528,7 +528,7 @@ using Ferrite: getncells
 
     @testset "BESO with black elements on LBeam" begin
         # Test BESO with black elements on a different problem type
-        problem = LBeam(Val{:Linear}, Float64; force=force)
+        problem = LBeam(Float64; force=force)
         solver = FEASolver(DirectSolver, problem; xmin=0.001)
         comp = ComplianceFun(solver)
         vol = VolumeFun(solver)
@@ -552,7 +552,7 @@ using Ferrite: getncells
 
     @testset "BESO show methods" begin
         nels = (10, 4)
-        problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
+        problem = PointLoadCantilever(nels, (1.0, 1.0), E, ν, force)
         solver = FEASolver(DirectSolver, problem; xmin=0.001)
         comp = ComplianceFun(solver)
         vol = VolumeFun(solver)

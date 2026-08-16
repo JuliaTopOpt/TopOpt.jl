@@ -9,9 +9,7 @@ Random.seed!(42)
         joinpath(@__DIR__, "testfile2_compact.json")
     )
     loads = load_cases["0"]
-    problem = TrussProblem(
-        Val{:Linear}, node_points, elements, loads, fixities, mats, crosssecs
-    )
+    problem = TrussProblem(node_points, elements, loads, fixities, mats, crosssecs)
     ncells = length(elements)
 
     xmin = 0.0001
@@ -63,9 +61,7 @@ end
         joinpath(@__DIR__, "testfile2_compact.json")
     )
     loads = load_cases["0"]
-    problem = TrussProblem(
-        Val{:Linear}, node_points, elements, loads, fixities, mats, crosssecs
-    )
+    problem = TrussProblem(node_points, elements, loads, fixities, mats, crosssecs)
     ncells = length(elements)
 
     # Use p=3 penalty to test that the rrule correctly chains through penalty

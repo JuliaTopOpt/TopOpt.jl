@@ -11,7 +11,7 @@ E = 1.0
 f = 1.0
 
 # Create problem
-problem = HalfMBB(Val{:Linear}, nels, sizes, E, ν, f)
+problem = HalfMBB(nels, sizes, E, ν, f)
 n_dofs = ndofs(problem.ch.dh)
 
 # Create element info and global info needed for operators

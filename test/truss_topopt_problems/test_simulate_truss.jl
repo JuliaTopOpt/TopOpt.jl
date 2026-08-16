@@ -17,7 +17,7 @@ using TopOpt.FEA: simulate
         # Create a truss problem (note: loads come before fixities in constructor)
         loads = load_cases["0"]
         problem = TopOpt.TrussTopOptProblems.TrussProblem(
-            Val{:Linear}, node_points, elements, loads, fixities, mats, crosssecs
+            node_points, elements, loads, fixities, mats, crosssecs
         )
 
         # Full material topology
@@ -38,7 +38,7 @@ using TopOpt.FEA: simulate
         )
         loads = load_cases["0"]
         problem = TopOpt.TrussTopOptProblems.TrussProblem(
-            Val{:Linear}, node_points, elements, loads, fixities, mats, crosssecs
+            node_points, elements, loads, fixities, mats, crosssecs
         )
 
         topology = ones(TopOpt.TrussTopOptProblems.getncells(problem))

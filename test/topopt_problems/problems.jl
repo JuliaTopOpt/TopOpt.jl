@@ -12,7 +12,7 @@ force = 1.0
 # Cantilever beam problem tests
 @testset "Point load cantilever beam" begin
     global E, ν, force
-    problem = PointLoadCantilever(Val{:Linear}, (160, 40), (1.0, 1.0), E, ν, force)
+    problem = PointLoadCantilever((160, 40), (1.0, 1.0), E, ν, force)
     ncells = 160 * 40
     @test problem.E == E
     @test problem.ν == ν
@@ -55,7 +55,7 @@ end
 # Half MBB beam problem
 @testset "Half MBB beam" begin
     global E, ν, force
-    problem = HalfMBB(Val{:Linear}, (60, 20), (1.0, 1.0), E, ν, force)
+    problem = HalfMBB((60, 20), (1.0, 1.0), E, ν, force)
     ncells = 60 * 20
     @test problem.E == E
     @test problem.ν == ν
@@ -98,7 +98,7 @@ end
 # L-beam problem
 @testset "L-beam" begin
     global E, ν, force
-    problem = LBeam(Val{:Linear}, Float64; force=force)
+    problem = LBeam(Float64; force=force)
     ncells = 100 * 50 + 50 * 50
     @test problem.E == E
     @test problem.ν == ν
@@ -131,7 +131,7 @@ end
     global E, ν, force
     nels = (30, 10)
     sizes = (2.0, 2.0)
-    problem = HalfMBB(Val{:Quadratic}, nels, sizes, E, ν, force)
+    problem = HalfMBB(nels, sizes, E, ν, force; celltype=:Quadratic)
     ncells = nels[1] * nels[2]
     @test problem.E == E
     @test problem.ν == ν
@@ -172,8 +172,8 @@ end
 @testset "L-beam quadratic elements" begin
     global E, ν, force
     problem = LBeam(
-        Val{:Quadratic},
         Float64;
+        celltype=:Quadratic,
         length=50,
         height=50,
         upperslab=25,
@@ -213,7 +213,7 @@ end
 
 # Tie-beam problem
 @testset "Tie-beam" begin
-    problem = TopOpt.TopOptProblems.TieBeam(Val{:Quadratic}, Float64)
+    problem = TopOpt.TopOptProblems.TieBeam(Float64; celltype=:Quadratic)
     ncells = 100
     @test problem.E == 1
     @test problem.ν == 0.3
@@ -260,16 +260,16 @@ end
 # Tie-beam accessor functions
 @testset "Tie-beam accessor functions" begin
     @testset "getdim(::TieBeam) = 2" begin
-        problem_linear = TopOpt.TopOptProblems.TieBeam(Val{:Linear}, Float64; refine=1)
-        problem_quad = TopOpt.TopOptProblems.TieBeam(Val{:Quadratic}, Float64)
+        problem_linear = TopOpt.TopOptProblems.TieBeam(Float64; refine=1)
+        problem_quad = TopOpt.TopOptProblems.TieBeam(Float64; celltype=:Quadratic)
 
         @test TopOpt.TopOptProblems.getdim(problem_linear) == 2
         @test TopOpt.TopOptProblems.getdim(problem_quad) == 2
     end
 
     @testset "nnodespercell(::TieBeam{T,N}) = N" begin
-        problem_linear = TopOpt.TopOptProblems.TieBeam(Val{:Linear}, Float64; refine=1)
-        problem_quad = TopOpt.TopOptProblems.TieBeam(Val{:Quadratic}, Float64)
+        problem_linear = TopOpt.TopOptProblems.TieBeam(Float64; refine=1)
+        problem_quad = TopOpt.TopOptProblems.TieBeam(Float64; celltype=:Quadratic)
 
         # Linear elements have 4 nodes per cell
         @test TopOpt.TopOptProblems.nnodespercell(problem_linear) == 4
@@ -279,9 +279,7 @@ end
 
     @testset "getpressuredict(::TieBeam)" begin
         force = 2.5
-        problem = TopOpt.TopOptProblems.TieBeam(
-            Val{:Linear}, Float64; refine=1, force=force
-        )
+        problem = TopOpt.TopOptProblems.TieBeam(Float64; refine=1, force=force)
 
         pd = TopOpt.TopOptProblems.getpressuredict(problem)
         @test pd isa Dict{String,Float64}
@@ -292,7 +290,7 @@ end
     end
 
     @testset "getfacesets(::TieBeam)" begin
-        problem = TopOpt.TopOptProblems.TieBeam(Val{:Linear}, Float64; refine=1)
+        problem = TopOpt.TopOptProblems.TieBeam(Float64; refine=1)
 
         facesets = TopOpt.TopOptProblems.getfacesets(problem)
         @test facesets isa Dict
@@ -309,7 +307,7 @@ end
     @testset "getmetadata(::HeatTransferTopOptProblem)" begin
         heatflux = Dict{String,Float64}("top" => 1.0)
         problem = HeatConductionProblem(
-            Val{:Linear}, (10, 5), (1.0, 1.0), 1.0; Tleft=0.0, Tright=0.0, heatflux=heatflux
+            (10, 5), (1.0, 1.0), 1.0; Tleft=0.0, Tright=0.0, heatflux=heatflux
         )
 
         metadata = TopOpt.TopOptProblems.getmetadata(problem)
@@ -319,7 +317,7 @@ end
     @testset "getpressuredict(::HeatTransferTopOptProblem)" begin
         heatflux = Dict{String,Float64}("top" => 1.0)
         problem = HeatConductionProblem(
-            Val{:Linear}, (10, 5), (1.0, 1.0), 1.0; Tleft=0.0, Tright=0.0, heatflux=heatflux
+            (10, 5), (1.0, 1.0), 1.0; Tleft=0.0, Tright=0.0, heatflux=heatflux
         )
 
         # Returns empty dict for HeatTransferTopOptProblem
@@ -331,7 +329,7 @@ end
     @testset "getheatfluxdict(::HeatTransferTopOptProblem)" begin
         heatflux = Dict{String,Float64}("top" => 1.0)
         problem = HeatConductionProblem(
-            Val{:Linear}, (10, 5), (1.0, 1.0), 1.0; Tleft=0.0, Tright=0.0, heatflux=heatflux
+            (10, 5), (1.0, 1.0), 1.0; Tleft=0.0, Tright=0.0, heatflux=heatflux
         )
 
         # Returns the heatflux dict that was passed in
@@ -343,7 +341,7 @@ end
     @testset "getcloaddict(::HeatTransferTopOptProblem)" begin
         heatflux = Dict{String,Float64}("top" => 1.0)
         problem = HeatConductionProblem(
-            Val{:Linear}, (10, 5), (1.0, 1.0), 1.0; Tleft=0.0, Tright=0.0, heatflux=heatflux
+            (10, 5), (1.0, 1.0), 1.0; Tleft=0.0, Tright=0.0, heatflux=heatflux
         )
 
         # Returns an empty Dict{Int,Vector{Float64}} (node index => heat value)
@@ -363,7 +361,7 @@ end
     heatflux = Dict{String,Float64}("top" => 1.0)
 
     problem = HeatConductionProblem(
-        Val{:Linear}, nels, sizes, k; Tleft=0.0, Tright=0.0, heatflux=heatflux
+        nels, sizes, k; Tleft=0.0, Tright=0.0, heatflux=heatflux
     )
 
     @test problem isa HeatConductionProblem
@@ -382,7 +380,6 @@ end
     top_center = center_x + ny * (nx + 1)
 
     problem = HeatConductionProblem(
-        Val{:Linear},
         nels,
         (1.0, 1.0),
         1.0;
@@ -409,13 +406,7 @@ end
 
     # Default (no cload) keeps the zero load, preserving old behavior.
     problem_empty = HeatConductionProblem(
-        Val{:Linear},
-        nels,
-        (1.0, 1.0),
-        1.0;
-        Tleft=0.0,
-        Tright=0.0,
-        heatflux=Dict{String,Float64}(),
+        nels, (1.0, 1.0), 1.0; Tleft=0.0, Tright=0.0, heatflux=Dict{String,Float64}()
     )
     @test isempty(TopOpt.TopOptProblems.getcloaddict(problem_empty))
     solver_empty = FEASolver(DirectSolver, problem_empty; xmin=0.01)
@@ -430,7 +421,6 @@ end
     center_bottom = div(nx, 2) + 1
 
     problem = HeatConductionProblem(
-        Val{:Linear},
         nels,
         (1.0, 1.0),
         1.0;
@@ -450,7 +440,6 @@ end
 
     # Multiple fixed nodes with distinct temperatures.
     problem2 = HeatConductionProblem(
-        Val{:Linear},
         nels,
         (1.0, 1.0),
         1.0;
@@ -467,7 +456,7 @@ end
 @testset "HeatTree convenience constructor" begin
     # Classic heat-conduction topopt benchmark: flux on top, cold bottom,
     # insulated sides.
-    problem = HeatTree(Val{:Linear}, (8, 4), (1.0, 1.0), 1.0; q=2.0)
+    problem = HeatTree((8, 4), (1.0, 1.0), 1.0; q=2.0)
     @test problem isa HeatConductionProblem
     @test TopOpt.TopOptProblems.getheatfluxdict(problem) == Dict("top" => 2.0)
     # Only the bottom boundary is prescribed (9 nodes for 8 bottom elements).
@@ -489,7 +478,7 @@ end
     heatflux = Dict{String,Float64}("top" => 10.0)
 
     problem = HeatConductionProblem(
-        Val{:Quadratic}, nels, sizes, k; Tleft=100.0, Tright=0.0, heatflux=heatflux
+        nels, sizes, k; celltype=:Quadratic, Tleft=100.0, Tright=0.0, heatflux=heatflux
     )
 
     @test problem isa HeatConductionProblem
@@ -527,7 +516,7 @@ end
     heatflux = Dict{String,Float64}("top" => 1.0)
 
     problem = HeatConductionProblem(
-        Val{:Linear}, nels, sizes, k; Tleft=0.0, Tright=0.0, heatflux=heatflux
+        nels, sizes, k; Tleft=0.0, Tright=0.0, heatflux=heatflux
     )
 
     # Build element FEA info
@@ -549,7 +538,7 @@ end
         heatflux = Dict{String,Float64}("top" => 1.0)
 
         problem = HeatConductionProblem(
-            Val{:Linear}, nels, sizes, k; Tleft=0.0, Tright=0.0, heatflux=heatflux
+            nels, sizes, k; Tleft=0.0, Tright=0.0, heatflux=heatflux
         )
 
         elementinfo = ElementFEAInfo(problem, 2, Val{:Static})
@@ -588,7 +577,7 @@ end
         heatflux = Dict{String,Float64}("top" => 1.0)
 
         problem = HeatConductionProblem(
-            Val{:Linear}, nels, sizes, k; Tleft=0.0, Tright=0.0, heatflux=heatflux
+            nels, sizes, k; Tleft=0.0, Tright=0.0, heatflux=heatflux
         )
 
         elementinfo = ElementFEAInfo(problem, 2, Val{:Static})
@@ -613,7 +602,7 @@ end
     ν = 0.3
 
     # Create problem
-    problem = PointLoadCantilever(Val{:Linear}, nels, sizes, E, ν, 1.0)
+    problem = PointLoadCantilever(nels, sizes, E, ν, 1.0)
 
     # Verify boundary condition facesets exist
     grid = problem.ch.dh.grid
@@ -636,7 +625,7 @@ end
     ν = 0.3
     force = 1.0
 
-    problem = PointLoadCantilever(Val{:Linear}, nels, sizes, E, ν, force)
+    problem = PointLoadCantilever(nels, sizes, E, ν, force)
 
     # Test accessor functions
     @test TopOpt.TopOptProblems.getE(problem) == E
@@ -651,8 +640,7 @@ end
     ν = 0.3
 
     problems = [
-        PointLoadCantilever(Val{:Linear}, nels, sizes, E, ν, 1.0),
-        HalfMBB(Val{:Linear}, nels, sizes, E, ν, 1.0),
+        PointLoadCantilever(nels, sizes, E, ν, 1.0), HalfMBB(nels, sizes, E, ν, 1.0)
     ]
 
     for problem in problems
@@ -672,7 +660,7 @@ end
     E = 1.0
     ν = 0.3
 
-    problem = PointLoadCantilever(Val{:Linear}, nels, sizes, E, ν, 1.0)
+    problem = PointLoadCantilever(nels, sizes, E, ν, 1.0)
     grid = problem.ch.dh.grid
 
     # Test bounding box calculation
@@ -698,7 +686,7 @@ end
         ν = 0.3
         force = 1.0
 
-        problem = PointLoadCantilever(Val{:Linear}, nels, sizes, E, ν, force)
+        problem = PointLoadCantilever(nels, sizes, E, ν, force)
 
         # Test with default topology (should be all ones)
         topology = RectilinearTopology(problem)
@@ -713,7 +701,7 @@ end
         ν = 0.3
         force = 1.0
 
-        problem = PointLoadCantilever(Val{:Linear}, nels, sizes, E, ν, force)
+        problem = PointLoadCantilever(nels, sizes, E, ν, force)
 
         # Create a custom topology with some zeros
         custom_topology = ones(Float64, Ferrite.getncells(problem))
@@ -739,7 +727,7 @@ end
         force = 1.0
 
         # Use HalfMBB which supports quadratic elements in 2D
-        problem = HalfMBB(Val{:Quadratic}, nels, sizes, E, ν, force)
+        problem = HalfMBB(nels, sizes, E, ν, force; celltype=:Quadratic)
 
         topology = RectilinearTopology(problem)
         @test size(topology) == (6, 10)
@@ -755,7 +743,7 @@ end
     force = 1.0
 
     @testset "PointLoadCantilever show" begin
-        problem = PointLoadCantilever(Val{:Linear}, nels, sizes, E, ν, force)
+        problem = PointLoadCantilever(nels, sizes, E, ν, force)
         io = IOBuffer()
         show(io, MIME("text/plain"), problem)
         output = String(take!(io))
@@ -765,7 +753,7 @@ end
     end
 
     @testset "HalfMBB show" begin
-        problem = HalfMBB(Val{:Linear}, nels, sizes, E, ν, force)
+        problem = HalfMBB(nels, sizes, E, ν, force)
         io = IOBuffer()
         show(io, MIME("text/plain"), problem)
         output = String(take!(io))
@@ -773,7 +761,7 @@ end
     end
 
     @testset "LBeam show" begin
-        problem = LBeam(Val{:Linear}, Float64; force=force)
+        problem = LBeam(Float64; force=force)
         io = IOBuffer()
         show(io, MIME("text/plain"), problem)
         output = String(take!(io))
@@ -781,7 +769,7 @@ end
     end
 
     @testset "TieBeam show" begin
-        problem = TopOpt.TopOptProblems.TieBeam(Val{:Quadratic}, Float64)
+        problem = TopOpt.TopOptProblems.TieBeam(Float64; celltype=:Quadratic)
         io = IOBuffer()
         show(io, MIME("text/plain"), problem)
         output = String(take!(io))
@@ -791,7 +779,7 @@ end
     @testset "HeatConductionProblem show" begin
         heatflux = Dict{String,Float64}("top" => 1.0)
         problem = HeatConductionProblem(
-            Val{:Linear}, (10, 5), (1.0, 1.0), 1.0; Tleft=0.0, Tright=0.0, heatflux=heatflux
+            (10, 5), (1.0, 1.0), 1.0; Tleft=0.0, Tright=0.0, heatflux=heatflux
         )
         io = IOBuffer()
         show(io, MIME("text/plain"), problem)

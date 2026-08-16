@@ -43,9 +43,9 @@ function NewPointLoadCantilever(
 
     T = float(promote_type(eltype(sizes), typeof(E), typeof(ν), typeof(force)))
     if CellType === :Linear || dim === 3
-        rect_grid = RectilinearGrid(Val{:Linear}, nels, T.(sizes))
+        rect_grid = RectilinearGrid(nels, T.(sizes))
     else
-        rect_grid = RectilinearGrid(Val{:Quadratic}, nels, T.(sizes))
+        rect_grid = RectilinearGrid(nels, T.(sizes); celltype=:Quadratic)
     end
 
     if haskey(rect_grid.grid.facetsets, "fixed_all")

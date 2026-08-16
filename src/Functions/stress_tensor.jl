@@ -64,7 +64,7 @@ struct ElementStressTensorFun{T,Ts<:StressTensorFun{T},Tc1,Tc2} <: AbstractFunct
     cell::Tc1
     cellidx::Tc2
 end
-function Base.getindex(f::StressTensorFun{T}, cellidx) where {T}
+function Base.getindex(f::StressTensorFun, cellidx)
     reinit!(f, cellidx)
     return ElementStressTensorFun(f, f.cells[cellidx], cellidx)
 end

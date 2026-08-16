@@ -16,7 +16,7 @@ Random.seed!(42)
 @testset "BlockComplianceFun Basic API" begin
     @testset "Construction with different methods" begin
         nels = (4, 4)
-        base_problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
+        base_problem = PointLoadCantilever(nels, (1.0, 1.0), 1.0, 0.3, 1.0)
 
         # Create multi-load problem with single load
         F = spzeros(Ferrite.ndofs(base_problem.ch.dh), 1)
@@ -52,7 +52,7 @@ Random.seed!(42)
 
     @testset "getpenalty and properties" begin
         nels = (4, 4)
-        base_problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
+        base_problem = PointLoadCantilever(nels, (1.0, 1.0), 1.0, 0.3, 1.0)
 
         F = spzeros(Ferrite.ndofs(base_problem.ch.dh), 1)
         F[end, 1] = 1.0
@@ -71,7 +71,7 @@ Random.seed!(42)
 
     @testset "Evaluation produces finite positive results" begin
         nels = (4, 4)
-        base_problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
+        base_problem = PointLoadCantilever(nels, (1.0, 1.0), 1.0, 0.3, 1.0)
 
         F = spzeros(Ferrite.ndofs(base_problem.ch.dh), 1)
         F[end, 1] = 1.0
@@ -99,7 +99,7 @@ end
 @testset "BlockComplianceFun Multi-Load Cases" begin
     @testset "Multiple independent loads" begin
         nels = (6, 4)
-        base_problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
+        base_problem = PointLoadCantilever(nels, (1.0, 1.0), 1.0, 0.3, 1.0)
 
         # Create 3 load cases
         nloads = 3
@@ -132,7 +132,7 @@ end
 
     @testset "Block compliance returns correct dimensions" begin
         nels = (6, 4)
-        base_problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
+        base_problem = PointLoadCantilever(nels, (1.0, 1.0), 1.0, 0.3, 1.0)
 
         # Create 2 load cases
         nloads = 2
@@ -159,7 +159,7 @@ end
 
     @testset "ComplianceFun decreases with increasing density" begin
         nels = (6, 4)
-        base_problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
+        base_problem = PointLoadCantilever(nels, (1.0, 1.0), 1.0, 0.3, 1.0)
 
         nloads = 3
         F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
@@ -188,7 +188,7 @@ end
 @testset "BlockComplianceFun Method Accuracy" begin
     @testset "Exact and exact_svd methods match" begin
         nels = (6, 4)
-        base_problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
+        base_problem = PointLoadCantilever(nels, (1.0, 1.0), 1.0, 0.3, 1.0)
 
         nloads = 3
         F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
@@ -220,7 +220,7 @@ end
 
     @testset "Approximation methods converge with more samples" begin
         nels = (6, 4)
-        base_problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
+        base_problem = PointLoadCantilever(nels, (1.0, 1.0), 1.0, 0.3, 1.0)
 
         nloads = 2
         F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
@@ -261,7 +261,7 @@ end
 
     @testset "Different sample methods" begin
         nels = (6, 4)
-        base_problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
+        base_problem = PointLoadCantilever(nels, (1.0, 1.0), 1.0, 0.3, 1.0)
 
         nloads = 2
         F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
@@ -298,7 +298,7 @@ end
 @testset "BlockComplianceFun Gradient Verification" begin
     @testset "Zygote gradient with exact method" begin
         nels = (4, 4)
-        base_problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
+        base_problem = PointLoadCantilever(nels, (1.0, 1.0), 1.0, 0.3, 1.0)
 
         nloads = 2
         F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
@@ -330,7 +330,7 @@ end
 
     @testset "ChainRules rrule consistency" begin
         nels = (4, 4)
-        base_problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
+        base_problem = PointLoadCantilever(nels, (1.0, 1.0), 1.0, 0.3, 1.0)
 
         nloads = 2
         F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
@@ -362,7 +362,7 @@ end
 
     @testset "Gradient with different methods" begin
         nels = (4, 4)
-        base_problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
+        base_problem = PointLoadCantilever(nels, (1.0, 1.0), 1.0, 0.3, 1.0)
 
         nloads = 2
         F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
@@ -403,7 +403,7 @@ end
 
     @testset "Gradient through weighted sum" begin
         nels = (4, 4)
-        base_problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
+        base_problem = PointLoadCantilever(nels, (1.0, 1.0), 1.0, 0.3, 1.0)
 
         nloads = 3
         F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
@@ -440,7 +440,7 @@ end
 @testset "BlockComplianceFun Physical Properties" begin
     @testset "ComplianceFun scales with load magnitude squared" begin
         nels = (4, 4)
-        base_problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
+        base_problem = PointLoadCantilever(nels, (1.0, 1.0), 1.0, 0.3, 1.0)
 
         nloads = 2
         F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
@@ -474,7 +474,7 @@ end
 
     @testset "SIMP power law behavior" begin
         nels = (4, 4)
-        base_problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
+        base_problem = PointLoadCantilever(nels, (1.0, 1.0), 1.0, 0.3, 1.0)
 
         nloads = 2
         F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
@@ -514,7 +514,7 @@ end
 
     @testset "Positive definiteness" begin
         nels = (4, 4)
-        base_problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
+        base_problem = PointLoadCantilever(nels, (1.0, 1.0), 1.0, 0.3, 1.0)
 
         nloads = 3
         F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
@@ -546,7 +546,7 @@ end
 @testset "BlockComplianceFun with Different Problem Types" begin
     @testset "Half MBB problem" begin
         nels = (6, 4)
-        base_problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
+        base_problem = HalfMBB(nels, (1.0, 1.0), 1.0, 0.3, 1.0)
 
         nloads = 2
         F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
@@ -571,7 +571,7 @@ end
 @testset "BlockComplianceFun Integration with Filter" begin
     @testset "DensityFilterFun chain rule" begin
         nels = (6, 4)
-        base_problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
+        base_problem = PointLoadCantilever(nels, (1.0, 1.0), 1.0, 0.3, 1.0)
 
         nloads = 2
         F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
@@ -601,7 +601,7 @@ end
 @testset "BlockComplianceFun Decay Parameter" begin
     @testset "Decay affects result" begin
         nels = (4, 4)
-        base_problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
+        base_problem = PointLoadCantilever(nels, (1.0, 1.0), 1.0, 0.3, 1.0)
 
         F = spzeros(Ferrite.ndofs(base_problem.ch.dh), 1)
         F[end, 1] = 1.0
@@ -627,7 +627,7 @@ end
 @testset "BlockComplianceFun fevals tracking" begin
     @testset "Function evaluations are counted" begin
         nels = (4, 4)
-        base_problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
+        base_problem = PointLoadCantilever(nels, (1.0, 1.0), 1.0, 0.3, 1.0)
 
         F = spzeros(Ferrite.ndofs(base_problem.ch.dh), 1)
         F[end, 1] = 1.0
@@ -651,7 +651,7 @@ end
 @testset "BlockComplianceFun with Custom V Matrix" begin
     @testset "User-provided V matrix" begin
         nels = (4, 4)
-        base_problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
+        base_problem = PointLoadCantilever(nels, (1.0, 1.0), 1.0, 0.3, 1.0)
 
         nloads = 2
         F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
