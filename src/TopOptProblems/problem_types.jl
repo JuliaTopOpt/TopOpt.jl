@@ -73,6 +73,8 @@ getfacesets(p::StiffnessTopOptProblem{dim,T}) where {dim,T} = Dict{String,Tuple{
 Ferrite.getncells(problem::StiffnessTopOptProblem) = Ferrite.getncells(getdh(problem).grid)
 
 """
+    PointLoadCantilever{dim, T, N, M} <: StiffnessTopOptProblem{dim, T}
+
 A cantilever beam problem with a point load applied at the free end. Available
 in 2D and 3D.
 
@@ -229,6 +231,8 @@ function _PointLoadCantilever(
 end
 
 """
+    HalfMBB{dim, T, N, M} <: StiffnessTopOptProblem{dim, T}
+
 The half Messerschmitt-Bölkow-Blohm (MBB) beam problem with a point load at
 the top-left corner. Available in 2D and 3D.
 
@@ -398,6 +402,8 @@ function getcloaddict(p::Union{PointLoadCantilever{dim,T},HalfMBB{dim,T}}) where
 end
 
 """
+    LBeam{T, N, M} <: StiffnessTopOptProblem{2, T}
+
 An L-shaped beam problem with a point load at the free end of the lower slab.
 Always 2D.
 
@@ -611,6 +617,8 @@ function getcloaddict(p::LBeam{T}) where {T}
 end
 
 """
+    TieBeam{T, N, M} <: StiffnessTopOptProblem{2, T}
+
 A tie-beam problem with distributed loading on specified elements. Always 2D.
 
 ```

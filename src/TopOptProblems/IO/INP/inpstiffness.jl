@@ -1,4 +1,6 @@
 """
+    InpStiffness{dim, N, TF, TI, Tch, GO, TInds, TMeta} <: StiffnessTopOptProblem{dim, TF}
+
 A problem defined by an imported Abaqus `.inp` file, with arbitrary
 unstructured mesh, boundary conditions, and loads.
 

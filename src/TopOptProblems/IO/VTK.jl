@@ -25,6 +25,11 @@ function save_mesh(filename::AbstractString, alg)
     vars = alg.optimizer.obj.solver.vars
     return save_mesh(filename, problem, vars)
 end
+"""
+    save_mesh(filename, problem, vars)
+
+Save the design `vars` (a density vector) as a VTK (.vtu) mesh file.
+"""
 function save_mesh(filename::AbstractString, problem, vars::AbstractVector)
     vtkfile = WriteVTK.vtk_grid(filename, problem, vars)
     return outfiles = WriteVTK.vtk_save(vtkfile)
@@ -66,7 +71,7 @@ end
     save_mesh(filename, problem::HeatTransferTopOptProblem, vars, temperature)
 
 Save the design topology and the nodal `temperature` field (e.g. from
-[`TemperatureFun`](@ref)) as a VTK (.vtu) mesh file.
+`TemperatureFun`) as a VTK (.vtu) mesh file.
 """
 function save_mesh(
     filename::AbstractString,
