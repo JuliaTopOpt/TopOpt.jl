@@ -8,6 +8,10 @@ CurrentModule = TopOpt.TopOptProblems
 
 ## Problem types
 
+```@docs
+AbstractTopOptProblem
+```
+
 ### Structural problems
 
 `StiffnessTopOptProblem` is an abstract type that a number of linear elasticity, quasi-static, topology optimization problems subtype.
@@ -79,12 +83,50 @@ RectilinearGrid
 LGrid
 ```
 
+```@docs
+TieBeamGrid
+```
+
+## Problem accessors
+
+The following accessors are available on every problem type (structural and
+heat transfer):
+
+```@docs
+getdim
+floattype
+getdh
+getk
+getcloaddict
+getfacesets
+getpressuredict
+getheatfluxdict
+```
+
+## Material accessors
+
+```@docs
+YoungsModulus
+PoissonRatio
+```
+
+## Mesh output
+
+```@docs
+save_mesh
+```
+
 ## Finite element backend
 
 Currently, `TopOpt` uses [`Ferrite.jl`](https://github.com/KristofferC/Ferrite.jl) for FEA-related modeling. 
 This means that all the problems above are described in the language and types of `Ferrite`.
 
 ## Matrices and vectors
+
+```@docs
+assemble
+assemble_f!
+```
 
 ### `ElementFEAInfo`
 

@@ -140,6 +140,12 @@ end
 Utilities.getpenalty(c::MeanComplianceFun) = getpenalty(getsolver(c.compliance))
 @forward_property MeanComplianceFun compliance
 
+"""
+    hutch_rand!(x::Array)
+
+Fill `x` with independent Rademacher (±1) samples, used by the Hutchinson
+trace estimator in [`MeanComplianceFun`](@ref).
+"""
 hutch_rand!(x::Array) = x .= rand.(Ref(-1.0:2.0:1.0))
 function hadamard3!(V)
     n, nv = size(V)
@@ -170,6 +176,12 @@ function hadamard2!(V)
     V .= H[1:n, :]
     return V
 end
+"""
+    hadamard!(V)
+
+Fill `V` with Hadamard (±1) columns, used by the Hadamard-based trace estimator
+in [`MeanComplianceFun`](@ref).
+"""
 function hadamard!(V)
     n, nv = size(V)
     H = ones(Int, 1, 1)
@@ -182,6 +194,14 @@ function hadamard!(V)
     return V
 end
 
+"""
+    generate_scenarios(dof::Int, size::Tuple{Int,Int}, f, perturb=() -> (rand() - 0.5))
+
+Generate a sparse load matrix `F` of shape `size` for the single degree of
+freedom `dof`, with load magnitudes `f` perturbed by `perturb`. Used to build
+the multi-load scenarios of a [`MeanComplianceFun`](@ref) /
+[`BlockComplianceFun`](@ref).
+"""
 function generate_scenarios(dof::Int, size::Tuple{Int,Int}, f, perturb=() -> (rand() - 0.5))
     ndofs, nscenarios = size
     I = Int[]

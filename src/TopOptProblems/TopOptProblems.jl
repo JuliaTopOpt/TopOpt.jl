@@ -11,6 +11,15 @@ using VTKDataTypes
 
 import Ferrite: assemble!
 
+"""
+    AbstractTopOptProblem
+
+Abstract supertype for all topology optimization problems (continuum
+`StiffnessTopOptProblem`, `HeatTransferTopOptProblem`, and truss
+`TrussProblem`). Every concrete subtype provides a `Ferrite.ConstraintHandler`
+(`ch`), element metadata, and the accessors in this module (`getdim`, `getdh`,
+`getncells`, ...).
+"""
 abstract type AbstractTopOptProblem end
 
 include("grids.jl")

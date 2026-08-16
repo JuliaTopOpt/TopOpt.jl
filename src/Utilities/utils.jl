@@ -1,3 +1,10 @@
+"""
+    RaggedArray(vv::Vector{Vector{T}})
+
+Store a vector of variable-length vectors in a single flat `values` array with
+an `offsets` array marking where each row begins. Used to pack the per-cell
+DOF and cell connectivity tables of the FEA metadata.
+"""
 struct RaggedArray{TO,TV}
     offsets::TO
     values::TV
@@ -32,6 +39,11 @@ function Base.setindex!(ra::RaggedArray, v, i, j)
     return ra.values[r[i]] = v
 end
 
+"""
+    compliance(Ke, u, dofs)
+
+Compute the local compliance `uᵀ Ke u` over the degrees of freedom `dofs`.
+"""
 function compliance(Ke, u, dofs)
     comp = zero(eltype(u))
     for i in eachindex(dofs)
@@ -42,6 +54,11 @@ function compliance(Ke, u, dofs)
     return comp
 end
 
+"""
+    meandiag(K::AbstractMatrix)
+
+Compute the mean of the absolute diagonal entries of `K`.
+"""
 function meandiag(K::AbstractMatrix)
     z = zero(eltype(K))
     for i in axes(K, 1)
@@ -59,6 +76,11 @@ Map a design variable `var` ∈ [0, 1] to a physical density in `[xmin, 1]`:
 """
 density(var, xmin) = var * (1 - xmin) + xmin
 
+"""
+    @debug expr
+
+Evaluate `expr` only when the package-level `DEBUG` flag is enabled.
+"""
 macro debug(expr)
     return quote
         if DEBUG[]
@@ -75,6 +97,12 @@ end
     f ∈ fieldnames(T) && return :(setfield!(c, $(QuoteNode(f)), val))
     return :(setproperty!(getfield(c, $(QuoteNode(fallback))), $(QuoteNode(f)), val))
 end
+"""
+    @forward_property T field
+
+Forward any `getproperty`/`setproperty!` access on `T` to its `field`, so
+`T` transparently exposes that field's properties.
+"""
 macro forward_property(T, field)
     quote
         function Base.getproperty(c::$(esc(T)), f::Symbol)

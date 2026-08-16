@@ -1,10 +1,28 @@
+"""
+    Coordinates(coords)
+
+Wrapper for the centroid coordinates of the elements, used as the input to the
+neural-network model in [`NeuralNetworkFun`](@ref).
+"""
 struct Coordinates{C}
     coords::C
 end
+
+"""
+    NNParams(p)
+
+Wrapper for the neural network's weights and biases `p`, the design variables
+of a neural-network-parametrized topology optimization.
+"""
 struct NNParams{W}
     p::W
 end
 
+"""
+    getcentroids(problem::AbstractTopOptProblem)
+
+Return a vector of the element centroid coordinates for `problem`.
+"""
 function getcentroids(problem::AbstractTopOptProblem)
     dh = problem.ch.dh
     return map(CellIterator(dh)) do cell
@@ -12,6 +30,12 @@ function getcentroids(problem::AbstractTopOptProblem)
     end
 end
 
+"""
+    AbstractMLModel
+
+Abstract supertype for machine-learning models that re-parametrize the design
+(e.g. [`NeuralNetworkFun`](@ref)).
+"""
 abstract type AbstractMLModel end
 
 """

@@ -54,6 +54,13 @@ export VolumeFun,
     get_free_variables,
     get_free_variable_count
 
+"""
+    AbstractFunction{T}
+
+Abstract supertype for all differentiable objective/constraint functions in
+`TopOpt` (e.g. [`ComplianceFun`](@ref), [`VolumeFun`](@ref)). The parameter `T`
+is the number type of the function's inputs and outputs.
+"""
 abstract type AbstractFunction{T} <: Nonconvex.NonconvexCore.AbstractFunction end
 
 include("compliance.jl")

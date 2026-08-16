@@ -627,6 +627,13 @@ function _QuadraticLGrid(
     return Grid(cells, nodes; facetsets=facesets, nodesets=nodesets)
 end
 
+"""
+    TieBeamGrid(::Type{T}=Float64; celltype=:Linear, refine=1)
+
+Construct the [`TieBeam`](@ref) grid — the standard 2D tie-beam benchmark mesh.
+`refine` controls the mesh refinement (a value of 1 gives the standard
+literature problem), and `celltype` selects `:Linear` or `:Quadratic` elements.
+"""
 function TieBeamGrid((::Type{T})=Float64; celltype::Symbol=:Linear, refine=1) where {T}
     return _TieBeamGrid(_celltype_tag(celltype), T, refine)
 end

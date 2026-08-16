@@ -55,3 +55,9 @@ EnergyCriteria
 ```@docs
 simulate
 ```
+
+## Internal CG solve
+
+```@docs
+cg_solve!
+```

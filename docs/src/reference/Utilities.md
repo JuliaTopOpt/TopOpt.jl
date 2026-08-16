@@ -47,3 +47,15 @@ setpenalty!
 ```@docs
 density
 ```
+
+## Low-level helpers
+
+```@docs
+RaggedArray
+compliance
+sumdiag
+meandiag
+getsolver
+@debug
+@forward_property
+```
