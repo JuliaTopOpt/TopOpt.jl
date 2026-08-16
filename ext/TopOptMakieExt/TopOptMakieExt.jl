@@ -493,11 +493,11 @@ function _add_legend!(
         padding=(4, 4, 4, 4),
     )
     if has_colorbar
-        Makie.colsize!(fig.layout, 1, Makie.Fixed(728))
+        Makie.colsize!(fig.layout, 1, Makie.Auto())
         Makie.colsize!(fig.layout, 2, Makie.Fixed(60))
         Makie.colsize!(fig.layout, 3, Makie.Fixed(150))
     else
-        Makie.colsize!(fig.layout, 1, Makie.Fixed(812))
+        Makie.colsize!(fig.layout, 1, Makie.Auto())
         Makie.colsize!(fig.layout, 2, Makie.Fixed(150))
     end
     Makie.rowsize!(fig.layout, 1, Makie.Fixed(plot_height))

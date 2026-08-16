@@ -28,7 +28,12 @@ using TopOpt, LinearAlgebra
 using WGLMakie
 WGLMakie.activate!(; resize_to=:parent)
 using Bonito
-Bonito.Page(exportable=true, offline=true)
+if haskey(ENV, "QUARTO_PROJECT_DIR")
+    Bonito.Page(exportable=true, offline=true)
+else
+    Bonito.browser_display()
+end
+display_app(app) = display(app)
 ```
 
 `WGLMakie.activate!(; resize_to=:parent)` selects the browser renderer and fills the Quarto output column. `Bonito.Page(exportable=true, offline=true)` embeds the assets needed by `visualize(...; static=true)` in the Quarto output, so the visualization does not require a running Julia process.
@@ -141,7 +146,7 @@ large-scale nonlinear problem.
 #| label: fig-truss
 #| fig-cap: "Optimized truss structure with cross-sectional areas proportional to bar thickness"
 fig = visualize(problem; static=true, u=solver.u, topology=r.minimizer, default_exagg_scale=0.0)
-display(fig)
+display_app(fig)
 
 ```
 

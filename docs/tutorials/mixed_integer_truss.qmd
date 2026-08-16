@@ -23,7 +23,12 @@ using NonconvexJuniper, NonconvexIpopt
 using WGLMakie
 WGLMakie.activate!(; resize_to=:parent)
 using Bonito
-Bonito.Page(exportable=true, offline=true)
+if haskey(ENV, "QUARTO_PROJECT_DIR")
+    Bonito.Page(exportable=true, offline=true)
+else
+    Bonito.browser_display()
+end
+display_app(app) = display(app)
 ```
 
 `WGLMakie.activate!(; resize_to=:parent)` selects the browser renderer and fills the Quarto output column. `Bonito.Page(exportable=true, offline=true)` embeds the assets needed by `visualize(...; static=true)` in the Quarto output, so the visualization does not require a running Julia process.
@@ -115,7 +120,7 @@ println("Elements removed: $(sum(x .< 0.5)) / $ncells")
 #| label: fig-mixed-integer-truss
 #| fig-cap: "Binary truss design: elements either present (black) or removed (white)"
 fig = visualize(problem; static=true, u=solver.u, topology=r.minimizer, default_exagg_scale=0.0)
-display(fig)
+display_app(fig)
 
 ```
 

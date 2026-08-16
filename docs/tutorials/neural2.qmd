@@ -22,7 +22,12 @@ using NNlib: leakyrelu
 using WGLMakie
 WGLMakie.activate!(; resize_to=:parent)
 using Bonito
-Bonito.Page(exportable=true, offline=true)
+if haskey(ENV, "QUARTO_PROJECT_DIR")
+    Bonito.Page(exportable=true, offline=true)
+else
+    Bonito.browser_display()
+end
+display_app(app) = display(app)
 ```
 
 `WGLMakie.activate!(; resize_to=:parent)` selects the browser renderer and fills the Quarto output column. `Bonito.Page(exportable=true, offline=true)` embeds the assets needed by `visualize(...; static=true)` in the Quarto output, so the visualization does not require a running Julia process.
@@ -171,5 +176,5 @@ constr_final = w -> volfrac(todensities(w; filter=false)) / V - 1
 #| fig-cap: "Adam-optimized neural network design (6-layer MLP)"
 topology = todensities(w; filter=true)
 fig = visualize(problem; static=true, topology=topology)
-display(fig)
+display_app(fig)
 ```

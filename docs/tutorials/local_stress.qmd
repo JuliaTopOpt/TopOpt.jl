@@ -37,7 +37,12 @@ using TopOpt, LinearAlgebra
 using WGLMakie
 WGLMakie.activate!(; resize_to=:parent)
 using Bonito
-Bonito.Page(exportable=true, offline=true)
+if haskey(ENV, "QUARTO_PROJECT_DIR")
+    Bonito.Page(exportable=true, offline=true)
+else
+    Bonito.browser_display()
+end
+display_app(app) = display(app)
 ```
 
 `WGLMakie.activate!(; resize_to=:parent)` selects the browser renderer and fills the Quarto output column. `Bonito.Page(exportable=true, offline=true)` embeds the assets needed by `visualize(...; static=true)` in the Quarto output, so the visualization does not require a running Julia process.
@@ -160,7 +165,7 @@ fig = visualize(
     scale_range=10.0,
     vector_arrowsize=0.5,
 )
-display(fig)
+display_app(fig)
 
 ```
 

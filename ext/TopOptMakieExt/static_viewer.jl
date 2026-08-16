@@ -60,17 +60,69 @@ function TopOpt._static_visualization(
             problem;
             interactive=false,
             undeformed_mesh_color=undeformed_mesh_color,
-            draw_legend=draw_legend,
+            draw_legend=false,
             load_arrow_color=load_arrow_color,
             support_arrow_color=support_arrow_color,
             lighting=lighting,
             kw...,
         )
         _last_static_fig[] = fig
+
+        # HTML legend overlay rendered in the same coordinate system as the
+        # cross, so the two stay aligned as the window resizes. The
+        # Makie-internal Legend is disabled above because its grid column
+        # width varies with the canvas size and would drift from the overlay.
+        css_color(c) = begin
+            cc = Makie.to_color(c)
+            r = round(Int, 255 * Float64(cc.r))
+            g = round(Int, 255 * Float64(cc.g))
+            b = round(Int, 255 * Float64(cc.b))
+            a = hasproperty(cc, :a) ? Float64(cc.a) : 1.0
+            "rgba($r,$g,$b,$a)"
+        end
+        swatch = "width:12px;height:12px;flex:0 0 auto;border-radius:50%;"
+        legend_row = "display:flex;align-items:center;gap:5px;font-size:11px;color:#333;"
+        legend = D.div(
+            D.div(
+                D.div(;
+                    style=swatch *
+                          "border-radius:0;background:$(css_color(undeformed_mesh_color));",
+                ),
+                D.span("undeformed mesh"; style="user-select:none;");
+                style=legend_row,
+            ),
+            D.div(
+                D.div(; style=swatch * "background:$(css_color(load_arrow_color));"),
+                D.span("load arrows"; style="user-select:none;");
+                style=legend_row,
+            ),
+            D.div(
+                D.div(; style=swatch * "background:$(css_color(support_arrow_color));"),
+                D.span("support arrows"; style="user-select:none;");
+                style=legend_row,
+            );
+            style=join([
+                "position:absolute;",
+                "top:8px;",
+                "right:10px;",
+                "z-index:15;",
+                "display:flex;",
+                "flex-direction:column;",
+                "gap:4px;",
+                "padding:6px;",
+                "background:rgba(255,255,255,0.85);",
+                "border:1px solid rgba(0,0,0,0.12);",
+                "border-radius:4px;",
+                "line-height:1;",
+            ]),
+        )
+        no_legend = D.div()
+
         ax1_candidates = [c for c in fig.content if c isa LScene]
         # 2D problems use an Axis, not an LScene; there is no 3D camera to
-        # control, so return the bare figure.
-        isempty(ax1_candidates) && return D.div(fig)
+        # control, so return the bare figure with the legend overlay.
+        isempty(ax1_candidates) &&
+            return D.div(fig, draw_legend ? legend : no_legend; style="position:relative;")
         ax1 = first(ax1_candidates)
 
         scene_id = WGLMakie.js_uuid(ax1.scene)
@@ -219,24 +271,27 @@ function TopOpt._static_visualization(
         )
 
         # The legend and controls share the right side of the static viewport.
+        # Both anchor to the figure so they stay aligned as the window resizes.
         figure = D.div(
-            fig;
+            fig,
+            draw_legend ? legend : no_legend,
+            cross;
             style=join([
+                "position:relative;",
                 "flex:0 0 auto;",
                 "min-width:0;",
                 "min-height:0;",
                 "width:100%;",
-                "max-width:100%;",
+                "max-width:1170px;",
+                "margin:0 auto;",
                 "display:flex;",
-                "justify-content:flex-end;",
+                "justify-content:center;",
                 "line-height:0;",
             ]),
         )
         viewport = D.div(
-            figure,
-            cross;
+            figure;
             style=join([
-                "position:relative;",
                 "display:flex;",
                 "align-items:flex-end;",
                 "justify-content:center;",
@@ -261,7 +316,7 @@ function TopOpt._static_visualization(
                 "padding:8px;",
                 "box-sizing:border-box;",
                 "width:100%;",
-                "max-width:1086px;",
+                "max-width:1170px;",
                 "margin:0 auto;",
                 "overflow:visible;",
             ]),
@@ -591,6 +646,23 @@ function TopOpt._static_visualization(
         la0_js = jsvec_inline(lookat)
         fov_js = string(persp_fov)
         scene_id_js = string(scene_id)
+        # Legend entries (label, css color, swatch shape) for compositing onto
+        # the saved PNG. The zoom/pan controls are deliberately excluded.
+        legend_entries = [
+            ("undeformed mesh", css_color(undeformed_mesh_color), "square"),
+            ("load arrows", css_color(load_arrow_color), "circle"),
+            ("support arrows", css_color(support_arrow_color), "circle"),
+        ]
+        legend_js =
+            "[" *
+            join(
+                (
+                    "{label:\"$(e[1])\",color:\"$(e[2])\",shape:\"$(e[3])\"}" for
+                    e in legend_entries
+                ),
+                ",",
+            ) *
+            "]"
 
         container = D.div(
             container,
@@ -601,6 +673,7 @@ function TopOpt._static_visualization(
                     const la0 = $(la0_js);
                     const fov0 = $(fov_js);
                     const scene_id = $(string("\"", scene_id_js, "\""));
+                    const legend_entries = $(legend_js);
 
                     const ORTHO_FOV = 1.0;
                     const deg = Math.PI / 180;
@@ -846,9 +919,54 @@ function TopOpt._static_visualization(
                         if (save_el) save_el.addEventListener('click', () => {
                             const canvas = scene.screen.canvas || scene.screen.renderer.domElement;
                             const save_box = fldOrNull('.tv-savename');
+                            // Composite the legend (but not the zoom/pan
+                            // controls) onto the WebGL frame before export.
+                            const out = document.createElement('canvas');
+                            out.width = canvas.width;
+                            out.height = canvas.height;
+                            const ctx = out.getContext('2d');
+                            ctx.drawImage(canvas, 0, 0);
+                            if (legend_entries.length) {
+                                const pad = 6, gap = 4, sw = 12, sh = 12, gapX = 5, radius = 4;
+                                ctx.font = '11px sans-serif';
+                                const textW = legend_entries.map(e => ctx.measureText(e.label).width);
+                                const rowW = legend_entries.map((e, i) => sw + gapX + textW[i]);
+                                const lineH = Math.max(sh, 14);
+                                const boxW = Math.max(...rowW) + pad * 2;
+                                const boxH = legend_entries.length * lineH + (legend_entries.length - 1) * gap + pad * 2;
+                                const x0 = canvas.width - boxW - 10;
+                                const y0 = 8;
+                                ctx.beginPath();
+                                ctx.moveTo(x0 + radius, y0);
+                                ctx.arcTo(x0 + boxW, y0, x0 + boxW, y0 + boxH, radius);
+                                ctx.arcTo(x0 + boxW, y0 + boxH, x0, y0 + boxH, radius);
+                                ctx.arcTo(x0, y0 + boxH, x0, y0, radius);
+                                ctx.arcTo(x0, y0, x0 + boxW, y0, radius);
+                                ctx.closePath();
+                                ctx.fillStyle = 'rgba(255,255,255,0.85)';
+                                ctx.fill();
+                                ctx.strokeStyle = 'rgba(0,0,0,0.12)';
+                                ctx.lineWidth = 1;
+                                ctx.stroke();
+                                legend_entries.forEach((e, i) => {
+                                    const cy = y0 + pad + i * (lineH + gap) + lineH / 2;
+                                    const cx = x0 + pad + sw / 2;
+                                    ctx.fillStyle = e.color;
+                                    if (e.shape === 'circle') {
+                                        ctx.beginPath();
+                                        ctx.arc(cx, cy, sw / 2, 0, 2 * Math.PI);
+                                        ctx.fill();
+                                    } else {
+                                        ctx.fillRect(x0 + pad, cy - sh / 2, sw, sh);
+                                    }
+                                    ctx.fillStyle = '#333';
+                                    ctx.textBaseline = 'middle';
+                                    ctx.fillText(e.label, x0 + pad + sw + gapX, cy);
+                                });
+                            }
                             const a = document.createElement('a');
                             a.download = (save_box && save_box.value) || 'topopt_view.png';
-                            a.href = canvas.toDataURL('image/png');
+                            a.href = out.toDataURL('image/png');
                             a.click();
                         });
 

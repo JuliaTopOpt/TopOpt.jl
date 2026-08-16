@@ -23,7 +23,12 @@ using TopOpt, Zygote, Test
 using WGLMakie
 WGLMakie.activate!(; resize_to=:parent)
 using Bonito
-Bonito.Page(exportable=true, offline=true)
+if haskey(ENV, "QUARTO_PROJECT_DIR")
+    Bonito.Page(exportable=true, offline=true)
+else
+    Bonito.browser_display()
+end
+display_app(app) = display(app)
 ```
 
 `WGLMakie.activate!(; resize_to=:parent)` selects the browser renderer and fills the Quarto output column. `Bonito.Page(exportable=true, offline=true)` embeds the assets needed by `visualize(...; static=true)` in the Quarto output, so the visualization does not require a running Julia process.
@@ -154,7 +159,7 @@ isolation.
 x = tounit(MultiMaterialVariablesFun(y, nmats))  # ncells × nmats, rows sum to 1
 rhos = x.x * densities  # physical density per cell, used for transparency
 fig = visualize(problem; static=true, topology=rhos, cell_colors=interp1(x).x, draw_legend=true)
-display(fig)
+display_app(fig)
 ```
 
 Here `topology=rhos` sets each cell's alpha to its physical density (0 for
@@ -168,7 +173,7 @@ topology and mask the others:
 #| fig-cap: "Stiff material (E=4.0) distribution only"
 stiff_frac = x.x[:, 3]  # fraction of stiff material per cell
 fig_stiff = visualize(problem; static=true, topology=stiff_frac)
-display(fig_stiff)
+display_app(fig_stiff)
 ```
 
 ```{julia}
@@ -176,7 +181,7 @@ display(fig_stiff)
 #| fig-cap: "Soft material (E=1.0) distribution only"
 soft_frac = x.x[:, 2]  # fraction of soft material per cell
 fig_soft = visualize(problem; static=true, topology=soft_frac)
-display(fig_soft)
+display_app(fig_soft)
 ```
 
 The combined view shows optimal material distribution — stiff material

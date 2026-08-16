@@ -25,7 +25,12 @@ using NonconvexTOBS, TopOpt
 using WGLMakie
 WGLMakie.activate!(; resize_to=:parent)
 using Bonito
-Bonito.Page(exportable=true, offline=true)
+if haskey(ENV, "QUARTO_PROJECT_DIR")
+    Bonito.Page(exportable=true, offline=true)
+else
+    Bonito.browser_display()
+end
+display_app(app) = display(app)
 ```
 
 `WGLMakie.activate!(; resize_to=:parent)` selects the browser renderer and fills the Quarto output column. `Bonito.Page(exportable=true, offline=true)` embeds the assets needed by `visualize(...; static=true)` in the Quarto output, so the visualization does not require a running Julia process.
@@ -127,7 +132,7 @@ designs without intermediate densities.
 #| fig-cap: "TOBS optimization result showing binary (0/1) material distribution"
 topology = r.minimizer
 fig = visualize(problem; static=true, topology=topology)
-display(fig)
+display_app(fig)
 
 ```
 
