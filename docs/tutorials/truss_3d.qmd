@@ -57,7 +57,7 @@ cross sections, fixities, and load cases.
 ```{julia}
 #| output: false
 problem = TrussProblem(
-    Val{:Linear}, node_points, elements, loads, fixities, mats, crosssecs
+    node_points, elements, loads, fixities, mats, crosssecs
 )
 ```
 

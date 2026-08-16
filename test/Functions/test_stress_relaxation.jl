@@ -38,7 +38,7 @@ end
 
 @testset "Relaxed von Mises stress function" begin
     nels = (3, 2)
-    problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
+    problem = HalfMBB(nels, (1.0, 1.0), 1.0, 0.3, 1.0)
     xmin = 0.01
     solver = FEASolver(DirectSolver, problem; xmin=xmin, penalty=PowerPenaltyFun(3.0))
 

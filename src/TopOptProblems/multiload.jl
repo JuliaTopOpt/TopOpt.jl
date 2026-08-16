@@ -14,7 +14,7 @@ f1 = RandomMagnitudeFun([0, -1], Uniform(0.5, 1.5))
 f2 = RandomMagnitudeFun(normalize([1, -1]), Uniform(0.5, 1.5))
 f3 = RandomMagnitudeFun(normalize([-1, -1]), Uniform(0.5, 1.5))
 
-base_problem = PointLoadCantilever(Val{:Linear}, (160, 40), (1.0, 1.0), 1.0, 0.3, 1.0)
+base_problem = PointLoadCantilever((160, 40), (1.0, 1.0), 1.0, 0.3, 1.0)
 problem = MultiLoad(base_problem, [(160, 20) => f1, (80, 40) => f2, (120, 0) => f3], 10000)
 ```
 """

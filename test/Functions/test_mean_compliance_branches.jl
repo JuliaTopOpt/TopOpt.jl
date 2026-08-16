@@ -15,7 +15,7 @@ Random.seed!(42)
     force = 1.0
     nels = (6, 4)
 
-    base_problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
+    base_problem = PointLoadCantilever(nels, (1.0, 1.0), E, ν, force)
 
     nloads = 3
     F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)

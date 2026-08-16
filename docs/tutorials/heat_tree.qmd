@@ -43,7 +43,7 @@ and fixed temperature at the bottom:
 nels = (80, 40)  # 80×40 rectangular mesh
 k = 1.0          # thermal conductivity
 q = 1.0          # heat flux on top boundary
-problem = HeatTree(Val{:Linear}, nels, (1.0, 1.0), k; q=q)
+problem = HeatTree(nels, (1.0, 1.0), k; q=q)
 ```
 
 The boundary conditions:

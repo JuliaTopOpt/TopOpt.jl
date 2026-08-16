@@ -56,7 +56,7 @@ v = 0.3 # Poisson's ratio
 f = 1.0 # downward force
 rmin = 3.0 # filter radius
 
-problem = PointLoadCantilever(Val{:Linear}, (80, 20), (1.0, 1.0), E, v, f)
+problem = PointLoadCantilever((80, 20), (1.0, 1.0), E, v, f)
 ```
 
 A 80×20 mesh (1,600 elements) keeps 1,600 local stress constraints

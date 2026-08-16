@@ -49,10 +49,10 @@ v = 0.3 # Poisson's ratio
 f = 1.0 # downward force magnitude
 
 nels = (30, 10, 10)  # 30 elements in x, 10 in y, 10 in z
-problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0, 1.0), E, v, f)
+problem = PointLoadCantilever(nels, (1.0, 1.0, 1.0), E, v, f)
 ```
 
-The `Val{:Linear}` specifies linear (trilinear) hexahedral elements. The problem object contains the 3D mesh, Dirichlet boundary conditions on the fixed face, and the point load definition.
+The default `celltype=:Linear` specifies linear (trilinear) hexahedral elements. The problem object contains the 3D mesh, Dirichlet boundary conditions on the fixed face, and the point load definition.
 
 ## Parameter settings
 

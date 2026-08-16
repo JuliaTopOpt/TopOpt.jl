@@ -21,9 +21,7 @@ ins_dir = joinpath(@__DIR__, "instances", "ground_meshes");
         node_points, elements, _, _, fixities, load_cases = load_truss_json(problem_file)
         loads = load_cases["0"]
     end
-    problem = TrussProblem(
-        Val{:Linear}, node_points, elements, loads, fixities, mat, crossec
-    )
+    problem = TrussProblem(node_points, elements, loads, fixities, mat, crossec)
 
     solver = FEASolver(DirectSolver, problem)
     solver()
@@ -39,9 +37,7 @@ end
     )
     loads = load_cases[string(lc_ind)]
 
-    problem = TrussProblem(
-        Val{:Linear}, node_points, elements, loads, fixities, mats, crosssecs
-    )
+    problem = TrussProblem(node_points, elements, loads, fixities, mats, crosssecs)
 
     ndim, nnodes, ncells = length(node_points[1]), length(node_points), length(elements)
     @test getE(problem) == [m.E for m in mats]
@@ -134,9 +130,7 @@ end # end testset
     loads = load_cases["0"]
     mat = TrussFEAMaterial(1.0, 0.3)
     crossec = TrussFEACrossSec(800.0)
-    problem = TrussProblem(
-        Val{:Linear}, node_points, elements, loads, fixities, mat, crossec
-    )
+    problem = TrussProblem(node_points, elements, loads, fixities, mat, crossec)
 
     @testset "TrussProblem show" begin
         io = IOBuffer()
@@ -157,6 +151,23 @@ end # end testset
         show(io, MIME("text/plain"), crossec)
         output = String(take!(io))
         @test occursin("TrussFEACrossSec", output) || output != ""
+    end
+
+    @testset "TrussFEACrossSec arithmetic" begin
+        cs = TrussFEACrossSec{Float64}(1.0)
+        @test cs + 1 == TrussFEACrossSec(2.0)
+        @test 1 + cs == TrussFEACrossSec(2.0)
+        @test cs + cs == TrussFEACrossSec(2.0)
+        @test cs - 1 == TrussFEACrossSec(0.0)
+        @test -cs == TrussFEACrossSec(-1.0)
+        @test cs - cs == TrussFEACrossSec(0.0)
+        @test cs * 2 == TrussFEACrossSec(2.0)
+        @test 2 * cs == TrussFEACrossSec(2.0)
+        @test cs / 2 == TrussFEACrossSec(0.5)
+        @test zero(cs) == TrussFEACrossSec(0.0)
+        @test one(cs) == TrussFEACrossSec(1.0)
+        @test eltype(TrussFEACrossSec{Float64}) == Float64
+        @test eltype(cs) == Float64
     end
 
     @testset "PointLoadCantileverTruss show" begin

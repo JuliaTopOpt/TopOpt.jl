@@ -4,7 +4,7 @@ using TopOpt.FEA: simulate
 @testset "simulate function - basic tests" begin
     @testset "DirectSolver with PointLoadCantilever" begin
         nels = (6, 4)  # Even numbers for both dimensions
-        problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
+        problem = PointLoadCantilever(nels, (1.0, 1.0), 1.0, 0.3, 1.0)
         topology = ones(prod(nels))
 
         result = simulate(problem, topology)
@@ -16,7 +16,7 @@ using TopOpt.FEA: simulate
 
     @testset "Different topologies produce different results" begin
         nels = (6, 4)
-        problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
+        problem = PointLoadCantilever(nels, (1.0, 1.0), 1.0, 0.3, 1.0)
 
         full_topology = ones(prod(nels))
         zero_topology = zeros(prod(nels))
@@ -37,7 +37,7 @@ using TopOpt.FEA: simulate
 
     @testset "LinearElasticityResult properties" begin
         nels = (6, 4)
-        problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
+        problem = PointLoadCantilever(nels, (1.0, 1.0), 1.0, 0.3, 1.0)
         topology = ones(prod(nels))
 
         result = simulate(problem, topology)
@@ -56,7 +56,7 @@ using TopOpt.FEA: simulate
 
     @testset "round=false preserves continuous densities" begin
         nels = (6, 4)
-        problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
+        problem = PointLoadCantilever(nels, (1.0, 1.0), 1.0, 0.3, 1.0)
 
         # Create topology with intermediate densities
         ncells = prod(nels)
@@ -78,7 +78,7 @@ using TopOpt.FEA: simulate
 
     @testset "round=false vs round=true with mixed topology" begin
         nels = (6, 4)
-        problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
+        problem = PointLoadCantilever(nels, (1.0, 1.0), 1.0, 0.3, 1.0)
 
         ncells = prod(nels)
         # Mix of solid (1.0), void (0.0), and intermediate densities
@@ -105,7 +105,7 @@ using TopOpt.FEA: simulate
 
     @testset "round=false with uniform intermediate density" begin
         nels = (6, 4)
-        problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
+        problem = PointLoadCantilever(nels, (1.0, 1.0), 1.0, 0.3, 1.0)
 
         ncells = prod(nels)
 

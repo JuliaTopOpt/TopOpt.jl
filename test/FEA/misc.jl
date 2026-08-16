@@ -8,7 +8,7 @@ using Ferrite, StaticArrays
     @testset "Basic compliance calculation" begin
         nels = (4, 4)
         sizes = (1.0, 1.0)
-        problem = PointLoadCantilever(Val{:Linear}, nels, sizes, 1.0, 0.3, 1.0)
+        problem = PointLoadCantilever(nels, sizes, 1.0, 0.3, 1.0)
         solver = FEASolver(DirectSolver, problem)
 
         # Set uniform design variables
@@ -30,7 +30,7 @@ using Ferrite, StaticArrays
     @testset "getcompliance with different solvers" begin
         nels = (4, 4)
         sizes = (1.0, 1.0)
-        problem = PointLoadCantilever(Val{:Linear}, nels, sizes, 1.0, 0.3, 1.0)
+        problem = PointLoadCantilever(nels, sizes, 1.0, 0.3, 1.0)
 
         solver_direct = FEASolver(DirectSolver, problem)
         solver_cg = FEASolver(CGAssemblySolver, problem; abstol=1e-8)
@@ -51,7 +51,7 @@ using Ferrite, StaticArrays
     @testset "getcompliance with varying density" begin
         nels = (4, 4)
         sizes = (1.0, 1.0)
-        problem = PointLoadCantilever(Val{:Linear}, nels, sizes, 1.0, 0.3, 1.0)
+        problem = PointLoadCantilever(nels, sizes, 1.0, 0.3, 1.0)
         solver = FEASolver(DirectSolver, problem)
 
         # Test with full density
@@ -73,7 +73,7 @@ end
     @testset "update_f! with prescribed DOFs" begin
         nels = (4, 4)
         sizes = (1.0, 1.0)
-        problem = PointLoadCantilever(Val{:Linear}, nels, sizes, 1.0, 0.3, 1.0)
+        problem = PointLoadCantilever(nels, sizes, 1.0, 0.3, 1.0)
 
         elementinfo = ElementFEAInfo(problem, 2, Val{:Static})
         globalinfo = GlobalFEAInfo(problem)
@@ -124,7 +124,7 @@ end
         sizes = (1.0, 1.0)
 
         # Use PointLoadCantilever which has proper boundary condition setup
-        problem = PointLoadCantilever(Val{:Linear}, nels, sizes, 1.0, 0.3, 1.0)
+        problem = PointLoadCantilever(nels, sizes, 1.0, 0.3, 1.0)
         elementinfo = ElementFEAInfo(problem, 2, Val{:Static})
 
         ndofs_total = Ferrite.ndofs(problem.ch.dh)
@@ -205,7 +205,7 @@ end
     @testset "update_f! with applyzero=true" begin
         nels = (4, 4)
         sizes = (1.0, 1.0)
-        problem = PointLoadCantilever(Val{:Linear}, nels, sizes, 1.0, 0.3, 1.0)
+        problem = PointLoadCantilever(nels, sizes, 1.0, 0.3, 1.0)
 
         elementinfo = ElementFEAInfo(problem, 2, Val{:Static})
         globalinfo = GlobalFEAInfo(problem)
@@ -257,7 +257,7 @@ end
     @testset "matrix_free_apply2f! basic functionality" begin
         nels = (4, 4)
         sizes = (1.0, 1.0)
-        problem = PointLoadCantilever(Val{:Linear}, nels, sizes, 1.0, 0.3, 1.0)
+        problem = PointLoadCantilever(nels, sizes, 1.0, 0.3, 1.0)
 
         elementinfo = ElementFEAInfo(problem, 2, Val{:Static})
 
@@ -286,7 +286,7 @@ end
     @testset "matrix_free_apply2f! with applyzero=true" begin
         nels = (4, 4)
         sizes = (1.0, 1.0)
-        problem = PointLoadCantilever(Val{:Linear}, nels, sizes, 1.0, 0.3, 1.0)
+        problem = PointLoadCantilever(nels, sizes, 1.0, 0.3, 1.0)
 
         elementinfo = ElementFEAInfo(problem, 2, Val{:Static})
 
@@ -309,7 +309,7 @@ end
     @testset "matrix_free_apply2f! with varying density" begin
         nels = (4, 4)
         sizes = (1.0, 1.0)
-        problem = PointLoadCantilever(Val{:Linear}, nels, sizes, 1.0, 0.3, 1.0)
+        problem = PointLoadCantilever(nels, sizes, 1.0, 0.3, 1.0)
 
         elementinfo = ElementFEAInfo(problem, 2, Val{:Static})
 
@@ -343,7 +343,7 @@ end
     @testset "size(op) returns (m, n)" begin
         nels = (2, 2)
         sizes = (1.0, 1.0)
-        problem = PointLoadCantilever(Val{:Linear}, nels, sizes, 1.0, 0.3, 1.0)
+        problem = PointLoadCantilever(nels, sizes, 1.0, 0.3, 1.0)
 
         solver = FEASolver(DirectSolver, problem)
         K = solver.globalinfo.K
@@ -362,7 +362,7 @@ end
     @testset "size(op, i) for i=1,2" begin
         nels = (2, 2)
         sizes = (1.0, 1.0)
-        problem = PointLoadCantilever(Val{:Linear}, nels, sizes, 1.0, 0.3, 1.0)
+        problem = PointLoadCantilever(nels, sizes, 1.0, 0.3, 1.0)
 
         solver = FEASolver(DirectSolver, problem)
         K = solver.globalinfo.K
@@ -378,7 +378,7 @@ end
     @testset "eltype returns element type of K" begin
         nels = (2, 2)
         sizes = (1.0, 1.0)
-        problem = PointLoadCantilever(Val{:Linear}, nels, sizes, 1.0, 0.3, 1.0)
+        problem = PointLoadCantilever(nels, sizes, 1.0, 0.3, 1.0)
 
         solver = FEASolver(DirectSolver, problem)
         K = solver.globalinfo.K
@@ -395,7 +395,7 @@ end
     @testset "size(op) returns (m, n)" begin
         nels = (2, 2)
         sizes = (1.0, 1.0)
-        problem = PointLoadCantilever(Val{:Linear}, nels, sizes, 1.0, 0.3, 1.0)
+        problem = PointLoadCantilever(nels, sizes, 1.0, 0.3, 1.0)
 
         solver = FEASolver(CGMatrixFreeSolver, problem)
         elementinfo = solver.elementinfo
@@ -430,7 +430,7 @@ end
     @testset "size(op, i) for i=1,2" begin
         nels = (2, 2)
         sizes = (1.0, 1.0)
-        problem = PointLoadCantilever(Val{:Linear}, nels, sizes, 1.0, 0.3, 1.0)
+        problem = PointLoadCantilever(nels, sizes, 1.0, 0.3, 1.0)
 
         solver = FEASolver(CGMatrixFreeSolver, problem)
         elementinfo = solver.elementinfo
@@ -469,7 +469,7 @@ end
     @testset "eltype returns type parameter T" begin
         nels = (2, 2)
         sizes = (1.0, 1.0)
-        problem = PointLoadCantilever(Val{:Linear}, nels, sizes, 1.0, 0.3, 1.0)
+        problem = PointLoadCantilever(nels, sizes, 1.0, 0.3, 1.0)
 
         solver = FEASolver(CGMatrixFreeSolver, problem)
         elementinfo = solver.elementinfo
@@ -503,7 +503,7 @@ end
     @testset "MatrixFreeOperator show output" begin
         nels = (2, 2)
         sizes = (1.0, 1.0)
-        problem = PointLoadCantilever(Val{:Linear}, nels, sizes, 1.0, 0.3, 1.0)
+        problem = PointLoadCantilever(nels, sizes, 1.0, 0.3, 1.0)
 
         solver = FEASolver(CGMatrixFreeSolver, problem)
 
@@ -541,7 +541,7 @@ end
     @testset "MatrixOperator show output" begin
         nels = (2, 2)
         sizes = (1.0, 1.0)
-        problem = PointLoadCantilever(Val{:Linear}, nels, sizes, 1.0, 0.3, 1.0)
+        problem = PointLoadCantilever(nels, sizes, 1.0, 0.3, 1.0)
 
         solver = FEASolver(DirectSolver, problem)
 
@@ -563,7 +563,7 @@ end
     @testset "mul! with solver state" begin
         nels = (4, 4)
         sizes = (1.0, 1.0)
-        problem = PointLoadCantilever(Val{:Linear}, nels, sizes, 1.0, 0.3, 1.0)
+        problem = PointLoadCantilever(nels, sizes, 1.0, 0.3, 1.0)
 
         solver = FEASolver(CGMatrixFreeSolver, problem)
 
@@ -608,7 +608,7 @@ end
     @testset "mul! consistency with matrix assembly" begin
         nels = (4, 4)
         sizes = (1.0, 1.0)
-        problem = PointLoadCantilever(Val{:Linear}, nels, sizes, 1.0, 0.3, 1.0)
+        problem = PointLoadCantilever(nels, sizes, 1.0, 0.3, 1.0)
 
         # Assembly solver
         solver_asm = FEASolver(CGAssemblySolver, problem)
@@ -664,7 +664,7 @@ end
     @testset "Consistency with assembled matrix approach" begin
         nels = (4, 4)
         sizes = (1.0, 1.0)
-        problem = PointLoadCantilever(Val{:Linear}, nels, sizes, 1.0, 0.3, 1.0)
+        problem = PointLoadCantilever(nels, sizes, 1.0, 0.3, 1.0)
 
         solver_assembly = FEASolver(CGAssemblySolver, problem; abstol=1e-8)
         solver_matrixfree = FEASolver(CGMatrixFreeSolver, problem; abstol=1e-8)

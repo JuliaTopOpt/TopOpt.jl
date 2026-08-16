@@ -14,6 +14,8 @@ getdim(::StiffnessTopOptProblem{dim,T}) where {dim,T} = dim
 floattype(::StiffnessTopOptProblem{dim,T}) where {dim,T} = T
 getE(p::StiffnessTopOptProblem) = p.E
 getν(p::StiffnessTopOptProblem) = p.ν
+YoungsModulus(p::StiffnessTopOptProblem) = getE(p)
+PoissonRatio(p::StiffnessTopOptProblem) = getν(p)
 getgeomorder(p::StiffnessTopOptProblem) = nnodespercell(p) in (9, 27) ? 2 : 1
 getdensity(::StiffnessTopOptProblem{dim,T}) where {dim,T} = T(0)
 getmetadata(p::StiffnessTopOptProblem) = p.metadata
@@ -78,7 +80,7 @@ function Base.show(io::IO, ::MIME{Symbol("text/plain")}, ::PointLoadCantilever)
 end
 
 """
-    PointLoadCantilever(::Type{Val{CellType}}, nels::NTuple{dim,Int}, sizes::NTuple{dim}, E, ν, force) where {dim, CellType}
+    PointLoadCantilever(nels::NTuple{dim,Int}, sizes::NTuple{dim}, E, ν, force; celltype=:Linear) where {dim}
 
 - `dim`: dimension of the problem
 - `E`: Young's modulus
@@ -86,7 +88,7 @@ end
 - `force`: force at the center right of the cantilever beam (positive is downward)
 - `nels`: number of elements in each direction, a 2-tuple for 2D problems and a 3-tuple for 3D problems
 - `sizes`: the size of each element in each direction, a 2-tuple for 2D problems and a 3-tuple for 3D problems
-- `CellType`: can be either `:Linear` or `:Quadratic` to determine the order of the geometric and field basis functions and element type. Only isoparametric elements are supported for now.
+- `celltype`: can be either `:Linear` or `:Quadratic` to determine the order of the geometric and field basis functions and element type. Only isoparametric elements are supported for now.
 
 Example:
 ```
@@ -102,25 +104,30 @@ celltype = :Linear
 # Quadratic elements and quadratic basis functions
 #celltype = :Quadratic
 
-problem = PointLoadCantilever(Val{celltype}, nels, sizes, E, ν, force)
+problem = PointLoadCantilever(nels, sizes, E, ν, force; celltype)
 ```
 """
 function PointLoadCantilever(
-    ::Type{Val{CellType}},
     nels::NTuple{dim,Int},
     sizes::NTuple{dim},
     E=1.0,
     ν=0.3,
-    force=1.0,
+    force=1.0;
+    celltype::Symbol=:Linear,
+) where {dim}
+    return _PointLoadCantilever(_celltype_tag(celltype), nels, sizes, E, ν, force)
+end
+function _PointLoadCantilever(
+    ::Val{CellType}, nels::NTuple{dim,Int}, sizes::NTuple{dim}, E=1.0, ν=0.3, force=1.0
 ) where {dim,CellType}
     iseven(nels[2]) && (length(nels) < 3 || iseven(nels[3])) ||
         throw("Grid does not have an even number of elements along the y and/or z axes.")
 
     T = float(promote_type(eltype(sizes), typeof(E), typeof(ν), typeof(force)))
     if CellType === :Linear || dim === 3
-        rect_grid = RectilinearGrid(Val{:Linear}, nels, T.(sizes))
+        rect_grid = RectilinearGrid(nels, T.(sizes); celltype=:Linear)
     else
-        rect_grid = RectilinearGrid(Val{:Quadratic}, nels, T.(sizes))
+        rect_grid = RectilinearGrid(nels, T.(sizes); celltype=:Quadratic)
     end
 
     if haskey(rect_grid.grid.facetsets, "fixed_all")
@@ -230,7 +237,7 @@ function Base.show(io::IO, ::MIME{Symbol("text/plain")}, ::HalfMBB)
 end
 
 """
-    HalfMBB(::Type{Val{CellType}}, nels::NTuple{dim,Int}, sizes::NTuple{dim}, E, ν, force) where {dim, CellType}
+    HalfMBB(nels::NTuple{dim,Int}, sizes::NTuple{dim}, E, ν, force; celltype=:Linear) where {dim}
 
 - `dim`: dimension of the problem
 - `E`: Young's modulus
@@ -238,7 +245,7 @@ end
 - `force`: force at the top left of half the MBB (positive is downward)
 - `nels`: number of elements in each direction, a 2-tuple for 2D problems and a 3-tuple for 3D problems
 - `sizes`: the size of each element in each direction, a 2-tuple for 2D problems and a 3-tuple for 3D problems
-- `CellType`: can be either `:Linear` or `:Quadratic` to determine the order of the geometric and field basis functions and element type. Only isoparametric elements are supported for now.
+- `celltype`: can be either `:Linear` or `:Quadratic` to determine the order of the geometric and field basis functions and element type. Only isoparametric elements are supported for now.
 
 Example:
 ```
@@ -254,22 +261,27 @@ celltype = :Linear
 # Quadratic elements and quadratic basis functions
 #celltype = :Quadratic
 
-problem = HalfMBB(Val{celltype}, nels, sizes, E, ν, force)
+problem = HalfMBB(nels, sizes, E, ν, force; celltype)
 ```
 """
 function HalfMBB(
-    ::Type{Val{CellType}},
     nels::NTuple{dim,Int},
     sizes::NTuple{dim},
     E=1.0,
     ν=0.3,
-    force=1.0,
+    force=1.0;
+    celltype::Symbol=:Linear,
+) where {dim}
+    return _HalfMBB(_celltype_tag(celltype), nels, sizes, E, ν, force)
+end
+function _HalfMBB(
+    ::Val{CellType}, nels::NTuple{dim,Int}, sizes::NTuple{dim}, E=1.0, ν=0.3, force=1.0
 ) where {dim,CellType}
     T = float(promote_type(eltype(sizes), typeof(E), typeof(ν), typeof(force)))
     if CellType === :Linear || dim === 3
-        rect_grid = RectilinearGrid(Val{:Linear}, nels, T.(sizes))
+        rect_grid = RectilinearGrid(nels, T.(sizes); celltype=:Linear)
     else
-        rect_grid = RectilinearGrid(Val{:Quadratic}, nels, T.(sizes))
+        rect_grid = RectilinearGrid(nels, T.(sizes); celltype=:Quadratic)
     end
 
     if haskey(rect_grid.grid.facetsets, "fixed_u1")
@@ -381,7 +393,7 @@ function Base.show(io::IO, ::MIME{Symbol("text/plain")}, ::LBeam)
 end
 
 """
-    LBeam(::Type{Val{CellType}}, ::Type{T}=Float64; length = 100, height = 100, upperslab = 50, lowerslab = 50, E = 1.0, ν = 0.3, force = 1.0, load_width = nothing) where {T, CellType}
+    LBeam(::Type{T}=Float64; celltype=:Linear, length = 100, height = 100, upperslab = 50, lowerslab = 50, E = 1.0, ν = 0.3, force = 1.0, load_width = nothing) where {T}
 
 - `T`: number type for computations and coordinates
 - `E`: Young's modulus
@@ -394,7 +406,7 @@ end
   optimization (a mesh-dependent artifact of load introduction, not of the
   topology).
 - `length`, `height`, `upperslab` and `lowerslab` are explained in [`LGrid`](@ref).
-- `CellType`: can be either `:Linear` or `:Quadratic` to determine the order of the geometric and field basis functions and element type. Only isoparametric elements are supported for now.
+- `celltype`: can be either `:Linear` or `:Quadratic` to determine the order of the geometric and field basis functions and element type. Only isoparametric elements are supported for now.
 
 Example:
 ```
@@ -408,12 +420,12 @@ celltype = :Linear
 # Quadratic elements and quadratic basis functions
 #celltype = :Quadratic
 
-problem = LBeam(Val{celltype}, E = E, ν = ν, force = force)
+problem = LBeam(E = E, ν = ν, force = force)
 ```
 """
 function LBeam(
-    ::Type{Val{CellType}},
     (::Type{T})=Float64;
+    celltype::Symbol=:Linear,
     length=100,
     height=100,
     upperslab=50,
@@ -422,11 +434,36 @@ function LBeam(
     ν=0.3,
     force=1.0,
     load_width=nothing,
-) where {T,CellType}
+) where {T}
+    return _LBeam(
+        _celltype_tag(celltype),
+        T;
+        length=length,
+        height=height,
+        upperslab=upperslab,
+        lowerslab=lowerslab,
+        E=E,
+        ν=ν,
+        force=force,
+        load_width=load_width,
+    )
+end
+function _LBeam(
+    ::Val{CellType},
+    ::Type{T};
+    length=100,
+    height=100,
+    upperslab=50,
+    lowerslab=50,
+    E=1.0,
+    ν=0.3,
+    force=1.0,
+    load_width=nothing,
+) where {CellType,T}
     # Create displacement field u
     grid = LGrid(
-        Val{CellType},
         T;
+        celltype=CellType,
         length=length,
         height=height,
         upperslab=upperslab,
@@ -565,19 +602,24 @@ function Base.show(io::IO, ::MIME{Symbol("text/plain")}, ::TieBeam)
 end
 
 """
-    TieBeam(::Type{Val{CellType}}, ::Type{T} = Float64, refine = 1, force = T(1); E = T(1), ν = T(0.3)) where {T, CellType}
+    TieBeam(::Type{T} = Float64; celltype=:Linear, refine = 1, force = T(1), E = T(1), ν = T(0.3)) where {T}
 
 - `T`: number type for computations and coordinates
 - `E`: Young's modulus
 - `ν`: Poisson's ration
 - `force`: force at the center right of the cantilever beam (positive is downward)
 - `refine`: an integer value of 1 or greater that specifies the mesh refinement extent. A value of 1 gives the standard tie-beam problem in literature.
-- `CellType`: can be either `:Linear` or `:Quadratic` to determine the order of the geometric and field basis functions and element type. Only isoparametric elements are supported for now.
+- `celltype`: can be either `:Linear` or `:Quadratic` to determine the order of the geometric and field basis functions and element type. Only isoparametric elements are supported for now.
 """
 function TieBeam(
-    ::Type{Val{CellType}}, (::Type{T})=Float64; refine=1, force=T(1), E=T(1), ν=T(0.3)
+    (::Type{T})=Float64; celltype::Symbol=:Linear, refine=1, force=T(1), E=T(1), ν=T(0.3)
+) where {T}
+    return _TieBeam(_celltype_tag(celltype), T; refine=refine, force=force, E=E, ν=ν)
+end
+function _TieBeam(
+    ::Val{CellType}, ::Type{T}; refine=1, force=T(1), E=T(1), ν=T(0.3)
 ) where {T,CellType}
-    grid = TieBeamGrid(Val{CellType}, T; refine=refine)
+    grid = TieBeamGrid(T; celltype=CellType, refine=refine)
 
     dh = DofHandler(grid)
     refshape = Ferrite.getrefshape(eltype(grid.cells))
@@ -736,7 +778,7 @@ getheatfluxdict(p::HeatConductionProblem) = p.heatfluxdict
 getcloaddict(p::HeatConductionProblem) = Dict(node => [v] for (node, v) in p.cloaddict)
 
 """
-    HeatConductionProblem(::Type{Val{CellType}}, nels, sizes, k=1.0; Tleft=0.0, Tright=0.0, Ttop=nothing, Tbottom=nothing, heatflux=Dict{String,Float64}(), cload=Dict{Int,Float64}(), Tfix=Dict{Int,Float64}())
+    HeatConductionProblem(nels, sizes, k=1.0; celltype=:Linear, Tleft=0.0, Tright=0.0, Ttop=nothing, Tbottom=nothing, heatflux=Dict{String,Float64}(), cload=Dict{Int,Float64}(), Tfix=Dict{Int,Float64}())
 
 Create a 2D/3D heat conduction problem on a rectangular domain.
 
@@ -749,6 +791,9 @@ side free (no Dirichlet BC there). `Ttop` and `Tbottom` default to
 Heat flux BCs can be applied on any faceset via the `heatflux` argument.
 Point heat sources can be applied at nodes via the `cload` argument.
 
+`celltype` is either `:Linear` or `:Quadratic` to determine the order of the
+geometric and field basis functions and element type.
+
 Example:
 ```julia
 nels = (60, 20)
@@ -756,17 +801,17 @@ sizes = (1.0, 1.0)
 k = 1.0
 # Apply heat flux on top boundary (faceset "top")
 heatflux = Dict("top" => 100.0)  # 100 W/m² into the domain
-problem = HeatConductionProblem(Val{:Linear}, nels, sizes, k; Tleft=0.0, Tright=0.0, heatflux=heatflux)
+problem = HeatConductionProblem(nels, sizes, k; Tleft=0.0, Tright=0.0, heatflux=heatflux)
 
 # Point heat source at the top-center node, cold bottom (classic tree setup):
 nx, ny = nels
 center_top_node = div(nx, 2) + 1 + ny * (nx + 1)
 cload = Dict(center_top_node => 1.0)
-problem = HeatConductionProblem(Val{:Linear}, nels, sizes, k; Tleft=nothing, Tright=nothing, Tbottom=0.0, cload=cload)
+problem = HeatConductionProblem(nels, sizes, k; Tleft=nothing, Tright=nothing, Tbottom=0.0, cload=cload)
 
 # Point source top-center, point sink bottom-center (branching tree):
 center_bottom_node = div(nx, 2) + 1
-problem = HeatConductionProblem(Val{:Linear}, nels, sizes, k;
+problem = HeatConductionProblem(nels, sizes, k;
     Tleft=nothing, Tright=nothing, Ttop=nothing, Tbottom=nothing,
     cload=Dict(center_top_node => 1.0),
     Tfix=Dict(center_bottom_node => 0.0),
@@ -774,7 +819,34 @@ problem = HeatConductionProblem(Val{:Linear}, nels, sizes, k;
 ```
 """
 function HeatConductionProblem(
-    ::Type{Val{CellType}},
+    nels::NTuple{dim,Int},
+    sizes::NTuple{dim},
+    k=1.0;
+    celltype::Symbol=:Linear,
+    Tleft=0.0,
+    Tright=0.0,
+    Ttop=nothing,
+    Tbottom=nothing,
+    heatflux=Dict{String,Float64}(),
+    cload=Dict{Int,Float64}(),
+    Tfix=Dict{Int,Float64}(),
+) where {dim}
+    return _HeatConductionProblem(
+        _celltype_tag(celltype),
+        nels,
+        sizes,
+        k;
+        Tleft=Tleft,
+        Tright=Tright,
+        Ttop=Ttop,
+        Tbottom=Tbottom,
+        heatflux=heatflux,
+        cload=cload,
+        Tfix=Tfix,
+    )
+end
+function _HeatConductionProblem(
+    ::Val{CellType},
     nels::NTuple{dim,Int},
     sizes::NTuple{dim},
     k=1.0;
@@ -801,9 +873,9 @@ function HeatConductionProblem(
     )
 
     if CellType === :Linear
-        rect_grid = RectilinearGrid(Val{:Linear}, nels, T.(sizes))
+        rect_grid = RectilinearGrid(nels, T.(sizes); celltype=:Linear)
     else
-        rect_grid = RectilinearGrid(Val{:Quadratic}, nels, T.(sizes))
+        rect_grid = RectilinearGrid(nels, T.(sizes); celltype=:Quadratic)
     end
 
     # Add boundary node sets
@@ -904,7 +976,7 @@ end
 nnodespercell(p::HeatConductionProblem) = nnodespercell(p.rect_grid)
 
 """
-    HeatTree(::Type{Val{CellType}}, nels, sizes, k=1.0; q=1.0)
+    HeatTree(nels, sizes, k=1.0; celltype=:Linear, q=1.0)
 
 Convenience constructor for the classic heat-conduction topology-optimization
 benchmark ([BendsoeSigmund2003](@cite) §1.3, Fig. 1.4):
@@ -919,15 +991,16 @@ Arguments:
 - `sizes`: tuple of element sizes
 - `k`: thermal conductivity
 - `q`: heat flux on the top boundary (W/m², positive = into the domain)
+- `celltype`: either `:Linear` or `:Quadratic`
 """
 function HeatTree(
-    ::Type{Val{CellType}}, nels::NTuple{dim,Int}, sizes::NTuple{dim}, k=1.0; q=1.0
-) where {dim,CellType}
+    nels::NTuple{dim,Int}, sizes::NTuple{dim}, k=1.0; celltype::Symbol=:Linear, q=1.0
+) where {dim}
     return HeatConductionProblem(
-        Val{CellType},
         nels,
         sizes,
         k;
+        celltype=celltype,
         Tleft=nothing,
         Tright=nothing,
         Ttop=nothing,

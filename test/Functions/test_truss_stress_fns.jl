@@ -48,9 +48,7 @@ using ColorSchemes
     # Get the load case 0
     loads = load_cases["0"]
     # Assemble the problem
-    problem = TrussProblem(
-        Val{:Linear}, node_points, elements, loads, fixities, mats, crosssecs
-    )
+    problem = TrussProblem(node_points, elements, loads, fixities, mats, crosssecs)
 
     # println("This problem has ", nnodes, " nodes and ", ncells, " elements.")
 

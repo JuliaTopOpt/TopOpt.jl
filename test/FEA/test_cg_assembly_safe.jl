@@ -7,7 +7,7 @@ using TopOpt, Test
         E = 1.0
         ν = 0.3
         force = -1.0
-        problem = PointLoadCantilever(Val{:Linear}, nels, sizes, E, ν, force)
+        problem = PointLoadCantilever(nels, sizes, E, ν, force)
 
         # Create CGAssemblySolver
         solver = FEASolver(CGAssemblySolver, problem; abstol=1e-7)
@@ -30,7 +30,7 @@ using TopOpt, Test
         E = 1.0
         ν = 0.3
         force = -1.0
-        problem = PointLoadCantilever(Val{:Linear}, nels, sizes, E, ν, force)
+        problem = PointLoadCantilever(nels, sizes, E, ν, force)
 
         # Create two identical solvers
         solver_safe = FEASolver(CGAssemblySolver, problem; abstol=1e-7)
@@ -62,7 +62,7 @@ using TopOpt, Test
         heatflux = Dict{String,Float64}("top" => 1.0)
 
         problem = HeatConductionProblem(
-            Val{:Linear}, nels, sizes, k; Tleft=0.0, Tright=0.0, heatflux=heatflux
+            nels, sizes, k; Tleft=0.0, Tright=0.0, heatflux=heatflux
         )
 
         solver = FEASolver(CGAssemblySolver, problem; abstol=1e-7)
@@ -83,7 +83,7 @@ using TopOpt, Test
         E = 1.0
         ν = 0.3
         force = -1.0
-        problem = PointLoadCantilever(Val{:Linear}, nels, sizes, E, ν, force)
+        problem = PointLoadCantilever(nels, sizes, E, ν, force)
 
         solver = FEASolver(CGAssemblySolver, problem; abstol=1e-7, xmin=1e-6)
 

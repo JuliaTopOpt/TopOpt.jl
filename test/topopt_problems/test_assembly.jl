@@ -23,7 +23,7 @@ using TopOpt.TopOptProblems: make_Kes_and_fes
     ν = 0.3
     force = 1.0
 
-    problem = PointLoadCantilever(Val{:Linear}, nels, sizes, E, ν, force)
+    problem = PointLoadCantilever(nels, sizes, E, ν, force)
 
     # Build element FEA info
     elementinfo = ElementFEAInfo(problem, 2, Val{:Static})
@@ -87,7 +87,7 @@ end
     ν = 0.3
     force = 1.0
 
-    problem = PointLoadCantilever(Val{:Linear}, nels, sizes, E, ν, force)
+    problem = PointLoadCantilever(nels, sizes, E, ν, force)
 
     # Build element FEA info
     elementinfo = ElementFEAInfo(problem, 2, Val{:Static})
@@ -213,9 +213,7 @@ end
         ndim, nnodes, ncells = length(node_points[1]), length(node_points), length(elements)
         loads = load_cases["0"]
 
-        problem = TrussProblem(
-            Val{:Linear}, node_points, elements, loads, fixities, mats, crosssecs
-        )
+        problem = TrussProblem(node_points, elements, loads, fixities, mats, crosssecs)
 
         # Create solver
         solver = FEASolver(DirectSolver, problem)
@@ -276,7 +274,7 @@ end
     ν = 0.3
     force = 1.0
 
-    problem = PointLoadCantilever(Val{:Linear}, nels, sizes, E, ν, force)
+    problem = PointLoadCantilever(nels, sizes, E, ν, force)
     elementinfo = ElementFEAInfo(problem, 2, Val{:Static})
     ncells = getncells(problem.ch.dh.grid)
 
@@ -305,7 +303,7 @@ end
     ν = 0.3
     force = 1.0
 
-    problem = PointLoadCantilever(Val{:Linear}, nels, sizes, E, ν, force)
+    problem = PointLoadCantilever(nels, sizes, E, ν, force)
     elementinfo = ElementFEAInfo(problem, 2, Val{:Static})
     ncells = getncells(problem.ch.dh.grid)
 
@@ -327,7 +325,7 @@ end
     ν = T(0.3)
     force = T(1)
 
-    problem = TieBeam(Val{:Linear}, T; refine=1, force=force, E=E, ν=ν)
+    problem = TieBeam(T; refine=1, force=force, E=E, ν=ν)
 
     # Check that TieBeam has pressure loads defined
     pressuredict = TopOpt.TopOptProblems.getpressuredict(problem)
@@ -380,7 +378,7 @@ end
     ν = T(0.3)
     force = T(1)
 
-    problem = TieBeam(Val{:Linear}, T; refine=1, force=force, E=E, ν=ν)
+    problem = TieBeam(T; refine=1, force=force, E=E, ν=ν)
 
     # Build element FEA info
     elementinfo = ElementFEAInfo(problem, 2, Val{:Static})
@@ -418,7 +416,7 @@ end
 @testset "Pressure direction sign convention" begin
     # Create a simple problem with known pressure
     T = Float64
-    problem = TieBeam(Val{:Linear}, T; refine=1, force=T(1.0), E=T(1), ν=T(0.3))
+    problem = TieBeam(T; refine=1, force=T(1.0), E=T(1), ν=T(0.3))
 
     # Get pressure dictionary
     pressuredict = TopOpt.TopOptProblems.getpressuredict(problem)
@@ -451,7 +449,7 @@ end
     # This test specifically covers the code in _make_dloads that iterates over
     # pressuredict keys and computes distributed loads from pressure boundary conditions
     T = Float64
-    problem = TieBeam(Val{:Linear}, T; refine=2, force=T(1.0), E=T(1), ν=T(0.3))
+    problem = TieBeam(T; refine=2, force=T(1.0), E=T(1), ν=T(0.3))
 
     # Get problem data needed for the loop
     dh = TopOpt.TopOptProblems.getdh(problem)
@@ -502,7 +500,7 @@ end
 # Test pressure loop with multiple face quadrature points
 @testset "Pressure loop - quadrature integration" begin
     T = Float64
-    problem = TieBeam(Val{:Linear}, T; refine=2, force=T(1.0), E=T(1), ν=T(0.3))
+    problem = TieBeam(T; refine=2, force=T(1.0), E=T(1), ν=T(0.3))
 
     # Get facevalues and dloads
     Kes, weights, dloads, cellvalues, facevalues = make_Kes_and_fes(
@@ -540,7 +538,7 @@ end
 # Test pressure boundary condition error handling
 @testset "Pressure loop - boundary validation" begin
     T = Float64
-    problem = TieBeam(Val{:Linear}, T; refine=1, force=T(1.0), E=T(1), ν=T(0.3))
+    problem = TieBeam(T; refine=1, force=T(1.0), E=T(1), ν=T(0.3))
 
     # Verify all faces in pressuredict facesets are on the boundary
     dh = TopOpt.TopOptProblems.getdh(problem)

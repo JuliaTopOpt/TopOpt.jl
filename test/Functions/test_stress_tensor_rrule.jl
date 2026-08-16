@@ -18,7 +18,7 @@ Random.seed!(1)
 
 @testset "StressTensorFun reinit! rrule" begin
     nels = (2, 2)
-    problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
+    problem = HalfMBB(nels, (1.0, 1.0), 1.0, 0.3, 1.0)
     solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(3.0))
 
     st = StressTensorFun(solver)
@@ -133,7 +133,7 @@ end
 
 @testset "StressTensorFun reinit! integration with AD" begin
     nels = (3, 3)
-    problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
+    problem = HalfMBB(nels, (1.0, 1.0), 1.0, 0.3, 1.0)
     solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(3.0))
 
     st = StressTensorFun(solver)
@@ -171,7 +171,7 @@ end
 
 @testset "ElementStressTensorKernelFun rrule" begin
     nels = (2, 2)
-    problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
+    problem = HalfMBB(nels, (1.0, 1.0), 1.0, 0.3, 1.0)
     solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(3.0))
 
     st = StressTensorFun(solver)

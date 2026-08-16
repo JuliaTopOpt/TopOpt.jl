@@ -63,7 +63,7 @@ end
     ν = 0.3
     force = 1.0
 
-    problem = PointLoadCantilever(Val{:Linear}, nels, sizes, E, ν, force)
+    problem = PointLoadCantilever(nels, sizes, E, ν, force)
 
     # Create a solver using FEASolver with DirectSolver
     solver = FEASolver(DirectSolver, problem)
@@ -83,7 +83,7 @@ end
     ν = 0.3
     force = 1.0
 
-    problem = PointLoadCantilever(Val{:Linear}, nels, sizes, E, ν, force)
+    problem = PointLoadCantilever(nels, sizes, E, ν, force)
 
     # Create a solver using FEASolver with DirectSolver
     solver = FEASolver(DirectSolver, problem)
@@ -647,7 +647,7 @@ end
     ν = 0.3
     force = 1.0
 
-    problem = PointLoadCantilever(Val{:Linear}, nels, sizes, E, ν, force)
+    problem = PointLoadCantilever(nels, sizes, E, ν, force)
 
     @testset "Initial state - prev_penalty equals penalty" begin
         # Test with DirectSolver

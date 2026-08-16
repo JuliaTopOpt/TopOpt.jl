@@ -31,6 +31,22 @@ struct TrussFEACrossSec{T} <: AbstractFEACrossSec
     A::T # cross section area
 end
 
+# Treat `TrussFEACrossSec` as a scalar-like wrapper over its area so it can be
+# used as a design variable (e.g. `TrussFEACrossSec(1.0) + 1`).
+Base.:+(a::TrussFEACrossSec, b::Number) = TrussFEACrossSec(a.A + b)
+Base.:+(a::Number, b::TrussFEACrossSec) = TrussFEACrossSec(a + b.A)
+Base.:+(a::TrussFEACrossSec, b::TrussFEACrossSec) = TrussFEACrossSec(a.A + b.A)
+Base.:-(a::TrussFEACrossSec, b::Number) = TrussFEACrossSec(a.A - b)
+Base.:-(a::TrussFEACrossSec) = TrussFEACrossSec(-a.A)
+Base.:-(a::TrussFEACrossSec, b::TrussFEACrossSec) = TrussFEACrossSec(a.A - b.A)
+Base.:*(a::TrussFEACrossSec, b::Number) = TrussFEACrossSec(a.A * b)
+Base.:*(a::Number, b::TrussFEACrossSec) = TrussFEACrossSec(a * b.A)
+Base.:/(a::TrussFEACrossSec, b::Number) = TrussFEACrossSec(a.A / b)
+Base.zero(::TrussFEACrossSec{T}) where {T} = TrussFEACrossSec(zero(T))
+Base.one(::TrussFEACrossSec{T}) where {T} = TrussFEACrossSec(one(T))
+Base.eltype(::Type{<:TrussFEACrossSec{T}}) where {T} = T
+Base.eltype(::TrussFEACrossSec{T}) where {T} = T
+
 include("grids.jl")
 include("problem_types.jl")
 include("matrices_and_vectors.jl")

@@ -1,14 +1,22 @@
 using ..TopOpt.TopOptProblems:
-    StiffnessTopOptProblem, Metadata, RectilinearGrid, left, right, middley, middlez
+    StiffnessTopOptProblem,
+    Metadata,
+    RectilinearGrid,
+    left,
+    right,
+    middley,
+    middlez,
+    _celltype_tag
 
 get_fixities_node_set_name(i) = "fixed_u$(i)"
 
 """
-    TrussProblem(::Val{:Linear}, node_points, elements, loads, fixities, mats, crosssecs)
+    TrussProblem(node_points, elements, loads, fixities, mats, crosssecs; celltype=:Linear)
 
 Truss topology optimization problem. Construct from node coordinates,
 element connectivity, loads, fixities, material and cross-section data.
-Use `load_truss_json` to load these from a JSON file.
+Use `load_truss_json` to load these from a JSON file. `celltype` selects the
+element order; only `:Linear` (axial bar elements) is currently supported.
 """
 struct TrussProblem{
     xdim,
@@ -37,7 +45,20 @@ getA(sp::TrussProblem) = [cs.A for cs in sp.truss_grid.crosssecs]
 Ferrite.getnnodes(problem::StiffnessTopOptProblem) = Ferrite.getnnodes(getdh(problem).grid)
 
 function TrussProblem(
-    ::Type{Val{CellType}},
+    node_points::Dict{iT,SVector{xdim,T}},
+    elements::Dict{iT,Tuple{iT,iT}},
+    loads::Dict{iT,SVector{xdim,T}},
+    supports::Dict{iT,SVector{xdim,fT}},
+    mats=TrussFEAMaterial{T}(1.0, 0.3),
+    crosssecs=TrussFEACrossSec{T}(1.0);
+    celltype::Symbol=:Linear,
+) where {xdim,T,iT,fT}
+    return _TrussProblem(
+        _celltype_tag(celltype), node_points, elements, loads, supports, mats, crosssecs
+    )
+end
+function _TrussProblem(
+    ::Val{CellType},
     node_points::Dict{iT,SVector{xdim,T}},
     elements::Dict{iT,Tuple{iT,iT}},
     loads::Dict{iT,SVector{xdim,T}},
@@ -200,7 +221,7 @@ function PointLoadCantileverTruss(
         throw("Grid does not have an even number of elements along the y and/or z axes.")
     T = float(promote_type(eltype(sizes), typeof(E), typeof(ν), typeof(force)))
     # only for the convience of getting all the node points
-    rect_grid = RectilinearGrid(Val{:Linear}, nels, T.(sizes))
+    rect_grid = RectilinearGrid(nels, T.(sizes))
     node_mat = hcat(map(x -> Vector(x.x), rect_grid.grid.nodes)...)
     kdtree = KDTree(node_mat)
     if dim == 2

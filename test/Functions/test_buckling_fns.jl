@@ -10,7 +10,7 @@ gm_ins_dir = joinpath(@__DIR__, "..", "truss_topopt_problems", "instances", "gro
 
 @testset "AssembleKFun" begin
     nels = (2, 2)
-    problem = PointLoadCantilever(Val{:Quadratic}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
+    problem = PointLoadCantilever(nels, (1.0, 1.0), 1.0, 0.3, 1.0; celltype=:Quadratic)
     ak = AssembleKFun(problem)
     dh = problem.ch.dh
     total_ndof = ndofs(dh)
@@ -39,7 +39,7 @@ end
 
 @testset "ElementKFun" begin
     nels = (2, 2)
-    problem = PointLoadCantilever(Val{:Quadratic}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
+    problem = PointLoadCantilever(nels, (1.0, 1.0), 1.0, 0.3, 1.0; celltype=:Quadratic)
     solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(1.0))
 
     ek = ElementKFun(solver)
@@ -83,9 +83,7 @@ end
     ndim, nnodes, ncells = length(node_points[1]), length(node_points), length(elements)
     loads = load_cases["0"]
 
-    problem = TrussProblem(
-        Val{:Linear}, node_points, elements, loads, fixities, mats, crossecs
-    )
+    problem = TrussProblem(node_points, elements, loads, fixities, mats, crossecs)
     solver = FEASolver(DirectSolver, problem)
     solver()
     u = solver.u
@@ -139,9 +137,7 @@ end
     node_points, elements, _, _, fixities, load_cases = load_truss_json(problem_file)
     loads = load_cases["0"]
 
-    problem = TrussProblem(
-        Val{:Linear}, node_points, elements, loads, fixities, mats, crossecs
-    )
+    problem = TrussProblem(node_points, elements, loads, fixities, mats, crossecs)
     solver = FEASolver(DirectSolver, problem)
     solver()
 
@@ -171,7 +167,7 @@ end
 
 @testset "apply_boundary" begin
     nels = (2, 2)
-    problem = PointLoadCantilever(Val{:Quadratic}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
+    problem = PointLoadCantilever(nels, (1.0, 1.0), 1.0, 0.3, 1.0; celltype=:Quadratic)
     ch = problem.ch
     dh = problem.ch.dh
     T = eltype(problem.E)
@@ -217,9 +213,7 @@ end
     ndim, nnodes, ncells = length(node_points[1]), length(node_points), length(elements)
     loads = load_cases["0"]
 
-    problem = TrussProblem(
-        Val{:Linear}, node_points, elements, loads, fixities, mats, crossecs
-    )
+    problem = TrussProblem(node_points, elements, loads, fixities, mats, crossecs)
 
     xmin = 0.0001 # minimum density
     p = 4.0 # penalty

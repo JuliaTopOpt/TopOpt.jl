@@ -24,7 +24,7 @@ rmin = 2.0; # density filter radius
 
 nels = (1440, 480) # (1000, 1000) # (500, 500) # (100, 100) # (1440, 480) # | (720, 240) 
 sizes = (1.0, 1.0)
-@timeit to "problem def" problem = PointLoadCantilever(Val{:Linear}, nels, sizes, E, v, f);
+@timeit to "problem def" problem = PointLoadCantilever(nels, sizes, E, v, f);
 
 # Define a finite element solver
 @timeit to "penalty def" penalty = PowerPenaltyFun(3.0)

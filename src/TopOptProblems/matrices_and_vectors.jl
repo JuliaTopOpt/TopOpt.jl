@@ -57,13 +57,17 @@ end
 initialize_K(sp::AbstractTopOptProblem) = Symmetric(allocate_matrix(sp.ch.dh))
 initialize_f(sp::AbstractTopOptProblem) = zeros(floattype(sp), ndofs(sp.ch.dh))
 
-function make_Kes_and_fes(problem, quad_order=2)
+function make_Kes_and_fes(problem::StiffnessTopOptProblem, quad_order=2)
     return make_Kes_and_fes(problem, quad_order, Val{:Static})
 end
-function make_Kes_and_fes(problem, ::Type{Val{mat_type}}) where {mat_type}
+function make_Kes_and_fes(
+    problem::StiffnessTopOptProblem, ::Type{Val{mat_type}}
+) where {mat_type}
     return make_Kes_and_fes(problem, 2, Val{mat_type})
 end
-function make_Kes_and_fes(problem, quad_order, ::Type{Val{mat_type}}) where {mat_type}
+function make_Kes_and_fes(
+    problem::StiffnessTopOptProblem, quad_order, ::Type{Val{mat_type}}
+) where {mat_type}
     T = floattype(problem)
     dim = getdim(problem)
     geom_order = getgeomorder(problem)
@@ -229,7 +233,9 @@ Assemble distributed loads for boundary (face) loads.
 For structural problems: returns boundary traction/pressure loads.
 For heat transfer problems: returns zeros (no boundary distributed heat sources).
 """
-function _make_dloads(fes, problem::StiffnessTopOptProblem, facetvalues)
+function _make_dloads(
+    fes, problem::StiffnessTopOptProblem, facetvalues::Ferrite.FacetValues
+)
     dim = getdim(problem)
     N = nnodespercell(problem)
     T = floattype(problem)
@@ -279,7 +285,9 @@ end
 # For heat transfer: surface heat flux (Neumann BC)
 # Heat flux q is positive INTO the domain (heat source on boundary)
 # Heat flux is NOT penalized - it's an external boundary condition
-function _make_dloads(fes, problem::HeatTransferTopOptProblem, facetvalues)
+function _make_dloads(
+    fes, problem::HeatTransferTopOptProblem, facetvalues::Ferrite.FacetValues
+)
     dim = getdim(problem)
     N = nnodespercell(problem)
     T = floattype(problem)
@@ -410,7 +418,7 @@ function make_Kes_and_fes(
 
     # Shape functions for the scalar temperature field. Use the interpolation
     # actually stored on the DofHandler so quadratic problems build quadratic
-    # cell/facet values (hardcoding order 1 breaks Val{:Quadratic} problems).
+    # cell/facet values (hardcoding order 1 breaks celltype=:Quadratic problems).
     # Pass the interpolation as both function and geometric mapping because
     # TopOpt uses isoparametric elements; Ferrite defaults the geometric
     # mapping to linear Lagrange, which mismatches quadratic cell nodes.

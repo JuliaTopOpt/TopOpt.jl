@@ -32,7 +32,7 @@ using TopOpt:
 
     @testset "NeuralNetworkFun problem constructor" begin
         # Create a simple problem
-        problem = PointLoadCantilever(Val{:Linear}, (4, 4), (1.0, 1.0), 1.0, 0.3, 1.0)
+        problem = PointLoadCantilever((4, 4), (1.0, 1.0), 1.0, 0.3, 1.0)
 
         # Create a simple NN model
         nn = Flux.Chain(Flux.Dense(2, 3, relu), Flux.Dense(3, 1, sigmoid))

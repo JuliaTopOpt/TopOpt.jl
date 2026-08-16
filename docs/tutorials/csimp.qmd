@@ -47,11 +47,11 @@ v = 0.3 # Poisson's ratio
 f = 1.0 # downward force
 
 problems = Any[
-    PointLoadCantilever(Val{:Linear}, (60, 20, 20), (1.0, 1.0, 1.0), E, v, f),  # 3D cantilever
-    PointLoadCantilever(Val{:Linear}, (160, 40), (1.0, 1.0), E, v, f),          # 2D cantilever
-    HalfMBB(Val{:Linear}, (60, 20), (1.0, 1.0), E, v, f),                       # Half MBB
-    LBeam(Val{:Linear}, Float64; force=f),                                      # L-beam
-    TieBeam(Val{:Quadratic}, Float64),                                          # Tie-beam
+    PointLoadCantilever((60, 20, 20), (1.0, 1.0, 1.0), E, v, f),  # 3D cantilever
+    PointLoadCantilever((160, 40), (1.0, 1.0), E, v, f),          # 2D cantilever
+    HalfMBB((60, 20), (1.0, 1.0), E, v, f),                       # Half MBB
+    LBeam(Float64; force=f),                                      # L-beam
+    TieBeam(Float64; celltype=:Quadratic),                                          # Tie-beam
 ]
 problem_names = [
     "3d cantilever beam", "cantilever beam", "half MBB beam", "L-beam", "tie-beam"

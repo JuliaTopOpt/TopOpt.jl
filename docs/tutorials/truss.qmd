@@ -69,11 +69,11 @@ The JSON file contains:
 ```{julia}
 #| eval: false
 problem = TrussProblem(
-    Val{:Linear}, node_points, elements, loads, fixities, mats, crosssecs
+    node_points, elements, loads, fixities, mats, crosssecs
 )
 ```
 
-The `Val{:Linear}` specifies linear truss elements (axial deformation only).
+The default `celltype=:Linear` specifies linear truss elements (axial deformation only).
 The problem object assembles the global stiffness matrix and applies boundary
 conditions.
 

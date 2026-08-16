@@ -12,9 +12,7 @@ node_points, elements, mats, crosssecs, fixities, load_cases = load_truss_json(
 )
 ndim, nnodes, ncells = length(node_points[1]), length(node_points), length(elements)
 loads = load_cases["1"]
-problem = TrussProblem(
-    Val{:Linear}, node_points, elements, loads, fixities, mats, crosssecs
-)
+problem = TrussProblem(node_points, elements, loads, fixities, mats, crosssecs)
 
 xmin = 0.0001 # minimum density
 x0 = fill(1.0, ncells) # initial design

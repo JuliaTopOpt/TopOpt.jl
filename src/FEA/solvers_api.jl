@@ -122,7 +122,7 @@ mutable struct GenericFEASolver{
     xes::Vector{Vector{T}}
 end
 
-export GenericFEASolver
+export GenericFEASolver, cg_solve!
 
 # Linear solver algorithm dispatch
 # These functions dispatch on the linear solver type to solve the system
@@ -164,6 +164,55 @@ function solve_system!(
     return false
 end
 
+# Shared preconditioned-CG solve. Used by the assembled and matrix-free
+# `solve_system!` methods (forward pass) and by the thermal adjoint
+# `solve_adjoint!` in `Functions` so the CG setup (preconditioner init, lhs
+# zeroing, and the `cg!` call) is written once.
+function cg_solve!(
+    solver::GenericFEASolver{T,Physics,Solver},
+    op,
+    rhs,
+    lhs,
+    precond_matrix;
+    initially_zero=true,
+) where {T,Physics,Solver}
+    @unpack cg_max_iter, abstol, cg_statevars = solver
+    @unpack preconditioner, preconditioner_initialized = solver
+    if !(preconditioner === identity)
+        if !preconditioner_initialized[]
+            UpdatePreconditioner!(preconditioner, precond_matrix)
+            preconditioner_initialized[] = true
+        end
+    end
+    if initially_zero
+        fill!(lhs, zero(T))
+    end
+    if preconditioner === identity
+        return cg!(
+            lhs,
+            op,
+            rhs;
+            abstol=abstol,
+            maxiter=cg_max_iter,
+            log=false,
+            statevars=cg_statevars,
+            initially_zero=initially_zero,
+        )
+    else
+        return cg!(
+            lhs,
+            op,
+            rhs;
+            abstol=abstol,
+            maxiter=cg_max_iter,
+            log=false,
+            statevars=cg_statevars,
+            initially_zero=initially_zero,
+            Pl=preconditioner,
+        )
+    end
+end
+
 # CG with assembled matrix
 function solve_system!(
     ::Type{CGAssemblySolver},
@@ -184,49 +233,14 @@ function solve_system!(
         end
     end
 
-    @unpack cg_max_iter, abstol, cg_statevars = solver
-    @unpack preconditioner, preconditioner_initialized = solver
-
     _K = K isa Symmetric ? K.data : K
-    if !(preconditioner === identity)
-        if !preconditioner_initialized[]
-            UpdatePreconditioner!(preconditioner, _K)
-            preconditioner_initialized[] = true
-        end
-    end
     # `initially_zero=true` tells IterativeSolvers' cg! that `iszero(lhs)` so
     # it can skip one matvec when forming the initial residual. The caller
     # reuses `solver.u` as `lhs`, which holds the previous solution, so the
     # assumption is violated and CG silently accumulates the new solution on
     # top of the old one. Zero `lhs` to honor the contract.
-    if initially_zero
-        fill!(lhs, zero(T))
-    end
     op = MatrixOperator(_K, f, solver.conv)
-    if preconditioner === identity
-        return cg!(
-            lhs,
-            op,
-            f;
-            abstol=abstol,
-            maxiter=cg_max_iter,
-            log=false,
-            statevars=cg_statevars,
-            initially_zero=initially_zero,
-        )
-    else
-        return cg!(
-            lhs,
-            op,
-            f;
-            abstol=abstol,
-            maxiter=cg_max_iter,
-            log=false,
-            statevars=cg_statevars,
-            initially_zero=initially_zero,
-            Pl=preconditioner,
-        )
-    end
+    return cg_solve!(solver, op, f, lhs, _K; initially_zero=initially_zero)
 end
 
 # Matrix-free CG
@@ -239,8 +253,6 @@ function solve_system!(
     initially_zero=true,
     kwargs...,
 ) where {T,Physics}
-    @unpack cg_max_iter, abstol, cg_statevars = solver
-    @unpack preconditioner, preconditioner_initialized = solver
     @unpack elementinfo, meandiag, vars, xmin, fixed_dofs, free_dofs, xes = solver
 
     _K = K isa Symmetric ? K.data : K
@@ -260,42 +272,7 @@ function solve_system!(
         solver.conv,
     )
 
-    if !(preconditioner === identity)
-        if !preconditioner_initialized[]
-            UpdatePreconditioner!(preconditioner, _K)
-            preconditioner_initialized[] = true
-        end
-    end
-    # See CGAssemblySolver: honor the `initially_zero=true` contract by zeroing
-    # `lhs` (which is `solver.u` reused across solves) before cg! accumulates
-    # into it.
-    if initially_zero
-        fill!(lhs, zero(T))
-    end
-    if preconditioner === identity
-        return cg!(
-            lhs,
-            operator,
-            f;
-            abstol,
-            maxiter=cg_max_iter,
-            log=false,
-            statevars=cg_statevars,
-            initially_zero=initially_zero,
-        )
-    else
-        return cg!(
-            lhs,
-            operator,
-            f;
-            abstol,
-            maxiter=cg_max_iter,
-            log=false,
-            statevars=cg_statevars,
-            initially_zero=initially_zero,
-            Pl=preconditioner,
-        )
-    end
+    return cg_solve!(solver, operator, f, lhs, _K; initially_zero=initially_zero)
 end
 
 # Unified solver call operator

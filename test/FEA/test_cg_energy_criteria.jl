@@ -8,7 +8,7 @@ using TopOpt.FEA: EnergyCriteria, CGAssemblySolver, CGMatrixFreeSolver, DirectSo
         E = 1.0
         ν = 0.3
         force = -1.0
-        problem = PointLoadCantilever(Val{:Linear}, nels, sizes, E, ν, force)
+        problem = PointLoadCantilever(nels, sizes, E, ν, force)
 
         # Create solver with EnergyCriteria
         solver_energy = FEASolver(
@@ -45,7 +45,7 @@ using TopOpt.FEA: EnergyCriteria, CGAssemblySolver, CGMatrixFreeSolver, DirectSo
         E = 1.0
         ν = 0.3
         force = -1.0
-        problem = PointLoadCantilever(Val{:Linear}, nels, sizes, E, ν, force)
+        problem = PointLoadCantilever(nels, sizes, E, ν, force)
 
         # Create solver with EnergyCriteria
         solver_energy = FEASolver(
@@ -82,7 +82,7 @@ using TopOpt.FEA: EnergyCriteria, CGAssemblySolver, CGMatrixFreeSolver, DirectSo
         E = 1.0
         ν = 0.3
         force = -1.0
-        problem = PointLoadCantilever(Val{:Linear}, nels, sizes, E, ν, force)
+        problem = PointLoadCantilever(nels, sizes, E, ν, force)
 
         # Create solver with EnergyCriteria
         energy_criteria = EnergyCriteria()
@@ -109,7 +109,7 @@ using TopOpt.FEA: EnergyCriteria, CGAssemblySolver, CGMatrixFreeSolver, DirectSo
         E = 1.0
         ν = 0.3
         force = -1.0
-        problem = PointLoadCantilever(Val{:Linear}, nels, sizes, E, ν, force)
+        problem = PointLoadCantilever(nels, sizes, E, ν, force)
 
         # Test with different tolerances
         for abstol in [1e-5, 1e-7, 1e-9]

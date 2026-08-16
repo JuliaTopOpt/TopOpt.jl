@@ -122,15 +122,7 @@ function (b::BESO)(x0=copy(b.comp.solver.vars); black=BitVector(), white=BitVect
     end
 
     # Initialize black elements to 1 (solid) and white elements to 0 (void)
-    @inbounds for i in eachindex(topology)
-        if !isempty(black) && black[i]
-            topology[i] = T(1)
-            vars[i] = T(1)
-        elseif !isempty(white) && white[i]
-            topology[i] = T(0)
-            vars[i] = T(0)
-        end
-    end
+    initialize_black_white!(topology, vars, black, white)
 
     # Calculate the current volume fraction
     true_vol = vol = dot(topology, cellvolumes) / total_volume

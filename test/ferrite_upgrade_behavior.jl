@@ -2,7 +2,7 @@ using TopOpt, Ferrite, Test
 
 @testset "Ferrite 1.x upgrade behavior" begin
     @testset "2D PointLoadCantilever construction" begin
-        problem = PointLoadCantilever(Val{:Linear}, (10, 6), (1.0, 1.0), 1.0, 0.3, 1.0)
+        problem = PointLoadCantilever((10, 6), (1.0, 1.0), 1.0, 0.3, 1.0)
         dh = getdh(problem)
         grid = dh.grid
         @test Ferrite.getspatialdim(grid) == 2
@@ -16,9 +16,7 @@ using TopOpt, Ferrite, Test
     end
 
     @testset "3D PointLoadCantilever construction" begin
-        problem3 = PointLoadCantilever(
-            Val{:Linear}, (4, 4, 2), (1.0, 1.0, 1.0), 1.0, 0.3, 1.0
-        )
+        problem3 = PointLoadCantilever((4, 4, 2), (1.0, 1.0, 1.0), 1.0, 0.3, 1.0)
         dh3 = getdh(problem3)
         grid3 = dh3.grid
         @test Ferrite.getspatialdim(grid3) == 3
@@ -28,7 +26,7 @@ using TopOpt, Ferrite, Test
     end
 
     @testset "2D HalfMBB construction" begin
-        problem_mbb = HalfMBB(Val{:Linear}, (10, 6), (1.0, 1.0), 1.0, 0.3, 1.0)
+        problem_mbb = HalfMBB((10, 6), (1.0, 1.0), 1.0, 0.3, 1.0)
         @test Ferrite.getspatialdim(getdh(problem_mbb).grid) == 2
     end
 

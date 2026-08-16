@@ -56,7 +56,7 @@ mats = TrussFEAMaterial(1.0, 0.3)
 crosssecs = TrussFEACrossSec(800.0)
 
 problem = TrussProblem(
-    Val{:Linear}, node_points, elements, loads, fixities, mats, crosssecs
+    node_points, elements, loads, fixities, mats, crosssecs
 )
 ```
 

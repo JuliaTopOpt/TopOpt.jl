@@ -75,7 +75,7 @@ around the load from the aggregation, or use regional stress measures.)
 #| output: false
 E, ν, f = 1.0, 0.3, 1.0
 problem = LBeam(
-    Val{:Linear};
+    ;
     length=50, height=50, upperslab=25, lowerslab=25, E=E, ν=ν, force=f,
     load_width=5,  # distribute the load over 5 nodes
 )

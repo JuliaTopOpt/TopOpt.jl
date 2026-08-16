@@ -143,6 +143,74 @@ function crossover!(children, genotypes, i, j)
     return nothing
 end
 
+# Crossover over one sensitivity class: for each element in `self_class`, pick
+# a partner from `self_class` (with probability `Pc`), `other1`, or `other2`
+# and mix their genotypes. Black/white elements are skipped. When
+# `self_class` has a single element the self-pick is impossible, so the choice
+# between `other1` and `other2` uses `single_threshold` instead.
+function crossover_class!(
+    children, genotypes, self_class, other1, other2, Pc, black, white; single_threshold
+)
+    for i in self_class
+        if !isempty(black) && black[i]
+            continue
+        end
+        if !isempty(white) && white[i]
+            continue
+        end
+        r = rand()
+        j = i
+        if length(self_class) > 1
+            if r < Pc
+                while i == j
+                    j = rand(self_class)
+                end
+            elseif r < 0.5 + 0.5 * Pc
+                j = rand(other1)
+            else
+                j = rand(other2)
+            end
+        else
+            if r < single_threshold
+                j = rand(other1)
+            else
+                j = rand(other2)
+            end
+        end
+        crossover!(children, genotypes, i, j)
+    end
+    return nothing
+end
+
+# Mutation over one sensitivity class: each genotype bit flips with probability
+# `Pm`. `flip_from_zero` selects whether zeros flip to ones (high-sensitivity
+# elements gain material) or ones flip to zeros (mid/low-sensitivity elements
+# lose material). Returns whether any element's black/white state changed.
+function mutate_class!(
+    genotypes, var_black, self_class, Pm, black, white; flip_from_zero::Bool
+)
+    topology_changed = false
+    for i in self_class
+        if !isempty(black) && black[i]
+            continue
+        end
+        if !isempty(white) && white[i]
+            continue
+        end
+        for j in axes(genotypes, 1)
+            r = rand()
+            if r < Pm && (flip_from_zero ? !genotypes[j, i] : genotypes[j, i])
+                genotypes[j, i] = !genotypes[j, i]
+            end
+        end
+        if any(@view genotypes[:, i]) != var_black[i]
+            var_black[i] = !var_black[i]
+            topology_changed = true
+        end
+    end
+    return topology_changed
+end
+
 function update!(
     var_black,
     children,
@@ -158,153 +226,52 @@ function update!(
     topology_changed = false
     while !topology_changed
         # Crossover for all classes
-        for i in high_class
-            # Skip black and white elements in crossover
-            if !isempty(black) && black[i]
-                continue
-            end
-            if !isempty(white) && white[i]
-                continue
-            end
-            r = rand()
-            j = i
-            if length(high_class) > 1
-                if r < Pc
-                    while i == j
-                        j = rand(high_class)
-                    end
-                elseif r < 0.5 + 0.5 * Pc
-                    j = rand(mid_class)
-                else
-                    j = rand(low_class)
-                end
-            else
-                if r < 0.5
-                    j = rand(mid_class)
-                else
-                    j = rand(low_class)
-                end
-            end
-            crossover!(children, genotypes, i, j)
-        end
-        for i in mid_class
-            # Skip black and white elements in crossover
-            if !isempty(black) && black[i]
-                continue
-            end
-            if !isempty(white) && white[i]
-                continue
-            end
-            r = rand()
-            j = i
-            if length(mid_class) > 1
-                if r < Pc
-                    while i == j
-                        j = rand(mid_class)
-                    end
-                elseif r < 0.5 + 0.5 * Pc
-                    j = rand(high_class)
-                else
-                    j = rand(low_class)
-                end
-            else
-                if r < 0.5 + 0.5 * Pc
-                    j = rand(high_class)
-                else
-                    j = rand(low_class)
-                end
-            end
-            crossover!(children, genotypes, i, j)
-        end
-        for i in low_class
-            # Skip black and white elements in crossover
-            if !isempty(black) && black[i]
-                continue
-            end
-            if !isempty(white) && white[i]
-                continue
-            end
-            r = rand()
-            j = i
-            if length(low_class) > 1
-                if r < Pc
-                    while i == j
-                        j = rand(low_class)
-                    end
-                elseif r < 0.5 + 0.5 * Pc
-                    j = rand(mid_class)
-                else
-                    j = rand(high_class)
-                end
-            else
-                if r < 0.5
-                    j = rand(mid_class)
-                else
-                    j = rand(high_class)
-                end
-            end
-            crossover!(children, genotypes, i, j)
-        end
+        crossover_class!(
+            children,
+            genotypes,
+            high_class,
+            mid_class,
+            low_class,
+            Pc,
+            black,
+            white;
+            single_threshold=0.5,
+        )
+        crossover_class!(
+            children,
+            genotypes,
+            mid_class,
+            high_class,
+            low_class,
+            Pc,
+            black,
+            white;
+            single_threshold=0.5 + 0.5 * Pc,
+        )
+        crossover_class!(
+            children,
+            genotypes,
+            low_class,
+            mid_class,
+            high_class,
+            Pc,
+            black,
+            white;
+            single_threshold=0.5,
+        )
         genotypes .= children
 
         # Mutation for all classes
-        for i in high_class
-            # Skip black and white elements in mutation
-            if !isempty(black) && black[i]
-                continue
-            end
-            if !isempty(white) && white[i]
-                continue
-            end
-            for j in axes(genotypes, 1)
-                r = rand()
-                if r < Pm && !genotypes[j, i]
-                    genotypes[j, i] = !genotypes[j, i]
-                end
-            end
-            if any(@view genotypes[:, i]) != var_black[i]
-                var_black[i] = !var_black[i]
-                topology_changed = true
-            end
-        end
-        for i in mid_class
-            # Skip black and white elements in mutation
-            if !isempty(black) && black[i]
-                continue
-            end
-            if !isempty(white) && white[i]
-                continue
-            end
-            for j in axes(genotypes, 1)
-                r = rand()
-                if r < Pm && genotypes[j, i]
-                    genotypes[j, i] = !genotypes[j, i]
-                end
-            end
-            if any(@view genotypes[:, i]) != var_black[i]
-                var_black[i] = !var_black[i]
-                topology_changed = true
-            end
-        end
-        for i in low_class
-            # Skip black and white elements in mutation
-            if !isempty(black) && black[i]
-                continue
-            end
-            if !isempty(white) && white[i]
-                continue
-            end
-            for j in axes(genotypes, 1)
-                r = rand()
-                if r < Pm && genotypes[j, i]
-                    genotypes[j, i] = !genotypes[j, i]
-                end
-            end
-            if any(@view genotypes[:, i]) != var_black[i]
-                var_black[i] = !var_black[i]
-                topology_changed = true
-            end
-        end
+        c1 = mutate_class!(
+            genotypes, var_black, high_class, Pm, black, white; flip_from_zero=true
+        )
+        c2 = mutate_class!(
+            genotypes, var_black, mid_class, Pm, black, white; flip_from_zero=false
+        )
+        c3 = mutate_class!(
+            genotypes, var_black, low_class, Pm, black, white; flip_from_zero=false
+        )
+        topology_changed = c1 | c2 | c3
     end
 
     return var_black
@@ -350,17 +317,15 @@ function (b::GESO)(
     end
 
     # Initialize black elements to 1 (solid) and white elements to 0 (void)
+    initialize_black_white!(topology, vars, black, white)
+    # GESO additionally tracks each element's black/white genotype state.
     @inbounds for i in eachindex(topology)
         if !isempty(black) && black[i]
-            topology[i] = T(1)
-            vars[i] = T(1)
             var_black[i] = true
             for j in axes(genotypes, 1)
                 genotypes[j, i] = true
             end
         elseif !isempty(white) && white[i]
-            topology[i] = T(0)
-            vars[i] = T(0)
             var_black[i] = false
             for j in axes(genotypes, 1)
                 genotypes[j, i] = false

@@ -3,7 +3,7 @@ using TopOpt, Test
 @testset "Functions Show Methods" begin
     # Create a simple problem for testing
     nels = (2, 2)
-    problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
+    problem = HalfMBB(nels, (1.0, 1.0), 1.0, 0.3, 1.0)
     solver = FEASolver(DirectSolver, problem; xmin=0.001, penalty=PowerPenaltyFun(3.0))
 
     @testset "TrussStressFun show method" begin

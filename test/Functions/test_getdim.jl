@@ -4,10 +4,18 @@ using NonconvexCore: NonconvexCore
 using TopOpt.TopOptProblems:
     getmetadata, getpressuredict, getheatfluxdict, getcloaddict, nnodespercell, getfacesets
 
+@testset "YoungsModulus and PoissonRatio accessors" begin
+    problem = HalfMBB((4, 4), (1.0, 1.0), 2.0, 0.25, 1.0)
+    @test YoungsModulus(problem) == 2.0
+    @test PoissonRatio(problem) == 0.25
+    @test TopOpt.TopOptProblems.getE(problem) == 2.0
+    @test TopOpt.TopOptProblems.getν(problem) == 0.25
+end
+
 # Minimal test for Nonconvex.NonconvexCore.getdim(::ComplianceFun) = 1
 @testset "getdim ComplianceFun test" begin
     nels = (2, 2)
-    problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
+    problem = HalfMBB(nels, (1.0, 1.0), 1.0, 0.3, 1.0)
     solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(3.0))
 
     comp = ComplianceFun(solver)
@@ -27,7 +35,7 @@ end
 # Test for Nonconvex.NonconvexCore.getdim(::MeanComplianceFun) = 1
 @testset "getdim MeanComplianceFun test" begin
     nels = (2, 2)
-    problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
+    problem = HalfMBB(nels, (1.0, 1.0), 1.0, 0.3, 1.0)
     multiload_problem = MultiLoad(problem, F -> begin
         return [F[:, 1] F[:, 1]]
     end)
@@ -45,7 +53,7 @@ end
 
 # Test for TopOpt.TopOptProblems.getdim(::LBeam) = 2 (Linear)
 @testset "TopOpt.TopOptProblems.getdim LBeam test" begin
-    problem = LBeam(Val{:Linear}, Float64; force=1.0)
+    problem = LBeam(Float64; force=1.0)
 
     # Test TopOpt.TopOptProblems.getdim(::LBeam) = 2
     dim = TopOpt.TopOptProblems.getdim(problem)
@@ -55,7 +63,7 @@ end
 
 # Test for TopOpt.TopOptProblems.getdim(::TieBeam) = 2 (Linear)
 @testset "TopOpt.TopOptProblems.getdim TieBeam test" begin
-    problem = TieBeam(Val{:Linear}, Float64; refine=1, force=1.0)
+    problem = TieBeam(Float64; refine=1, force=1.0)
 
     # Test TopOpt.TopOptProblems.getdim(::TieBeam) = 2
     dim = TopOpt.TopOptProblems.getdim(problem)
@@ -68,7 +76,7 @@ end
     using TopOpt.TopOptProblems: getpressuredict, getfacesets, nnodespercell, getdh
 
     # Create a TieBeam problem
-    problem = TieBeam(Val{:Linear}, Float64; refine=1, force=1.0)
+    problem = TieBeam(Float64; refine=1, force=1.0)
 
     # Test nnodespercell(::TieBeam{T,N}) = N
     nnodes = nnodespercell(problem)
@@ -90,14 +98,14 @@ end
 # Test for HeatTransferTopOptProblem accessor functions
 @testset "HeatTransferTopOptProblem accessor functions" begin
     # Create a HeatConductionProblem using the correct constructor
-    # HeatConductionProblem(::Type{Val{CellType}}, nels, sizes, k=1.0; Tleft=0.0, Tright=0.0, heatflux=Dict())
+    # HeatConductionProblem(nels, sizes, k=1.0; celltype=:Linear, Tleft=0.0, Tright=0.0, heatflux=Dict())
     nels = (10, 10)
     sizes = (1.0, 1.0)
     k = 1.0
 
     # Quadratic elements (9 nodes per cell in 2D)
     problem = HeatConductionProblem(
-        Val{:Quadratic}, nels, sizes, k; Tleft=0.0, Tright=100.0
+        nels, sizes, k; celltype=:Quadratic, Tleft=0.0, Tright=100.0
     )
 
     # Test getdim

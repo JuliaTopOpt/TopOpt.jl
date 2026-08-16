@@ -22,13 +22,7 @@ end
     @testset "Gradient matches finite differences: homogeneous Dirichlet" begin
         nels = (8, 6)
         problem = HeatConductionProblem(
-            Val{:Linear},
-            nels,
-            (1.0, 1.0),
-            1.0;
-            Tleft=0.0,
-            Tright=0.0,
-            heatflux=Dict("top" => 100.0),
+            nels, (1.0, 1.0), 1.0; Tleft=0.0, Tright=0.0, heatflux=Dict("top" => 100.0)
         )
         solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(1.0))
         comp = ThermalComplianceFun(solver)
@@ -45,13 +39,7 @@ end
         # ~260% relative error when Tleft != 0.
         nels = (8, 6)
         problem = HeatConductionProblem(
-            Val{:Linear},
-            nels,
-            (1.0, 1.0),
-            1.0;
-            Tleft=100.0,
-            Tright=0.0,
-            heatflux=Dict("top" => 1.0),
+            nels, (1.0, 1.0), 1.0; Tleft=100.0, Tright=0.0, heatflux=Dict("top" => 1.0)
         )
         solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(3.0))
         comp = ThermalComplianceFun(solver)
@@ -63,14 +51,14 @@ end
     end
 
     @testset "Gradient matches finite differences: quadratic elements" begin
-        # Previously ElementFEAInfo crashed for Val{:Quadratic} heat problems
-        # because the cellvalues interpolation was hardcoded to order 1.
+        # ElementFEAInfo must build for celltype=:Quadratic heat problems;
+        # the cellvalues interpolation is derived from the DofHandler order.
         nels = (6, 4)
         problem = HeatConductionProblem(
-            Val{:Quadratic},
             nels,
             (1.0, 1.0),
             1.0;
+            celltype=:Quadratic,
             Tleft=0.0,
             Tright=0.0,
             heatflux=Dict("top" => 1.0),
@@ -85,10 +73,10 @@ end
     @testset "Gradient matches finite differences: quadratic + inhomogeneous Dirichlet" begin
         nels = (6, 4)
         problem = HeatConductionProblem(
-            Val{:Quadratic},
             nels,
             (1.0, 1.0),
             1.0;
+            celltype=:Quadratic,
             Tleft=100.0,
             Tright=0.0,
             heatflux=Dict("top" => 1.0),
@@ -104,13 +92,7 @@ end
 @testset "Thermal ComplianceFun - Objective Correctness" begin
     @testset "J == Q^T T for homogeneous Dirichlet" begin
         problem = HeatConductionProblem(
-            Val{:Linear},
-            (8, 4),
-            (1.0, 1.0),
-            1.0;
-            Tleft=0.0,
-            Tright=0.0,
-            heatflux=Dict("top" => 1.0),
+            (8, 4), (1.0, 1.0), 1.0; Tleft=0.0, Tright=0.0, heatflux=Dict("top" => 1.0)
         )
         solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(3.0))
         comp = ThermalComplianceFun(solver)
@@ -123,13 +105,7 @@ end
         # Previously J was computed as T^T K T, which leaks the Dirichlet energy
         # and overestimates by Tleft^2 * (conductance to boundary).
         problem = HeatConductionProblem(
-            Val{:Linear},
-            (8, 4),
-            (1.0, 1.0),
-            1.0;
-            Tleft=100.0,
-            Tright=0.0,
-            heatflux=Dict("top" => 1.0),
+            (8, 4), (1.0, 1.0), 1.0; Tleft=100.0, Tright=0.0, heatflux=Dict("top" => 1.0)
         )
         solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(3.0))
         comp = ThermalComplianceFun(solver)
@@ -147,7 +123,6 @@ end
         # T^T K T objective returned a large positive number (the Dirichlet
         # energy) and optimized toward it.
         problem = HeatConductionProblem(
-            Val{:Linear},
             (4, 4),
             (1.0, 1.0),
             1.0;
@@ -173,7 +148,6 @@ end
         center_x = div(nx, 2) + 1
         top_center = center_x + ny * (nx + 1)
         problem = HeatConductionProblem(
-            Val{:Linear},
             nels,
             (1.0, 1.0),
             1.0;
@@ -199,10 +173,10 @@ end
         nels = (8, 4)
         heatflux = Dict("top" => 1.0)
         problem_low = HeatConductionProblem(
-            Val{:Linear}, nels, (1.0, 1.0), 0.5; Tleft=0.0, Tright=0.0, heatflux=heatflux
+            nels, (1.0, 1.0), 0.5; Tleft=0.0, Tright=0.0, heatflux=heatflux
         )
         problem_high = HeatConductionProblem(
-            Val{:Linear}, nels, (1.0, 1.0), 5.0; Tleft=0.0, Tright=0.0, heatflux=heatflux
+            nels, (1.0, 1.0), 5.0; Tleft=0.0, Tright=0.0, heatflux=heatflux
         )
         comp_low = ThermalComplianceFun(FEASolver(DirectSolver, problem_low; xmin=0.01))
         comp_high = ThermalComplianceFun(FEASolver(DirectSolver, problem_high; xmin=0.01))
@@ -216,22 +190,10 @@ end
         # wrong T^T K T objective, so it is NOT a sufficient test on its own;
         # it is kept as a sanity check alongside the Q^T T identity test above.
         problem1 = HeatConductionProblem(
-            Val{:Linear},
-            (6, 4),
-            (1.0, 1.0),
-            1.0;
-            Tleft=0.0,
-            Tright=0.0,
-            heatflux=Dict("top" => 1.0),
+            (6, 4), (1.0, 1.0), 1.0; Tleft=0.0, Tright=0.0, heatflux=Dict("top" => 1.0)
         )
         problem2 = HeatConductionProblem(
-            Val{:Linear},
-            (6, 4),
-            (1.0, 1.0),
-            1.0;
-            Tleft=0.0,
-            Tright=0.0,
-            heatflux=Dict("top" => 2.0),
+            (6, 4), (1.0, 1.0), 1.0; Tleft=0.0, Tright=0.0, heatflux=Dict("top" => 2.0)
         )
         comp1 = ThermalComplianceFun(FEASolver(DirectSolver, problem1; xmin=0.01))
         comp2 = ThermalComplianceFun(FEASolver(DirectSolver, problem2; xmin=0.01))
@@ -248,22 +210,10 @@ end
         # Dirichlet contribution stays fixed. So J(2Q) - J(Q) is NOT 3*J(Q) in
         # general. Verify the Q^T T identity holds at both scales instead.
         problem1 = HeatConductionProblem(
-            Val{:Linear},
-            (6, 4),
-            (1.0, 1.0),
-            1.0;
-            Tleft=100.0,
-            Tright=0.0,
-            heatflux=Dict("top" => 1.0),
+            (6, 4), (1.0, 1.0), 1.0; Tleft=100.0, Tright=0.0, heatflux=Dict("top" => 1.0)
         )
         problem2 = HeatConductionProblem(
-            Val{:Linear},
-            (6, 4),
-            (1.0, 1.0),
-            1.0;
-            Tleft=100.0,
-            Tright=0.0,
-            heatflux=Dict("top" => 2.0),
+            (6, 4), (1.0, 1.0), 1.0; Tleft=100.0, Tright=0.0, heatflux=Dict("top" => 2.0)
         )
         for (p, label) in [(problem1, "Q"), (problem2, "2Q")]
             solver = FEASolver(DirectSolver, p; xmin=0.01, penalty=PowerPenaltyFun(3.0))
@@ -276,12 +226,12 @@ end
 end
 
 @testset "Thermal ComplianceFun - Quadratic Elements" begin
-    @testset "ElementFEAInfo builds for Val{:Quadratic} (previously crashed)" begin
+    @testset "ElementFEAInfo builds for celltype=:Quadratic heat problems" begin
         problem = HeatConductionProblem(
-            Val{:Quadratic},
             (4, 4),
             (1.0, 1.0),
             1.0;
+            celltype=:Quadratic,
             Tleft=0.0,
             Tright=0.0,
             heatflux=Dict("top" => 1.0),
@@ -302,10 +252,10 @@ end
         # field and produce a finite compliance. Cross-check element count.
         nels = (6, 4)
         problem = HeatConductionProblem(
-            Val{:Quadratic},
             nels,
             (1.0, 1.0),
             1.0;
+            celltype=:Quadratic,
             Tleft=0.0,
             Tright=0.0,
             heatflux=Dict("top" => 1.0),
@@ -323,15 +273,13 @@ end
 
 @testset "Thermal ComplianceFun - Error Handling" begin
     @testset "ThermalComplianceFun rejects structural problems" begin
-        problem = PointLoadCantilever(Val{:Linear}, (6, 4), (1.0, 1.0), 1.0, 0.3, 1.0)
+        problem = PointLoadCantilever((6, 4), (1.0, 1.0), 1.0, 0.3, 1.0)
         solver = FEASolver(DirectSolver, problem; xmin=0.001)
         @test_throws ArgumentError ThermalComplianceFun(solver)
     end
 
     @testset "ComplianceFun rejects heat transfer problems" begin
-        problem = HeatConductionProblem(
-            Val{:Linear}, (4, 4), (1.0, 1.0), 1.0; Tleft=0.0, Tright=0.0
-        )
+        problem = HeatConductionProblem((4, 4), (1.0, 1.0), 1.0; Tleft=0.0, Tright=0.0)
         solver = FEASolver(DirectSolver, problem; xmin=0.001)
         @test_throws ArgumentError ComplianceFun(solver)
     end
@@ -339,13 +287,7 @@ end
 
 @testset "Thermal ComplianceFun - getpenalty and setpenalty!" begin
     problem = HeatConductionProblem(
-        Val{:Linear},
-        (4, 4),
-        (1.0, 1.0),
-        1.0;
-        Tleft=0.0,
-        Tright=0.0,
-        heatflux=Dict("top" => 1.0),
+        (4, 4), (1.0, 1.0), 1.0; Tleft=0.0, Tright=0.0, heatflux=Dict("top" => 1.0)
     )
     solver = FEASolver(DirectSolver, problem; xmin=0.001, penalty=PowerPenaltyFun(3.0))
     tc = ThermalComplianceFun(solver)
@@ -364,13 +306,7 @@ end
 
 @testset "Thermal ComplianceFun - Vector input warning" begin
     problem = HeatConductionProblem(
-        Val{:Linear},
-        (4, 4),
-        (1.0, 1.0),
-        1.0;
-        Tleft=0.0,
-        Tright=0.0,
-        heatflux=Dict("top" => 1.0),
+        (4, 4), (1.0, 1.0), 1.0; Tleft=0.0, Tright=0.0, heatflux=Dict("top" => 1.0)
     )
     solver = FEASolver(DirectSolver, problem; xmin=0.001, penalty=PowerPenaltyFun(3.0))
     tc = ThermalComplianceFun(solver)

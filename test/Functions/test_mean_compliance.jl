@@ -15,7 +15,7 @@ Random.seed!(42)
         force = 1.0
         nels = (10, 4)
 
-        base_problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
+        base_problem = PointLoadCantilever(nels, (1.0, 1.0), E, ν, force)
         nloads = 3
         F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
         dense_load_inds = vec(TopOpt.TopOptProblems.get_surface_dofs(base_problem))
@@ -45,7 +45,7 @@ Random.seed!(42)
         force = 1.0
         nels = (8, 4)
 
-        base_problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
+        base_problem = PointLoadCantilever(nels, (1.0, 1.0), E, ν, force)
 
         # Single load
         F1 = spzeros(Ferrite.ndofs(base_problem.ch.dh), 1)
@@ -83,7 +83,7 @@ Random.seed!(42)
         force = 1.0
         nels = (6, 4)
 
-        base_problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
+        base_problem = PointLoadCantilever(nels, (1.0, 1.0), E, ν, force)
 
         # Reference with unit load
         nloads = 3
@@ -128,7 +128,7 @@ Random.seed!(42)
         force = 1.0
         nels = (8, 4)
 
-        base_problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
+        base_problem = PointLoadCantilever(nels, (1.0, 1.0), E, ν, force)
 
         nloads = 3
         F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
@@ -167,7 +167,7 @@ end
         force = 1.0
         nels = (8, 4)
 
-        base_problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
+        base_problem = PointLoadCantilever(nels, (1.0, 1.0), E, ν, force)
 
         nloads = 4
         F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
@@ -207,7 +207,7 @@ end
         force = 1.0
         nels = (6, 4)
 
-        base_problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
+        base_problem = PointLoadCantilever(nels, (1.0, 1.0), E, ν, force)
 
         nloads = 3
         F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
@@ -256,7 +256,7 @@ end
         force = 1.0
         nels = (6, 4)
 
-        base_problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
+        base_problem = PointLoadCantilever(nels, (1.0, 1.0), E, ν, force)
 
         nloads = 3
         F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
@@ -304,7 +304,7 @@ end
         force = 1.0
         nels = (6, 4)
 
-        base_problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
+        base_problem = PointLoadCantilever(nels, (1.0, 1.0), E, ν, force)
 
         nloads = 3
         F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
@@ -349,7 +349,7 @@ end
         force = 1.0
         nels = (6, 4)
 
-        base_problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
+        base_problem = PointLoadCantilever(nels, (1.0, 1.0), E, ν, force)
 
         nloads = 3
         F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
@@ -392,7 +392,7 @@ end
         force = 1.0
         nels = (6, 4)
 
-        base_problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
+        base_problem = PointLoadCantilever(nels, (1.0, 1.0), E, ν, force)
 
         nloads = 3
         F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
@@ -428,7 +428,7 @@ end
         force = 1.0
         nels = (6, 4)
 
-        base_problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
+        base_problem = PointLoadCantilever(nels, (1.0, 1.0), E, ν, force)
 
         nloads = 3
         F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
@@ -463,7 +463,7 @@ end
         force = 1.0
         nels = (6, 4)
 
-        base_problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
+        base_problem = PointLoadCantilever(nels, (1.0, 1.0), E, ν, force)
 
         nloads = 3
         F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
@@ -501,7 +501,7 @@ end
         force = 1.0
         nels = (6, 4)
 
-        base_problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
+        base_problem = PointLoadCantilever(nels, (1.0, 1.0), E, ν, force)
 
         # Create 3 specific load cases
         nloads = 3
@@ -548,7 +548,7 @@ end
         force = 1.0
         nels = (8, 4)
 
-        base_problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
+        base_problem = PointLoadCantilever(nels, (1.0, 1.0), E, ν, force)
 
         nloads = 3
         F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)
@@ -589,7 +589,7 @@ end
         force = 1.0
         nels = (6, 4)
 
-        base_problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), E, ν, force)
+        base_problem = PointLoadCantilever(nels, (1.0, 1.0), E, ν, force)
 
         nloads = 3
         F = spzeros(Ferrite.ndofs(base_problem.ch.dh), nloads)

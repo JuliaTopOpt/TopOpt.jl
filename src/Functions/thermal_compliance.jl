@@ -36,7 +36,7 @@ optimization.
 
 ```julia
 heatflux = Dict{String,Float64}("top" => 100.0)  # heat flux on boundary (W/m²)
-problem = HeatConductionProblem(Val{:Linear}, nels, sizes, k; Tleft=0.0, Tright=0.0, heatflux=heatflux)
+problem = HeatConductionProblem(nels, sizes, k; Tleft=0.0, Tright=0.0, heatflux=heatflux)
 solver = FEASolver(DirectSolver, problem; xmin=0.001)
 comp = ThermalComplianceFun(solver)
 val = comp(PseudoDensities(ones(length(solver.vars))))
@@ -182,37 +182,7 @@ function solve_adjoint!(
     K = solver.globalinfo.K
     _K = K isa Symmetric ? K.data : K
     op = MatrixOperator(_K, rhs, solver.conv)
-    # Zero `lhs` so the `initially_zero=true` contract with cg! holds (lhs is
-    # `adjoint_sol`, reused across ThermalComplianceFun evaluations).
-    fill!(lhs, zero(T))
-    if solver.preconditioner === identity
-        cg!(
-            lhs,
-            op,
-            rhs;
-            abstol=solver.abstol,
-            maxiter=solver.cg_max_iter,
-            log=false,
-            statevars=solver.cg_statevars,
-            initially_zero=true,
-        )
-    else
-        if !solver.preconditioner_initialized[]
-            UpdatePreconditioner!(solver.preconditioner, _K)
-            solver.preconditioner_initialized[] = true
-        end
-        cg!(
-            lhs,
-            op,
-            rhs;
-            abstol=solver.abstol,
-            maxiter=solver.cg_max_iter,
-            log=false,
-            statevars=solver.cg_statevars,
-            initially_zero=true,
-            Pl=solver.preconditioner,
-        )
-    end
+    cg_solve!(solver, op, rhs, lhs, _K; initially_zero=true)
     return nothing
 end
 
@@ -233,37 +203,9 @@ function solve_adjoint!(
         penalty,
         solver.conv,
     )
-    fill!(lhs, zero(T))
-    if solver.preconditioner === identity
-        cg!(
-            lhs,
-            operator,
-            rhs;
-            abstol=solver.abstol,
-            maxiter=solver.cg_max_iter,
-            log=false,
-            statevars=solver.cg_statevars,
-            initially_zero=true,
-        )
-    else
-        _K = solver.globalinfo.K
-        _K = _K isa Symmetric ? _K.data : _K
-        if !solver.preconditioner_initialized[]
-            UpdatePreconditioner!(solver.preconditioner, _K)
-            solver.preconditioner_initialized[] = true
-        end
-        cg!(
-            lhs,
-            operator,
-            rhs;
-            abstol=solver.abstol,
-            maxiter=solver.cg_max_iter,
-            log=false,
-            statevars=solver.cg_statevars,
-            initially_zero=true,
-            Pl=solver.preconditioner,
-        )
-    end
+    _K = solver.globalinfo.K
+    _K = _K isa Symmetric ? _K.data : _K
+    cg_solve!(solver, operator, rhs, lhs, _K; initially_zero=true)
     return nothing
 end
 

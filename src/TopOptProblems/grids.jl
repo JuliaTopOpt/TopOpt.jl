@@ -31,7 +31,21 @@ struct RectilinearGrid{dim,T,N,M,TG<:Ferrite.AbstractGrid{dim}} <: AbstractGrid{
 end
 
 """
-    RectilinearGrid(::Type{Val{CellType}}, nels::NTuple{dim,Int}, sizes::NTuple{dim,T}) where {dim, T, CellType}
+    _celltype_tag(celltype::Symbol)
+
+Return the `Val{:Linear}` or `Val{:Quadratic}` tag corresponding to the
+user-facing `celltype` keyword. Throws an `ArgumentError` for any other value.
+Used as a function barrier so the cell type is a compile-time constant inside
+the internal constructors.
+"""
+function _celltype_tag(celltype::Symbol)
+    celltype === :Linear && return Val(:Linear)
+    celltype === :Quadratic && return Val(:Quadratic)
+    throw(ArgumentError("celltype must be :Linear or :Quadratic, got :$celltype"))
+end
+
+"""
+    RectilinearGrid(nels::NTuple{dim,Int}, sizes::NTuple{dim,T}; celltype=:Linear) where {dim, T}
 
 Constructs an instance of [`RectilinearGrid`](@ref).
 
@@ -39,6 +53,9 @@ Constructs an instance of [`RectilinearGrid`](@ref).
 - `T`: number type for coordinates
 - `nels`: number of elements in every dimension
 - `sizes`: dimensions of each rectilinear cell
+- `celltype`: either `:Linear` or `:Quadratic` to determine the order of the
+  geometric and field basis functions and element type. Only isoparametric
+  elements are supported for now.
 
 Example:
 
@@ -47,14 +64,16 @@ rectgrid = RectilinearGrid((60,20), (1.0,1.0))
 ```
 """
 function RectilinearGrid(
-    ::Type{Val{:Linear}}, nels::NTuple{<:Any,Int}, sizes::NTuple{<:Any}
+    nels::NTuple{<:Any,Int}, sizes::NTuple{<:Any}; celltype::Symbol=:Linear
 )
+    return _RectilinearGrid(_celltype_tag(celltype), nels, sizes)
+end
+
+function _RectilinearGrid(::Val{:Linear}, nels::NTuple{<:Any,Int}, sizes::NTuple{<:Any})
     return _RectilinearGrid_Linear(Val(length(nels)), eltype(sizes), nels, sizes)
 end
 
-function RectilinearGrid(
-    ::Type{Val{:Quadratic}}, nels::NTuple{<:Any,Int}, sizes::NTuple{<:Any}
-)
+function _RectilinearGrid(::Val{:Quadratic}, nels::NTuple{<:Any,Int}, sizes::NTuple{<:Any})
     return _RectilinearGrid_Quadratic(Val(length(nels)), eltype(sizes), nels, sizes)
 end
 
@@ -109,8 +128,8 @@ nnodes(cell::Type{<:Ferrite.AbstractCell}) = length(Base.fieldtypes(cell)[1].par
 nnodes(cell::Ferrite.AbstractCell) = length(cell.nodes)
 
 """
-    LGrid(::Type{Val{CellType}}, ::Type{T}; length = 100, height = 100, upperslab = 50, lowerslab = 50) where {T, CellType}
-    LGrid(::Type{Val{CellType}}, nel1::NTuple{2,Int}, nel2::NTuple{2,Int}, LL::Vec{2,T}, UR::Vec{2,T}, MR::Vec{2,T}) where {CellType, T}
+    LGrid(::Type{T}; celltype=:Linear, length = 100, height = 100, upperslab = 50, lowerslab = 50) where {T}
+    LGrid(nel1::NTuple{2,Int}, nel2::NTuple{2,Int}, LL::Vec{2,T}, UR::Vec{2,T}, MR::Vec{2,T}; celltype=:Linear) where {T}
 
 Constructs a `Ferrite.Grid` that represents the following L-shaped grid.
 
@@ -131,22 +150,26 @@ height .          .                     MR
 
 ```
 
+`celltype` is either `:Linear` or `:Quadratic` to determine the order of the
+geometric and field basis functions and element type. Only isoparametric
+elements are supported for now.
+
 Examples:
 
 ```
 LGrid(upperslab = 30, lowerslab = 70)
-LGrid(Val{:Linear}, (2, 4), (2, 2), Vec{2,Float64}((0.0,0.0)), Vec{2,Float64}((2.0, 4.0)), Vec{2,Float64}((4.0, 2.0)))
+LGrid((2, 4), (2, 2), Vec{2,Float64}((0.0,0.0)), Vec{2,Float64}((2.0, 4.0)), Vec{2,Float64}((4.0, 2.0)))
 ```
 """
 function LGrid(
-    ::Type{Val{CellType}},
     ::Type{T};
+    celltype::Symbol=:Linear,
     length=100,
     height=100,
     upperslab=50,
     lowerslab=50,
     load_width=nothing,
-) where {T,CellType}
+) where {T}
     length > upperslab || throw(
         ArgumentError(
             "LGrid: length ($length) must be greater than upperslab ($upperslab)"
@@ -158,29 +181,49 @@ function LGrid(
         ),
     )
     return LGrid(
-        Val{CellType},
         (upperslab, height),
         (length - upperslab, lowerslab),
         Vec{2,T}((0.0, 0.0)),
         Vec{2,T}((T(upperslab), T(height))),
         Vec{2,T}((T(length), T(lowerslab)));
+        celltype=celltype,
         load_width=load_width,
     )
 end
 function LGrid(
-    ::Type{Val{CellType}},
+    nel1::NTuple{2,Int},
+    nel2::NTuple{2,Int},
+    LL::Vec{2,T},
+    UR::Vec{2,T},
+    MR::Vec{2,T};
+    celltype::Symbol=:Linear,
+    load_width=nothing,
+) where {T}
+    return _LGrid(_celltype_tag(celltype), nel1, nel2, LL, UR, MR; load_width=load_width)
+end
+
+function _LGrid(
+    ::Val{:Linear},
     nel1::NTuple{2,Int},
     nel2::NTuple{2,Int},
     LL::Vec{2,T},
     UR::Vec{2,T},
     MR::Vec{2,T};
     load_width=nothing,
-) where {CellType,T}
-    if CellType === :Linear
-        return _LinearLGrid(nel1, nel2, LL, UR, MR; load_width=load_width)
-    else
-        return _QuadraticLGrid(nel1, nel2, LL, UR, MR; load_width=load_width)
-    end
+) where {T}
+    return _LinearLGrid(nel1, nel2, LL, UR, MR; load_width=load_width)
+end
+
+function _LGrid(
+    ::Val{:Quadratic},
+    nel1::NTuple{2,Int},
+    nel2::NTuple{2,Int},
+    LL::Vec{2,T},
+    UR::Vec{2,T},
+    MR::Vec{2,T};
+    load_width=nothing,
+) where {T}
+    return _QuadraticLGrid(nel1, nel2, LL, UR, MR; load_width=load_width)
 end
 
 """
@@ -584,14 +627,16 @@ function _QuadraticLGrid(
     return Grid(cells, nodes; facetsets=facesets, nodesets=nodesets)
 end
 
-function TieBeamGrid(
-    ::Type{Val{CellType}}, (::Type{T})=Float64; refine=1
-) where {T,CellType}
-    if CellType === :Linear
-        return _LinearTieBeamGrid(T, refine)
-    else
-        return _QuadraticTieBeamGrid(T, refine)
-    end
+function TieBeamGrid((::Type{T})=Float64; celltype::Symbol=:Linear, refine=1) where {T}
+    return _TieBeamGrid(_celltype_tag(celltype), T, refine)
+end
+
+function _TieBeamGrid(::Val{:Linear}, ::Type{T}, refine=1) where {T}
+    return _LinearTieBeamGrid(T, refine)
+end
+
+function _TieBeamGrid(::Val{:Quadratic}, ::Type{T}, refine=1) where {T}
+    return _QuadraticTieBeamGrid(T, refine)
 end
 
 function _LinearTieBeamGrid((::Type{T})=Float64, refine=1) where {T}

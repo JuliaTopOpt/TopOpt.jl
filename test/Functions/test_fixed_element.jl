@@ -207,7 +207,7 @@ end
     @testset "PointLoadCantilever" begin
         # Create a 2D cantilever problem
         nels = (10, 6)
-        problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
+        problem = PointLoadCantilever(nels, (1.0, 1.0), 1.0, 0.3, 1.0)
 
         nel = getncells(problem.ch.dh.grid)
         @test nel == prod(nels)
@@ -254,7 +254,7 @@ end
     @testset "HalfMBB" begin
         # Create a half MBB problem
         nels = (8, 4)
-        problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
+        problem = HalfMBB(nels, (1.0, 1.0), 1.0, 0.3, 1.0)
 
         nel = getncells(problem.ch.dh.grid)
         @test nel == prod(nels)
@@ -277,7 +277,7 @@ end
 
     @testset "Integration with optimization workflow" begin
         nels = (10, 6)
-        problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
+        problem = PointLoadCantilever(nels, (1.0, 1.0), 1.0, 0.3, 1.0)
 
         nel = getncells(problem.ch.dh.grid)
 
@@ -397,7 +397,7 @@ end
 
         # Create a simple problem
         nels = (10, 10)
-        problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
+        problem = PointLoadCantilever(nels, (1.0, 1.0), 1.0, 0.3, 1.0)
 
         # Create projector with some fixed elements
         nel = prod(nels)
@@ -463,7 +463,7 @@ end
 
     # Create a cantilever problem
     nels = (20, 10)
-    problem = PointLoadCantilever(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
+    problem = PointLoadCantilever(nels, (1.0, 1.0), 1.0, 0.3, 1.0)
     nel = prod(nels)
 
     # Define fixed elements: left side solid (black), right side void (white)

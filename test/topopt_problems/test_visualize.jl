@@ -7,11 +7,9 @@ using Test
     # Node-based Dirichlet BCs (cantilever) and facet-based BCs (LBeam,
     # TieBeam) must both render: support drawing expands FacetIndex sets to
     # their facet nodes.
-    cantilever = PointLoadCantilever(Val{:Linear}, (4, 2), (1.0, 1.0), 1.0, 0.3, 1.0)
-    lbeam = LBeam(Val{:Linear}; length=6, height=6, upperslab=3, lowerslab=3)
-    lbeam_dist = LBeam(
-        Val{:Linear}; length=6, height=6, upperslab=3, lowerslab=3, load_width=3
-    )
+    cantilever = PointLoadCantilever((4, 2), (1.0, 1.0), 1.0, 0.3, 1.0)
+    lbeam = LBeam(; length=6, height=6, upperslab=3, lowerslab=3)
+    lbeam_dist = LBeam(; length=6, height=6, upperslab=3, lowerslab=3, load_width=3)
 
     for problem in (cantilever, lbeam, lbeam_dist)
         fig = visualize(
@@ -30,7 +28,7 @@ using Test
 end
 
 @testset "Non-interactive visualization (CairoMakie)" begin
-    cantilever = PointLoadCantilever(Val{:Linear}, (4, 2), (1.0, 1.0), 1.0, 0.3, 1.0)
+    cantilever = PointLoadCantilever((4, 2), (1.0, 1.0), 1.0, 0.3, 1.0)
     topology = ones(getncells(TopOptProblems.getdh(cantilever).grid))
 
     # interactive=false should produce a figure without sliders
@@ -56,7 +54,7 @@ end
 end
 
 @testset "Static visualization keyword dispatch" begin
-    cantilever = PointLoadCantilever(Val{:Linear}, (4, 2), (1.0, 1.0), 1.0, 0.3, 1.0)
+    cantilever = PointLoadCantilever((4, 2), (1.0, 1.0), 1.0, 0.3, 1.0)
     topology = ones(getncells(TopOptProblems.getdh(cantilever).grid))
 
     # The static path requires WGLMakie; CairoMakie should reject it at the
@@ -73,9 +71,7 @@ end
         joinpath(ins_dir, "tim_2d.json")
     )
     loads = load_cases["0"]
-    truss_problem = TrussProblem(
-        Val{:Linear}, node_points, elements, loads, fixities, mats, crosssecs
-    )
+    truss_problem = TrussProblem(node_points, elements, loads, fixities, mats, crosssecs)
     topology = ones(getncells(truss_problem))
 
     # Non-interactive mode

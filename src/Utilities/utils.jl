@@ -32,9 +32,6 @@ function Base.setindex!(ra::RaggedArray, v, i, j)
     return ra.values[r[i]] = v
 end
 
-YoungsModulus(p) = getE(p)
-PoissonRatio(p) = getν(p)
-
 function compliance(Ke, u, dofs)
     comp = zero(eltype(u))
     for i in eachindex(dofs)

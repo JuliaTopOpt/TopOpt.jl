@@ -31,7 +31,7 @@ end
 
 @testset "ElementStressTensorFun call function" begin
     nels = (2, 2)
-    problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
+    problem = HalfMBB(nels, (1.0, 1.0), 1.0, 0.3, 1.0)
     solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(3.0))
 
     st = StressTensorFun(solver)
@@ -205,7 +205,7 @@ end
     # be 3×3 with a nonzero σzz entry. The old code returned 2×2 and used
     # the plane-stress von Mises formula, which incorrectly assumed σzz=0.
     nels = (2, 2)
-    problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
+    problem = HalfMBB(nels, (1.0, 1.0), 1.0, 0.3, 1.0)
     solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(3.0))
     st = StressTensorFun(solver)
     dp = DisplacementFun(solver)

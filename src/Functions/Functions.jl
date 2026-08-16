@@ -47,6 +47,8 @@ export VolumeFun,
     element_densities,
     tounit,
     ThermalComplianceFun,
+    TemperatureFun,
+    cell_temperature,
     FixedElementProjectorFun,
     get_fixed_element_projector,
     get_free_variables,
@@ -85,6 +87,9 @@ include("compute_element_energy.jl")
 
 # Thermal compliance for heat transfer problems
 include("thermal_compliance.jl")
+
+# Nodal temperature function for heat transfer problems
+include("temperature.jl")
 
 # Fixed element projection for black/white handling
 include("fixed_element.jl")

@@ -15,7 +15,7 @@ V = 0.5 # maximum volume fraction
 p = 4.0 # penalty
 x0 = fill(V, prod(problem_size)) # initial design
 
-problem = HalfMBB(Val{:Linear}, problem_size, (1.0, 1.0), E, v, f)
+problem = HalfMBB(problem_size, (1.0, 1.0), E, v, f)
 
 solver = FEASolver(DirectSolver, problem; xmin=xmin)
 cheqfilter = DensityFilterFun(solver; rmin=rmin)

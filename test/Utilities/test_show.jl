@@ -5,7 +5,7 @@ using TopOpt, Test
 @testset "Show Methods" begin
     # Create a simple problem for testing
     nels = (2, 2)
-    problem = HalfMBB(Val{:Linear}, nels, (1.0, 1.0), 1.0, 0.3, 1.0)
+    problem = HalfMBB(nels, (1.0, 1.0), 1.0, 0.3, 1.0)
 
     @testset "GenericFEASolver show methods" begin
         # Direct solver

@@ -22,9 +22,7 @@ include("utils.jl")
     )
     loads = load_cases["0"]
 
-    problem = TrussProblem(
-        Val{:Linear}, node_points, elements, loads, fixities, mats, crosssecs
-    )
+    problem = TrussProblem(node_points, elements, loads, fixities, mats, crosssecs)
     solver = FEASolver(DirectSolver, problem)
     solver()
 
@@ -92,7 +90,7 @@ gm_ins_dir = joinpath(@__DIR__, "instances", "ground_meshes");
 #             # internal force based on previous configuration
 #             # assemble K based on the conf (orig + u1)
 #             updated_nodes = Dict(nid => pt + u1[2*nid-1:2*nid] for (nid, pt) in node_points)
-#             problem = TrussProblem(Val{:Linear}, updated_nodes, elements, P, fixities, mats, crosssecs);
+#             problem = TrussProblem(updated_nodes, elements, P, fixities, mats, crosssecs);
 #             solver = FEASolver(DirectSolver, problem)
 #             # trigger assembly
 #             solver()
