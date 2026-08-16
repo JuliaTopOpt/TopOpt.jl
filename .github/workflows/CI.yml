@@ -297,7 +297,7 @@ jobs:
             for resource in "$site"/*; do
               name=$(basename "$resource")
               case "$name" in
-                *.html|site_libs) continue ;;
+                *.html|site_libs|search.json) continue ;;
               esac
               target="docs/build/tutorials/$name"
               if [ -e "$target" ]; then
