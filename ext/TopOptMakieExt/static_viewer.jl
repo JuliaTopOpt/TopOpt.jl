@@ -55,7 +55,8 @@ function TopOpt._static_visualization(
     # so the JS is built as raw JSCode with values inlined as JS literals.
     jsvec(v) = "[" * join(Float64.(v), ",") * "]"
 
-    return Bonito.App() do session
+    app_ref = Ref{Any}(nothing)
+    app = Bonito.App() do session
         fig = TopOpt.visualize(
             problem;
             interactive=false,
@@ -121,8 +122,9 @@ function TopOpt._static_visualization(
         ax1_candidates = [c for c in fig.content if c isa LScene]
         # 2D problems use an Axis, not an LScene; there is no 3D camera to
         # control, so return the bare figure with the legend overlay.
-        isempty(ax1_candidates) &&
-            return D.div(fig, draw_legend ? legend : no_legend; style="position:relative;")
+        isempty(ax1_candidates) && return D.div(
+            fig, draw_legend ? legend : no_legend; style="position:relative;"
+        )
         ax1 = first(ax1_candidates)
 
         scene_id = WGLMakie.js_uuid(ax1.scene)
@@ -139,6 +141,18 @@ function TopOpt._static_visualization(
         lab = "font-size:10px;user-select:none;cursor:pointer;white-space:nowrap;"
         row = "display:flex;flex-wrap:nowrap;gap:3px;align-items:center;justify-content:center;margin:2px 0;"
         cross_btn = "font-size:10px;padding:0;margin:0;cursor:pointer;width:22px;height:20px;"
+
+        # Open the live app in the operating system's default browser. The
+        # offline export has no Julia process, so the frontend falls back to
+        # opening the current page in a new tab instead.
+        open_browser_cmd = Bonito.Observable(false)
+        on(open_browser_cmd) do v
+            v || return nothing
+            Bonito.browser_display()
+            display(app_ref[])
+            open_browser_cmd[] = false
+            return nothing
+        end
 
         # Bounds for the eye-position fields: generous but finite, so typing
         # or spinning cannot fling the camera to numerically absurd places.
@@ -191,7 +205,12 @@ function TopOpt._static_visualization(
                 D.span("Camera"; style=lab * "margin-left:8px;"),
                 D.span("φ"; style=lab),
                 D.input(;
-                    type="number", class="tv-phi", style=num, min=-180, max=180, step="1"
+                    type="number",
+                    class="tv-phi",
+                    style=num,
+                    min=-180,
+                    max=180,
+                    step="1",
                 ),
                 D.span("θ"; style=lab),
                 D.input(;
@@ -231,7 +250,19 @@ function TopOpt._static_visualization(
                     class="tv-savename",
                     style="font-size:10px;width:10em;padding:1px 2px;margin-left:5px;",
                 ),
-                button("Save", "tv-save");
+                button("Save", "tv-save"),
+                D.button(
+                    "Browser";
+                    class="tv-browser",
+                    style=btn,
+                    onclick=Bonito.JSCode([
+                        Bonito.JSString("event => { try { "),
+                        open_browser_cmd,
+                        Bonito.JSString(
+                            ".notify(true); } catch (e) { window.open(window.location.href, '_blank'); } }",
+                        ),
+                    ],),
+                );
                 style=row,
             );
             style="position:relative;z-index:100;width:580px;flex:0 0 auto;overflow:visible;margin-top:6px;",
@@ -988,4 +1019,6 @@ function TopOpt._static_visualization(
 
         return container
     end
+    app_ref[] = app
+    return app
 end
