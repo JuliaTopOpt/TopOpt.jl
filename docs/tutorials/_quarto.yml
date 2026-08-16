@@ -5,7 +5,7 @@ project:
     - "*.qmd"
 
 execute:
-  freeze: auto
+  freeze: false
 
 website:
   title: "TopOpt.jl Tutorials"

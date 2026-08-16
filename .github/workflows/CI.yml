@@ -281,7 +281,9 @@ jobs:
             [ -d "$site" ] || continue
             for page in "$site"/*.html; do
               [ -e "$page" ] || continue
-              target="docs/build/tutorials/$(basename "$page")"
+              name=$(basename "$page")
+              [ "$name" = index.html ] && continue
+              target="docs/build/tutorials/$name"
               [ ! -e "$target" ] || { echo "Tutorial page collision: $target"; exit 1; }
               cp "$page" "$target"
             done

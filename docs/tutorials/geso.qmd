@@ -98,6 +98,7 @@ stochastic nature, but can find better global optima for complex problems.
 #| label: fig-geso
 #| fig-cap: "GESO optimization result showing the evolved beam structure"
 fig = visualize(problem; static=true, topology=result.topology)
+display(fig)
 ```
 
 The result shows a truss-like structure optimized for minimum compliance under

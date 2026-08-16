@@ -171,4 +171,5 @@ constr_final = w -> volfrac(todensities(w; filter=false)) / V - 1
 #| fig-cap: "Adam-optimized neural network design (6-layer MLP)"
 topology = todensities(w; filter=true)
 fig = visualize(problem; static=true, topology=topology)
+display(fig)
 ```

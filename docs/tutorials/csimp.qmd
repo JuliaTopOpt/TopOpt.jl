@@ -154,6 +154,7 @@ fig = visualize(
     scale_range=10.0,
     vector_arrowsize=0.5,
 )
+display(fig)
 ```
 
 The visualization shows the final material distribution after the full

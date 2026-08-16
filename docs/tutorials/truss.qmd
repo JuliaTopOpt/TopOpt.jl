@@ -141,6 +141,7 @@ large-scale nonlinear problem.
 #| label: fig-truss
 #| fig-cap: "Optimized truss structure with cross-sectional areas proportional to bar thickness"
 fig = visualize(problem; static=true, u=solver.u, topology=r.minimizer, default_exagg_scale=0.0)
+display(fig)
 
 ```
 

@@ -485,15 +485,19 @@ function _add_legend!(
         backgroundcolor=RGBAf(1, 1, 1, 0.85),
         halign=:left,
         valign=:top,
-        margin=(0, 0, 0, 0),
+        margin=(0, 0, 0, -8),
+        labelsize=11,
+        patchsize=(12, 12),
+        rowgap=3,
+        padding=(4, 4, 4, 4),
     )
     if has_colorbar
-        Makie.colsize!(fig.layout, 1, Makie.Fixed(520))
+        Makie.colsize!(fig.layout, 1, Makie.Fixed(728))
         Makie.colsize!(fig.layout, 2, Makie.Fixed(60))
-        Makie.colsize!(fig.layout, 3, Makie.Fixed(180))
+        Makie.colsize!(fig.layout, 3, Makie.Fixed(150))
     else
-        Makie.colsize!(fig.layout, 1, Makie.Fixed(580))
-        Makie.colsize!(fig.layout, 2, Makie.Fixed(180))
+        Makie.colsize!(fig.layout, 1, Makie.Fixed(812))
+        Makie.colsize!(fig.layout, 2, Makie.Fixed(150))
     end
     Makie.rowsize!(fig.layout, 1, Makie.Fixed(387))
     return fig
@@ -709,7 +713,7 @@ function TopOpt.visualize(
     end
 
     # * initialize the makie scene
-    fig = Figure(; size=dim == 3 ? (760, 510) : (800, 600))
+    fig = Figure(; size=dim == 3 ? (1020, 510) : (800, 600))
 
     if dim == 2
         ax1 = Axis(fig[1, 1])
@@ -852,13 +856,15 @@ function TopOpt.visualize(
             dup_u[:, new_nid] = u[:, old_node_id_from_new[new_nid]]
         end
 
+        deformation_scale =
+            interactive ? deform_lsgrid.sliders[1].value : Observable(default_exagg_scale)
         exagg_deformed_nodes = lift(
             s -> [
                 Ferrite.Node(
                     Tuple([new_node.x[ax_id] + s * dup_u[ax_id, nid] for ax_id in 1:3])
                 ) for (nid, new_node) in enumerate(dup_nodes)
             ],
-            deform_lsgrid.sliders[1].value,
+            deformation_scale,
         )
         deformed_mesh_colors = [
             RGBAf(
@@ -1063,7 +1069,7 @@ function TopOpt.visualize(
         )
     end
 
-    fig = Figure(; size=xdim == 3 ? (760, 510) : (800, 600))
+    fig = Figure(; size=xdim == 3 ? (1020, 510) : (800, 600))
     if ndim == 2
         ax1 = Axis(fig[1, 1])
         # tightlimits!(ax1)
@@ -1324,7 +1330,7 @@ function TopOpt.visualize(
     end
 
     # Initialize Makie figure
-    fig = Figure(; size=dim == 3 ? (760, 510) : (800, 600))
+    fig = Figure(; size=dim == 3 ? (1020, 510) : (800, 600))
 
     if dim == 2
         ax1 = Axis(fig[1, 1])
@@ -1618,10 +1624,10 @@ function TopOpt._static_visualization(
                 button("Save", "tv-save");
                 style=row,
             );
-            style="position:relative;z-index:100;width:580px;flex:0 0 auto;overflow:visible;margin-top:6px;transform:translateX(-135px);",
+            style="position:relative;z-index:100;width:580px;flex:0 0 auto;overflow:visible;margin-top:6px;",
         )
 
-        # Zoom/pan controls occupy a dedicated column beside the viewport.
+        # Overlay the controls so the 3D viewport uses the full inline width.
         cross = D.div(
             D.div(
                 D.button("−"; class="tv-zoomout", style=cross_btn),
@@ -1643,10 +1649,10 @@ function TopOpt._static_visualization(
             );
             style=join([
                 "position:absolute;",
-                "right:0;",
-                "bottom:40px;",
+                "right:45px;",
+                "bottom:0;",
                 "z-index:20;",
-                "width:180px;",
+                "width:60px;",
                 "padding:4px 0;",
                 "display:flex;",
                 "flex-direction:column;",
@@ -1654,8 +1660,7 @@ function TopOpt._static_visualization(
             ]),
         )
 
-        # The cross stays outside the rendered viewport while remaining in the
-        # app layout; the Makie legend is inside the saved figure itself.
+        # The legend and controls share the right side of the static viewport.
         figure = D.div(
             fig;
             style=join([
@@ -1663,8 +1668,9 @@ function TopOpt._static_visualization(
                 "min-width:0;",
                 "min-height:0;",
                 "width:100%;",
+                "max-width:100%;",
                 "display:flex;",
-                "justify-content:center;",
+                "justify-content:flex-end;",
                 "line-height:0;",
             ]),
         )
@@ -1682,7 +1688,6 @@ function TopOpt._static_visualization(
                 "flex:0 0 auto;",
                 "gap:6px;",
                 "margin:0;",
-                "transform:translateX(-90px);",
             ]),
         )
         container = D.div(
@@ -1698,8 +1703,8 @@ function TopOpt._static_visualization(
                 "padding:8px;",
                 "box-sizing:border-box;",
                 "width:100%;",
-                "max-width:1218px;",
-                "margin:0;",
+                "max-width:1086px;",
+                "margin:0 auto;",
                 "overflow:visible;",
             ]),
         )
@@ -1729,7 +1734,7 @@ function TopOpt._static_visualization(
         end
         cam_cmd = Bonito.Observable(Float64[])
         cam_state = Bonito.Observable(state_vec())
-        sync_state!(_...) = (cam_state[] = state_vec(); nothing)
+        sync_state!(_...) = (cam_state[]=state_vec(); nothing)
         on(cam_cmd) do v
             isempty(v) && return nothing
             op = Int(v[1])

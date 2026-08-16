@@ -127,6 +127,7 @@ designs without intermediate densities.
 #| fig-cap: "TOBS optimization result showing binary (0/1) material distribution"
 topology = r.minimizer
 fig = visualize(problem; static=true, topology=topology)
+display(fig)
 
 ```
 

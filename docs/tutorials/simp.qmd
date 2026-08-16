@@ -126,6 +126,7 @@ app = visualize(
     static=true,
     topology=r.minimizer,
 )
+display(app)
 ```
 
 The visualization shows the optimized 3D structure — typically an L-shaped or curved truss-like form that efficiently transfers the load from the free end to the fixed support while using only 30% of the material volume. Passing `static=true` to `visualize` returns a `Bonito.App` with a top-right load/support legend and client-side camera controls (Reset, view presets, orthographic toggle, zoom-to-cursor, and the cross-button zoom/pan) — so they keep working in the exported HTML alongside mouse rotate and zoom.

@@ -120,6 +120,7 @@ problem size.
 #| label: fig-beso
 #| fig-cap: "BESO optimization result showing the evolved beam structure"
 fig = visualize(problem; static=true, topology=result.topology)
+display(fig)
 ```
 
 The visualization shows the final material distribution — a truss-like structure

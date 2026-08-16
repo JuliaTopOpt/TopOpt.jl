@@ -197,6 +197,8 @@ using Makie, WGLMakie
 
 fig1 = visualize(problem; static=true, u=solver.u, topology=r1.minimizer, default_exagg_scale=0.0)
 fig2 = visualize(problem; static=true, u=solver.u, topology=r2.minimizer, default_exagg_scale=0.0)
+display(fig1)
+display(fig2)
 ```
 
 The buckling-constrained design typically shows thicker compression

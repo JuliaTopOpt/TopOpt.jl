@@ -1,3 +1,6 @@
+ignore:
+  - "ext/TopOptMakieExt/"
+
 coverage:
   status:
     project:
