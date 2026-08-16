@@ -9,6 +9,12 @@ docstrings.
 CurrentModule = TopOpt.Functions
 ```
 
+## Abstract type
+
+```@docs
+AbstractFunction
+```
+
 ## ComplianceFun and volume
 
 ```@docs
@@ -30,6 +36,21 @@ epsilon_relaxed
 TrussStressFun
 ```
 
+## Temperature
+
+```@docs
+TemperatureFun
+cell_temperature
+```
+
+## Multi-load and trace estimation
+
+```@docs
+generate_scenarios
+hutch_rand!
+hadamard!
+```
+
 ## Buckling helpers
 
 ```@docs
@@ -46,6 +67,10 @@ TrussElementKσFun
 NeuralNetworkFun
 TrainFunctionFun
 PredictFunctionFun
+AbstractMLModel
+Coordinates
+NNParams
+getcentroids
 ```
 
 ## Multi-material

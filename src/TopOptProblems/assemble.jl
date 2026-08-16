@@ -1,3 +1,9 @@
+"""
+    assemble(problem, elementinfo, vars, penalty, xmin)
+
+Assemble the global stiffness matrix and load vector of `problem` from the
+element information and design variables, returning a [`GlobalFEAInfo`](@ref).
+"""
 function assemble(
     problem::AbstractTopOptProblem,
     elementinfo::ElementFEAInfo,
@@ -96,6 +102,12 @@ function assemble_f(
 end
 get_f(problem, vars::Array) = zeros(floattype(problem), ndofs(problem.ch.dh))
 
+"""
+    assemble_f!(f, problem, elementinfo, ρ, penalty, xmin)
+
+Assemble the global load vector `f` in place from the element load vectors and
+concentrated/distributed loads.
+"""
 function assemble_f!(
     f::AbstractVector,
     problem::StiffnessTopOptProblem,

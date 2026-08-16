@@ -54,6 +54,21 @@ Every differentiable callable struct type uses a `Fun` suffix in its name (e.g. 
   - **Constructor example**: `disp = DisplacementFun(solver)`
   - **Usage example**: `u = disp(x)`
 
+## Nodal temperature
+  - **Function name**: `TemperatureFun`
+  - **Description**: Nodal temperature function for heat-conduction problems. Solves the thermal FEA system and returns the temperature at every node, analogous to `DisplacementFun` for linear elasticity. Works with homogeneous and inhomogeneous (prescribed) temperature boundary conditions.
+  - **Input(s)**: Filtered and optionally projected design `x::PseudoDensities`
+  - **Output**: Nodal temperature `T::TemperatureResult`
+  - **Constructor example**: `tf = TemperatureFun(solver)`
+  - **Usage example**: `T = tf(PseudoDensities(x))`
+
+## Cell-averaged temperature
+  - **Function name**: `cell_temperature`
+  - **Description**: Averages a nodal temperature field over each cell's nodes to produce a per-cell temperature vector, suitable for coloring a heat-problem visualization with `visualize(problem; cell_colors=...)`.
+  - **Input(s)**: A `TemperatureResult` (or plain vector) and a `HeatTransferTopOptProblem`
+  - **Output**: Per-cell temperature `::Vector{<:Real}`
+  - **Usage example**: `cellT = cell_temperature(T, problem)`
+
 ## Element-wise microscopic stress tensor
   - **Function name**: `StressTensorFun`
   - **Description**: A function computing the element-wise microscopic stress tensor which is useful in stress-constrained optimization and machine learning for topology optimization. The microscopic stress tensor uses the base Young's modulus to compute the stiffness tensor and calculate the stress tensor from the strain tensor.

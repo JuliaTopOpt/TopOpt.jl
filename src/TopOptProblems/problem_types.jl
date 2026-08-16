@@ -10,22 +10,74 @@ An abstract stiffness topology optimization problem. All subtypes must have the 
 abstract type StiffnessTopOptProblem{dim,T} <: AbstractTopOptProblem end
 
 # Fallbacks
+"""
+    getdim(problem::StiffnessTopOptProblem)
+
+Return the spatial dimension of the problem.
+"""
 getdim(::StiffnessTopOptProblem{dim,T}) where {dim,T} = dim
+
+"""
+    floattype(problem::StiffnessTopOptProblem)
+
+Return the number type used for the problem's coordinates and computations.
+"""
 floattype(::StiffnessTopOptProblem{dim,T}) where {dim,T} = T
 getE(p::StiffnessTopOptProblem) = p.E
 getν(p::StiffnessTopOptProblem) = p.ν
+
+"""
+    YoungsModulus(p::StiffnessTopOptProblem)
+
+Return the Young's modulus of a structural topology optimization problem.
+"""
 YoungsModulus(p::StiffnessTopOptProblem) = getE(p)
+
+"""
+    PoissonRatio(p::StiffnessTopOptProblem)
+
+Return the Poisson's ratio of a structural topology optimization problem.
+"""
 PoissonRatio(p::StiffnessTopOptProblem) = getν(p)
 getgeomorder(p::StiffnessTopOptProblem) = nnodespercell(p) in (9, 27) ? 2 : 1
 getdensity(::StiffnessTopOptProblem{dim,T}) where {dim,T} = T(0)
 getmetadata(p::StiffnessTopOptProblem) = p.metadata
+
+"""
+    getdh(problem::StiffnessTopOptProblem)
+
+Return the `Ferrite.DofHandler` of the problem.
+"""
 getdh(p::StiffnessTopOptProblem) = p.ch.dh
+
+"""
+    getcloaddict(problem::StiffnessTopOptProblem)
+
+Return the concentrated-load dictionary (node index => load vector).
+"""
 getcloaddict(p::StiffnessTopOptProblem{dim,T}) where {dim,T} = Dict{String,Vector{T}}()
+
+"""
+    getpressuredict(problem::StiffnessTopOptProblem)
+
+Return the pressure-load dictionary (faceset name => pressure value).
+"""
 getpressuredict(p::StiffnessTopOptProblem{dim,T}) where {dim,T} = Dict{String,T}()
+
+"""
+    getfacesets(problem::StiffnessTopOptProblem)
+
+Return the face sets of the problem's grid.
+"""
 getfacesets(p::StiffnessTopOptProblem{dim,T}) where {dim,T} = Dict{String,Tuple{Int,T}}()
 Ferrite.getncells(problem::StiffnessTopOptProblem) = Ferrite.getncells(getdh(problem).grid)
 
 """
+    PointLoadCantilever{dim, T, N, M} <: StiffnessTopOptProblem{dim, T}
+
+A cantilever beam problem with a point load applied at the free end. Available
+in 2D and 3D.
+
 ```
 ///**********************************
 ///*                                *
@@ -179,6 +231,11 @@ function _PointLoadCantilever(
 end
 
 """
+    HalfMBB{dim, T, N, M} <: StiffnessTopOptProblem{dim, T}
+
+The half Messerschmitt-Bölkow-Blohm (MBB) beam problem with a point load at
+the top-left corner. Available in 2D and 3D.
+
 ```
  |
  |
@@ -345,6 +402,11 @@ function getcloaddict(p::Union{PointLoadCantilever{dim,T},HalfMBB{dim,T}}) where
 end
 
 """
+    LBeam{T, N, M} <: StiffnessTopOptProblem{2, T}
+
+An L-shaped beam problem with a point load at the free end of the lower slab.
+Always 2D.
+
 ```
 ////////////
 ............
@@ -555,6 +617,10 @@ function getcloaddict(p::LBeam{T}) where {T}
 end
 
 """
+    TieBeam{T, N, M} <: StiffnessTopOptProblem{2, T}
+
+A tie-beam problem with distributed loading on specified elements. Always 2D.
+
 ```
                                                                1
                                                                
@@ -688,10 +754,22 @@ abstract type HeatTransferTopOptProblem{dim,T} <: AbstractTopOptProblem end
 # Fallbacks for HeatTransferTopOptProblem
 getdim(::HeatTransferTopOptProblem{dim,T}) where {dim,T} = dim
 floattype(::HeatTransferTopOptProblem{dim,T}) where {dim,T} = T
+
+"""
+    getk(problem::HeatTransferTopOptProblem)
+
+Return the thermal conductivity of a heat transfer problem.
+"""
 getk(p::HeatTransferTopOptProblem) = p.k
 getmetadata(p::HeatTransferTopOptProblem) = p.metadata
 getdh(p::HeatTransferTopOptProblem) = p.ch.dh
 getpressuredict(p::HeatTransferTopOptProblem{dim,T}) where {dim,T} = Dict{String,T}()
+
+"""
+    getheatfluxdict(problem::HeatTransferTopOptProblem)
+
+Return the surface heat-flux dictionary (faceset name => heat flux value).
+"""
 getheatfluxdict(p::HeatTransferTopOptProblem{dim,T}) where {dim,T} = Dict{String,T}()
 getfacesets(p::HeatTransferTopOptProblem) = getdh(p).grid.facetsets
 function Ferrite.getncells(problem::HeatTransferTopOptProblem)

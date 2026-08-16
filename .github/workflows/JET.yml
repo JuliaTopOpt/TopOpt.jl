@@ -74,11 +74,11 @@ jobs:
         run: julia --project=test test/jet_report.jl --output ../master_jet.json
         working-directory: master
 
-      - name: Compare JET reports
+      - name: Compare JET reports (PR)
         run: julia --project=test test/jet_compare.jl ../master_jet.json ../pr_jet.json
         working-directory: pr
 
-      - name: Compare JET reports (full, for master push)
+      - name: List JET issues (push to master)
         if: github.event_name == 'push'
         run: julia --project=test test/jet_compare.jl ../master_jet.json ../pr_jet.json --full
         working-directory: pr

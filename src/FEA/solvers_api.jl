@@ -168,6 +168,12 @@ end
 # `solve_system!` methods (forward pass) and by the thermal adjoint
 # `solve_adjoint!` in `Functions` so the CG setup (preconditioner init, lhs
 # zeroing, and the `cg!` call) is written once.
+"""
+    cg_solve!(solver, op, rhs, lhs, precond_matrix; initially_zero=true)
+
+Solve the linear system with the solver's preconditioned conjugate-gradient
+settings, writing the solution into `lhs`.
+"""
 function cg_solve!(
     solver::GenericFEASolver{T,Physics,Solver},
     op,
