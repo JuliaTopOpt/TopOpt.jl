@@ -128,7 +128,7 @@ nnodes(cell::Type{<:Ferrite.AbstractCell}) = length(Base.fieldtypes(cell)[1].par
 nnodes(cell::Ferrite.AbstractCell) = length(cell.nodes)
 
 """
-    LGrid(::Type{T}; celltype=:Linear, length = 100, height = 100, upperslab = 50, lowerslab = 50) where {T}
+    LGrid(::Type{T}=Float64; celltype=:Linear, length = 100, height = 100, upperslab = 50, lowerslab = 50) where {T}
     LGrid(nel1::NTuple{2,Int}, nel2::NTuple{2,Int}, LL::Vec{2,T}, UR::Vec{2,T}, MR::Vec{2,T}; celltype=:Linear) where {T}
 
 Constructs a `Ferrite.Grid` that represents the following L-shaped grid.
@@ -162,7 +162,7 @@ LGrid((2, 4), (2, 2), Vec{2,Float64}((0.0,0.0)), Vec{2,Float64}((2.0, 4.0)), Vec
 ```
 """
 function LGrid(
-    ::Type{T};
+    (::Type{T})=Float64;
     celltype::Symbol=:Linear,
     length=100,
     height=100,

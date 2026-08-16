@@ -24,7 +24,14 @@ using Test
 @testset "RectilinearGrid Basic Construction" begin
     # Invalid cell types fail fast with a descriptive error
     @test_throws ArgumentError RectilinearGrid((4, 4), (1.0, 1.0); celltype=:Cubic)
-    @test_throws ArgumentError LGrid((2, 4), (2, 2), Vec{2,Float64}((0.0, 0.0)), Vec{2,Float64}((2.0, 4.0)), Vec{2,Float64}((4.0, 2.0)); celltype=:Cubic)
+    @test_throws ArgumentError LGrid(
+        (2, 4),
+        (2, 2),
+        Vec{2,Float64}((0.0, 0.0)),
+        Vec{2,Float64}((2.0, 4.0)),
+        Vec{2,Float64}((4.0, 2.0));
+        celltype=:Cubic,
+    )
 
     # 2D grid
     nels = (10, 5)
