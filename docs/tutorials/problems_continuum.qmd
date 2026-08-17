@@ -135,3 +135,98 @@ Workflow:
 3. Import into TopOpt.jl for optimization
 
 The `.inp` file contains nodes, elements, materials, BCs, and loads.
+
+## Defining a custom problem type
+
+Beyond the built-in benchmarks, you can define your own continuum problem by
+subtyping `StiffnessTopOptProblem` and providing a grid, a `ConstraintHandler`,
+and a `Metadata`. The example below defines a cantilever fixed on the left and
+loaded at the top-center — a modification of `PointLoadCantilever` that
+illustrates each step: build a `RectilinearGrid`, mark node sets with
+`addnodeset!`, create the displacement `DofHandler` and `ConstraintHandler`, and
+assemble the `Metadata` and load dictionary.
+
+```{julia}
+#| output: false
+const TTP = TopOpt.TopOptProblems
+const Ferrite = TTP.Ferrite
+
+struct CustomCantilever{dim,T,N,M,Tr,Tc,Tf,Tm} <: TTP.StiffnessTopOptProblem{dim,T}
+    rect_grid::Tr
+    E::T
+    ν::T
+    ch::Tc
+    force::T
+    force_dof::Tf
+    metadata::Tm
+end
+
+function CustomCantilever(nels, sizes, E=1.0, ν=0.3, force=1.0)
+    T = float(promote_type(eltype(sizes), typeof(E), typeof(ν), typeof(force)))
+    rect_grid = TTP.RectilinearGrid(nels, T.(sizes); celltype=:Linear)
+
+    # Fixed support on the left edge
+    haskey(rect_grid.grid.nodesets, "fixed_all") && pop!(rect_grid.grid.nodesets, "fixed_all")
+    TTP.addnodeset!(rect_grid.grid, "fixed_all", x -> TTP.left(rect_grid, x))
+
+    # Downward load at the top-center
+    haskey(rect_grid.grid.nodesets, "top_load") && pop!(rect_grid.grid.nodesets, "top_load")
+    TTP.addnodeset!(rect_grid.grid, "top_load", x -> TTP.top(rect_grid, x) && TTP.middlex(rect_grid, x))
+
+    # Displacement field (2 DOFs/node) and Dirichlet BC
+    dh = Ferrite.DofHandler(rect_grid.grid)
+    refshape = Ferrite.getrefshape(eltype(rect_grid.grid.cells))
+    Ferrite.add!(dh, :u, Ferrite.Lagrange{refshape,1}()^2)
+    Ferrite.close!(dh)
+
+    ch = Ferrite.ConstraintHandler(dh)
+    Ferrite.add!(
+        ch,
+        Ferrite.Dirichlet(
+            :u, Ferrite.getnodeset(rect_grid.grid, "fixed_all"), (x, t) -> zeros(T, 2), collect(1:2)
+        ),
+    )
+    Ferrite.close!(ch)
+    Ferrite.update!(ch, T(0))
+
+    metadata = TTP.Metadata(dh)
+    fnode = Tuple(Ferrite.getnodeset(rect_grid.grid, "top_load"))[1]
+    force_dof = metadata.node_dofs[2, fnode]
+
+    N = TTP.nnodespercell(rect_grid)
+    M = TTP.nfacespercell(rect_grid)
+    return CustomCantilever{2,T,N,M,typeof(rect_grid),typeof(ch),typeof(force_dof),typeof(metadata)}(
+        rect_grid, E, ν, ch, force, force_dof, metadata
+    )
+end
+
+# Trait methods the FEA assembly relies on
+TTP.nnodespercell(p::CustomCantilever) = TTP.nnodespercell(p.rect_grid)
+function TTP.getcloaddict(p::CustomCantilever{2,T}) where {T}
+    fnode = Tuple(Ferrite.getnodeset(p.rect_grid.grid, "top_load"))[1]
+    return Dict{Int,Vector{T}}(fnode => [0.0, -p.force])
+end
+```
+
+The two trait methods are the only glue required beyond the struct itself: the
+remaining accessors (`getdim`, `floattype`, `getE`, `getν`, `getdh`, ...) have
+defaults on `StiffnessTopOptProblem`. The custom problem is then used exactly
+like a built-in one:
+
+```{julia}
+#| output: true
+problem = CustomCantilever((40, 20), (1.0, 1.0), E, ν, f)
+solver = FEASolver(DirectSolver, problem; xmin=0.001, penalty=PowerPenaltyFun(3.0))
+filter = DensityFilterFun(solver; rmin=2.0)
+comp = ComplianceFun(solver)
+volfrac = VolumeFun(solver)
+
+obj = x -> comp(filter(PseudoDensities(x)))
+constr = x -> volfrac(filter(PseudoDensities(x))) - 0.5
+model = Model(obj)
+addvar!(model, zeros(getncells(problem)), ones(getncells(problem)))
+add_ineq_constraint!(model, constr)
+r = optimize(model, MMA87(), fill(0.5, getncells(problem));
+    options=MMAOptions(; maxiter=100, tol=Tolerance(; kkt=1e-4, f=1e-4)))
+println("custom problem: compliance = $(round(obj(r.minimizer), digits=2)), volume = $(round(constr(r.minimizer) + 0.5, digits=3))")
+```

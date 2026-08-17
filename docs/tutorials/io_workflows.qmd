@@ -1,0 +1,139 @@
+---
+title: "Importing Abaqus INP Files and Exporting VTK Meshes"
+toc: true
+---
+
+## Description
+
+TopOpt.jl bridges CAD/FEA tooling and optimization in two directions:
+
+- **INP import** — `InpStiffness` reads an Abaqus `.inp` mesh (nodes, elements,
+  materials, boundary conditions, and loads) into a `StiffnessTopOptProblem`,
+  so a mesh produced by FreeCAD, Abaqus, or CalculiX can be optimized directly.
+- **VTK export** — `save_mesh` writes an optimized design as a `.vtu`
+  unstructured mesh for ParaView and other post-processors.
+
+This tutorial walks through both directions: importing a mesh, optimizing it,
+and exporting the result.
+
+## Setup
+
+```{julia}
+#| output: false
+using TopOpt, LinearAlgebra
+using WGLMakie
+WGLMakie.activate!(; resize_to=:parent)
+using Bonito
+if haskey(ENV, "QUARTO_PROJECT_DIR")
+    Bonito.Page(exportable=true, offline=true)
+else
+    Bonito.browser_display()
+end
+display_app(app) = display(app)
+```
+
+`WGLMakie.activate!(; resize_to=:parent)` selects the browser renderer and fills the Quarto output column. `Bonito.Page(exportable=true, offline=true)` embeds the assets needed by `visualize(...; static=true)` in the Quarto output, so the visualization does not require a running Julia process.
+
+## Importing an INP file
+
+`InpStiffness("file.inp")` parses the mesh and returns a fully-formed problem.
+The bundled `MBB.inp` is a 2D MBB beam of 400 linear `CPS4` elements with
+`E = 42000`, `ν = 0.2`, a concentrated load, and displacement boundary
+conditions.
+
+```{julia}
+#| output: true
+problem = InpStiffness(joinpath(@__DIR__, "triangle.inp"))
+println("cells = $(getncells(problem))")
+println("E = $(TopOpt.TopOptProblems.getE(problem)), ν = $(TopOpt.TopOptProblems.getν(problem))")
+```
+
+Supported element types include linear and quadratic quadrilaterals, triangles,
+and 3D hexahedra/tetrahedra — see `test/inp_parser/` for examples
+(`triangle.inp` CPS3, `MBB.inp` CPS4, `testcube.inp` C3D10). The imported
+problem supports the same `FEASolver`, function, and optimizer API as the
+built-in benchmark problems.
+
+## Optimize the imported mesh
+
+The mesh coordinates carry units, so the filter radius `rmin` must be expressed
+in the same units. `triangle.inp` nodes are spaced 10.0 apart; `rmin = 20.0`
+spans a couple of elements.
+
+```{julia}
+#| output: false
+solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(3.0))
+filter = DensityFilterFun(solver; rmin=20.0)
+comp = ComplianceFun(solver)
+volfrac = VolumeFun(solver)
+
+V = 0.5
+N = length(solver.vars)
+obj = x -> comp(filter(PseudoDensities(x)))
+constr = x -> volfrac(filter(PseudoDensities(x))) - V
+
+model = Model(obj)
+addvar!(model, zeros(N), ones(N))
+add_ineq_constraint!(model, constr)
+r = optimize(model, MMA87(), fill(V, N);
+    options=MMAOptions(; maxiter=100, tol=Tolerance(; kkt=1e-4, f=1e-4)))
+topo = filter(PseudoDensities(r.minimizer)).x
+println("compliance = $(round(obj(r.minimizer), digits=1)), volume = $(round(constr(r.minimizer) + V, digits=3))")
+```
+
+```{julia}
+#| label: fig-io-inp
+#| fig-cap: "Cantilever design imported from an Abaqus INP file (triangular mesh) and optimized"
+fig = visualize(problem; static=true, topology=topo)
+display_app(fig)
+```
+
+## Exporting to VTK
+
+`save_mesh(filename, problem, topology)` writes the design (elements with
+density ≥ 0.5) as a `.vtu` file. The returned list contains the written file
+path(s).
+
+```{julia}
+#| output: true
+outfiles = save_mesh("optimized_inp", problem, topo)
+println("wrote: ", outfiles)
+```
+
+Open `optimized_inp.vtu` in ParaView to inspect, re-mesh, or render the design.
+`save_mesh` also accepts a solver or an optimization result directly:
+
+```{julia}
+#| output: false
+save_mesh("optimized_mbb_from_solver", problem, solver)   # uses solver.vars
+```
+
+## Exporting a heat-conduction design with its temperature field
+
+For heat problems `save_mesh` can also write the nodal temperature field
+alongside the design, which is convenient for post-processing in ParaView:
+
+```{julia}
+#| output: false
+heat = HeatConductionProblem((60, 20), (1.0, 1.0), 1.0; Tleft=100.0, Tright=0.0)
+heat_solver = FEASolver(DirectSolver, heat; xmin=0.001)
+heat_solver.vars .= 1.0
+temp = TemperatureFun(heat_solver)
+T = temp(PseudoDensities(ones(getncells(heat))))
+```
+
+```{julia}
+#| output: true
+heat_out = save_mesh("heat_design", heat, heat_solver.vars, T.T)
+println("wrote: ", heat_out)
+```
+
+## Workflow summary
+
+1. **CAD → INP**: mesh the geometry in FreeCAD/Abaqus and export `.inp`.
+2. **INP → TopOpt**: `problem = InpStiffness(path)`, then optimize as usual.
+3. **TopOpt → VTK**: `save_mesh(name, problem, topology)` and open in ParaView.
+
+The INP parser maps nodes/elements into a Ferrite grid and boundary/load sets
+into a `ConstraintHandler`, so the imported problem is indistinguishable from a
+built-in one to the rest of the package.

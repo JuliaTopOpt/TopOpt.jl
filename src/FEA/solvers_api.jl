@@ -592,6 +592,16 @@ function FEASolver(::Type{CGMatrixFreeSolver}, problem::AbstractTopOptProblem; k
     return FEASolver(physics_type(problem), CGMatrixFreeSolver, problem; kwargs...)
 end
 
+# Physics-inferred constructor for a user-defined linear solver (any subtype of
+# `AbstractLinearSolver`). The concrete constructors above are more specific and
+# take precedence; this fallback lets custom solvers be built with the same
+# `FEASolver(Solver, problem)` call form.
+function FEASolver(
+    ::Type{S}, problem::AbstractTopOptProblem; kwargs...
+) where {S<:AbstractLinearSolver}
+    return FEASolver(physics_type(problem), S, problem; kwargs...)
+end
+
 # Export new FEASolver methods
 export FEASolver
 

@@ -173,3 +173,23 @@ The optimized design shows smooth stress distributions without concentration
 points, demonstrating effective local stress control. See
 `STRESS_CONSTRAINED_TO.md` in the repository root for the theory and the
 comparison with global aggregation approaches.
+
+## Hyper-parameter guide
+
+The reliable defaults and their ranges:
+
+| Parameter | Default here | Range | Effect of increasing it |
+|-----------|--------------|-------|--------------------------|
+| `stress_exponent` (`q`) | 0.5 | 0.3–0.5 | weaker relaxation → singular optima |
+| SIMP `p` | continuation 1→3 | 1→3 | skip the p=1 warm start if the design is already feasible |
+| stress threshold `thr` | 1.2× solid peak | 1.1–1.5× solid peak | more feasible, higher volume |
+| compliance weight `λ` | 1e-4 | 1e-5–1e-3 | stronger regularizer → stiffer but less volume-reduced designs |
+| filter `rmin` | 3.0 | 1.5–3 elements | smoother designs |
+| Percival `max_iter` | 20 | 10–40 | more outer AL iterations |
+| Percival `subsolver_max_eval` | 100 | 50–200 | more accurate subproblem solves |
+
+As in the global case, the threshold must be calibrated from the solid design's
+peak stress — an arbitrary value is either vacuous or infeasible, and the
+latter stalls the optimizer at the solid design.
+
+

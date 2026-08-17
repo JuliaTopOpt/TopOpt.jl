@@ -1,0 +1,202 @@
+---
+title: "Iterative and Matrix-Free Solvers, Preconditioners, and Custom Solvers"
+toc: true
+---
+
+## Description
+
+For large 3D problems a direct factorization becomes expensive in time and
+memory. TopOpt.jl offers three linear-solver backends behind a single
+`FEASolver` interface, plus hooks for plugging in your own solver and
+preconditioner:
+
+- `DirectSolver` — Cholesky/QR factorization; robust, but `O(n²)`-`O(n³)`
+  memory/time.
+- `CGAssemblySolver` — conjugate gradient on the assembled sparse stiffness
+  matrix; `O(n)` memory, faster per-iteration work.
+- `CGMatrixFreeSolver` — CG without ever assembling the global matrix; element
+  matrices are applied on the fly.
+
+All three expose the same API, so switching is a one-line change. This tutorial
+compares them, demonstrates preconditioning, shows how to select a convergence
+criterion, and defines a custom solver and preconditioner.
+
+## Setup
+
+```{julia}
+#| output: false
+using TopOpt, LinearAlgebra
+using WGLMakie
+WGLMakie.activate!(; resize_to=:parent)
+using Bonito
+if haskey(ENV, "QUARTO_PROJECT_DIR")
+    Bonito.Page(exportable=true, offline=true)
+else
+    Bonito.browser_display()
+end
+display_app(app) = display(app)
+```
+
+`WGLMakie.activate!(; resize_to=:parent)` selects the browser renderer and fills the Quarto output column. `Bonito.Page(exportable=true, offline=true)` embeds the assets needed by `visualize(...; static=true)` in the Quarto output, so the visualization does not require a running Julia process.
+
+## The three solvers agree
+
+```{julia}
+#| output: false
+problem = PointLoadCantilever((20, 10, 10), (1.0, 1.0, 1.0), 1.0, 0.3, 1.0)
+x = fill(0.6, getncells(problem))
+
+direct = FEASolver(DirectSolver, problem; xmin=0.01)
+direct.vars .= x
+direct()
+
+cg = FEASolver(CGAssemblySolver, problem; xmin=0.01, abstol=1e-10)
+cg.vars .= x
+cg()
+
+mf = FEASolver(CGMatrixFreeSolver, problem; xmin=0.01, abstol=1e-10)
+mf.vars .= x
+mf()
+```
+
+```{julia}
+#| output: true
+println("CGAssembly  vs Direct  rel. error: $(norm(cg.u - direct.u) / norm(direct.u))")
+println("CGMatrixFree vs Direct rel. error: $(norm(mf.u - direct.u) / norm(direct.u))")
+```
+
+The iterative solvers converge to the same displacement field as the direct
+factorization (to the requested tolerance). `CGMatrixFreeSolver` requires
+homogeneous Dirichlet boundary conditions (it throws a descriptive
+`ArgumentError` otherwise) because its matrix-free diagonal does not match
+Ferrite's inhomogeneous-BC diagonal.
+
+## Preconditioning
+
+Conjugate gradient convergence depends on the conditioning of the stiffness
+matrix. A preconditioner clusters the eigenvalues so CG converges in fewer
+iterations. TopOpt.jl passes any `Preconditioners.jl`-compatible preconditioner
+through `FEASolver(...; preconditioner=...)`. The built-in
+`DiagonalPreconditioner` (Jacobi) is the cheapest useful choice.
+
+```{julia}
+#| output: false
+const Preconditioners = TopOpt.FEA.Preconditioners
+n = length(cg.u)
+diag_prec = Preconditioners.DiagonalPreconditioner(ones(n))
+cg_prec = FEASolver(CGAssemblySolver, problem; xmin=0.01, abstol=1e-10, preconditioner=diag_prec)
+cg_prec.vars .= x
+cg_prec()
+```
+
+```{julia}
+#| output: true
+println("CGAssembly + diagonal preconditioner matches direct: $(isapprox(cg_prec.u, direct.u; rtol=1e-7))")
+```
+
+## A custom preconditioner
+
+A preconditioner only needs `size` and `ldiv!` (to apply `P⁻¹`), plus
+`UpdatePreconditioner!` (from `Preconditioners.jl`) so TopOpt.jl can build it
+from the assembled matrix. Here is a Jacobi (diagonal) preconditioner written
+from scratch:
+
+```{julia}
+#| output: false
+import LinearAlgebra: ldiv!
+
+struct JacobiPreconditioner{T,V<:AbstractVector{T}}
+    D::V
+end
+Base.size(P::JacobiPreconditioner) = (length(P.D), length(P.D))
+function Preconditioners.UpdatePreconditioner!(P::JacobiPreconditioner, K::AbstractMatrix)
+    Kd = K isa Symmetric ? K.data : K
+    P.D .= diag(Kd)
+    return P
+end
+function ldiv!(y::AbstractVector, P::JacobiPreconditioner, b::AbstractVector)
+    y .= b ./ P.D
+    return y
+end
+```
+
+```{julia}
+#| output: true
+jacobi_prec = JacobiPreconditioner(ones(n))
+cg_custom = FEASolver(CGAssemblySolver, problem; xmin=0.01, abstol=1e-10, preconditioner=jacobi_prec)
+cg_custom.vars .= x
+cg_custom()
+println("CGAssembly + custom Jacobi preconditioner matches direct: $(isapprox(cg_custom.u, direct.u; rtol=1e-7))")
+```
+
+## Convergence criteria
+
+By default CG uses `DefaultCriteria` (relative residual norm). For stiff
+systems the residual norm can be a poor indicator; `EnergyCriteria` checks the
+relative energy norm instead, and throws a `DomainError` if it encounters a
+non-finite or negative energy (fail-fast).
+
+```{julia}
+#| output: true
+cg_energy = FEASolver(CGAssemblySolver, problem; xmin=0.01, abstol=1e-10, conv=EnergyCriteria())
+cg_energy.vars .= x
+cg_energy()
+println("CGAssembly + EnergyCriteria matches direct: $(isapprox(cg_energy.u, direct.u; rtol=1e-7))")
+```
+
+## A custom linear solver
+
+Defining a custom solver means (1) subtyping `AbstractLinearSolver` and (2)
+implementing `solve_system!` for it. The generic `FEASolver(Solver, problem)`
+constructor infers the physics, so a custom solver plugs in with the same call
+form as the built-ins. The example below is a weighted-Jacobi iteration — slow
+on a stiffness matrix, but a minimal illustration of the extension point.
+
+```{julia}
+#| output: false
+import TopOpt.FEA: solve_system!, GenericFEASolver
+
+struct JacobiSolver <: TopOpt.AbstractLinearSolver end
+
+function solve_system!(
+    ::Type{JacobiSolver},
+    solver::GenericFEASolver{T,Physics,JacobiSolver},
+    K,
+    f,
+    lhs;
+    max_iters=5000,
+    ω=2 / 3,
+    tol=1e-9,
+    kwargs...,
+) where {T,Physics}
+    Kd = K isa Symmetric ? K.data : K
+    d = diag(Kd)
+    any(iszero, d) && throw(ArgumentError("JacobiSolver: zero diagonal entry"))
+    fill!(lhs, zero(T))
+    for _ in 1:max_iters
+        r = f .- Kd * lhs
+        norm(r) < tol && break
+        lhs .+= ω .* (r ./ d)
+    end
+    return false
+end
+```
+
+```{julia}
+#| output: true
+jacobi = FEASolver(JacobiSolver, problem; xmin=0.01)
+jacobi.vars .= x
+jacobi()
+println("custom JacobiSolver matches direct (rel. error): $(norm(jacobi.u - direct.u) / norm(direct.u))")
+```
+
+## Choosing a solver
+
+- **`DirectSolver`** for small-to-medium problems and when robustness matters
+  more than speed.
+- **`CGAssemblySolver`** for larger problems that still fit an assembled sparse
+  matrix; add a `DiagonalPreconditioner` (or your own) to cut iteration counts.
+- **`CGMatrixFreeSolver`** when assembling the global matrix is the bottleneck
+  — at the cost of homogeneous-Dirichlet-only support.
+- **`EnergyCriteria`** when the residual norm misjudges convergence on stiff
+  systems.

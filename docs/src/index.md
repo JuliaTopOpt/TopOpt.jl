@@ -42,6 +42,68 @@ and to optionally load the visualization sub-module as part of `TopOpt`, use:
 using TopOpt, Makie, GLMakie
 ```
 
+## Features
+
+### Optimization domains
+
+- 2D and 3D continuum and truss domains ([continuum](reference/TopOptProblems.md),
+  [truss](reference/TrussTopOptProblems.md))
+- Unstructured ground meshes imported from Abaqus/FreeCAD `.inp` files
+- Linear and quadratic triangle, quadrilateral, tetrahedron and hexahedron
+  elements
+- Fixed and non-design regions ([`FixedElementProjectorFun`](reference/Functions.md))
+- Concentrated and distributed loads
+- Multi-material design parametrization ([`MultiMaterialVariablesFun`](functions.md))
+
+### High-level algorithms and penalty types
+
+- Solid isotropic material with penalization (SIMP) and RAMP
+- Continuation SIMP/RAMP
+- Bi-directional evolutionary structural optimization (BESO) with soft-kill
+- Topology optimization of binary structures (TOBS)
+- Rational, hyperbolic-sine and projected penalty functions
+  ([`Utilities`](reference/Utilities.md))
+
+### Differentiable functions
+
+A library of differentiable building blocks — compliance, volume, stress,
+displacement, temperature, buckling, and more — that can be chained into
+arbitrary objectives and constraints and differentiated automatically with
+Zygote. See [Functions](functions.md).
+
+### Linear system solvers
+
+- Direct sparse Cholesky/QR factorization
+- Preconditioned conjugate gradient with matrix assembly
+- Matrix-free preconditioned conjugate gradient
+- Custom solver and preconditioner hooks ([`FEA`](reference/FEA.md))
+
+### Optimization algorithms
+
+Optimization is driven by [Nonconvex.jl](https://github.com/JuliaNonconvex/Nonconvex.jl):
+
+- Method of moving asymptotes (MMA)
+- All the algorithms in NLopt, and Ipopt
+- First-order augmented Lagrangian algorithm
+- Nonlinear semidefinite programming for buckling-constrained optimization
+- Surrogate-assisted and Bayesian optimization
+- Integer nonlinear programming, and TOBS sequential integer linear programming
+
+### Handling uncertainty
+
+- Mean, variance, standard deviation and scalar-valued functions of per-scenario
+  compliance under load uncertainty
+- Reliability-based topology optimization
+
+### Visualization and post-processing
+
+- End-to-end workflow from INP import to VTK export
+- Interactive visualization of designs and deformation using
+  [Makie.jl](https://makie.juliaplots.org/stable/)
+- Static browser-based visualization with camera controls for the rendered docs
+- Interactive visualization using Dash apps and
+  [DashVtk](https://github.com/JuliaTopOpt/DashVtk_Examples/tree/main/src/TopOptDemo)
+
 ## Quick start
 
 A minimal 2D SIMP example — minimize the compliance of a cantilever beam

@@ -44,6 +44,24 @@ Penalty ramp (1.0 → 5.0) for improved convergence on cantilever, Half MBB, L-b
 
 Binary (0/1) topology optimization with sequential linearization and Cbc.jl branch-and-cut for 16,000+ variables.
 :::
+
+::: {.tutorial-card}
+[**Comparing Penalty Functions**](penalties.html)
+
+Power, rational, hyperbolic-sine, and projected penalties: their curves, their effect on gray elements, and parameter sensitivity.
+:::
+
+::: {.tutorial-card}
+[**Projected Density Filter**](projected_filter.html)
+
+Filter + Heaviside/Sigmoid projection for near-binary designs, with β-continuation and comparison to the plain density filter.
+:::
+
+::: {.tutorial-card}
+[**Minimizing Volume Subject to a Compliance Constraint**](volume_minimization.html)
+
+The dual of compliance minimization: least material for a required stiffness, on continuum cantilevers and 2D/3D trusses.
+:::
 :::
 
 ## Heat conduction
@@ -84,6 +102,16 @@ Semidefinite programming (SDP) constraints for stability via NonconvexSemidefini
 :::
 :::
 
+## Stochastic and uncertainty
+
+::: {.tutorial-grid}
+::: {.tutorial-card}
+[**Stochastic Compliance Minimization**](stochastic.html)
+
+Mean and standard-deviation compliance objectives over random load scenarios, exact and randomized (Hutchinson/Hadamard/SVD) trace estimators, and a maximum-compliance-constrained problem solved with the augmented Lagrangian method.
+:::
+:::
+
 ## Advanced parametrization
 
 ::: {.tutorial-grid}
@@ -103,6 +131,18 @@ Softmax parametrization for distributing 3+ candidate materials with mass constr
 [**Neural Network Parametrization (Adam)**](neural2.html)
 
 6-layer MLP with Adam optimizer and continuation on penalty and constraint aggregation weight.
+:::
+
+::: {.tutorial-card}
+[**Fixed Element Regions**](fixed_elements.html)
+
+Reserve solid/void regions with FixedElementProjectorFun — support and load regions, keep-out zones — and optimize only the free elements.
+:::
+
+::: {.tutorial-card}
+[**Simultaneous Analysis and Design (SAND)**](simultaneous.html)
+
+Treat displacements as design variables and enforce K u = f as a constraint with the augmented Lagrangian method, using the differentiable assembly blocks.
 :::
 :::
 
@@ -128,13 +168,41 @@ Compliance minimization on a 3D space truss with the interactive static browser 
 :::
 :::
 
+## Solvers, IO and post-processing
+
+::: {.tutorial-grid}
+::: {.tutorial-card}
+[**Iterative and Matrix-Free Solvers**](iterative_solvers.html)
+
+DirectSolver vs CGAssemblySolver vs CGMatrixFreeSolver on a 3D problem, with preconditioning and convergence criteria.
+:::
+
+::: {.tutorial-card}
+[**Custom Linear Solver and Preconditioner**](iterative_solvers.html)
+
+Define your own linear solver (subtyping AbstractLinearSolver) and a from-scratch Jacobi preconditioner that plugs into the FEASolver interface.
+:::
+
+::: {.tutorial-card}
+[**Importing Abaqus INP Files**](io_workflows.html)
+
+Import a CAD/FEA mesh from an Abaqus .inp file with InpStiffness and optimize it directly.
+:::
+
+::: {.tutorial-card}
+[**Exporting VTK Meshes**](io_workflows.html)
+
+Write optimized designs (and heat-conduction temperature fields) as .vtu files for ParaView and other post-processors.
+:::
+:::
+
 ## Problem types
 
 ::: {.tutorial-grid}
 ::: {.tutorial-card}
 [**Continuum Problem Types**](problems_continuum.html)
 
-Standard benchmarks: point load cantilever (2D/3D), Half MBB, L-beam, tie-beam, and INP file import from CAD.
+Standard benchmarks: point load cantilever (2D/3D), Half MBB, L-beam, tie-beam, INP import, and defining a custom problem type.
 :::
 
 ::: {.tutorial-card}

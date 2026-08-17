@@ -18,6 +18,30 @@ using NonconvexCore: getdim
         @test df.metadata isa FilterMetadata
     end
 
+    @testset "ProjectedDensityFilterFun convenience constructor" begin
+        nels = (5, 5)
+        problem = HalfMBB(nels, (1.0, 1.0), 1.0, 0.3, 1.0)
+        solver = FEASolver(DirectSolver, problem; xmin=0.001, penalty=PowerPenaltyFun(3.0))
+
+        # default projection (Heaviside β=10) applied after the filter
+        pf = ProjectedDensityFilterFun(solver; rmin=2.0)
+        @test pf.filter isa DensityFilterFun
+        @test pf.preproj === nothing
+        @test pf.postproj isa HeavisideProjectionFun
+        @test pf.postproj.β == 10.0
+
+        # custom projection
+        pf2 = ProjectedDensityFilterFun(
+            solver; rmin=2.0, projection=SigmoidProjectionFun(20.0)
+        )
+        @test pf2.postproj isa SigmoidProjectionFun
+        @test pf2.postproj.β == 20.0
+
+        # output is bounded in [0, 1] for a uniform input
+        y = pf(PseudoDensities(ones(getncells(problem))))
+        @test all(0 .<= y.x .<= 1)
+    end
+
     nels = (5, 5)
     problem = HalfMBB(nels, (1.0, 1.0), 1.0, 0.3, 1.0)
     solver = FEASolver(DirectSolver, problem; xmin=0.001, penalty=PowerPenaltyFun(3.0))
@@ -42,6 +66,10 @@ using NonconvexCore: getdim
         sf = SensFilterFun(solver; rmin=rmin)
         @test sf.rmin == rmin
         @test sf.metadata isa FilterMetadata
+    end
+
+    @testset "DensityFilterFun too-small rmin gives descriptive error" begin
+        @test_throws ArgumentError DensityFilterFun(solver; rmin=0.01)
     end
 
     @testset "SensFilterFun show method" begin

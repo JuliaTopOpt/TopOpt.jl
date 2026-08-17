@@ -289,6 +289,28 @@ display_app(fig)
 - Deeper discussion of the theory and the failure modes of the naive
   formulation: see `STRESS_CONSTRAINED_TO.md` in the repository root.
 
+## Hyper-parameter guide
+
+The choices above are the reliable defaults, not one-off tuning. The main
+parameters and their sensible ranges:
+
+| Parameter | Default here | Range | Effect of increasing it |
+|-----------|--------------|-------|--------------------------|
+| `stress_exponent` (`q`) | 0.5 | 0.3–0.5 | weaker relaxation → singular optima reappear |
+| SIMP `p` | 3.0 | fixed | keep fixed at 3 (continuation from p=1 collapses) |
+| `σlim` (stress limit) | 1.75× solid peak | 1.5–2× solid peak | more feasible, higher volume |
+| p-norm `P` | 8 | 6–12 | tighter to `max`, but gradient concentrates |
+| KS `γ` | 20 | 10–50 | tighter bound, but MMA oscillates |
+| `ε` (ε-relaxation) | 0.25 | 0.1–0.5 | looser; needs slow continuation to shrink |
+| filter `rmin` | 2.0 | 1.5–3 elements | smoother designs, wider gray layer |
+| `load_width` | 5 | 3–8 | distribute the point load to remove its stress singularity |
+
+The most common failure is an infeasible problem at the *solid* design (the
+stress limit is below the solid block's peak), which parks the optimizer at
+`x = 1`; always calibrate `σlim` from the solid design first. The second is a
+point load/support dominating the aggregation — distribute the load
+(`load_width`) or exclude its vicinity.
+
 ## References
 
 - Le, Norato, Bruns, Ha & Tortorelli (2010). *Stress-based topology

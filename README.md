@@ -13,112 +13,29 @@
 [![Code Style: Blue](https://img.shields.io/badge/code%20style-Blue-4473c9.svg)](https://github.com/invenia/BlueStyle)
 [![JET](https://img.shields.io/badge/%F0%9F%9B%A9%EF%B8%8F_tested_with-JET.jl-233f9a)](https://github.com/aviatesk/JET.jl)
 
-`TopOpt` is a topology optimization package written in [Julia](https://github.com/JuliaLang/julia). To learn more and see some examples, visit the [documentation](https://juliatopopt.github.io/TopOpt.jl/stable) ([dev](https://juliatopopt.github.io/TopOpt.jl/dev)) and the [tutorials](https://juliatopopt.github.io/TopOpt.jl/stable/tutorials/) ([dev](https://juliatopopt.github.io/TopOpt.jl/dev/tutorials/)). Numerous examples can also be found in the `test/examples` and `test/wcsmo14` directories.
-
-## Installation
-
-To install `TopOpt.jl`, run:
-
-```julia
-using Pkg
-pkg"add TopOpt"
-```
-
-To additionally load the visualization submodule of `TopOpt`, you will need to install `GLMakie.jl` using:
-
-```julia
-pkg"add Makie, GLMakie"
-```
-
-To load the package, use:
-
-```julia
-using TopOpt
-```
-
-and to optionally load the visualization sub-module as part of `TopOpt`, use:
-
-```julia
-using TopOpt, Makie, GLMakie
-```
+`TopOpt` is a topology optimization package written in [Julia](https://github.com/JuliaLang/julia). It supports structural (linear elasticity) and heat-transfer problems on continuum and truss ground meshes in 2D and 3D, with automatic differentiation through every objective and constraint.
 
 ![gif1](https://user-images.githubusercontent.com/19524993/138464511-2685f3fe-e7c5-482e-8b06-43ab0fb82990.gif)
 ![gif2](https://user-images.githubusercontent.com/19524993/138464828-88f0ffcb-01f7-43b7-8d17-f5d201e95aa3.gif)
 ![gif3](https://user-images.githubusercontent.com/19524993/138464845-d0b289b7-0fe9-4408-be57-fe697b5d671e.gif)
 ![gif4](https://user-images.githubusercontent.com/19524993/167059067-f08502a8-c62d-4d62-a2df-e132efc5e25c.gif)
 
-## Features available
+## Installation
 
-### Optimization domains
+See the [installation section of the documentation](https://juliatopopt.github.io/TopOpt.jl/stable/#installation)
+([dev](https://juliatopopt.github.io/TopOpt.jl/dev/#installation)).
 
-- 2D and 3D truss domains
-- 2D and 3D continuum domains
-- Unstructured ground mesh
-- Linear and quadratic triangle, quadrilateral, tetrahedron and hexahedron elements in ground mesh
-- Fixed and non-design domain support
-- Concentrated and distributed loads
-- Multi-material design parameterisation
+## Features
 
-### High level algorithms and penalty types
-
-The following high level topology optimization algorithms and penalty types are available.
-
-- Solid isotropic material with penalization (SIMP)
-- Rational approximation of material properties (RAMP)
-- Continuation SIMP/RAMP
-- Bi-directional evolutionary structural optimization (BESO) with soft-kill
-- Topology optimization of binary structures (TOBS)
-
-### Differentiable functions
-
-There are numerous functions in `TopOpt.jl` that are defined in a differentiable way and you can use them in the objectives or constraints in topology optimization formulations. In `TopOpt.jl`, you can build arbitrarily complex objective and constraint functions using these differentiable functions as building blocks or lego pieces chaining them in any arbitrary way. The gradient and jacobian of the aggregate Julia function defined is then obtained using [automatic differentiation](https://www.youtube.com/watch?v=UqymrMG-Qi4). For a detailed account of the functions available, see the relevant section in the [documentation](https://juliatopopt.github.io/TopOpt.jl/stable/functions/) ([dev](https://juliatopopt.github.io/TopOpt.jl/dev/functions/)).
-
-### Linear system solvers
-
-- Direct sparse Cholesky decomposition based linear system solver
-- Preconditioned conjugate gradient method with matrix assembly
-- Matrix-free preconditioned conjugate gradient method
-
-### Optimization algorithms
-
-We use [Nonconvex.jl](https://github.com/JuliaNonconvex/Nonconvex.jl) for the optimization problem definition and solving. The following algorithms are all available using `Nonconvex.jl`.
-
-- Method of moving asymptotes
-- All the algorithms in NLopt
-- Ipopt
-- First order augmented Lagrangian algorithm
-- Nonlinear semidefinite programming for buckling constrained optimization
-- Basic surrogate assisted optimization and Bayesian optimization
-- Integer nonlinear programming (design variables guaranteed to be integer)
-- Sequential integer linear programming in the topology optimization for binary structures (TOBS) algorithm
-
-### Handling uncertainty
-- Handling load uncertainty in compliance-based topology optimization
-- Reliability-based topology optimization
-
-### Visualization and post-processing
-
-- End-to-end topology optimization from INP file to VTK file
-- Interactive visualization of designs and deformation using [Makie.jl](https://makie.juliaplots.org/stable/)
-- Interactive visualization of designs using Dash apps and [DashVtk](https://github.com/JuliaTopOpt/DashVtk_Examples/tree/main/src/TopOptDemo)
+The full list of features is maintained in one place, the
+[documentation](https://juliatopopt.github.io/TopOpt.jl/stable/#features)
+([dev](https://juliatopopt.github.io/TopOpt.jl/dev/#features)).
 
 ## Tutorials
 
-The [tutorials](https://juliatopopt.github.io/TopOpt.jl/stable/tutorials/) ([dev](https://juliatopopt.github.io/TopOpt.jl/dev/tutorials/)) cover a wide range of topics with complete, commented examples:
-
-- **SIMP** — basic compliance minimization
-- **BESO / GESO** — evolutionary optimization methods
-- **CSIMP** — continuation SIMP
-- **TOBS** — topology optimization for binary structures
-- **Global / local stress constraints** — stress-constrained design
-- **Heat sink / heat tree** — heat conduction problems
-- **Truss** — truss topology optimization
-- **Buckling** — buckling-constrained optimization
-- **Multi-material** — multi-material design parameterisation
-- **Neural network** — neural-network-based parameterization
-- **Mixed-integer truss** — discrete truss design
-
-See the full list and run the notebooks at [TopOpt Tutorials](https://juliatopopt.github.io/TopOpt.jl/stable/tutorials/) ([dev](https://juliatopopt.github.io/TopOpt.jl/dev/tutorials/)).
+Executable, commented tutorials are hosted on the documentation site:
+[TopOpt.jl Tutorials](https://juliatopopt.github.io/TopOpt.jl/stable/tutorials/)
+([dev](https://juliatopopt.github.io/TopOpt.jl/dev/tutorials/)).
 
 ## Citation
 
@@ -165,17 +82,10 @@ A standard citation file is provided as [`CITATION.bib`](CITATION.bib).
 
 ## Contribute
 
-We always welcome new contributors! Feel free to open an issue or reach out to us via email if you want to collaborate. There are plenty of things to do including beginner friendly tasks and research-oriented tasks. You can help us create the best topology optimization ecosystem in the world! Some beginner-friendly ideas you could be working on include:
-- Level set design parameterization
-- Lattice design parameterization
-- Local volume constraints
-- Supporting rectilinear grids
-- Wrapping OpenLSTO_jll which is the precompiled binary for M2DOLab/OpenLSTO
-- Wrapping TopOpt_in_PETSc_jll which is the precompiled binary for topopt/TopOpt_in_PETSc
-- Robust optimization
-- Stochastic optimization
-
+We welcome new contributors! Please see the
+[open issues](https://github.com/JuliaTopOpt/TopOpt.jl/issues) for beginner-friendly
+and research-oriented tasks, or open a new issue to discuss your idea.
 
 ## Questions?
 
-If you have any questions, join us on on the #topopt channel in the [Julia slack](https://julialang.org/slack/), open an issue or shoot us an email.
+If you have any questions, join us on the #topopt channel in the [Julia slack](https://julialang.org/slack/), open an issue or shoot us an email.

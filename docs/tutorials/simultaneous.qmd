@@ -1,0 +1,210 @@
+---
+title: "Simultaneous Analysis and Design (SAND)"
+toc: true
+---
+
+## Description
+
+Nested topology optimization solves the equilibrium equation `K(x) u = f` for
+the displacements `u` at every design iterate, then differentiates through that
+solve. *Simultaneous analysis and design* (SAND) instead treats the
+displacements `u` as optimization variables and enforces the equilibrium
+equation as a constraint:
+
+$$
+\min_{x, u}\; f^\mathsf{T} u
+\quad\text{s.t.}\quad K(x)\,u = f,\quad 0 \le x_e \le 1
+$$
+
+At a feasible point `K u = f`, the objective `fᵀu` equals the compliance
+`uᵀKu`, so this is the same physical problem — but the linear solve is folded
+into the optimization, and the equilibrium is enforced by a nonlinear solver
+rather than a nested factorization.
+
+TopOpt.jl exposes the differentiable pieces needed for SAND: `ElementKFun`
+maps densities to element stiffness matrices, `AssembleKFun` assembles them
+into the global matrix, and `apply_boundary_with_meandiag!` applies the
+Dirichlet boundary conditions — all differentiable through Zygote.
+
+## Setup
+
+```{julia}
+#| output: false
+using TopOpt, LinearAlgebra
+using WGLMakie
+WGLMakie.activate!(; resize_to=:parent)
+using Bonito
+if haskey(ENV, "QUARTO_PROJECT_DIR")
+    Bonito.Page(exportable=true, offline=true)
+else
+    Bonito.browser_display()
+end
+display_app(app) = display(app)
+```
+
+`WGLMakie.activate!(; resize_to=:parent)` selects the browser renderer and fills the Quarto output column. `Bonito.Page(exportable=true, offline=true)` embeds the assets needed by `visualize(...; static=true)` in the Quarto output, so the visualization does not require a running Julia process.
+
+## The differentiable assembly
+
+```{julia}
+#| output: false
+E, ν, f = 1.0, 0.3, 1.0
+problem = PointLoadCantilever((20, 10), (1.0, 1.0), E, ν, f)
+ch = problem.ch
+nel = getncells(problem)
+
+solver = FEASolver(DirectSolver, problem; xmin=0.001, penalty=PowerPenaltyFun(3.0))
+solver.vars .= 1.0
+solver()
+
+fvec = copy(solver.globalinfo.f)          # assembled load (BC applied)
+ndofs = length(fvec)
+element_k = ElementKFun(solver)            # x -> element stiffness matrices
+assemble_k = AssembleKFun(problem)         # element matrices -> global K
+
+K(x) = apply_boundary_with_meandiag!(assemble_k(element_k(PseudoDensities(x))), ch)
+```
+
+We verify these blocks reproduce the solver's own equilibrium: assembling
+`K(x)` and solving `K u = f` matches the nested displacement field, and the
+compliance `fᵀu` matches `ComplianceFun`.
+
+```{julia}
+#| output: true
+x = ones(nel)
+Kx = K(x)
+u_nested = copy(solver.u)
+u_direct = Kx \ fvec
+comp = ComplianceFun(solver)
+println("assembly reproduces equilibrium: |K u - f| = $(norm(Kx * u_direct - fvec))")
+println("nested vs assembled u:          |Δu| = $(norm(u_nested - u_direct))")
+println("f'u = $(dot(fvec, u_direct)),  ComplianceFun = $(comp(PseudoDensities(x)))")
+```
+
+## The augmented Lagrangian method
+
+The equilibrium is a vector of `ndofs` equality constraints
+`r(x, u) = K(x) u - f = 0`. The augmented Lagrangian folds them into the
+objective:
+
+$$
+L(x,u;\lambda,\rho) = f^\mathsf{T} u + \lambda^\mathsf{T} r + \frac{\rho}{2}\,r^\mathsf{T} r,
+\qquad
+\lambda \leftarrow \lambda + \rho\, r,\quad \rho \leftarrow \gamma\rho.
+$$
+
+For a fixed design (analysis only) the subproblem is a convex quadratic in `u`,
+so it can be solved exactly. Below we run the multiplier/penalty loop and show
+the equilibrium residual collapse to zero, recovering the nested displacement.
+
+```{julia}
+#| output: false
+function al_subproblem(λ, ρ)
+    # stationarity of L w.r.t. u:  K(λ + ρ (K u - f)) = -f   =>   u = K⁻¹f - K⁻¹(K⁻¹f + λ)/ρ
+    w = Kx \ fvec
+    return w .- (Kx \ (w .+ λ)) ./ ρ
+end
+```
+
+```{julia}
+#| output: true
+λ = zeros(ndofs)
+ρ = 1.0
+u = zeros(ndofs)
+for k in 1:6
+    global λ, ρ, u
+    u = al_subproblem(λ, ρ)
+    r = Kx * u - fvec
+    println("AL iter $k: |r| = $(norm(r)),  |u - u_nested| = $(norm(u - u_nested))")
+    λ .+= ρ .* r
+    ρ *= 10.0
+end
+```
+
+After the first multiplier update the equilibrium is satisfied to machine
+precision — in exact arithmetic the augmented Lagrangian converges in a single
+multiplier update for a quadratic equality, and in practice a few iterations
+suffice.
+
+## Feasibility of the recovered solution
+
+The displacement `u` is an optimization variable, so we verify the equilibrium
+constraint directly: the residual `K u - f` must vanish, and `u` must match the
+nested solver's displacement.
+
+```{julia}
+#| output: true
+r_final = Kx * u - fvec
+println("equilibrium residual |K u - f| = $(norm(r_final))")
+println("recovered vs nested |Δu|     = $(norm(u - u_nested))")
+println("feasible: $(norm(r_final) < 1e-8)")
+```
+
+```{julia}
+#| label: fig-sand-deformed
+#| fig-cap: "Deformed cantilever with the displacement field recovered by the augmented Lagrangian (the SAND solution)"
+fig = visualize(problem; static=true, topology=ones(nel), u=u, default_exagg_scale=0.5)
+display_app(fig)
+```
+
+The residual is at machine precision, so the SAND analysis solution satisfies
+`K u = f` exactly and reproduces the nested displacement field.
+
+## From analysis to design
+
+The same augmented Lagrangian applies to the full SAND problem: add the volume
+constraint and optimize over `(x, u)` jointly, with `K(x) u - f = 0` enforced
+as the augmented-Lagrangian term. TopOpt.jl's first-order augmented Lagrangian
+solver, `PercivalAlg` from `NonconvexPercival`, does exactly this.
+
+```{julia}
+#| output: true
+model = Model(z -> dot(fvec, z[nel+1:end]))
+addvar!(model, vcat(zeros(nel), fill(-1e3, ndofs)), vcat(ones(nel), fill(1e3, ndofs)))
+add_ineq_constraint!(model, z -> sum(z[1:nel]) / nel - 0.5)
+add_eq_constraint!(model, z -> K(z[1:nel]) * z[nel+1:end] - fvec; dim=ndofs)
+z_sand = optimize(model, PercivalAlg(), vcat(fill(0.5, nel), solver.u);
+    options=PercivalOptions(; max_iter=25, subsolver_max_eval=250)).minimizer
+x_sand = z_sand[1:nel]
+u_sand = z_sand[nel+1:end]
+```
+
+## Feasibility of the SAND design
+
+The optimization now jointly returns a design `x_sand` and a displacement
+`u_sand`. Because `u` is a decision variable, its feasibility is not guaranteed
+— we must check the equilibrium residual `K(x) u - f` and compare the objective
+`fᵀu` against the nested compliance (which satisfies equilibrium by
+construction).
+
+```{julia}
+#| output: true
+r_sand = K(x_sand) * u_sand - fvec
+solver.vars .= x_sand
+solver()
+u_nested_sand = copy(solver.u)
+println("volume fraction         = $(round(sum(x_sand) / nel, digits=4))")
+println("equilibrium residual    = $(round(norm(r_sand), digits=4))  (relative $(round(norm(r_sand) / norm(fvec), digits=4)))")
+println("SAND objective  f'u     = $(round(dot(fvec, u_sand), digits=3))")
+println("nested compliance at x  = $(round(dot(fvec, u_nested_sand), digits=3))")
+println("feasible (|K u - f| ≈ 0) = $(norm(r_sand) < 1e-6)")
+```
+
+The recovered `u` is only approximate: the problem is nonconvex and the solver
+may not find a solution that satisfies all constraints perfectly, so a
+significant residual `K(x)u - f` means the design is not actually feasible.
+Consequently `fᵀu` no longer equals the nested compliance (which satisfies
+equilibrium by construction).
+
+## Discussion
+
+- SAND exposes `u` as a design variable and enforces `K u = f` as a constraint,
+  avoiding a nested solve per iterate at the cost of a larger, nonconvex
+  problem.
+- The building blocks (`ElementKFun`, `AssembleKFun`,
+  `apply_boundary_with_meandiag!`) are differentiable, so the equilibrium
+  residual and its gradient are available through Zygote.
+- The augmented Lagrangian is the natural method for the equilibrium
+  constraint; for the convex analysis-only case it converges immediately, while
+  the full SAND problem relies on first-order solvers such as
+  `NonconvexPercival.PercivalAlg`.
