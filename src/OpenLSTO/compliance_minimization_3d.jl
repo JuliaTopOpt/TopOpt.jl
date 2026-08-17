@@ -161,7 +161,11 @@ function compliance_minimization_3d(;
             ]
             s = hex_boundary_sensitivity(study, bp)
             bs = -s
+            # Pin the load (bottom edge of the right face) and support
+            # (left face) so the boundary does not erode material from them.
             if bp[1] >= nelx - 2 && bp[3] <= 2
+                bs = 1.0e5
+            elseif bp[1] <= 2
                 bs = 1.0e5
             end
             push!(bsens, bs)
