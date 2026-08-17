@@ -1,6 +1,7 @@
 module TopOptMakieExt
 
 using LinearAlgebra: norm
+using Random: rand
 using Makie: Makie, lift, cam3d!, Point3f, Vec3f, Figure, Auto, RGBAf
 using Makie: DataAspect, Axis, LScene, SliderGrid, linesegments!, Point2f
 using Makie: ColorSchemes

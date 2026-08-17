@@ -102,14 +102,14 @@ println("final p-norm stress: ", round(lresult.objectives[end]; digits=4))
 println("max von Mises stress: ", round(lresult.sensitivities.von_mises_max; digits=4))
 ```
 
-The area fractions of the stress result can be shown with the same viewer
-(load/support arrows describe the equivalent cantilever, so for the L-beam
-they are indicative only):
+The area fractions of the stress result can be shown with the same viewer.
+The L-beam's support (fixed top edge) and load (2/5 height on the right edge)
+are not the cantilever's, so the load/support arrows are suppressed:
 
 ```{julia}
 #| label: fig-levelset-stress
 #| fig-cap: "Level-set stress minimization: L-beam design"
-app = visualize(lresult; static=true)
+app = visualize(lresult; static=true, display_supports=false)
 display_app(app)
 ```
 
