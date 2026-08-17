@@ -26,7 +26,15 @@ mutable struct Element
     status::Int                  # ELEMENT_* flag
 end
 
-mutable struct Mesh
+"""
+    LevelSetMesh(width, height)
+
+The level-set fixed grid: a `width × height` array of unit-square cells with
+one node per grid point, used to represent the signed-distance function. Node
+coordinates are `(x, y)` with `x ∈ 0:width`, `y ∈ 0:height`. `LevelSetMesh` is the
+level-set counterpart of the Ferrite grids used by the rest of TopOpt.jl.
+"""
+mutable struct LevelSetMesh
     width::Int
     height::Int
     nElements::Int
@@ -34,7 +42,7 @@ mutable struct Mesh
     nodes::Vector{Node}
     elements::Vector{Element}
 
-    function Mesh(width::Integer, height::Integer)
+    function LevelSetMesh(width::Integer, height::Integer)
         w = Int(width)
         h = Int(height)
         nodes = [
@@ -63,13 +71,13 @@ mutable struct Mesh
 end
 
 # 0-based (x, y) grid coordinate -> 1-based node index.
-xy_to_index(mesh::Mesh, x::Int, y::Int) = y * (mesh.width + 1) + x + 1
+xy_to_index(mesh::LevelSetMesh, x::Int, y::Int) = y * (mesh.width + 1) + x + 1
 
 # 1-based node index -> 0-based grid coordinate.
-node_x(mesh::Mesh, node::Int) = (node - 1) % (mesh.width + 1)
-node_y(mesh::Mesh, node::Int) = (node - 1) ÷ (mesh.width + 1)
+node_x(mesh::LevelSetMesh, node::Int) = (node - 1) % (mesh.width + 1)
+node_y(mesh::LevelSetMesh, node::Int) = (node - 1) ÷ (mesh.width + 1)
 
-function initialise_nodes!(mesh::Mesh)
+function initialise_nodes!(mesh::LevelSetMesh)
     for i in eachindex(mesh.nodes)
         node = mesh.nodes[i]
         node.isDomain = false
@@ -95,7 +103,7 @@ function initialise_nodes!(mesh::Mesh)
     end
 end
 
-function initialise_elements!(mesh::Mesh)
+function initialise_elements!(mesh::LevelSetMesh)
     w = mesh.width + 1
     for i in 1:(mesh.nElements)
         element = mesh.elements[i]
@@ -117,7 +125,7 @@ function initialise_elements!(mesh::Mesh)
     end
 end
 
-function get_element(mesh::Mesh, x::Float64, y::Float64)
+function get_element(mesh::LevelSetMesh, x::Float64, y::Float64)
     x -= 1e-6
     y -= 1e-6
     x = max(0.0, x)
@@ -126,9 +134,9 @@ function get_element(mesh::Mesh, x::Float64, y::Float64)
     element_y = floor(Int, y)
     return element_y * mesh.width + element_x + 1
 end
-get_element(mesh::Mesh, point::Coord) = get_element(mesh, point.x, point.y)
+get_element(mesh::LevelSetMesh, point::Coord) = get_element(mesh, point.x, point.y)
 
-function get_closest_node(mesh::Mesh, x::Float64, y::Float64)
+function get_closest_node(mesh::LevelSetMesh, x::Float64, y::Float64)
     element = mesh.elements[get_element(mesh, x, y)]
     dx = x - element.coord.x
     dy = y - element.coord.y
@@ -138,4 +146,20 @@ function get_closest_node(mesh::Mesh, x::Float64, y::Float64)
         return dy < 0 ? element.nodes[2] : element.nodes[3]
     end
 end
-get_closest_node(mesh::Mesh, point::Coord) = get_closest_node(mesh, point.x, point.y)
+function get_closest_node(mesh::LevelSetMesh, point::Coord)
+    return get_closest_node(mesh, point.x, point.y)
+end
+
+# Mark every node inside the given rectangle as a domain boundary
+# (`Mesh::createMeshBoundary` in OpenLSTO).
+function create_mesh_boundary!(mesh::LevelSetMesh, points::Vector{Coord})
+    for node in mesh.nodes
+        if node.coord.x > points[1].x &&
+            node.coord.y > points[1].y &&
+            node.coord.x < points[2].x &&
+            node.coord.y < points[2].y
+            node.isDomain = true
+        end
+    end
+    return mesh
+end

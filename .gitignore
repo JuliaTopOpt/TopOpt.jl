@@ -24,3 +24,4 @@ docs/tutorials/Manifest.toml
 
 # Tutorial-generated VTK output
 docs/tutorials/*.vtu
+docs/tutorials/*.stl

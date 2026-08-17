@@ -5,7 +5,7 @@ struct Coord
     y::Float64
 end
 
-mutable struct BoundaryPoint
+mutable struct LevelSetBoundaryPoint
     coord::Coord
     normal::Coord
     length::Float64
@@ -19,7 +19,7 @@ mutable struct BoundaryPoint
     sensitivities::Vector{Float64}
 end
 
-mutable struct BoundarySegment
+mutable struct LevelSetBoundarySegment
     start::Int
     stop::Int
     element::Int

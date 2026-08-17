@@ -62,6 +62,48 @@ end
     @test_throws ArgumentError visualize(cantilever; topology, static=true)
 end
 
+@testset "Level-set (OpenLSTO) visualization" begin
+    L = TopOpt.OpenLSTO
+    holes = L.LevelSetHole[
+        L.LevelSetHole(8, 4, 2),
+        L.LevelSetHole(16, 4, 2),
+        L.LevelSetHole(24, 4, 2),
+        L.LevelSetHole(12, 8, 2),
+        L.LevelSetHole(20, 8, 2),
+        L.LevelSetHole(28, 8, 2),
+        L.LevelSetHole(8, 12, 2),
+        L.LevelSetHole(16, 12, 2),
+        L.LevelSetHole(24, 12, 2),
+    ]
+    result = L.compliance_minimization(;
+        nelx=40, nely=20, holes=holes, max_iterations=2, verbose=false
+    )
+
+    fig = visualize(result)
+    @test fig isa Makie.Figure
+
+    fig = visualize(result; interactive=false)
+    @test fig isa Makie.Figure
+
+    # The static path requires WGLMakie; CairoMakie rejects it at the boundary.
+    @test_throws ArgumentError visualize(result; static=true)
+end
+
+@testset "Level-set (OpenLSTO) 3D visualization" begin
+    L = TopOpt.OpenLSTO
+    r3 = L.compliance_minimization_3d(;
+        nelx=8, nely=4, nelz=4, max_iterations=2, verbose=false
+    )
+
+    fig = visualize(r3.level_set)
+    @test fig isa Makie.Figure
+
+    fig = visualize(r3.level_set; interactive=false)
+    @test fig isa Makie.Figure
+
+    @test_throws ArgumentError visualize(r3.level_set; static=true)
+end
+
 @testset "Truss visualization with new options" begin
     using TopOpt.TrussTopOptProblems
 

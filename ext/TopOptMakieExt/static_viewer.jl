@@ -83,7 +83,7 @@ function TopOpt._static_visualization(
         end
         swatch = "width:12px;height:12px;flex:0 0 auto;border-radius:50%;"
         legend_row = "display:flex;align-items:center;gap:5px;font-size:11px;color:#333;"
-        legend = D.div(
+        legend_rows = (
             D.div(
                 D.div(;
                     style=swatch *
@@ -101,12 +101,32 @@ function TopOpt._static_visualization(
                 D.div(; style=swatch * "background:$(css_color(support_arrow_color));"),
                 D.span("support arrows"; style="user-select:none;");
                 style=legend_row,
-            );
+            ),
+        )
+        # Overlay legend for the 3D viewer (the geometry is centered, so a
+        # top-right overlay does not cover it).
+        legend = D.div(
+            legend_rows...;
             style=join([
                 "position:absolute;",
                 "top:8px;",
                 "right:10px;",
                 "z-index:15;",
+                "display:flex;",
+                "flex-direction:column;",
+                "gap:4px;",
+                "padding:6px;",
+                "background:rgba(255,255,255,0.85);",
+                "border:1px solid rgba(0,0,0,0.12);",
+                "border-radius:4px;",
+                "line-height:1;",
+            ]),
+        )
+        # In-flow legend for the 2D viewer, placed below the figure so it
+        # never covers the mesh.
+        legend_flow = D.div(
+            legend_rows...;
+            style=join([
                 "display:flex;",
                 "flex-direction:column;",
                 "gap:4px;",
@@ -221,21 +241,35 @@ function TopOpt._static_visualization(
                 );
                 style=row2,
             )
-            viewport2 = D.div(
-                fig, draw_legend ? legend : no_legend; style="position:relative;"
+            viewport2 = D.div(fig; style="position:relative;")
+            legend_row2 = D.div(
+                draw_legend ? legend_flow : no_legend;
+                style="display:flex;justify-content:center;",
             )
+            # Unique per-viewer function name so this script finds itself
+            # rather than the first similarly-named script on a page that
+            # holds several viewers.
+            marker2 = string(rand(UInt64))
             return D.div(
                 controls2,
                 viewport2,
+                legend_row2,
                 D.script(
                     """
-                    function initialize_static_view_2d(container) {
+                    function initialize_static_view_2d_$(marker2)(container) {
                         const legend_entries = $(legend_js);
                         function live() {
                             return typeof Bonito !== 'undefined' &&
                                    Bonito.can_send_to_julia &&
                                    Bonito.can_send_to_julia();
                         }
+                        // 2D has no zoom or rotation, so let wheel events
+                        // scroll the page instead of zooming the axis.
+                        container.addEventListener(
+                            'wheel',
+                            (e) => e.stopPropagation(),
+                            { capture: true },
+                        );
                         // In an offline export (e.g. `quarto render`) the page
                         // is already open in a browser and there is no live
                         // Julia process to re-open, so hide the "Browser" button.
@@ -266,8 +300,8 @@ function TopOpt._static_visualization(
                         }, 100);
                     }
                     const self = [...document.scripts].find(s =>
-                        s.textContent.includes('initialize_static_view_2d'));
-                    initialize_static_view_2d(self ? self.parentElement : document.body);
+                        s.textContent.includes('initialize_static_view_2d_$(marker2)'));
+                    initialize_static_view_2d_$(marker2)(self ? self.parentElement : document.body);
                     """;
                     type="module",
                 );
@@ -809,12 +843,15 @@ function TopOpt._static_visualization(
         la0_js = jsvec_inline(lookat)
         fov_js = string(persp_fov)
         scene_id_js = string(scene_id)
+        # Unique per-viewer function name so this script finds itself rather
+        # than a 2D script sharing the "initialize_static_view" prefix.
+        marker3 = string(rand(UInt64))
 
         container = D.div(
             container,
             D.script(
                 """
-                function initialize_static_view(container) {
+                function initialize_static_view_$(marker3)(container) {
                     const eye0 = $(eye0_js);
                     const la0 = $(la0_js);
                     const fov0 = $(fov_js);
@@ -1095,8 +1132,8 @@ function TopOpt._static_visualization(
                 // this script by its unique function marker and use its
                 // parent as the control/figure container.
                 const self = [...document.scripts].find(s =>
-                    s.textContent.includes('initialize_static_view'));
-                initialize_static_view(self ? self.parentElement : document.body);
+                    s.textContent.includes('initialize_static_view_$(marker3)'));
+                initialize_static_view_$(marker3)(self ? self.parentElement : document.body);
                 """;
                 type="module",
             ),

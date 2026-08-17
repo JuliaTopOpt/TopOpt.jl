@@ -5,8 +5,15 @@
 # volume constraint is met, then applies the boundary points' normal
 # velocities `v = -min(λ_f s_f + λ_g s_g, d)`.
 
-mutable struct Optimise
-    boundaryPoints::Vector{BoundaryPoint}
+"""
+    LevelSetOptimizer(boundary_points, move_limit)
+
+Solves for the boundary-point velocities that advance the level set while
+satisfying the volume constraint. Uses a Newton-Raphson iteration on the
+Lagrange multiplier (a port of `M2DO_LSM/src/optimise.cpp`).
+"""
+mutable struct LevelSetOptimizer
+    boundaryPoints::Vector{LevelSetBoundaryPoint}
     moveLimit::Float64
     boundary_area::Float64
     mesh_area::Float64
@@ -18,13 +25,13 @@ mutable struct Optimise
     timeStep::Float64
 end
 
-function Optimise(boundaryPoints::Vector{BoundaryPoint}, moveLimit::Real)
-    return Optimise(
+function LevelSetOptimizer(boundaryPoints::Vector{LevelSetBoundaryPoint}, moveLimit::Real)
+    return LevelSetOptimizer(
         boundaryPoints, Float64(moveLimit), 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0
     )
 end
 
-function solve_with_newton_raphson!(optimise::Optimise)
+function solve_with_newton_raphson!(optimise::LevelSetOptimizer)
     boundaryPoints = optimise.boundaryPoints
     bpointsize = length(boundaryPoints)
     optimise.timeStep = 1.0
@@ -109,6 +116,97 @@ function solve_with_newton_raphson!(optimise::Optimise)
 
     # CFL: scale the velocities when the largest exceeds the move limit.
     absvel = maximum(bp.velocity for bp in boundaryPoints)
+    if absvel > optimise.moveLimit
+        for bp in boundaryPoints
+            bp.velocity *= optimise.moveLimit / absvel
+        end
+    end
+    return optimise
+end
+
+# Optimum boundary-point velocities for the L-beam stress problem
+# (OpenLSTO's `Solve_LbeamStress_With_NewtonRaphson`). Uses a reduced move
+# limit for the bounds and the L-beam inner-corner distance to clamp the
+# velocities.
+function solve_lbeam_stress_with_newton_raphson!(
+    optimise::LevelSetOptimizer, reduced_move_limit::Real
+)
+    boundaryPoints = optimise.boundaryPoints
+    bpointsize = length(boundaryPoints)
+    optimise.timeStep = 1.0
+
+    abssens = maximum(abs(bp.sensitivities[1]) for bp in boundaryPoints)
+    for bp in boundaryPoints
+        bp.sensitivities[1] /= abssens
+    end
+
+    optimise.lambda_g = Float64(reduced_move_limit)
+
+    fraction_area = 0.25
+    target_area = optimise.boundary_area
+    for bp in boundaryPoints
+        target_area += bp.length * fraction_area * (-optimise.lambda_g)
+    end
+    target_area = max(optimise.max_area * optimise.mesh_area, target_area)
+
+    upper_bound = Vector{Float64}(undef, bpointsize)
+    lower_bound = fill(-Float64(reduced_move_limit), bpointsize)
+    for i in 1:bpointsize
+        bp = boundaryPoints[i]
+        domdist = min(
+            abs(bp.coord.x - 0.0),
+            abs(bp.coord.x - optimise.length_x),
+            abs(bp.coord.y - 0.0),
+            abs(bp.coord.y - optimise.length_y),
+        )
+        domdist1 = min(
+            bp.coord.x - 0.4 * optimise.length_x,
+            -bp.coord.x + optimise.length_x,
+            bp.coord.y - 0.4 * optimise.length_y,
+            -bp.coord.y + optimise.length_y,
+        )
+        domdist = min(-domdist1, domdist)
+        upper_bound[i] = min(domdist, Float64(reduced_move_limit))
+    end
+
+    function new_area(lambda_cur)
+        area = optimise.boundary_area
+        for i in 1:bpointsize
+            bp = boundaryPoints[i]
+            z = min(
+                upper_bound[i],
+                optimise.lambda_g * bp.sensitivities[2] + lambda_cur * bp.sensitivities[1],
+            )
+            z = max(lower_bound[i], z)
+            area += bp.length * z
+        end
+        return area
+    end
+
+    lambda_0 = 0.0
+    delta_lambda = 0.1
+    for _ in 1:250
+        new_area0 = new_area(lambda_0)
+        new_area2 = new_area(lambda_0 + delta_lambda)
+        new_area1 = new_area(lambda_0 - delta_lambda)
+        slope = (new_area2 - new_area1) / 2 / delta_lambda
+        lambda_0 -= (new_area0 - target_area) / slope
+        abs(new_area0 - target_area) / optimise.mesh_area < 1e-3 && break
+    end
+    optimise.lambda_f = lambda_0
+
+    for i in 1:bpointsize
+        bp = boundaryPoints[i]
+        z = min(
+            upper_bound[i],
+            optimise.lambda_f * bp.sensitivities[1] +
+            optimise.lambda_g * bp.sensitivities[2],
+        )
+        z = max(lower_bound[i], z)
+        bp.velocity = -z
+    end
+
+    absvel = maximum(abs(bp.velocity) for bp in boundaryPoints)
     if absvel > optimise.moveLimit
         for bp in boundaryPoints
             bp.velocity *= optimise.moveLimit / absvel

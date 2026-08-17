@@ -1,0 +1,199 @@
+---
+title: "Level-Set Topology Optimization (OpenLSTO)"
+toc: true
+---
+
+## Description
+
+Level-set topology optimization represents the design boundary implicitly as
+the zero contour of a signed-distance function and moves it with shape
+sensitivities, so the boundary stays crisp throughout the optimization (no
+intermediate densities). This tutorial uses the `TopOpt.OpenLSTO` submodule, a
+self-contained Julia translation of [OpenLSTO](https://github.com/M2DOLab/OpenLSTO).
+
+We solve two problems:
+
+- **Compliance minimization** on a cantilever (left edge fixed, downward load
+  at the midpoint of the right edge) under a volume-fraction constraint.
+- **Stress minimization** on an L-beam, minimizing the p-norm of the von
+  Mises stress under a volume-fraction constraint.
+
+A 3D level-set compliance solver
+([`compliance_minimization_3d`](../reference/OpenLSTO.html)) with
+marching-cubes boundary discretization is also available.
+
+[← Back to tutorials](index.html)
+
+## Setup
+
+```{julia}
+#| output: false
+using TopOpt
+using TopOpt.OpenLSTO
+using WGLMakie
+WGLMakie.activate!(; resize_to=:parent)
+using Bonito
+if haskey(ENV, "QUARTO_PROJECT_DIR")
+    Bonito.Page(exportable=true, offline=true)
+else
+    Bonito.browser_display()
+end
+display_app(app) = display(app)
+```
+
+## Compliance minimization
+
+`compliance_minimization` runs the level-set compliance loop. The level-set
+grid is seeded with a "Swiss cheese" arrangement of circular holes by
+default (which requires a mesh of at least about 75×75); for a smaller mesh
+you pass your own `LevelSetHole` list:
+
+```{julia}
+#| output: false
+holes = [
+    LevelSetHole(16, 8, 4), LevelSetHole(32, 8, 4), LevelSetHole(48, 8, 4),
+    LevelSetHole(24, 16, 4), LevelSetHole(40, 16, 4), LevelSetHole(56, 16, 4),
+    LevelSetHole(16, 24, 4), LevelSetHole(32, 24, 4), LevelSetHole(48, 24, 4),
+]
+result = compliance_minimization(; nelx=80, nely=40, holes=holes, verbose=false)
+```
+
+The returned `LevelSetResult` holds the final level set, its discretized
+boundary, the finite element study and sensitivities, and the per-iteration
+objective and area-fraction histories:
+
+```{julia}
+println("iterations: ", length(result.objectives))
+println("final compliance: ", round(result.objectives[end]; digits=4))
+println("final area fraction: ", round(result.areas[end]; digits=4))
+```
+
+## Visualize the design
+
+`visualize(::LevelSetResult)` converts the level-set design to a
+`PointLoadCantilever` problem on the same grid and shows the per-cell area
+fractions as the density field, so the same load/support arrows and static
+viewer apply as for SIMP results:
+
+```{julia}
+#| label: fig-levelset
+#| fig-cap: "Level-set compliance minimization: cantilever design"
+app = visualize(result; static=true)
+display_app(app)
+```
+
+## Stress minimization (L-beam)
+
+`stress_minimization` minimizes the p-norm of the von Mises stress on an
+L-beam (top edge fixed, downward load on the right edge at 2/5 height):
+
+```{julia}
+#| output: false
+lresult = stress_minimization(;
+    nelx=40, nely=40, max_iterations=40,
+    holes=[LevelSetHole(8, 8, 5), LevelSetHole(8, 20, 5), LevelSetHole(20, 8, 5)],
+    verbose=false,
+)
+```
+
+```{julia}
+println("iterations: ", length(lresult.objectives))
+println("final p-norm stress: ", round(lresult.objectives[end]; digits=4))
+println("max von Mises stress: ", round(lresult.sensitivities.von_mises_max; digits=4))
+```
+
+The area fractions of the stress result can be shown with the same viewer.
+The load and support arrows are read from the L-beam's own finite element
+solve, so the load appears at 2/5 height and the supports on the fixed top
+edge:
+
+```{julia}
+#| label: fig-levelset-stress
+#| fig-cap: "Level-set stress minimization: L-beam design"
+app = visualize(lresult; static=true)
+display_app(app)
+```
+
+## Hole nucleation
+
+When the volume constraint is far from being met, `compliance_minimization`
+can nucleate new holes (a port of OpenLSTO's `projects/hole_creation`) rather
+than only moving the existing boundary. Enable it with `hole_nucleation=true`:
+
+```{julia}
+#| output: false
+hresult = compliance_minimization(;
+    nelx=40, nely=20,
+    holes=[LevelSetHole(8, 4, 2), LevelSetHole(16, 4, 2), LevelSetHole(24, 4, 2),
+           LevelSetHole(12, 8, 2), LevelSetHole(20, 8, 2), LevelSetHole(28, 8, 2),
+           LevelSetHole(8, 12, 2), LevelSetHole(16, 12, 2), LevelSetHole(24, 12, 2)],
+    hole_nucleation=true, max_iterations=8, verbose=false,
+)
+```
+
+```{julia}
+println("final compliance: ", round(hresult.objectives[end]; digits=4))
+```
+
+## 3D level-set
+
+A 3D level-set solver discretizes the boundary with marching cubes and drives
+a trilinear-hex finite element solve; the final surface can be exported as an
+STL:
+
+```{julia}
+#| output: false
+r3 = compliance_minimization_3d(; nelx=10, nely=4, nelz=4, max_iterations=4, verbose=false)
+stl = write_stl(r3.level_set, joinpath(mktempdir(), "mystlfile.stl"))
+```
+
+```{julia}
+println("final compliance: ", round(r3.compliances[end]; digits=4))
+println("wrote ", r3.level_set.num_triangles, " triangles to ", stl)
+```
+
+By default only the load region is pinned solid, matching the upstream
+`projects/3d/comp_min.cpp`. The optimizer can then erode material from the
+left-face supports. To keep material on the supports, pass `pin_support`:
+
+- `pin_support=:soft` assigns the support boundary a large sensitivity
+  (analogous to the load pin), keeping the support mostly solid.
+- `pin_support=:hard` clamps the signed distance on the support face so the
+  contour cannot recede past it, keeping the support fully solid.
+
+```{julia}
+#| output: false
+r3_hard = compliance_minimization_3d(; nelx=10, nely=4, nelz=4, max_iterations=4, pin_support=:hard, verbose=false)
+```
+
+```{julia}
+# The left-face (support) layer: cells with x = 0 (10 x 4 x 4 grid).
+x0 = [r3_hard.level_set.volumefraction_vector[10j + 40k + 1] for j in 0:3, k in 0:3]
+println("hard-pinned support layer mean: ", round(sum(x0) / 16; digits=3))
+```
+
+The 3D design can be visualized with the same viewer as a 3D SIMP result:
+
+```{julia}
+#| label: fig-levelset-3d
+#| fig-cap: "Level-set compliance minimization: 3D cantilever design"
+app = visualize(r3.level_set; static=true)
+display_app(app)
+```
+
+## Exporting the design
+
+The OpenLSTO module mirrors OpenLSTO's own VTK/TXT writers for the level-set
+function and area fractions:
+
+```{julia}
+#| output: false
+out = mktempdir()
+save_level_set_vtk(result.level_set, 1; output_directory=out)
+save_area_fractions_vtk(result.level_set.mesh, 1; output_directory=out)
+save_boundary_segments_txt(result.boundary, 1; output_directory=out)
+```
+
+```{julia}
+println(readdir(out))
+```

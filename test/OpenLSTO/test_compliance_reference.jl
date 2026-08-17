@@ -14,16 +14,16 @@ using TopOpt
 
 const L = TopOpt.OpenLSTO
 
-const HOLES = L.Hole[
-    L.Hole(8, 4, 2),
-    L.Hole(16, 4, 2),
-    L.Hole(24, 4, 2),
-    L.Hole(12, 8, 2),
-    L.Hole(20, 8, 2),
-    L.Hole(28, 8, 2),
-    L.Hole(8, 12, 2),
-    L.Hole(16, 12, 2),
-    L.Hole(24, 12, 2),
+const HOLES = L.LevelSetHole[
+    L.LevelSetHole(8, 4, 2),
+    L.LevelSetHole(16, 4, 2),
+    L.LevelSetHole(24, 4, 2),
+    L.LevelSetHole(12, 8, 2),
+    L.LevelSetHole(20, 8, 2),
+    L.LevelSetHole(28, 8, 2),
+    L.LevelSetHole(8, 12, 2),
+    L.LevelSetHole(16, 12, 2),
+    L.LevelSetHole(24, 12, 2),
 ]
 
 function read_reference(path::AbstractString)
@@ -49,17 +49,17 @@ end
         nelx=40, nely=20, holes=HOLES, max_iterations=length(ref_iters), verbose=false
     )
 
-    @test length(result.compliances) == length(ref_iters)
+    @test length(result.objectives) == length(ref_iters)
     @test length(result.areas) == length(ref_iters)
 
     # The first iteration is deterministic: it only depends on the initial
     # level set, which the port reproduces to machine precision.
-    @test result.compliances[1] ≈ ref_compliance[1] rtol = 1e-6
+    @test result.objectives[1] ≈ ref_compliance[1] rtol = 1e-6
     @test result.areas[1] ≈ ref_area[1] atol = 1e-8
 
     # After many iterations the two trajectories drift apart (see the note
     # above), but both must converge to the same volume fraction and a
     # comparable compliance.
     @test result.areas[end] ≈ ref_area[end] atol = 1e-2
-    @test result.compliances[end] ≈ ref_compliance[end] rtol = 1e-2
+    @test result.objectives[end] ≈ ref_compliance[end] rtol = 1e-2
 end

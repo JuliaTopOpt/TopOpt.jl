@@ -44,65 +44,79 @@ using TopOpt, Makie, GLMakie
 
 ## Features
 
+TopOpt.jl is organized around a small set of high-level building blocks:
+problem types define the design domain and physics, differentiable functions
+define objectives and constraints, filters regularize the design, and
+algorithms drive the optimization. Every feature links to its reference page.
+
 ### Optimization domains
 
-- 2D and 3D continuum and truss domains ([continuum](reference/TopOptProblems.md),
-  [truss](reference/TrussTopOptProblems.md))
-- Unstructured ground meshes imported from Abaqus/FreeCAD `.inp` files
+- **Continuum structural** (2D/3D linear elasticity): `PointLoadCantilever`,
+  `HalfMBB`, `LBeam`, `TieBeam`, and arbitrary meshes imported from
+  Abaqus/FreeCAD `.inp` files via `InpStiffness`
+  ([`TopOptProblems`](reference/TopOptProblems.md))
+- **Truss** (2D/3D): `TrussProblem` and `PointLoadCantileverTruss`, with
+  stress and buckling constraints
+  ([`TrussTopOptProblems`](reference/TrussTopOptProblems.md))
+- **Heat transfer** (2D/3D): `HeatConductionProblem` and `HeatTree`
+  ([`TopOptProblems`](reference/TopOptProblems.md))
 - Linear and quadratic triangle, quadrilateral, tetrahedron and hexahedron
   elements
-- Fixed and non-design regions ([`FixedElementProjectorFun`](reference/Functions.md))
-- Concentrated and distributed loads
-- Multi-material design parametrization ([`MultiMaterialVariablesFun`](functions.md))
+- Concentrated and distributed loads, multi-load cases (`MultiLoad`), and
+  fixed/non-design regions ([`FixedElementProjectorFun`](reference/Functions.md))
 
-### High-level algorithms and penalty types
+### Optimization methods
 
-- Solid isotropic material with penalization (SIMP) and RAMP
-- Continuation SIMP/RAMP
-- Bi-directional evolutionary structural optimization (BESO) with soft-kill
-- Topology optimization of binary structures (TOBS)
-- Rational, hyperbolic-sine and projected penalty functions
-  ([`Utilities`](reference/Utilities.md))
+- **Density-based**: SIMP and RAMP, with continuation
+- **BESO** and **GESO** evolutionary algorithms ([`Algorithms`](reference/Algorithms.md))
+- **TOBS**: binary topology optimization via sequential integer programming
+- **Level-set**: 2D and 3D level-set topology optimization, with hole
+  nucleation, stress minimization, and marching-cubes boundary discretization
+  ([`OpenLSTO`](reference/OpenLSTO.md))
+- Gradient-based optimization through
+  [Nonconvex.jl](https://github.com/JuliaNonconvex/Nonconvex.jl): MMA, Ipopt,
+  NLopt, augmented Lagrangian, nonlinear SDP (buckling), and Juniper
+  (mixed-integer)
 
 ### Differentiable functions
 
-A library of differentiable building blocks — compliance, volume, stress,
-displacement, temperature, buckling, and more — that can be chained into
-arbitrary objectives and constraints and differentiated automatically with
-Zygote. See [Functions](functions.md).
+Composable, Zygote-differentiable building blocks for objectives and
+constraints ([guide](functions.md), [reference](reference/Functions.md)):
+
+- **Objectives**: `ComplianceFun`, `ThermalComplianceFun`, `VolumeFun`,
+  `MeanComplianceFun`, `BlockComplianceFun`
+- **Responses**: `DisplacementFun`, `TemperatureFun`, `StressTensorFun`,
+  `von_mises_stress_function`, `epsilon_relaxed`, `TrussStressFun`
+- **Buckling**: `ElementKFun`, `AssembleKFun`, `TrussElementKσFun`
+- **Parametrization**: `NeuralNetworkFun`, `MaterialInterpolationFun`,
+  `MultiMaterialVariablesFun`, `FixedElementProjectorFun`
+
+### Filters and penalties
+
+- `DensityFilterFun`, `SensFilterFun`, `ProjectedDensityFilterFun`
+  ([`CheqFilters`](reference/CheqFilters.md))
+- Power, rational and hyperbolic-sine penalties, and Heaviside/sigmoid
+  projections ([`Utilities`](reference/Utilities.md))
 
 ### Linear system solvers
 
-- Direct sparse Cholesky/QR factorization
-- Preconditioned conjugate gradient with matrix assembly
-- Matrix-free preconditioned conjugate gradient
+- Direct sparse Cholesky/QR factorization (`DirectSolver`)
+- Preconditioned conjugate gradient, with assembly and matrix-free
+  (`CGAssemblySolver`, `CGMatrixFreeSolver`)
 - Custom solver and preconditioner hooks ([`FEA`](reference/FEA.md))
 
-### Optimization algorithms
+### Visualization and input/output
 
-Optimization is driven by [Nonconvex.jl](https://github.com/JuliaNonconvex/Nonconvex.jl):
-
-- Method of moving asymptotes (MMA)
-- All the algorithms in NLopt, and Ipopt
-- First-order augmented Lagrangian algorithm
-- Nonlinear semidefinite programming for buckling-constrained optimization
-- Surrogate-assisted and Bayesian optimization
-- Integer nonlinear programming, and TOBS sequential integer linear programming
+- Interactive and static (browser, camera-control) visualization with
+  [Makie.jl](https://makie.juliaplots.org/stable/)
+- VTK export (`save_mesh`) and Abaqus/FreeCAD `.inp` import (`InpStiffness`)
+- STL export of 3D level-set designs (`write_stl`)
 
 ### Handling uncertainty
 
-- Mean, variance, standard deviation and scalar-valued functions of per-scenario
-  compliance under load uncertainty
+- Mean and per-scenario compliance under load uncertainty
+  (`MeanComplianceFun`, `BlockComplianceFun`)
 - Reliability-based topology optimization
-
-### Visualization and post-processing
-
-- End-to-end workflow from INP import to VTK export
-- Interactive visualization of designs and deformation using
-  [Makie.jl](https://makie.juliaplots.org/stable/)
-- Static browser-based visualization with camera controls for the rendered docs
-- Interactive visualization using Dash apps and
-  [DashVtk](https://github.com/JuliaTopOpt/DashVtk_Examples/tree/main/src/TopOptDemo)
 
 ## Quick start
 
@@ -144,25 +158,10 @@ For an interactive camera-control app suitable for static HTML export, use
 initialize Bonito with `Bonito.Page(exportable=true, offline=true)` first. This
 returns a `Bonito.App`.
 
-## Problem types
+## Where to go next
 
-TopOpt.jl provides several pre-defined problem types for common test cases:
-
-### Structural problems (linear elasticity)
-- **`PointLoadCantilever`** — Cantilever beam with a point load at the free end (2D or 3D)
-- **`HalfMBB`** — Half Messerschmitt-Bölkow-Blohm beam, a standard benchmark (2D or 3D)
-- **`LBeam`** — L-shaped beam (2D only)
-- **`TieBeam`** — Tie-beam test problem (2D only)
-- **`InpStiffness`** — Import from Abaqus/FreeCAD `.inp` files for arbitrary meshes
-
-### Heat transfer problems
-- **`HeatConductionProblem`** — Steady-state heat conduction with surface heat flux (2D or 3D)
-- **`HeatTree`** — Tree-shaped heat conduction problem
-
-### Truss problems
-- **`TrussProblem`** — General truss topology optimization with stress/buckling constraints
-- **`PointLoadCantileverTruss`** — Truss cantilever with point load
-
-See the [TopOpt Tutorials](tutorials/index.md) section for complete, commented examples covering
-stress-constrained optimization, heat sinks, multi-material design,
-neural-network parametrization, trusses, and more.
+The [Tutorials](tutorials/index.md) walk through complete, commented examples
+— compliance and volume minimization, stress-constrained and
+buckling-constrained optimization, heat sinks, multi-material and
+neural-network parametrization, trusses, and level-set optimization. The
+sidebar lists the full API reference, grouped by module.
