@@ -1513,7 +1513,7 @@ function TopOpt.visualize(
     problem = PointLoadCantilever((mesh.nelx, mesh.nely), (1.0, 1.0), E, ν, force)
     topology = topology === nothing ? TopOpt.OpenLSTO.area_fractions(result) : topology
     bc = result.boundary_conditions
-    cloaddict = Dict(node => v for (node, v) in bc.loads)
+    cloaddict = Dict(node => v ./ norm(v) for (node, v) in bc.loads)
     return TopOpt.visualize(
         problem;
         static=static,
@@ -1562,7 +1562,7 @@ function TopOpt.visualize(
     if bc === nothing
         return TopOpt.visualize(problem; static=static, topology=topology, kw...)
     end
-    cloaddict = Dict(node => v for (node, v) in bc.loads)
+    cloaddict = Dict(node => v ./ norm(v) for (node, v) in bc.loads)
     return TopOpt.visualize(
         problem;
         static=static,
