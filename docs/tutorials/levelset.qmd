@@ -44,11 +44,17 @@ display_app(app) = display(app)
 
 `compliance_minimization` runs the level-set compliance loop. The level-set
 grid is seeded with a "Swiss cheese" arrangement of circular holes by
-default; you can also pass your own `LevelSetHole` list.
+default (which requires a mesh of at least about 75×75); for a smaller mesh
+you pass your own `LevelSetHole` list:
 
 ```{julia}
 #| output: false
-result = compliance_minimization(; nelx=80, nely=40, verbose=false)
+holes = [
+    LevelSetHole(16, 8, 4), LevelSetHole(32, 8, 4), LevelSetHole(48, 8, 4),
+    LevelSetHole(24, 16, 4), LevelSetHole(40, 16, 4), LevelSetHole(56, 16, 4),
+    LevelSetHole(16, 24, 4), LevelSetHole(32, 24, 4), LevelSetHole(48, 24, 4),
+]
+result = compliance_minimization(; nelx=80, nely=40, holes=holes, verbose=false)
 ```
 
 The returned `LevelSetResult` holds the final level set, its discretized
@@ -82,7 +88,11 @@ L-beam (top edge fixed, downward load on the right edge at 2/5 height):
 
 ```{julia}
 #| output: false
-lresult = stress_minimization(; nelx=60, nely=60, max_iterations=50, verbose=false)
+lresult = stress_minimization(;
+    nelx=40, nely=40, max_iterations=40,
+    holes=[LevelSetHole(8, 8, 5), LevelSetHole(8, 20, 5), LevelSetHole(20, 8, 5)],
+    verbose=false,
+)
 ```
 
 ```{julia}
