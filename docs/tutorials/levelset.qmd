@@ -18,8 +18,9 @@ We solve two problems:
 - **Stress minimization** on an L-beam, minimizing the p-norm of the von
   Mises stress under a volume-fraction constraint.
 
-A 3D level-set compliance solver ([`compliance_minimization_3d`](../reference/OpenLSTO.md))
-with marching-cubes boundary discretization is also available.
+A 3D level-set compliance solver
+([`compliance_minimization_3d`](../reference/OpenLSTO.html)) with
+marching-cubes boundary discretization is also available.
 
 [← Back to tutorials](index.html)
 
