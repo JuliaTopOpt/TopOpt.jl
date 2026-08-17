@@ -152,6 +152,11 @@ include(joinpath("Functions", "Functions.jl"))
 include(joinpath("Algorithms", "Algorithms.jl"))
 using .Algorithms
 
+# Level-set topology optimization (a self-contained port of OpenLSTO). Its
+# names are accessed via `TopOpt.OpenLSTO` rather than re-exported here, to
+# avoid clashing with Ferrite/TopOpt names (`Mesh`, `Boundary`, ...).
+include(joinpath("OpenLSTO", "OpenLSTO.jl"))
+
 export TopOpt,
     simulate,
     SensFilterFun,
