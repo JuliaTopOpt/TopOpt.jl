@@ -1011,6 +1011,8 @@ function TopOpt.visualize(
                     strokecolor=:black,
                     strokewidth=1.0,
                     markersize=3.5,
+                    overdraw=true,
+                    depth_shift=-1.0f-3,
                 )
             end
         end
