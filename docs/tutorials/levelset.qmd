@@ -152,6 +152,26 @@ println("final compliance: ", round(r3.compliances[end]; digits=4))
 println("wrote ", r3.level_set.num_triangles, " triangles to ", stl)
 ```
 
+By default only the load region is pinned solid, matching the upstream
+`projects/3d/comp_min.cpp`. The optimizer can then erode material from the
+left-face supports. To keep material on the supports, pass `pin_support`:
+
+- `pin_support=:soft` assigns the support boundary a large sensitivity
+  (analogous to the load pin), keeping the support mostly solid.
+- `pin_support=:hard` clamps the signed distance on the support face so the
+  contour cannot recede past it, keeping the support fully solid.
+
+```{julia}
+#| output: false
+r3_hard = compliance_minimization_3d(; nelx=10, nely=4, nelz=4, max_iterations=4, pin_support=:hard, verbose=false)
+```
+
+```{julia}
+# The left-face (support) layer: cells with x = 0 (10 x 4 x 4 grid).
+x0 = [r3_hard.level_set.volumefraction_vector[10j + 40k + 1] for j in 0:3, k in 0:3]
+println("hard-pinned support layer mean: ", round(sum(x0) / 16; digits=3))
+```
+
 The 3D design can be visualized with the same viewer as a 3D SIMP result:
 
 ```{julia}

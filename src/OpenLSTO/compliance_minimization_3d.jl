@@ -89,8 +89,15 @@ end
 Run the OpenLSTO 3D level-set compliance-minimization loop on a cantilever
 (left face fixed, downward line load on the bottom edge of the right face).
 Returns a `NamedTuple` with the final `level_set` ([`LevelSet3D`](@ref)), the
-[`HexStudy`](@ref), and the per-iteration `compliances` and volume-fraction
-`areas`.
+[`HexStudy`](@ref), the boundary conditions, and the per-iteration
+`compliances` and volume-fraction `areas`.
+
+Like the upstream `projects/3d/comp_min.cpp`, only the load region is pinned
+solid by default (`pin_support=:none`). To also keep material on the left-face
+supports — which the optimizer can otherwise erode onto void — pass
+`pin_support=:soft` (a large support sensitivity, analogous to the load pin)
+or `pin_support=:hard` (clamp the signed distance on the support face so the
+contour cannot recede past it).
 """
 function compliance_minimization_3d(;
     nelx::Integer=40,
@@ -103,6 +110,7 @@ function compliance_minimization_3d(;
     max_iterations::Integer=50,
     max_vol::Real=30.0,
     move_limit::Real=0.25,
+    pin_support::Symbol=:none,
     verbose::Bool=true,
 )
     nelx = Int(nelx)
@@ -135,6 +143,9 @@ function compliance_minimization_3d(;
 
     lsm = LevelSet3D(nelx, nely, nelz; holes)
     lsm.boundary_conditions = boundary_conditions
+    if pin_support == :hard
+        fix_solid_face!(lsm, :x, 0)
+    end
 
     compliances = Float64[]
     areas = Float64[]
@@ -161,11 +172,11 @@ function compliance_minimization_3d(;
             ]
             s = hex_boundary_sensitivity(study, bp)
             bs = -s
-            # Pin the load (bottom edge of the right face) and support
-            # (left face) so the boundary does not erode material from them.
+            # Pin the load (bottom edge of the right face) so the boundary
+            # does not erode material from it.
             if bp[1] >= nelx - 2 && bp[3] <= 2
                 bs = 1.0e5
-            elseif bp[1] <= 2
+            elseif pin_support == :soft && bp[1] <= 2
                 bs = 1.0e5
             end
             push!(bsens, bs)

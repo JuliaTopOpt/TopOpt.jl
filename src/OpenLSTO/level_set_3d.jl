@@ -32,6 +32,7 @@ mutable struct LevelSet3D
     indices_considered_outside::Vector{Int}
     holes::Vector{Vector{Float64}}
     boundary_conditions::Union{Nothing,LevelSetBoundaryConditions}
+    fixed_solid::Vector{Int}
     num_boundary_pts::Int
     num_triangles::Int
     triangles::Vector{NTuple{3,NTuple{3,Float64}}}
@@ -72,6 +73,7 @@ function LevelSet3D(
         Int[],
         holes,
         nothing,
+        Int[],
         0,
         0,
         NTuple{3,NTuple{3,Float64}}[],
@@ -540,6 +542,42 @@ function advect!(lsm::LevelSet3D)
             lsm.phi[idx] = 0.0
         end
     end
+    # Nodes marked as fixed-solid are kept on or inside the structure, so the
+    # contour can never recede past them (a hard support/load constraint).
+    for idx in lsm.fixed_solid
+        lsm.phi[idx] = max(lsm.phi[idx], 0.0)
+    end
+    return lsm
+end
+
+"""
+    fix_solid_face!(level_set, axis, coord)
+
+Keep the nodes on the `axis == coord` face and its adjacent interior layer
+solid, so the zero contour can never recede past that face. Used to enforce a
+hard support constraint.
+"""
+function fix_solid_face!(lsm::LevelSet3D, axis::Symbol, coord::Int)
+    for i in 0:(lsm.nx), j in 0:(lsm.ny), k in 0:(lsm.nz)
+        on_face = if axis === :x
+            i == coord
+        elseif axis === :y
+            j == coord
+        else
+            k == coord
+        end
+        adjacent = if axis === :x
+            i == coord + 1
+        elseif axis === :y
+            j == coord + 1
+        else
+            k == coord + 1
+        end
+        if on_face || adjacent
+            push!(lsm.fixed_solid, _idx3(lsm, i, j, k))
+        end
+    end
+    unique!(lsm.fixed_solid)
     return lsm
 end
 
