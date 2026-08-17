@@ -141,7 +141,7 @@ STL:
 
 ```{julia}
 #| output: false
-r3 = compliance_minimization_3d(; nelx=10, nely=5, nelz=5, max_iterations=4, verbose=false)
+r3 = compliance_minimization_3d(; nelx=10, nely=4, nelz=4, max_iterations=4, verbose=false)
 write_stl(r3.level_set, "mystlfile.stl")
 ```
 

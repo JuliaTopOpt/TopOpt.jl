@@ -1505,6 +1505,9 @@ See [`visualize(::StiffnessTopOptProblem)`](@ref) for the shared keyword
 arguments. Extra keywords:
 - `E`, `ν`, `force`: material/load parameters of the equivalent
   `PointLoadCantilever` (only used for drawing loads and supports).
+
+The equivalent `PointLoadCantilever` places its point load at the y-z
+midpoint, so `ny` and `nz` must be even.
 """
 function TopOpt.visualize(
     level_set::TopOpt.OpenLSTO.LevelSet3D;
