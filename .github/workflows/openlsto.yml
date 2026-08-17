@@ -23,8 +23,8 @@ jobs:
           git clone --depth 1 https://github.com/M2DOLab/OpenLSTO.git /tmp/OpenLSTO
           curl -sL -o /tmp/eigen.tar.gz https://gitlab.com/libeigen/eigen/-/archive/3.4.0/eigen-3.4.0.tar.gz
           tar xzf /tmp/eigen.tar.gz -C /tmp
-          # The vendored Eigen 3.3 does not compile with modern GCC; replace it
-          # with 3.4.0 (the same workaround used to build OpenLSTO at all).
+          # The vendored Eigen 3.3 does not compile with a modern GCC, so
+          # replace it with 3.4.0 to build the demo on the CI runner.
           rm -rf /tmp/OpenLSTO/vendor/eigen3/Eigen
           cp -r /tmp/eigen-3.4.0/Eigen /tmp/OpenLSTO/vendor/eigen3/Eigen
           cd /tmp/OpenLSTO/projects/compliance
