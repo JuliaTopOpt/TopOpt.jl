@@ -1010,7 +1010,7 @@ function TopOpt.visualize(
                     color=RGBAf(1.0, 0.9, 0.45, 1.0),
                     strokecolor=:black,
                     strokewidth=1.0,
-                    markersize=3.5,
+                    markersize=dim == 2 ? 5.0 : 9.0,
                     overdraw=true,
                     depth_shift=-1.0f-3,
                 )
