@@ -121,14 +121,20 @@ function compliance_minimization_3d(;
 
     load_dofs = Int[]
     load_values = Float64[]
+    load_nodes = Tuple{Int,Vector{Float64}}[]
     for y in 0:nely
         node = _hex_node(nelx, nely, nelx, y, 0)
         append!(load_dofs, [3node - 2, 3node - 1, 3node])
         append!(load_values, [0.0, 0.0, -1.0])
+        push!(load_nodes, (node, [0.0, 0.0, -1.0]))
     end
     assemble_hex_f!(study, load_dofs, load_values)
+    boundary_conditions = LevelSetBoundaryConditions(
+        load_nodes, _supports_from_fixed_dofs(fixed_dofs, 3)
+    )
 
     lsm = LevelSet3D(nelx, nely, nelz; holes)
+    lsm.boundary_conditions = boundary_conditions
 
     compliances = Float64[]
     areas = Float64[]
@@ -194,5 +200,11 @@ function compliance_minimization_3d(;
         )
     end
 
-    return (level_set=lsm, study=study, compliances=compliances, areas=areas)
+    return (
+        level_set=lsm,
+        study=study,
+        boundary_conditions=boundary_conditions,
+        compliances=compliances,
+        areas=areas,
+    )
 end

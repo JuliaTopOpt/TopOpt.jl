@@ -103,13 +103,14 @@ println("max von Mises stress: ", round(lresult.sensitivities.von_mises_max; dig
 ```
 
 The area fractions of the stress result can be shown with the same viewer.
-The L-beam's support (fixed top edge) and load (2/5 height on the right edge)
-are not the cantilever's, so the load/support arrows are suppressed:
+The load and support arrows are read from the L-beam's own finite element
+solve, so the load appears at 2/5 height and the supports on the fixed top
+edge:
 
 ```{julia}
 #| label: fig-levelset-stress
 #| fig-cap: "Level-set stress minimization: L-beam design"
-app = visualize(lresult; static=true, display_supports=false)
+app = visualize(lresult; static=true)
 display_app(app)
 ```
 

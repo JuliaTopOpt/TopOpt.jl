@@ -31,6 +31,7 @@ mutable struct LevelSet3D
     indices_considered_inside::Vector{Int}
     indices_considered_outside::Vector{Int}
     holes::Vector{Vector{Float64}}
+    boundary_conditions::Union{Nothing,LevelSetBoundaryConditions}
     num_boundary_pts::Int
     num_triangles::Int
     triangles::Vector{NTuple{3,NTuple{3,Float64}}}
@@ -70,6 +71,7 @@ function LevelSet3D(
         Int[],
         Int[],
         holes,
+        nothing,
         0,
         0,
         NTuple{3,NTuple{3,Float64}}[],

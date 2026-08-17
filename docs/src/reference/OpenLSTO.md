@@ -18,6 +18,7 @@ compliance_minimization
 stress_minimization
 compliance_minimization_3d
 LevelSetResult
+LevelSetBoundaryConditions
 area_fractions
 ```
 

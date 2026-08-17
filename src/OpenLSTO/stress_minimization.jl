@@ -57,6 +57,9 @@ function stress_minimization(;
     load_node = load_y * w + nelx + 1
     load_dofs = [2load_node - 1, 2load_node]
     load_values = [0.0, -3.0]
+    boundary_conditions = LevelSetBoundaryConditions(
+        [(load_node, [0.0, -3.0])], _supports_from_fixed_dofs(fixed_dofs, 2)
+    )
 
     # Level-set setup: L-beam domain with an inner corner at 2/5 width.
     lsm_mesh = LevelSetMesh(nelx, nely)
@@ -194,5 +197,7 @@ function stress_minimization(;
         end
     end
 
-    return LevelSetResult(level_set, boundary, study, sens, stresses, areas)
+    return LevelSetResult(
+        level_set, boundary, study, sens, boundary_conditions, stresses, areas
+    )
 end

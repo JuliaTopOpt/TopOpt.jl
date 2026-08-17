@@ -562,6 +562,7 @@ So we recommend using `GLMakie` backend until you are satisfied, and switch back
 - `topology=undef` : desired topology density vector (dim `n_cells`). If `undef`, assume all cells are included. 
     For display, we apply a transparency of `x[i]` to `cell[i]` to see all the gray-scale cells, not only the black and white ones.
 - `cloaddict=undef` : Dict(node_id => load vector). If `undef`, the dict will be parsed from the problem by `getcloaddict(problem)`.
+- `support_spec=nothing` : override the support arrows with a vector of `(component, node_ids)` pairs; `nothing` draws the problem's own Dirichlet BCs.
 - `undeformed_mesh_color` : color used for displaying the undeformed mesh.
 - `cell_colors=undef` : Vector (dim `n_cells`) of a value per cell to show the color map. If this is used, `undeformed_mesh_color` will be ignored.
 - `draw_legend=false` : draw the color legend for cell_colors.
@@ -587,6 +588,7 @@ function TopOpt.visualize(
     u=undef,
     topology=undef,
     cloaddict=undef,
+    support_spec=nothing,
     undeformed_mesh_color=if dim == 2
         RGBAf(0.35, 0.35, 0.35, 1.0)
     else
@@ -625,6 +627,7 @@ function TopOpt.visualize(
             u,
             topology,
             cloaddict,
+            support_spec,
             undeformed_mesh_color,
             cell_colors,
             draw_legend=true,
@@ -935,29 +938,41 @@ function TopOpt.visualize(
         ch = problem.ch
         live_support_scale =
             interactive ? condition_lsgrid.sliders[1].value : default_support_scale
-        for (_, dbc) in enumerate(ch.dbcs)
-            support_vectors = Tuple{Int,Vector{Float64}}[]
-            if 1 in dbc.components
-                push!(support_vectors, (1, [1.0, 0.0, 0.0]))
+        # Normalize the supports to (component, node_ids) pairs. `support_spec`
+        # overrides the problem's Dirichlet BCs (used by the level-set viewers
+        # whose equivalent problem has different supports).
+        specs = if support_spec !== nothing
+            support_spec
+        else
+            specs = Tuple{Int,Vector{Int}}[]
+            for (_, dbc) in enumerate(ch.dbcs)
+                node_ids = dbc.facets
+                # Node-based BCs store node indices directly; facet-based BCs
+                # (e.g. LBeam) store FacetIndex values — expand them to the
+                # facet nodes so the supports can be drawn at node positions.
+                support_ids = if eltype(node_ids) <: Ferrite.FacetIndex
+                    unique(
+                        Iterators.flatten(
+                            Ferrite.facets(getcells(mesh, fi[1]))[fi[2]] for fi in node_ids
+                        ),
+                    )
+                else
+                    collect(node_ids)
+                end
+                for comp in dbc.components
+                    push!(specs, (comp, support_ids))
+                end
             end
-            if 2 in dbc.components
-                push!(support_vectors, (2, [0.0, 1.0, 0.0]))
-            end
-            if 3 in dbc.components
-                push!(support_vectors, (3, [0.0, 0.0, 1.0]))
-            end
-            node_ids = dbc.facets
-            # Node-based BCs store node indices directly; facet-based BCs
-            # (e.g. LBeam) store FacetIndex values — expand them to the facet
-            # nodes so the supports can be drawn at node positions.
-            support_ids = if eltype(node_ids) <: Ferrite.FacetIndex
-                unique(
-                    Iterators.flatten(
-                        Ferrite.facets(getcells(mesh, fi[1]))[fi[2]] for fi in node_ids
-                    ),
-                )
+            specs
+        end
+        drawn_scatter = Set{Vector{Int}}()
+        for (comp, support_ids) in specs
+            v = if comp == 1
+                [1.0, 0.0, 0.0]
+            elseif comp == 2
+                [0.0, 1.0, 0.0]
             else
-                collect(node_ids)
+                [0.0, 0.0, 1.0]
             end
             fixed_pts = [Point3f(nodes[i].x...) for i in support_ids]
             centroid = Point3f(
@@ -967,35 +982,37 @@ function TopOpt.visualize(
             )
             # One arrow per constrained direction; the constraints move
             # uniformly when the slider changes (live_support_scale).
-            for (_comp, v) in support_vectors
-                _plot_arrows!(
+            _plot_arrows!(
+                ax1,
+                [centroid],
+                lift(live_support_scale) do s
+                    return if dim == 2
+                        [Vec2f(s * v[1], s * v[2])]
+                    else
+                        [Vec3f(s * v[1], s * v[2], s * v[3])]
+                    end
+                end;
+                arrow_color=support_arrow_color,
+                arrow_linewidth=0.75 * support_arrow_linewidth,
+                arrow_quality=arrow_quality,
+                arrow_size=0.65 * vector_arrowsize,
+                dim=dim,
+            )
+            # BC markers: small, bright yellow with a thick black outline so
+            # they stay readable against any mesh background but don't compete
+            # with the support arrow for visual attention. Drawn once per node
+            # set (several components can share the same nodes).
+            if !(support_ids in drawn_scatter)
+                push!(drawn_scatter, support_ids)
+                Makie.scatter!(
                     ax1,
-                    [centroid],
-                    lift(live_support_scale) do s
-                        return if dim == 2
-                            [Vec2f(s * v[1], s * v[2])]
-                        else
-                            [Vec3f(s * v[1], s * v[2], s * v[3])]
-                        end
-                    end;
-                    arrow_color=support_arrow_color,
-                    arrow_linewidth=0.75 * support_arrow_linewidth,
-                    arrow_quality=arrow_quality,
-                    arrow_size=0.65 * vector_arrowsize,
-                    dim=dim,
+                    fixed_pts;
+                    color=RGBAf(1.0, 0.9, 0.45, 1.0),
+                    strokecolor=:black,
+                    strokewidth=1.0,
+                    markersize=3.5,
                 )
             end
-            # BC markers: small, bright yellow with a thick black outline so
-            # they stay readable against any mesh background but don't
-            # compete with the support arrow for visual attention.
-            Makie.scatter!(
-                ax1,
-                fixed_pts;
-                color=RGBAf(1.0, 0.9, 0.45, 1.0),
-                strokecolor=:black,
-                strokewidth=1.0,
-                markersize=3.5,
-            )
         end
     end # end if display_supports
 
@@ -1478,6 +1495,10 @@ arguments. Extra keywords:
 - `E`, `ν`, `force`: material/load parameters of the equivalent
   `PointLoadCantilever` (only used for drawing loads and supports; defaults
   match `compliance_minimization`).
+
+The load and support arrows are taken from the result's own
+`boundary_conditions`, so an L-beam result draws its top-edge supports and
+2/5-height load rather than the equivalent cantilever's.
 """
 function TopOpt.visualize(
     result::TopOpt.OpenLSTO.LevelSetResult;
@@ -1491,7 +1512,16 @@ function TopOpt.visualize(
     mesh = result.study.mesh
     problem = PointLoadCantilever((mesh.nelx, mesh.nely), (1.0, 1.0), E, ν, force)
     topology = topology === nothing ? TopOpt.OpenLSTO.area_fractions(result) : topology
-    return TopOpt.visualize(problem; static=static, topology=topology, kw...)
+    bc = result.boundary_conditions
+    cloaddict = Dict(node => v for (node, v) in bc.loads)
+    return TopOpt.visualize(
+        problem;
+        static=static,
+        topology=topology,
+        cloaddict=cloaddict,
+        support_spec=bc.supports,
+        kw...,
+    )
 end
 
 """
@@ -1507,8 +1537,10 @@ arguments. Extra keywords:
 - `E`, `ν`, `force`: material/load parameters of the equivalent
   `PointLoadCantilever` (only used for drawing loads and supports).
 
-The equivalent `PointLoadCantilever` places its point load at the y-z
-midpoint, so `ny` and `nz` must be even.
+The load and support arrows are taken from the level set's own
+`boundary_conditions` when available (set by `compliance_minimization_3d`),
+otherwise the equivalent `PointLoadCantilever`'s. The equivalent problem
+places its point load at the y-z midpoint, so `ny` and `nz` must be even.
 """
 function TopOpt.visualize(
     level_set::TopOpt.OpenLSTO.LevelSet3D;
@@ -1526,7 +1558,19 @@ function TopOpt.visualize(
         (level_set.nx, level_set.ny, level_set.nz), (1.0, 1.0, 1.0), E, ν, force
     )
     topology = topology === nothing ? level_set.volumefraction_vector : topology
-    return TopOpt.visualize(problem; static=static, topology=topology, kw...)
+    bc = level_set.boundary_conditions
+    if bc === nothing
+        return TopOpt.visualize(problem; static=static, topology=topology, kw...)
+    end
+    cloaddict = Dict(node => v for (node, v) in bc.loads)
+    return TopOpt.visualize(
+        problem;
+        static=static,
+        topology=topology,
+        cloaddict=cloaddict,
+        support_spec=bc.supports,
+        kw...,
+    )
 end
 
 include("static_viewer.jl")

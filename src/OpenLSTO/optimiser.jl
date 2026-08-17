@@ -8,18 +8,48 @@
 # files; TopOpt.jl's equivalent output path is `save_mesh`/`visualize`.
 
 """
+    LevelSetBoundaryConditions
+
+The load and support (Dirichlet) specification of a level-set problem, carried
+by [`LevelSetResult`](@ref) so `visualize` can draw the load and support arrows
+without reconstructing them from the finite element vectors.
+
+Fields:
+- `loads`: `(node, load vector)` pairs, one per applied load.
+- `supports`: `(component, node indices)` pairs, one per constrained direction.
+"""
+struct LevelSetBoundaryConditions
+    loads::Vector{Tuple{Int,Vector{Float64}}}
+    supports::Vector{Tuple{Int,Vector{Int}}}
+end
+
+# Build the support spec ((component, node indices) pairs) from a list of
+# fixed dofs. Node `n` owns dofs `dim*(n-1)+1 .. dim*n`.
+function _supports_from_fixed_dofs(fixed_dofs::Vector{Int}, dim::Int)
+    support_nodes = Dict{Int,Vector{Int}}()
+    for d in fixed_dofs
+        comp = (d - 1) % dim + 1
+        node = (d - 1) ÷ dim + 1
+        push!(get!(support_nodes, comp, Int[]), node)
+    end
+    return [(comp, sort(unique(ns))) for (comp, ns) in sort(collect(support_nodes))]
+end
+
+"""
     LevelSetResult
 
 The result of [`compliance_minimization`](@ref) or
 [`stress_minimization`](@ref). Holds the final level set, its discretized
-boundary, the finite element study and sensitivities, and the per-iteration
-objective and area-fraction histories.
+boundary, the finite element study and sensitivities, the per-iteration
+objective and area-fraction histories, and the problem's boundary conditions.
 
 Fields:
 - `level_set`: the final [`LevelSet`](@ref) (signed distance on the grid).
 - `boundary`: the final [`LevelSetBoundary`](@ref) discretization.
 - `study`: the [`StationaryStudy`](@ref) holding the last FEA solve.
 - `sensitivities`: the [`SensitivityAnalysis`](@ref) from the last iteration.
+- `boundary_conditions`: the [`LevelSetBoundaryConditions`](@ref) (loads and
+  supports) of the problem.
 - `objectives`: per-iteration objective (compliance or p-norm stress) values.
 - `areas`: per-iteration volume-fraction values.
 """
@@ -28,6 +58,7 @@ struct LevelSetResult
     boundary::LevelSetBoundary
     study::StationaryStudy
     sensitivities::SensitivityAnalysis
+    boundary_conditions::LevelSetBoundaryConditions
     objectives::Vector{Float64}
     areas::Vector{Float64}
 end
@@ -112,6 +143,9 @@ function compliance_minimization(;
 
     load_node = (nely ÷ 2) * w + nelx + 1
     assemble_f!(study, [2load_node - 1, 2load_node], [0.0, -0.5])
+    boundary_conditions = LevelSetBoundaryConditions(
+        [(load_node, [0.0, -0.5])], _supports_from_fixed_dofs(fixed_dofs, 2)
+    )
 
     # Level-set setup.
     lsm_mesh = LevelSetMesh(nelx, nely)
@@ -296,5 +330,7 @@ function compliance_minimization(;
         end
     end
 
-    return LevelSetResult(level_set, boundary, study, sens, objectives, areas)
+    return LevelSetResult(
+        level_set, boundary, study, sens, boundary_conditions, objectives, areas
+    )
 end
