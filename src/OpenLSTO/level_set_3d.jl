@@ -560,7 +560,7 @@ function write_stl(lsm::LevelSet3D, filename::AbstractString; box_smooth::Intege
             println(io, "  end loop")
             println(io, "endfacet")
         end
-        println(io, "endsolid mysolid")
+        return println(io, "endsolid mysolid")
     end
     return filename
 end
