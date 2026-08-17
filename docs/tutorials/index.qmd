@@ -64,6 +64,16 @@ The dual of compliance minimization: least material for a required stiffness, on
 :::
 :::
 
+## Level-set method
+
+::: {.tutorial-grid}
+::: {.tutorial-card}
+[**Level-Set Topology Optimization (OpenLSTO)**](levelset.html)
+
+Boundary-based optimization with a signed-distance level set: compliance minimization on a cantilever and p-norm stress minimization on an L-beam, using the OpenLSTO port.
+:::
+:::
+
 ## Heat conduction
 
 ::: {.tutorial-grid}

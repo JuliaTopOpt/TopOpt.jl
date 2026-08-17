@@ -14,6 +14,12 @@
 # here reproduces OpenLSTO's linear (ersatz) area-fraction weighting, which
 # those SIMP-based paths do not.
 
+"""
+    SolidElement
+
+A single 4-node (Q4) plane-stress finite element: its node indices, global
+dofs, material area fraction, and centroid.
+"""
 mutable struct SolidElement
     node_ids::Vector{Int}
     dof::Vector{Int}
@@ -21,6 +27,13 @@ mutable struct SolidElement
     centroid::Vector{Float64}
 end
 
+"""
+    FEMesh(nelx, nely)
+
+The structured `nelx × nely` finite element mesh (unit-square Q4 cells) used
+for the level-set compliance solve. Independent of the level-set [`LevelSetMesh`](@ref)
+but with matching cell ordering.
+"""
 mutable struct FEMesh
     nelx::Int
     nely::Int
@@ -31,12 +44,21 @@ mutable struct FEMesh
     elements::Vector{SolidElement}
 end
 
+"""
+    SolidMaterial(E, ν, ρ; h=1.0)
+
+Plane-stress material with Young's modulus `E`, Poisson's ratio `ν`, density
+`ρ`, and thickness `h`. Stores the 4×4 constitutive matrix `C` and the 4×4
+Voigt matrix `V` used for von Mises stress
+(`σᵀ V σ = σ_vm²` in the strain ordering of `C`).
+"""
 mutable struct SolidMaterial
     E::Float64
     nu::Float64
     rho::Float64
     h::Float64
     C::Matrix{Float64}
+    V::Matrix{Float64}
 end
 
 function FEMesh(nelx::Integer, nely::Integer)
@@ -98,7 +120,13 @@ function SolidMaterial(E::Real, nu::Real, rho::Real=1.0; h::Real=1.0)
     ]
     D .*= E / (1 - nu^2)
     C = Float64(h) * D * A
-    return SolidMaterial(E, nu, Float64(rho), Float64(h), C)
+    V = [
+        1.0 0.0 0.0 -0.5
+        0.0 1.5 0.0 0.0
+        0.0 0.0 1.5 0.0
+        -0.5 0.0 0.0 1.0
+    ]
+    return SolidMaterial(E, nu, Float64(rho), Float64(h), C, V)
 end
 
 # 2×2 Gauss points for the Q4 element (order 2 in each direction).
@@ -172,6 +200,13 @@ function gauss_point_coords(mesh::FEMesh, element::SolidElement)
     return coords
 end
 
+"""
+    StationaryStudy(mesh, material, fixed_dofs)
+
+A linear static study `K u = f` for the level-set FEA: assembles the
+area-fraction-weighted stiffness matrix and solves it with a conjugate
+gradient method. Holds `K`, `f`, and the solution `u`.
+"""
 mutable struct StationaryStudy
     mesh::FEMesh
     material::SolidMaterial
@@ -179,6 +214,8 @@ mutable struct StationaryStudy
     K::SparseMatrixCSC{Float64,Int}
     f::Vector{Float64}
     u::Vector{Float64}
+    f_i::Vector{Float64}
+    u_i::Vector{Float64}
 end
 
 function StationaryStudy(mesh::FEMesh, material::SolidMaterial, fixed_dofs::Vector{Int})
@@ -187,6 +224,8 @@ function StationaryStudy(mesh::FEMesh, material::SolidMaterial, fixed_dofs::Vect
         material,
         fixed_dofs,
         spzeros(mesh.n_dof, mesh.n_dof),
+        zeros(mesh.n_dof),
+        zeros(mesh.n_dof),
         zeros(mesh.n_dof),
         zeros(mesh.n_dof),
     )
@@ -283,11 +322,44 @@ function solve!(study::StationaryStudy)
     return study.u
 end
 
+# Assemble the adjoint pseudo-load (a port of `StationaryStudy::AssembleF_i`).
+# `lambda_i` is the per-element adjoint force; it is accumulated into `f_i`,
+# whose constrained dofs are then zeroed.
+function assemble_f_i!(study::StationaryStudy, lambda_i::Vector{Float64}, dof::Vector{Int})
+    study.f_i = zeros(study.mesh.n_dof)
+    for i in eachindex(dof)
+        study.f_i[dof[i]] += lambda_i[i]
+    end
+    for d in study.fixed_dofs
+        study.f_i[d] = 0.0
+    end
+    return study.f_i
+end
+
+# Solve the adjoint system with the same stiffness matrix (a port of
+# `StationaryStudy::SolveWithCG_f_i`).
+function solve_adjoint!(study::StationaryStudy)
+    study.u_i = cg_solve(study.K, study.f_i)
+    return study.u_i
+end
+
+"""
+    SensitivityAnalysis(study)
+
+Computes the compliance or stress shape sensitivity at each Gauss point.
+The sensitivities are interpolated to the boundary points by weighted least
+squares ([`compute_boundary_sensitivity`](@ref)).
+"""
 mutable struct SensitivityAnalysis
     study::StationaryStudy
     Bs::Vector{Matrix{Float64}}                       # one B per Gauss point
+    B_int::Matrix{Float64}                            # integrated B (sum over Gauss points)
     gauss_coords::Vector{Vector{Vector{Float64}}}     # per element, per Gauss point
     sensitivities::Vector{Vector{Float64}}            # per element, per Gauss point
+    sensitivity_component1::Vector{Vector{Float64}}   # von Mises * area fraction
+    sensitivity_component2::Vector{Vector{Float64}}   # adjoint stress-strain * area fraction
+    von_mises::Vector{Vector{Float64}}                # per element, per Gauss point
+    von_mises_max::Float64
     objective::Float64
 end
 
@@ -300,15 +372,33 @@ function SensitivityAnalysis(study::StationaryStudy)
         B, _ = B_matrix(xs, ys, xi, eta)
         push!(Bs, B)
     end
+    B_int = sum(Bs)
     gauss_coords = [gauss_point_coords(mesh, element) for element in mesh.elements]
     sensitivities = [zeros(4) for _ in mesh.elements]
-    return SensitivityAnalysis(study, Bs, gauss_coords, sensitivities, 0.0)
+    component1 = [zeros(4) for _ in mesh.elements]
+    component2 = [zeros(4) for _ in mesh.elements]
+    von_mises = [zeros(4) for _ in mesh.elements]
+    return SensitivityAnalysis(
+        study,
+        Bs,
+        B_int,
+        gauss_coords,
+        sensitivities,
+        component1,
+        component2,
+        von_mises,
+        0.0,
+        0.0,
+    )
 end
 
-# Compliance shape sensitivity at each Gauss point (OpenLSTO's
-# `ComputeComplianceSensitivities`). The value is the strain-energy density
-# times the area fraction; it is normalised downstream in the optimiser, so
-# the quadrature weight and Jacobian are not included.
+"""
+    compute_compliance_sensitivities!(sens)
+
+Compute the compliance shape sensitivity at each Gauss point: the
+strain-energy density times the area fraction. Sets `sens.objective` to the
+compliance.
+"""
 function compute_compliance_sensitivities!(sens::SensitivityAnalysis)
     study = sens.study
     mesh = study.mesh
@@ -328,10 +418,42 @@ function compute_compliance_sensitivities!(sens::SensitivityAnalysis)
     return sens.objective
 end
 
-# Interpolate Gauss-point sensitivities to a boundary point by weighted least
-# squares (OpenLSTO's `ComputeBoundarySensitivities` / `SolveLeastSquares`).
+"""
+    compute_boundary_sensitivity(sens, boundary_point; radius, indicator, p_norm)
+
+Interpolate Gauss-point sensitivities to a boundary point by weighted least
+squares. `indicator == 0` returns the compliance sensitivity;
+`indicator == 1` combines the two stress sensitivity components into the
+p-norm stress sensitivity.
+"""
 function compute_boundary_sensitivity(
-    sens::SensitivityAnalysis, boundary_point::Vector{Float64}; radius::Float64=2.0
+    sens::SensitivityAnalysis,
+    boundary_point::Vector{Float64};
+    radius::Float64=2.0,
+    indicator::Integer=0,
+    p_norm::Real=6.0,
+)
+    if indicator == 0
+        return _least_squares_boundary_sensitivity(
+            sens, boundary_point, sens.sensitivities, radius
+        )
+    else
+        b1 = _least_squares_boundary_sensitivity(
+            sens, boundary_point, sens.sensitivity_component1, radius
+        )
+        b2 = _least_squares_boundary_sensitivity(
+            sens, boundary_point, sens.sensitivity_component2, radius
+        )
+        p = Float64(p_norm)
+        return sens.objective^(1 - p) * (b1^p + b2) / p
+    end
+end
+
+function _least_squares_boundary_sensitivity(
+    sens::SensitivityAnalysis,
+    boundary_point::Vector{Float64},
+    field::Vector{Vector{Float64}},
+    radius::Float64,
 )
     mesh = sens.study.mesh
     r2 = radius * radius
@@ -357,7 +479,7 @@ function compute_boundary_sensitivity(
                 distance = sqrt(d2)
                 w = element.area_fraction / distance
                 push!(rows, [w, xb * w, yb * w, xb * yb * w, xb * xb * w, yb * yb * w])
-                push!(b, sens.sensitivities[e][j] * w)
+                push!(b, field[e][j] * w)
             end
         end
     end
@@ -365,4 +487,76 @@ function compute_boundary_sensitivity(
     A = permutedims(hcat(rows...))
     x = A \ b
     return x[1]
+end
+
+"""
+    compute_stress_sensitivities!(sens, p_norm)
+
+Compute the p-norm von Mises stress objective `(Σ (ρ_e σ_vm)^p)^(1/p)` and
+its adjoint-based sensitivity at each Gauss point. Sets `sens.objective` and
+`sens.von_mises_max`.
+"""
+function compute_stress_sensitivities!(sens::SensitivityAnalysis, p_norm::Real)
+    study = sens.study
+    mesh = study.mesh
+    C = study.material.C
+    V = study.material.V
+    B_int = sens.B_int
+    p = Float64(p_norm)
+
+    sens.objective = 0.0
+    sens.von_mises_max = 0.0
+    study.f_i = zeros(mesh.n_dof)
+
+    for e in eachindex(mesh.elements)
+        element = mesh.elements[e]
+        element.area_fraction <= 0.1 && continue
+        ue = study.u[element.dof]
+        CBu = C * (B_int * ue)
+        Tvm = sqrt(dot(CBu, V * CBu))
+        af_Tvm = element.area_fraction * Tvm
+        sens.objective += af_Tvm^p
+        if af_Tvm > sens.von_mises_max
+            sens.von_mises_max = af_Tvm
+        end
+        CB = C * B_int
+        lambda_i = -p * Tvm^(p - 2) .* (CB' * (V * CBu))
+        for i in eachindex(element.dof)
+            study.f_i[element.dof[i]] += lambda_i[i]
+        end
+    end
+
+    sens.objective = sens.objective^(1 / p)
+
+    for d in study.fixed_dofs
+        study.f_i[d] = 0.0
+    end
+    solve_adjoint!(study)
+
+    for e in eachindex(mesh.elements)
+        element = mesh.elements[e]
+        if element.area_fraction <= 0.1
+            for j in 1:4
+                sens.sensitivities[e][j] = 0.0
+                sens.sensitivity_component1[e][j] = 0.0
+                sens.sensitivity_component2[e][j] = 0.0
+            end
+        else
+            ue = study.u[element.dof]
+            ue_adj = study.u_i[element.dof]
+            for j in 1:4
+                CBu = C * (sens.Bs[j] * ue)
+                Bu_adj = sens.Bs[j] * ue_adj
+                stress_strain_adj = dot(CBu, Bu_adj)
+                von_mises = sqrt(dot(CBu, V * CBu))
+                sens.von_mises[e][j] = von_mises
+                sens.sensitivities[e][j] =
+                    sens.objective^(1 - p) * (von_mises^p + stress_strain_adj) / p
+                sens.sensitivity_component1[e][j] = von_mises * element.area_fraction
+                sens.sensitivity_component2[e][j] =
+                    stress_strain_adj * element.area_fraction
+            end
+        end
+    end
+    return sens.objective
 end

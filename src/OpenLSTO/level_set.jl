@@ -5,8 +5,18 @@
 # points through the narrow band, with the spatial gradient approximated by a
 # 5th-order Hamilton-Jacobi WENO upwind stencil.
 
+"""
+    LevelSet(mesh; move_limit=0.5, band_width=6, is_fixed=false)
+    LevelSet(mesh, holes; move_limit=0.5, band_width=6, is_fixed=false)
+
+A signed-distance level set on a [`LevelSetMesh`](@ref). Positive values are inside
+the structure, negative outside. The zero contour is advanced by a normal
+velocity extended from the boundary points, reinitialized by the fast
+marching method. `holes` seeds the initial configuration (default: the
+"Swiss cheese" arrangement of circular holes).
+"""
 mutable struct LevelSet
-    mesh::Mesh
+    mesh::LevelSetMesh
     moveLimit::Float64
     bandWidth::Int
     isFixed::Bool
@@ -18,7 +28,7 @@ mutable struct LevelSet
 end
 
 function LevelSet(
-    mesh::Mesh, moveLimit::Real=0.5, bandWidth::Integer=6, isFixed::Bool=false
+    mesh::LevelSetMesh, moveLimit::Real=0.5, bandWidth::Integer=6, isFixed::Bool=false
 )
     bandWidth > 2 || error("Width of the narrow band must be greater than 2.")
     0 < moveLimit <= 1 || error("Move limit must be between 0 and 1.")
@@ -39,8 +49,8 @@ function LevelSet(
 end
 
 function LevelSet(
-    mesh::Mesh,
-    holes::Vector{Hole},
+    mesh::LevelSetMesh,
+    holes::Vector{LevelSetHole},
     moveLimit::Real=0.5,
     bandWidth::Integer=6,
     isFixed::Bool=false,
@@ -75,7 +85,7 @@ function closest_domain_boundary!(ls::LevelSet)
 end
 
 # Initialise the signed distance from a set of circular holes.
-function initialise!(ls::LevelSet, holes::Vector{Hole})
+function initialise!(ls::LevelSet, holes::Vector{LevelSetHole})
     mesh = ls.mesh
     closest_domain_boundary!(ls)
     for i in eachindex(mesh.nodes)
@@ -179,7 +189,7 @@ end
 
 # Map boundary-point velocities to level-set nodes using inverse-squared
 # distance interpolation.
-function initialise_velocities!(ls::LevelSet, boundaryPoints::Vector{BoundaryPoint})
+function initialise_velocities!(ls::LevelSet, boundaryPoints::Vector{LevelSetBoundaryPoint})
     mesh = ls.mesh
     isSet = falses(mesh.nNodes)
     weight = zeros(mesh.nNodes)
@@ -229,11 +239,36 @@ function reinitialise!(ls::LevelSet)
 end
 
 # Extend boundary-point velocities to every narrow-band node.
-function compute_velocities!(ls::LevelSet, boundaryPoints::Vector{BoundaryPoint})
+function compute_velocities!(ls::LevelSet, boundaryPoints::Vector{LevelSetBoundaryPoint})
     initialise_velocities!(ls, boundaryPoints)
     fmm = FastMarchingMethod(ls.mesh)
     march!(fmm, ls.signedDistance, ls.velocity)
     return nothing
+end
+
+# Extend boundary-point velocities with added stochastic noise
+# (`computeVelocities` with a temperature and RNG in OpenLSTO). Returns the
+# (possibly CFL-scaled) time step; the scale is 1.0 unless the noise would
+# violate the move-limit condition.
+function compute_velocities!(
+    ls::LevelSet,
+    boundaryPoints::Vector{LevelSetBoundaryPoint},
+    timeStep::Real,
+    temperature::Real,
+    rng::MersenneTwister,
+)
+    sqrt2T = sqrt(2.0 * temperature)
+    scale = 1.0
+    if sqrt2T * sqrt(timeStep) > 0.5 * ls.moveLimit
+        scale = (8.0 * timeStep * temperature) / (ls.moveLimit * ls.moveLimit)
+        timeStep /= scale
+    end
+    noise = sqrt2T / sqrt(timeStep)
+    for point in boundaryPoints
+        point.velocity += noise * normal(rng, 0.0, 1.0)
+    end
+    compute_velocities!(ls, boundaryPoints)
+    return timeStep
 end
 
 function compute_gradients!(ls::LevelSet)
@@ -265,6 +300,59 @@ end
 
 function signed_distance_at(ls::LevelSet, x::Int, y::Int)
     return ls.signedDistance[xy_to_index(ls.mesh, x, y)]
+end
+
+# Kill the nodes in a rectangular or polygonal region: set their signed
+# distance to just below zero and mark them fixed (`LevelSet::killNodes`).
+function kill_nodes!(ls::LevelSet, points::Vector{Coord})
+    if length(points) == 2
+        for i in eachindex(ls.mesh.nodes)
+            node = ls.mesh.nodes[i]
+            if node.coord.x > points[1].x &&
+                node.coord.y > points[1].y &&
+                node.coord.x < points[2].x &&
+                node.coord.y < points[2].y
+                ls.signedDistance[i] = -1e-6
+                node.isFixed = true
+            end
+        end
+    else
+        for i in eachindex(ls.mesh.nodes)
+            if is_inside_polygon(ls.mesh.nodes[i].coord, points)
+                ls.signedDistance[i] = -1e-6
+                ls.mesh.nodes[i].isFixed = true
+            end
+        end
+    end
+    return ls
+end
+
+# Mark the nodes in a rectangular region as fixed (`LevelSet::fixNodes`).
+function fix_nodes!(ls::LevelSet, points::Vector{Coord})
+    for node in ls.mesh.nodes
+        if node.coord.x > points[1].x &&
+            node.coord.y > points[1].y &&
+            node.coord.x < points[2].x &&
+            node.coord.y < points[2].y
+            node.isFixed = true
+        end
+    end
+    return ls
+end
+
+# Zero the signed distance in a rectangular region, creating a level-set
+# boundary there (`LevelSet::createLevelSetBoundary`).
+function create_level_set_boundary!(ls::LevelSet, points::Vector{Coord})
+    for i in eachindex(ls.mesh.nodes)
+        node = ls.mesh.nodes[i]
+        if node.coord.x > points[1].x &&
+            node.coord.y > points[1].y &&
+            node.coord.x < points[2].x &&
+            node.coord.y < points[2].y
+            ls.signedDistance[i] = 0.0
+        end
+    end
+    return ls
 end
 
 # Modulus of the gradient of the signed distance at a node, using the

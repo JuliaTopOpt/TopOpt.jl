@@ -8,6 +8,14 @@
 
 import Base: push!, pop!
 
+"""
+    Heap(max_length)
+
+A binary min-heap used as the priority queue of the
+[`FastMarchingMethod`](@ref). It stores `(address, distance)` pairs and is a
+faithful port of OpenLSTO's `M2DO_LSM/src/heap.cpp`, itself adapted from
+Scikit-FMM.
+"""
 mutable struct Heap
     maxLength::Int
     heapLength::Int

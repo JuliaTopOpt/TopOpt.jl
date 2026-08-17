@@ -24,6 +24,7 @@ makedocs(;
             "Functions" => "reference/Functions.md",
             "Algorithms" => "reference/Algorithms.md",
             "Utilities" => "reference/Utilities.md",
+            "OpenLSTO" => "reference/OpenLSTO.md",
         ],
         "Bibliography" => "bibliography.md",
     ],

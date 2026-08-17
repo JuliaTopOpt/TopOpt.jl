@@ -134,6 +134,9 @@ if ACTUAL_GROUP in ("All", "OpenLSTO_Tests")
     @safetestset "OpenLSTO compliance reference" begin
         include("OpenLSTO/test_compliance_reference.jl")
     end
+    @safetestset "OpenLSTO features" begin
+        include("OpenLSTO/test_features.jl")
+    end
 end
 
 if ACTUAL_GROUP in ("All", "JET_Tests")

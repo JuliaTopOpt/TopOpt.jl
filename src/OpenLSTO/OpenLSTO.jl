@@ -5,10 +5,14 @@ A Julia translation of the level-set topology optimization method in
 OpenLSTO (https://github.com/M2DOLab/OpenLSTO), originally written in C++.
 
 The module implements the 2D compliance-minimization workflow from
-`projects/compliance/main.cpp`: a signed-distance level-set representation
-advanced by boundary velocities that satisfy the volume constraint, with the
-structural response computed by an area-fraction ("ersatz material") finite
-element solve.
+`projects/compliance/main.cpp` (with the hole-nucleation scheme from
+`projects/hole_creation`), the 2D L-beam stress-minimization workflow from
+`projects/stress_min/lbeam.cpp`, and the 3D compliance-minimization workflow
+from `projects/3d/comp_min.cpp` (marching cubes, 3D fast marching, and a 3D
+hexahedral solver), along with the Mersenne-Twister RNG and OpenLSTO's VTK/TXT
+writers. A signed-distance level-set representation is advanced by boundary
+velocities that satisfy the volume constraint, with the structural response
+computed by an area-fraction ("ersatz material") finite element solve.
 
 The translation is intentionally self-contained (its own mesh, fast marching,
 boundary discretization, and finite element solver) so it can be verified
@@ -21,19 +25,36 @@ using LinearAlgebra
 using SparseArrays
 using Random
 
-export Mesh,
-    Hole,
+export LevelSetMesh,
+    LevelSetHole,
     LevelSet,
-    Boundary,
+    LevelSetBoundary,
     FastMarchingMethod,
     Heap,
-    Optimise,
+    LevelSetOptimizer,
+    MersenneTwister,
     FEMesh,
     SolidMaterial,
     SolidElement,
     StationaryStudy,
     SensitivityAnalysis,
-    compliance_minimization
+    compliance_minimization,
+    stress_minimization,
+    compliance_minimization_3d,
+    LevelSetResult,
+    area_fractions,
+    LevelSet3D,
+    HexMaterial,
+    HexStudy,
+    write_stl,
+    save_level_set_vtk,
+    save_level_set_txt,
+    save_boundary_points_txt,
+    save_boundary_segments_txt,
+    save_area_fractions_vtk,
+    save_area_fractions_txt,
+    boundary_vtk,
+    write_optimisation_history_txt
 
 # Node and element status bit flags (mirror `NodeStatus` / `ElementStatus`
 # in OpenLSTO's `M2DO_LSM/include/mesh.h`).
@@ -60,11 +81,20 @@ include("common.jl")
 include("mesh.jl")
 include("hole.jl")
 include("heap.jl")
+include("mersenne_twister.jl")
 include("fast_marching.jl")
 include("level_set.jl")
 include("boundary.jl")
+include("input_output.jl")
+include("hole_nucleation.jl")
 include("fea.jl")
 include("optimise.jl")
 include("optimiser.jl")
+include("stress_minimization.jl")
+include("mc_table.jl")
+include("marching_cubes.jl")
+include("fea_3d.jl")
+include("level_set_3d.jl")
+include("compliance_minimization_3d.jl")
 
 end # module

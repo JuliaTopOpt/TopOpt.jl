@@ -3,19 +3,31 @@
 # triangulated per element with marching squares, producing boundary points,
 # boundary segments, and a material area fraction for each element.
 
-mutable struct Boundary
+"""
+    LevelSetBoundary(level_set)
+
+The discretized boundary of a [`LevelSet`](@ref). [`discretise!`](@ref)
+finds the boundary points where the zero contour crosses grid edges (marching
+squares) and [`compute_area_fractions!`](@ref) computes the material area
+fraction of every cell.
+"""
+mutable struct LevelSetBoundary
     levelSet::LevelSet
-    points::Vector{BoundaryPoint}
-    segments::Vector{BoundarySegment}
+    points::Vector{LevelSetBoundaryPoint}
+    segments::Vector{LevelSetBoundarySegment}
     length::Float64
     area::Float64
 end
-Boundary(ls::LevelSet) = Boundary(ls, BoundaryPoint[], BoundarySegment[], 0.0, 0.0)
+function LevelSetBoundary(ls::LevelSet)
+    return LevelSetBoundary(
+        ls, LevelSetBoundaryPoint[], LevelSetBoundarySegment[], 0.0, 0.0
+    )
+end
 
-function initialise_point(boundary::Boundary, coord::Coord, size_lambdas::Int)
+function initialise_point(boundary::LevelSetBoundary, coord::Coord, size_lambdas::Int)
     ls = boundary.levelSet
     mesh = ls.mesh
-    point = BoundaryPoint(
+    point = LevelSetBoundaryPoint(
         coord,
         Coord(0.0, 0.0),
         0.0,
@@ -58,13 +70,13 @@ function initialise_point(boundary::Boundary, coord::Coord, size_lambdas::Int)
     return point
 end
 
-function add_point!(boundary::Boundary, coord::Coord, size_lambdas::Int)
+function add_point!(boundary::LevelSetBoundary, coord::Coord, size_lambdas::Int)
     push!(boundary.points, initialise_point(boundary, coord, size_lambdas))
     return length(boundary.points)
 end
 
 # Determine the node and element status flags from the signed distance.
-function compute_mesh_status!(boundary::Boundary, sd::Vector{Float64})
+function compute_mesh_status!(boundary::LevelSetBoundary, sd::Vector{Float64})
     mesh = boundary.levelSet.mesh
     for i in eachindex(mesh.nodes)
         empty!(mesh.nodes[i].boundaryPoints)
@@ -101,7 +113,7 @@ end
 
 # Work out the coordinates of a boundary point on an element edge and return
 # the index of any previously added point at that location.
-function is_added(boundary::Boundary, node::Int, edge::Int, distance::Float64)
+function is_added(boundary::LevelSetBoundary, node::Int, edge::Int, distance::Float64)
     mesh = boundary.levelSet.mesh
     nc = mesh.nodes[node].coord
     if edge == 0
@@ -122,7 +134,13 @@ function is_added(boundary::Boundary, node::Int, edge::Int, distance::Float64)
     return -1, coord
 end
 
-function discretise!(boundary::Boundary, size_lambdas::Int)
+"""
+    discretise!(boundary, size_lambdas)
+
+Discretize the zero contour of the level set into boundary points and
+segments with marching squares.
+"""
+function discretise!(boundary::LevelSetBoundary, size_lambdas::Int)
     ls = boundary.levelSet
     mesh = ls.mesh
     sd = ls.signedDistance
@@ -168,7 +186,7 @@ function discretise!(boundary::Boundary, size_lambdas::Int)
                         index = add_point!(boundary, coord, size_lambdas)
                         push!(mesh.nodes[n2].boundaryPoints, index)
                     end
-                    segment = BoundarySegment(start, index, i, 0.0, 0.0)
+                    segment = LevelSetBoundarySegment(start, index, i, 0.0, 0.0)
                     segment.length = segment_length(boundary, segment)
                     boundary.length += segment.length
                     push!(element.boundarySegments, length(boundary.segments) + 1)
@@ -178,7 +196,7 @@ function discretise!(boundary::Boundary, size_lambdas::Int)
         end
 
         if nCut == 2
-            segment = BoundarySegment(bp_indices[1], bp_indices[2], i, 0.0, 0.0)
+            segment = LevelSetBoundarySegment(bp_indices[1], bp_indices[2], i, 0.0, 0.0)
             segment.length = segment_length(boundary, segment)
             boundary.length += segment.length
             push!(element.boundarySegments, length(boundary.segments) + 1)
@@ -196,7 +214,7 @@ function discretise!(boundary::Boundary, size_lambdas::Int)
                             index = add_point!(boundary, coord, size_lambdas)
                             push!(mesh.nodes[node].boundaryPoints, index)
                         end
-                        segment = BoundarySegment(bp_indices[1], index, i, 0.0, 0.0)
+                        segment = LevelSetBoundarySegment(bp_indices[1], index, i, 0.0, 0.0)
                         segment.length = segment_length(boundary, segment)
                         boundary.length += segment.length
                         push!(element.boundarySegments, length(boundary.segments) + 1)
@@ -212,11 +230,11 @@ function discretise!(boundary::Boundary, size_lambdas::Int)
             status = mesh.nodes[element.nodes[1]].status
             if ((status & NODE_INSIDE) != 0 && lsfSum > 0) ||
                 ((status & NODE_OUTSIDE) != 0 && lsfSum < 0)
-                seg1 = BoundarySegment(bp_indices[1], bp_indices[2], i, 0.0, 0.0)
-                seg2 = BoundarySegment(bp_indices[3], bp_indices[4], i, 0.0, 0.0)
+                seg1 = LevelSetBoundarySegment(bp_indices[1], bp_indices[2], i, 0.0, 0.0)
+                seg2 = LevelSetBoundarySegment(bp_indices[3], bp_indices[4], i, 0.0, 0.0)
             else
-                seg1 = BoundarySegment(bp_indices[1], bp_indices[4], i, 0.0, 0.0)
-                seg2 = BoundarySegment(bp_indices[2], bp_indices[3], i, 0.0, 0.0)
+                seg1 = LevelSetBoundarySegment(bp_indices[1], bp_indices[4], i, 0.0, 0.0)
+                seg2 = LevelSetBoundarySegment(bp_indices[2], bp_indices[3], i, 0.0, 0.0)
             end
             for segment in (seg1, seg2)
                 segment.length = segment_length(boundary, segment)
@@ -243,7 +261,7 @@ function discretise!(boundary::Boundary, size_lambdas::Int)
                 index = add_point!(boundary, coord, size_lambdas)
                 push!(mesh.nodes[boundary_nodes[2]].boundaryPoints, index)
             end
-            segment = BoundarySegment(start, index, i, 0.0, 0.0)
+            segment = LevelSetBoundarySegment(start, index, i, 0.0, 0.0)
             segment.length = segment_length(boundary, segment)
             boundary.length += segment.length
             push!(element.boundarySegments, length(boundary.segments) + 1)
@@ -255,7 +273,7 @@ function discretise!(boundary::Boundary, size_lambdas::Int)
     return boundary
 end
 
-function segment_length(boundary::Boundary, segment::BoundarySegment)
+function segment_length(boundary::LevelSetBoundary, segment::LevelSetBoundarySegment)
     p1 = boundary.points[segment.start].coord
     p2 = boundary.points[segment.stop].coord
     dx = p1.x - p2.x
@@ -263,7 +281,7 @@ function segment_length(boundary::Boundary, segment::BoundarySegment)
     return sqrt(dx * dx + dy * dy)
 end
 
-function compute_point_lengths!(boundary::Boundary)
+function compute_point_lengths!(boundary::LevelSetBoundary)
     for (k, segment) in enumerate(boundary.segments)
         for idx in (segment.start, segment.stop)
             point = boundary.points[idx]
@@ -275,7 +293,13 @@ function compute_point_lengths!(boundary::Boundary)
     end
 end
 
-function compute_area_fractions!(boundary::Boundary)
+"""
+    compute_area_fractions!(boundary)
+
+Compute the material area fraction of every cell from the discretized
+boundary and return the total area.
+"""
+function compute_area_fractions!(boundary::LevelSetBoundary)
     mesh = boundary.levelSet.mesh
     boundary.area = 0.0
     for element in mesh.elements
@@ -291,7 +315,7 @@ function compute_area_fractions!(boundary::Boundary)
     return boundary.area
 end
 
-function cut_area(boundary::Boundary, element::Element)
+function cut_area(boundary::LevelSetBoundary, element::Element)
     mesh = boundary.levelSet.mesh
     status = (element.status & ELEMENT_CENTRE_OUTSIDE) != 0 ? NODE_OUTSIDE : NODE_INSIDE
     vertices = Coord[]

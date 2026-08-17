@@ -16,7 +16,8 @@ using TopOpt.TopOptProblems:
     AbstractTopOptProblem,
     StiffnessTopOptProblem,
     HeatTransferTopOptProblem,
-    HeatConductionProblem
+    HeatConductionProblem,
+    PointLoadCantilever
 using TopOpt.TrussTopOptProblems: TrussProblem
 using Ferrite
 
@@ -1460,6 +1461,36 @@ function TopOpt.visualize(
     )
     dim == 3 && _plot_voxel_edges!(ax1, dup_nodes, dup_cells, undeformed_mesh_colors)
     return fig
+end
+
+"""
+    visualize(result::OpenLSTO.LevelSetResult; ...)
+
+Visualize the result of `OpenLSTO.compliance_minimization` with the regular
+continuum visualizer. The level-set design is converted to a
+`PointLoadCantilever` problem on the same grid and the per-cell area
+fractions are shown as the density field, so the same controls (loads,
+supports, sliders, `static=true` viewer) apply as for SIMP results.
+
+See [`visualize(::StiffnessTopOptProblem)`](@ref) for the shared keyword
+arguments. Extra keywords:
+- `E`, `ν`, `force`: material/load parameters of the equivalent
+  `PointLoadCantilever` (only used for drawing loads and supports; defaults
+  match `compliance_minimization`).
+"""
+function TopOpt.visualize(
+    result::TopOpt.OpenLSTO.LevelSetResult;
+    static=false,
+    topology=nothing,
+    E=1.0,
+    ν=0.3,
+    force=0.5,
+    kw...,
+)
+    mesh = result.study.mesh
+    problem = PointLoadCantilever((mesh.nelx, mesh.nely), (1.0, 1.0), E, ν, force)
+    topology = topology === nothing ? TopOpt.OpenLSTO.area_fractions(result) : topology
+    return TopOpt.visualize(problem; static=static, topology=topology, kw...)
 end
 
 include("static_viewer.jl")

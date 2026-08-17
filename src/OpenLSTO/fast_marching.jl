@@ -6,8 +6,16 @@
 const doubleEpsilon = eps(Float64)
 const maxDouble = floatmax(Float64)
 
+"""
+    FastMarchingMethod(mesh)
+
+Solves the Eikonal equation by the fast marching method to reinitialise a
+signed-distance function or to extend boundary velocities through the narrow
+band. A port of `M2DO_LSM/src/fast_marching_method.cpp`, adapted from
+Scikit-FMM. Use [`march!`](@ref) to run it.
+"""
 mutable struct FastMarchingMethod
-    mesh::Mesh
+    mesh::LevelSetMesh
     heap::Heap
     heapPtr::Vector{Int}
     nodeStatus::Vector{Int}
@@ -16,7 +24,7 @@ mutable struct FastMarchingMethod
     vel::Vector{Float64}
     isVelocity::Bool
 
-    function FastMarchingMethod(mesh::Mesh)
+    function FastMarchingMethod(mesh::LevelSetMesh)
         n = mesh.nNodes
         return new(
             mesh, Heap(0), zeros(Int, n), zeros(Int, n), zeros(n), zeros(n), zeros(n), false
@@ -24,7 +32,14 @@ mutable struct FastMarchingMethod
     end
 end
 
-# Reinitialise `signedDistance` to a signed distance function.
+"""
+    march!(fmm, signedDistance)
+    march!(fmm, signedDistance, velocity)
+
+Run the fast marching method to reinitialize `signedDistance` to a signed
+distance function, or (with `velocity`) to extend boundary velocities through
+the narrow band without changing the signed distance.
+"""
 function march!(fmm::FastMarchingMethod, signedDistance::Vector{Float64})
     fmm.sd = signedDistance
     fmm.isVelocity = false

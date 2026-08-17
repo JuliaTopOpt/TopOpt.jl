@@ -61,6 +61,8 @@ using TopOpt, Makie, GLMakie
 - Continuation SIMP/RAMP
 - Bi-directional evolutionary structural optimization (BESO) with soft-kill
 - Topology optimization of binary structures (TOBS)
+- Level-set topology optimization, in 2D and 3D
+  ([`OpenLSTO`](reference/OpenLSTO.md))
 - Rational, hyperbolic-sine and projected penalty functions
   ([`Utilities`](reference/Utilities.md))
 
