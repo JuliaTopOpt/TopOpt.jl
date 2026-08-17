@@ -1,5 +1,33 @@
 using TopOpt, Test, LinearAlgebra, Ferrite
 
+import TopOpt.FEA: solve_system!, GenericFEASolver
+
+# Custom linear solver used to exercise the physics-inferred generic
+# `FEASolver(Solver, problem)` constructor (a weighted-Jacobi iteration).
+struct JacobiSolver <: TopOpt.AbstractLinearSolver end
+function solve_system!(
+    ::Type{JacobiSolver},
+    solver::GenericFEASolver{T,Physics,JacobiSolver},
+    K,
+    f,
+    lhs;
+    max_iters=5000,
+    ω=2 / 3,
+    tol=1e-9,
+    kwargs...,
+) where {T,Physics}
+    Kd = K isa Symmetric ? K.data : K
+    d = diag(Kd)
+    any(iszero, d) && throw(ArgumentError("JacobiSolver: zero diagonal entry"))
+    fill!(lhs, zero(T))
+    for _ in 1:max_iters
+        r = f .- Kd * lhs
+        norm(r) < tol && break
+        lhs .+= ω .* (r ./ d)
+    end
+    return false
+end
+
 @testset "FEA Solver Tests" begin
     @testset "Structural solver consistency" begin
         nels = (20, 10, 10)
@@ -361,5 +389,21 @@ using TopOpt, Test, LinearAlgebra, Ferrite
             (4, 4), (1.0, 1.0), 1.0; Tleft=0.0, Tright=0.0, heatflux=Dict("top" => 1.0)
         )
         @test FEASolver(CGMatrixFreeSolver, problem_homog) isa TopOpt.FEA.GenericFEASolver
+    end
+
+    @testset "Custom linear solver via generic FEASolver constructor" begin
+        problem = PointLoadCantilever((10, 6), (1.0, 1.0), 1.0, 0.3, 1.0)
+        # physics is inferred from the problem type by the generic constructor
+        jacobi = FEASolver(JacobiSolver, problem; xmin=0.01)
+        @test jacobi isa
+            TopOpt.FEA.GenericFEASolver{Float64,TopOpt.FEA.LinearElasticity,JacobiSolver}
+        direct = FEASolver(DirectSolver, problem; xmin=0.01)
+        x = fill(0.5, getncells(problem))
+        jacobi.vars .= x
+        direct.vars .= x
+        jacobi()
+        direct()
+        @test all(isfinite, jacobi.u)
+        @test jacobi.u ≈ direct.u rtol = 3e-2
     end
 end

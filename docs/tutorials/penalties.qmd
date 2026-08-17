@@ -1,0 +1,160 @@
+---
+title: "Comparing Penalty Functions"
+toc: true
+---
+
+## Description
+
+The SIMP penalty maps the design density `x` to the effective stiffness
+material used in the finite-element assembly. A steeper penalty suppresses
+intermediate ("gray") densities, but too steep a penalty makes the problem
+non-convex and hard to optimize. TopOpt.jl provides four penalties:
+
+- `PowerPenaltyFun(p)` — the classic SIMP power law `x^p`.
+- `RationalPenaltyFun(p)` — `x / (1 + p(1 - x))`, smoother than the power law
+  for the same exponent.
+- `SinhPenaltyFun(p)` — `sinh(p·x) / sinh(p)`, another smooth alternative.
+- `ProjectedPenaltyFun(penalty, proj)` — applies a projection (default
+  `HeavisideProjectionFun(10)`) before the penalty, pushing toward a near-binary
+  design.
+
+This tutorial compares their curves, their effect on the optimized design, and
+the sensitivity of the result to the penalty parameter.
+
+## Setup
+
+```{julia}
+#| output: false
+using TopOpt, LinearAlgebra
+using WGLMakie
+WGLMakie.activate!(; resize_to=:parent)
+using Bonito
+if haskey(ENV, "QUARTO_PROJECT_DIR")
+    Bonito.Page(exportable=true, offline=true)
+else
+    Bonito.browser_display()
+end
+display_app(app) = display(app)
+```
+
+`WGLMakie.activate!(; resize_to=:parent)` selects the browser renderer and fills the Quarto output column. `Bonito.Page(exportable=true, offline=true)` embeds the assets needed by `visualize(...; static=true)` in the Quarto output, so the visualization does not require a running Julia process.
+
+## The penalty curves
+
+```{julia}
+#| output: true
+p = 3.0
+penalties = [
+    ("power", PowerPenaltyFun(p)),
+    ("rational", RationalPenaltyFun(p)),
+    ("sinh", SinhPenaltyFun(p)),
+    ("projected", ProjectedPenaltyFun(PowerPenaltyFun(p))),
+]
+for x in (0.1, 0.3, 0.5, 0.8, 1.0)
+    vals = [round(P(x), digits=3) for (_, P) in penalties]
+    println("x=$x → ", join(["$(n)=$v" for ((n, _), v) in zip(penalties, vals)], "  "))
+end
+```
+
+```{julia}
+#| label: fig-penalties-curves
+#| fig-cap: "Penalty functions (p = 3): stiffness multiplier P(x) vs design density x"
+using Makie
+xs = range(0.0, 1.0; length=101)
+fig = Figure()
+ax = Axis(fig[1, 1]; xlabel="design density x", ylabel="penalty P(x)")
+for (name, P) in penalties
+    lines!(ax, xs, P.(xs); label=name)
+end
+axislegend(ax)
+display_app(fig)
+```
+
+At `x = 0.5` the rational and sinh penalties are milder than the power law
+(more intermediate stiffness), while the projected penalty is already nearly
+binary.
+
+## Optimize with each penalty
+
+We solve the same Half MBB compliance problem with each penalty (exponent 3)
+and measure the resulting grayness — the fraction of elements in the
+intermediate band `(0.1, 0.9)`.
+
+```{julia}
+#| output: false
+E, ν, f = 1.0, 0.3, 1.0
+nels = (60, 20)
+N = prod(nels)
+V = 0.5
+rmin = 2.0
+
+problem = HalfMBB(nels, (1.0, 1.0), E, ν, f)
+grayness(x) = count(0.1 .< x .< 0.9) / length(x)
+
+function solve_with(penalty)
+    solver = FEASolver(DirectSolver, problem; xmin=0.001, penalty=penalty)
+    filter = DensityFilterFun(solver; rmin=rmin)
+    comp = ComplianceFun(solver)
+    volfrac = VolumeFun(solver)
+    obj = x -> comp(filter(PseudoDensities(x)))
+    constr = x -> volfrac(filter(PseudoDensities(x))) - V
+    model = Model(obj)
+    addvar!(model, zeros(N), ones(N))
+    add_ineq_constraint!(model, constr)
+    r = optimize(model, MMA87(), fill(V, N);
+        options=MMAOptions(; maxiter=120, tol=Tolerance(; kkt=1e-4, f=1e-4)))
+    topo = filter(PseudoDensities(r.minimizer)).x
+    return obj(r.minimizer), constr(r.minimizer) + V, grayness(topo), topo
+end
+```
+
+```{julia}
+#| output: true
+results = Dict{String,Any}()
+for (name, P) in penalties
+    c, vol, g, topo = solve_with(P)
+    results[name] = topo
+    println("$(lpad(name, 10)): compliance = $(round(c, digits=2)), vol = $(round(vol, digits=3)), gray = $(round(g, digits=3))")
+end
+```
+
+```{julia}
+#| label: fig-penalties-power
+#| fig-cap: "PowerPenaltyFun(p=3): standard SIMP result"
+fig_p = visualize(problem; static=true, topology=results["power"])
+display_app(fig_p)
+```
+
+```{julia}
+#| label: fig-penalties-projected
+#| fig-cap: "ProjectedPenaltyFun: near-binary design"
+fig_proj = visualize(problem; static=true, topology=results["projected"])
+display_app(fig_proj)
+```
+
+The power, rational, and sinh penalties produce comparable topologies with
+varying amounts of gray; the projected penalty produces a noticeably crisper
+design.
+
+## Parameter sensitivity
+
+Ramping the exponent of the power-law penalty trades stiffness for binary
+crispness. We sweep `p` and report the grayness and final compliance.
+
+```{julia}
+#| output: true
+for p in (2.0, 3.0, 4.0, 5.0)
+    c, vol, g, _ = solve_with(PowerPenaltyFun(p))
+    println("p=$p: compliance = $(round(c, digits=2)), gray = $(round(g, digits=3))")
+end
+```
+
+## Guidance
+
+- **Power law** is the default and the most widely reported; `p = 3` is the
+  standard choice for 2D continuum problems.
+- **Rational / sinh** penalties transition more smoothly, which can help
+  continuation strategies converge from a uniform start.
+- **Projected penalty** is the go-to when a crisp 0/1 design matters more than
+  a slight stiffness penalty; combine it with a continuation on the projection
+  `β` (see the `projected_filter` tutorial) for best results.

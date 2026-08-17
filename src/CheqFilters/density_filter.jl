@@ -71,7 +71,12 @@ function getJacobian(solver, metadata::FilterMetadata)
     end
     mat1_transpose = sparse(J, I, V, nel, nnodes)
     scalecols!(mat1_transpose)
-    norm(V) == 0 && throw("Jacobian is all 0s.")
+    norm(V) == 0 && throw(
+        ArgumentError(
+            "DensityFilterFun: the node→cell adjacency is empty, so no filter " *
+            "can be built. This indicates a problem with the mesh connectivity.",
+        ),
+    )
 
     I = Int[]
     J = Int[]
@@ -90,7 +95,14 @@ function getJacobian(solver, metadata::FilterMetadata)
         end
     end
     mat2_transpose = sparse(J, I, V, nnodes, nel)
-    norm(V) == 0 && throw("Jacobian is all 0s.")
+    norm(V) == 0 && throw(
+        ArgumentError(
+            "DensityFilterFun: no neighbouring nodes were found within the " *
+            "filter radius `rmin` for any element. `rmin` is likely smaller " *
+            "than the mesh element size; increase `rmin` (it must be expressed " *
+            "in the same units as the mesh coordinates).",
+        ),
+    )
     mat_transpose = mat1_transpose * mat2_transpose
     return mat_transpose'
 end
@@ -136,4 +148,22 @@ function (cf::ProjectedDensityFilterFun)(x::PseudoDensities{I,P}) where {I,P}
         out = cf.postproj.(fx)
     end
     return PseudoDensities{I,P,true}(out)
+end
+
+"""
+    ProjectedDensityFilterFun(solver; rmin, projection=HeavisideProjectionFun(10.0))
+
+Convenience constructor: a [`DensityFilterFun`](@ref) followed by a projection
+(applied *after* filtering). The default projection is a
+[`HeavisideProjectionFun`](@ref) with `β = 10`; pass any
+[`AbstractProjection`](@ref) (e.g. [`SigmoidProjectionFun`](@ref)) to change
+the projection, or `nothing` for a plain filter. Use the 3-argument form
+`ProjectedDensityFilterFun(filter, preproj, postproj)` to place a projection
+*before* the filter instead.
+"""
+function ProjectedDensityFilterFun(
+    solver::AbstractFEASolver; rmin, projection=HeavisideProjectionFun(10.0)
+)
+    filter = DensityFilterFun(solver, rmin)
+    return ProjectedDensityFilterFun(filter, nothing, projection)
 end

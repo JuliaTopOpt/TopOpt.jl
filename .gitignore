@@ -21,3 +21,6 @@ IMPROVEMENTS_SUMMARY.md
 docs/tutorials/*_files/
 docs/tutorials/_site/
 docs/tutorials/Manifest.toml
+
+# Tutorial-generated VTK output
+docs/tutorials/*.vtu

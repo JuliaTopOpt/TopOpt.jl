@@ -1,0 +1,288 @@
+---
+title: "Stochastic Compliance Minimization with Trace Estimation"
+toc: true
+---
+
+## Description
+
+When a load follows a distribution (magnitude, direction, or location), a
+single deterministic compliance value no longer captures the structure's
+performance. TopOpt.jl provides differentiable functions that average
+compliance over many load scenarios, plus randomized estimators that
+approximate the average without solving every scenario.
+
+The methods used here — exact and randomized evaluation of the mean compliance,
+of any scalar-valued function of the per-scenario compliances (e.g. a weighted
+sum of the mean and standard deviation), and the augmented-Lagrangian handling
+of a maximum-compliance constraint — are described in
+[TarekRay2021](https://arxiv.org/abs/2103.04594) and its approximate counterpart
+[TarekRay2022](https://arxiv.org/abs/2108.03654).
+
+This tutorial covers:
+
+- `MultiLoad` and `generate_scenarios` for building load ensembles
+- `MeanComplianceFun` with the exact, SVD, Hutchinson-trace, and
+  SVD-trace estimators
+- `BlockComplianceFun` for per-scenario compliance, used in a risk-averse
+  (mean + standard deviation) objective and in a maximum-compliance-constrained
+  problem solved with the augmented Lagrangian method
+- Choosing an estimator based on accuracy vs. cost
+
+## Setup
+
+```{julia}
+#| output: false
+using TopOpt, LinearAlgebra, SparseArrays, Random, Statistics
+using WGLMakie
+WGLMakie.activate!(; resize_to=:parent)
+using Bonito
+if haskey(ENV, "QUARTO_PROJECT_DIR")
+    Bonito.Page(exportable=true, offline=true)
+else
+    Bonito.browser_display()
+end
+display_app(app) = display(app)
+```
+
+`WGLMakie.activate!(; resize_to=:parent)` selects the browser renderer and fills the Quarto output column. `Bonito.Page(exportable=true, offline=true)` embeds the assets needed by `visualize(...; static=true)` in the Quarto output, so the visualization does not require a running Julia process.
+
+## A load ensemble
+
+We model a cantilever whose tip is loaded by many random point loads drawn
+from a distribution of directions and magnitudes. The load matrix `F` has one
+column per scenario.
+
+```{julia}
+#| output: false
+Random.seed!(42)
+E, ν = 1.0, 0.3
+nels = (40, 20)
+base = PointLoadCantilever(nels, (1.0, 1.0), E, ν, 1.0)
+ndofs = length(FEASolver(DirectSolver, base).u)
+nloads = 16
+
+F = spzeros(ndofs, nloads)
+surface_dofs = vec(TopOpt.TopOptProblems.get_surface_dofs(base))
+for i in 1:nloads
+    dofs = surface_dofs[rand(1:length(surface_dofs), 2)]
+    F[dofs, i] .= randn(2)
+end
+problem = MultiLoad(base, F)
+
+solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(2.0))
+```
+
+`generate_scenarios` builds a simpler ensemble: a single DOF loaded with
+perturbed magnitudes.
+
+```{julia}
+#| output: true
+F_simple = generate_scenarios(surface_dofs[1], (ndofs, 8), 1.0)
+println("generate_scenarios: $(size(F_simple, 2)) scenarios, $(nnz(F_simple)) non-zeros")
+```
+
+## Exact mean compliance (baseline)
+
+`MeanComplianceFun(problem, solver; method=:exact)` solves every scenario and
+averages. The `:exact_svd` method compresses `F` with a thin SVD first, giving
+the same value from fewer solves when the scenarios are linearly dependent.
+
+```{julia}
+#| output: true
+mc_exact = MeanComplianceFun(problem, solver; method=:exact)
+mc_svd   = MeanComplianceFun(problem, solver; method=:exact_svd)
+
+x = fill(0.5, length(solver.vars))
+C_exact = mc_exact(PseudoDensities(x))
+C_svd   = mc_svd(PseudoDensities(x))
+println("exact     = $(C_exact)")
+println("exact_svd = $(C_svd)  (rel. diff $(abs(C_exact - C_svd) / C_exact))")
+```
+
+## Hutchinson trace estimator
+
+Instead of solving all `nloads` scenarios, the Hutchinson estimator probes with
+`nv` random Rademacher (±1) vectors:
+
+$$
+\mathbb{E}\,[v^\mathsf{T} F^\mathsf{T} K^{-1} F v] = \mathrm{tr}(F^\mathsf{T} K^{-1} F)
+$$
+
+which is proportional to the mean compliance. `nv` is the number of probe
+vectors; the estimate converges at `O(1/√nv)` but costs only `nv` solves.
+
+```{julia}
+#| output: true
+for nv in (2, 4, 8, 16)
+    mc = MeanComplianceFun(problem, solver; method=:trace, nv=nv, sample_once=false)
+    est = mc(PseudoDensities(x))
+    println("hutch nv=$(lpad(nv, 2)): $(round(est, digits=3))  (rel. err $(round(abs(est - C_exact) / C_exact, digits=3)))")
+end
+```
+
+With `sample_once=false` the probe vectors are redrawn on every call, so the
+estimate varies between calls; with `sample_once=true` (the default) they are
+drawn once at construction and held fixed, which keeps the objective and its
+gradient consistent during an optimization.
+
+## Hadamard (deterministic) estimator
+
+Passing `sample_method=:hadamard` replaces the random probes with deterministic
+orthogonal Hadamard columns. This removes the sampling noise and converges
+smoothly, at the cost of a fixed `nv` that is a power of two.
+
+```{julia}
+#| output: true
+for nv in (4, 8, 16)
+    mc = MeanComplianceFun(problem, solver; method=:trace, nv=nv, sample_method=:hadamard)
+    est = mc(PseudoDensities(x))
+    println("hadamard nv=$(lpad(nv, 2)): $(round(est, digits=3))  (rel. err $(round(abs(est - C_exact) / C_exact, digits=3)))")
+end
+```
+
+## Per-scenario compliance: mean and standard deviation
+
+`BlockComplianceFun` returns a vector of compliance values, one per scenario.
+This lets us form arbitrary statistics. Minimizing the mean alone is the
+standard robust formulation; adding a multiple of the standard deviation
+penalizes designs that perform unevenly across the load distribution.
+
+```{julia}
+#| output: false
+bc = BlockComplianceFun(problem, solver; method=:exact)
+V = 0.5
+filter = DensityFilterFun(solver; rmin=2.0)
+volfrac = VolumeFun(solver)
+
+mean_only = x -> mean(bc(filter(PseudoDensities(x))))
+mean_std  = x -> mean(bc(filter(PseudoDensities(x)))) + 0.25 * std(bc(filter(PseudoDensities(x))))
+volconstr = x -> volfrac(filter(PseudoDensities(x))) - V
+
+function run(obj, label)
+    model = Model(obj)
+    addvar!(model, zeros(length(x)), ones(length(x)))
+    add_ineq_constraint!(model, volconstr)
+    r = optimize(model, MMA87(), fill(V, length(x));
+        options=MMAOptions(; maxiter=100, tol=Tolerance(; kkt=1e-4, f=1e-4)))
+    println("$label: obj = $(round(obj(r.minimizer), digits=3)), vol = $(round(volconstr(r.minimizer) + V, digits=3))")
+    return r.minimizer
+end
+```
+
+```{julia}
+#| output: true
+x_mean = run(mean_only, "mean only      ")
+x_meanstd = run(mean_std, "mean + 0.25 std")
+```
+
+## Maximum compliance constraint via augmented Lagrangian
+
+A robust design can instead bound the *worst-case* compliance: minimize the
+volume subject to `C_i ≤ C_t` for every scenario. Following
+[TarekRay2021](https://arxiv.org/abs/2103.04594) (§4), this is solved with the
+augmented Lagrangian method, where the per-scenario compliances from
+`BlockComplianceFun` enter the augmented Lagrangian function
+
+$$
+L(\bm{x}; \bm\lambda, r) = V(\bm{x}) + \sum_i \left[\lambda_i (C_i - C_t) + r\,\max(C_i - C_t, 0)^2\right].
+$$
+
+Each subproblem minimizes this function over the box `0 ≤ x ≤ 1`, then the
+multipliers and penalty are updated (`λ ← λ + ρ·c`, `ρ ← γρ`). The compliance
+threshold `C_t` is calibrated from the solid design's worst-case compliance.
+
+```{julia}
+#| output: false
+volf = x -> volfrac(filter(PseudoDensities(x)))
+Cfun = x -> bc(filter(PseudoDensities(x)))
+C_t = 2.0 * maximum(Cfun(ones(length(solver.vars))))
+
+function al_subproblem(λ, ρ, x0)
+    model = Model(xx -> begin
+        C = Cfun(xx)
+        c = C .- C_t
+        pen = max.(λ .+ ρ .* c, 0.0)
+        volf(xx) + (1 / (2ρ)) * (dot(pen, pen) - dot(λ, λ))
+    end)
+    addvar!(model, zeros(length(x0)), ones(length(x0)))
+    return optimize(model, MMA87(), x0;
+        options=MMAOptions(; maxiter=60, tol=Tolerance(; kkt=1e-4, f=1e-4))).minimizer
+end
+```
+
+```{julia}
+#| output: true
+λ = zeros(nloads)
+ρ = 1.0
+x_al = ones(length(solver.vars))
+for k in 1:20
+    global λ, ρ, x_al
+    x_al = al_subproblem(λ, ρ, x_al)
+    C = Cfun(x_al)
+    λ .= max.(λ .+ ρ .* (C .- C_t), 0.0)
+    ρ *= 1.5
+end
+C = Cfun(x_al)
+println("max-compliance design: volume = $(round(volf(x_al), digits=3)), max C = $(round(maximum(C), digits=1)), C_t = $(round(C_t, digits=1))")
+```
+
+`NonconvexPercival` provides this augmented-Lagrangian method as a built-in
+solver. The same problem can be posed directly with a vector constraint and
+solved by `PercivalAlg` (no manual multiplier loop):
+
+```{julia}
+#| eval: false
+model = Model(volf)
+addvar!(model, zeros(length(solver.vars)), ones(length(solver.vars)))
+add_ineq_constraint!(model, x -> Cfun(x) ./ C_t .- 1)
+x_al2 = optimize(model, PercivalAlg(), x_al;
+    options=PercivalOptions(; max_iter=40, subsolver_max_eval=500)).minimizer
+```
+
+## Visualize the designs
+
+```{julia}
+#| label: fig-stochastic-mean
+#| fig-cap: "Robust design minimizing mean compliance over random tip loads"
+fig1 = visualize(problem.problem; static=true, topology=filter(PseudoDensities(x_mean)).x)
+display_app(fig1)
+```
+
+```{julia}
+#| label: fig-stochastic-meanstd
+#| fig-cap: "Design minimizing mean + 0.25·std, trading a bit of average stiffness for consistency across the load distribution"
+fig2 = visualize(problem.problem; static=true, topology=filter(PseudoDensities(x_meanstd)).x)
+display_app(fig2)
+```
+
+```{julia}
+#| label: fig-stochastic-al
+#| fig-cap: "Minimum-volume design subject to a maximum-compliance bound (augmented Lagrangian)"
+fig3 = visualize(problem.problem; static=true, topology=filter(PseudoDensities(x_al)).x)
+display_app(fig3)
+```
+
+## Practical guidance
+
+- **Exact** (`:exact`, `:exact_svd`): use when the number of scenarios is small
+  (≤ a few dozen) or the scenarios are strongly correlated. `:exact_svd` is
+  the better default — it gives the same answer with fewer solves.
+- **Hutchinson** (`:trace`): use for large ensembles where solving every
+  scenario is prohibitive. Accuracy improves with `nv`, but so does cost.
+- **Hadamard** (`:trace` with `sample_method=:hadamard`): deterministic and
+  smoother than Hutchinson; pick `nv` a power of two.
+- `BlockComplianceFun` exposes the per-scenario values, so it is the tool for
+  statistics beyond the mean (standard deviation, CVaR-style combinations) and
+  for the maximum-compliance constraint handled by the augmented Lagrangian
+  method.
+
+## References
+
+- [TarekRay2021](https://arxiv.org/abs/2103.04594): Tarek, M. & Ray, T.
+  (2021). *Robust and stochastic compliance-based topology optimization with
+  finitely many loading scenarios*. Structural and Multidisciplinary
+  Optimization. DOI: [10.1007/s00158-021-03022-x](https://doi.org/10.1007/s00158-021-03022-x).
+- [TarekRay2022](https://arxiv.org/abs/2108.03654): Tarek, M. & Ray, T.
+  (2022). *Approximation schemes for stochastic compliance-based topology
+  optimization with many loading scenarios*. Structural and Multidisciplinary
+  Optimization. DOI: [10.1007/s00158-022-03221-0](https://doi.org/10.1007/s00158-022-03221-0).

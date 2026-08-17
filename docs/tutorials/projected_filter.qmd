@@ -1,0 +1,169 @@
+---
+title: "Projected Density Filter for Crisp Black/White Designs"
+toc: true
+---
+
+## Description
+
+A plain density filter smooths the design and removes checkerboards, but it
+leaves a wide band of intermediate ("gray") densities. `ProjectedDensityFilterFun`
+combines the density filter with a nonlinear projection (Heaviside or Sigmoid)
+that pushes filtered densities toward 0 or 1, producing near-binary designs —
+the standard approach for eliminating gray elements (Sigmund, 2007).
+
+This tutorial compares the plain filter with Heaviside and Sigmoid projections,
+and shows how to continue the projection steepness parameter `β` during the
+optimization.
+
+## Setup
+
+```{julia}
+#| output: false
+using TopOpt, LinearAlgebra
+using WGLMakie
+WGLMakie.activate!(; resize_to=:parent)
+using Bonito
+if haskey(ENV, "QUARTO_PROJECT_DIR")
+    Bonito.Page(exportable=true, offline=true)
+else
+    Bonito.browser_display()
+end
+display_app(app) = display(app)
+```
+
+`WGLMakie.activate!(; resize_to=:parent)` selects the browser renderer and fills the Quarto output column. `Bonito.Page(exportable=true, offline=true)` embeds the assets needed by `visualize(...; static=true)` in the Quarto output, so the visualization does not require a running Julia process.
+
+## The projection functions
+
+`HeavisideProjectionFun(β)` and `SigmoidProjectionFun(β)` both map `[0, 1]`
+toward `{0, 1}`, with larger `β` giving a sharper transition:
+
+```{julia}
+#| output: true
+for β in (1.0, 4.0, 16.0)
+    H = HeavisideProjectionFun(β)
+    S = SigmoidProjectionFun(β)
+    println("β=$β:  Heaviside(0.2)=$(round(H(0.2), digits=3)), $(round(H(0.8), digits=3));  Sigmoid(0.2)=$(round(S(0.2), digits=3)), $(round(S(0.8), digits=3))")
+end
+```
+
+## Define the problem
+
+```{julia}
+#| output: false
+E, ν, f = 1.0, 0.3, 1.0
+nels = (60, 20)
+problem = HalfMBB(nels, (1.0, 1.0), E, ν, f)
+solver = FEASolver(DirectSolver, problem; xmin=0.001, penalty=PowerPenaltyFun(3.0))
+comp = ComplianceFun(solver)
+volfrac = VolumeFun(solver)
+
+V = 0.5
+rmin = 2.0
+N = prod(nels)
+x0 = fill(V, N)
+
+grayness(x) = count(0.1 .< x .< 0.9) / length(x)
+
+function solve_with(filt)
+    obj = x -> comp(filt(PseudoDensities(x)))
+    constr = x -> volfrac(filt(PseudoDensities(x))) - V
+    model = Model(obj)
+    addvar!(model, zeros(N), ones(N))
+    add_ineq_constraint!(model, constr)
+    r = optimize(model, MMA87(), x0;
+        options=MMAOptions(; maxiter=120, tol=Tolerance(; kkt=1e-4, f=1e-4)))
+    topo = filt(PseudoDensities(r.minimizer)).x
+    println("compliance = $(round(obj(r.minimizer), digits=2)), vol = $(round(constr(r.minimizer) + V, digits=3)), gray = $(round(grayness(topo), digits=3))")
+    return topo
+end
+```
+
+## Plain density filter (baseline)
+
+```{julia}
+#| output: true
+plain_filter = DensityFilterFun(solver; rmin=rmin)
+topo_plain = solve_with(plain_filter)
+```
+
+```{julia}
+#| label: fig-proj-plain
+#| fig-cap: "Plain density filter: smooth design with visible gray boundary layer"
+fig_plain = visualize(problem; static=true, topology=topo_plain)
+display_app(fig_plain)
+```
+
+## Heaviside projection
+
+`ProjectedDensityFilterFun(solver; rmin, projection=...)` applies the filter
+then the projection. The default projection is `HeavisideProjectionFun(10.0)`.
+
+```{julia}
+#| output: true
+heaviside_filter = ProjectedDensityFilterFun(solver; rmin=rmin, projection=HeavisideProjectionFun(8.0))
+topo_h = solve_with(heaviside_filter)
+```
+
+```{julia}
+#| label: fig-proj-heaviside
+#| fig-cap: "Heaviside projection: near-binary design with far fewer gray elements"
+fig_h = visualize(problem; static=true, topology=topo_h)
+display_app(fig_h)
+```
+
+## Sigmoid projection
+
+A sigmoid projection is a smoother alternative; for the same `β` it produces a
+less aggressive threshold around the midpoint.
+
+```{julia}
+#| output: true
+sigmoid_filter = ProjectedDensityFilterFun(solver; rmin=rmin, projection=SigmoidProjectionFun(8.0))
+topo_s = solve_with(sigmoid_filter)
+```
+
+```{julia}
+#| label: fig-proj-sigmoid
+#| fig-cap: "Sigmoid projection: similar topology with a smoother 0/1 transition"
+fig_s = visualize(problem; static=true, topology=topo_s)
+display_app(fig_s)
+```
+
+## Continuation on the projection parameter β
+
+Starting with a mild projection (`β = 2`) and ramping it up sharpens the design
+gradually, avoiding the premature lock-in that a large fixed `β` can cause. The
+projection struct is mutable, so we update `β` in place between solves.
+
+```{julia}
+#| output: true
+projection = HeavisideProjectionFun(2.0)
+filt = ProjectedDensityFilterFun(solver; rmin=rmin, projection=projection)
+obj = x -> comp(filt(PseudoDensities(x)))
+constr = x -> volfrac(filt(PseudoDensities(x))) - V
+model = Model(obj)
+addvar!(model, zeros(N), ones(N))
+add_ineq_constraint!(model, constr)
+
+x = copy(x0)
+for β in (2.0, 4.0, 8.0, 16.0)
+    projection.β = β
+    r = optimize(model, MMA87(), x;
+        options=MMAOptions(; maxiter=60, tol=Tolerance(; kkt=1e-3, f=1e-3)))
+    x = r.minimizer
+    topo = filt(PseudoDensities(x)).x
+    println("β=$β: compliance = $(round(obj(x), digits=2)), gray = $(round(grayness(topo), digits=3))")
+end
+topo_cont = filt(PseudoDensities(x)).x
+```
+
+```{julia}
+#| label: fig-proj-cont
+#| fig-cap: "β-continuation (2 → 4 → 8 → 16): grayness decreases as the projection sharpens"
+fig_cont = visualize(problem; static=true, topology=topo_cont)
+display_app(fig_cont)
+```
+
+The reported grayness drops as `β` increases, confirming that the projection
+continuation drives the design toward a crisp 0/1 distribution.

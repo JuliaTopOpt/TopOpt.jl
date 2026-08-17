@@ -1,0 +1,153 @@
+---
+title: "Minimizing Volume Subject to a Compliance Constraint"
+toc: true
+---
+
+## Description
+
+Compliance minimization with a volume constraint (the standard SIMP problem) is
+covered throughout these tutorials. Its dual formulation — **minimize the
+volume subject to an upper bound on the compliance** — is equally useful: it
+answers "what is the least material that still gives the required stiffness?"
+instead of "what is the stiffest design for a fixed material budget?".
+
+This tutorial solves the compliance-constrained volume minimization problem on
+a continuum cantilever and on 2D and 3D trusses, following the WCSMO-14
+benchmark demos.
+
+## Setup
+
+```{julia}
+#| output: false
+using TopOpt, LinearAlgebra
+using WGLMakie
+WGLMakie.activate!(; resize_to=:parent)
+using Bonito
+if haskey(ENV, "QUARTO_PROJECT_DIR")
+    Bonito.Page(exportable=true, offline=true)
+else
+    Bonito.browser_display()
+end
+display_app(app) = display(app)
+```
+
+`WGLMakie.activate!(; resize_to=:parent)` selects the browser renderer and fills the Quarto output column. `Bonito.Page(exportable=true, offline=true)` embeds the assets needed by `visualize(...; static=true)` in the Quarto output, so the visualization does not require a running Julia process.
+
+## Continuum cantilever
+
+We minimize the volume fraction subject to a compliance bound. The bound is
+calibrated from the fully solid design, so it is a meaningful stiffness
+requirement rather than an arbitrary number.
+
+```{julia}
+#| output: false
+E, ν, f = 1.0, 0.3, 1.0
+rmin, xmin = 4.0, 0.0001
+nels = (80, 20)
+N = prod(nels)
+
+problem = PointLoadCantilever(nels, (1.0, 1.0), E, ν, f)
+solver = FEASolver(DirectSolver, problem; xmin=xmin)
+filter = DensityFilterFun(solver; rmin=rmin)
+comp = ComplianceFun(solver)
+volfrac = VolumeFun(solver)
+
+# Compliance bound: the solid cantilever's compliance, relaxed so a design
+# using less material is feasible.
+C_t = 8.0 * comp(filter(PseudoDensities(ones(N))))
+
+obj = x -> volfrac(filter(PseudoDensities(x)))
+constr = x -> comp(filter(PseudoDensities(x))) - C_t
+
+setpenalty!(solver, 4.0)
+model = Model(obj)
+addvar!(model, zeros(N), ones(N))
+add_ineq_constraint!(model, constr)
+r1 = optimize(model, MMA87(; dualoptimizer=ConjugateGradient()), ones(N);
+    options=MMAOptions(; maxiter=200, tol=Tolerance(; kkt=1e-4, x=1e-4, f=1e-4)))
+println("cantilever: volume = $(round(obj(r1.minimizer), digits=3)), compliance = $(round(constr(r1.minimizer) + C_t, digits=1))")
+```
+
+```{julia}
+#| label: fig-volmin-cantilever
+#| fig-cap: "Cantilever: minimum volume subject to a compliance bound"
+fig1 = visualize(problem; static=true, topology=filter(PseudoDensities(r1.minimizer)).x)
+display_app(fig1)
+```
+
+## 2D truss
+
+The same formulation applies to trusses, where the design variables are the
+bar cross-sections.
+
+```{julia}
+#| output: false
+node_points, elements, mats, crosssecs, fixities, load_cases = load_truss_json(
+    joinpath(@__DIR__, "tim_2d.json")
+)
+ncells = length(elements)
+loads = load_cases["0"]  # horizontal load
+
+problem_2d = TrussProblem(node_points, elements, loads, fixities, mats, crosssecs)
+solver_2d = FEASolver(DirectSolver, problem_2d; xmin=0.0001)
+comp_2d = ComplianceFun(solver_2d)
+
+C_t2 = 2.0 * comp_2d(PseudoDensities(ones(ncells)))
+obj2 = x -> sum(x) / length(x)
+constr2 = x -> comp_2d(PseudoDensities(x)) - C_t2
+
+setpenalty!(solver_2d, 4.0)
+model2 = Model(obj2)
+addvar!(model2, zeros(ncells), ones(ncells))
+add_ineq_constraint!(model2, constr2)
+r2 = optimize(model2, MMA87(; dualoptimizer=ConjugateGradient()), ones(ncells);
+    options=MMAOptions(; maxiter=200, tol=Tolerance(; kkt=1e-4, f=1e-4)))
+println("2D truss: volume = $(round(obj2(r2.minimizer), digits=3)), compliance = $(round(constr2(r2.minimizer) + C_t2, digits=2))")
+```
+
+```{julia}
+#| label: fig-volmin-truss2d
+#| fig-cap: "2D truss: minimum volume subject to a compliance bound"
+fig2 = visualize(problem_2d; static=true, u=solver_2d.u, topology=r2.minimizer, default_exagg_scale=0.0)
+display_app(fig2)
+```
+
+## 3D truss
+
+```{julia}
+#| output: false
+node_points3, elements3, mats3, crosssecs3, fixities3, load_cases3 = load_truss_json(
+    joinpath(@__DIR__, "tim_3d.json")
+)
+ncells3 = length(elements3)
+loads3 = load_cases3["0"]
+
+problem_3d = TrussProblem(node_points3, elements3, loads3, fixities3, mats3, crosssecs3)
+solver_3d = FEASolver(DirectSolver, problem_3d; xmin=0.0001)
+comp_3d = ComplianceFun(solver_3d)
+
+C_t3 = 2.0 * comp_3d(PseudoDensities(ones(ncells3)))
+obj3 = x -> sum(x) / length(x)
+constr3 = x -> comp_3d(PseudoDensities(x)) - C_t3
+
+setpenalty!(solver_3d, 4.0)
+model3 = Model(obj3)
+addvar!(model3, zeros(ncells3), ones(ncells3))
+add_ineq_constraint!(model3, constr3)
+r3 = optimize(model3, MMA87(; dualoptimizer=ConjugateGradient()), ones(ncells3);
+    options=MMAOptions(; maxiter=200, tol=Tolerance(; kkt=1e-4, f=1e-4)))
+println("3D truss: volume = $(round(obj3(r3.minimizer), digits=3)), compliance = $(round(constr3(r3.minimizer) + C_t3, digits=2))")
+```
+
+```{julia}
+#| label: fig-volmin-truss3d
+#| fig-cap: "3D truss: minimum volume subject to a compliance bound"
+fig3 = visualize(problem_3d; static=true, u=solver_3d.u, topology=r3.minimizer, default_exagg_scale=0.0)
+display_app(fig3)
+```
+
+In all three cases the optimizer removes material until the compliance bound
+becomes active, leaving only the members needed to meet the stiffness
+requirement. The same pattern composes with any differentiable objective: swap
+`obj` for the volume fraction and the constraint for any upper-bound function
+(compliance, stress, displacement, ...).

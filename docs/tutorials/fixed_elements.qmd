@@ -1,0 +1,125 @@
+---
+title: "Fixed Element Regions with FixedElementProjectorFun"
+toc: true
+---
+
+## Description
+
+Many practical designs reserve parts of the domain: a solid region where a
+load is applied or a bolt hole is drilled, a void region that must stay empty
+for access, or a keep-out zone near another component. `FixedElementProjectorFun`
+maps *free* design variables to a *full* density vector in which selected
+elements are pinned to solid (`black`, density 1) or void (`white`, density 0),
+so the optimizer only varies the remaining elements.
+
+This tutorial demonstrates the workflow on a cantilever, fixing the support
+column and the load-application region as solid and carving a keep-out void,
+then running a SIMP optimization over the free elements.
+
+## Setup
+
+```{julia}
+#| output: false
+using TopOpt, LinearAlgebra
+using WGLMakie
+WGLMakie.activate!(; resize_to=:parent)
+using Bonito
+if haskey(ENV, "QUARTO_PROJECT_DIR")
+    Bonito.Page(exportable=true, offline=true)
+else
+    Bonito.browser_display()
+end
+display_app(app) = display(app)
+```
+
+`WGLMakie.activate!(; resize_to=:parent)` selects the browser renderer and fills the Quarto output column. `Bonito.Page(exportable=true, offline=true)` embeds the assets needed by `visualize(...; static=true)` in the Quarto output, so the visualization does not require a running Julia process.
+
+## Define the problem and the fixed regions
+
+```{julia}
+#| output: false
+E, ν, f = 1.0, 0.3, 1.0
+nels = (40, 20)
+problem = PointLoadCantilever(nels, (1.0, 1.0), E, ν, f)
+nx, ny = nels
+nel = getncells(problem)
+
+# Cells are ordered row-major (x fastest): index = (row-1)*nx + col.
+cell_block(xr, yr) = [r * nx + c for r in (yr[1]-1):(yr[2]-1) for c in xr]
+
+# Solid (black): the left support column and the right load column.
+black_cells = cell_block(1:1, 1:ny)
+# Void (white): a rectangular keep-out hole in the upper-right quadrant.
+white_cells = cell_block(30:40, 13:20)
+
+projector = get_fixed_element_projector(problem, black_cells, white_cells)
+nfree = get_free_variable_count(projector)
+println("fixed solid: $(count(projector.black)), fixed void: $(count(projector.white)), free: $nfree")
+```
+
+The projector throws an `ArgumentError` if the same element is listed as both
+black and white, or if the free-variable vector has the wrong length — a
+fail-fast guard against silent mis-projection.
+
+## Objective and constraint over free variables
+
+```{julia}
+#| output: false
+solver = FEASolver(DirectSolver, problem; xmin=0.001, penalty=PowerPenaltyFun(3.0))
+comp = ComplianceFun(solver)
+volfrac = VolumeFun(solver)
+
+V = 0.4
+obj = x_free -> comp(PseudoDensities(projector(x_free)))
+constr = x_free -> volfrac(PseudoDensities(projector(x_free))) - V
+```
+
+Note that the volume constraint counts the fixed solid elements too: the fixed
+regions already consume part of the volume budget, so the optimizer spreads the
+remainder over the free elements.
+
+## Check the initial layout
+
+```{julia}
+#| output: true
+x0_free = fill(0.5, nfree)
+ρ0 = projector(x0_free)
+println("fixed black respected: $(all(ρ0[projector.black] .== 1.0))")
+println("fixed white respected: $(all(ρ0[projector.white] .== 0.0))")
+println("free elements at 0.5:  $(all(ρ0[projector.free] .== 0.5))")
+```
+
+```{julia}
+#| label: fig-fixed-init
+#| fig-cap: "Initial layout: support/load columns solid, keep-out region void, free elements at 0.5"
+fig0 = visualize(problem; static=true, topology=ρ0)
+display_app(fig0)
+```
+
+## Run SIMP optimization over the free elements
+
+```{julia}
+#| output: true
+model = Model(obj)
+addvar!(model, zeros(nfree), ones(nfree))
+add_ineq_constraint!(model, constr)
+r = optimize(model, MMA87(), x0_free;
+    options=MMAOptions(; maxiter=150, tol=Tolerance(; kkt=1e-4, f=1e-4)))
+x_opt = projector(r.minimizer)
+println("final compliance = $(round(obj(r.minimizer), digits=3)), volume = $(round(constr(r.minimizer) + V, digits=3))")
+println("fixed regions still respected: $(all(x_opt[projector.black] .== 1.0) && all(x_opt[projector.white] .== 0.0))")
+```
+
+## Visualize the result
+
+```{julia}
+#| label: fig-fixed-opt
+#| fig-cap: "Optimized cantilever with fixed support/load columns and a keep-out hole"
+fig = visualize(problem; static=true, topology=x_opt)
+display_app(fig)
+```
+
+The design loads the fixed solid columns at support and tip and routes material
+around the keep-out hole, leaving it empty. Gradients flow only through the
+free elements: the projector's `rrule` returns zero cotangent on black/white
+elements, so the fixed regions never change.
