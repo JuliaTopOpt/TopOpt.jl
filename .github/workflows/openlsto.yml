@@ -1,0 +1,57 @@
+name: OpenLSTO
+on:
+  pull_request:
+    branches:
+      - master
+  push:
+    branches:
+      - master
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  openlsto:
+    name: "OpenLSTO reference comparison"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Build C++ OpenLSTO reference
+        run: |
+          git clone --depth 1 https://github.com/M2DOLab/OpenLSTO.git /tmp/OpenLSTO
+          curl -sL -o /tmp/eigen.tar.gz https://gitlab.com/libeigen/eigen/-/archive/3.4.0/eigen-3.4.0.tar.gz
+          tar xzf /tmp/eigen.tar.gz -C /tmp
+          # The vendored Eigen 3.3 does not compile with a modern GCC, so
+          # replace it with 3.4.0 to build the demo on the CI runner.
+          rm -rf /tmp/OpenLSTO/vendor/eigen3/Eigen
+          cp -r /tmp/eigen-3.4.0/Eigen /tmp/OpenLSTO/vendor/eigen3/Eigen
+          cd /tmp/OpenLSTO/projects/compliance
+          make -j"$(nproc)"
+          g++ -std=c++14 -O3 -w -fopenmp \
+            -I../../M2DO_FEA/include -I../../M2DO_LSM/include \
+            -o /tmp/compliance_driver \
+            "$GITHUB_WORKSPACE/test/OpenLSTO/compliance_driver.cpp" \
+            ../../M2DO_FEA/bin/*.o
+          /tmp/compliance_driver 40 > "$GITHUB_WORKSPACE/reference_40x20.txt"
+
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: '1'
+          arch: x64
+
+      - uses: julia-actions/cache@v2
+        with:
+          cache-name: openlsto
+          cache-artifacts: true
+          cache-packages: true
+          cache-compiled: true
+
+      - name: Instantiate test environment
+        run: julia --project=test -e 'using Pkg; Pkg.develop(PackageSpec(path=".")); Pkg.instantiate()'
+
+      - name: Compare Julia port against C++ reference
+        env:
+          OPENLSTO_REFERENCE: ${{ github.workspace }}/reference_40x20.txt
+        run: julia --project=test --color=yes -e 'include("test/OpenLSTO/test_compliance_reference.jl")'
