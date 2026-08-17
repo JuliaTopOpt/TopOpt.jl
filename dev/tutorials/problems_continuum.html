@@ -161,6 +161,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#d-l-beam-problem" id="toc-d-l-beam-problem" class="nav-link" data-scroll-target="#d-l-beam-problem">2D L-Beam Problem</a></li>
   <li><a href="#d-tie-beam-problem" id="toc-d-tie-beam-problem" class="nav-link" data-scroll-target="#d-tie-beam-problem">2D Tie-Beam Problem</a></li>
   <li><a href="#reading-inp-abaqus-files" id="toc-reading-inp-abaqus-files" class="nav-link" data-scroll-target="#reading-inp-abaqus-files">Reading INP (Abaqus) Files</a></li>
+  <li><a href="#defining-a-custom-problem-type" id="toc-defining-a-custom-problem-type" class="nav-link" data-scroll-target="#defining-a-custom-problem-type">Defining a custom problem type</a></li>
   </ul>
 </nav>
 </nav>
@@ -296,6 +297,138 @@ height .          .
 <li>Import into TopOpt.jl for optimization</li>
 </ol>
 <p>The <code>.inp</code> file contains nodes, elements, materials, BCs, and loads.</p>
+</section>
+<section id="defining-a-custom-problem-type" class="level2">
+<h2 class="anchored" data-anchor-id="defining-a-custom-problem-type">Defining a custom problem type</h2>
+<p>Beyond the built-in benchmarks, you can define your own continuum problem by subtyping <code>StiffnessTopOptProblem</code> and providing a grid, a <code>ConstraintHandler</code>, and a <code>Metadata</code>. The example below defines a cantilever fixed on the left and loaded at the top-center — a modification of <code>PointLoadCantilever</code> that illustrates each step: build a <code>RectilinearGrid</code>, mark node sets with <code>addnodeset!</code>, create the displacement <code>DofHandler</code> and <code>ConstraintHandler</code>, and assemble the <code>Metadata</code> and load dictionary.</p>
+<div id="16" class="cell" data-execution_count="1">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb9"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> TTP <span class="op">=</span> TopOpt.TopOptProblems</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> Ferrite <span class="op">=</span> TTP.Ferrite</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="kw">struct</span> CustomCantilever{dim,T,N,M,Tr,Tc,Tf,Tm} <span class="op">&lt;:</span><span class="dt"> TTP.StiffnessTopOptProblem{dim,T}</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>    rect_grid<span class="op">::</span><span class="dt">Tr</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>    E<span class="op">::</span><span class="dt">T</span></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>    ν<span class="op">::</span><span class="dt">T</span></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>    ch<span class="op">::</span><span class="dt">Tc</span></span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>    force<span class="op">::</span><span class="dt">T</span></span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>    force_dof<span class="op">::</span><span class="dt">Tf</span></span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>    metadata<span class="op">::</span><span class="dt">Tm</span></span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a><span class="kw">end</span></span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a><span class="kw">function</span> <span class="fu">CustomCantilever</span>(nels, sizes, E<span class="op">=</span><span class="fl">1.0</span>, ν<span class="op">=</span><span class="fl">0.3</span>, force<span class="op">=</span><span class="fl">1.0</span>)</span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a>    T <span class="op">=</span> <span class="fu">float</span>(<span class="fu">promote_type</span>(<span class="fu">eltype</span>(sizes), <span class="fu">typeof</span>(E), <span class="fu">typeof</span>(ν), <span class="fu">typeof</span>(force)))</span>
+<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a>    rect_grid <span class="op">=</span> TTP.<span class="fu">RectilinearGrid</span>(nels, <span class="fu">T</span>.(sizes); celltype<span class="op">=:</span>Linear)</span>
+<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Fixed support on the left edge</span></span>
+<span id="cb9-19"><a href="#cb9-19" aria-hidden="true" tabindex="-1"></a>    <span class="fu">haskey</span>(rect_grid.grid.nodesets, <span class="st">"fixed_all"</span>) <span class="op">&amp;&amp;</span> <span class="fu">pop!</span>(rect_grid.grid.nodesets, <span class="st">"fixed_all"</span>)</span>
+<span id="cb9-20"><a href="#cb9-20" aria-hidden="true" tabindex="-1"></a>    TTP.<span class="fu">addnodeset!</span>(rect_grid.grid, <span class="st">"fixed_all"</span>, x <span class="op">-&gt;</span> TTP.<span class="fu">left</span>(rect_grid, x))</span>
+<span id="cb9-21"><a href="#cb9-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-22"><a href="#cb9-22" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Downward load at the top-center</span></span>
+<span id="cb9-23"><a href="#cb9-23" aria-hidden="true" tabindex="-1"></a>    <span class="fu">haskey</span>(rect_grid.grid.nodesets, <span class="st">"top_load"</span>) <span class="op">&amp;&amp;</span> <span class="fu">pop!</span>(rect_grid.grid.nodesets, <span class="st">"top_load"</span>)</span>
+<span id="cb9-24"><a href="#cb9-24" aria-hidden="true" tabindex="-1"></a>    TTP.<span class="fu">addnodeset!</span>(rect_grid.grid, <span class="st">"top_load"</span>, x <span class="op">-&gt;</span> TTP.<span class="fu">top</span>(rect_grid, x) <span class="op">&amp;&amp;</span> TTP.<span class="fu">middlex</span>(rect_grid, x))</span>
+<span id="cb9-25"><a href="#cb9-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-26"><a href="#cb9-26" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Displacement field (2 DOFs/node) and Dirichlet BC</span></span>
+<span id="cb9-27"><a href="#cb9-27" aria-hidden="true" tabindex="-1"></a>    dh <span class="op">=</span> Ferrite.<span class="fu">DofHandler</span>(rect_grid.grid)</span>
+<span id="cb9-28"><a href="#cb9-28" aria-hidden="true" tabindex="-1"></a>    refshape <span class="op">=</span> Ferrite.<span class="fu">getrefshape</span>(<span class="fu">eltype</span>(rect_grid.grid.cells))</span>
+<span id="cb9-29"><a href="#cb9-29" aria-hidden="true" tabindex="-1"></a>    Ferrite.<span class="fu">add!</span>(dh, <span class="op">:</span>u, Ferrite.<span class="fu">Lagrange</span><span class="dt">{refshape,1}</span>()<span class="op">^</span><span class="fl">2</span>)</span>
+<span id="cb9-30"><a href="#cb9-30" aria-hidden="true" tabindex="-1"></a>    Ferrite.<span class="fu">close!</span>(dh)</span>
+<span id="cb9-31"><a href="#cb9-31" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-32"><a href="#cb9-32" aria-hidden="true" tabindex="-1"></a>    ch <span class="op">=</span> Ferrite.<span class="fu">ConstraintHandler</span>(dh)</span>
+<span id="cb9-33"><a href="#cb9-33" aria-hidden="true" tabindex="-1"></a>    Ferrite.<span class="fu">add!</span>(</span>
+<span id="cb9-34"><a href="#cb9-34" aria-hidden="true" tabindex="-1"></a>        ch,</span>
+<span id="cb9-35"><a href="#cb9-35" aria-hidden="true" tabindex="-1"></a>        Ferrite.<span class="fu">Dirichlet</span>(</span>
+<span id="cb9-36"><a href="#cb9-36" aria-hidden="true" tabindex="-1"></a>            <span class="op">:</span>u, Ferrite.<span class="fu">getnodeset</span>(rect_grid.grid, <span class="st">"fixed_all"</span>), (x, t) <span class="op">-&gt;</span> <span class="fu">zeros</span>(T, <span class="fl">2</span>), <span class="fu">collect</span>(<span class="fl">1</span><span class="op">:</span><span class="fl">2</span>)</span>
+<span id="cb9-37"><a href="#cb9-37" aria-hidden="true" tabindex="-1"></a>        ),</span>
+<span id="cb9-38"><a href="#cb9-38" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb9-39"><a href="#cb9-39" aria-hidden="true" tabindex="-1"></a>    Ferrite.<span class="fu">close!</span>(ch)</span>
+<span id="cb9-40"><a href="#cb9-40" aria-hidden="true" tabindex="-1"></a>    Ferrite.<span class="fu">update!</span>(ch, <span class="fu">T</span>(<span class="fl">0</span>))</span>
+<span id="cb9-41"><a href="#cb9-41" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-42"><a href="#cb9-42" aria-hidden="true" tabindex="-1"></a>    metadata <span class="op">=</span> TTP.<span class="fu">Metadata</span>(dh)</span>
+<span id="cb9-43"><a href="#cb9-43" aria-hidden="true" tabindex="-1"></a>    fnode <span class="op">=</span> <span class="fu">Tuple</span>(Ferrite.<span class="fu">getnodeset</span>(rect_grid.grid, <span class="st">"top_load"</span>))[<span class="fl">1</span>]</span>
+<span id="cb9-44"><a href="#cb9-44" aria-hidden="true" tabindex="-1"></a>    force_dof <span class="op">=</span> metadata.node_dofs[<span class="fl">2</span>, fnode]</span>
+<span id="cb9-45"><a href="#cb9-45" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-46"><a href="#cb9-46" aria-hidden="true" tabindex="-1"></a>    N <span class="op">=</span> TTP.<span class="fu">nnodespercell</span>(rect_grid)</span>
+<span id="cb9-47"><a href="#cb9-47" aria-hidden="true" tabindex="-1"></a>    M <span class="op">=</span> TTP.<span class="fu">nfacespercell</span>(rect_grid)</span>
+<span id="cb9-48"><a href="#cb9-48" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="fu">CustomCantilever</span><span class="dt">{2,T,N,M,typeof(rect_grid),typeof(ch),typeof(force_dof),typeof(metadata)}</span>(</span>
+<span id="cb9-49"><a href="#cb9-49" aria-hidden="true" tabindex="-1"></a>        rect_grid, E, ν, ch, force, force_dof, metadata</span>
+<span id="cb9-50"><a href="#cb9-50" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb9-51"><a href="#cb9-51" aria-hidden="true" tabindex="-1"></a><span class="kw">end</span></span>
+<span id="cb9-52"><a href="#cb9-52" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-53"><a href="#cb9-53" aria-hidden="true" tabindex="-1"></a><span class="co"># Trait methods the FEA assembly relies on</span></span>
+<span id="cb9-54"><a href="#cb9-54" aria-hidden="true" tabindex="-1"></a>TTP.<span class="fu">nnodespercell</span>(p<span class="op">::</span><span class="dt">CustomCantilever</span>) <span class="op">=</span> TTP.<span class="fu">nnodespercell</span>(p.rect_grid)</span>
+<span id="cb9-55"><a href="#cb9-55" aria-hidden="true" tabindex="-1"></a><span class="kw">function</span> TTP.<span class="fu">getcloaddict</span>(p<span class="op">::</span><span class="dt">CustomCantilever{2,T}</span>) <span class="kw">where</span> {T}</span>
+<span id="cb9-56"><a href="#cb9-56" aria-hidden="true" tabindex="-1"></a>    fnode <span class="op">=</span> <span class="fu">Tuple</span>(Ferrite.<span class="fu">getnodeset</span>(p.rect_grid.grid, <span class="st">"top_load"</span>))[<span class="fl">1</span>]</span>
+<span id="cb9-57"><a href="#cb9-57" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="fu">Dict</span><span class="dt">{Int,Vector{T}}</span>(fnode <span class="op">=&gt;</span> [<span class="fl">0.0</span>, <span class="op">-</span>p.force])</span>
+<span id="cb9-58"><a href="#cb9-58" aria-hidden="true" tabindex="-1"></a><span class="kw">end</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>The two trait methods are the only glue required beyond the struct itself: the remaining accessors (<code>getdim</code>, <code>floattype</code>, <code>getE</code>, <code>getν</code>, <code>getdh</code>, …) have defaults on <code>StiffnessTopOptProblem</code>. The custom problem is then used exactly like a built-in one:</p>
+<div id="18" class="cell" data-execution_count="1">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb10"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>problem <span class="op">=</span> <span class="fu">CustomCantilever</span>((<span class="fl">40</span>, <span class="fl">20</span>), (<span class="fl">1.0</span>, <span class="fl">1.0</span>), E, ν, f)</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>solver <span class="op">=</span> <span class="fu">FEASolver</span>(DirectSolver, problem; xmin<span class="op">=</span><span class="fl">0.001</span>, penalty<span class="op">=</span><span class="fu">PowerPenaltyFun</span>(<span class="fl">3.0</span>))</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>filter <span class="op">=</span> <span class="fu">DensityFilterFun</span>(solver; rmin<span class="op">=</span><span class="fl">2.0</span>)</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>comp <span class="op">=</span> <span class="fu">ComplianceFun</span>(solver)</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>volfrac <span class="op">=</span> <span class="fu">VolumeFun</span>(solver)</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>obj <span class="op">=</span> x <span class="op">-&gt;</span> <span class="fu">comp</span>(<span class="fu">filter</span>(<span class="fu">PseudoDensities</span>(x)))</span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>constr <span class="op">=</span> x <span class="op">-&gt;</span> <span class="fu">volfrac</span>(<span class="fu">filter</span>(<span class="fu">PseudoDensities</span>(x))) <span class="op">-</span> <span class="fl">0.5</span></span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>model <span class="op">=</span> <span class="fu">Model</span>(obj)</span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a><span class="fu">addvar!</span>(model, <span class="fu">zeros</span>(<span class="fu">getncells</span>(problem)), <span class="fu">ones</span>(<span class="fu">getncells</span>(problem)))</span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a><span class="fu">add_ineq_constraint!</span>(model, constr)</span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a>r <span class="op">=</span> <span class="fu">optimize</span>(model, <span class="fu">MMA87</span>(), <span class="fu">fill</span>(<span class="fl">0.5</span>, <span class="fu">getncells</span>(problem));</span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a>    options<span class="op">=</span><span class="fu">MMAOptions</span>(; maxiter<span class="op">=</span><span class="fl">100</span>, tol<span class="op">=</span><span class="fu">Tolerance</span>(; kkt<span class="op">=</span><span class="fl">1e-4</span>, f<span class="op">=</span><span class="fl">1e-4</span>)))</span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a><span class="fu">println</span>(<span class="st">"custom problem: compliance = </span><span class="sc">$</span>(<span class="fu">round</span>(<span class="fu">obj</span>(r.minimizer), digits<span class="op">=</span><span class="fl">2</span>))<span class="st">, volume = </span><span class="sc">$</span>(<span class="fu">round</span>(<span class="fu">constr</span>(r.minimizer) <span class="op">+</span> <span class="fl">0.5</span>, digits<span class="op">=</span><span class="fl">3</span>))<span class="st">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<div class="ansi-escaped-output">
+<pre><span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>  iter       obj      Δobj  violation  kkt_residual  
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>     0   6.8e+01       Inf   0.0e+00   9.6e+00
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>     1   2.9e+01   3.8e+01   0.0e+00   2.4e+01
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>     2   1.4e+01   1.5e+01   0.0e+00   3.0e+00
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>     3   1.1e+01   3.4e+00   0.0e+00   5.2e-01
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>     4   9.7e+00   8.7e-01   0.0e+00   1.1e-01
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>     5   9.5e+00   2.5e-01   0.0e+00   4.4e-02
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>     6   9.4e+00   1.2e-01   0.0e+00   2.5e-02
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>     7   9.3e+00   6.6e-02   0.0e+00   1.5e-02
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>     8   9.3e+00   3.6e-02   0.0e+00   1.2e-02
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>     9   9.3e+00   1.9e-02   0.0e+00   1.1e-02
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>    10   9.3e+00   8.4e-03   0.0e+00   9.1e-03
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>    11   9.2e+00   5.0e-03   0.0e+00   8.1e-03
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>    12   9.2e+00   4.2e-03   0.0e+00   7.3e-03
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>    13   9.2e+00   3.8e-03   0.0e+00   4.6e-03
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>    14   9.2e+00   3.1e-03   0.0e+00   4.5e-03
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>    15   9.2e+00   1.8e-03   0.0e+00   3.5e-03
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>    16   9.2e+00   1.3e-03   0.0e+00   3.6e-03
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>    17   9.2e+00   8.1e-04   0.0e+00   3.2e-03
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>    18   9.2e+00   3.7e-04   0.0e+00   2.4e-03
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>    19   9.2e+00   3.1e-04   0.0e+00   1.1e-03
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>    20   9.2e+00   1.3e-04   0.0e+00   1.4e-03
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>    21   9.2e+00   9.4e-05   0.0e+00   1.4e-03
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>    22   9.2e+00   1.1e-04   0.0e+00   1.4e-03
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>    23   9.2e+00   1.3e-04   0.0e+00   1.4e-03
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>    24   9.2e+00   1.6e-04   0.0e+00   1.4e-03
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>    25   9.2e+00   1.9e-04   0.0e+00   1.4e-03
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>    26   9.2e+00   2.2e-04   0.0e+00   1.4e-03
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>    27   9.2e+00   2.5e-04   0.0e+00   1.1e-03
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>    28   9.2e+00   1.6e-04   0.0e+00   2.0e-04
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>    29   9.2e+00   2.6e-05   0.0e+00   2.2e-04
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>    30   9.2e+00   8.4e-06   0.0e+00   2.1e-04
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>    31   9.2e+00   9.2e-06   0.0e+00   2.0e-04
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>    32   9.2e+00   9.6e-06   0.0e+00   1.9e-04
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>    33   9.2e+00   9.6e-06   0.0e+00   1.9e-04
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>    34   9.2e+00   9.5e-06   0.0e+00   1.9e-04
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>    35   9.2e+00   9.1e-06   0.0e+00   1.8e-04
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>    36   9.2e+00   8.7e-06   0.0e+00   1.7e-04
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>    37   9.2e+00   8.3e-06   0.0e+00   1.7e-04
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>    38   9.2e+00   7.8e-06   0.0e+00   1.6e-04
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>    39   9.2e+00   6.5e-06   0.0e+00   1.5e-04
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>    40   9.2e+00   4.9e-06   0.0e+00   1.3e-04
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>    41   9.2e+00   3.9e-06   0.0e+00   1.2e-04
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>    42   9.2e+00   3.1e-06   0.0e+00   1.1e-04
+<span class="ansi-cyan-fg ansi-bold">[ </span><span class="ansi-cyan-fg ansi-bold">Info: </span>    43   9.2e+00   2.4e-06   0.0e+00   9.7e-05
+custom problem: compliance = 9.23, volume = 0.5
+</pre>
+</div>
+</div>
+</div>
 
 
 </section>

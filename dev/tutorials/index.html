@@ -123,8 +123,10 @@ ul.task-list li input[type="checkbox"] {
   <li><a href="#density-based-methods" id="toc-density-based-methods" class="nav-link active" data-scroll-target="#density-based-methods">Density-based methods</a></li>
   <li><a href="#heat-conduction" id="toc-heat-conduction" class="nav-link" data-scroll-target="#heat-conduction">Heat conduction</a></li>
   <li><a href="#stress-and-buckling" id="toc-stress-and-buckling" class="nav-link" data-scroll-target="#stress-and-buckling">Stress and buckling</a></li>
+  <li><a href="#stochastic-and-uncertainty" id="toc-stochastic-and-uncertainty" class="nav-link" data-scroll-target="#stochastic-and-uncertainty">Stochastic and uncertainty</a></li>
   <li><a href="#advanced-parametrization" id="toc-advanced-parametrization" class="nav-link" data-scroll-target="#advanced-parametrization">Advanced parametrization</a></li>
   <li><a href="#truss-optimization" id="toc-truss-optimization" class="nav-link" data-scroll-target="#truss-optimization">Truss optimization</a></li>
+  <li><a href="#solvers-io-and-post-processing" id="toc-solvers-io-and-post-processing" class="nav-link" data-scroll-target="#solvers-io-and-post-processing">Solvers, IO and post-processing</a></li>
   <li><a href="#problem-types" id="toc-problem-types" class="nav-link" data-scroll-target="#problem-types">Problem types</a></li>
   </ul>
 </nav>
@@ -178,6 +180,18 @@ ul.task-list li input[type="checkbox"] {
 <p><a href="tobs.html"><strong>TOBS: Topological Optimization of Binary Structures</strong></a></p>
 <p>Binary (0/1) topology optimization with sequential linearization and Cbc.jl branch-and-cut for 16,000+ variables.</p>
 </div>
+<div class="tutorial-card">
+<p><a href="penalties.html"><strong>Comparing Penalty Functions</strong></a></p>
+<p>Power, rational, hyperbolic-sine, and projected penalties: their curves, their effect on gray elements, and parameter sensitivity.</p>
+</div>
+<div class="tutorial-card">
+<p><a href="projected_filter.html"><strong>Projected Density Filter</strong></a></p>
+<p>Filter + Heaviside/Sigmoid projection for near-binary designs, with β-continuation and comparison to the plain density filter.</p>
+</div>
+<div class="tutorial-card">
+<p><a href="volume_minimization.html"><strong>Minimizing Volume Subject to a Compliance Constraint</strong></a></p>
+<p>The dual of compliance minimization: least material for a required stiffness, on continuum cantilevers and 2D/3D trusses.</p>
+</div>
 </div>
 </section>
 <section id="heat-conduction" class="level2">
@@ -210,6 +224,15 @@ ul.task-list li input[type="checkbox"] {
 </div>
 </div>
 </section>
+<section id="stochastic-and-uncertainty" class="level2">
+<h2 class="anchored" data-anchor-id="stochastic-and-uncertainty">Stochastic and uncertainty</h2>
+<div class="tutorial-grid">
+<div class="tutorial-card">
+<p><a href="stochastic.html"><strong>Stochastic Compliance Minimization</strong></a></p>
+<p>Mean and standard-deviation compliance objectives over random load scenarios, exact and randomized (Hutchinson/Hadamard/SVD) trace estimators, and a maximum-compliance-constrained problem solved with the augmented Lagrangian method.</p>
+</div>
+</div>
+</section>
 <section id="advanced-parametrization" class="level2">
 <h2 class="anchored" data-anchor-id="advanced-parametrization">Advanced parametrization</h2>
 <div class="tutorial-grid">
@@ -224,6 +247,14 @@ ul.task-list li input[type="checkbox"] {
 <div class="tutorial-card">
 <p><a href="neural2.html"><strong>Neural Network Parametrization (Adam)</strong></a></p>
 <p>6-layer MLP with Adam optimizer and continuation on penalty and constraint aggregation weight.</p>
+</div>
+<div class="tutorial-card">
+<p><a href="fixed_elements.html"><strong>Fixed Element Regions</strong></a></p>
+<p>Reserve solid/void regions with FixedElementProjectorFun — support and load regions, keep-out zones — and optimize only the free elements.</p>
+</div>
+<div class="tutorial-card">
+<p><a href="simultaneous.html"><strong>Simultaneous Analysis and Design (SAND)</strong></a></p>
+<p>Treat displacements as design variables and enforce K u = f as a constraint with the augmented Lagrangian method, using the differentiable assembly blocks.</p>
 </div>
 </div>
 </section>
@@ -244,12 +275,33 @@ ul.task-list li input[type="checkbox"] {
 </div>
 </div>
 </section>
+<section id="solvers-io-and-post-processing" class="level2">
+<h2 class="anchored" data-anchor-id="solvers-io-and-post-processing">Solvers, IO and post-processing</h2>
+<div class="tutorial-grid">
+<div class="tutorial-card">
+<p><a href="iterative_solvers.html"><strong>Iterative and Matrix-Free Solvers</strong></a></p>
+<p>DirectSolver vs CGAssemblySolver vs CGMatrixFreeSolver on a 3D problem, with preconditioning and convergence criteria.</p>
+</div>
+<div class="tutorial-card">
+<p><a href="iterative_solvers.html"><strong>Custom Linear Solver and Preconditioner</strong></a></p>
+<p>Define your own linear solver (subtyping AbstractLinearSolver) and a from-scratch Jacobi preconditioner that plugs into the FEASolver interface.</p>
+</div>
+<div class="tutorial-card">
+<p><a href="io_workflows.html"><strong>Importing Abaqus INP Files</strong></a></p>
+<p>Import a CAD/FEA mesh from an Abaqus .inp file with InpStiffness and optimize it directly.</p>
+</div>
+<div class="tutorial-card">
+<p><a href="io_workflows.html"><strong>Exporting VTK Meshes</strong></a></p>
+<p>Write optimized designs (and heat-conduction temperature fields) as .vtu files for ParaView and other post-processors.</p>
+</div>
+</div>
+</section>
 <section id="problem-types" class="level2">
 <h2 class="anchored" data-anchor-id="problem-types">Problem types</h2>
 <div class="tutorial-grid">
 <div class="tutorial-card">
 <p><a href="problems_continuum.html"><strong>Continuum Problem Types</strong></a></p>
-<p>Standard benchmarks: point load cantilever (2D/3D), Half MBB, L-beam, tie-beam, and INP file import from CAD.</p>
+<p>Standard benchmarks: point load cantilever (2D/3D), Half MBB, L-beam, tie-beam, INP import, and defining a custom problem type.</p>
 </div>
 <div class="tutorial-card">
 <p><a href="problems_truss.html"><strong>Truss Problem Types</strong></a></p>
