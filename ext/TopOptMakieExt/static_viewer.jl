@@ -83,7 +83,7 @@ function TopOpt._static_visualization(
         end
         swatch = "width:12px;height:12px;flex:0 0 auto;border-radius:50%;"
         legend_row = "display:flex;align-items:center;gap:5px;font-size:11px;color:#333;"
-        legend = D.div(
+        legend_rows = (
             D.div(
                 D.div(;
                     style=swatch *
@@ -101,12 +101,32 @@ function TopOpt._static_visualization(
                 D.div(; style=swatch * "background:$(css_color(support_arrow_color));"),
                 D.span("support arrows"; style="user-select:none;");
                 style=legend_row,
-            );
+            ),
+        )
+        # Overlay legend for the 3D viewer (the geometry is centered, so a
+        # top-right overlay does not cover it).
+        legend = D.div(
+            legend_rows...;
             style=join([
                 "position:absolute;",
                 "top:8px;",
                 "right:10px;",
                 "z-index:15;",
+                "display:flex;",
+                "flex-direction:column;",
+                "gap:4px;",
+                "padding:6px;",
+                "background:rgba(255,255,255,0.85);",
+                "border:1px solid rgba(0,0,0,0.12);",
+                "border-radius:4px;",
+                "line-height:1;",
+            ]),
+        )
+        # In-flow legend for the 2D viewer, placed below the figure so it
+        # never covers the mesh.
+        legend_flow = D.div(
+            legend_rows...;
+            style=join([
                 "display:flex;",
                 "flex-direction:column;",
                 "gap:4px;",
@@ -221,12 +241,15 @@ function TopOpt._static_visualization(
                 );
                 style=row2,
             )
-            viewport2 = D.div(
-                fig, draw_legend ? legend : no_legend; style="position:relative;"
+            viewport2 = D.div(fig; style="position:relative;")
+            legend_row2 = D.div(
+                draw_legend ? legend_flow : no_legend;
+                style="display:flex;justify-content:center;",
             )
             return D.div(
                 controls2,
                 viewport2,
+                legend_row2,
                 D.script(
                     """
                     function initialize_static_view_2d(container) {
@@ -236,6 +259,13 @@ function TopOpt._static_visualization(
                                    Bonito.can_send_to_julia &&
                                    Bonito.can_send_to_julia();
                         }
+                        // 2D has no zoom or rotation, so let wheel events
+                        // scroll the page instead of zooming the axis.
+                        container.addEventListener(
+                            'wheel',
+                            (e) => e.stopPropagation(),
+                            { capture: true },
+                        );
                         // In an offline export (e.g. `quarto render`) the page
                         // is already open in a browser and there is no live
                         // Julia process to re-open, so hide the "Browser" button.

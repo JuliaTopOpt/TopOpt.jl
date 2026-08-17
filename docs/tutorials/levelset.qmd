@@ -127,6 +127,9 @@ hresult = compliance_minimization(;
            LevelSetHole(8, 12, 2), LevelSetHole(16, 12, 2), LevelSetHole(24, 12, 2)],
     hole_nucleation=true, max_iterations=8, verbose=false,
 )
+```
+
+```{julia}
 println("final compliance: ", round(hresult.objectives[end]; digits=4))
 ```
 
@@ -139,9 +142,21 @@ STL:
 ```{julia}
 #| output: false
 r3 = compliance_minimization_3d(; nelx=10, nely=5, nelz=5, max_iterations=4, verbose=false)
-println("final compliance: ", round(r3.compliances[end]; digits=4))
 write_stl(r3.level_set, "mystlfile.stl")
+```
+
+```{julia}
+println("final compliance: ", round(r3.compliances[end]; digits=4))
 println("wrote ", r3.level_set.num_triangles, " triangles to mystlfile.stl")
+```
+
+The 3D design can be visualized with the same viewer as a 3D SIMP result:
+
+```{julia}
+#| label: fig-levelset-3d
+#| fig-cap: "Level-set compliance minimization: 3D cantilever design"
+app = visualize(r3.level_set; static=true)
+display_app(app)
 ```
 
 ## Exporting the design
@@ -155,5 +170,8 @@ out = mktempdir()
 save_level_set_vtk(result.level_set, 1; output_directory=out)
 save_area_fractions_vtk(result.level_set.mesh, 1; output_directory=out)
 save_boundary_segments_txt(result.boundary, 1; output_directory=out)
+```
+
+```{julia}
 println(readdir(out))
 ```

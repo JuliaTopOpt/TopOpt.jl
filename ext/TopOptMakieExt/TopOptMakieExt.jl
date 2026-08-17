@@ -1493,5 +1493,37 @@ function TopOpt.visualize(
     return TopOpt.visualize(problem; static=static, topology=topology, kw...)
 end
 
+"""
+    visualize(level_set::OpenLSTO.LevelSet3D; ...)
+
+Visualize a 3D level-set design with the regular 3D continuum visualizer. The
+per-cell volume fractions are shown as the density field of an equivalent
+`PointLoadCantilever` problem, so the same controls (loads, supports, sliders,
+`static=true` viewer) apply as for SIMP results.
+
+See [`visualize(::StiffnessTopOptProblem)`](@ref) for the shared keyword
+arguments. Extra keywords:
+- `E`, `ν`, `force`: material/load parameters of the equivalent
+  `PointLoadCantilever` (only used for drawing loads and supports).
+"""
+function TopOpt.visualize(
+    level_set::TopOpt.OpenLSTO.LevelSet3D;
+    static=false,
+    topology=nothing,
+    E=1.0,
+    ν=0.3,
+    force=1.0,
+    kw...,
+)
+    if length(level_set.volumefraction_vector) != level_set.num_cells
+        TopOpt.OpenLSTO.calculate_volume_fractions!(level_set)
+    end
+    problem = PointLoadCantilever(
+        (level_set.nx, level_set.ny, level_set.nz), (1.0, 1.0, 1.0), E, ν, force
+    )
+    topology = topology === nothing ? level_set.volumefraction_vector : topology
+    return TopOpt.visualize(problem; static=static, topology=topology, kw...)
+end
+
 include("static_viewer.jl")
 end

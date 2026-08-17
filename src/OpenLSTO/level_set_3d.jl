@@ -549,6 +549,7 @@ file.
 """
 function write_stl(lsm::LevelSet3D, filename::AbstractString; box_smooth::Integer=1)
     lsm.triangles = marching_cubes_3d(lsm.nx, lsm.ny, lsm.nz, lsm.phi)
+    lsm.num_triangles = length(lsm.triangles)
     open(filename, "w") do io
         println(io, "solid mysolid")
         for tri in lsm.triangles
