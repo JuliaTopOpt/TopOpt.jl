@@ -240,7 +240,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">println</span>(<span class="st">"CGMatrixFree vs Direct rel. error: </span><span class="sc">$</span>(<span class="fu">norm</span>(mf.u <span class="op">-</span> direct.u) <span class="op">/</span> <span class="fu">norm</span>(direct.u))<span class="st">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>CGAssembly  vs Direct  rel. error: 6.154891032611021e-10
-CGMatrixFree vs Direct rel. error: 6.180480291148279e-10</code></pre>
+CGMatrixFree vs Direct rel. error: 6.115875164562082e-10</code></pre>
 </div>
 </div>
 <p>The iterative solvers converge to the same displacement field as the direct factorization (to the requested tolerance). <code>CGMatrixFreeSolver</code> requires homogeneous Dirichlet boundary conditions (it throws a descriptive <code>ArgumentError</code> otherwise) because its matrix-free diagonal does not match Ferrite’s inhomogeneous-BC diagonal.</p>
