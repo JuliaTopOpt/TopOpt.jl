@@ -124,7 +124,7 @@ T = temp(PseudoDensities(ones(getncells(heat))))
 
 ```{julia}
 #| output: true
-heat_out = save_mesh("heat_design", heat, heat_solver.vars, T.T)
+heat_out = save_mesh("heat_design", heat, heat_solver.vars, T.data)
 println("wrote: ", heat_out)
 ```
 

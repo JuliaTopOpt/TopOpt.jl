@@ -98,9 +98,9 @@ function HexMaterial(E::Real, nu::Real, rho::Real=1.0)
     lambda = E * nu / ((1 + nu) * (1 - 2nu))
     mu = E / (2 * (1 + nu))
     C = [
-        lambda+2mu lambda lambda 0.0 0.0 0.0
-        lambda lambda+2mu lambda 0.0 0.0 0.0
-        lambda lambda lambda+2mu 0.0 0.0 0.0
+        lambda + 2mu lambda lambda 0.0 0.0 0.0
+        lambda lambda + 2mu lambda 0.0 0.0 0.0
+        lambda lambda lambda + 2mu 0.0 0.0 0.0
         0.0 0.0 0.0 mu 0.0 0.0
         0.0 0.0 0.0 0.0 mu 0.0
         0.0 0.0 0.0 0.0 0.0 mu
