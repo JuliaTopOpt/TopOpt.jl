@@ -244,7 +244,17 @@ function update!(
     any_free || return var_black
 
     topology_changed = false
+    # The crossover/mutation pass is stochastic, but at extreme probabilities
+    # (Pc = Pm ≈ 1, which happens when the volume fraction reaches its target)
+    # it becomes deterministic: every element's genotype is driven to its
+    # class-uniform state, after which `var_black` cannot flip and the retry
+    # loop would spin forever. Bound the number of attempts; the design can
+    # change again in the next outer iteration once the sensitivities (and
+    # hence the classes) move.
+    attempts = 0
     while !topology_changed
+        attempts += 1
+        attempts >= 100 && break
         # Crossover for all classes
         crossover_class!(
             children,
