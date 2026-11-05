@@ -46,6 +46,12 @@ Binary (0/1) topology optimization with sequential linearization and Cbc.jl bran
 :::
 
 ::: {.tutorial-card}
+[**Reliability-Based Topology Optimization (RBTO)**](rbto.html)
+
+Robust compliance minimization under lognormal material uncertainty using FORM/RIA reliability analysis from ReliabilityOptimization.jl.
+:::
+
+::: {.tutorial-card}
 [**Comparing Penalty Functions**](penalties.html)
 
 Power, rational, hyperbolic-sine, and projected penalties: their curves, their effect on gray elements, and parameter sensitivity.

@@ -1,0 +1,163 @@
+---
+title: "Reliability-Based Topology Optimization (RBTO)"
+toc: true
+---
+
+## Description
+
+Reliability-based topology optimization (RBTO) accounts for uncertainty in
+material properties or loads. Instead of minimizing the deterministic
+compliance, we minimize a weighted sum of the mean and the standard deviation
+of the compliance, where the Young's moduli are treated as random variables.
+
+The reliability analysis uses the first-order reliability method (FORM) with
+the reliability index approach (RIA) from
+[ReliabilityOptimization.jl](https://github.com/JuliaNonconvex/ReliabilityOptimization.jl):
+each evaluation of the objective solves `min ‖p‖ s.t. g(x, p) = 0` in
+standard normal space to find the most probable failure point (MPP), then
+linearizes the limit state around it to propagate the uncertainty into a mean
+and a covariance of the compliance. The whole pipeline is differentiable, so
+the MMA optimizer can use exact gradients of the reliability objective.
+
+This tutorial optimizes a cantilever with two materials (void and solid),
+where the solid material's Young's modulus follows a lognormal distribution.
+
+## Setup
+
+```{julia}
+#| output: false
+using TopOpt
+using ReliabilityOptimization
+using Zygote, LinearAlgebra
+using WGLMakie
+WGLMakie.activate!(; resize_to=:parent)
+using Bonito
+if haskey(ENV, "QUARTO_PROJECT_DIR")
+    Bonito.Page(exportable=true, offline=true)
+else
+    Bonito.browser_display()
+end
+display_app(app) = display(app)
+```
+
+`WGLMakie.activate!(; resize_to=:parent)` selects the browser renderer and fills the Quarto output column. `Bonito.Page(exportable=true, offline=true)` embeds the assets needed by `visualize(...; static=true)` in the Quarto output, so the visualization does not require a running Julia process.
+
+## Define the Problem
+
+```{julia}
+#| output: false
+nmats = 2                  # number of materials (void + solid)
+densities = [0.0, 1.0]     # physical densities for the mass constraint
+avgEs = [1e-6, 0.5]        # nominal Young's moduli: void, solid
+V = 0.4                    # volume fraction
+
+nu = 0.3  # Poisson's ratio
+f = 1.0   # downward force
+
+problem = PointLoadCantilever(
+    (60, 30),       # 60×30 mesh
+    (1.0, 1.0),     # element size
+    1.0,            # base Young's modulus
+    nu,             # Poisson's ratio
+    f,              # load
+)
+ncells = getncells(problem)
+```
+
+## FEA Solver and Filter
+
+```{julia}
+#| output: false
+solver = FEASolver(DirectSolver, problem; xmin=0.0)
+filter = DensityFilterFun(solver; rmin=3.0)
+comp = ComplianceFun(solver)
+```
+
+## Reliability Model
+
+The solid material's stiffness is uncertain: we model the log-moduli as a
+lognormal random vector with a 10% coefficient of variation. The compliance
+then depends on both the design variables `y` and the random log-moduli
+`logEs`, and `RandomFunction` wraps it together with the `FORM(RIA())`
+reliability method.
+
+```{julia}
+#| output: false
+logEs = MvNormal(log.(avgEs), Diagonal((0.1 .* log.(avgEs)).^2))
+
+function compObj(y, logEs)
+    penalty1 = PowerPenaltyFun(3.0)
+    interp1 = MaterialInterpolationFun(exp.(logEs), penalty1)
+    x = tounit(MultiMaterialVariablesFun(y, nmats))
+    _E = interp1(filter(x))
+    return comp(_E)
+end
+
+# Wrap the compliance in a RandomFunction: evaluating it solves the RIA
+# problem and returns the mean and covariance of the compliance at y.
+rf = RandomFunction(compObj, logEs, FORM(RIA()))
+```
+
+## Objective and Constraint
+
+The robust objective minimizes `mean + 2·σ` of the compliance. The constraint
+is the usual mass (volume fraction) constraint.
+
+```{julia}
+#| output: false
+obj = y -> begin
+    dist = rf(y)
+    return mean(dist)[1] + 2 * sqrt(cov(dist)[1, 1])
+end
+
+penalty2 = PowerPenaltyFun(1.0)
+interp2 = MaterialInterpolationFun(densities, penalty2)
+constr = y -> sum(interp2(MultiMaterialVariablesFun(y, nmats)).x) / ncells - V
+
+y0 = zeros(ncells * (nmats - 1))
+
+# Sanity check: objective, constraint and their gradients
+println("Initial objective: $(obj(y0))")
+println("Initial constraint: $(constr(y0))")
+grad_obj = Zygote.gradient(obj, y0)[1]
+println("Gradient norm: $(norm(grad_obj))")
+```
+
+## Optimization
+
+We use the Method of Moving Asymptotes (MMA87) from Nonconvex.jl:
+
+```{julia}
+#| output: true
+model = Model(obj)
+addvar!(model, fill(-10.0, length(y0)), fill(10.0, length(y0)))
+add_ineq_constraint!(model, constr)
+
+alg = MMA87()
+options = MMAOptions(; s_init=0.1, tol=Tolerance(; kkt=1e-3))
+
+res = optimize(model, alg, y0; options=options)
+y = res.minimizer
+```
+
+## Verify Results
+
+```{julia}
+#| output: true
+println("Constraint value: $(constr(y))")
+println("Mass constraint satisfied: $(constr(y) < 1e-6)")
+```
+
+## Visualize the Result
+
+```{julia}
+#| label: fig-rbto
+#| fig-cap: "RBTO design: void (white) vs. solid (black) material distribution"
+rhos = interp2(MultiMaterialVariablesFun(y, nmats)).x
+fig = visualize(problem; static=true, topology=rhos)
+display_app(fig)
+```
+
+The optimized design uses the uncertain solid material where it contributes
+most to stiffness, while respecting the mass constraint under the
+reliability-based objective.
