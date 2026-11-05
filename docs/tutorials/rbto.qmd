@@ -13,11 +13,18 @@ of the compliance, where the Young's moduli are treated as random variables.
 The reliability analysis uses the first-order reliability method (FORM) with
 the reliability index approach (RIA) from
 [ReliabilityOptimization.jl](https://github.com/JuliaNonconvex/ReliabilityOptimization.jl):
-each evaluation of the objective solves `min ‖p‖ s.t. g(x, p) = 0` in
-standard normal space to find the most probable failure point (MPP), then
-linearizes the limit state around it to propagate the uncertainty into a mean
-and a covariance of the compliance. The whole pipeline is differentiable, so
-the MMA optimizer can use exact gradients of the reliability objective.
+each evaluation of the objective solves `min ‖p‖ s.t. g(x, p) = 0` to find
+the most probable failure point (MPP), i.e. the point on the limit-state
+surface closest to the mean of the random parameters, and then linearizes the
+limit state around it to propagate the uncertainty into a mean and a
+covariance of the compliance. The whole pipeline is differentiable, so the
+MMA optimizer uses exact gradients of the reliability objective.
+
+We define the limit state as `g(x, p) = C(x, p) - C_max = 0`, where `C_max`
+is a failure threshold for the compliance. The mean and covariance of the
+compliance are shift-invariant (subtracting `C_max` only shifts the mean), so
+the robust objective `μ + 2σ` is computed from the shifted distribution by
+adding `C_max` back.
 
 This tutorial optimizes a cantilever with two materials (void and solid),
 where the solid material's Young's modulus follows a lognormal distribution.
@@ -78,14 +85,11 @@ comp = ComplianceFun(solver)
 The solid material's stiffness is uncertain: we model the log-moduli as a
 lognormal random vector with a 10% coefficient of variation. The compliance
 then depends on both the design variables `y` and the random log-moduli
-`logEs`, and `RandomFunction` wraps it together with the `FORM(RIA())`
-reliability method.
+`logEs`.
 
 ```{julia}
 #| output: false
-logEs = MvNormal(log.(avgEs), Diagonal((0.1 .* log.(avgEs)).^2))
-
-function compObj(y, logEs)
+function compliance(y, logEs)
     penalty1 = PowerPenaltyFun(3.0)
     interp1 = MaterialInterpolationFun(exp.(logEs), penalty1)
     x = tounit(MultiMaterialVariablesFun(y, nmats))
@@ -93,28 +97,38 @@ function compObj(y, logEs)
     return comp(_E)
 end
 
-# Wrap the compliance in a RandomFunction: evaluating it solves the RIA
-# problem and returns the mean and covariance of the compliance at y.
+y0 = zeros(ncells * (nmats - 1))
+
+# Failure threshold: 20% above the nominal compliance of the uniform design.
+Cmax = 1.2 * compliance(y0, log.(avgEs))
+
+logEs = MvNormal(log.(avgEs), Diagonal((0.1 .* log.(avgEs)).^2))
+
+# Limit state g(y, logEs) = compliance - Cmax = 0. Wrapping the shifted
+# compliance in a RandomFunction makes each evaluation solve the RIA problem
+# and return the mean and covariance of the shifted compliance at y.
+function compObj(y, logEs)
+    return compliance(y, logEs) - Cmax
+end
+
 rf = RandomFunction(compObj, logEs, FORM(RIA()))
 ```
 
 ## Objective and Constraint
 
-The robust objective minimizes `mean + 2·σ` of the compliance. The constraint
-is the usual mass (volume fraction) constraint.
+The robust objective minimizes `μ + 2σ` of the compliance. Since `rf` models
+the *shifted* compliance, we add `Cmax` back to recover the mean:
 
 ```{julia}
 #| output: false
 obj = y -> begin
     dist = rf(y)
-    return mean(dist)[1] + 2 * sqrt(cov(dist)[1, 1])
+    return Cmax + mean(dist)[1] + 2 * sqrt(cov(dist)[1, 1])
 end
 
 penalty2 = PowerPenaltyFun(1.0)
 interp2 = MaterialInterpolationFun(densities, penalty2)
 constr = y -> sum(interp2(MultiMaterialVariablesFun(y, nmats)).x) / ncells - V
-
-y0 = zeros(ncells * (nmats - 1))
 
 # Sanity check: objective, constraint and their gradients
 println("Initial objective: $(obj(y0))")
