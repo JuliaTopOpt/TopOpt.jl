@@ -8,7 +8,8 @@ toc: true
 Reliability-based topology optimization (RBTO) accounts for uncertainty in
 material properties or loads. Instead of minimizing the deterministic
 compliance, we minimize a weighted sum of the mean and the standard deviation
-of the compliance, where the Young's moduli are treated as random variables.
+of the compliance, where the solid material's Young's modulus is treated as a
+random variable.
 
 The reliability analysis uses the first-order reliability method (FORM) with
 the reliability index approach (RIA) from
@@ -55,7 +56,8 @@ display_app(app) = display(app)
 #| output: false
 nmats = 2                  # number of materials (void + solid)
 densities = [0.0, 1.0]     # physical densities for the mass constraint
-avgEs = [1e-6, 0.5]        # nominal Young's moduli: void, solid
+Evoid = 1e-6               # deterministic void stiffness
+avgE = 0.5                 # nominal solid Young's modulus
 V = 0.4                    # volume fraction
 
 nu = 0.3  # Poisson's ratio
@@ -82,16 +84,16 @@ comp = ComplianceFun(solver)
 
 ## Reliability Model
 
-The solid material's stiffness is uncertain: we model the log-moduli as a
-lognormal random vector with a 10% coefficient of variation. The compliance
-then depends on both the design variables `y` and the random log-moduli
+The solid material's stiffness is uncertain: we model its log-modulus as a
+lognormal random variable with a 10% coefficient of variation. The compliance
+then depends on both the design variables `y` and the random log-modulus
 `logEs`.
 
 ```{julia}
 #| output: false
 function compliance(y, logEs)
     penalty1 = PowerPenaltyFun(3.0)
-    interp1 = MaterialInterpolationFun(exp.(logEs), penalty1)
+    interp1 = MaterialInterpolationFun([Evoid, exp(logEs[1])], penalty1)
     x = tounit(MultiMaterialVariablesFun(y, nmats))
     _E = interp1(filter(x))
     return comp(_E)
@@ -100,9 +102,9 @@ end
 y0 = zeros(ncells * (nmats - 1))
 
 # Failure threshold: 20% above the nominal compliance of the uniform design.
-Cmax = 1.2 * compliance(y0, log.(avgEs))
+Cmax = 1.2 * compliance(y0, [log(avgE)])
 
-logEs = MvNormal(log.(avgEs), Diagonal((0.1 .* log.(avgEs)).^2))
+logE = MvNormal([log(avgE)], Diagonal([(0.1 * log(avgE))^2]))
 
 # Limit state g(y, logEs) = compliance - Cmax = 0. Wrapping the shifted
 # compliance in a RandomFunction makes each evaluation solve the RIA problem
@@ -111,13 +113,16 @@ function compObj(y, logEs)
     return compliance(y, logEs) - Cmax
 end
 
-rf = RandomFunction(compObj, logEs, FORM(RIA()))
+rf = RandomFunction(compObj, logE, FORM(RIA()))
 ```
 
 ## Objective and Constraint
 
 The robust objective minimizes `μ + 2σ` of the compliance. Since `rf` models
-the *shifted* compliance, we add `Cmax` back to recover the mean:
+the *shifted* compliance, we add `Cmax` back to recover the mean. We also
+enforce the mass constraint and a nominal-safety constraint that keeps the
+nominal compliance below the failure threshold, where the FORM linearization
+is valid:
 
 ```{julia}
 #| output: false
@@ -129,6 +134,7 @@ end
 penalty2 = PowerPenaltyFun(1.0)
 interp2 = MaterialInterpolationFun(densities, penalty2)
 constr = y -> sum(interp2(MultiMaterialVariablesFun(y, nmats)).x) / ncells - V
+constr2 = y -> compliance(y, [log(avgE)]) - 0.9 * Cmax
 
 # Sanity check: objective, constraint and their gradients
 println("Initial objective: $(obj(y0))")
@@ -139,16 +145,20 @@ println("Gradient norm: $(norm(grad_obj))")
 
 ## Optimization
 
-We use the Method of Moving Asymptotes (MMA87) from Nonconvex.jl:
+We use the Method of Moving Asymptotes (MMA87) from Nonconvex.jl. The uniform
+initial design uses 50% of the material, so the optimizer first repairs the
+mass constraint (reducing the material to the 40% limit) while keeping the
+reliability objective low:
 
 ```{julia}
 #| output: true
 model = Model(obj)
 addvar!(model, fill(-10.0, length(y0)), fill(10.0, length(y0)))
 add_ineq_constraint!(model, constr)
+add_ineq_constraint!(model, constr2)
 
 alg = MMA87()
-options = MMAOptions(; s_init=0.1, tol=Tolerance(; kkt=1e-3))
+options = MMAOptions(; s_init=0.1, tol=Tolerance(; kkt=1e-3), maxiter=150)
 
 res = optimize(model, alg, y0; options=options)
 y = res.minimizer
@@ -158,6 +168,7 @@ y = res.minimizer
 
 ```{julia}
 #| output: true
+println("Robust objective: $(obj(y))")
 println("Constraint value: $(constr(y))")
 println("Mass constraint satisfied: $(constr(y) < 1e-6)")
 ```
