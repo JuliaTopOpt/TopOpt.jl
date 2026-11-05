@@ -78,11 +78,15 @@ function get_neighbour_info(problem, rmin::T) where {T}
     neighbouring_nodes = TI[]
     node_weights = T[]
     visited_cells = Set{Int}()
+    visited_nodes = Set{TI}()
     for cell in CellIterator(dh)
-        current_cell_id = cell.cellid
+        # Ferrite ≥ 1.7 stores the id in a resizeable buffer; use the
+        # `cellid(::CellCache)` accessor (the `.cellid` field is a Vector).
+        current_cell_id = Ferrite.cellid(cell)
 
         empty!(cells_to_traverse)
         empty!(visited_cells)
+        empty!(visited_nodes)
         empty!(neighbouring_nodes)
         empty!(node_weights)
 
@@ -96,7 +100,11 @@ function get_neighbour_info(problem, rmin::T) where {T}
             for n in grid.cells[cell_id].nodes
                 node = getnodes(grid, n)
                 dist = norm(node.x - center.x)
-                if dist < rmin
+                if dist < rmin && !(n in visited_nodes)
+                    # A node shared by several cells would otherwise be added
+                    # once per visited cell, inflating its weight in the
+                    # density/sensitivity filters relative to corner nodes.
+                    push!(visited_nodes, n)
                     push!(neighbouring_nodes, n)
                     push!(node_weights, max(rmin - dist, zero(T)))
                     n_cells = node_cells[n]

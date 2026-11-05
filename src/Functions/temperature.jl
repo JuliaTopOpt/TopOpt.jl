@@ -114,7 +114,9 @@ function ChainRulesCore.rrule(tf::TemperatureFun, x::PseudoDensities)
             KeT = rawmatrix(Kes[e]) * u.T[global_dofs]
             dTdx_tmp[e] = -dρe * dot(KeT, solver.lhs[global_dofs])
         end
-        return nothing, Tangent{typeof(x)}(; x=dTdx_tmp)
+        # Copy: `dTdx_tmp` is a reusable workspace buffer of `tp` and is
+        # overwritten by the next evaluation/pullback.
+        return nothing, Tangent{typeof(x)}(; x=copy(dTdx_tmp))
     end
 end
 

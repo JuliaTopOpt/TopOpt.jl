@@ -46,10 +46,13 @@ function update_f!(
     vars,
     M,
 ) where {T}
+    # `values` is indexed per prescribed DOF while `Kes` is indexed per cell;
+    # all cells share the same number of local DOFs, so the local size comes
+    # from the first cell's matrix.
+    m = size(first(Kes), 1)
     for ind in eachindex(values)
         d = prescribed_dofs[ind]
         v = values[ind]
-        m = size(Kes[ind], 1)
 
         r = dof_cells.offsets[d]:(dof_cells.offsets[d + 1] - 1)
         if !applyzero && v != 0

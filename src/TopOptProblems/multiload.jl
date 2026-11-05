@@ -97,7 +97,19 @@ function get_surface_dofs(problem::StiffnessTopOptProblem)
         end
     end
     unique!(surface_node_inds)
-    return setdiff(node_dofs[:, surface_node_inds], problem.ch.prescribed_dofs)
+
+    # Filter out constrained DOFs *per node* before flattening. Removing
+    # individual DOFs from the flattened list breaks the fixed-width per-node
+    # grouping used by `generate_random_loads` (nodes with a constrained DOF
+    # contribute fewer entries, so the grouping silently assigns loads to
+    # DOFs belonging to different nodes).
+    prescribed = Set(problem.ch.prescribed_dofs)
+    dofs = Int[]
+    for n in surface_node_inds
+        node_d = @view node_dofs[:, n]
+        all(d -> d ∉ prescribed, node_d) && append!(dofs, node_d)
+    end
+    return dofs
 end
 
 function generate_random_loads(

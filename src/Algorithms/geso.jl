@@ -9,7 +9,7 @@ end
 """
 The GESO algorithm, see [LiuYiLiShen2008](@cite).
 """
-struct GESO{T<:Real,TF<:AbstractCheqFilter} <: TopOptAlgorithm
+struct GESO{T<:Real,K,TF<:AbstractCheqFilter} <: TopOptAlgorithm
     comp::ComplianceFun
     vol::VolumeFun
     vol_limit::T
@@ -32,7 +32,7 @@ struct GESO{T<:Real,TF<:AbstractCheqFilter} <: TopOptAlgorithm
     penalty::AbstractPenalty{T}
     sens::AbstractVector{T}
     old_sens::AbstractVector{T}
-    obj_trace::MVector{10,T}
+    obj_trace::MVector{K,T}
     tol::T
     sens_tol::T
     result::GESOResult{T,Vector{T}}
@@ -63,6 +63,15 @@ function GESO(
     solver = comp.solver
     T = eltype(solver.vars)
     nel = Ferrite.getncells(solver.problem.ch.dh.grid)
+    # The target volume fraction must be strictly inside (0, 1): `vol_limit >=
+    # 1` leaves the cumulative-volume classification step with no crossing
+    # (`findfirst` returns `nothing`), and `vol_limit -> 0` produces empty
+    # sensitivity classes that the crossover step cannot sample from.
+    0 < vol_limit < 1 || throw(
+        ArgumentError(
+            "GESO: vol_limit must be strictly between 0 and 1 (exclusive), got $vol_limit",
+        ),
+    )
     # GESO now works with full design variables
     nvars = nel
     vars = zeros(T, nvars)
@@ -79,7 +88,7 @@ function GESO(
     children = trues(string_length, nvars)
     var_black = trues(nvars)
 
-    return GESO{T,typeof(filter)}(
+    return GESO{T,k,typeof(filter)}(
         comp,
         vol,
         T(vol_limit),
@@ -147,7 +156,9 @@ end
 # a partner from `self_class` (with probability `Pc`), `other1`, or `other2`
 # and mix their genotypes. Black/white elements are skipped. When
 # `self_class` has a single element the self-pick is impossible, so the choice
-# between `other1` and `other2` uses `single_threshold` instead.
+# between `other1` and `other2` uses `single_threshold` instead. Empty partner
+# classes (possible for extreme volume fractions) fall back to a self-pick,
+# which is a no-op crossover.
 function crossover_class!(
     children, genotypes, self_class, other1, other2, Pc, black, white; single_threshold
 )
@@ -166,15 +177,15 @@ function crossover_class!(
                     j = rand(self_class)
                 end
             elseif r < 0.5 + 0.5 * Pc
-                j = rand(other1)
+                isempty(other1) || (j = rand(other1))
             else
-                j = rand(other2)
+                isempty(other2) || (j = rand(other2))
             end
         else
             if r < single_threshold
-                j = rand(other1)
+                isempty(other1) || (j = rand(other1))
             else
-                j = rand(other2)
+                isempty(other2) || (j = rand(other2))
             end
         end
         crossover!(children, genotypes, i, j)
@@ -223,6 +234,15 @@ function update!(
     black=BitVector(),
     white=BitVector(),
 )
+    # If every element is fixed black/white, crossover and mutation can never
+    # change the topology and the `while !topology_changed` loop below would
+    # spin forever. Return early in that case.
+    nel = length(var_black)
+    any_free = any(
+        i -> (isempty(black) || !black[i]) && (isempty(white) || !white[i]), 1:nel
+    )
+    any_free || return var_black
+
     topology_changed = false
     while !topology_changed
         # Crossover for all classes
@@ -319,6 +339,7 @@ function (b::GESO)(
     # Initialize black elements to 1 (solid) and white elements to 0 (void)
     initialize_black_white!(topology, vars, black, white)
     # GESO additionally tracks each element's black/white genotype state.
+    # Free elements start from the user's initial design `x0`.
     @inbounds for i in eachindex(topology)
         if !isempty(black) && black[i]
             var_black[i] = true
@@ -330,6 +351,11 @@ function (b::GESO)(
             for j in axes(genotypes, 1)
                 genotypes[j, i] = false
             end
+        else
+            var_black[i] = topology[i] > 0.5
+            for j in axes(genotypes, 1)
+                genotypes[j, i] = var_black[i]
+            end
         end
     end
 
@@ -340,15 +366,16 @@ function (b::GESO)(
     change = T(1)
     iter = 0
     f = x -> b.comp(b.filter(PseudoDensities(x)))
+    k = length(b.obj_trace)
     while (change > tol || vol > V) && iter < maxiter
         iter += 1
         if iter > 1
             old_sens .= sens
         end
-        for j in max(2, 10 - iter + 2):10
+        for j in max(2, k - iter + 2):k
             obj_trace[j - 1] = obj_trace[j]
         end
-        obj_trace[10], pb = Zygote.pullback(f, vars)
+        obj_trace[k], pb = Zygote.pullback(f, vars)
         sens = pb(1.0)[1]
         rmul!(sens, -1)
         if iter > 1
@@ -360,7 +387,10 @@ function (b::GESO)(
         # but will be excluded from mutation via update! function
         sortperm!(order, sens; rev=true)
         accumulate!(+, cum_var_volumes, view(var_volumes, order))
-        N1 = findfirst(check, cum_var_volumes) - 1
+        # `check` is guaranteed to find an index (cum_var_volumes[end] ==
+        # total volume > design volume for vol_limit < 1); `something` keeps
+        # the code safe if the volume limit is ever reached exactly.
+        N1 = something(findfirst(check, cum_var_volumes), nel + 1) - 1
         N2 = (nel - N1) ÷ 2
         N3 = nvars - N1 - N2
         high_class = @view order[1:N1]
@@ -387,10 +417,10 @@ function (b::GESO)(
         current_volume = dot(vars, var_volumes)
         vol = current_volume / total_volume
 
-        if iter >= 10
-            l = sum(@view obj_trace[1:5])
-            h = sum(@view obj_trace[6:10])
-            change = abs(l - h) / h
+        if iter >= k
+            l = sum(@view obj_trace[1:(k ÷ 2)])
+            h = sum(@view obj_trace[(k ÷ 2 + 1):k])
+            change = iszero(h) ? (iszero(l) ? T(0) : T(1)) : abs(l - h) / h
         end
     end
 
@@ -398,7 +428,7 @@ function (b::GESO)(
         topology[i] = vars[i]
     end
 
-    b.result.objval = obj_trace[10]
+    b.result.objval = obj_trace[k]
     b.result.change = change
     b.result.converged = change <= tol
     b.result.fevals = iter

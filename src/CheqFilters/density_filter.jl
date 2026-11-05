@@ -104,6 +104,14 @@ function getJacobian(solver, metadata::FilterMetadata)
         ),
     )
     mat_transpose = mat1_transpose * mat2_transpose
+    # Elements with no neighbouring nodes within `rmin` have an all-zero
+    # (empty) row above, which would force their filtered density to zero.
+    # Patch such rows with an identity mapping so the raw density is kept.
+    for i in 1:nel
+        if length(cell_neighbouring_nodes[i]) == 0
+            mat_transpose[i, i] = T(1)
+        end
+    end
     return mat_transpose'
 end
 

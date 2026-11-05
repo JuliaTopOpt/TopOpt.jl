@@ -29,16 +29,20 @@ function project(f::VolumeFun, V, x)
     if f.fraction
         V = V * f.total_volume
     end
+    # Non-positive target volume: the projection is the all-void design.
+    V <= zero(V) && return zeros(eltype(x), length(x))
     inds = sortperm(x; rev=true)
     total = zero(V)
     i = 0
-    while i <= length(inds)
+    while i < length(inds)
         i += 1
         ind = inds[i]
         _total = total + cellvolumes[ind]
         _total >= V && break
         total = _total
     end
+    # If the cumulative volume never reaches V, `i` ends at `length(inds)` and
+    # the projection is the all-solid design.
     x = zeros(eltype(x), length(x))
     x[inds[1:i]] .= 1
     return x

@@ -182,7 +182,7 @@ function cg_solve!(
     precond_matrix;
     initially_zero=true,
 ) where {T,Physics,Solver}
-    @unpack cg_max_iter, abstol, cg_statevars = solver
+    @unpack cg_max_iter, abstol, cg_statevars, conv = solver
     @unpack preconditioner, preconditioner_initialized = solver
     if !(preconditioner === identity)
         if !preconditioner_initialized[]
@@ -192,6 +192,19 @@ function cg_solve!(
     end
     if initially_zero
         fill!(lhs, zero(T))
+    end
+    if conv isa EnergyCriteria
+        return _cg_solve_with_energy_criterion!(
+            solver,
+            op,
+            rhs,
+            lhs,
+            preconditioner;
+            cg_max_iter=cg_max_iter,
+            abstol=abstol,
+            cg_statevars=cg_statevars,
+            initially_zero=initially_zero,
+        )
     end
     if preconditioner === identity
         return cg!(
@@ -217,6 +230,58 @@ function cg_solve!(
             Pl=preconditioner,
         )
     end
+end
+
+# IterativeSolvers 0.9's `cg!`/`cg_iterator!` stop on the built-in residual
+# criterion only (`done(it, i) = i ≥ maxiter || it.residual ≤ it.tol`); the
+# `isconverged` hook that `EnergyCriteria` extends is never consulted. Drive
+# the iteration manually and test the energy-based stopping test after every
+# iteration so that `conv=EnergyCriteria()` has an actual effect.
+function _cg_solve_with_energy_criterion!(
+    solver,
+    op,
+    rhs,
+    lhs,
+    preconditioner;
+    cg_max_iter,
+    abstol,
+    cg_statevars,
+    initially_zero,
+)
+    if preconditioner === identity
+        iterable = IterativeSolvers.cg_iterator!(
+            lhs,
+            op,
+            rhs;
+            abstol=abstol,
+            maxiter=cg_max_iter,
+            statevars=cg_statevars,
+            initially_zero=initially_zero,
+        )
+    else
+        iterable = IterativeSolvers.cg_iterator!(
+            lhs,
+            op,
+            rhs,
+            preconditioner;
+            abstol=abstol,
+            maxiter=cg_max_iter,
+            statevars=cg_statevars,
+            initially_zero=initially_zero,
+        )
+    end
+    for (iteration, residual) in enumerate(iterable)
+        # Consult the energy-based test (which also updates `conv.energy`).
+        # Break early only when *both* the energy test and the built-in
+        # residual test hold: the energy change per CG iteration scales like
+        # ‖r‖², so the energy test alone can fire far earlier than a
+        # residual-based stopping rule and would degrade the solution. With
+        # the conjunction the energy criterion can only tighten convergence,
+        # never loosen it relative to the default criterion.
+        IterativeSolvers.isconverged(iterable) && IterativeSolvers.converged(iterable) &&
+            break
+    end
+    return nothing
 end
 
 # CG with assembled matrix
@@ -290,8 +355,9 @@ function (s::GenericFEASolver{T,Physics,Solver})(
     lhs=assemble_f ? s.u : s.lhs,
     kwargs...,
 ) where {T,Physics,Solver,safe}
-    # Handle matrix RHS by solving for each column
-    if ndims(rhs) == 2 && size(rhs, 2) > 1
+    # Handle matrix RHS by solving for each column. A single-column matrix is
+    # solved column-wise too; only genuine vectors take the vector path below.
+    if ndims(rhs) == 2 && size(rhs, 2) >= 1
         # Multiple RHS columns - solve each one
         # Assemble stiffness matrix (and force vector if assemble_f=true)
         assemble!(
@@ -316,10 +382,6 @@ function (s::GenericFEASolver{T,Physics,Solver})(
 
             # Pass initially_zero only for CG solvers
             if Solver === DirectSolver
-                # Filter out kwargs that DirectSolver doesn't accept
-                filtered_kwargs = filter(
-                    p -> p.first ∉ (:initially_zero, :solver), collect(kwargs)
-                )
                 solve_system!(
                     Solver,
                     s,
@@ -328,7 +390,6 @@ function (s::GenericFEASolver{T,Physics,Solver})(
                     lhs_j;
                     reuse_fact=(j > 1 || reuse_fact),
                     safe=safe,
-                    filtered_kwargs...,
                 )
             else
                 # For CG solvers, start from zero initial guess for each column
@@ -341,7 +402,6 @@ function (s::GenericFEASolver{T,Physics,Solver})(
                     lhs_j;
                     reuse_fact=(j > 1 || reuse_fact),
                     safe=safe,
-                    initially_zero=true,
                     kwargs...,
                 )
             end

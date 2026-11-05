@@ -68,7 +68,7 @@ function (bc::BlockComplianceFun{T})(x::PseudoDensities) where {T}
     setpenalty!(solver, penalty.p)
     compute_block_compliance(bc, method) # Modifies raw_val
     val .= raw_val
-    return val
+    return copy(val) # do not leak the internal buffer
 end
 
 function ChainRulesCore.rrule(bc::BlockComplianceFun, x::PseudoDensities)

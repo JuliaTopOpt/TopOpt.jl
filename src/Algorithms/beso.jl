@@ -175,7 +175,7 @@ function (b::BESO)(x0=copy(b.comp.solver.vars); black=BitVector(), white=BitVect
         if iter >= k
             l = sum(@view obj_trace[1:(k ÷ 2)])
             h = sum(@view obj_trace[(k ÷ 2 + 1):k])
-            change = abs(l - h) / h
+            change = iszero(h) ? (iszero(l) ? T(0) : T(1)) : abs(l - h) / h
         end
     end
 
