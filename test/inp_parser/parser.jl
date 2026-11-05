@@ -119,3 +119,98 @@ grid_c3d20 = dh_c3d20.grid
 ref_grid = Ferrite.generate_grid(Ferrite.SerendipityQuadraticHexahedron, (1, 1, 1))
 @test [n.x for n in grid_c3d20.nodes] == [n.x for n in ref_grid.nodes]
 @test grid_c3d20.cells[1].nodes == ref_grid.cells[1].nodes
+
+@testset "INP parser regressions" begin
+    # A file whose final section ends with data rows (no trailing keyword
+    # line, as produced by many meshing tools) previously crashed with an
+    # EOFError; and files with generated (`*, generate`) sets or integer
+    # values in *DLOAD/*BOUNDARY rows were silently misparsed.
+    inp = """
+    *Node, NSET=Nall
+    1, 0.0, 0.0
+    2, 1.0, 0.0
+    3, 0.0, 1.0
+    4, 1.0, 1.0
+    *Element, TYPE=CPS4, ELSET=Eall
+    1, 1, 2, 4, 3
+    *ELSET, ELSET=Egen, generate
+    1, 1, 1
+    *NSET, NSET=Ngen, generate
+    1, 4, 2
+    *MATERIAL, NAME=Mat
+    *ELASTIC
+    100.0, 0.3
+    *BOUNDARY
+    Ngen, 1, 1, 0
+    *DLOAD
+    1, P2, -3
+    *CLOAD
+    4, 2, -3
+    """
+    mktempdir() do dir
+        path = joinpath(dir, "eof_terminated.inp")
+        write(path, inp)
+        raw = INP.Parser.extract_inp(path)
+        @test length(raw.node_coords) == 4
+        @test raw.node_coords[4] == (1.0, 1.0)
+        @test length(raw.cells) == 1
+        @test raw.cells[1] == (1, 2, 4, 3)
+        @test raw.cellsets["Egen"] == [1]
+        @test raw.nodesets["Ngen"] == [1, 3]
+        @test raw.E == 100.0
+        @test raw.ν == 0.3
+        @test raw.nodedbcs["Ngen"] == [(1, 0.0)]
+        @test raw.dloads["DLOAD_SET_1"] == -3.0
+        @test raw.facesets["DLOAD_SET_1"] == [(1, 2)]
+        @test raw.cloads[4] == [0.0, -3.0]
+    end
+
+    # A *BOUNDARY row with a nonzero integer value must not be misparsed as a
+    # zero-valued range constraint.
+    inp2 = """
+    *Node, NSET=Nall
+    1, 0.0, 0.0
+    2, 1.0, 0.0
+    3, 0.0, 1.0
+    4, 1.0, 1.0
+    *Element, TYPE=CPS4, ELSET=Eall
+    1, 1, 2, 4, 3
+    *NSET, NSET=Nbound
+    1, 2, 3
+    *MATERIAL, NAME=Mat
+    *ELASTIC
+    100.0, 0.3
+    *BOUNDARY
+    Nbound, 1, 1, 1
+    """
+    mktempdir() do dir
+        path = joinpath(dir, "integer_boundary.inp")
+        write(path, inp2)
+        raw = INP.Parser.extract_inp(path)
+        @test raw.nodedbcs["Nbound"] == [(1, 1.0)]
+    end
+
+    # Forward references to not-yet-defined sets must fail loudly instead of
+    # silently dropping the referenced set.
+    inp3 = """
+    *Node, NSET=Nall
+    1, 0.0, 0.0
+    2, 1.0, 0.0
+    3, 0.0, 1.0
+    4, 1.0, 1.0
+    *Element, TYPE=CPS4, ELSET=Eall
+    1, 1, 2, 4, 3
+    *NSET, NSET=Nforward
+    Nlater
+    *NSET, NSET=Nlater
+    1, 2
+    *MATERIAL, NAME=Mat
+    *ELASTIC
+    100.0, 0.3
+    """
+    mktempdir() do dir
+        path = joinpath(dir, "forward_reference.inp")
+        write(path, inp3)
+        @test_throws ArgumentError INP.Parser.extract_inp(path)
+    end
+end

@@ -284,3 +284,28 @@ end
         @test norm(grad1 - grad3) <= 1e-5
     end
 end
+
+@testset "buckling applies BCs to Kσ" begin
+    # `buckling` must return a Kσ whose prescribed-DOF rows and columns are
+    # zeroed (matching the condensed K); unconstrained Kσ rows couple fixed
+    # DOFs into the eigenproblem and produce spurious support-localized modes.
+    nels = (4, 4)
+    problem = PointLoadCantilever(nels, (1.0, 1.0), 1.0, 0.3, 1.0)
+    solver = FEASolver(DirectSolver, problem)
+    x = fill(0.8, getncells(problem))
+    solver.vars .= x
+    solver()
+    K, Kσ = TopOpt.TopOptProblems.buckling(
+        problem, solver.globalinfo, solver.elementinfo, x
+    )
+
+    ch = problem.ch
+    prescribed = Set(ch.prescribed_dofs)
+    @test length(prescribed) > 0
+    Kσa = Array(Kσ)
+    for d in prescribed
+        @test all(iszero, Kσa[d, :])
+        @test all(iszero, Kσa[:, d])
+        @test iszero(Kσa[d, d])
+    end
+end

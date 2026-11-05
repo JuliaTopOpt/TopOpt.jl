@@ -39,9 +39,11 @@ Random.seed!(42)
         @test mc.method isa TopOpt.Functions.TraceEstimationMean
         @test size(mc.method.V, 2) == 5
 
-        # Test with sample_method=:hadamard
+        # Test with sample_method=:hadamard (requires nv == number of load
+        # scenarios, since Hadamard columns are only exactly orthogonal as a
+        # complete basis)
         mc = MeanComplianceFun(
-            problem, solver; method=:trace, nv=5, sample_method=:hadamard
+            problem, solver; method=:trace, nv=nloads, sample_method=:hadamard
         )
         @test mc.method isa TopOpt.Functions.TraceEstimationMean
         @test mc.method.sample_once == true  # hadamard forces sample_once=true
@@ -76,9 +78,11 @@ Random.seed!(42)
         @test mc.method isa TopOpt.Functions.TraceEstimationSVDMean
         @test size(mc.method.V, 2) == 4
 
-        # Test with sample_method=:hadamard
+        # Test with sample_method=:hadamard (requires nv == number of retained
+        # SVD directions)
+        nsv = size(TopOpt.Functions.ExactSVDMean(F).US, 2)
         mc = MeanComplianceFun(
-            problem, solver; method=:svd_trace, nv=4, sample_method=:hadamard
+            problem, solver; method=:svd_trace, nv=nsv, sample_method=:hadamard
         )
         @test mc.method isa TopOpt.Functions.TraceEstimationSVDMean
         @test mc.method.sample_once == true  # hadamard forces sample_once=true

@@ -42,9 +42,9 @@ Random.seed!(42)
         @test bc_approx isa BlockComplianceFun
         @test Nonconvex.NonconvexCore.getdim(bc_approx) == 1
 
-        # Test approximate method with hadamard
+        # Test approximate method with hadamard (requires nv == n_scenarios)
         bc_hadamard = BlockComplianceFun(
-            problem, solver; method=:approx, nv=2, sample_method=:hadamard
+            problem, solver; method=:approx, nv=1, sample_method=:hadamard
         )
         @test bc_hadamard isa BlockComplianceFun
         @test Nonconvex.NonconvexCore.getdim(bc_hadamard) == 1
@@ -278,8 +278,10 @@ end
             solver = FEASolver(
                 DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(3.0)
             )
+            # Hadamard sampling requires nv == nloads.
+            nv = sample_method == :hadamard ? nloads : 10
             bc = BlockComplianceFun(
-                problem, solver; method=:approx, nv=10, sample_method=sample_method
+                problem, solver; method=:approx, nv=nv, sample_method=sample_method
             )
 
             x = fill(0.5, prod(nels))

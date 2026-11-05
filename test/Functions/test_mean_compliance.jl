@@ -481,8 +481,11 @@ end
             solver = FEASolver(
                 DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(2.0)
             )
+            # Hadamard sampling requires nv == nloads (its columns are only
+            # exactly orthogonal as a complete basis).
+            nv = sample_method == :hadamard ? nloads : 15
             mc = MeanComplianceFun(
-                problem, solver; method=:trace, nv=15, sample_method=sample_method
+                problem, solver; method=:trace, nv=nv, sample_method=sample_method
             )
 
             x = fill(0.5, length(solver.vars))

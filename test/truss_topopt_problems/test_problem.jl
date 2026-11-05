@@ -178,3 +178,32 @@ end # end testset
         @test output != ""
     end
 end
+
+@testset "PointLoadCantileverTruss ground structure" begin
+    nels = (4, 2)
+    sizes = (4.0, 2.0)
+    E = 1.0
+    ν = 0.3
+    force = 1.0
+    problem = PointLoadCantileverTruss(nels, sizes, E, ν, force; k_connect=1)
+    grid = TopOpt.TrussTopOptProblems.getFerritegrid(problem)
+
+    # The kNN neighbourhood is symmetric, so naive construction emitted every
+    # member twice ((i, j) and (j, i)); the ground structure must contain each
+    # unordered pair exactly once.
+    seen = Set{Tuple{Int,Int}}()
+    for cell in grid.cells
+        (a, b) = cell.nodes
+        @test (a, b) ∉ seen
+        push!(seen, (a, b))
+        @test (b, a) ∉ seen
+    end
+
+    # Positive `force` is downward (negative y), matching the docstring and
+    # the continuum PointLoadCantilever convention.
+    load_nodes = TopOpt.Ferrite.getnodeset(grid, "force")
+    @test length(load_nodes) == 1
+    fvec = problem.force[only(load_nodes)]
+    @test fvec[1] == 0.0
+    @test fvec[2] == -force
+end

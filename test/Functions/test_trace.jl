@@ -137,8 +137,9 @@ Random.seed!(42)
         F = sparse(sqrt(A))
         true_trace = tr(Matrix(F)' * Matrix(F))
 
-        # Hadamard sampling (deterministic)
-        tem_hadamard = TraceEstimationMean(F, 8, true, hadamard!)
+        # Hadamard sampling (deterministic; requires nv == size(F, 2) for an
+        # unbiased trace estimate)
+        tem_hadamard = TraceEstimationMean(F, size(F, 2), true, hadamard!)
         V_h = tem_hadamard.V
 
         estimate_h = 0.0
@@ -221,10 +222,11 @@ Random.seed!(42)
     end
 
     @testset "DiagonalEstimation approximate diagonal" begin
-        # Hutchinson-style diagonal estimation
+        # Hadamard-based diagonal estimation (the default sampler) requires
+        # nv == m for an unbiased estimate.
         n = 8
         m = 4
-        nv = 5
+        nv = 4
         nE = 6
 
         F_dense = randn(n, m)
@@ -249,13 +251,14 @@ Random.seed!(42)
         nE = 4
 
         F = sprandn(n, m, 0.8)
-        V_custom = randn(m, 5)
+        # Keep nv == m so the default hadamard! sampler is valid.
+        V_custom = randn(m, m)
 
         de = DiagonalEstimation(F, V_custom, nE)
 
         @test de.V === V_custom
-        @test size(de.Y) == (n, 5)
-        @test size(de.Q) == (n, 5)
+        @test size(de.Y) == (n, m)
+        @test size(de.Q) == (n, m)
     end
 
     @testset "TraceEstimationSVDMean with custom V" begin
