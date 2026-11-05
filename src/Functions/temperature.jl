@@ -18,7 +18,7 @@ mutable struct TemperatureFun{
     Ts<:AbstractFEASolver,
     Tg<:AbstractVector{<:Integer},
 } <: AbstractFunction{T}
-    T::Tt # temperature vector
+    temperature::Tt # temperature vector
     dTdx_tmp::Td # directional derivative
     solver::Ts
     global_dofs::Tg
@@ -31,14 +31,14 @@ function Base.show(io::IO, ::MIME{Symbol("text/plain")}, ::TemperatureFun)
 end
 
 struct TemperatureResult{T,N,A<:AbstractArray{T,N}} <: AbstractArray{T,N}
-    T::A
+    data::A
 end
 
-Base.length(t::TemperatureResult) = length(t.T)
-Base.size(t::TemperatureResult, i...) = size(t.T, i...)
-Base.getindex(t::TemperatureResult, i::Integer...) = t.T[i...]
-Base.getindex(t::TemperatureResult, i::CartesianIndex) = t.T[i]
-Base.sum(t::TemperatureResult) = sum(t.T)
+Base.length(t::TemperatureResult) = length(t.data)
+Base.size(t::TemperatureResult, i...) = size(t.data, i...)
+Base.getindex(t::TemperatureResult, i::Integer...) = t.data[i...]
+Base.getindex(t::TemperatureResult, i::CartesianIndex) = t.data[i]
+Base.sum(t::TemperatureResult) = sum(t.data)
 
 """
     TemperatureFun(solver)
@@ -98,8 +98,8 @@ function ChainRulesCore.rrule(tf::TemperatureFun, x::PseudoDensities)
     u = tf(x)
     return u, Δ -> begin
         Δ = ChainRulesCore.unthunk(Δ)
-        if hasproperty(Δ, :T)
-            solver.rhs .= Δ.T
+        if hasproperty(Δ, :data)
+            solver.rhs .= Δ.data
         else
             solver.rhs .= Δ
         end
@@ -111,7 +111,7 @@ function ChainRulesCore.rrule(tf::TemperatureFun, x::PseudoDensities)
             # Use the full element conductivity matrix (not the BC-zeroed
             # `bcmatrix`) so the prescribed-temperature lift K_fp·T_p enters
             # the gradient when the Dirichlet values are nonzero.
-            KeT = rawmatrix(Kes[e]) * u.T[global_dofs]
+            KeT = rawmatrix(Kes[e]) * u.data[global_dofs]
             dTdx_tmp[e] = -dρe * dot(KeT, solver.lhs[global_dofs])
         end
         return nothing, Tangent{typeof(x)}(; x=dTdx_tmp)
@@ -126,7 +126,7 @@ over each cell's nodes, returning a per-cell temperature vector suitable for
 `visualize(problem; cell_colors=...)`.
 """
 function cell_temperature(T, problem::HeatTransferTopOptProblem)
-    Tvec = T isa TemperatureResult ? T.T : T
+    Tvec = T isa TemperatureResult ? T.data : T
     return [mean(Tvec[node] for node in cell.nodes) for cell in getdh(problem).grid.cells]
 end
 
