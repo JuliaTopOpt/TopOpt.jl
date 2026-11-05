@@ -24,9 +24,7 @@ function _extract_cells!(
     node_idx_pattern = r",\s*(\d+)"
     nodes = zeros(TI, nnodes)
 
-    line = readline(file)
-    m = match(stopping_pattern, line)
-    while m isa Nothing
+    nextline = consume_section(file) do line
         m = match(cell_idx_pattern, line)
         if m != nothing
             cell_idx = parse(TI, something(m[1]))
@@ -42,9 +40,7 @@ function _extract_cells!(
 
             prev_cell_idx = cell_idx
         end
-        line = readline(file)
-        m = match(stopping_pattern, line)
     end
 
-    return line
+    return nextline
 end

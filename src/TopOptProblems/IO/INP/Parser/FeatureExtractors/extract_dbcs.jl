@@ -1,10 +1,11 @@
 function extract_nodedbcs!(node_dbcs::Dict{String,Vector{Tuple{TI,TF}}}, file) where {TI,TF}
     pattern_zero = r"([^,]+)\s*,\s*(\d)"
     pattern_range = r"([^,]+)\s*,\s*(\d)\s*,\s*(\d)"
-    pattern_other = r"([^,]+)\s*,\s*(\d)\s*,\s*(\d)\s*,\s*(\-?\d+\.\d*)"
-    line = readline(file)
-    m = match(stopping_pattern, line)
-    while m isa Nothing
+    # The value is optional and, when present, must be parsed even without a
+    # decimal point (e.g. `0`, `-1`) -- previously integer values were either
+    # dropped or misparsed as zero-valued range constraints.
+    pattern_other = r"([^,]+)\s*,\s*(\d)\s*,\s*(\d)\s*,\s*(\-?\d+(\.\d*)?(e[-\+]?\d*)?)"
+    return consume_section(file) do line
         m = match(pattern_other, line)
         if m != nothing
             nodesetname = something(m[1])
@@ -21,9 +22,7 @@ function extract_nodedbcs!(node_dbcs::Dict{String,Vector{Tuple{TI,TF}}}, file) w
                     push!(node_dbcs[nodesetname], (dof, val))
                 end
             end
-            line = readline(file)
-            m = match(stopping_pattern, line)
-            continue
+            return
         end
         m = match(pattern_range, line)
         if m != nothing
@@ -40,9 +39,7 @@ function extract_nodedbcs!(node_dbcs::Dict{String,Vector{Tuple{TI,TF}}}, file) w
                     push!(node_dbcs[nodesetname], (dof, zero(TF)))
                 end
             end
-            line = readline(file)
-            m = match(stopping_pattern, line)
-            continue
+            return
         end
         m = match(pattern_zero, line)
         if m != nothing
@@ -53,12 +50,7 @@ function extract_nodedbcs!(node_dbcs::Dict{String,Vector{Tuple{TI,TF}}}, file) w
             else
                 node_dbcs[nodesetname] = [(dof, zero(TF))]
             end
-            line = readline(file)
-            m = match(stopping_pattern, line)
-            continue
+            return
         end
-        line = readline(file)
-        m = match(stopping_pattern, line)
     end
-    return line
 end

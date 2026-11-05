@@ -34,9 +34,7 @@ function _extract_nodes!(node_coords::AbstractVector{<:NTuple}, file, prev_node_
         error("Dimension is not supported.")
     end
 
-    line = readline(file)
-    m = match(stopping_pattern, line)
-    while m isa Nothing
+    nextline = consume_section(file) do line
         m = match(pattern, line)
         if m != nothing
             node_idx = parse(Int, something(m[1]))
@@ -55,8 +53,6 @@ function _extract_nodes!(node_coords::AbstractVector{<:NTuple}, file, prev_node_
             end
             prev_node_idx = node_idx
         end
-        line = readline(file)
-        m = match(stopping_pattern, line)
     end
-    return line
+    return nextline
 end

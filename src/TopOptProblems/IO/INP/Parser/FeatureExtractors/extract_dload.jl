@@ -5,7 +5,8 @@ function extract_dload!(
     ::Type{Val{dim}},
     offset::TI,
 ) where {TI,TF,dim}
-    pattern = r"(\d+)\s*,\s*P(\d+)\s*,\s*(\-?\d+\.\d*)"
+    # The magnitude must accept integer values (`-3` as well as `-3.0`).
+    pattern = r"(\d+)\s*,\s*P(\d+)\s*,\s*(\-?\d+(\.\d*)?(e[-\+]?\d*)?)"
     dload_heading_pattern = r"\*DLOAD"
 
     faceset_name = "DLOAD_SET_$(length(dloads)+1)"
@@ -15,9 +16,7 @@ function extract_dload!(
     prevload = zero(TF)
     load = zero(TF)
 
-    line = readline(file)
-    m = match(stopping_pattern, line)
-    while m isa Nothing
+    nextline = consume_section(file) do line
         m = match(dload_heading_pattern, line)
         if m != nothing
             dloads[faceset_name] = load
@@ -39,10 +38,8 @@ function extract_dload!(
             end
             push!(facesets[faceset_name], (cellidx, faceidx))
         end
-        line = readline(file)
-        m = match(stopping_pattern, line)
     end
     dloads[faceset_name] = load
 
-    return line
+    return nextline
 end
