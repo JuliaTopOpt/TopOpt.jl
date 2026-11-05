@@ -231,10 +231,21 @@ function PointLoadCantileverTruss(
         k_ = 8 * k_connect + 6 * sum(1:9:(9 * k_connect - 1))
     end
     idxs, _ = knn(kdtree, node_mat, k_ + 1, true)
-    connect_mat = zeros(Int, 2, k_ * length(idxs))
+    # The kNN neighborhood is symmetric, so (i, j) and (j, i) both appear in
+    # the raw result. Build the ground structure from *unordered* member pairs
+    # so each physical member gets exactly one element (previously every
+    # member was duplicated, doubling its stiffness/volume contribution).
+    pairs = Set{Tuple{Int,Int}}()
     for (i, v) in enumerate(idxs)
-        connect_mat[1, ((i - 1) * k_ + 1):(i * k_)] = ones(Int, k_) * i
-        connect_mat[2, ((i - 1) * k_ + 1):(i * k_)] = v[2:end] # skip the point itself
+        for j in v[2:end] # skip the point itself
+            push!(pairs, (min(i, j), max(i, j)))
+        end
+    end
+    pair_vec = sort!(collect(pairs))
+    connect_mat = Matrix{Int}(undef, 2, length(pair_vec))
+    for (k, (i, j)) in enumerate(pair_vec)
+        connect_mat[1, k] = i
+        connect_mat[2, k] = j
     end
     truss_grid = TrussGrid(node_mat, connect_mat)
 
@@ -288,7 +299,9 @@ function PointLoadCantileverTruss(
     loadset = getnodeset(truss_grid.grid, "force")
     ploads = Dict{Int,SVector{dim,T}}()
     for node_id in loadset
-        ploads[node_id] = SVector{dim,T}(dim == 2 ? [0.0, force] : [0.0, 0.0, force])
+        # Positive `force` points downward (negative y/z), matching the
+        # docstring and the continuum `PointLoadCantilever`.
+        ploads[node_id] = SVector{dim,T}(dim == 2 ? [0.0, -force] : [0.0, 0.0, -force])
     end
 
     return TrussProblem(truss_grid, mats, ch, ploads, metadata)

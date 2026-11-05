@@ -170,7 +170,14 @@ function ChainRulesCore.rrule(::typeof(pinv), t::Vec{dim,T}) where {dim,T}
     TT = LinearAlgebra.Transpose{T,Vec{dim,T}}
     return TT(t / s), Δ -> begin
         Δ = ChainRulesCore.unthunk(Δ)
-        nothing, TT(Δ)
+        # f(t) = tᵀ/s with s = Σᵢ tᵢ² has pullback ṫ = Δ̄/s − 2 t (Δ̄⋅t)/s².
+        # The cotangent Δ̄ of the row-vector output may be a `Transpose`
+        # (possibly of a plain vector); normalize it to a `Vec` so the
+        # result has the natural `Transpose{T,Vec}` cotangent type.
+        Δv = Δ isa LinearAlgebra.Transpose ? parent(Δ) : vec(Δ)
+        v = Vec{dim,T}(Tuple(collect(Δv)))
+        d = dot(v, t)
+        return nothing, TT(v / s - 2 * d / s^2 * t)
     end
 end
 

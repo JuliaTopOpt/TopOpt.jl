@@ -293,7 +293,9 @@ function assemble_f!(
     return f
 end
 
-# Conjugate gradient solve (OpenLSTO's `SolveWithCG` uses the same tolerance).
+# Conjugate gradient solve. OpenLSTO's `SolveWithCG` uses Eigen's CG, which
+# stops on the relative residual `‖r‖ < tol·‖b‖`; use the same criterion so
+# results match upstream.
 function cg_solve(
     K::SparseMatrixCSC{Float64,Int},
     b::Vector{Float64};
@@ -304,13 +306,14 @@ function cg_solve(
     r = copy(b)
     p = copy(r)
     rsold = dot(r, r)
+    stop_tol = tol * sqrt(dot(b, b))
     for _ in 1:maxiter
         Ap = K * p
         alpha = rsold / dot(p, Ap)
         x .+= alpha .* p
         r .-= alpha .* Ap
         rsnew = dot(r, r)
-        sqrt(rsnew) < tol && break
+        sqrt(rsnew) < stop_tol && break
         p .= r .+ (rsnew / rsold) .* p
         rsold = rsnew
     end
