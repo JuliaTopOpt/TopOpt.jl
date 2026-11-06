@@ -1,0 +1,88 @@
+---
+title: "Reliability-based topology optimization (RBTO)"
+toc: true
+---
+
+## Description
+
+[Reliability-based topology optimization](https://link.springer.com/article/10.1007/s00158-010-0518-6)
+(RBTO) searches for an optimal design while accounting for uncertainty in the
+problem, such as random material properties. This tutorial walks through an
+RBTO example with two materials: the Young's moduli are treated as log-normally
+distributed random variables, and the objective is the mean plus two standard
+deviations of the compliance.
+
+## Setup
+
+```{julia}
+#| output: false
+using ReliabilityOptimization, Test, ChainRulesCore
+using TopOpt, Zygote, FiniteDifferences, Nonconvex
+using Distributions, LinearAlgebra
+```
+
+## Problem definition
+
+```{julia}
+#| output: false
+const v = 0.3 # Poisson's ratio
+const densities = [0.0, 1.0] # for mass calc
+const f = 1.0 # downward force
+const nmats = 2
+const V = 0.4 # volume fraction
+const problemSize = (4, 4) # size of rectangular mesh
+const elSize = (1.0, 1.0) # size of QUAD4 elements
+# Point load cantilever problem to be solved
+problem = PointLoadCantilever(problemSize, elSize, 1.0, v, f)
+ncells = TopOpt.getncells(problem) # Number of elements in mesh
+solver = FEASolver(DirectSolver, problem; xmin = 0.0)
+filter = DensityFilterFun(solver; rmin = 3.0) # filter to avoid checkerboarding
+comp = ComplianceFun(solver) # function that returns compliance
+penalty = PowerPenaltyFun(3.0) # SIMP penalty
+const avgEs = [1e-6, 0.5]
+logEs = MvNormal(log.(avgEs), Matrix(Diagonal(abs.(log.(avgEs) * 0.1))))
+```
+
+## Random objective
+
+The 'original' objective function takes the design variables and a random
+sample of the Young's moduli as input. It is wrapped in a `RandomFunction` to
+propagate the input uncertainty through the model.
+
+```{julia}
+#| output: false
+function compObj(y, logEs)
+    penalty1 = PowerPenaltyFun(3.0)
+    interp1 = MaterialInterpolationFun(exp.(logEs), penalty1)
+    x = tounit(MultiMaterialVariablesFun(y, nmats))
+    _E = interp1(filter(x))
+    dsd = comp(_E)
+    return dsd
+end
+penalty2 = PowerPenaltyFun(1.0)
+interp2 = MaterialInterpolationFun(densities, penalty2)
+# wrap the original function in a RandomFunction struct
+rf = RandomFunction(compObj, logEs; method = FORM(RIA()))
+# initial homogeneous distribution of pseudo-densities
+x0 = fill(V, ncells * (length(logEs) - 1))
+# this returns a probability distribution of the objective at the current point
+d = rf(x0)
+```
+
+## Optimization
+
+```{julia}
+constr = y -> begin
+    _rhos = interp2(MultiMaterialVariablesFun(y, nmats))
+    return sum(_rhos.x) / ncells - 0.4 # elements have unit volumes
+end
+function obj(x) # objective for the topology optimization problem
+    dist = rf(x)
+    return mean(dist)[1] + 2 * sqrt(cov(dist)[1, 1])
+end
+
+m = Model(obj) # create optimization model
+addvar!(m, zeros(length(x0)), ones(length(x0))) # setup optimization variables
+Nonconvex.add_ineq_constraint!(m, constr) # setup volume inequality constraint
+@time r = Nonconvex.optimize(m, MMA87(), x0; options = MMAOptions())
+```
