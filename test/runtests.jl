@@ -64,6 +64,7 @@ if ACTUAL_GROUP in ("All", "Core_Tests_1")
         include("Functions/test_stress_tensor_rrule.jl")
         include("Functions/test_stress_relaxation.jl")
         include("Functions/test_truss_stress_rrule.jl")
+        include("Functions/test_correctness_regressions.jl")
     end
 end
 
@@ -77,6 +78,7 @@ if ACTUAL_GROUP in ("All", "Core_Tests_2")
         include("FEA/misc.jl")
         include("FEA/test_cg_assembly_safe.jl")
         include("FEA/test_preconditioner.jl")
+        include("FEA/test_regressions.jl")
     end
     @safetestset "Utilities" begin
         include("Utilities/test_utils.jl")

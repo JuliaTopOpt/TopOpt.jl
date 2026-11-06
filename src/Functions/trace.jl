@@ -2,6 +2,28 @@ abstract type AbstractMeanMethod end
 abstract type AbstractExactMeanMethod <: AbstractMeanMethod end
 abstract type AbstractTraceEstimationMeanMethod <: AbstractMeanMethod end
 
+"""
+    _check_hadamard_nv(sample_method, nrows, nv)
+
+The Hadamard columns produced by `hadamard!` are mutually orthogonal with
+norm² `n` only when they form a complete basis (`nv == nrows`). For `nv < nrows`
+the estimator is silently biased (it returns the trace of `A` projected onto
+the column span instead of `tr(A)`), so fail fast instead.
+"""
+function _check_hadamard_nv(sample_method, nrows::Int, nv::Int)
+    if sample_method === hadamard! && nv != nrows
+        throw(
+            ArgumentError(
+                "Hadamard trace/diagonal estimation requires `nv == $nrows` (the " *
+                "number of sample-matrix rows), got nv=$nv. Hadamard columns are " *
+                "exactly orthogonal only when they form a complete basis; use the " *
+                "default :hutch sampler for nv < $nrows.",
+            ),
+        )
+    end
+    return nothing
+end
+
 struct ExactMean{TF} <: AbstractExactMeanMethod
     F::TF
 end
@@ -42,6 +64,7 @@ end
 function TraceEstimationMean(
     F::SparseMatrixCSC, nv::Int, sample_once::Bool=true, sample_method=(hutch_rand!)
 )
+    _check_hadamard_nv(sample_method, size(F, 2), nv)
     V = zeros(eltype(F), size(F, 2), nv)
     sample_method(V)
     return TraceEstimationMean(F, V, sample_once, sample_method)
@@ -57,6 +80,7 @@ function TraceEstimationSVDMean(
     F::SparseMatrixCSC, nv::Int, sample_once::Bool=true, sample_method=(hutch_rand!)
 )
     US = ExactSVDMean(F).US
+    _check_hadamard_nv(sample_method, size(US, 2), nv)
     V = zeros(eltype(F), size(US, 2), nv)
     sample_method(V)
     sample_once = sample_method === hadamard! || sample_once
@@ -69,6 +93,7 @@ function TraceEstimationSVDMean(
     sample_method=(hutch_rand!),
 )
     US = ExactSVDMean(F).US
+    _check_hadamard_nv(sample_method, size(US, 2), size(V, 2))
     sample_once = sample_method === hadamard! || sample_once
     return TraceEstimationSVDMean(US, size(F, 2), V, sample_once, sample_method)
 end
@@ -131,6 +156,7 @@ end
 function DiagonalEstimation(
     F::SparseMatrixCSC, nv::Int, nE::Int, sample_once::Bool=true, sample_method=(hadamard!)
 )
+    _check_hadamard_nv(sample_method, size(F, 2), nv)
     V = zeros(eltype(F), size(F, 2), nv)
     sample_method(V)
     Y = zeros(eltype(F), size(F, 1), nv)
@@ -147,6 +173,7 @@ function DiagonalEstimation(
     sample_method=(hadamard!),
 )
     nv = size(V, 2)
+    _check_hadamard_nv(sample_method, size(F, 2), nv)
     Y = zeros(eltype(F), size(F, 1), nv)
     Q = similar(Y)
     temp = zeros(eltype(F), nE)

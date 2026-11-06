@@ -448,7 +448,9 @@ function _QuadraticLGrid(
         ),
     )
 
-    midpointindy = round(Int, nel2[2] / 2) + 1
+    # The quadratic node array of the lower-right block has `2*nel_y2 + 1`
+    # rows, so the mid-height row index is `2*round(nel2[2]/2) + 1`.
+    midpointindy = 2 * round(Int, nel2[2] / 2) + 1
     nodes = Node{2,T}[]
     cells = QuadraticQuadrilateral[]
     boundary = Tuple{Int,Int}[]
@@ -693,11 +695,13 @@ function _LinearTieBeamGrid((::Type{T})=Float64, refine=1) where {T}
         if j == 1
             cidx = length(cells)
             push!(boundary, (cidx, 1))
-            if i == 31
+            # Elements `30*refine+1 : 31*refine` cover x ∈ [30, 31] where the
+            # column connects (element 31 alone only matches refine == 1).
+            if 30 * refine + 1 <= i <= 31 * refine
                 push!(facesets["bottomload"], Ferrite.FacetIndex(cidx, 1))
             end
         end
-        if j == nel_y1 && i != 31
+        if j == nel_y1 && !(30 * refine + 1 <= i <= 31 * refine)
             cidx = length(cells)
             push!(boundary, (cidx, 3))
         end
@@ -823,11 +827,13 @@ function _QuadraticTieBeamGrid((::Type{T})=Float64, refine=1) where {T}
         if j == 1
             cidx = length(cells)
             push!(boundary, (cidx, 1))
-            if i == 31
+            # Elements `30*refine+1 : 31*refine` cover x ∈ [30, 31] where the
+            # column connects (element 31 alone only matches refine == 1).
+            if 30 * refine + 1 <= i <= 31 * refine
                 push!(facesets["bottomload"], Ferrite.FacetIndex(cidx, 1))
             end
         end
-        if j == nel_y1 && i != 31
+        if j == nel_y1 && !(30 * refine + 1 <= i <= 31 * refine)
             cidx = length(cells)
             push!(boundary, (cidx, 3))
         end

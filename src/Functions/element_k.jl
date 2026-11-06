@@ -40,7 +40,9 @@ function ElementKFun(solver::AbstractFEASolver)
     dh = solver.problem.ch.dh
     penalty = getpenalty(solver)
     xmin = solver.xmin
-    solver.vars = ones(getncells(dh.grid))
+    # Fill (rather than replace) `solver.vars` so the element type matches and
+    # any external references to the array stay valid.
+    fill!(solver.vars, one(eltype(solver.vars)))
     # trigger Ke construction
     solver()
     Kes_solver = solver.elementinfo.Kes

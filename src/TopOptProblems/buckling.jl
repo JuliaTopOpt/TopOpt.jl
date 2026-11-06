@@ -136,5 +136,15 @@ function buckling(
         end
     end
 
+    # `ginfo.K` is condensed by `apply!(K, f, ch)` during assembly; apply the
+    # same constraints to `Kσ` so the generalized eigenproblem `Kφ = λKσφ`
+    # does not couple through prescribed DOFs. The diagonal is zeroed at
+    # prescribed DOFs so the constrained modes satisfy `φ_p = 0` exactly
+    # instead of introducing a spurious unit eigenvalue.
+    Ferrite.apply!(Kσ, problem.ch)
+    for d in problem.ch.prescribed_dofs
+        Kσ[d, d] = 0
+    end
+
     return ginfo.K, Kσ
 end

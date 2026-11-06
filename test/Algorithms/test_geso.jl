@@ -395,4 +395,53 @@ using Ferrite: getncells
         @test all(result.topology[black] .== 1)
         @test all(x -> x == 0 || x == 1, result.topology)
     end
+
+    @testset "GESO vol_limit validation" begin
+        nels = (10, 4)
+        problem = PointLoadCantilever(nels, (1.0, 1.0), E, ν, force)
+        solver = FEASolver(DirectSolver, problem; xmin=0.001)
+        comp = ComplianceFun(solver)
+        vol = VolumeFun(solver)
+        filter = DensityFilterFun(solver; rmin=2.0)
+
+        for bad_V in (0.0, -0.1, 1.0, 1.5)
+            @test_throws ArgumentError GESO(comp, vol, bad_V, filter)
+        end
+        # Valid interior volume fractions still construct
+        @test GESO(comp, vol, 0.5, filter) isa TopOpt.Algorithms.GESO
+    end
+
+    @testset "GESO respects x0 for free elements" begin
+        nels = (8, 4)
+        problem = PointLoadCantilever(nels, (1.0, 1.0), E, ν, force)
+        solver = FEASolver(DirectSolver, problem; xmin=0.001)
+        comp = ComplianceFun(solver)
+        vol = VolumeFun(solver)
+        filter = DensityFilterFun(solver; rmin=1.5)
+
+        geso = GESO(comp, vol, 0.5, filter; maxiter=0, tol=0.1, p=1.0)
+        x0 = fill(0.4, length(solver.vars)) # rounds to 0 for every element
+        geso(x0; seed=4242)
+
+        # With maxiter=0 the optimization loop never runs, so the state
+        # reflects the initialization: it must match the rounded x0 (all
+        # false) instead of the constructor default (all true).
+        expected = round.(x0) .> 0
+        @test geso.var_black == expected
+        for j in axes(geso.genotypes, 1)
+            @test geso.genotypes[j, :] == expected
+        end
+    end
+
+    @testset "GESO k keyword changes history length" begin
+        nels = (10, 4)
+        problem = PointLoadCantilever(nels, (1.0, 1.0), E, ν, force)
+        solver = FEASolver(DirectSolver, problem; xmin=0.001)
+        comp = ComplianceFun(solver)
+        vol = VolumeFun(solver)
+        filter = DensityFilterFun(solver; rmin=2.0)
+
+        geso = GESO(comp, vol, 0.5, filter; k=6)
+        @test length(geso.obj_trace) == 6
+    end
 end

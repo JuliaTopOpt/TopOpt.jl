@@ -1,6 +1,7 @@
 using TopOpt
 using TopOpt.TopOptProblems
 using Test
+using Random
 
 using Ferrite
 using SparseArrays
@@ -321,5 +322,39 @@ end
 
         # The DOFs should be valid indices
         @test all(d -> 1 <= d <= Ferrite.ndofs(problem.ch.dh), nearest_dofs)
+    end
+end
+
+@testset "get_surface_dofs grouping" begin
+    # HalfMBB constrains the whole bottom edge; the surface DOF list must
+    # drop whole *nodes* (not individual DOFs), so that the per-node grouping
+    # in `generate_random_loads` never slices across node boundaries.
+    problem = HalfMBB((8, 4), (1.0, 1.0), 1.0, 0.3, 1.0)
+    ndofs_per_node = size(problem.metadata.node_dofs, 1)
+    dofs = TopOpt.TopOptProblems.get_surface_dofs(problem)
+    @test length(dofs) % ndofs_per_node == 0
+
+    # Each contiguous group of `ndofs_per_node` DOFs belongs to a single node
+    node_dofs = problem.metadata.node_dofs
+    for i in 1:(length(dofs) ÷ ndofs_per_node)
+        group = dofs[(ndofs_per_node * (i - 1) + 1):(ndofs_per_node * i)]
+        matching_nodes = [n for n in axes(node_dofs, 2) if node_dofs[:, n] == group]
+        @test length(matching_nodes) == 1
+    end
+
+    # No constrained DOF appears in the list
+    @test all(d -> d ∉ problem.ch.prescribed_dofs, dofs)
+
+    # The load matrix built from these DOFs only touches full nodes
+    Random.seed!(1)
+    F = TopOpt.TopOptProblems.generate_random_loads(problem, 10)
+    for j in axes(F, 2)
+        inds = findall(!iszero, F[:, j])
+        @test length(inds) % ndofs_per_node == 0
+        for i in 1:(length(inds) ÷ ndofs_per_node)
+            group = inds[(ndofs_per_node * (i - 1) + 1):(ndofs_per_node * i)]
+            matching_nodes = [n for n in axes(node_dofs, 2) if node_dofs[:, n] == group]
+            @test length(matching_nodes) == 1
+        end
     end
 end

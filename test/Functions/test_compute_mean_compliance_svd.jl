@@ -297,8 +297,11 @@ Random.seed!(42)
         x = fill(0.5, length(solver.vars))
 
         for sample_method in [:hutch, :hadamard]
+            # Hadamard sampling requires nv == number of rows of the probe
+            # matrix (the number of retained SVD directions for :approx_svd).
+            nv = sample_method == :hadamard ? nloads : 5
             mc = MeanComplianceFun(
-                problem, solver; method=:approx_svd, nv=5, sample_method=sample_method
+                problem, solver; method=:approx_svd, nv=nv, sample_method=sample_method
             )
             ax = mc.method
             grad = similar(x)

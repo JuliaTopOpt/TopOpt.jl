@@ -5,14 +5,14 @@
         meandiag::T
     end
 
-An element stiffness matrix. `matrix` is the unconstrained element stiffness matrix. `mask` is a `BitVector` where `mask[i]` is 1 iff the local degree of freedom `i` is not constrained by a Dirichlet boundary condition. `meandiag` is the mean of the diagonal of the unconstrained element stiffness matrix.
+An element stiffness matrix. `matrix` is the unconstrained element stiffness matrix. `mask` is a `BitVector` where `mask[i]` is 1 iff the local degree of freedom `i` is not constrained by a Dirichlet boundary condition. `meandiag` is the sum of the diagonal of the unconstrained element stiffness matrix.
 """
 struct ElementMatrix{T,Tm1<:AbstractMatrix{T},Tm2} <: AbstractMatrix{T}
     matrix::Tm1
     mask::Tm2
     meandiag::T
 end
-ElementMatrix(matrix, mask) = ElementMatrix(matrix, mask, sumdiag(matrix) / size(matrix, 1))
+ElementMatrix(matrix, mask) = ElementMatrix(matrix, mask, sumdiag(matrix))
 function Base.show(io::IO, ::MIME{Symbol("text/plain")}, ::ElementMatrix)
     return println(io, "TopOpt element matrix")
 end

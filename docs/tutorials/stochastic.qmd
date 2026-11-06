@@ -128,16 +128,19 @@ gradient consistent during an optimization.
 ## Hadamard (deterministic) estimator
 
 Passing `sample_method=:hadamard` replaces the random probes with deterministic
-orthogonal Hadamard columns. This removes the sampling noise and converges
-smoothly, at the cost of a fixed `nv` that is a power of two.
+orthogonal Hadamard columns. The estimator is exact only when `nv` equals the
+number of load scenarios (the Hadamard columns then form a complete orthogonal
+basis); with fewer columns the estimate is biased toward the column span, so
+the constructor rejects `nv < n_scenarios`.
 
 ```{julia}
 #| output: true
-for nv in (4, 8, 16)
-    mc = MeanComplianceFun(problem, solver; method=:trace, nv=nv, sample_method=:hadamard)
-    est = mc(PseudoDensities(x))
-    println("hadamard nv=$(lpad(nv, 2)): $(round(est, digits=3))  (rel. err $(round(abs(est - C_exact) / C_exact, digits=3)))")
-end
+n_scenarios = size(problem.F, 2)
+mc = MeanComplianceFun(
+    problem, solver; method=:trace, nv=n_scenarios, sample_method=:hadamard
+)
+est = mc(PseudoDensities(x))
+println("hadamard nv=$(n_scenarios): $(round(est, digits=3))  (rel. err $(round(abs(est - C_exact) / C_exact, digits=3)))")
 ```
 
 ## Per-scenario compliance: mean and standard deviation
@@ -270,7 +273,8 @@ display_app(fig3)
 - **Hutchinson** (`:trace`): use for large ensembles where solving every
   scenario is prohibitive. Accuracy improves with `nv`, but so does cost.
 - **Hadamard** (`:trace` with `sample_method=:hadamard`): deterministic and
-  smoother than Hutchinson; pick `nv` a power of two.
+  smoother than Hutchinson; `nv` must equal the number of scenarios for an
+  unbiased estimate.
 - `BlockComplianceFun` exposes the per-scenario values, so it is the tool for
   statistics beyond the mean (standard deviation, CVaR-style combinations) and
   for the maximum-compliance constraint handled by the augmented Lagrangian

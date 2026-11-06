@@ -201,6 +201,61 @@ end
     @test tb_default isa Ferrite.Grid
 end
 
+@testset "Quadratic LGrid load node at mid-height" begin
+    # The quadratic grid's lower-right block has 2*nel_y2 + 1 node rows; the
+    # load must sit on the mid-height row (y = 25 for a height-50 arm), not
+    # at quarter height (y = 12.5), which is where the linear-grid row index
+    # formula lands on the quadratic node array.
+    qgrid = LGrid(
+        Float64; celltype=:Quadratic, length=100, height=100, upperslab=50, lowerslab=50
+    )
+    load_nodes = getnodeset(qgrid, "load")
+    @test length(load_nodes) == 1
+    @test qgrid.nodes[only(load_nodes)].x[2] == 25.0
+    @test qgrid.nodes[only(load_nodes)].x[1] == 100.0
+
+    # Distributed quadratic load stays centered on the midpoint
+    qgrid_w = LGrid(
+        Float64;
+        celltype=:Quadratic,
+        length=100,
+        height=100,
+        upperslab=50,
+        lowerslab=50,
+        load_width=5,
+    )
+    load_nodes_w = getnodeset(qgrid_w, "load")
+    @test length(load_nodes_w) == 5
+    @test sum(qgrid_w.nodes[n].x[2] for n in load_nodes_w) / 5 == 25.0
+end
+
+@testset "TieBeam refined grid bottomload placement" begin
+    # For refine > 1 the bottomload facets must stay under the connecting
+    # column at x ∈ [30, 31]; the old hardcoded element index 31 covers
+    # x ∈ [30/refine, 31/refine] instead.
+    for refine in (1, 2)
+        tb = TieBeamGrid(Float64; refine=refine)
+        @test length(tb.facetsets["bottomload"]) == refine
+        for facet in tb.facetsets["bottomload"]
+            cell = getcells(tb, facet[1])
+            xs = [tb.nodes[n].x[1] for n in Ferrite.facets(cell)[facet[2]]]
+            @test minimum(xs) >= 30.0
+            @test maximum(xs) <= 31.0
+        end
+        # All facets together span the full column footprint
+        all_xs = sort!(
+            vcat(
+                [
+                    [tb.nodes[n].x[1] for n in Ferrite.facets(getcells(tb, f[1]))[f[2]]] for
+                    f in tb.facetsets["bottomload"]
+                ]...,
+            ),
+        )
+        @test first(all_xs) ≈ 30.0
+        @test last(all_xs) ≈ 31.0
+    end
+end
+
 @testset "Grid Boundary Conditions" begin
     lgrid = LGrid(Float64; upperslab=30, lowerslab=70)
 

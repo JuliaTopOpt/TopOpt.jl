@@ -64,7 +64,7 @@ end
         T = tf(PseudoDensities(ones(prod(nels))))
         @test T isa TopOpt.Functions.TemperatureResult
         @test length(T) == ndofs(problem.ch.dh)
-        @test all(isfinite, T.T)
+        @test all(isfinite, T.data)
     end
 
     @testset "cell_temperature averages to per-cell vector" begin
@@ -79,7 +79,7 @@ end
         @test length(cellT) == getncells(problem)
         @test all(isfinite, cellT)
         # Every cell temperature lies between the min and max nodal temperature.
-        Tmin, Tmax = minimum(T.T), maximum(T.T)
+        Tmin, Tmax = minimum(T.data), maximum(T.data)
         @test all(Tmin <= c <= Tmax for c in cellT)
     end
 end

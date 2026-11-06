@@ -83,3 +83,25 @@ end
         @test grad_zygote ≈ grad_fd rtol = 1e-3
     end
 end
+
+@testset "pinv rrule" begin
+    # The pseudo-inverse f(t) = tᵀ/Σt² has pullback ṫ = Δ̄/s − 2 t (Δ̄⋅t)/s²;
+    # the previous rrule returned the bare transpose of the cotangent.
+    Vec = TopOpt.Tensors.Vec
+    for _ in 1:5
+        t = Vec{3,Float64}(Tuple(rand(3) .+ 0.1))
+        # avoid near-zero denominators
+        f = TopOpt.TrussTopOptProblems.pinv
+        y, pb = ChainRulesCore.rrule(f, t)
+        @test y isa LinearAlgebra.Transpose
+        @test parent(y) ≈ t ./ sum(t .^ 2)
+        Δ = rand(3)
+        # pullback with a row cotangent
+        cots = ChainRulesCore.unthunk(pb(transpose(Δ))[2])
+        @test cots isa LinearAlgebra.Transpose
+        cots = parent(cots)
+        s = sum(t .^ 2)
+        expected = Δ ./ s .- 2 .* t .* (dot(Δ, t) / s^2)
+        @test collect(cots) ≈ expected
+    end
+end

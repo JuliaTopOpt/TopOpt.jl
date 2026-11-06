@@ -114,9 +114,14 @@ function ChainRulesCore.rrule(dp::DisplacementFun, x::PseudoDensities)
         for e in eachindex(x.x)
             _, dρe = get_ρ_dρ(x.x[e], penalty, xmin)
             celldofs!(global_dofs, dh, e)
-            Keu = bcmatrix(Kes[e]) * u.u[global_dofs]
+            # Use the full element stiffness matrix (not the BC-zeroed
+            # `bcmatrix`) so the lift term K_fp·u_p enters the gradient when
+            # the prescribed displacements are nonzero (see TemperatureFun).
+            Keu = rawmatrix(Kes[e]) * u.u[global_dofs]
             dudx_tmp[e] = -dρe * dot(Keu, solver.lhs[global_dofs])
         end
-        return nothing, Tangent{typeof(x)}(; x=dudx_tmp) # J1' * v, J2' * v
+        # Copy: `dudx_tmp` is a reusable workspace buffer of `dp` and is
+        # overwritten by the next evaluation/pullback.
+        return nothing, Tangent{typeof(x)}(; x=copy(dudx_tmp)) # J1' * v, J2' * v
     end
 end

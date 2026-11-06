@@ -97,10 +97,12 @@ using TopOpt.FEA: EnergyCriteria, CGAssemblySolver, CGMatrixFreeSolver, DirectSo
         # Run solver - energy will be updated during CG iterations
         solver()
 
-        # After solving, the energy criteria should have been updated
-        # Note: The actual value depends on the problem, but it should be non-negative
-        # since energy is computed as xAx which is positive definite
-        @test energy_criteria.energy >= 0
+        # The energy criterion is only updated inside the extended
+        # `isconverged` method. If the iteration loop never consults it (i.e.
+        # the criterion is dead code, as it was when IterativeSolvers' `cg!`
+        # was used directly), `energy` stays exactly 0.0 for a nonzero load.
+        @test energy_criteria.energy > 0
+        @test isfinite(energy_criteria.energy)
     end
 
     @testset "EnergyCriteria convergence behavior" begin

@@ -250,6 +250,11 @@ function discretise!(boundary::LevelSetBoundary, size_lambdas::Int)
                     push!(boundary_nodes, element.nodes[j])
                 end
             end
+            # Degenerate elements can end up with fewer than two boundary
+            # nodes (e.g. right after advection near the band edge); upstream
+            # reads uninitialized memory here. Skip such elements instead of
+            # crashing with a BoundsError.
+            length(boundary_nodes) >= 2 || continue
             index, coord = is_added(boundary, boundary_nodes[1], 0, 0.0)
             if index < 0
                 index = add_point!(boundary, coord, size_lambdas)

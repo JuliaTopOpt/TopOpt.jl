@@ -104,6 +104,11 @@ function initialise_frozen!(fmm::FastMarchingMethod)
             end
         end
     end
+    # Upstream (`initialiseFrozen`) aborts when the level set has no zero
+    # crossings (`lsm_check(nFrozen > 0, "There are no frozen nodes!")`).
+    # Without this check a degenerate input (e.g. all-inside or all-outside)
+    # silently skips reinitialisation and returns the input unchanged.
+    count(==(FMM_FROZEN), fmm.nodeStatus) > 0 || error("There are no frozen nodes!")
     return nothing
 end
 

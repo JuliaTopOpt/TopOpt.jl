@@ -248,8 +248,8 @@ end
 
 # Extend boundary-point velocities with added stochastic noise
 # (`computeVelocities` with a temperature and RNG in OpenLSTO). Returns the
-# (possibly CFL-scaled) time step; the scale is 1.0 unless the noise would
-# violate the move-limit condition.
+# CFL scaling factor applied to the time step (matching upstream; the scale
+# is 1.0 unless the noise would violate the move-limit condition).
 function compute_velocities!(
     ls::LevelSet,
     boundaryPoints::Vector{LevelSetBoundaryPoint},
@@ -268,7 +268,7 @@ function compute_velocities!(
         point.velocity += noise * normal(rng, 0.0, 1.0)
     end
     compute_velocities!(ls, boundaryPoints)
-    return timeStep
+    return scale
 end
 
 function compute_gradients!(ls::LevelSet)

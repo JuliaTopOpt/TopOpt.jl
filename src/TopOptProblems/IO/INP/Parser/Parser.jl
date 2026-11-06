@@ -52,6 +52,25 @@ end
 
 const stopping_pattern = r"^\*[^\*]"
 
+"""
+    consume_section(f, file) -> Union{String,Nothing}
+
+Read lines from `file` until a section-heading (stopping) line is found,
+calling `f(line)` for every data line in between. Returns the stopping line so
+the caller can dispatch on it, or `nothing` if end-of-file is reached first.
+Unlike a bare `readline` loop, this never throws `EOFError` on INP files whose
+last section ends with data rows. The function argument comes first so it can
+be used with `do`-block syntax: `consume_section(file) do line ... end`.
+"""
+function consume_section(process::F, file) where {F}
+    while !eof(file)
+        line = readline(file)
+        match(stopping_pattern, line) === nothing || return line
+        process(line)
+    end
+    return nothing
+end
+
 # Import
 include(joinpath("FeatureExtractors", "extract_cells.jl"))
 include(joinpath("FeatureExtractors", "extract_cload.jl"))
@@ -88,9 +107,10 @@ function extract_inp(filepath_with_ext)
     cload_heading_pattern = r"\*CLOAD"
     dload_heading_pattern = r"\*DLOAD"
 
-    line = readline(file)
+    line = nothing
     dim = 0
     while !eof(file)
+        line === nothing && (line = readline(file))
         m = match(node_heading_pattern, line)
         if m != nothing && something(m[1]) == "Nall"
             node_coords, line = extract_nodes(file)
@@ -108,13 +128,15 @@ function extract_inp(filepath_with_ext)
         m = match(nodeset_heading_pattern, line)
         if m != nothing
             nodesetname = String(something(m[1]))
-            line = extract_set!(nodesets, nodesetname, file)
+            generated = occursin(r",\s*generate\b"i, line)
+            line = extract_set!(nodesets, nodesetname, file; generated=generated)
             continue
         end
         m = match(cellset_heading_pattern, line)
         if m != nothing
             cellsetname = String(something(m[1]))
-            line = extract_set!(cellsets, cellsetname, file, offset)
+            generated = occursin(r",\s*generate\b"i, line)
+            line = extract_set!(cellsets, cellsetname, file, offset; generated=generated)
             continue
         end
         m = match(material_heading_pattern, line)
@@ -138,7 +160,7 @@ function extract_inp(filepath_with_ext)
             line = extract_dload!(dloads, facesets, file, Val{dim}, offset)
             continue
         end
-        line = readline(file)
+        line = nothing
     end
 
     close(file)
