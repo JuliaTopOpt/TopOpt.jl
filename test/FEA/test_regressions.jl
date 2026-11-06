@@ -5,7 +5,8 @@
 #  - A single-column matrix RHS fell through to the vector solve path and
 #    raised a DimensionMismatch when the LHS was a vector.
 using TopOpt, Test, LinearAlgebra, Random, SparseArrays
-using Ferrite: getncells, ndofs, ConstraintHandler, Dirichlet, getfacetset, add!, close!, update!
+using Ferrite:
+    getncells, ndofs, ConstraintHandler, Dirichlet, getfacetset, add!, close!, update!
 
 Random.seed!(42)
 
@@ -54,7 +55,7 @@ end
     close!(ch)
     update!(ch, 0.0)
     problem = PointLoadCantilever(
-        base.rect_grid, base.E, base.ν, ch, base.force, base.force_dof, base.metadata,
+        base.rect_grid, base.E, base.ν, ch, base.force, base.force_dof, base.metadata
     )
 
     @test length(ch.prescribed_dofs) > getncells(problem)

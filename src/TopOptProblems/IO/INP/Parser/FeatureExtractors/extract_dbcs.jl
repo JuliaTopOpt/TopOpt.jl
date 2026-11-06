@@ -22,7 +22,7 @@ function extract_nodedbcs!(node_dbcs::Dict{String,Vector{Tuple{TI,TF}}}, file) w
                     push!(node_dbcs[nodesetname], (dof, val))
                 end
             end
-            return
+            return nothing
         end
         m = match(pattern_range, line)
         if m != nothing
@@ -39,7 +39,7 @@ function extract_nodedbcs!(node_dbcs::Dict{String,Vector{Tuple{TI,TF}}}, file) w
                     push!(node_dbcs[nodesetname], (dof, zero(TF)))
                 end
             end
-            return
+            return nothing
         end
         m = match(pattern_zero, line)
         if m != nothing
@@ -50,7 +50,7 @@ function extract_nodedbcs!(node_dbcs::Dict{String,Vector{Tuple{TI,TF}}}, file) w
             else
                 node_dbcs[nodesetname] = [(dof, zero(TF))]
             end
-            return
+            return nothing
         end
     end
 end

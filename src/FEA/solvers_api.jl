@@ -238,15 +238,7 @@ end
 # the iteration manually and test the energy-based stopping test after every
 # iteration so that `conv=EnergyCriteria()` has an actual effect.
 function _cg_solve_with_energy_criterion!(
-    solver,
-    op,
-    rhs,
-    lhs,
-    preconditioner;
-    cg_max_iter,
-    abstol,
-    cg_statevars,
-    initially_zero,
+    solver, op, rhs, lhs, preconditioner; cg_max_iter, abstol, cg_statevars, initially_zero
 )
     if preconditioner === identity
         iterable = IterativeSolvers.cg_iterator!(
@@ -278,7 +270,8 @@ function _cg_solve_with_energy_criterion!(
         # residual-based stopping rule and would degrade the solution. With
         # the conjunction the energy criterion can only tighten convergence,
         # never loosen it relative to the default criterion.
-        IterativeSolvers.isconverged(iterable) && IterativeSolvers.converged(iterable) &&
+        IterativeSolvers.isconverged(iterable) &&
+            IterativeSolvers.converged(iterable) &&
             break
     end
     return nothing

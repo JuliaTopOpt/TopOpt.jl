@@ -9,11 +9,7 @@ with element indices shifted by `offset` (1-based conversion). Without
 collected.
 """
 function extract_set!(
-    sets::Dict{String,TV},
-    setname::AbstractString,
-    file,
-    offset=0;
-    generated::Bool=false,
+    sets::Dict{String,TV}, setname::AbstractString, file, offset=0; generated::Bool=false
 ) where {TI,TV<:AbstractVector{TI}}
     sets[setname] = Int[]
     vector = sets[setname]
@@ -37,7 +33,7 @@ function extract_set!(
     pattern_subset = r"^([^,]+)"
     return consume_section(file) do line
         # Ignore comment lines (`**...`) and separator lines (`****...`).
-        occursin(r"^\s*\*", line) && return
+        occursin(r"^\s*\*", line) && return nothing
         if match(pattern_single, line) !== nothing
             m = eachmatch(r"(\d+)", line)
             for _m in m

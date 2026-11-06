@@ -244,10 +244,12 @@ end
         end
         # All facets together span the full column footprint
         all_xs = sort!(
-            vcat([
-                [tb.nodes[n].x[1] for n in Ferrite.facets(getcells(tb, f[1]))[f[2]]] for
-                f in tb.facetsets["bottomload"]
-            ]...),
+            vcat(
+                [
+                    [tb.nodes[n].x[1] for n in Ferrite.facets(getcells(tb, f[1]))[f[2]]] for
+                    f in tb.facetsets["bottomload"]
+                ]...,
+            ),
         )
         @test first(all_xs) ≈ 30.0
         @test last(all_xs) ≈ 31.0

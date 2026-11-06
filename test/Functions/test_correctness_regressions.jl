@@ -5,7 +5,8 @@
 #  - Hadamard trace/diagonal estimation requires `nv == nrows`.
 #  - Filter metadata must not contain duplicate nodes per cell.
 using TopOpt, Test, LinearAlgebra, Random, SparseArrays, Zygote
-using Ferrite: getncells, ndofs, ConstraintHandler, Dirichlet, getnodeset, add!, close!, update!
+using Ferrite:
+    getncells, ndofs, ConstraintHandler, Dirichlet, getnodeset, add!, close!, update!
 using FiniteDifferences
 const FDM = FiniteDifferences
 
@@ -24,7 +25,12 @@ Random.seed!(42)
     close!(ch)
     update!(ch, 0.0)
     problem = PointLoadCantilever(
-        problem.rect_grid, problem.E, problem.ν, ch, problem.force, problem.force_dof,
+        problem.rect_grid,
+        problem.E,
+        problem.ν,
+        ch,
+        problem.force,
+        problem.force_dof,
         problem.metadata,
     )
 
@@ -75,7 +81,9 @@ end
 
     # nv < number of probe-matrix rows is silently biased for Hadamard
     # columns; fail fast instead.
-    @test_throws ArgumentError TopOpt.Functions.TraceEstimationMean(F, 1, true, TopOpt.Functions.hadamard!)
+    @test_throws ArgumentError TopOpt.Functions.TraceEstimationMean(
+        F, 1, true, TopOpt.Functions.hadamard!
+    )
     @test_throws ArgumentError TopOpt.Functions.DiagonalEstimation(F, 1, n)
     # nv == m is fine
     tem = TopOpt.Functions.TraceEstimationMean(F, m, true, TopOpt.Functions.hadamard!)
