@@ -173,12 +173,17 @@ end
     mktempdir() do dir
         pts = [[0.0, 0.0], [1.0, 0.0], [0.0, 1.0]]
         sens = [[0.1, 0.2, 0.3], [-1.0, -1.0, -1.0]]
-        neighbors = [[0, 1], [1, 2]]
+        # 1-based point index pairs, as stored in `LevelSetBoundarySegment`.
+        neighbors = [[1, 2], [2, 3]]
         path = joinpath(dir, "boundary.vtk")
         @test L.boundary_vtk(path, pts, sens, neighbors)
         content = read(path, String)
         @test occursin("DATASET UNSTRUCTURED_GRID", content)
         @test occursin("POINTS\t3\tdouble", content)
+        # VTK connectivity is 0-based: the 1-based pairs (1,2) and (2,3)
+        # become (0,1) and (1,2) in the file.
+        @test occursin("2\t0\t1", content)
+        @test occursin("2\t1\t2", content)
     end
 
     mktempdir() do dir

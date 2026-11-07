@@ -35,6 +35,12 @@ jobs:
             "$GITHUB_WORKSPACE/test/OpenLSTO/compliance_driver.cpp" \
             ../../M2DO_FEA/bin/*.o
           /tmp/compliance_driver 40 > "$GITHUB_WORKSPACE/reference_40x20.txt"
+          g++ -std=c++14 -O3 -w -fopenmp \
+            -I../../M2DO_FEA/include -I../../M2DO_LSM/include \
+            -o /tmp/stress_driver \
+            "$GITHUB_WORKSPACE/test/OpenLSTO/stress_driver.cpp" \
+            ../../M2DO_FEA/bin/*.o
+          /tmp/stress_driver 40 > "$GITHUB_WORKSPACE/reference_stress_40x40.txt"
 
       - uses: julia-actions/setup-julia@v2
         with:
@@ -54,4 +60,5 @@ jobs:
       - name: Compare Julia port against C++ reference
         env:
           OPENLSTO_REFERENCE: ${{ github.workspace }}/reference_40x20.txt
-        run: julia --project=test --color=yes -e 'include("test/OpenLSTO/test_compliance_reference.jl")'
+          OPENLSTO_STRESS_REFERENCE: ${{ github.workspace }}/reference_stress_40x40.txt
+        run: julia --project=test --color=yes -e 'include("test/OpenLSTO/test_compliance_reference.jl"); include("test/OpenLSTO/test_stress_reference.jl")'
