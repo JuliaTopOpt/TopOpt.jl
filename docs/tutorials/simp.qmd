@@ -111,7 +111,10 @@ add_ineq_constraint!(model, constr)  # g(x) ≤ 0
 alg = MMA87()                       # Method of Moving Asymptotes
 convcriteria = Nonconvex.KKTCriteria()  # KKT conditions for convergence
 options = MMAOptions(; maxiter=200, tol=Nonconvex.Tolerance(; x=1e-3, f=1e-3, kkt=0.001))
-r = optimize(model, alg, x0; options)
+history = Vector{Vector{Float64}}()  # per-iteration design snapshots
+# The callback is invoked as `callback(solution; update=...)`; the closure
+# must accept the keyword even though the recorder does not use it.
+r = optimize(model, alg, x0; options, callback=(s; kwargs...) -> push!(history, copy(s.x)))
 ```
 
 ```{julia}
@@ -120,6 +123,23 @@ r = optimize(model, alg, x0; options)
 ```
 
 The optimization typically converges in 40-60 iterations for this problem, achieving a final compliance around 39-40 (normalized units).
+
+## Iteration history (per-iteration snapshots)
+
+`Nonconvex.optimize` accepts a `callback` keyword that is called once per
+iteration with the current solution object (whose `x` field holds the design
+vector), so intermediate designs can be recorded or exported without
+re-running the optimization:
+
+```{julia}
+#| output: true
+println("recorded ", length(history), " designs (one per iteration)")
+println("objective decreased: ", obj(history[1]), " -> ", obj(history[end]))
+```
+
+The design at any recorded iteration can be visualized or saved with the
+regular tools, e.g. `visualize(problem; topology=history[10])` or
+`save_mesh("step_10", problem, history[10], solver.vars)`.
 
 ## Visualize the result
 

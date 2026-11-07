@@ -21,7 +21,7 @@ search strategy.
 Load the TopOpt package:
 
 ```{julia}
-using TopOpt
+using TopOpt, Random
 using WGLMakie
 WGLMakie.activate!(; resize_to=:parent)
 using Bonito
@@ -43,6 +43,8 @@ We use the same 2D HalfMBB benchmark with 160×40 elements:
 E = 1.0 # Young's modulus (normalized)
 v = 0.3 # Poisson's ratio
 f = 1.0 # downward force magnitude
+
+Random.seed!(42)  # GESO is stochastic; the seed makes the result reproducible
 
 nels = (160, 40)  # 160 elements in x, 40 in y
 problem = HalfMBB(nels, (1.0, 1.0), E, v, f)

@@ -558,26 +558,17 @@ function FEASolver(
 
     # Compute meandiag and xes for matrix-free solvers
     if Solver === CGMatrixFreeSolver
-        # The matrix-free operator approximates the prescribed-DOF diagonal
-        # with a `meandiag` summed over element contributions, which does not
-        # match the `meandiag` Ferrite's `apply!` uses to seed the RHS on
-        # prescribed DOFs. For homogeneous Dirichlet BCs the RHS is zero there
-        # so the mismatch is invisible; for inhomogeneous BCs the prescribed
-        # DOFs come out wrong. Fail fast rather than silently returning a
-        # corrupted solution.
-        if any(!=(0), problem.ch.inhomogeneities)
-            throw(
-                ArgumentError(
-                    "CGMatrixFreeSolver does not yet support inhomogeneous Dirichlet " *
-                    "BCs (nonzero prescribed values): the matrix-free meandiag does " *
-                    "not match Ferrite's apply! meandiag, so prescribed DOFs are " *
-                    "solved to wrong values. Use DirectSolver or CGAssemblySolver " *
-                    "for problems with nonzero prescribed temperatures/displacements.",
-                ),
-            )
-        end
+        # The matrix-free operator approximates each prescribed-DOF row with
+        # `meandiag * x[dof]`, so `meandiag` must equal the value Ferrite's
+        # `apply!` places on the prescribed diagonal: the mean of the absolute
+        # diagonal of the fully assembled K (`meandiag(K) = sum|diag(K)| / n`).
+        # The element-diagonal sum equals the exact assembled diagonal, and
+        # the SPD element stiffness matrices have positive diagonals, so the
+        # absolute value is a no-op. With the mean in place, prescribed DOFs
+        # solve to their inhomogeneous values exactly as in the assembled
+        # path (`f_p = inhom * meandiag` from `apply!`).
         f = x -> sumdiag(rawmatrix(x).data)
-        meandiag = mapreduce(f, +, elementinfo.Kes; init=zero(T))
+        meandiag = mapreduce(f, +, elementinfo.Kes; init=zero(T)) / length(u)
         xes = deepcopy(elementinfo.fes)
         fixed_dofs = problem.ch.prescribed_dofs
         free_dofs = setdiff(eachindex(u), fixed_dofs)

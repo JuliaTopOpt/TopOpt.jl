@@ -1,0 +1,186 @@
+---
+title: "Stress-Constrained Truss Optimization"
+toc: true
+---
+
+## Description
+
+This tutorial demonstrates stress-constrained truss optimization on the classic
+10-bar truss benchmark (Haftka & Gürdal). We first compute the axial stress in
+every member with [`TrussStressFun`](../reference/), then optimize twice:
+
+- **Compliance-only**: minimize compliance under a volume-fraction constraint.
+- **Fully-stressed design (FSD)**: minimize the volume subject to a limit on
+  every member's axial stress, using the ε-relaxed stress constraints of
+  Cheng & Guo (1997).
+
+Stress-constrained truss optimization is genuinely harder than compliance
+minimization because of the **stress singularity problem** (Sved & Ginos,
+1968): the optimum often requires removing a member, but the member's stress
+constraint is violated throughout the removal path, so a plain
+gradient-based optimizer cannot reach it. ε-relaxation replaces
+`g_e = |σ_e|/σ_lim − 1 ≤ 0` with `g_e = x_e (|σ_e|/σ_lim − 1) − ε ≤ 0`:
+at `x_e = 0` the constraint becomes `−ε ≤ 0`, which opens the degenerate
+subspaces. The resulting FSD design trades stiffness for weight: its members
+carry stresses near the limit.
+
+[← Back to tutorials](index.html)
+
+## Setup
+
+```{julia}
+#| output: false
+using TopOpt, LinearAlgebra
+using StaticArrays: SVector
+using WGLMakie
+WGLMakie.activate!(; resize_to=:parent)
+using Bonito
+if haskey(ENV, "QUARTO_PROJECT_DIR")
+    Bonito.Page(exportable=true, offline=true)
+else
+    Bonito.browser_display()
+end
+display_app(app) = display(app)
+```
+
+## Define the 10-bar truss
+
+The 10-bar truss has 6 nodes and 10 members: two bottom-edge nodes loaded
+downward, the bottom-left corner pinned, and the bottom-right corner on a
+roller. Each member's design variable scales its cross-sectional area.
+
+```{julia}
+#| output: false
+node_points = Dict(
+    1 => SVector(0.0, 0.0), 2 => SVector(360.0, 0.0), 3 => SVector(720.0, 0.0),
+    4 => SVector(720.0, 360.0), 5 => SVector(360.0, 360.0), 6 => SVector(0.0, 360.0),
+)
+elements = Dict(
+    1 => (5, 3), 2 => (1, 3), 3 => (4, 1), 4 => (5, 4), 5 => (3, 2),
+    6 => (1, 2), 7 => (4, 2), 8 => (3, 4), 9 => (2, 5), 10 => (1, 5),
+)
+mats = TrussFEAMaterial(1.0, 0.3)
+crosssecs = TrussFEACrossSec(1.0)
+fixities = Dict(1 => SVector(true, true), 3 => SVector(false, true))
+loads = Dict(2 => SVector(0.0, -1.0), 4 => SVector(0.0, -1.0))
+problem = TrussProblem(node_points, elements, loads, fixities, mats, crosssecs)
+ncells = length(elements)
+```
+
+## Compute the member stresses
+
+[`TrussStressFun`](../reference/) computes the axial stress in each member from
+the nodal displacements and the penalized design. Compressive stress is
+negative, tensile stress is positive. We solve the full design first:
+
+```{julia}
+#| output: false
+solver = FEASolver(DirectSolver, problem; xmin=0.0001)
+ts = TrussStressFun(solver)
+vol = VolumeFun(solver; fraction=true)
+comp = ComplianceFun(solver)
+```
+
+```{julia}
+#| output: true
+xfull = ones(ncells)
+σfull = ts(PseudoDensities(xfull))
+println("full design: peak |σ| = $(round(maximum(abs, σfull), digits=4))")
+println("member stresses: ", round.(σfull; digits=3))
+```
+
+The peak stress of the full design is the reference value for choosing the
+stress limit below.
+
+## Compliance-only optimization
+
+Minimize compliance subject to a 50% volume fraction:
+
+```{julia}
+#| output: true
+obj(x) = comp(PseudoDensities(x))
+m1 = Model(obj)
+addvar!(m1, zeros(ncells), fill(3.0, ncells))
+Nonconvex.add_ineq_constraint!(m1, x -> vol(PseudoDensities(x)) - 0.5)
+r1 = Nonconvex.optimize(
+    m1, MMA87(), fill(0.5, ncells);
+    options=MMAOptions(; maxiter=200, tol=Nonconvex.Tolerance(; kkt=1e-3, f=1e-3))
+)
+x1 = r1.minimizer
+σ1 = ts(PseudoDensities(x1))
+println("compliance-only: compliance = $(round(obj(x1), digits=3)), ")
+println("  volume = $(round(vol(PseudoDensities(x1)), digits=3)), peak |σ| = $(round(maximum(abs, σ1), digits=3))")
+```
+
+The compliance-only design concentrates area in the stiffest load paths; its
+peak stress (per unit area) is the value a stress constraint must cut below.
+
+## Stress-constrained (fully-stressed) design
+
+Minimize the volume subject to ε-relaxed stress constraints
+`x_e (|σ_e|/σ_lim − 1) − ε ≤ 0`, starting from the full design. `σ_lim` is set
+below the full design's peak so the constraints are active, and `ε` relaxes
+them near zero area so members can be removed:
+
+```{julia}
+#| output: true
+σlim = 0.9 * maximum(abs, σfull)
+ε = 0.02
+g(x) = epsilon_relaxed(abs.(ts(PseudoDensities(x))), x, σlim, ε)
+m2 = Model(x -> vol(PseudoDensities(x)))
+addvar!(m2, zeros(ncells), fill(3.0, ncells))
+Nonconvex.add_ineq_constraint!(m2, g)
+r2 = Nonconvex.optimize(
+    m2, MMA87(), copy(xfull);
+    options=MMAOptions(; maxiter=300, tol=Nonconvex.Tolerance(; kkt=1e-3, f=1e-3))
+)
+x2 = r2.minimizer
+σ2 = ts(PseudoDensities(x2))
+println("stress-constrained: volume = $(round(vol(PseudoDensities(x2)), digits=3)), ")
+println("  compliance = $(round(comp(PseudoDensities(x2)), digits=3)), peak |σ| = $(round(maximum(abs, σ2), digits=3))")
+println("  (σ_lim = $(round(σlim, digits=4)))")
+```
+
+The stress-constrained design is lighter than the compliance-only design at
+the same time as its active members carry stresses near `σ_lim`. The reported
+peak can exceed `σ_lim` slightly: the ε-relaxed constraint allows a slack of
+`ε/x_e` per member, which is the price of keeping the removal path open.
+
+## Visualize the designs
+
+Member area (line width) and axial stress (color) of the two designs:
+
+```{julia}
+#| label: fig-trs-stress
+#| fig-cap: "Stress-constrained truss design: member areas and axial stresses"
+app = visualize(
+    problem;
+    static=true,
+    topology=x2,
+    cell_colors=σ2,
+    draw_legend=true,
+)
+display_app(app)
+```
+
+```{julia}
+#| label: fig-trs-comp
+#| fig-cap: "Compliance-only truss design for comparison"
+app = visualize(
+    problem;
+    static=true,
+    topology=x1,
+    cell_colors=σ1,
+    draw_legend=true,
+)
+display_app(app)
+```
+
+## References
+
+- Sved, G., & Ginos, Z. (1968). *Structural optimization under multiple
+  loading.* International Journal of Mechanical Sciences.
+- Cheng, G. D., & Guo, X. (1997). *ε-relaxed approach in structural topology
+  optimization.* Structural Optimization.
+- Haftka, R. T., & Gürdal, Z. (1992). *Elements of Structural Optimization.*
+  Kluwer Academic Publishers.

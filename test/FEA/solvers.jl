@@ -377,18 +377,56 @@ end
         @test solver_assembly.u[pdofs] ≈ inhom atol = 1e-4
     end
 
-    @testset "CGMatrixFreeSolver rejects inhomogeneous Dirichlet" begin
-        # Fail-fast guard: the matrix-free meandiag mismatch would silently
-        # corrupt prescribed DOFs, so the constructor throws instead.
+    @testset "CGMatrixFreeSolver matches DirectSolver for inhomogeneous Dirichlet" begin
+        # The matrix-free prescribed-DOF diagonal must equal Ferrite's
+        # `meandiag(K)` (mean of |diag| over the assembled K) so the
+        # prescribed DOFs solve to their prescribed values and the free DOFs
+        # match the assembled path (see #239).
         problem = HeatConductionProblem(
             (4, 4), (1.0, 1.0), 1.0; Tleft=100.0, Tright=0.0, heatflux=Dict("top" => 1.0)
         )
-        @test_throws ArgumentError FEASolver(CGMatrixFreeSolver, problem)
-        # Homogeneous Dirichlet is still supported.
-        problem_homog = HeatConductionProblem(
-            (4, 4), (1.0, 1.0), 1.0; Tleft=0.0, Tright=0.0, heatflux=Dict("top" => 1.0)
+        solver_direct = FEASolver(DirectSolver, problem; xmin=0.01)
+        solver_matrixfree = FEASolver(CGMatrixFreeSolver, problem; xmin=0.01)
+        for s in (solver_direct, solver_matrixfree)
+            s.vars .= 1.0
+            s()
+        end
+        pdofs = problem.ch.prescribed_dofs
+        @test solver_matrixfree.u[pdofs] ≈ solver_direct.u[pdofs] atol = 1e-4
+        @test solver_matrixfree.u[pdofs] ≈ problem.ch.inhomogeneities atol = 1e-4
+        @test solver_matrixfree.u ≈ solver_direct.u atol = 1e-5
+
+        # Structural problem with a nonzero prescribed displacement.
+        sproblem = PointLoadCantilever((6, 4), (1.0, 1.0), 1.0, 0.3, 1.0)
+        ch = ConstraintHandler(sproblem.ch.dh)
+        add!(
+            ch,
+            Dirichlet(
+                :u,
+                getnodeset(sproblem.ch.dh.grid, "fixed_all"),
+                (x, t) -> [0.1, 0.0],
+                [1, 2],
+            ),
         )
-        @test FEASolver(CGMatrixFreeSolver, problem_homog) isa TopOpt.FEA.GenericFEASolver
+        close!(ch)
+        update!(ch, 0.0)
+        sproblem = PointLoadCantilever(
+            sproblem.rect_grid,
+            sproblem.E,
+            sproblem.ν,
+            ch,
+            sproblem.force,
+            sproblem.force_dof,
+            sproblem.metadata,
+        )
+        sdirect = FEASolver(DirectSolver, sproblem; xmin=0.001)
+        smf = FEASolver(CGMatrixFreeSolver, sproblem; xmin=0.001)
+        for s in (sdirect, smf)
+            s.vars .= 1.0
+            s()
+        end
+        @test smf.u[ch.prescribed_dofs] ≈ ch.inhomogeneities atol = 1e-4
+        @test smf.u ≈ sdirect.u atol = 1e-5
     end
 
     @testset "Custom linear solver via generic FEASolver constructor" begin

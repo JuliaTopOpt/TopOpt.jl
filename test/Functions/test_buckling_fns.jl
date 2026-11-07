@@ -309,3 +309,48 @@ end
         @test iszero(Kσa[d, d])
     end
 end
+
+@testset "ContinuumElementKσFun $problem_dim" for problem_dim in ["2d", "3d"]
+    Random.seed!(42)
+    if problem_dim == "2d"
+        problem = PointLoadCantilever((8, 4), (1.0, 1.0), 1.0, 0.3, 1.0)
+    else
+        problem = PointLoadCantilever((4, 4, 4), (1.0, 1.0, 1.0), 1.0, 0.3, 1.0)
+    end
+    solver = FEASolver(DirectSolver, problem; penalty=PowerPenaltyFun(3.0))
+    solver.vars .= 1.0
+    solver()
+    u = solver.u
+
+    eksig = ContinuumElementKσFun(problem, solver)
+    nels = getncells(problem)
+    T = eltype(u)
+    penalty = getpenalty(solver)
+    xmin = solver.xmin
+
+    # Consistency with the buckling path: the per-element matrices match
+    # `get_Kσs` (same kernel, same penalized-density scaling).
+    x = clamp.(rand(nels), 0.1, 1.0)
+    Kσs_fun = eksig(TopOpt.Functions.DisplacementResult(u), PseudoDensities(x))
+    Kσs_ref = TopOpt.TopOptProblems.get_Kσs(
+        problem, u, solver.elementinfo.cellvalues, x, penalty, xmin
+    )
+    @test length(Kσs_fun) == nels
+    for (kf, kr) in zip(Kσs_fun, Kσs_ref)
+        @test kf ≈ kr atol = 1e-12
+        @test kf ≈ kf'  # geometric stiffness is symmetric
+    end
+
+    # Gradient of a scalar functional of the Kσ matrices through the rrule.
+    for _ in 1:2
+        vs = [rand(T, size(Kσs_fun[1])) for _ in 1:nels]
+        f = x -> begin
+            Kes = eksig(TopOpt.Functions.DisplacementResult(u), PseudoDensities(x))
+            sum(sum(Kes[i] .* vs[i]) for i in eachindex(x))
+        end
+        xr = clamp.(rand(nels), 0.1, 1.0)
+        grad_z = Zygote.gradient(f, xr)[1]
+        grad_fd = FDM.grad(central_fdm(5, 1), f, xr)[1]
+        @test norm(grad_z - grad_fd) <= 1e-5 * max(1.0, norm(grad_fd))
+    end
+end
