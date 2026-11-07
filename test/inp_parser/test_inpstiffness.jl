@@ -141,6 +141,29 @@ using Ferrite, Test
         @test problem.ch isa ConstraintHandler
     end
 
+    @testset "Assembled load vector places each CLOAD on its node DOFs" begin
+        # Each concentrated load in the INP must land exactly on the global
+        # DOFs of its node with the requested magnitude, and nowhere else
+        # (regression test: loads were once assigned to DOFs of the wrong
+        # nodes, see #123).
+        for (inp_file, load_node, expected_load) in (
+            (joinpath(@__DIR__, "MBB.inp"), 431, [0.0, -3.0]),
+            (joinpath(@__DIR__, "triangle.inp"), 42, [0.0, -1000.0]),
+        )
+            problem = InpStiffness(inp_file)
+            solver = FEASolver(DirectSolver, problem; xmin=0.001, qr=true)
+            solver.vars .= 1.0
+            solver()  # assembles K and f and solves
+            f = solver.globalinfo.f
+            dofs = problem.metadata.node_dofs[:, load_node]
+            @test f[dofs] ≈ expected_load
+            # The load is the only nonzero entry in the assembled f.
+            f_noload = copy(f)
+            f_noload[dofs] .= 0.0
+            @test norm(f_noload) ≈ 0.0 atol = 1e-12
+        end
+    end
+
     @testset "InpStiffness error handling" begin
         # Test with non-existent file
         @test_throws Exception InpStiffness("nonexistent_file.inp")
