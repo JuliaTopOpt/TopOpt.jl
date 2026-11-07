@@ -20,8 +20,12 @@ end
 function swiss_cheese_holes(width::Integer, height::Integer)
     w = Int(width)
     h = Int(height)
-    nx = round(Int, w / 30)
-    ny = round(Int, h / 30)
+    # `std::round` in the C++ rounds half away from zero; Julia's default
+    # `round(Int, x)` rounds half to even, which seeds one fewer hole row or
+    # column on meshes whose width or height is 15 mod 60 (e.g. 75, 135, 195)
+    # and rejects 75-wide meshes entirely.
+    nx = round(Int, w / 30, RoundNearestTiesAway)
+    ny = round(Int, h / 30, RoundNearestTiesAway)
     nx > 2 && ny > 2 || error("LevelSetMesh is too small for Swiss cheese initialisation.")
     n1 = nx * ny
     n2 = (nx - 1) * (ny - 1)
