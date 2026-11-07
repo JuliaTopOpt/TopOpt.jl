@@ -112,7 +112,9 @@ alg = MMA87()                       # Method of Moving Asymptotes
 convcriteria = Nonconvex.KKTCriteria()  # KKT conditions for convergence
 options = MMAOptions(; maxiter=200, tol=Nonconvex.Tolerance(; x=1e-3, f=1e-3, kkt=0.001))
 history = Vector{Vector{Float64}}()  # per-iteration design snapshots
-r = optimize(model, alg, x0; options, callback=s -> push!(history, copy(s.minimizer)))
+# The callback is invoked as `callback(solution; update=...)`; the closure
+# must accept the keyword even though the recorder does not use it.
+r = optimize(model, alg, x0; options, callback=(s; kwargs...) -> push!(history, copy(s.x)))
 ```
 
 ```{julia}
@@ -125,8 +127,9 @@ The optimization typically converges in 40-60 iterations for this problem, achie
 ## Iteration history (per-iteration snapshots)
 
 `Nonconvex.optimize` accepts a `callback` keyword that is called once per
-iteration with the current solution, so intermediate designs can be recorded
-or exported without re-running the optimization:
+iteration with the current solution object (whose `x` field holds the design
+vector), so intermediate designs can be recorded or exported without
+re-running the optimization:
 
 ```{julia}
 #| output: true
