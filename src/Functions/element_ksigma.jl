@@ -1,4 +1,5 @@
 using TopOpt.TopOptProblems: getE
+import TopOpt.TopOptProblems: element_kσ
 using TopOpt.TrussTopOptProblems: truss_reinit!
 using ..TopOpt: PENALTY_BEFORE_INTERPOLATION
 using ..Utilities: density, getpenalty
@@ -182,4 +183,138 @@ end
 
 #####################################
 
-# TODO ElementKσ for volumetic cells
+"""
+    ContinuumElementKσFun(problem, solver)
+
+Element-wise geometric stiffness matrices for continuum (2D/3D) domains,
+computed from the nodal displacements with the plane-strain (3D isotropic)
+constitutive law of the stiffness assembly. Used in buckling-constrained
+continuum optimization, e.g. as a differentiable penalty on the lowest
+buckling eigenvalue.
+
+Call as `Kσs = Kσsf(u, x)` where `u` is the displacement vector (a
+[`DisplacementResult`](@ref)) and `x` is the penalized/interpolated design.
+Returns a vector of symmetric matrices, one per element, each scaled by the
+penalized density `ρ_e = penalty(density(x_e, xmin))`, consistent with the
+stiffness assembly and [`TopOptProblems.buckling`](@ref).
+"""
+mutable struct ContinuumElementKσFun{
+    T,
+    Tp<:StiffnessTopOptProblem,
+    TK<:AbstractVector{<:AbstractMatrix{T}},
+    Tcv,
+    Tcc,
+    Tg<:AbstractVector{<:Integer},
+    Tpen<:AbstractPenalty{T},
+} <: AbstractFunction{T}
+    problem::Tp
+    Kσes::TK
+    cellvalues::Tcv
+    cellcache::Tcc
+    global_dofs::Tg
+    penalty::Tpen
+    xmin::T
+end
+
+function Base.show(io::IO, ::MIME{Symbol("text/plain")}, ::ContinuumElementKσFun)
+    return println(
+        io, "TopOpt continuum element stress stiffness matrix (Kσ_e) construction function"
+    )
+end
+
+function ContinuumElementKσFun(
+    problem::StiffnessTopOptProblem{xdim,T}, solver::AbstractFEASolver
+) where {xdim,T}
+    dh = problem.ch.dh
+    cellvalues = solver.elementinfo.cellvalues
+    ndof_pc = ndofs_per_cell(dh)
+    n_basefuncs = getnbasefunctions(cellvalues)
+    ndof_pc == xdim * n_basefuncs || throw(
+        DimensionMismatch(
+            "ContinuumElementKσFun: expected ndof_pc=$(xdim * n_basefuncs), got $ndof_pc",
+        ),
+    )
+    global_dofs = zeros(Int, ndof_pc)
+    Kσes = [zeros(T, ndof_pc, ndof_pc) for _ in 1:getncells(dh.grid)]
+    cellcache = Ferrite.CellCache(dh)
+    penalty = getpenalty(solver)
+    xmin = solver.xmin
+    return ContinuumElementKσFun(
+        problem, Kσes, cellvalues, cellcache, global_dofs, penalty, xmin
+    )
+end
+
+"""
+    (eksig::ContinuumElementKσFun)(u_e::AbstractVector, x_e::Number, ci::Integer)
+
+Compute the geometric stiffness matrix for continuum element index `ci` from
+its nodal displacements `u_e` and penalized density `x_e`.
+"""
+function (eksig::ContinuumElementKσFun)(u_e::AbstractVector, x_e::Number, ci::Integer)
+    Ferrite.reinit!(eksig.cellcache, ci)
+    reinit!(eksig.cellvalues, eksig.cellcache)
+    return x_e * element_kσ(eksig.problem, eksig.cellvalues, u_e)
+end
+
+function (eksig::ContinuumElementKσFun)(u::DisplacementResult, x::PseudoDensities)
+    @unpack problem, Kσes, global_dofs, penalty, xmin = eksig
+    dh = problem.ch.dh
+    ncells = getncells(dh.grid)
+    ncells == length(x.x) || throw(
+        DimensionMismatch(
+            "ContinuumElementKσFun: expected $(ncells) cells, got $(length(x.x))"
+        ),
+    )
+    ndofs(dh) == length(u.u) || throw(
+        DimensionMismatch(
+            "ContinuumElementKσFun: expected $(ndofs(dh)) DOFs, got $(length(u.u))"
+        ),
+    )
+    for ci in eachindex(x.x)
+        celldofs!(global_dofs, dh, ci)
+        # Apply the same penalty/interpolation as ElementKFun and the stiffness assembly
+        ρ_e, _ = get_ρ_dρ(x.x[ci], penalty, xmin)
+        Kσes[ci] = eksig(u.u[global_dofs], ρ_e, ci)
+    end
+    return copy(Kσes)
+end
+
+function ChainRulesCore.rrule(
+    eksig::ContinuumElementKσFun{T}, u::DisplacementResult, x::PseudoDensities
+) where {T}
+    @unpack problem, Kσes, global_dofs, penalty, xmin = eksig
+    dh = problem.ch.dh
+    Kσes = eksig(u, x)
+    function pullback_fn(Δ)
+        Δ = ChainRulesCore.unthunk(Δ)
+        Δu = zeros(T, size(u.u))
+        Δx = zeros(T, size(x.x))
+        for ci in eachindex(x.x)
+            celldofs!(global_dofs, dh, ci)
+            # Jacobian with respect to (u_e, ρ_e)
+            function vec_eksig_fn(uρ_vec)
+                u_e = uρ_vec[1:(end - 1)]
+                ρ_e = uρ_vec[end]
+                return vec(eksig(u_e, ρ_e, ci))
+            end
+            ρ_e, dρ_dx = get_ρ_dρ(x.x[ci], penalty, xmin)
+            jac_cell = ForwardDiff.jacobian(vec_eksig_fn, [u.u[global_dofs]; ρ_e])
+            jtv = jac_cell' * vec(Δ[ci])
+            Δu[global_dofs] += jtv[1:(end - 1)]
+            # Chain rule: d(Kσ)/d(x) = d(Kσ)/d(ρ) * d(ρ)/d(x)
+            Δx[ci] = jtv[end] * dρ_dx
+        end
+        return Tangent{typeof(eksig)}(;
+            problem=NoTangent(),
+            Kσes=Δ,
+            cellvalues=NoTangent(),
+            cellcache=NoTangent(),
+            global_dofs=NoTangent(),
+            penalty=NoTangent(),
+            xmin=NoTangent(),
+        ),
+        Tangent{typeof(u)}(; u=Δu),
+        Tangent{typeof(x)}(; x=Δx)
+    end
+    return Kσes, pullback_fn
+end

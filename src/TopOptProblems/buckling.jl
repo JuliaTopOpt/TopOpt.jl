@@ -4,6 +4,61 @@ using ..Utilities: density
 import ..Utilities: get_ρ_dρ
 
 """
+    element_kσ(sp, cellvalues, u_e)
+
+Geometric stiffness matrix of a single cell from its nodal displacements
+`u_e` (node-major, component-minor ordering, as `celldofs!` produces). The
+matrix is unpenalized; `get_Kσs` and `ContinuumElementKσFun` scale it by the
+penalized density. Uses the same 3D isotropic constitutive law (plane strain
+for 2D problems) as the stiffness assembly: Lamé constants
+`λ = Eν/((1+ν)(1-2ν))` and `2μ = E/(1+ν)`.
+"""
+function element_kσ(
+    sp::StiffnessTopOptProblem{xdim,TT}, cellvalues::Ferrite.CellValues, u_e::AbstractVector
+) where {xdim,TT}
+    T = promote_type(TT, eltype(u_e))
+    E = getE(sp)
+    ν = getν(sp)
+    n_basefuncs = getnbasefunctions(cellvalues)
+    ndof_pc = xdim * n_basefuncs
+    Kσ_e = zeros(T, ndof_pc, ndof_pc)
+    # block-diagonal - block σ_e = σ_ij, i,j in xdim
+    ψ_e = zeros(T, xdim * xdim, xdim * xdim)
+    G = zeros(T, xdim * xdim, xdim * n_basefuncs)
+    δ = Matrix{T}(1.0I, xdim, xdim)
+    ϵ = zeros(T, xdim, xdim)
+    σ = zeros(T, xdim, xdim)
+    # u_i,j: partial derivative
+    u_p = zeros(T, xdim, xdim)
+    λ = T(E * ν / ((1 + ν) * (1 - 2 * ν)))
+    two_mu = T(E / (1 + ν))
+    for q_point in 1:getnquadpoints(cellvalues)
+        dΩ = getdetJdV(cellvalues, q_point)
+        for d in 1:xdim
+            ψ_e[((d - 1) * xdim + 1):(d * xdim), ((d - 1) * xdim + 1):(d * xdim)] .= 0
+        end
+        for a in 1:n_basefuncs
+            ∇ϕ = shape_gradient(cellvalues, q_point, a)
+            _u = @view u_e[xdim * (a - 1) .+ (1:xdim)]
+            # u_i,j, i for spatial xdim, j for partial derivative
+            @einsum u_p[i, j] = _u[i] * ∇ϕ[j]
+            # effect of the quadratic term in the strain formula have on the stress field is ignored
+            @einsum ϵ[i, j] = 1 / 2 * (u_p[i, j] + u_p[j, i])
+            # isotropic solid — 3D (plane strain) constitutive law
+            @einsum σ[i, j] = λ * δ[i, j] * ϵ[k, k] + two_mu * ϵ[i, j]
+            for d in 1:xdim
+                # block diagonal
+                ψ_e[((d - 1) * xdim .+ 1):(d * xdim), ((d - 1) * xdim .+ 1):(d * xdim)] .+=
+                    σ
+                G[(xdim * (d - 1) + 1):(xdim * d), (a - 1) * xdim + d] .= ∇ϕ
+            end
+        end
+        Kσ_e .+= G' * ψ_e * G * dΩ
+    end
+    return Kσ_e
+end
+
+"""
     get_Kσs(sp, u_dofs, cellvalues, vars, penalty, xmin)
 
 Compute the per-cell geometric stiffness matrices `Kσ` from the displacement
@@ -27,61 +82,19 @@ function get_Kσs(
     penalty=PowerPenaltyFun{TT}(1),
     xmin=TT(1//1000),
 ) where {xdim,TT}
-    E = getE(sp)
-    ν = getν(sp)
     dh = sp.ch.dh
     # usually ndof_pc = xdim * n_basefuncs
     ndof_pc = ndofs_per_cell(dh)
-    n_basefuncs = getnbasefunctions(cellvalues)
     global_dofs = zeros(Int, ndof_pc)
     Kσs = [zeros(TT, ndof_pc, ndof_pc) for i in 1:getncells(dh.grid)]
-    Kσ_e = zeros(TT, ndof_pc, ndof_pc)
-    # block-diagonal - block σ_e = σ_ij, i,j in xdim
-    ψ_e = zeros(TT, xdim * xdim, xdim * xdim)
-    G = zeros(TT, xdim * xdim, xdim * n_basefuncs)
-    δ = Matrix(TT(1.0)I, xdim, xdim)
-    ϵ = zeros(TT, xdim, xdim)
-    σ = zeros(TT, xdim, xdim)
-    # u_i,j: partial derivative
-    u_p = zeros(TT, xdim, xdim)
-    # 3D isotropic constitutive law (plane strain), consistent with the
-    # stiffness matrix assembly in matrices_and_vectors.jl:
-    #   σ_ij = λ * ε_kk * δ_ij + 2μ * ε_ij
-    #   λ = E*ν/((1+ν)*(1-2ν)),  2μ = E/(1+ν)
-    λ = E * ν / ((1 + ν) * (1 - 2 * ν))
-    two_mu = E / (1 + ν)
     for (cellidx, cell) in enumerate(CellIterator(dh))
-        Kσ_e .= 0
         reinit!(cellvalues, cell)
         # get cell's dof's global dof indices, i.e. CC_a^e
         celldofs!(global_dofs, dh, cellidx)
-        for q_point in 1:getnquadpoints(cellvalues)
-            dΩ = getdetJdV(cellvalues, q_point)
-            for d in 1:xdim
-                ψ_e[((d - 1) * xdim + 1):(d * xdim), ((d - 1) * xdim + 1):(d * xdim)] .= 0
-            end
-            for a in 1:n_basefuncs
-                ∇ϕ = shape_gradient(cellvalues, q_point, a)
-                _u = @view u_dofs[(@view global_dofs[xdim * (a - 1) .+ (1:xdim)])]
-                # u_i,j, i for spatial xdim, j for partial derivative
-                @einsum u_p[i, j] = _u[i] * ∇ϕ[j]
-                # effect of the quadratic term in the strain formula have on the stress field is ignored
-                @einsum ϵ[i, j] = 1 / 2 * (u_p[i, j] + u_p[j, i])
-                # isotropic solid — 3D (plane strain) constitutive law
-                @einsum σ[i, j] = λ * δ[i, j] * ϵ[k, k] + two_mu * ϵ[i, j]
-                for d in 1:xdim
-                    # block diagonal
-                    ψ_e[
-                        ((d - 1) * xdim .+ 1):(d * xdim), ((d - 1) * xdim .+ 1):(d * xdim)
-                    ] .+= σ
-                    G[(xdim * (d - 1) + 1):(xdim * d), (a - 1) * xdim + d] .= ∇ϕ
-                end
-            end
-            Kσ_e .+= G' * ψ_e * G * dΩ
-        end
+        Kσs[cellidx] .= element_kσ(sp, cellvalues, @view u_dofs[global_dofs])
         # Scale by the penalized element density, consistent with stiffness assembly
         ρ_e, _ = get_ρ_dρ(vars[cellidx], penalty, xmin)
-        Kσs[cellidx] .= ρ_e * Kσ_e
+        Kσs[cellidx] .*= ρ_e
     end
 
     return Kσs
