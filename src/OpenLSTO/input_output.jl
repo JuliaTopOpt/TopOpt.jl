@@ -245,7 +245,9 @@ end
 Write boundary points and their sensitivity fields as a ParaView VTK
 unstructured grid of line segments. `boundary_points` is a vector of
 coordinates, `sensitivities` a vector of per-field point values, and
-`neighbors` the (start, end) index pairs of the segments.
+`neighbors` the (start, end) index pairs of the segments (1-based point
+indices, as stored in `LevelSetBoundarySegment`). The connectivity written to
+the file uses VTK's 0-based point indices, matching OpenLSTO's writer.
 """
 function boundary_vtk(
     filename::AbstractString,
@@ -270,7 +272,7 @@ function boundary_vtk(
         end
         println(io, "CELLS\t$(nsegments)\t$(3 * nsegments)")
         for i in 1:nsegments
-            println(io, "2\t", neighbors[i][1], "\t", neighbors[i][2])
+            println(io, "2\t", neighbors[i][1] - 1, "\t", neighbors[i][2] - 1)
         end
         println(io, "CELL_TYPES\t$(nsegments)")
         for _ in 1:nsegments

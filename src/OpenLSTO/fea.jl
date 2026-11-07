@@ -371,11 +371,16 @@ function SensitivityAnalysis(study::StationaryStudy)
     xs = [mesh.coords[n, 1] for n in mesh.elements[1].node_ids]
     ys = [mesh.coords[n, 2] for n in mesh.elements[1].node_ids]
     Bs = Matrix{Float64}[]
+    B_int = zeros(4, 8)
     for (xi, eta) in GAUSS_POINTS
-        B, _ = B_matrix(xs, ys, xi, eta)
+        B, detJ = B_matrix(xs, ys, xi, eta)
         push!(Bs, B)
+        # OpenLSTO's `SolidElement::B_int` accumulates `B * w * detJ` over the
+        # Gauss points (2-point weights w = 1.0; detJ = 0.25 for unit-square
+        # cells). Omitting the factor would scale every B_int-based stress
+        # quantity (p-norm objective, von Mises max, adjoint force) by 4.
+        B_int .+= B .* detJ
     end
-    B_int = sum(Bs)
     gauss_coords = [gauss_point_coords(mesh, element) for element in mesh.elements]
     sensitivities = [zeros(4) for _ in mesh.elements]
     component1 = [zeros(4) for _ in mesh.elements]

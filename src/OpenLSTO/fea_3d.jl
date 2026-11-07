@@ -1,7 +1,9 @@
 # 3D hexahedral finite element analysis for the 3D level-set compliance
 # driver (a port of the spacedim = 3 branch of M2DO_FEA). Standard trilinear
-# Q8 elements with 2x2x2 Gauss integration. Nodes and elements are ordered
-# x-fastest (then y, then z) to match the level-set volume-fraction vector.
+# Q8 elements with 3x3x3 Gauss integration (the 3-point rule that
+# `projects/3d/comp_min.cpp` selects with `element_order = 3`). Nodes and
+# elements are ordered x-fastest (then y, then z) to match the level-set
+# volume-fraction vector.
 
 # Node index (1-based) of grid point (x, y, z).
 _hex_node(nelx, nely, x, y, z) = x + (nelx + 1) * y + (nelx + 1) * (nely + 1) * z + 1
@@ -32,16 +34,18 @@ const _HEX_NATURAL = (
     (-1.0, 1.0, 1.0),
 )
 
-# 2x2x2 Gauss points and (unit) weights.
-const _HEX_GAUSS = (
-    (-1 / sqrt(3), -1 / sqrt(3), -1 / sqrt(3)),
-    (1 / sqrt(3), -1 / sqrt(3), -1 / sqrt(3)),
-    (-1 / sqrt(3), 1 / sqrt(3), -1 / sqrt(3)),
-    (1 / sqrt(3), 1 / sqrt(3), -1 / sqrt(3)),
-    (-1 / sqrt(3), -1 / sqrt(3), 1 / sqrt(3)),
-    (1 / sqrt(3), -1 / sqrt(3), 1 / sqrt(3)),
-    (-1 / sqrt(3), 1 / sqrt(3), 1 / sqrt(3)),
-    (1 / sqrt(3), 1 / sqrt(3), 1 / sqrt(3)),
+# 3-point Gauss-Legendre rule per direction (27 points and weights for the
+# cube), mirroring `GaussianQuadrature(spacedim=3, order=3)` in OpenLSTO:
+# points +-sqrt(3/5), 0 with weights 5/9, 8/9, 5/9.
+const _HEX_GAUSS_1D = (-sqrt(3 / 5), 0.0, sqrt(3 / 5))
+const _HEX_GAUSS_W1D = (5 / 9, 8 / 9, 5 / 9)
+
+const _HEX_GAUSS_PTS = Tuple(
+    (xi, eta, zeta) for xi in _HEX_GAUSS_1D for eta in _HEX_GAUSS_1D for
+    zeta in _HEX_GAUSS_1D
+)
+const _HEX_GAUSS_WS = Tuple(
+    wx * wy * wz for wx in _HEX_GAUSS_W1D for wy in _HEX_GAUSS_W1D for wz in _HEX_GAUSS_W1D
 )
 
 # Shape function gradients (∂N/∂x, ∂N/∂y, ∂N/∂z) at a natural point. The unit
@@ -141,13 +145,14 @@ function HexStudy(
     nelz = Int(nelz)
     n_dof = 3 * (nelx + 1) * (nely + 1) * (nelz + 1)
     n_elements = nelx * nely * nelz
-    gauss_coords = [Vector{Vector{Float64}}(undef, 8) for _ in 1:n_elements]
+    n_gauss = length(_HEX_GAUSS_PTS)
+    gauss_coords = [Vector{Vector{Float64}}(undef, n_gauss) for _ in 1:n_elements]
     for k in 0:(nelz - 1)
         for j in 0:(nely - 1)
             for i in 0:(nelx - 1)
                 e = i + nelx * j + nelx * nely * k + 1
-                for g in 1:8
-                    xi, eta, zeta = _HEX_GAUSS[g]
+                for g in 1:n_gauss
+                    xi, eta, zeta = _HEX_GAUSS_PTS[g]
                     lx = (xi + 1) / 2
                     ly = (eta + 1) / 2
                     lz = (zeta + 1) / 2
@@ -156,7 +161,7 @@ function HexStudy(
             end
         end
     end
-    sensitivities = [zeros(8) for _ in 1:n_elements]
+    sensitivities = [zeros(n_gauss) for _ in 1:n_elements]
     return HexStudy(
         nelx,
         nely,
@@ -173,10 +178,13 @@ function HexStudy(
     )
 end
 
-function _hex_element_stiffness(material::HexMaterial, Bs::Vector{Matrix{Float64}})
+function _hex_element_stiffness(
+    material::HexMaterial, Bs::Vector{Matrix{Float64}}, ws::Vector{Float64}
+)
     K = zeros(24, 24)
-    for B in Bs
-        K .+= (1 / 8) .* (B' * material.C * B)
+    for (B, w) in zip(Bs, ws)
+        # detJ = 1/8 for the unit cube.
+        K .+= (w / 8) .* (B' * material.C * B)
     end
     return K
 end
@@ -190,11 +198,13 @@ function assemble_hex_K!(study::HexStudy)
         is_fixed[d] = true
     end
     Bs = Matrix{Float64}[]
-    for g in 1:8
-        xi, eta, zeta = _HEX_GAUSS[g]
+    ws = Float64[]
+    for g in 1:length(_HEX_GAUSS_PTS)
+        xi, eta, zeta = _HEX_GAUSS_PTS[g]
         push!(Bs, _hex_B_matrix(xi, eta, zeta))
+        push!(ws, _HEX_GAUSS_WS[g])
     end
-    Ke = _hex_element_stiffness(study.material, Bs)
+    Ke = _hex_element_stiffness(study.material, Bs, ws)
     I = Int[]
     J = Int[]
     V = Float64[]
@@ -268,8 +278,8 @@ function compute_hex_compliance_sensitivities!(study::HexStudy)
                     push!(dofs, 3n - 2, 3n - 1, 3n)
                 end
                 ue = study.u[dofs]
-                for g in 1:8
-                    xi, eta, zeta = _HEX_GAUSS[g]
+                for g in 1:length(_HEX_GAUSS_PTS)
+                    xi, eta, zeta = _HEX_GAUSS_PTS[g]
                     B = _hex_B_matrix(xi, eta, zeta)
                     Bu = B * ue
                     stress_strain = dot(Bu, C * Bu)
@@ -290,7 +300,7 @@ function hex_boundary_sensitivity(
     rows = Vector{Vector{Float64}}()
     b = Float64[]
     for e in eachindex(study.area_fractions)
-        for g in 1:8
+        for g in eachindex(study.gauss_coords[e])
             gp = study.gauss_coords[e][g]
             far = false
             for k in 1:3

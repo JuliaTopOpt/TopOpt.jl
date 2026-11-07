@@ -54,11 +54,19 @@ function stress_minimization(;
     sens = SensitivityAnalysis(study)
 
     load_y = round(Int, nely * 2 / 5)
-    load_node = load_y * w + nelx + 1
-    load_dofs = [2load_node - 1, 2load_node]
-    load_values = [0.0, -3.0]
+    # The tip load is split over the two right-edge nodes nearest
+    # (nelx, 2/5 nely), mirroring `lbeam.cpp`'s `GetNodesByCoordinates` box of
+    # tolerance (1.1, 0.1): nodes (nelx - 1, load_y) and (nelx, load_y) each
+    # carry -3.0 / 2 = -1.5.
+    load_nodes = [load_y * w + nelx, load_y * w + nelx + 1]
+    load_dofs = Int[]
+    for node in load_nodes
+        push!(load_dofs, 2node - 1, 2node)
+    end
+    load_values = [0.0, -1.5, 0.0, -1.5]
     boundary_conditions = LevelSetBoundaryConditions(
-        [(load_node, [0.0, -3.0])], _supports_from_fixed_dofs(fixed_dofs, 2)
+        [(node, [0.0, -1.5]) for node in load_nodes],
+        _supports_from_fixed_dofs(fixed_dofs, 2),
     )
 
     # Level-set setup: L-beam domain with an inner corner at 2/5 width.
