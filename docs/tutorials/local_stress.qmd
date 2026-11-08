@@ -147,9 +147,16 @@ intermediate densities.
 # stress evaluation (da Silva et al., 2019) — so they are excluded here.
 topo = filter(PseudoDensities(x)).x
 s = stress(filter(PseudoDensities(x)))
-max_solid = maximum(s[topo .> 0.5])
-println("max stress on solid elements: $max_solid (threshold: $thr)")
-println("stress constraint satisfied: $((max_solid - thr) / thr < 0.01)")
+s_solid = s[topo .> 0.5]
+if isempty(s_solid)
+    # A non-binary final design (every filtered density ≤ 0.5) has no solid
+    # elements to report a stress on.
+    println("no solid elements in the final design (max density $(round(maximum(topo), digits=3)))")
+else
+    max_solid = maximum(s_solid)
+    println("max stress on solid elements: $max_solid (threshold: $thr)")
+    println("stress constraint satisfied: $((max_solid - thr) / thr < 0.01)")
+end
 ```
 
 ## Visualization

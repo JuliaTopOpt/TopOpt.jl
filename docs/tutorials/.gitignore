@@ -14,7 +14,9 @@
 **/*_ipynb
 
 # Julia cache and precompilation
-/Manifest.toml
+# The Manifest is committed (see the repository .gitignore) so the CI
+# tutorial jobs resolve the exact environment the tutorials were verified
+# against.
 /*.ji
 /sysimage.*
 
