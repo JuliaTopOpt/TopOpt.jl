@@ -25,3 +25,7 @@ docs/tutorials/Manifest.toml
 # Tutorial-generated VTK output
 docs/tutorials/*.vtu
 docs/tutorials/*.stl
+
+# The tutorials Manifest is committed so the CI tutorial jobs resolve the
+# exact environment the tutorials were verified against.
+!docs/tutorials/Manifest.toml

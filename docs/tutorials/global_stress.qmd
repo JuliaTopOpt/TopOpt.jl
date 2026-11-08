@@ -234,9 +234,13 @@ function report(label, x)
     srel = σ_rel(filter(PseudoDensities(x)))
     smic = σ_micro(filter(PseudoDensities(x)))
     solid = topo .> 0.5
+    smic_solid = smic[solid]
+    # A non-binary final design (every filtered density ≤ 0.5) has no solid
+    # elements to report a microscopic stress on.
+    max_micro = isempty(smic_solid) ? NaN : maximum(smic_solid)
     println(
         "$label: V = $(round(obj(x), digits=3)), max relaxed σ = $(round(maximum(srel), digits=3)), " *
-        "max microscopic σ (solid elements) = $(round(maximum(smic[solid]), digits=3)), " *
+        "max microscopic σ (solid elements) = $(isnan(max_micro) ? "n/a (no solid elements)" : round(max_micro, digits=3)), " *
         "σlim = $(round(σlim, digits=3))",
     )
     return topo
