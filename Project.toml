@@ -1,6 +1,6 @@
 name = "TopOpt"
 uuid = "53a1e1a5-51bb-58a9-8a02-02056cc81109"
-version = "0.16.4"
+version = "0.16.5"
 authors = ["Mohamed Tarek <mohdibntarek@gmail.com>", "Yijiang Huang <yijiang94817@gmail.com>"]
 
 [deps]
@@ -65,10 +65,10 @@ LinearAlgebra = "1"
 MacroTools = "0.5"
 Makie = "0.23, 0.24"
 NearestNeighbors = "0.4"
-Nonconvex = "3"
+Nonconvex = "3, 4"
 NonconvexMMA = "1"
-NonconvexPercival = "0.1.6"
-NonconvexSemidefinite = "0.1"
+NonconvexPercival = "0.1.6 - 0.3"
+NonconvexSemidefinite = "0.1 - 0.4"
 Parameters = "0.12"
 Pkg = "1"
 Preconditioners = "0.6"
