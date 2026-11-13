@@ -1,5 +1,5 @@
 ---
-title: "Local Stress: Element-Wise Constraints with Percival Solver"
+title: "Local Stress: Element-Wise Constraints with NonconvexAugLagLab"
 toc: true
 ---
 
@@ -25,15 +25,20 @@ the local setting (Duysinx & Bendsøe, 1998; Le et al., 2010):
    (never active) or makes the problem infeasible. We calibrate it from the
    solid design below.
 
-We use Percival.jl, a specialized solver for large-scale constrained
-optimization, with continuation SIMP (penalty 1.0 → 3.0) to converge to
-stress-constrained designs.
+We use NonconvexAugLagLab.jl, an augmented Lagrangian solver that folds
+the 1,600 element-wise stress constraints into the objective and solves the
+resulting bound-constrained subproblems with a warm-started quasi-Newton
+driver. Its `warm_continue` option carries the multipliers and the L-BFGS
+curvature across the SIMP continuation stages (penalty 1.0 → 3.0), so each
+stage continues from the previous one instead of restarting.
 
 ## Setup
 
 ```{julia}
 #| output: false
 using TopOpt, LinearAlgebra
+using NonconvexAugLagLab
+import NonconvexCore
 using WGLMakie
 WGLMakie.activate!(; resize_to=:parent)
 using Bonito
@@ -106,8 +111,10 @@ end
 ```
 
 Each element's relaxed von Mises stress must satisfy the threshold. The
-constraint function returns a vector (one constraint per element), which
-Percival handles efficiently using interior-point methods. The compliance
+constraint function returns a vector (one constraint per element), which the
+augmented Lagrangian handles efficiently: the constraints fold into the AL
+objective as penalty terms (evaluated as a vector — no constraint Jacobian
+is ever materialized) and the sub-solver only sees box bounds. The compliance
 regularizer (`λ·uᵀKu`) penalizes overly compliant (near-void) designs,
 keeping the optimization away from the degenerate empty-domain solution.
 
@@ -115,16 +122,22 @@ keeping the optimization away from the degenerate empty-domain solution.
 
 ```{julia}
 #| output: true
-alg = PercivalAlg()
-options = PercivalOptions(; max_iter=20, subsolver_max_eval=100)
+alg = NonconvexAugLagLab.AugLagAlg()
+options = NonconvexAugLagLab.AugLagOptions(;
+    max_iter=20,
+    sub_options=(; max_iter=100, tol=1e-6, linesearch=:trustregion),
+    warm_continue=true,
+)
 model = Model(obj)
 addvar!(model, zeros(N), ones(N))
 add_ineq_constraint!(model, constr)
+vm, x0f, _ = NonconvexCore.tovecmodel(model, x0)
+ws = Workspace(vm, alg, x0f; options=options)
 
 x = copy(x0)
 for p in [1.0, 2.0, 3.0]
     setpenalty!(solver, p)
-    global r = optimize(model, alg, x; options=options)
+    global r = NonconvexCore.optimize!(ws)
     global x = r.minimizer
     println("Penalty $p: obj=$(obj(x)), max_stress=$(maximum(stress(filter(PseudoDensities(x)))))")
 end
@@ -132,7 +145,11 @@ end
 
 The continuation strategy (penalty 1.0 → 2.0 → 3.0) helps converge to feasible
 designs by first solving a relaxed problem, then progressively penalizing
-intermediate densities.
+intermediate densities. One workspace is reused across the stages:
+`warm_continue = true` restarts each stage from the previous design with the
+carried multipliers and L-BFGS curvature, which measurably improves both the
+final design and the runtime when the per-stage parameter change is small
+(see the `warm_continue` documentation in NonconvexAugLagLab).
 
 ## Verify Results
 
@@ -192,8 +209,9 @@ The reliable defaults and their ranges:
 | stress threshold `thr` | 1.2× solid peak | 1.1–1.5× solid peak | more feasible, higher volume |
 | compliance weight `λ` | 1e-4 | 1e-5–1e-3 | stronger regularizer → stiffer but less volume-reduced designs |
 | filter `rmin` | 3.0 | 1.5–3 elements | smoother designs |
-| Percival `max_iter` | 20 | 10–40 | more outer AL iterations |
-| Percival `subsolver_max_eval` | 100 | 50–200 | more accurate subproblem solves |
+| AugLagLab `max_iter` | 20 | 10–40 | more outer AL iterations |
+| `sub_options.max_iter` | 100 | 50–200 | more subproblem iterations per outer step |
+| `warm_continue` | `true` | — | reuse multipliers and curvature across SIMP stages |
 
 As in the global case, the threshold must be calibrated from the solid design's
 peak stress — an arbitrary value is either vacuous or infeasible, and the
