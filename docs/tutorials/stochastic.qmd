@@ -229,17 +229,25 @@ C = Cfun(x_al)
 println("max-compliance design: volume = $(round(volf(x_al), digits=3)), max C = $(round(maximum(C), digits=1)), C_t = $(round(C_t, digits=1))")
 ```
 
-`NonconvexPercival` provides this augmented-Lagrangian method as a built-in
+`NonconvexAugLagLab` provides this augmented-Lagrangian method as a built-in
 solver. The same problem can be posed directly with a vector constraint and
-solved by `PercivalAlg` (no manual multiplier loop):
+solved by `AugLagAlg` (no manual multiplier loop):
 
 ```{julia}
 #| eval: false
+using NonconvexAugLagLab
 model = Model(volf)
 addvar!(model, zeros(length(solver.vars)), ones(length(solver.vars)))
 add_ineq_constraint!(model, x -> Cfun(x) ./ C_t .- 1)
-x_al2 = optimize(model, PercivalAlg(), x_al;
-    options=PercivalOptions(; max_iter=40, subsolver_max_eval=500)).minimizer
+x_al2 = optimize(
+    model,
+    NonconvexAugLagLab.AugLagAlg(),
+    x_al;
+    options=NonconvexAugLagLab.AugLagOptions(;
+        max_iter=40,
+        sub_options=(; max_iter=500, tol=1e-6, linesearch=:trustregion),
+    ),
+).minimizer
 ```
 
 ## Visualize the designs
