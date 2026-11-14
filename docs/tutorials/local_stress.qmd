@@ -147,9 +147,11 @@ The continuation strategy (penalty 1.0 → 2.0 → 3.0) helps converge to feasib
 designs by first solving a relaxed problem, then progressively penalizing
 intermediate densities. One workspace is reused across the stages:
 `warm_continue = true` restarts each stage from the previous design with the
-carried multipliers and L-BFGS curvature, which measurably improves both the
-final design and the runtime when the per-stage parameter change is small
-(see the `warm_continue` documentation in NonconvexAugLagLab).
+carried multipliers and L-BFGS curvature. Measured on the released
+NonconvexAugLagLab (0.2.5): warm continuation is consistently faster than
+cold restarts (26% on this coarse 3-step schedule) and holds the design
+exactly at the stress threshold, while cold restarts end with a lighter
+objective but a slight stress-limit violation.
 
 ## Verify Results
 
