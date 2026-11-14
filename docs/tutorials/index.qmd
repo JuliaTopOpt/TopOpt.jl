@@ -102,7 +102,7 @@ Stress-constrained L-bracket with relaxed stress and p-norm/KS/ε-relaxation agg
 ::: {.tutorial-card}
 [**Local Stress Constraints**](local_stress.html)
 
-Element-wise stress limits using Percival.jl for large-scale constrained optimization with continuation SIMP.
+Element-wise stress limits using NonconvexAugLagLab for large-scale constrained optimization with continuation SIMP.
 :::
 
 ::: {.tutorial-card}

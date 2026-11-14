@@ -31,6 +31,8 @@ Dirichlet boundary conditions — all differentiable through Zygote.
 ```{julia}
 #| output: false
 using TopOpt, LinearAlgebra
+using NonconvexAugLagLab
+import NonconvexCore
 using WGLMakie
 WGLMakie.activate!(; resize_to=:parent)
 using Bonito
@@ -154,17 +156,30 @@ The residual is at machine precision, so the SAND analysis solution satisfies
 
 The same augmented Lagrangian applies to the full SAND problem: add the volume
 constraint and optimize over `(x, u)` jointly, with `K(x) u - f = 0` enforced
-as the augmented-Lagrangian term. TopOpt.jl's first-order augmented Lagrangian
-solver, `PercivalAlg` from `NonconvexPercival`, does exactly this.
+as the augmented-Lagrangian term. `NonconvexAugLagLab`'s
+`AugLagAlg` does exactly this: the equilibrium (a vector equality constraint
+of length `ndofs`) folds into the AL objective, and the bound-constrained
+subproblems are solved with a warm-started quasi-Newton driver. The model uses
+`AutoZygote` for the gradients, because the assembly functions
+(`ElementKFun`, `AssembleKFun`, `apply_boundary_with_meandiag!`) are
+differentiable through Zygote:
 
 ```{julia}
 #| output: true
+NonconvexCore.set_ad_backend!(NonconvexCore.AutoZygote())
 model = Model(z -> dot(fvec, z[nel+1:end]))
 addvar!(model, vcat(zeros(nel), fill(-1e3, ndofs)), vcat(ones(nel), fill(1e3, ndofs)))
 add_ineq_constraint!(model, z -> sum(z[1:nel]) / nel - 0.5)
 add_eq_constraint!(model, z -> K(z[1:nel]) * z[nel+1:end] - fvec; dim=ndofs)
-z_sand = optimize(model, PercivalAlg(), vcat(fill(0.5, nel), solver.u);
-    options=PercivalOptions(; max_iter=25, subsolver_max_eval=250)).minimizer
+z_sand = optimize(
+    model,
+    NonconvexAugLagLab.AugLagAlg(),
+    vcat(fill(0.5, nel), solver.u);
+    options=NonconvexAugLagLab.AugLagOptions(;
+        max_iter=50,
+        sub_options=(; max_iter=300, tol=1e-6, linesearch=:trustregion),
+    ),
+).minimizer
 x_sand = z_sand[1:nel]
 u_sand = z_sand[nel+1:end]
 ```
@@ -205,6 +220,9 @@ equilibrium by construction).
   `apply_boundary_with_meandiag!`) are differentiable, so the equilibrium
   residual and its gradient are available through Zygote.
 - The augmented Lagrangian is the natural method for the equilibrium
-  constraint; for the convex analysis-only case it converges immediately, while
-  the full SAND problem relies on first-order solvers such as
-  `NonconvexPercival.PercivalAlg`.
+  constraint; for the convex analysis-only case it converges immediately,
+  while the full SAND problem is solved by `NonconvexAugLagLab.AugLagAlg`
+  (measured on this 20×10 example: the equilibrium residual lands at ~9% of
+  `|f|` with the budget above, roughly twice as close as a first-order
+  competitor, but still not machine precision — see the feasibility
+  section).
