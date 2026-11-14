@@ -193,61 +193,30 @@ $$
 Each subproblem minimizes this function over the box `0 ≤ x ≤ 1`, then the
 multipliers and penalty are updated (`λ ← λ + ρ·c`, `ρ ← γρ`). The compliance
 threshold `C_t` is calibrated from the solid design's worst-case compliance.
-
-```{julia}
-#| output: false
-volf = x -> volfrac(filter(PseudoDensities(x)))
-Cfun = x -> bc(filter(PseudoDensities(x)))
-C_t = 2.0 * maximum(Cfun(ones(length(solver.vars))))
-
-function al_subproblem(λ, ρ, x0)
-    model = Model(xx -> begin
-        C = Cfun(xx)
-        c = C .- C_t
-        pen = max.(λ .+ ρ .* c, 0.0)
-        volf(xx) + (1 / (2ρ)) * (dot(pen, pen) - dot(λ, λ))
-    end)
-    addvar!(model, zeros(length(x0)), ones(length(x0)))
-    return optimize(model, MMA87(), x0;
-        options=MMAOptions(; maxiter=60, tol=Tolerance(; kkt=1e-4, f=1e-4))).minimizer
-end
-```
+`NonconvexAugLagLab` provides this method as a built-in solver: the
+per-scenario vector constraint folds into the augmented Lagrangian and the
+multiplier/penalty loop runs automatically.
 
 ```{julia}
 #| output: true
-λ = zeros(nloads)
-ρ = 1.0
-x_al = ones(length(solver.vars))
-for k in 1:20
-    global λ, ρ, x_al
-    x_al = al_subproblem(λ, ρ, x_al)
-    C = Cfun(x_al)
-    λ .= max.(λ .+ ρ .* (C .- C_t), 0.0)
-    ρ *= 1.5
-end
-C = Cfun(x_al)
-println("max-compliance design: volume = $(round(volf(x_al), digits=3)), max C = $(round(maximum(C), digits=1)), C_t = $(round(C_t, digits=1))")
-```
-
-`NonconvexAugLagLab` provides this augmented-Lagrangian method as a built-in
-solver. The same problem can be posed directly with a vector constraint and
-solved by `AugLagAlg` (no manual multiplier loop):
-
-```{julia}
-#| eval: false
 using NonconvexAugLagLab
+volf = x -> volfrac(filter(PseudoDensities(x)))
+Cfun = x -> bc(filter(PseudoDensities(x)))
+C_t = 2.0 * maximum(Cfun(ones(length(solver.vars))))
 model = Model(volf)
 addvar!(model, zeros(length(solver.vars)), ones(length(solver.vars)))
 add_ineq_constraint!(model, x -> Cfun(x) ./ C_t .- 1)
-x_al2 = optimize(
+x_al = optimize(
     model,
     NonconvexAugLagLab.AugLagAlg(),
-    x_al;
+    fill(0.5, length(solver.vars));
     options=NonconvexAugLagLab.AugLagOptions(;
         max_iter=40,
-        sub_options=(; max_iter=500, tol=1e-6, linesearch=:trustregion),
+        sub_options=(; max_iter=200, tol=1e-6, linesearch=:trustregion),
     ),
 ).minimizer
+C = Cfun(x_al)
+println("max-compliance design: volume = $(round(volf(x_al), digits=3)), max C = $(round(maximum(C), digits=1)), C_t = $(round(C_t, digits=1)), max C / C_t = $(round(maximum(C) / C_t, digits=5))")
 ```
 
 ## Visualize the designs
