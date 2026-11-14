@@ -1860,7 +1860,7 @@ version = "1.3.1"
 
 [[deps.NonconvexPercival]]
 deps = ["ADNLPModels", "ForwardDiff", "LinearAlgebra", "LinearOperators", "NLPModels", "NLPModelsModifiers", "NonconvexCore", "Parameters", "Percival", "Reexport", "Zygote"]
-path = "/home/mmm/JuliaEnvs/NonconvexEnv/repos/NonconvexPercival.jl"
+git-tree-sha1 = "34fee5a377132e858f15045cc8c683761a066864"
 uuid = "4296f080-e499-44ba-a02c-ae40015c44d5"
 version = "0.3.5"
 
