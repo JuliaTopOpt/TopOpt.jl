@@ -212,6 +212,15 @@ significant residual `K(x)u - f` means the design is not actually feasible.
 Consequently `fᵀu` no longer equals the nested compliance (which satisfies
 equilibrium by construction).
 
+## Visualize the SAND design
+
+```{julia}
+#| label: fig-sand-design
+#| fig-cap: "The SAND design: densities from the joint optimization, deformed by the SAND displacement field"
+fig2 = visualize(problem; static=true, topology=x_sand, u=u_sand, default_exagg_scale=0.5)
+display_app(fig2)
+```
+
 ## Discussion
 
 - SAND exposes `u` as a design variable and enforces `K u = f` as a constraint,

@@ -132,18 +132,6 @@ Softmax parametrization for distributing 3+ candidate materials with mass constr
 :::
 
 ::: {.tutorial-card}
-[**Neural Network Parametrization (IPOPT)**](neural.html)
-
-4-layer MLP parametrization with feasibility restoration and augmented-Lagrangian refinement using IPOPT.
-:::
-
-::: {.tutorial-card}
-[**Neural Network Parametrization (Adam)**](neural2.html)
-
-6-layer MLP with Adam optimizer and continuation on penalty and constraint aggregation weight.
-:::
-
-::: {.tutorial-card}
 [**Fixed Element Regions**](fixed_elements.html)
 
 Reserve solid/void regions with FixedElementProjectorFun — support and load regions, keep-out zones — and optimize only the free elements.

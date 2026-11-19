@@ -162,6 +162,6 @@ returns a `Bonito.App`.
 
 The [Tutorials](tutorials/index.md) walk through complete, commented examples
 — compliance and volume minimization, stress-constrained and
-buckling-constrained optimization, heat sinks, multi-material and
-neural-network parametrization, trusses, and level-set optimization. The
+buckling-constrained optimization, heat sinks, multi-material
+parametrization, trusses, and level-set optimization. The
 sidebar lists the full API reference, grouped by module.
