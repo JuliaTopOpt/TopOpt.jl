@@ -239,8 +239,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">println</span>(<span class="st">"CGAssembly  vs Direct  rel. error: </span><span class="sc">$</span>(<span class="fu">norm</span>(cg.u <span class="op">-</span> direct.u) <span class="op">/</span> <span class="fu">norm</span>(direct.u))<span class="st">"</span>)</span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">println</span>(<span class="st">"CGMatrixFree vs Direct rel. error: </span><span class="sc">$</span>(<span class="fu">norm</span>(mf.u <span class="op">-</span> direct.u) <span class="op">/</span> <span class="fu">norm</span>(direct.u))<span class="st">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>CGAssembly  vs Direct  rel. error: 6.173485898993475e-10
-CGMatrixFree vs Direct rel. error: 6.170132604347214e-10</code></pre>
+<pre><code>CGAssembly  vs Direct  rel. error: 6.140283124182347e-10
+CGMatrixFree vs Direct rel. error: 6.142807479684295e-10</code></pre>
 </div>
 </div>
 <p>The iterative solvers converge to the same displacement field as the direct factorization (to the requested tolerance). <code>CGMatrixFreeSolver</code> requires homogeneous Dirichlet boundary conditions (it throws a descriptive <code>ArgumentError</code> otherwise) because its matrix-free diagonal does not match Ferrite’s inhomogeneous-BC diagonal.</p>
@@ -361,7 +361,7 @@ CGMatrixFree vs Direct rel. error: 6.170132604347214e-10</code></pre>
 <span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a><span class="fu">println</span>(<span class="st">"custom JacobiSolver matches direct (rel. error): </span><span class="sc">$</span>rel_error<span class="st">"</span>)</span>
 <span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>rel_error <span class="op">&lt;</span> <span class="fl">1e-6</span> <span class="op">||</span> <span class="fu">error</span>(<span class="st">"JacobiSolver did not reproduce the direct solution (rel. error </span><span class="sc">$</span>rel_error<span class="st">)"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>custom JacobiSolver matches direct (rel. error): 3.2104255787687926e-11</code></pre>
+<pre><code>custom JacobiSolver matches direct (rel. error): 3.210454487227815e-11</code></pre>
 </div>
 <div class="cell-output cell-output-display" data-execution_count="1">
 <pre><code>true</code></pre>
