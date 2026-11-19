@@ -228,34 +228,41 @@ p-mean makes the problem intractable for plain MMA (it stalls at a large
 violation) and for IPOPT with first-order derivatives (it cannot maintain the
 aggregate bound), so we enforce them as the *local* constraints they are
 with the augmented Lagrangian method (`NonconvexAugLagLab`), the same solver
-used in the `local_stress` tutorial. We run a single fixed `ε = 0.25`. Driving
-`ε → 0` tightens the *true* stress bound $\sigma_{\lim}(1 + \epsilon)$ on
-solid elements, but needs a slow continuation with many iterations — the
-global optimum of the relaxed problem can jump discontinuously as `ε → 0`
-(Stolpe & Svanberg, 2001) — which is why ε-relaxation is paired with
-augmented-Lagrangian solvers (Fancello & Pereira, 2006).
+used in the `local_stress` tutorial. We drive `ε` down with a continuation
+(`0.25 → 0.05 → 0.02 → 0.01`): each stage re-solves from the previous
+design, which tightens the true stress bound and removes the disconnected
+gray regions a single fixed `ε` leaves behind. Driving `ε → 0` recovers the
+original local constraints, though the global optimum of the relaxed problem
+can jump discontinuously (Stolpe & Svanberg, 2001) — which is why
+ε-relaxation is paired with augmented-Lagrangian solvers (Fancello &
+Pereira, 2006).
 
 ```{julia}
 #| output: true
 using NonconvexAugLagLab
 import NonconvexCore
 
-ε = 0.25
+εs = [0.25, 0.05, 0.02, 0.01]
+εref = Ref(εs[1])
 g_eps = x -> begin
     xfil = filter(PseudoDensities(x))
-    epsilon_relaxed(σ_micro(xfil), xfil.x, σlim, ε) ./ ε
+    epsilon_relaxed(σ_micro(xfil), xfil.x, σlim, εref[]) ./ εref[]
 end
-model_eps = Model(obj)
-addvar!(model_eps, zeros(N), ones(N))
-add_ineq_constraint!(model_eps, g_eps)
-vm, x0f, _ = NonconvexCore.tovecmodel(model_eps, x_solid)
-ws_eps = Workspace(vm, NonconvexAugLagLab.AugLagAlg(), x0f;
-    options=NonconvexAugLagLab.AugLagOptions(;
-        max_iter=20, sub_options=(; max_iter=100, tol=1e-6, linesearch=:trustregion),
-    ),
-)
-x3 = NonconvexCore.optimize!(ws_eps).minimizer
-println("ε-relaxed: V=$(round(obj(x3), digits=3)), max g=$(round(maximum(g_eps(x3)), digits=4))")
+x3 = copy(x_solid)
+for εv in εs
+    εref[] = εv
+    model_eps = Model(obj)
+    addvar!(model_eps, zeros(N), ones(N))
+    add_ineq_constraint!(model_eps, g_eps)
+    vm, x0f, _ = NonconvexCore.tovecmodel(model_eps, x3)
+    ws_eps = Workspace(vm, NonconvexAugLagLab.AugLagAlg(), x0f;
+        options=NonconvexAugLagLab.AugLagOptions(;
+            max_iter=20, sub_options=(; max_iter=100, tol=1e-6, linesearch=:trustregion),
+        ),
+    )
+    global x3 = NonconvexCore.optimize!(ws_eps).minimizer
+    println("ε=$εv: V=$(round(obj(x3), digits=3)), max g=$(round(maximum(g_eps(x3)), digits=4))")
+end
 ```
 
 ## Results and verification
@@ -263,7 +270,7 @@ println("ε-relaxed: V=$(round(obj(x3), digits=3)), max g=$(round(maximum(g_eps(
 ```{julia}
 #| output: true
 function report(label, x, constr)
-    topo = filter(PseudoDensities(x)).x
+    topo = collect(filter(PseudoDensities(x)).x)
     srel = σ_rel(filter(PseudoDensities(x)))
     smic = σ_micro(filter(PseudoDensities(x)))
     solid = topo .> 0.5
@@ -291,9 +298,55 @@ stress is about 1% above `σlim`. The plain KS upper bound is conservative by
 construction: its maximum relaxed stress stays near `0.7·σlim` and the design
 keeps more material. The normalized (lower-bound) KS removes most of that
 conservatism and lands close to the p-mean design. The ε-relaxed run
-satisfies every local constraint (`max g = 0`) with a maximum relaxed stress
+satisfies every local constraint (`max g ≈ 0`) with a maximum relaxed stress
 above `σlim` — the bound applies to the *microscopic* stress with a
 per-element slack `σ_e ≤ σlim(1 + ε/ρ_e)`, not to the relaxed measure.
+
+## Connectivity verification
+
+Every design must remain a single connected structure — a stress-driven
+design with floating islands would not be a usable result:
+
+```{julia}
+#| output: true
+grid = problem.ch.dh.grid
+function connectivity(topo; threshold=0.4)
+    solid = findall(topo .> threshold)
+    isempty(solid) && return (0, 0)
+    parent = collect(1:length(solid))
+    function root(i)
+        while parent[i] != i
+            parent[i] = parent[parent[i]]
+            i = parent[i]
+        end
+        return i
+    end
+    edges = Dict{Tuple{Int,Int},Vector{Int}}()
+    for (i, c) in enumerate(solid)
+        cell = grid.cells[c]
+        for e in 1:4
+            a, b = minmax(cell.nodes[e], cell.nodes[mod1(e + 1, 4)])
+            push!(get!(() -> Int[], edges, (a, b)), i)
+        end
+    end
+    for v in values(edges), i in 1:length(v), j in (i + 1):length(v)
+        ra, rb = root(v[i]), root(v[j])
+        parent[ra] = rb
+    end
+    counts = Dict{Int,Int}()
+    for i in eachindex(solid)
+        r = root(i)
+        counts[r] = get(counts, r, 0) + 1
+    end
+    return maximum(values(counts)), length(counts)
+end
+
+for (name, x) in (("p-norm      ", x1), ("KS          ", x2), ("normalized KS", x2l), ("ε-relaxed   ", x3))
+    topo = collect(filter(PseudoDensities(x)).x)
+    largest, ncomp = connectivity(topo)
+    println("$name: connected = $(ncomp == 1) (largest component $largest at threshold 0.4)")
+end
+```
 
 The microscopic stress is reported over solid elements only: with a density
 filter, the gray boundary layer is penalized material whose true stress
@@ -342,10 +395,11 @@ display_app(fig)
   concentrates the gradient on the few peak elements and MMA can no longer
   stay feasible.
 - **ε-relaxation pairs with an AL solver.** The local, signed constraints are
-  enforced by `NonconvexAugLagLab`; a single fixed `ε` leaves the true bound
-  `σ ≤ σlim(1 + ε)` on solid elements, so the reported relaxed stress exceeds
-  `σlim`. A continuation in `ε` is needed to approach the original
-  constraints.
+  enforced by `NonconvexAugLagLab` under an `ε` continuation that tightens
+  the true bound `σ ≤ σlim(1 + ε)` on solid elements; the reported relaxed
+  stress exceeds `σlim` because the bound applies to the microscopic stress.
+  A single fixed `ε` leaves gray, disconnected regions, which the
+  continuation removes.
 - **Point loads and supports** are singular stress sources; distribute them
   (`load_width` here) or exclude their vicinity from the aggregation.
 - Deeper discussion of the theory and the failure modes of the naive
@@ -363,7 +417,7 @@ parameters and their sensible ranges:
 | `σlim` (stress limit) | 1.75× solid peak | 1.5–2× solid peak | larger feasible set; the constraint binds less |
 | p-norm `P` | 8 | 6–12 | tighter to `max`, but gradient concentrates |
 | KS `γ` | 10 | 8–15 | tighter bound; too sharp and MMA leaves the feasible region |
-| `ε` (ε-relaxation) | 0.25 | 0.1–0.5 | looser; needs slow continuation to shrink |
+| `ε` (ε-relaxation) | continuation 0.25→0.01 | 0.1–0.5 start | shrink it in stages; a single fixed `ε` leaves gray, disconnected regions |
 | filter `rmin` | 2.0 | 1.5–3 elements | smoother designs, wider gray layer |
 | `load_width` | 5 | 3–8 | distribute the point load to remove its stress singularity |
 
