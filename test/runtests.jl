@@ -65,6 +65,7 @@ if ACTUAL_GROUP in ("All", "Core_Tests_1")
         include("Functions/test_stress_relaxation.jl")
         include("Functions/test_truss_stress_rrule.jl")
         include("Functions/test_correctness_regressions.jl")
+        include("Functions/test_pullback_state.jl")
     end
 end
 

@@ -199,6 +199,7 @@ solver.vars .= x_sand
 solver()
 u_nested_sand = copy(solver.u)
 println("volume fraction         = $(round(sum(x_sand) / nel, digits=4))")
+println("volume feasible (≤ 0.5) = $(sum(x_sand) / nel <= 0.5 + 1e-3)")
 println("equilibrium residual    = $(round(norm(r_sand), digits=4))  (relative $(round(norm(r_sand) / norm(fvec), digits=4)))")
 println("SAND objective  f'u     = $(round(dot(fvec, u_sand), digits=3))")
 println("nested compliance at x  = $(round(dot(fvec, u_nested_sand), digits=3))")
@@ -210,6 +211,15 @@ may not find a solution that satisfies all constraints perfectly, so a
 significant residual `K(x)u - f` means the design is not actually feasible.
 Consequently `fᵀu` no longer equals the nested compliance (which satisfies
 equilibrium by construction).
+
+## Visualize the SAND design
+
+```{julia}
+#| label: fig-sand-design
+#| fig-cap: "The SAND design: densities from the joint optimization, deformed by the SAND displacement field"
+fig2 = visualize(problem; static=true, topology=x_sand, u=u_sand, default_exagg_scale=0.5)
+display_app(fig2)
+```
 
 ## Discussion
 

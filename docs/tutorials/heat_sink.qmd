@@ -95,9 +95,10 @@ alg = MMA87()
 options = MMAOptions(; tol=Tolerance(; kkt=1e-4))
 result = optimize(model, alg, x0; options=options)
 
-println("\nOptimization complete!")
+println("\nOptimization finished")
 println("Final objective value (thermal compliance): $(result.minimum)")
 println("Iterations: $(result.iter)")
+println("Iteration budget exhausted: $(result.maxiter_reached)")
 ```
 
 ## Inspect Results

@@ -128,8 +128,13 @@ The initial all-solid design should have positive eigenvalues (stable).
 
 ```{julia}
 #| output: false
-vol_constr(x) = sum(x) / length(x) - V
+volfrac = VolumeFun(solver)
+vol_constr(x) = volfrac(PseudoDensities(x)) - V
 ```
+
+The volume fraction weights each member by its element volume
+`A_e · L_e`; the truss contains members of unequal length, so an unweighted
+average of the design variables would not be the physical volume.
 
 ## Compliance-Only Optimization (Baseline)
 
@@ -147,7 +152,7 @@ r1 = optimize(model, alg, x0; options=options)
 
 println("ComplianceFun-only result:")
 println("  obj = $(obj(r1.minimizer))")
-println("  vol = $(vol_constr(r1.minimizer))")
+println("  vol = $(volfrac(PseudoDensities(r1.minimizer)))")
 ```
 
 This baseline ignores buckling — the result may be unstable.
@@ -168,7 +173,7 @@ r2 = optimize(model, alg2, x0; options=options2)
 
 println("Buckling-constrained result:")
 println("  obj = $(obj(r2.minimizer))")
-println("  vol = $(vol_constr(r2.minimizer))")
+println("  vol = $(volfrac(PseudoDensities(r2.minimizer)))")
 ```
 
 The `SDPBarrierAlg` uses an interior-point method with log-barrier for PSD

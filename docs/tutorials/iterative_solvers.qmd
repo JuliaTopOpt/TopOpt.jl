@@ -149,8 +149,13 @@ println("CGAssembly + EnergyCriteria matches direct: $(isapprox(cg_energy.u, dir
 Defining a custom solver means (1) subtyping `AbstractLinearSolver` and (2)
 implementing `solve_system!` for it. The generic `FEASolver(Solver, problem)`
 constructor infers the physics, so a custom solver plugs in with the same call
-form as the built-ins. The example below is a weighted-Jacobi iteration — slow
-on a stiffness matrix, but a minimal illustration of the extension point.
+form as the built-ins. The example below is a hand-written
+preconditioned-conjugate-gradient iteration with the Jacobi (diagonal)
+preconditioner. A plain damped-Jacobi fixed-point iteration is *not* shown on
+purpose: for a 3D elasticity stiffness matrix its relaxation parameter would
+need `ω < 2/λ_max(D⁻¹K)`, and it would still need an impractical number of
+iterations because `λ_min(D⁻¹K)` is small. PCG converges for any SPD system,
+and the implementation fails loudly if its iteration budget is exhausted.
 
 ```{julia}
 #| output: false
@@ -165,20 +170,35 @@ function solve_system!(
     f,
     lhs;
     max_iters=5000,
-    ω=2 / 3,
     tol=1e-9,
     kwargs...,
 ) where {T,Physics}
     Kd = K isa Symmetric ? K.data : K
     d = diag(Kd)
     any(iszero, d) && throw(ArgumentError("JacobiSolver: zero diagonal entry"))
+    # Jacobi-preconditioned CG: r_0 = f, z = D⁻¹r, p_0 = z, then the standard
+    # three-term recurrence. `rhs` rows on prescribed DOFs are zero, so the
+    # preconditioned direction stays zero there as well.
     fill!(lhs, zero(T))
+    r = copy(f)
+    z = r ./ d
+    p = copy(z)
+    rz = dot(r, z)
     for _ in 1:max_iters
-        r = f .- Kd * lhs
-        norm(r) < tol && break
-        lhs .+= ω .* (r ./ d)
+        Ap = Kd * p
+        α = rz / dot(p, Ap)
+        lhs .+= α .* p
+        r .-= α .* Ap
+        norm(r) < tol && return nothing
+        z .= r ./ d
+        rz_new = dot(r, z)
+        β = rz_new / rz
+        p .= z .+ β .* p
+        rz = rz_new
     end
-    return false
+    throw(ArgumentError(
+        "JacobiSolver: no convergence in $max_iters iterations (residual norm $(norm(r)))",
+    ))
 end
 ```
 
@@ -187,7 +207,9 @@ end
 jacobi = FEASolver(JacobiSolver, problem; xmin=0.01)
 jacobi.vars .= x
 jacobi()
-println("custom JacobiSolver matches direct (rel. error): $(norm(jacobi.u - direct.u) / norm(direct.u))")
+rel_error = norm(jacobi.u - direct.u) / norm(direct.u)
+println("custom JacobiSolver matches direct (rel. error): $rel_error")
+rel_error < 1e-6 || error("JacobiSolver did not reproduce the direct solution (rel. error $rel_error)")
 ```
 
 ## Choosing a solver

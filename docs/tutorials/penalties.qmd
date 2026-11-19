@@ -8,18 +8,21 @@ toc: true
 The SIMP penalty maps the design density `x` to the effective stiffness
 material used in the finite-element assembly. A steeper penalty suppresses
 intermediate ("gray") densities, but too steep a penalty makes the problem
-non-convex and hard to optimize. TopOpt.jl provides four penalties:
+non-convex and hard to optimize. TopOpt.jl provides three penalty families:
 
 - `PowerPenaltyFun(p)` — the classic SIMP power law `x^p`.
 - `RationalPenaltyFun(p)` — `x / (1 + p(1 - x))`, smoother than the power law
   for the same exponent.
 - `SinhPenaltyFun(p)` — `sinh(p·x) / sinh(p)`, another smooth alternative.
-- `ProjectedPenaltyFun(penalty, proj)` — applies a projection (default
-  `HeavisideProjectionFun(10)`) before the penalty, pushing toward a near-binary
-  design.
 
-This tutorial compares their curves, their effect on the optimized design, and
-the sensitivity of the result to the penalty parameter.
+Interpolation sharpness alone does not guarantee a binary optimized design,
+so we additionally demonstrate a **Heaviside projection** applied to the
+filtered physical density. The same projected field is used for the
+stiffness, the volume constraint, and the displayed topology, so grayness is
+measured on the field the analysis actually sees (Sigmund, 2007).
+
+This tutorial compares the penalty curves, their effect on the optimized
+design, and the sensitivity of the result to the penalty parameter.
 
 ## Setup
 
@@ -44,26 +47,26 @@ display_app(app) = display(app)
 ```{julia}
 #| output: true
 p = 3.0
-penalties = [
+curves = [
     ("power", PowerPenaltyFun(p)),
     ("rational", RationalPenaltyFun(p)),
     ("sinh", SinhPenaltyFun(p)),
-    ("projected", ProjectedPenaltyFun(PowerPenaltyFun(p))),
+    ("heaviside β=10", HeavisideProjectionFun(10.0)),
 ]
 for x in (0.1, 0.3, 0.5, 0.8, 1.0)
-    vals = [round(P(x), digits=3) for (_, P) in penalties]
-    println("x=$x → ", join(["$(n)=$v" for ((n, _), v) in zip(penalties, vals)], "  "))
+    vals = [round(P(x), digits=3) for (_, P) in curves]
+    println("x=$x → ", join(["$(n)=$v" for ((n, _), v) in zip(curves, vals)], "  "))
 end
 ```
 
 ```{julia}
 #| label: fig-penalties-curves
-#| fig-cap: "Penalty functions (p = 3): stiffness multiplier P(x) vs design density x"
+#| fig-cap: "Penalty functions (p = 3) and the Heaviside projection: P(x) vs design density x"
 using Makie
 xs = range(0.0, 1.0; length=101)
 fig = Figure()
 ax = Axis(fig[1, 1]; xlabel="design density x", ylabel="penalty P(x)")
-for (name, P) in penalties
+for (name, P) in curves
     lines!(ax, xs, P.(xs); label=name)
 end
 axislegend(ax)
@@ -71,13 +74,14 @@ display_app(fig)
 ```
 
 At `x = 0.5` the rational and sinh penalties are milder than the power law
-(more intermediate stiffness), while the projected penalty is already nearly
-binary.
+(more intermediate stiffness), while the Heaviside projection already maps it
+to `≈ 0.99`.
 
 ## Optimize with each penalty
 
-We solve the same Half MBB compliance problem with each penalty (exponent 3)
-and measure the resulting grayness — the fraction of elements in the
+We solve the same Half MBB compliance problem with each penalty (exponent 3),
+plus one run with the Heaviside projection applied to the filtered physical
+density, and measure the resulting grayness — the fraction of elements in the
 intermediate band `(0.1, 0.9)`.
 
 ```{julia}
@@ -106,16 +110,40 @@ function solve_with(penalty)
     topo = filter(PseudoDensities(r.minimizer)).x
     return obj(r.minimizer), constr(r.minimizer) + V, grayness(topo), topo
 end
+
+# Heaviside projection: the projection acts on the filtered physical density,
+# and the same field is used by the stiffness, the volume constraint, and the
+# displayed topology.
+function solve_projected()
+    solver = FEASolver(DirectSolver, problem; xmin=0.001, penalty=PowerPenaltyFun(3.0))
+    filter = DensityFilterFun(solver; rmin=rmin)
+    comp = ComplianceFun(solver)
+    volfrac = VolumeFun(solver)
+    proj = HeavisideProjectionFun(10.0)
+    phys = x -> PseudoDensities(proj.(filter(PseudoDensities(x)).x))
+    obj = x -> comp(phys(x))
+    constr = x -> volfrac(phys(x)) - V
+    model = Model(obj)
+    addvar!(model, zeros(N), ones(N))
+    add_ineq_constraint!(model, constr)
+    r = optimize(model, MMA87(), fill(V, N);
+        options=MMAOptions(; maxiter=120, tol=Tolerance(; kkt=1e-4, f=1e-4)))
+    topo = phys(r.minimizer).x
+    return obj(r.minimizer), constr(r.minimizer) + V, grayness(topo), topo
+end
 ```
 
 ```{julia}
 #| output: true
 results = Dict{String,Any}()
-for (name, P) in penalties
+for (name, P) in curves[1:3]
     c, vol, g, topo = solve_with(P)
     results[name] = topo
     println("$(lpad(name, 10)): compliance = $(round(c, digits=2)), vol = $(round(vol, digits=3)), gray = $(round(g, digits=3))")
 end
+c_p, v_p, g_p, topo_p = solve_projected()
+results["projected"] = topo_p
+println("$(lpad("projected", 10)): compliance = $(round(c_p, digits=2)), vol = $(round(v_p, digits=3)), gray = $(round(g_p, digits=3))")
 ```
 
 ```{julia}
@@ -133,8 +161,9 @@ display_app(fig_proj)
 ```
 
 The power, rational, and sinh penalties produce comparable topologies with
-varying amounts of gray; the projected penalty produces a noticeably crisper
-design.
+varying amounts of gray. The projected case measures grayness on the
+projected physical field, so its grayness reflects the field used by the
+analysis rather than the raw design variables.
 
 ## Parameter sensitivity
 
@@ -155,6 +184,8 @@ end
   standard choice for 2D continuum problems.
 - **Rational / sinh** penalties transition more smoothly, which can help
   continuation strategies converge from a uniform start.
-- **Projected penalty** is the go-to when a crisp 0/1 design matters more than
-  a slight stiffness penalty; combine it with a continuation on the projection
-  `β` (see the `projected_filter` tutorial) for best results.
+- **Heaviside projection** is the go-to when a crisp 0/1 design matters more
+  than a slight stiffness penalty. Apply it to the filtered physical density
+  and use that same field in the volume constraint, otherwise the constraint
+  no longer bounds the material the analysis sees; combine it with a
+  continuation on the projection `β` (see the `projected_filter` tutorial).
