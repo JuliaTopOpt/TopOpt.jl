@@ -9,7 +9,7 @@ function check_composed_pullback(f, n)
     fd = map(eachindex(x)) do i
         step = zeros(n)
         step[i] = h
-        (objective(x + step) - objective(x - step)) / (2h)
+        return (objective(x + step) - objective(x - step)) / (2h)
     end
     ad = Zygote.gradient(objective, x)[1]
     @test all(isfinite, ad)
