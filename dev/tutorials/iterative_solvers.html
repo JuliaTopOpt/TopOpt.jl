@@ -239,8 +239,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">println</span>(<span class="st">"CGAssembly  vs Direct  rel. error: </span><span class="sc">$</span>(<span class="fu">norm</span>(cg.u <span class="op">-</span> direct.u) <span class="op">/</span> <span class="fu">norm</span>(direct.u))<span class="st">"</span>)</span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">println</span>(<span class="st">"CGMatrixFree vs Direct rel. error: </span><span class="sc">$</span>(<span class="fu">norm</span>(mf.u <span class="op">-</span> direct.u) <span class="op">/</span> <span class="fu">norm</span>(direct.u))<span class="st">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>CGAssembly  vs Direct  rel. error: 6.140283124182347e-10
-CGMatrixFree vs Direct rel. error: 6.142807479684295e-10</code></pre>
+<pre><code>CGAssembly  vs Direct  rel. error: 6.173485898993475e-10
+CGMatrixFree vs Direct rel. error: 6.170132604347214e-10</code></pre>
 </div>
 </div>
 <p>The iterative solvers converge to the same displacement field as the direct factorization (to the requested tolerance). <code>CGMatrixFreeSolver</code> requires homogeneous Dirichlet boundary conditions (it throws a descriptive <code>ArgumentError</code> otherwise) because its matrix-free diagonal does not match Ferrite’s inhomogeneous-BC diagonal.</p>
@@ -309,7 +309,7 @@ CGMatrixFree vs Direct rel. error: 6.142807479684295e-10</code></pre>
 </section>
 <section id="a-custom-linear-solver" class="level2">
 <h2 class="anchored" data-anchor-id="a-custom-linear-solver">A custom linear solver</h2>
-<p>Defining a custom solver means (1) subtyping <code>AbstractLinearSolver</code> and (2) implementing <code>solve_system!</code> for it. The generic <code>FEASolver(Solver, problem)</code> constructor infers the physics, so a custom solver plugs in with the same call form as the built-ins. The example below is a weighted-Jacobi iteration — slow on a stiffness matrix, but a minimal illustration of the extension point.</p>
+<p>Defining a custom solver means (1) subtyping <code>AbstractLinearSolver</code> and (2) implementing <code>solve_system!</code> for it. The generic <code>FEASolver(Solver, problem)</code> constructor infers the physics, so a custom solver plugs in with the same call form as the built-ins. The example below is a hand-written preconditioned-conjugate-gradient iteration with the Jacobi (diagonal) preconditioner. A plain damped-Jacobi fixed-point iteration is <em>not</em> shown on purpose: for a 3D elasticity stiffness matrix its relaxation parameter would need <code>ω &lt; 2/λ_max(D⁻¹K)</code>, and it would still need an impractical number of iterations because <code>λ_min(D⁻¹K)</code> is small. PCG converges for any SPD system, and the implementation fails loudly if its iteration budget is exhausted.</p>
 <div id="18" class="cell" data-execution_count="1">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb13"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> <span class="bu">TopOpt.FEA</span>: solve_system!, GenericFEASolver</span>
 <span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a></span>
@@ -322,29 +322,49 @@ CGMatrixFree vs Direct rel. error: 6.142807479684295e-10</code></pre>
 <span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a>    f,</span>
 <span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a>    lhs;</span>
 <span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a>    max_iters<span class="op">=</span><span class="fl">5000</span>,</span>
-<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a>    ω<span class="op">=</span><span class="fl">2</span> <span class="op">/</span> <span class="fl">3</span>,</span>
-<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a>    tol<span class="op">=</span><span class="fl">1e-9</span>,</span>
-<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a>    kwargs<span class="op">...</span>,</span>
-<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a>) <span class="kw">where</span> {T,Physics}</span>
-<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a>    Kd <span class="op">=</span> K isa Symmetric ? K.data <span class="op">:</span> K</span>
-<span id="cb13-17"><a href="#cb13-17" aria-hidden="true" tabindex="-1"></a>    d <span class="op">=</span> <span class="fu">diag</span>(Kd)</span>
-<span id="cb13-18"><a href="#cb13-18" aria-hidden="true" tabindex="-1"></a>    <span class="fu">any</span>(iszero, d) <span class="op">&amp;&amp;</span> <span class="fu">throw</span>(<span class="fu">ArgumentError</span>(<span class="st">"JacobiSolver: zero diagonal entry"</span>))</span>
-<span id="cb13-19"><a href="#cb13-19" aria-hidden="true" tabindex="-1"></a>    <span class="fu">fill!</span>(lhs, <span class="fu">zero</span>(T))</span>
-<span id="cb13-20"><a href="#cb13-20" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> _ <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span>max_iters</span>
-<span id="cb13-21"><a href="#cb13-21" aria-hidden="true" tabindex="-1"></a>        r <span class="op">=</span> f <span class="op">.-</span> Kd <span class="op">*</span> lhs</span>
-<span id="cb13-22"><a href="#cb13-22" aria-hidden="true" tabindex="-1"></a>        <span class="fu">norm</span>(r) <span class="op">&lt;</span> tol <span class="op">&amp;&amp;</span> <span class="cf">break</span></span>
-<span id="cb13-23"><a href="#cb13-23" aria-hidden="true" tabindex="-1"></a>        lhs <span class="op">.+=</span> ω <span class="op">.*</span> (r <span class="op">./</span> d)</span>
-<span id="cb13-24"><a href="#cb13-24" aria-hidden="true" tabindex="-1"></a>    <span class="cf">end</span></span>
-<span id="cb13-25"><a href="#cb13-25" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="cn">false</span></span>
-<span id="cb13-26"><a href="#cb13-26" aria-hidden="true" tabindex="-1"></a><span class="kw">end</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a>    tol<span class="op">=</span><span class="fl">1e-9</span>,</span>
+<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a>    kwargs<span class="op">...</span>,</span>
+<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a>) <span class="kw">where</span> {T,Physics}</span>
+<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a>    Kd <span class="op">=</span> K isa Symmetric ? K.data <span class="op">:</span> K</span>
+<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a>    d <span class="op">=</span> <span class="fu">diag</span>(Kd)</span>
+<span id="cb13-17"><a href="#cb13-17" aria-hidden="true" tabindex="-1"></a>    <span class="fu">any</span>(iszero, d) <span class="op">&amp;&amp;</span> <span class="fu">throw</span>(<span class="fu">ArgumentError</span>(<span class="st">"JacobiSolver: zero diagonal entry"</span>))</span>
+<span id="cb13-18"><a href="#cb13-18" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Jacobi-preconditioned CG: r_0 = f, z = D⁻¹r, p_0 = z, then the standard</span></span>
+<span id="cb13-19"><a href="#cb13-19" aria-hidden="true" tabindex="-1"></a>    <span class="co"># three-term recurrence. `rhs` rows on prescribed DOFs are zero, so the</span></span>
+<span id="cb13-20"><a href="#cb13-20" aria-hidden="true" tabindex="-1"></a>    <span class="co"># preconditioned direction stays zero there as well.</span></span>
+<span id="cb13-21"><a href="#cb13-21" aria-hidden="true" tabindex="-1"></a>    <span class="fu">fill!</span>(lhs, <span class="fu">zero</span>(T))</span>
+<span id="cb13-22"><a href="#cb13-22" aria-hidden="true" tabindex="-1"></a>    r <span class="op">=</span> <span class="fu">copy</span>(f)</span>
+<span id="cb13-23"><a href="#cb13-23" aria-hidden="true" tabindex="-1"></a>    z <span class="op">=</span> r <span class="op">./</span> d</span>
+<span id="cb13-24"><a href="#cb13-24" aria-hidden="true" tabindex="-1"></a>    p <span class="op">=</span> <span class="fu">copy</span>(z)</span>
+<span id="cb13-25"><a href="#cb13-25" aria-hidden="true" tabindex="-1"></a>    rz <span class="op">=</span> <span class="fu">dot</span>(r, z)</span>
+<span id="cb13-26"><a href="#cb13-26" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> _ <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span>max_iters</span>
+<span id="cb13-27"><a href="#cb13-27" aria-hidden="true" tabindex="-1"></a>        Ap <span class="op">=</span> Kd <span class="op">*</span> p</span>
+<span id="cb13-28"><a href="#cb13-28" aria-hidden="true" tabindex="-1"></a>        α <span class="op">=</span> rz <span class="op">/</span> <span class="fu">dot</span>(p, Ap)</span>
+<span id="cb13-29"><a href="#cb13-29" aria-hidden="true" tabindex="-1"></a>        lhs <span class="op">.+=</span> α <span class="op">.*</span> p</span>
+<span id="cb13-30"><a href="#cb13-30" aria-hidden="true" tabindex="-1"></a>        r <span class="op">.-=</span> α <span class="op">.*</span> Ap</span>
+<span id="cb13-31"><a href="#cb13-31" aria-hidden="true" tabindex="-1"></a>        <span class="fu">norm</span>(r) <span class="op">&lt;</span> tol <span class="op">&amp;&amp;</span> <span class="cf">return</span> <span class="cn">nothing</span></span>
+<span id="cb13-32"><a href="#cb13-32" aria-hidden="true" tabindex="-1"></a>        z <span class="op">.=</span> r <span class="op">./</span> d</span>
+<span id="cb13-33"><a href="#cb13-33" aria-hidden="true" tabindex="-1"></a>        rz_new <span class="op">=</span> <span class="fu">dot</span>(r, z)</span>
+<span id="cb13-34"><a href="#cb13-34" aria-hidden="true" tabindex="-1"></a>        β <span class="op">=</span> rz_new <span class="op">/</span> rz</span>
+<span id="cb13-35"><a href="#cb13-35" aria-hidden="true" tabindex="-1"></a>        p <span class="op">.=</span> z <span class="op">.+</span> β <span class="op">.*</span> p</span>
+<span id="cb13-36"><a href="#cb13-36" aria-hidden="true" tabindex="-1"></a>        rz <span class="op">=</span> rz_new</span>
+<span id="cb13-37"><a href="#cb13-37" aria-hidden="true" tabindex="-1"></a>    <span class="cf">end</span></span>
+<span id="cb13-38"><a href="#cb13-38" aria-hidden="true" tabindex="-1"></a>    <span class="fu">throw</span>(<span class="fu">ArgumentError</span>(</span>
+<span id="cb13-39"><a href="#cb13-39" aria-hidden="true" tabindex="-1"></a>        <span class="st">"JacobiSolver: no convergence in </span><span class="sc">$</span>max_iters<span class="st"> iterations (residual norm </span><span class="sc">$</span>(<span class="fu">norm</span>(r))<span class="st">)"</span>,</span>
+<span id="cb13-40"><a href="#cb13-40" aria-hidden="true" tabindex="-1"></a>    ))</span>
+<span id="cb13-41"><a href="#cb13-41" aria-hidden="true" tabindex="-1"></a><span class="kw">end</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div id="20" class="cell" data-execution_count="1">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb14"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>jacobi <span class="op">=</span> <span class="fu">FEASolver</span>(JacobiSolver, problem; xmin<span class="op">=</span><span class="fl">0.01</span>)</span>
 <span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>jacobi.vars <span class="op">.=</span> x</span>
 <span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a><span class="fu">jacobi</span>()</span>
-<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a><span class="fu">println</span>(<span class="st">"custom JacobiSolver matches direct (rel. error): </span><span class="sc">$</span>(<span class="fu">norm</span>(jacobi.u <span class="op">-</span> direct.u) <span class="op">/</span> <span class="fu">norm</span>(direct.u))<span class="st">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>rel_error <span class="op">=</span> <span class="fu">norm</span>(jacobi.u <span class="op">-</span> direct.u) <span class="op">/</span> <span class="fu">norm</span>(direct.u)</span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a><span class="fu">println</span>(<span class="st">"custom JacobiSolver matches direct (rel. error): </span><span class="sc">$</span>rel_error<span class="st">"</span>)</span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>rel_error <span class="op">&lt;</span> <span class="fl">1e-6</span> <span class="op">||</span> <span class="fu">error</span>(<span class="st">"JacobiSolver did not reproduce the direct solution (rel. error </span><span class="sc">$</span>rel_error<span class="st">)"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>custom JacobiSolver matches direct (rel. error): 1.7145444021153646e116</code></pre>
+<pre><code>custom JacobiSolver matches direct (rel. error): 3.2104255787687926e-11</code></pre>
+</div>
+<div class="cell-output cell-output-display" data-execution_count="1">
+<pre><code>true</code></pre>
 </div>
 </div>
 </section>
