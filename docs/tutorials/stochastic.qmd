@@ -49,8 +49,8 @@ display_app(app) = display(app)
 ## A load ensemble
 
 We model a cantilever whose tip is loaded by many random point loads drawn
-from a distribution of directions and magnitudes. The load matrix `F` has one
-column per scenario.
+from a distribution of directions and magnitudes, spread over the interior
+nodes of the tip face. The load matrix `F` has one column per scenario.
 
 ```{julia}
 #| output: false
@@ -62,8 +62,9 @@ ndofs = length(FEASolver(DirectSolver, base).u)
 nloads = 16
 
 # Sample loads on the free tip only: a load applied anywhere else could sit on
-# void material. The ensemble acts at the tip center node, drawn from a
-# distribution of directions and magnitudes.
+# void material. The ensemble is spread over the interior of the tip (the
+# corner nodes are excluded — point loads at re-entrant corners are
+# singular), with each scenario drawing two random DOFs from those nodes.
 grid = base.ch.dh.grid
 tip_nodes = Int[]
 for (cellind, faceind) in grid.facetsets["right"]
@@ -75,8 +76,8 @@ end
 unique!(tip_nodes)
 coords = grid.nodes
 xmax = maximum(n -> coords[n].x[1], tip_nodes)
-candidates = [n for n in tip_nodes if coords[n].x[1] == xmax]
-tip_nodes = [candidates[argmin([abs(coords[n].x[2] - 0.5) for n in candidates])]]
+tip_nodes = sort!([n for n in tip_nodes if coords[n].x[1] == xmax]; by=n -> coords[n].x[2])
+tip_nodes = tip_nodes[5:17]  # interior nodes of the tip (y ≈ 0.2–0.8)
 tip_dofs = vcat([base.metadata.node_dofs[:, n] for n in tip_nodes]...)
 
 F = spzeros(ndofs, nloads)
@@ -198,10 +199,11 @@ x_mean = run(mean_only, "mean only      ")
 x_meanstd = run(mean_std, "mean + 0.25 std"; x0=x_mean)
 ```
 
-## Verification: loaded cells and connectivity
+## Verification: loaded-node support and connectivity
 
-The load ensemble acts on the tip, so a valid design must keep material
-under every loaded cell and form a single connected structure:
+The load ensemble acts on the interior of the tip, so a valid design must
+keep material under every node that actually carries a load and form a
+single connected structure:
 
 ```{julia}
 #| output: true
@@ -211,7 +213,9 @@ for (ci, cell) in enumerate(grid.cells)
         push!(get!(() -> Int[], node2cells, n), ci)
     end
 end
-loaded_cells = unique(reduce(vcat, (node2cells[n] for n in tip_nodes), init=Int[]))
+loaded_nodes = unique((d - 1) ÷ 2 + 1 for d in reduce(vcat, [findall(!iszero, F[:, i]) for i in 1:nloads]))
+# Each loaded node must be supported: at least one adjacent cell is solid.
+node_support(topo) = minimum(maximum(topo[node2cells[n]] for n in loaded_nodes))
 
 function connectivity(topo)
     solid = findall(topo .> 0.5)
@@ -247,14 +251,13 @@ end
 for (name, x) in (("mean only      ", x_mean), ("mean + 0.25 std", x_meanstd))
     topo = collect(filter(PseudoDensities(x)).x)
     largest, ncomp = connectivity(topo)
-    ld = topo[loaded_cells]
-    println("$name: connected = $(ncomp == 1), loaded-cell densities ∈ [$(round(minimum(ld), digits=3)), $(round(maximum(ld), digits=3))]")
+    println("$name: connected = $(ncomp == 1), minimum loaded-node support = $(round(node_support(topo), digits=3))")
 end
 ```
 
-The designs keep every loaded cell populated and each material region is one
-connected component, so the plots below are not missing loaded material or
-floating islands.
+The designs keep every loaded node supported by solid material and each
+material region is one connected component, so the plots below are not
+missing load-bearing material or floating islands.
 
 ## Maximum compliance constraint via augmented Lagrangian
 
@@ -298,30 +301,47 @@ println("max-compliance design: volume = $(round(volf(x_al), digits=3)), max C =
 
 topo_al = collect(filter(PseudoDensities(x_al)).x)
 largest_al, ncomp_al = connectivity(topo_al)
-ld_al = topo_al[loaded_cells]
-println("max-compliance design: connected = $(ncomp_al == 1), loaded-cell densities ∈ [$(round(minimum(ld_al), digits=3)), $(round(maximum(ld_al), digits=3))]")
+println("max-compliance design: connected = $(ncomp_al == 1), minimum loaded-node support = $(round(node_support(topo_al), digits=3))")
 ```
 
 ## Visualize the designs
 
+The figures show the designs with every load of the ensemble drawn as an
+arrow: the scenario matrix `F` is aggregated into per-node load vectors and
+passed to `visualize` as `cloaddict`.
+
+```{julia}
+#| output: false
+load_vecs = Dict{Int,Vector{Float64}}()
+for i in 1:nloads
+    for dof in findall(!iszero, F[:, i])
+        node = (dof - 1) ÷ 2 + 1
+        comp = isodd(dof) ? 1 : 2
+        v = get!(() -> zeros(2), load_vecs, node)
+        v[comp] += F[dof, i]
+    end
+end
+cloaddict = Dict(n => [v[1], v[2], 0.0] for (n, v) in load_vecs)
+```
+
 ```{julia}
 #| label: fig-stochastic-mean
 #| fig-cap: "Robust design minimizing mean compliance over random tip loads"
-fig1 = visualize(problem.problem; static=true, topology=filter(PseudoDensities(x_mean)).x)
+fig1 = visualize(problem.problem; static=true, topology=filter(PseudoDensities(x_mean)).x, cloaddict=cloaddict)
 display_app(fig1)
 ```
 
 ```{julia}
 #| label: fig-stochastic-meanstd
 #| fig-cap: "Design minimizing mean + 0.25·std, trading a bit of average stiffness for consistency across the load distribution"
-fig2 = visualize(problem.problem; static=true, topology=filter(PseudoDensities(x_meanstd)).x)
+fig2 = visualize(problem.problem; static=true, topology=filter(PseudoDensities(x_meanstd)).x, cloaddict=cloaddict)
 display_app(fig2)
 ```
 
 ```{julia}
 #| label: fig-stochastic-al
 #| fig-cap: "Minimum-volume design subject to a maximum-compliance bound (augmented Lagrangian)"
-fig3 = visualize(problem.problem; static=true, topology=filter(PseudoDensities(x_al)).x)
+fig3 = visualize(problem.problem; static=true, topology=filter(PseudoDensities(x_al)).x, cloaddict=cloaddict)
 display_app(fig3)
 ```
 
