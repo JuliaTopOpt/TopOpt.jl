@@ -71,8 +71,9 @@ function (ec::MeanComplianceFun{T})(x::PseudoDensities) where {T}
     return compute_mean_compliance(ec, ec.method, solver.vars, ec.grad)
 end
 function ChainRulesCore.rrule(ec::MeanComplianceFun, x::PseudoDensities)
-    return ec(x),
-    Δ -> (nothing, Tangent{typeof(x)}(; x=ChainRulesCore.unthunk(Δ) * ec.grad))
+    out = ec(x)
+    grad = copy(ec.grad)
+    return out, Δ -> (nothing, Tangent{typeof(x)}(; x=ChainRulesCore.unthunk(Δ) * grad))
 end
 
 function compute_mean_compliance(ec::MeanComplianceFun, ::ExactMean, x, grad)

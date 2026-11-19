@@ -72,7 +72,12 @@ function (bc::BlockComplianceFun{T})(x::PseudoDensities) where {T}
 end
 
 function ChainRulesCore.rrule(bc::BlockComplianceFun, x::PseudoDensities)
-    return bc(x),
+    out = bc(x)
+    method = snapshot_compliance_method(bc.method)
+    design = copy(x.x)
+    penalty = copy(getpenalty(bc))
+    xmin = bc.compliance.solver.xmin
+    return out,
     Δ -> begin
         Δ = ChainRulesCore.unthunk(Δ)
         Nonconvex.NonconvexCore.getdim(bc) == length(Δ) || throw(
@@ -84,11 +89,32 @@ function ChainRulesCore.rrule(bc::BlockComplianceFun, x::PseudoDensities)
         newΔ .= 0
         @unpack compliance = bc
         @unpack solver = compliance
+        solver.vars .= design
+        solver.penalty = copy(penalty)
+        solver.xmin = xmin
         @unpack elementinfo = solver
         w = Δ
-        compute_jtvp!_bc(newΔ, bc, bc.method, w)
+        compute_jtvp!_bc(newΔ, bc, method, w)
         return (nothing, Tangent{typeof(x)}(; x=newΔ))
     end
+end
+
+function snapshot_compliance_method(m::ExactDiagonal)
+    return ExactDiagonal(m.F, copy(m.Y), similar(m.temp))
+end
+function snapshot_compliance_method(m::ExactSVDDiagonal)
+    return ExactSVDDiagonal(m.F, m.US, m.V, copy(m.Q), similar(m.Y), similar(m.temp))
+end
+function snapshot_compliance_method(m::DiagonalEstimation)
+    return DiagonalEstimation(
+        m.F,
+        copy(m.V),
+        copy(m.Y),
+        similar(m.Q),
+        similar(m.temp),
+        m.sample_once,
+        m.sample_method,
+    )
 end
 
 Nonconvex.NonconvexCore.getdim(f::BlockComplianceFun) = length(f.val)

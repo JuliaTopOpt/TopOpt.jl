@@ -102,17 +102,23 @@ function ChainRulesCore.rrule(dp::DisplacementFun, x::PseudoDensities)
     # Forward-pass
     # Cholesky factorisation
     u = dp(x)
+    design = copy(x.x)
+    penalty = copy(penalty)
     return u, Δ -> begin # v
+        # Each pullback belongs to its forward design, even after another solve.
+        solver.vars .= design
+        solver.penalty = copy(penalty)
+        solver.xmin = xmin
         Δ = ChainRulesCore.unthunk(Δ)
         if hasproperty(Δ, :u)
             solver.rhs .= Δ.u
         else
             solver.rhs .= Δ
         end
-        solver(; reuse_fact=true, assemble_f=false)
+        solver(false; assemble_f=false)
         dudx_tmp .= 0
         for e in eachindex(x.x)
-            _, dρe = get_ρ_dρ(x.x[e], penalty, xmin)
+            _, dρe = get_ρ_dρ(design[e], penalty, xmin)
             celldofs!(global_dofs, dh, e)
             # Use the full element stiffness matrix (not the BC-zeroed
             # `bcmatrix`) so the lift term K_fp·u_p enters the gradient when

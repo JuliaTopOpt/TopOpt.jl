@@ -11,10 +11,10 @@ neural network (Flux.jl) that maps cell centroids to densities. The design
 field is implicit in the network weights, which we optimize under a volume
 constraint.
 
-The approach uses IPOPT for gradient-based optimization with a two-stage
-strategy: feasibility restoration (find feasible initial point) followed
-by augmented-Lagrangian refinement (minimize compliance while satisfying
-constraints).
+The approach uses IPOPT for the feasibility-restoration stage (an
+unconstrained solve that finds a feasible initial point), followed by a
+first-order penalty-continuation loop with SIMP continuation that minimizes
+compliance while keeping the volume at its bound.
 
 ## Setup
 
@@ -93,7 +93,7 @@ densities) can produce smoother designs and reduce optimization dimensionality.
 Fixed-penalty SIMP (p=3) makes the problem highly non-convex for a neural
 network parametrization — the optimizer gets stuck in poor local minima. We
 use continuation: start with p=1 (convex, no penalization) and ramp to p=3,
-solving an augmented-Lagrangian subproblem at each penalty level:
+refining the design at each penalty level:
 
 ```{julia}
 #| output: false
@@ -117,39 +117,45 @@ res1 = optimize(model1, alg, p0; options=options)
 println("Feasible design found. Constraint: $(constr(res1.minimizer))")
 ```
 
-## Augmented-Lagrangian Refinement with Continuation
+## Refinement with penalty continuation
+
+The constrained problem `min compliance s.t. volume ≤ V` is notoriously
+hard for the sigmoid-parametrized network: the compliance gradient drives
+the weights toward sigmoid saturation, where the volume constraint's
+gradient vanishes and constrained optimizers (IPOPT included) converge to a
+point of local infeasibility. We therefore refine the feasible design with
+the same driver used by the Adam-based neural tutorial: a first-order loop
+minimizing the normalized compliance plus a growing quadratic penalty on the
+volume deviation, `obj/C₀ + α·(vol − V)²`. The penalty keeps the volume
+pinned at `V` while the compliance improves, and the SIMP exponent ramps
+from 1 to 3.
 
 ```{julia}
 #| output: true
-# Second: minimize compliance with a log-barrier on constraint violation.
-# Ramp the SIMP penalty through [1, 2, 3], increasing the barrier weight
-# at each level so the constraint is progressively enforced.
-res2 = res1
-for (j, p) in enumerate(penalties)
-    global res2
+using Flux: Flux
+C0 = comp(filter(PseudoDensities(fill(V, getncells(problem)))))
+w = copy(res1.minimizer)
+adam = Flux.Optimise.Adam(0.005)
+clip = Flux.Optimise.ClipValue(1.0)
+α = 10.0
+for p in penalties
+    global w, α
     setpenalty!(solver, p)
-    μ = 1.0
-    for i in 1:5
-        μ *= 5
-        model2 = Model()
-        addvar!(model2, fill(-100.0, nparams), fill(100.0, nparams))
-        # Smooth log-barrier: penalize constraint violation. The max
-        # keeps the barrier finite when the constraint is violated.
-        set_objective!(model2, p_ -> μ * obj(p_) - log(max(1e-8, -constr(p_))))
-        options = IpoptOptions(; max_iter=50, print_level=0)
-        println("Penalty $p, iter $i (μ=$μ):")
-        res2 = optimize(model2, alg, res2.minimizer; options=options)
-        @show extrema(tf(res2.minimizer))
-        @show obj(res2.minimizer)
-        @show constr(res2.minimizer)
+    for _ in 1:30
+        α = min(α * 1.5, 1e4)
+        f2 = w_ -> obj(w_) / C0 + α * constr(w_)^2
+        Δ = Zygote.gradient(f2, w)[1]
+        Δ = Flux.Optimise.apply!(clip, w, Δ)
+        Flux.Optimise.update!(adam, w, Δ)
     end
+    println("Penalty $p (α=$α): obj=$(round(obj(w), digits=1)), constr=$(round(constr(w), digits=4))")
 end
+res2 = w
 ```
 
-Each penalty level solves 5 augmented-Lagrangian subproblems with increasing
-barrier weight μ, driving the design toward feasibility while minimizing
-compliance. Ramping the SIMP penalty from 1 to 3 steers the network toward a
-crisp 0/1 design without getting trapped in the initial non-convex landscape.
+Each penalty level runs 30 Adam steps with gradient clipping while the
+quadratic penalty weight grows: the volume deviation stays near zero and the
+network output sharpens toward a 0/1 design as the SIMP exponent reaches 3.
 
 ## Gradient Verification
 
@@ -168,7 +174,7 @@ println("All gradients finite: $(all(isfinite, grad_obj))")
 ```{julia}
 #| label: fig-neural
 #| fig-cap: "Neural network-parametrized design (4-layer MLP, 20 neurons/layer)"
-topology = filter(tf(res2.minimizer))
+topology = filter(tf(res2))
 fig = visualize(problem; static=true, topology=topology)
 display_app(fig)
 ```

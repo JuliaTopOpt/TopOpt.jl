@@ -199,6 +199,7 @@ solver.vars .= x_sand
 solver()
 u_nested_sand = copy(solver.u)
 println("volume fraction         = $(round(sum(x_sand) / nel, digits=4))")
+println("volume feasible (≤ 0.5) = $(sum(x_sand) / nel <= 0.5 + 1e-3)")
 println("equilibrium residual    = $(round(norm(r_sand), digits=4))  (relative $(round(norm(r_sand) / norm(fvec), digits=4)))")
 println("SAND objective  f'u     = $(round(dot(fvec, u_sand), digits=3))")
 println("nested compliance at x  = $(round(dot(fvec, u_nested_sand), digits=3))")

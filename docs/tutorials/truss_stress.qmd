@@ -132,19 +132,26 @@ addvar!(m2, zeros(ncells), fill(3.0, ncells))
 Nonconvex.add_ineq_constraint!(m2, g)
 r2 = Nonconvex.optimize(
     m2, MMA87(), copy(xfull);
-    options=MMAOptions(; maxiter=300, tol=Nonconvex.Tolerance(; kkt=1e-3, f=1e-3))
+    options=MMAOptions(; maxiter=300, tol=Nonconvex.Tolerance(; kkt=1e-3, f=1e-3), keep_best=true)
 )
 x2 = r2.minimizer
 σ2 = ts(PseudoDensities(x2))
 println("stress-constrained: volume = $(round(vol(PseudoDensities(x2)), digits=3)), ")
 println("  compliance = $(round(comp(PseudoDensities(x2)), digits=3)), peak |σ| = $(round(maximum(abs, σ2), digits=3))")
 println("  (σ_lim = $(round(σlim, digits=4)))")
+gvals = g(x2)
+println("  max ε-relaxed constraint = $(round(maximum(gvals), digits=6))  (all satisfied: $(maximum(gvals) <= 1e-6))")
 ```
 
 The stress-constrained design is lighter than the compliance-only design at
 the same time as its active members carry stresses near `σ_lim`. The reported
-peak can exceed `σ_lim` slightly: the ε-relaxed constraint allows a slack of
-`ε/x_e` per member, which is the price of keeping the removal path open.
+peak can exceed `σ_lim`: the ε-relaxed constraint permits
+`|σ_e| ≤ σ_lim(1 + ε/x_e)`, so thin members (small `x_e`) may carry stresses
+well above the nominal limit while still satisfying the relaxed constraint.
+The printed maximum constraint value is the feasibility check: it must be
+`≤ 0` at the end. `keep_best=true` makes MMA return the most converged
+iterate: the ε-relaxed problem makes plain MMA cycle, and the final iterate
+alone is not representative.
 
 ## Visualize the designs
 

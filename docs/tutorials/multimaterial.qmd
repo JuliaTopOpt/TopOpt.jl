@@ -136,8 +136,8 @@ println("Constraint value: $(constr(y))")
 x = tounit(reshape(y, ncells, nmats - 1))
 println("Non-void fraction: $(sum(x[:, 2:3]) / size(x, 1))")
 
-# Verify constraints are satisfied
-println("Mass constraint satisfied: $(constr(y) < 1e-6)")
+# Verify constraints are satisfied at the optimizer's own tolerance
+println("Mass constraint satisfied (≤ 1e-3): $(constr(y) <= 1e-3)")
 println("Softmax sums to 1: $(all(x -> isapprox(x, 1), sum(x; dims=2)))")
 ```
 

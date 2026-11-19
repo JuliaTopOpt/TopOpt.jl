@@ -8,8 +8,8 @@ toc: true
 This tutorial demonstrates neural network-parametrized topology optimization
 using Flux.jl's Adam optimizer. Unlike the IPOPT-based approach, this method
 uses first-order gradient descent with adaptive learning rates. A continuation
-strategy progressively increases the SIMP penalty (1→3) and constraint
-aggregation weight (1→100) to converge to binary designs.
+strategy progressively increases the SIMP penalty (1→3) and the quadratic
+penalty weight on the volume constraint (1→100) to converge to binary designs.
 
 The network uses 6 hidden layers with sigmoid output for density parametrization.
 
@@ -140,7 +140,7 @@ while true
     setpenalty!(solver, p)
 
     obj = w -> comp(todensities(w; filter=true)) / C0
-    constr = w -> volfrac(todensities(w; filter=false)) / V - 1
+    constr = w -> volfrac(todensities(w; filter=true)) / V - 1
     combined_obj = w -> obj(w) + alpha * constr(w)^2
 
     # Adam step with gradient clipping
@@ -148,8 +148,9 @@ while true
     Δ = Flux.Optimise.apply!(clip_alg, w, Δ)
     Flux.Optimise.update!(alg, w, Δ)
 
-    # Check convergence
-    x = nn(NNParams(w)).x
+    # Grayness and the constraint are measured on the analyzed
+    # (projected, filtered) density field, the same one the compliance sees.
+    x = todensities(w; filter=true).x
     global eps = sum(0.05 .< x .< 0.95) / length(x)
     violation = abs(constr(w))
 
@@ -163,11 +164,20 @@ end
 ```{julia}
 #| output: true
 obj_final = w -> comp(todensities(w; filter=true)) / C0
-constr_final = w -> volfrac(todensities(w; filter=false)) / V - 1
+constr_final = w -> volfrac(todensities(w; filter=true)) / V - 1
+x_final = todensities(w; filter=true).x
 @show obj_final(w)
 @show constr_final(w)
+@show volfrac(todensities(w; filter=true))  # analyzed volume fraction
+@show sum(0.05 .< x_final .< 0.95) / length(x_final)  # analyzed grayness
 @show eps
 ```
+
+The volume constraint is evaluated on the same projected, filtered density
+field the compliance uses, so `constr_final ≤ 0` bounds the analyzed
+material. This run uses a fixed epoch budget rather than a feasibility
+certificate: if `constr_final(w) > constr_tol` the budget was insufficient
+and the design is not presented as feasible.
 
 ## Visualization
 

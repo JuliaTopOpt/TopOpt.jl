@@ -101,8 +101,13 @@ function ChainRulesCore.rrule(ts::TrussStressFun{T}, x::PseudoDensities) where {
     # Forward pass
     σ_val = ts(x)
     u = u_fn(x)  # DisplacementResult — factorization is now cached in solver
+    design = copy(x.x)
+    penalty = copy(penalty)
 
     function pullback_fn(Δ)
+        solver.vars .= design
+        solver.penalty = copy(penalty)
+        solver.xmin = xmin
         Δ = ChainRulesCore.unthunk(Δ)
         Δx = zeros(T, length(x.x))
 
@@ -117,9 +122,9 @@ function ChainRulesCore.rrule(ts::TrussStressFun{T}, x::PseudoDensities) where {
             adj_rhs[global_dofs] .-= Δ[e] .* grad_u
         end
 
-        # Solve the adjoint system K * λ = adj_rhs (reuse factorization)
+        # Factor the stiffness at this forward call's design for the adjoint.
         solver.rhs .= adj_rhs
-        solver(; reuse_fact=true, assemble_f=false)
+        solver(false; assemble_f=false)
         λ = solver.lhs
 
         # Gradient assembly:
@@ -129,7 +134,7 @@ function ChainRulesCore.rrule(ts::TrussStressFun{T}, x::PseudoDensities) where {
         #      du/dx_j = -K⁻¹ · dρ/dx · Ke_0_j · u
         #      => adjoint term = -dρ/dx * dot(Ke_0_j · u_j, λ_j)
         for j in eachindex(x.x)
-            _, dρ_dx = get_ρ_dρ(x.x[j], penalty, xmin)
+            _, dρ_dx = get_ρ_dρ(design[j], penalty, xmin)
             celldofs!(global_dofs, dh, j)
             Ke_0_u = rawmatrix(Kes[j]) * u.u[global_dofs]
             adjoint = -dρ_dx * dot(Ke_0_u, λ[global_dofs])
