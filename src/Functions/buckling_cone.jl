@@ -34,6 +34,25 @@ end
 
 Utilities.getpenalty(bc::BucklingConeFun) = getpenalty(bc.solver)
 
+"""
+    buckling(solver::AbstractFEASolver)
+
+The solver-state convenience method of [`TopOptProblems.buckling`](@ref):
+returns `(K, Kσ)` for the solver's *current* design, using the solver's
+own displacement solution `solver.u` as the prebuckling field (the solver
+must have been called at the current design). No solve and no
+factorization happen here, so the cost profile is identical for direct
+and iterative (CG) displacement solvers — the field the design analysis
+used is the field the buckling analysis uses.
+"""
+function buckling(solver::AbstractFEASolver)
+    problem = solver.problem
+    return buckling(
+        problem, solver.globalinfo, solver.elementinfo, solver.vars,
+        getpenalty(solver), solver.xmin; u=solver.u,
+    )
+end
+
 function BucklingConeFun(solver::AbstractFEASolver, λ̄)
     problem = solver.problem
     problem isa StiffnessTopOptProblem || throw(
@@ -53,13 +72,9 @@ end
 
 function (bc::BucklingConeFun)(x::PseudoDensities)
     @unpack solver, λ̄ = bc
-    problem = solver.problem
     solver.vars .= x.x
     solver()
-    K, Kσ = buckling(
-        problem, solver.globalinfo, solver.elementinfo, solver.vars,
-        getpenalty(solver), solver.xmin,
-    )
+    K, Kσ = buckling(solver)
     Kmat = K isa Symmetric ? K.data : K
     Kσmat = Kσ isa Symmetric ? Kσ.data : Kσ
     # Wrap in `Symmetric`: Ferrite's condensed matrices store both triangles,

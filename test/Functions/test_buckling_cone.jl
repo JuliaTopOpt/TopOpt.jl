@@ -42,10 +42,7 @@ end
     x̂ = PseudoDensities(x)
     solver.vars .= x
     solver()
-    K, Kσ = TopOpt.buckling(
-        problem, solver.globalinfo, solver.elementinfo, solver.vars,
-        TopOpt.Utilities.getpenalty(solver), solver.xmin,
-    )
+    K, Kσ = TopOpt.buckling(solver)
     ev = eigen(Symmetric(Matrix(Kσ.data)), Symmetric(Matrix(K.data)))
     v = vec(ev.vectors[:, 1])
     cut = BucklingCutFun(solver, λ̄, v)
@@ -102,10 +99,7 @@ end
     x̂ = PseudoDensities(x)
     solver.vars .= x
     solver()
-    K, Kσ = TopOpt.buckling(
-        problem, solver.globalinfo, solver.elementinfo, solver.vars,
-        TopOpt.Utilities.getpenalty(solver), solver.xmin,
-    )
+    K, Kσ = TopOpt.buckling(solver)
     ev = eigen(Symmetric(Matrix(Kσ.data)), Symmetric(Matrix(K.data)))
     V = [vec(ev.vectors[:, 1]), 0.9 .* vec(ev.vectors[:, 1])]
     cuts = BucklingCutsFun(solver, λ̄, V)

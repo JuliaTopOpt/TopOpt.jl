@@ -2,6 +2,7 @@ module Functions
 
 using ..TopOpt: TopOpt, PENALTY_BEFORE_INTERPOLATION, PseudoDensities
 using ..TopOptProblems, ..TrussTopOptProblems
+import ..TopOptProblems: buckling
 using ..TopOptProblems: initialize_K, getdh
 using ..FEA, ..CheqFilters
 using ..Utilities, ForwardDiff, LinearAlgebra

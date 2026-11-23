@@ -220,13 +220,20 @@ function get_Kσs(
 end
 
 """
-    buckling(problem, ginfo, einfo, [vars, penalty, xmin])
+    buckling(problem, ginfo, einfo, [vars, penalty, xmin]; u=nothing)
 
 Assemble the global geometric stiffness matrix `Kσ` for a stiffness topology
 optimization `problem` from the global FEA info `ginfo` and element FEA info
 `einfo`. Returns `(K, Kσ)`, the elastic and geometric stiffness matrices. Each
 element's geometric stiffness is scaled by the penalized density `ρ(vars[e])`,
 consistent with the stiffness assembly in `assemble!`.
+
+The prebuckling displacement field can be supplied through `u` — pass the
+displacement solver's current solution (e.g. `solver.u`) to reuse it and
+avoid an internal solve; without `u` the field is solved directly with
+`ginfo.K \\ ginfo.f` (a sparse factorization, whatever the caller's solver).
+The `Functions` module adds the solver-state convenience method
+`buckling(solver)`, which passes `solver.u`.
 
 See [Bathe1996](@cite) §9.3 for linearized buckling analysis and
 [CookMalkusPlesha1989](@cite) §13 for the geometric stiffness assembly.
@@ -237,9 +244,10 @@ function buckling(
     einfo,
     vars=ones(T, getncells(problem.ch.dh.grid)),
     penalty=PowerPenaltyFun{T}(1),
-    xmin=T(1) / 1000,
+    xmin=T(1) / 1000;
+    u=nothing,
 ) where {xdim,T}
-    u = ginfo.K \ ginfo.f
+    u === nothing && (u = ginfo.K \ ginfo.f)
     Kσ = assemble_Kσ(problem, ginfo, einfo, vars, penalty, xmin, u)
     return ginfo.K, Kσ
 end
