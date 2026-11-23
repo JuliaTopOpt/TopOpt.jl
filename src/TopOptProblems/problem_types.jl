@@ -248,6 +248,7 @@ Arguments:
 - `ν`: Poisson's ratio
 - `q`: total magnitude of the compressive load
 - `bfrac`: load segment length as a fraction of the height `Ly`
+  (`bfrac >= 1` loads the whole edge uniformly)
 - `celltype`: can be `:Linear` (default)
 
 See also [`buckling`](@ref) and [`BucklingConeFun`](@ref) for the buckling
@@ -325,16 +326,19 @@ function CompressedColumn(
 
     metadata = Metadata(dh)
 
-    # compressive load: total q, trapezoidal (halved at the segment ends)
+    # compressive load: total q, trapezoidal (halved at the segment ends).
+    # A segment covering the whole edge (bfrac >= 1) is distributed
+    # uniformly, matching full-edge load setups.
     loadnodes = sort(
         collect(getnodeset(rect_grid.grid, "comp_load"));
         by=ni -> get_node_coordinate(rect_grid.grid.nodes[ni])[2],
     )
     nseg = length(loadnodes)
-    w = T(q / max(nseg - 1, 1))
+    fulledge = bfrac >= 1.0
+    w = fulledge ? T(q / nseg) : T(q / max(nseg - 1, 1))
     cloads = Dict{Int,Vector{T}}()
     for (k, ni) in enumerate(loadnodes)
-        wi = (k == 1 || k == nseg) ? w / 2 : w
+        wi = fulledge ? w : ((k == 1 || k == nseg) ? w / 2 : w)
         cloads[ni] = [-wi, zero(T)]
     end
     return CompressedColumn(rect_grid, E, ν, ch, cloads, metadata)
