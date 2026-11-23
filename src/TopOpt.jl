@@ -185,6 +185,7 @@ export TopOpt,
     MMA02,
     HeavisideProjectionFun,
     SigmoidProjectionFun,
+    TanhProjectionFun,
     ProjectedPenaltyFun,
     setpenalty!,
     visualize

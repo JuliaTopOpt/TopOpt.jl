@@ -95,6 +95,24 @@ mutable struct SigmoidProjectionFun{T} <: AbstractProjection
 end
 @inline (P::SigmoidProjectionFun)(x::Real) = 1 / (1 + exp((P.β + 1) * (-x + 0.5)))
 
+"""
+    TanhProjectionFun(β, η=0.5)
+
+The Wang–Lazarov–Sigmund tanh threshold projection: `x̂ = (tanh(βη) +
+tanh(β(x − η))) / (tanh(βη) + tanh(β(1 − η)))`, pinned to `x̂(0) = 0` and
+`x̂(1) = 1`. This is the projection used by the topBuck250 benchmark
+(Ferrari, Sigmund and Guest 2021) with `η = 0.5` and `β` continued from 2.
+"""
+struct TanhProjectionFun{T} <: AbstractProjection
+    β::T
+    η::T
+end
+TanhProjectionFun(β) = TanhProjectionFun(β, 0.5)
+@inline function (P::TanhProjectionFun)(x::Real)
+    t = tanh(P.β * P.η)
+    return (t + tanh(P.β * (x - P.η))) / (t + tanh(P.β * (1 - P.η)))
+end
+
 import Base: copy
 copy(p::TP) where {TP<:AbstractPenalty} = TP(p.p)
 copy(p::HeavisideProjectionFun) = HeavisideProjectionFun(p.β)
