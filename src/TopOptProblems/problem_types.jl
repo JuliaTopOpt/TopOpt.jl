@@ -199,8 +199,14 @@ function PointLoadCantilever(
     )
 end
 function _PointLoadCantilever(
-    ::Val{CellType}, nels::NTuple{dim,Int}, sizes::NTuple{dim}, E=1.0, ν=0.3,
-    force=1.0, planestress=false, kσpoint=:quadrature
+    ::Val{CellType},
+    nels::NTuple{dim,Int},
+    sizes::NTuple{dim},
+    E=1.0,
+    ν=0.3,
+    force=1.0,
+    planestress=false,
+    kσpoint=:quadrature,
 ) where {dim,CellType}
     iseven(nels[2]) && (length(nels) < 3 || iseven(nels[3])) ||
         throw("Grid does not have an even number of elements along the y and/or z axes.")
@@ -369,7 +375,8 @@ function CompressedColumn(
             pop!(rect_grid.grid.nodesets, "comp_load")
         end
         addnodeset!(
-            rect_grid.grid, "comp_load",
+            rect_grid.grid,
+            "comp_load",
             x -> top(rect_grid, x) && abs(x[1] - midx) <= bfrac * Lx / 2 + 1e-9,
         )
     else
@@ -381,7 +388,8 @@ function CompressedColumn(
             pop!(rect_grid.grid.nodesets, "comp_load")
         end
         addnodeset!(
-            rect_grid.grid, "comp_load",
+            rect_grid.grid,
+            "comp_load",
             x -> right(rect_grid, x) && abs(x[2] - midy) <= bfrac * Ly / 2 + 1e-9,
         )
     end
@@ -431,7 +439,7 @@ function CompressedColumn(
     # along the edge.
     passive = Int[]
     if vertical
-        pcol = nels[1] ÷ 2 .+ (-(passive_solid[1] ÷ 2 - 1)):(passive_solid[1] ÷ 2)
+        pcol = (nels[1] ÷ 2 .+ (-(passive_solid[1] ÷ 2 - 1))):(passive_solid[1] ÷ 2)
         prow = nels[2] .- (0:(passive_solid[2] - 1))
         for ix in pcol, iy in prow
             (1 <= ix <= nels[1] && 1 <= iy <= nels[2]) || continue
@@ -439,7 +447,7 @@ function CompressedColumn(
         end
     else
         pcol = nels[1] .- (0:(passive_solid[1] - 1))
-        prow = nels[2] ÷ 2 .+ (-(passive_solid[2] ÷ 2 - 1)):(passive_solid[2] ÷ 2)
+        prow = (nels[2] ÷ 2 .+ (-(passive_solid[2] ÷ 2 - 1))):(passive_solid[2] ÷ 2)
         for ix in pcol, iy in prow
             (1 <= ix <= nels[1] && 1 <= iy <= nels[2]) || continue
             push!(passive, (ix - 1) * nels[2] + iy)
@@ -558,13 +566,17 @@ function HalfMBB(
     planestress::Bool=false,
     kσpoint::Symbol=:quadrature,
 ) where {dim}
-    return _HalfMBB(
-        _celltype_tag(celltype), nels, sizes, E, ν, force, planestress, kσpoint
-    )
+    return _HalfMBB(_celltype_tag(celltype), nels, sizes, E, ν, force, planestress, kσpoint)
 end
 function _HalfMBB(
-    ::Val{CellType}, nels::NTuple{dim,Int}, sizes::NTuple{dim}, E=1.0, ν=0.3,
-    force=1.0, planestress=false, kσpoint=:quadrature
+    ::Val{CellType},
+    nels::NTuple{dim,Int},
+    sizes::NTuple{dim},
+    E=1.0,
+    ν=0.3,
+    force=1.0,
+    planestress=false,
+    kσpoint=:quadrature,
 ) where {dim,CellType}
     T = float(promote_type(eltype(sizes), typeof(E), typeof(ν), typeof(force)))
     if CellType === :Linear || dim === 3
@@ -934,14 +946,25 @@ function TieBeam(
     kσpoint=:quadrature,
 ) where {T}
     return _TieBeam(
-        _celltype_tag(celltype), T;
-        refine=refine, force=force, E=E, ν=ν,
-        planestress=planestress, kσpoint=kσpoint,
+        _celltype_tag(celltype),
+        T;
+        refine=refine,
+        force=force,
+        E=E,
+        ν=ν,
+        planestress=planestress,
+        kσpoint=kσpoint,
     )
 end
 function _TieBeam(
-    ::Val{CellType}, ::Type{T}; refine=1, force=T(1), E=T(1), ν=T(0.3),
-    planestress=false, kσpoint=:quadrature
+    ::Val{CellType},
+    ::Type{T};
+    refine=1,
+    force=T(1),
+    E=T(1),
+    ν=T(0.3),
+    planestress=false,
+    kσpoint=:quadrature,
 ) where {T,CellType}
     grid = TieBeamGrid(T; celltype=CellType, refine=refine)
 
@@ -1344,5 +1367,170 @@ function HeatTree(
         Ttop=nothing,
         Tbottom=0.0,
         heatflux=Dict("top" => q),
+    )
+end
+
+"""
+    WallWithOpening(nels::NTuple{2,Int}, sizes::NTuple{2}, E=1.0, ν=0.3, q=1.0e-2; celltype=:Linear, planestress=false, kσpoint=:quadrature)
+
+The 2D wall-reinforcement benchmark of [FerrariSigmundGuest2021](@cite)
+(Example 5.2): a square wall clamped at the base on four support patches,
+loaded laterally by a total load `q` spread over the left edge. A void
+opening (passive `x = 0`) occupies the upper-middle of the wall,
+surrounded by a passive solid frame (`x = 1`) of thickness `Ly/40`,
+matching the reference setup. The active domain is the remaining material.
+
+```
+     q →
+   ┌───────┐
+   │  ┌───┐│   opening (passive void, framed by passive solid)
+   │  │   ││
+   │  │   ││
+   │  │   ││
+   │  └───┘│
+   │       │
+   │       │
+   └───────┘
+   ▒ ▒   ▒ ▒  ← support patches (clamped, u_x = u_y = 0)
+```
+
+The passive regions are exposed through [`getpassive_solid`](@ref) and
+[`getpassive_void`](@ref).
+"""
+struct WallWithOpening{T,N,M,Tr<:RectilinearGrid{2,T,N,M},Tc,Td,Tm} <:
+       StiffnessTopOptProblem{2,T}
+    rect_grid::Tr
+    E::T
+    ν::T
+    ch::Tc
+    cloads::Td
+    metadata::Tm
+    planestress::Bool
+    kσpoint::Symbol
+    passive_solid::Vector{Int}
+    passive_void::Vector{Int}
+end
+function Base.show(io::IO, ::MIME{Symbol("text/plain")}, ::WallWithOpening)
+    return println(io, "TopOpt wall-with-opening problem")
+end
+getplanestress(p::WallWithOpening) = p.planestress
+getkσpoint(p::WallWithOpening) = p.kσpoint
+getpassive_solid(p::WallWithOpening) = p.passive_solid
+getpassive_void(p::WallWithOpening) = p.passive_void
+nnodespercell(p::WallWithOpening) = nnodespercell(p.rect_grid)
+getcloaddict(p::WallWithOpening) = p.cloads
+
+function WallWithOpening(
+    nels::NTuple{2,Int},
+    sizes::NTuple{2},
+    E=1.0,
+    ν=0.3,
+    q=1.0e-2;
+    celltype::Symbol=:Linear,
+    planestress::Bool=false,
+    kσpoint::Symbol=:quadrature,
+)
+    T = float(promote_type(eltype(sizes), typeof(E), typeof(ν), typeof(q)))
+    rect_grid = RectilinearGrid(nels, T.(sizes); celltype=:Linear)
+    nelx, nely = nels
+    Lx = rect_grid.corners[2][1] - rect_grid.corners[1][1]
+    Ly = rect_grid.corners[2][2] - rect_grid.corners[1][2]
+
+    # support patches along the base (the topBuck250 columns 1:9, 120:128,
+    # 257:265, 313:321 at 320 elements, scaled)
+    patchcols = vcat(
+        1:max(1, 9 * nelx ÷ 320),
+        max(1, 120 * nelx ÷ 320):max(1, 128 * nelx ÷ 320),
+        max(1, 257 * nelx ÷ 320):max(1, 265 * nelx ÷ 320),
+        max(1, 313 * nelx ÷ 320):nelx,
+    )
+    if haskey(rect_grid.grid.nodesets, "supports")
+        pop!(rect_grid.grid.nodesets, "supports")
+    end
+    # the base row nodes at the patch columns: node row 1 (y = 0), column ix
+    base_nodes = Int[]
+    for (i, node) in enumerate(Ferrite.getnodes(rect_grid.grid))
+        c = Ferrite.get_node_coordinate(node)
+        c[2] ≈ rect_grid.corners[1][2] || continue
+        col = round(Int, c[1] / (Lx / nelx))
+        col in patchcols || continue
+        push!(base_nodes, i)
+    end
+    addnodeset!(rect_grid.grid, "supports", Set(base_nodes))
+    if haskey(rect_grid.grid.nodesets, "wall_load")
+        pop!(rect_grid.grid.nodesets, "wall_load")
+    end
+    addnodeset!(rect_grid.grid, "wall_load", x -> left(rect_grid, x))
+
+    dh = DofHandler(rect_grid.grid)
+    refshape = Ferrite.getrefshape(eltype(rect_grid.grid.cells))
+    if celltype === :Linear
+        ip = Lagrange{refshape,1}()
+        add!(dh, :u, ip^2)
+    else
+        ip = Lagrange{refshape,2}()
+        add!(dh, :u, ip^2)
+    end
+    close!(dh)
+    ch = ConstraintHandler(dh)
+    dbc = Dirichlet(
+        :u, getnodeset(rect_grid.grid, "supports"), (x, t) -> zeros(T, 2), collect(1:2)
+    )
+    add!(ch, dbc)
+    close!(ch)
+    t = T(0)
+    update!(ch, t)
+
+    metadata = Metadata(dh)
+
+    # lateral load over the whole left edge (trapezoidal, total q)
+    loadnodes = sort(
+        collect(getnodeset(rect_grid.grid, "wall_load"));
+        by=ni -> get_node_coordinate(rect_grid.grid.nodes[ni])[2],
+    )
+    nseg = length(loadnodes)
+    w = T(q / max(nseg - 1, 1))
+    cloads = Dict{Int,Vector{T}}()
+    for (k, ni) in enumerate(loadnodes)
+        wi = (k == 1 || k == nseg) ? w / 2 : w
+        cloads[ni] = [wi, zero(T)]
+    end
+
+    # passive regions (the topBuck250 code, scaled): solid frames and the
+    # void opening. Rows count from the bottom (iy = 1 at y = 0); the
+    # opening occupies rows 2nely/5:nely, columns 2nelx/5:nelx-nelx/5.
+    solid = Int[]
+    void = Int[]
+    for ix in 1:nelx, iy in 1:nely
+        e = (ix - 1) * nely + iy          # x-fastest cell numbering
+        inop = (iy >= 2 * nely ÷ 5) && (ix >= 2 * nelx ÷ 5) && (ix <= nelx - nelx ÷ 5)
+        inop && continue                 # the opening (void, added below)
+        # frames
+        bottom = iy <= nely ÷ 40
+        side = ix <= nelx ÷ 40 || ix > nelx - nelx ÷ 40
+        opl =
+            (iy >= 2 * nely ÷ 5 - nely ÷ 40) &&
+            (ix >= 2 * nelx ÷ 5 - nelx ÷ 40) &&
+            (ix <= 2 * nelx ÷ 5 - 1)
+        opr =
+            (iy >= 2 * nely ÷ 5 - nely ÷ 40) &&
+            (ix >= nelx - nelx ÷ 5 + 1) &&
+            (ix <= nelx - nelx ÷ 5 + nelx ÷ 40)
+        opb =
+            (iy >= 2 * nely ÷ 5 - nely ÷ 40) &&
+            (iy <= 2 * nely ÷ 5 - 1) &&
+            (ix >= 2 * nelx ÷ 5) &&
+            (ix <= nelx - nelx ÷ 5)
+        (bottom || side || opl || opr || opb) && push!(solid, e)
+    end
+    for ix in 1:nelx, iy in 1:nely
+        e = (ix - 1) * nely + iy
+        (iy >= 2 * nely ÷ 5) &&
+            (ix >= 2 * nelx ÷ 5) &&
+            (ix <= nelx - nelx ÷ 5) &&
+            push!(void, e)
+    end
+    return WallWithOpening(
+        rect_grid, E, ν, ch, cloads, metadata, planestress, kσpoint, solid, void
     )
 end
