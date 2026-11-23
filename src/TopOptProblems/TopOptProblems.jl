@@ -36,6 +36,7 @@ include(joinpath("IO", "IO.jl"))
 using .InputOutput
 
 export PointLoadCantilever,
+    CompressedColumn,
     HalfMBB,
     LBeam,
     TieBeam,

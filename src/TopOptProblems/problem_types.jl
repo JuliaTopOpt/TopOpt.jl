@@ -231,6 +231,118 @@ function _PointLoadCantilever(
 end
 
 """
+    CompressedColumn(nels::NTuple{2,Int}, sizes::NTuple{2}, E=1.0, ν=0.3, q=1.0e-3, bfrac=1/15; celltype=:Linear)
+
+The 2D compressed column benchmark of [FerrariSigmundGuest2021](@cite)
+(Example 5.1, the `topBuck250` code): a cantilever of `nels` elements
+clamped on the left edge, subject to a compressive (negative x) load of
+total magnitude `q` spread over the segment `b = bfrac * Ly` centered at
+mid-height of the right edge, with a trapezoidal nodal distribution
+(halved at the segment ends) matching the reference implementation.
+
+Arguments:
+
+- `nels`: number of elements in each direction, a 2-tuple
+- `sizes`: the size of each element in each direction, a 2-tuple
+- `E`: Young's modulus
+- `ν`: Poisson's ratio
+- `q`: total magnitude of the compressive load
+- `bfrac`: load segment length as a fraction of the height `Ly`
+- `celltype`: can be `:Linear` (default)
+
+See also [`buckling`](@ref) and [`BucklingConeFun`](@ref) for the buckling
+analysis used with this problem.
+
+```
+     ****** load segment (b = bfrac*Ly, mid-height) 
+    *                                        *
+    *                                        *
+    *                                        *
+    *                                        *
+    *                                        *
+    ******************************************
+    //////////////////////////////////////////
+    clamped
+```
+"""
+struct CompressedColumn{T,N,M,Tr<:RectilinearGrid{2,T,N,M},Tc,Td,Tm} <:
+       StiffnessTopOptProblem{2,T}
+    rect_grid::Tr
+    E::T
+    ν::T
+    ch::Tc
+    cloads::Td
+    metadata::Tm
+end
+function Base.show(io::IO, ::MIME{Symbol("text/plain")}, ::CompressedColumn)
+    return println(io, "TopOpt compressed column problem")
+end
+function CompressedColumn(
+    nels::NTuple{2,Int},
+    sizes::NTuple{2},
+    E=1.0,
+    ν=0.3,
+    q=1.0e-3,
+    bfrac=1 / 15;
+    celltype::Symbol=:Linear,
+)
+    T = float(promote_type(eltype(sizes), typeof(E), typeof(ν), typeof(q), typeof(bfrac)))
+    rect_grid = RectilinearGrid(nels, T.(sizes); celltype=:Linear)
+    Ly = rect_grid.corners[2][2] - rect_grid.corners[1][2]
+    midy = rect_grid.corners[1][2] + Ly / 2
+
+    if haskey(rect_grid.grid.nodesets, "fixed_left")
+        pop!(rect_grid.grid.nodesets, "fixed_left")
+    end
+    addnodeset!(rect_grid.grid, "fixed_left", x -> left(rect_grid, x))
+    if haskey(rect_grid.grid.nodesets, "comp_load")
+        pop!(rect_grid.grid.nodesets, "comp_load")
+    end
+    addnodeset!(
+        rect_grid.grid, "comp_load",
+        x -> right(rect_grid, x) && abs(x[2] - midy) <= bfrac * Ly / 2 + 1e-9,
+    )
+
+    # displacement field + clamped left edge (mirrors _PointLoadCantilever)
+    dh = DofHandler(rect_grid.grid)
+    refshape = Ferrite.getrefshape(eltype(rect_grid.grid.cells))
+    if celltype === :Linear
+        ip = Lagrange{refshape,1}()
+        add!(dh, :u, ip^2)
+    else
+        ip = Lagrange{refshape,2}()
+        add!(dh, :u, ip^2)
+    end
+    close!(dh)
+    ch = ConstraintHandler(dh)
+    dbc = Dirichlet(
+        :u, getnodeset(rect_grid.grid, "fixed_left"), (x, t) -> zeros(T, 2), collect(1:2)
+    )
+    add!(ch, dbc)
+    close!(ch)
+    t = T(0)
+    update!(ch, t)
+
+    metadata = Metadata(dh)
+
+    # compressive load: total q, trapezoidal (halved at the segment ends)
+    loadnodes = sort(
+        collect(getnodeset(rect_grid.grid, "comp_load"));
+        by=ni -> get_node_coordinate(rect_grid.grid.nodes[ni])[2],
+    )
+    nseg = length(loadnodes)
+    w = T(q / max(nseg - 1, 1))
+    cloads = Dict{Int,Vector{T}}()
+    for (k, ni) in enumerate(loadnodes)
+        wi = (k == 1 || k == nseg) ? w / 2 : w
+        cloads[ni] = [-wi, zero(T)]
+    end
+    return CompressedColumn(rect_grid, E, ν, ch, cloads, metadata)
+end
+nnodespercell(p::CompressedColumn) = nnodespercell(p.rect_grid)
+getcloaddict(p::CompressedColumn) = p.cloads
+
+"""
     HalfMBB{dim, T, N, M} <: StiffnessTopOptProblem{dim, T}
 
 The half Messerschmitt-Bölkow-Blohm (MBB) beam problem with a point load at

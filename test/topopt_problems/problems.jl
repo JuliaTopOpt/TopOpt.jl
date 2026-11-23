@@ -787,3 +787,20 @@ end
         @test occursin("HeatConductionProblem", output) || output != ""
     end
 end
+
+# Compressed column benchmark (topBuck250, Example 5.1)
+@testset "CompressedColumn" begin
+    problem = CompressedColumn((4, 2), (0.5, 0.5); q=1.0e-3)
+    @test problem.E == 1.0
+    @test problem.ν == 0.3
+    @test getncells(problem) == 8
+    solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(3.0))
+    solver()
+    # total applied force = q (compressive, negative x)
+    @test sum(solver.globalinfo.f) ≈ -1.0e-3
+    @test all(<=(0), solver.globalinfo.f)
+    # clamped dofs have zero displacement
+    @test all(iszero, solver.u[problem.ch.prescribed_dofs])
+    # equilibrium
+    @test norm(solver.globalinfo.K * solver.u - solver.globalinfo.f) < 1e-10
+end
