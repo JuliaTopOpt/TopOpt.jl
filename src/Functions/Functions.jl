@@ -30,6 +30,7 @@ export VolumeFun,
     AssembleKFun,
     TrussElementKσFun,
     ContinuumElementKσFun,
+    BucklingConeFun,
     ElementKFun,
     apply_boundary_with_zerodiag!,
     apply_boundary_with_meandiag!,
@@ -81,8 +82,8 @@ include("stress_relaxation.jl")
 include("apply_boundary.jl")
 include("assemble_K.jl")
 include("element_ksigma.jl")
+include("buckling_cone.jl")
 include("element_k.jl")
-
 # TODO no rrules yet
 include("truss_stress.jl")
 
