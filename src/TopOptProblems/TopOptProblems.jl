@@ -1,6 +1,6 @@
 module TopOptProblems
 
-using Ferrite, StaticArrays, LinearAlgebra
+using Ferrite, StaticArrays, LinearAlgebra, ChainRulesCore
 using SparseArrays, Setfield
 using ..TopOpt.Utilities
 using ..TopOpt: PENALTY_BEFORE_INTERPOLATION

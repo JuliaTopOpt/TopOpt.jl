@@ -96,6 +96,88 @@ function element_kσ(
 end
 
 """
+    ChainRulesCore.rrule(::typeof(element_kσ), sp, cellvalues, u_e)
+
+Analytic reverse of the element geometric stiffness. The stress is linear
+in `u_e`, so the pullback is a closed-form assembly: for the cotangent
+`ΔKσe`,
+
+    Δu_e[c,i] += dΩ · Σ_{a,b same-component} ΔKσe[a,b] · g_aᵀ S_cⁱ g_b,
+
+where `S_cⁱ = λ g_c[i] δ + μ (e_i ⊗ g_c + g_c ⊗ e_i)` is the derivative of
+the stress with respect to the i-th component of node c's displacement.
+Handles both the full-quadrature and the centroid stress points.
+"""
+function ChainRulesCore.rrule(
+    ::typeof(element_kσ),
+    sp::StiffnessTopOptProblem{xdim,TT},
+    cellvalues::Ferrite.CellValues,
+    u_e::AbstractVector,
+) where {xdim,TT}
+    Kσe = element_kσ(sp, cellvalues, u_e)
+    T = eltype(u_e)
+    E = getE(sp)
+    ν = getν(sp)
+    λ = T(getplanestress(sp) ? E * ν / (1 - ν^2) : E * ν / ((1 + ν) * (1 - 2 * ν)))
+    μ = T(E / (2 * (1 + ν)))
+    n_basefuncs = getnbasefunctions(cellvalues)
+    # The quadrature pairs (dΩ, gradients): the centroid branch is a single
+    # pseudo-point with the mean gradients and the total area.
+    pairs = if getkσpoint(sp) === :centroid
+        nq = getnquadpoints(cellvalues)
+        [(
+            sum(getdetJdV(cellvalues, q) for q in 1:nq),
+            [
+                sum(shape_gradient(cellvalues, q, a) for q in 1:nq) / nq for
+                a in 1:n_basefuncs
+            ],
+        )]
+    else
+        [
+            (
+                getdetJdV(cellvalues, q),
+                [shape_gradient(cellvalues, q, a) for a in 1:n_basefuncs],
+            ) for q in 1:getnquadpoints(cellvalues)
+        ]
+    end
+    function ekσ_pb(ΔKe)
+        ΔKe = ChainRulesCore.unthunk(ΔKe)
+        if ΔKe isa ChainRulesCore.AbstractZero
+            return (
+                ChainRulesCore.NoTangent(), ChainRulesCore.NoTangent(),
+                ChainRulesCore.NoTangent(), zeros(T, length(u_e)),
+            )
+        end
+        Δu = zeros(eltype(ΔKe), length(u_e))
+        for (dΩ, g) in pairs
+            for c in 1:n_basefuncs, i in 1:xdim
+                gc = g[c]
+                S = zeros(T, xdim, xdim)
+                for p in 1:xdim, q in 1:xdim
+                    S[p, q] = λ * ((p == q) ? gc[i] : zero(T)) +
+                              μ * ((i == p ? gc[q] : zero(T)) + (i == q ? gc[p] : zero(T)))
+                end
+                acc = zero(eltype(ΔKe))
+                for a in 1:(xdim * n_basefuncs), b in 1:(xdim * n_basefuncs)
+                    ((a - 1) % xdim == (b - 1) % xdim) || continue
+                    Δab = ΔKe[a, b]
+                    iszero(Δab) && continue
+                    ga = g[(a - 1) ÷ xdim + 1]
+                    gb = g[(b - 1) ÷ xdim + 1]
+                    acc += Δab * sum(ga[p] * S[p, q] * gb[q] for p in 1:xdim, q in 1:xdim)
+                end
+                Δu[xdim * (c - 1) + i] += dΩ * acc
+            end
+        end
+        return (
+            ChainRulesCore.NoTangent(), ChainRulesCore.NoTangent(),
+            ChainRulesCore.NoTangent(), Δu,
+        )
+    end
+    return Kσe, ekσ_pb
+end
+
+"""
     get_Kσs(sp, u_dofs, cellvalues, vars, penalty, xmin)
 
 Compute the per-cell geometric stiffness matrices `Kσ` from the displacement

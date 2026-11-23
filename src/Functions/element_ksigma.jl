@@ -291,18 +291,18 @@ function ChainRulesCore.rrule(
         Δx = zeros(T, size(x.x))
         for ci in eachindex(x.x)
             celldofs!(global_dofs, dh, ci)
-            # Jacobian with respect to (u_e, ρ_e)
-            function vec_eksig_fn(uρ_vec)
-                u_e = uρ_vec[1:(end - 1)]
-                ρ_e = uρ_vec[end]
-                return vec(eksig(u_e, ρ_e, ci))
-            end
+            Ferrite.reinit!(eksig.cellcache, ci)
+            reinit!(eksig.cellvalues, eksig.cellcache)
             ρ_e, dρ_dx = get_ρ_dρ(x.x[ci], penalty, xmin)
-            jac_cell = ForwardDiff.jacobian(vec_eksig_fn, [u.u[global_dofs]; ρ_e])
-            jtv = jac_cell' * vec(Δ[ci])
-            Δu[global_dofs] += jtv[1:(end - 1)]
-            # Chain rule: d(Kσ)/d(x) = d(Kσ)/d(ρ) * d(ρ)/d(x)
-            Δx[ci] = jtv[end] * dρ_dx
+            # The element map (u_e, ρ_e) -> ρ_e·Kσe is linear in u_e with a
+            # closed-form reverse (the analytic rrule of `element_kσ`); the
+            # ρ_e-derivative is the contraction with the unpenalized matrix.
+            Ke0, ek_pb = ChainRulesCore.rrule(
+                element_kσ, problem, eksig.cellvalues, u.u[global_dofs]
+            )
+            _, _, _, Δue = ek_pb(ρ_e .* Δ[ci])
+            Δu[global_dofs] .+= Δue
+            Δx[ci] = sum(Δ[ci] .* Ke0) * dρ_dx
         end
         return Tangent{typeof(eksig)}(;
             problem=NoTangent(),
