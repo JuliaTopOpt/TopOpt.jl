@@ -255,15 +255,22 @@ See also [`buckling`](@ref) and [`BucklingConeFun`](@ref) for the buckling
 analysis used with this problem.
 
 ```
-     ****** load segment (b = bfrac*Ly, mid-height) 
-    *                                        *
-    *                                        *
-    *                                        *
-    *                                        *
-    *                                        *
-    ******************************************
-    //////////////////////////////////////////
-    clamped
+   y ▲                        b = bfrac·Ly
+     │                 ┌───────────────┐
+     │                 │               │
+     │                 │               │
+     │                 │               │  ← ← ←  compressive load q
+     │                 │               │         (segment at mid-height
+     │                 │               │          of the right edge)
+     │                 │               │
+     │                 │               │
+     │                 │               │
+     │                 │               │
+     └─────────────────┴───────────────┴──► x
+     ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒
+     ▒▒ clamped left edge (u_x = u_y = 0)
+     ▒▒
+     ◄────────────── Lx ──────────────►
 ```
 """
 struct CompressedColumn{T,N,M,Tr<:RectilinearGrid{2,T,N,M},Tc,Td,Tm} <:
