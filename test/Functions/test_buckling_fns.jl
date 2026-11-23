@@ -354,3 +354,57 @@ end
         @test norm(grad_z - grad_fd) <= 1e-5 * max(1.0, norm(grad_fd))
     end
 end
+
+# Regression: element_kσ against the closed-form geometric stiffness for an
+# affine displacement field (the stress is constant, so a manual reference
+# quadrature gives the exact values). Guards against the einsum trace bug
+# that produced a factor-2 stress.
+@testset "element_kσ affine-field reference" begin
+    problem = PointLoadCantilever((2, 2), (1.0, 1.0), 1.0, 0.3, 1.0)
+    solver = FEASolver(DirectSolver, problem; xmin=0.0, penalty=PowerPenaltyFun(1.0))
+    cv = solver.elementinfo.cellvalues
+    dh = problem.ch.dh
+    T = eltype(problem.E)
+    E = getE(problem)
+    ν = getν(problem)
+    λ = T(E * ν / ((1 + ν) * (1 - 2 * ν)))
+    two_mu = T(E / (1 + ν))
+    global_dofs = zeros(Int, ndofs_per_cell(dh))
+    # affine field u1 = a11 x + a12 y, u2 = a21 x + a22 y with constant stress
+    a11, a12, a21, a22 = -0.01, 0.002, 0.0005, -0.003
+    cc = Ferrite.CellCache(dh)
+    for ci in 1:getncells(dh.grid)
+        Ferrite.reinit!(cc, ci)
+        Ferrite.reinit!(cv, cc)
+        celldofs!(global_dofs, dh, ci)
+        # node coordinates of this cell
+        xc = Ferrite.getcoordinates(cc)
+        ue = zeros(T, 8)
+        for (k, x) in enumerate(xc)
+            ue[2k-1] = a11 * x[1] + a12 * x[2]
+            ue[2k] = a21 * x[1] + a22 * x[2]
+        end
+        Ke = TopOpt.TopOptProblems.element_kσ(problem, cv, ue)
+        # reference: σ = λ tr(ε) δ + 2μ ε with ε = sym(∇u) (constant)
+        ϵ11, ϵ22 = a11, a22
+        ϵ12 = (a12 + a21) / 2
+        σ11 = λ * (ϵ11 + ϵ22) + two_mu * ϵ11
+        σ22 = λ * (ϵ11 + ϵ22) + two_mu * ϵ22
+        σ12 = two_mu * ϵ12
+        Kref = zeros(T, 8, 8)
+        for qp in 1:Ferrite.getnquadpoints(cv)
+            dΩ = Ferrite.getdetJdV(cv, qp)
+            grads = [Ferrite.shape_gradient(cv, qp, n) for n in 1:4]
+            for a in 1:8, b in 1:8
+                (a % 2 == b % 2) || continue
+                ga = grads[(a + 1) ÷ 2]
+                gb = grads[(b + 1) ÷ 2]
+                Kref[a, b] += dΩ * (
+                    (ga[1] * σ11 + ga[2] * σ12) * gb[1] +
+                    (ga[1] * σ12 + ga[2] * σ22) * gb[2]
+                )
+            end
+        end
+        @test Ke ≈ Kref atol = 1e-8 * max(1.0, norm(Kref))
+    end
+end

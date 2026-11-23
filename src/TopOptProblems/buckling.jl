@@ -44,8 +44,12 @@ function element_kσ(
             @einsum u_p[i, j] = _u[i] * ∇ϕ[j]
             # effect of the quadratic term in the strain formula have on the stress field is ignored
             @einsum ϵ[i, j] = 1 / 2 * (u_p[i, j] + u_p[j, i])
-            # isotropic solid — 3D (plane strain) constitutive law
-            @einsum σ[i, j] = λ * δ[i, j] * ϵ[k, k] + two_mu * ϵ[i, j]
+            # isotropic solid — 3D (plane strain) constitutive law. The trace
+            # is computed explicitly: `@einsum` double-counts when the same
+            # tensor appears with a repeated index (ϵ[k,k]) and free indices
+            # (ϵ[i,j]) in one expression (factor 2 in the stress).
+            tr_ϵ = sum(ϵ[d, d] for d in 1:xdim)
+            @einsum σ[i, j] = λ * δ[i, j] * tr_ϵ + two_mu * ϵ[i, j]
             for d in 1:xdim
                 # block diagonal
                 ψ_e[((d - 1) * xdim .+ 1):(d * xdim), ((d - 1) * xdim .+ 1):(d * xdim)] .+=
