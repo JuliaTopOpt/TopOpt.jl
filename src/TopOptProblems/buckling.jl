@@ -239,10 +239,47 @@ function buckling(
     penalty=PowerPenaltyFun{T}(1),
     xmin=T(1) / 1000,
 ) where {xdim,T}
-    dh = problem.ch.dh
-
     u = ginfo.K \ ginfo.f
+    Kσ = assemble_Kσ(problem, ginfo, einfo, vars, penalty, xmin, u)
+    return ginfo.K, Kσ
+end
+
+"""
+    assemble_Kσ(problem, ginfo, einfo, vars, penalty, xmin, u)
+
+Assemble the global geometric stiffness matrix `Kσ` from a *given*
+displacement field `u` (the caller is responsible for `u` being the
+solution at the current design). This is the assembly half of
+[`buckling`](@ref), exposed so that functions which already have the
+displacements (e.g. a cutting-plane constraint evaluated alongside a
+compliance term) can reuse them without re-solving.
+"""
+function assemble_Kσ(
+    problem::StiffnessTopOptProblem{xdim,T},
+    ginfo,
+    einfo,
+    vars,
+    penalty,
+    xmin,
+    u,
+) where {xdim,T}
     Kσs = get_Kσs(problem, u, einfo.cellvalues, vars, penalty, xmin)
+    return assemble_global_Kσ(problem, ginfo, Kσs)
+end
+
+"""
+    assemble_global_Kσ(problem, ginfo, Kσs)
+
+The global-assembly half of [`assemble_Kσ`](@ref): scatter the per-cell
+(already density-scaled) geometric stiffness matrices `Kσs` into the
+pattern of `ginfo.K` and apply the boundary condensation. Exposed so that
+callers with precomputed per-cell stress state (e.g. a cutting-plane
+constraint evaluated after another response) can reuse it directly.
+"""
+function assemble_global_Kσ(
+    problem::StiffnessTopOptProblem{xdim,T}, ginfo, Kσs
+) where {xdim,T}
+    dh = problem.ch.dh
     Kσ = deepcopy(ginfo.K)
 
     if Kσ isa Symmetric
@@ -278,5 +315,5 @@ function buckling(
         Kσ[d, d] = 0
     end
 
-    return ginfo.K, Kσ
+    return Kσ
 end
