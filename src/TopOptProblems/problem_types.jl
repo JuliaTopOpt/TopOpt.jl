@@ -27,6 +27,27 @@ getE(p::StiffnessTopOptProblem) = p.E
 getν(p::StiffnessTopOptProblem) = p.ν
 
 """
+    getplanestress(p::StiffnessTopOptProblem)
+
+Return `true` if the problem uses the plane-stress constitutive law (λ =
+Eν/(1-ν²)) and `false` for plane strain (λ = Eν/((1+ν)(1-2ν))). Both share
+the same shear modulus 2μ = E/(1+ν); only λ differs. Defaults to `false`
+(plane strain), matching the historical TopOpt convention.
+"""
+getplanestress(::StiffnessTopOptProblem) = false
+
+"""
+    getkσpoint(p::StiffnessTopOptProblem)
+
+Where the stress used to build the geometric stiffness Kσ is evaluated:
+`:quadrature` (default — the stress is evaluated at every quadrature
+point) or `:centroid` (a single evaluation at the element centroid, the
+superconvergent stress point used by the topBuck250 benchmark of Ferrari,
+Sigmund and Guest 2021).
+"""
+getkσpoint(::StiffnessTopOptProblem) = :quadrature
+
+"""
     YoungsModulus(p::StiffnessTopOptProblem)
 
 Return the Young's modulus of a structural topology optimization problem.
@@ -126,10 +147,14 @@ struct PointLoadCantilever{
     force::T
     force_dof::Tf
     metadata::Tm
+    planestress::Bool
+    kσpoint::Symbol
 end
 function Base.show(io::IO, ::MIME{Symbol("text/plain")}, ::PointLoadCantilever)
     return println(io, "TopOpt point load cantilever beam problem")
 end
+getplanestress(p::PointLoadCantilever) = p.planestress
+getkσpoint(p::PointLoadCantilever) = p.kσpoint
 
 """
     PointLoadCantilever(nels::NTuple{dim,Int}, sizes::NTuple{dim}, E, ν, force; celltype=:Linear) where {dim}
@@ -166,11 +191,16 @@ function PointLoadCantilever(
     ν=0.3,
     force=1.0;
     celltype::Symbol=:Linear,
+    planestress::Bool=false,
+    kσpoint::Symbol=:quadrature,
 ) where {dim}
-    return _PointLoadCantilever(_celltype_tag(celltype), nels, sizes, E, ν, force)
+    return _PointLoadCantilever(
+        _celltype_tag(celltype), nels, sizes, E, ν, force, planestress, kσpoint
+    )
 end
 function _PointLoadCantilever(
-    ::Val{CellType}, nels::NTuple{dim,Int}, sizes::NTuple{dim}, E=1.0, ν=0.3, force=1.0
+    ::Val{CellType}, nels::NTuple{dim,Int}, sizes::NTuple{dim}, E=1.0, ν=0.3,
+    force=1.0, planestress=false, kσpoint=:quadrature
 ) where {dim,CellType}
     iseven(nels[2]) && (length(nels) < 3 || iseven(nels[3])) ||
         throw("Grid does not have an even number of elements along the y and/or z axes.")
@@ -227,7 +257,9 @@ function _PointLoadCantilever(
     N = nnodespercell(rect_grid)
     M = nfacespercell(rect_grid)
 
-    return PointLoadCantilever(rect_grid, E, ν, ch, force, force_dof, metadata)
+    return PointLoadCantilever(
+        rect_grid, E, ν, ch, force, force_dof, metadata, planestress, kσpoint
+    )
 end
 
 """
@@ -250,6 +282,14 @@ Arguments:
 - `bfrac`: load segment length as a fraction of the height `Ly`
   (`bfrac >= 1` loads the whole edge uniformly)
 - `celltype`: can be `:Linear` (default)
+- `planestress`: use the plane-stress constitutive law (default `false`,
+  plane strain)
+- `kσpoint`: `:quadrature` (default) or `:centroid` (superconvergent
+  centroid stress, the topBuck250 convention) for the geometric stiffness
+- `passive_solid`: `(cols, rows)` of fixed solid elements at the loaded edge
+  around the load (the topBuck250 passive block)
+- `vertical`: clamp the bottom edge and compress from the top edge
+  (default `false`: clamped left, compressed from the right edge)
 
 See also [`buckling`](@ref) and [`BucklingConeFun`](@ref) for the buckling
 analysis used with this problem.
@@ -281,10 +321,22 @@ struct CompressedColumn{T,N,M,Tr<:RectilinearGrid{2,T,N,M},Tc,Td,Tm} <:
     ch::Tc
     cloads::Td
     metadata::Tm
+    planestress::Bool
+    kσpoint::Symbol
+    passive::Vector{Int}
 end
 function Base.show(io::IO, ::MIME{Symbol("text/plain")}, ::CompressedColumn)
     return println(io, "TopOpt compressed column problem")
 end
+getplanestress(p::CompressedColumn) = p.planestress
+getkσpoint(p::CompressedColumn) = p.kσpoint
+
+"""
+    getpassive(p::CompressedColumn)
+
+Indices of the passive (fixed solid) elements near the load, `x = 1` there.
+"""
+getpassive(p::CompressedColumn) = p.passive
 function CompressedColumn(
     nels::NTuple{2,Int},
     sizes::NTuple{2},
@@ -293,25 +345,48 @@ function CompressedColumn(
     q=1.0e-3,
     bfrac=1 / 15;
     celltype::Symbol=:Linear,
+    planestress::Bool=false,
+    kσpoint::Symbol=:quadrature,
+    passive_solid::NTuple{2,Int}=(0, 0),
+    vertical::Bool=false,
 )
     T = float(promote_type(eltype(sizes), typeof(E), typeof(ν), typeof(q), typeof(bfrac)))
     rect_grid = RectilinearGrid(nels, T.(sizes); celltype=:Linear)
     Ly = rect_grid.corners[2][2] - rect_grid.corners[1][2]
+    Lx = rect_grid.corners[2][1] - rect_grid.corners[1][1]
     midy = rect_grid.corners[1][2] + Ly / 2
+    midx = rect_grid.corners[1][1] + Lx / 2
 
-    if haskey(rect_grid.grid.nodesets, "fixed_left")
-        pop!(rect_grid.grid.nodesets, "fixed_left")
+    # Clamped edge and load segment: horizontal (clamped left, compressed
+    # from the right edge) or vertical (clamped base, compressed from the
+    # top edge).
+    if vertical
+        if haskey(rect_grid.grid.nodesets, "fixed_base")
+            pop!(rect_grid.grid.nodesets, "fixed_base")
+        end
+        addnodeset!(rect_grid.grid, "fixed_base", x -> bottom(rect_grid, x))
+        if haskey(rect_grid.grid.nodesets, "comp_load")
+            pop!(rect_grid.grid.nodesets, "comp_load")
+        end
+        addnodeset!(
+            rect_grid.grid, "comp_load",
+            x -> top(rect_grid, x) && abs(x[1] - midx) <= bfrac * Lx / 2 + 1e-9,
+        )
+    else
+        if haskey(rect_grid.grid.nodesets, "fixed_left")
+            pop!(rect_grid.grid.nodesets, "fixed_left")
+        end
+        addnodeset!(rect_grid.grid, "fixed_left", x -> left(rect_grid, x))
+        if haskey(rect_grid.grid.nodesets, "comp_load")
+            pop!(rect_grid.grid.nodesets, "comp_load")
+        end
+        addnodeset!(
+            rect_grid.grid, "comp_load",
+            x -> right(rect_grid, x) && abs(x[2] - midy) <= bfrac * Ly / 2 + 1e-9,
+        )
     end
-    addnodeset!(rect_grid.grid, "fixed_left", x -> left(rect_grid, x))
-    if haskey(rect_grid.grid.nodesets, "comp_load")
-        pop!(rect_grid.grid.nodesets, "comp_load")
-    end
-    addnodeset!(
-        rect_grid.grid, "comp_load",
-        x -> right(rect_grid, x) && abs(x[2] - midy) <= bfrac * Ly / 2 + 1e-9,
-    )
 
-    # displacement field + clamped left edge (mirrors _PointLoadCantilever)
+    # displacement field + clamped edge (mirrors _PointLoadCantilever)
     dh = DofHandler(rect_grid.grid)
     refshape = Ferrite.getrefshape(eltype(rect_grid.grid.cells))
     if celltype === :Linear
@@ -324,7 +399,10 @@ function CompressedColumn(
     close!(dh)
     ch = ConstraintHandler(dh)
     dbc = Dirichlet(
-        :u, getnodeset(rect_grid.grid, "fixed_left"), (x, t) -> zeros(T, 2), collect(1:2)
+        :u,
+        getnodeset(rect_grid.grid, vertical ? "fixed_base" : "fixed_left"),
+        (x, t) -> zeros(T, 2),
+        collect(1:2),
     )
     add!(ch, dbc)
     close!(ch)
@@ -338,7 +416,7 @@ function CompressedColumn(
     # uniformly, matching full-edge load setups.
     loadnodes = sort(
         collect(getnodeset(rect_grid.grid, "comp_load"));
-        by=ni -> get_node_coordinate(rect_grid.grid.nodes[ni])[2],
+        by=ni -> get_node_coordinate(rect_grid.grid.nodes[ni])[vertical ? 1 : 2],
     )
     nseg = length(loadnodes)
     fulledge = bfrac >= 1.0
@@ -346,9 +424,31 @@ function CompressedColumn(
     cloads = Dict{Int,Vector{T}}()
     for (k, ni) in enumerate(loadnodes)
         wi = fulledge ? w : ((k == 1 || k == nseg) ? w / 2 : w)
-        cloads[ni] = [-wi, zero(T)]
+        cloads[ni] = vertical ? [zero(T), -wi] : [-wi, zero(T)]
     end
-    return CompressedColumn(rect_grid, E, ν, ch, cloads, metadata)
+    # passive solid block near the load (topBuck250's 10×20 elements at
+    # 480×240): `passive_solid` columns × rows at the loaded edge, centered
+    # along the edge.
+    passive = Int[]
+    if vertical
+        pcol = nels[1] ÷ 2 .+ (-(passive_solid[1] ÷ 2 - 1)):(passive_solid[1] ÷ 2)
+        prow = nels[2] .- (0:(passive_solid[2] - 1))
+        for ix in pcol, iy in prow
+            (1 <= ix <= nels[1] && 1 <= iy <= nels[2]) || continue
+            push!(passive, (ix - 1) * nels[2] + iy)
+        end
+    else
+        pcol = nels[1] .- (0:(passive_solid[1] - 1))
+        prow = nels[2] ÷ 2 .+ (-(passive_solid[2] ÷ 2 - 1)):(passive_solid[2] ÷ 2)
+        for ix in pcol, iy in prow
+            (1 <= ix <= nels[1] && 1 <= iy <= nels[2]) || continue
+            push!(passive, (ix - 1) * nels[2] + iy)
+        end
+    end
+    unique!(sort!(passive))
+    return CompressedColumn(
+        rect_grid, E, ν, ch, cloads, metadata, planestress, kσpoint, passive
+    )
 end
 nnodespercell(p::CompressedColumn) = nnodespercell(p.rect_grid)
 getcloaddict(p::CompressedColumn) = p.cloads
@@ -411,10 +511,14 @@ struct HalfMBB{
     force::T
     force_dof::Tf
     metadata::Tm
+    planestress::Bool
+    kσpoint::Symbol
 end
 function Base.show(io::IO, ::MIME{Symbol("text/plain")}, ::HalfMBB)
     return println(io, "TopOpt half MBB problem")
 end
+getplanestress(p::HalfMBB) = p.planestress
+getkσpoint(p::HalfMBB) = p.kσpoint
 
 """
     HalfMBB(nels::NTuple{dim,Int}, sizes::NTuple{dim}, E, ν, force; celltype=:Linear) where {dim}
@@ -451,11 +555,16 @@ function HalfMBB(
     ν=0.3,
     force=1.0;
     celltype::Symbol=:Linear,
+    planestress::Bool=false,
+    kσpoint::Symbol=:quadrature,
 ) where {dim}
-    return _HalfMBB(_celltype_tag(celltype), nels, sizes, E, ν, force)
+    return _HalfMBB(
+        _celltype_tag(celltype), nels, sizes, E, ν, force, planestress, kσpoint
+    )
 end
 function _HalfMBB(
-    ::Val{CellType}, nels::NTuple{dim,Int}, sizes::NTuple{dim}, E=1.0, ν=0.3, force=1.0
+    ::Val{CellType}, nels::NTuple{dim,Int}, sizes::NTuple{dim}, E=1.0, ν=0.3,
+    force=1.0, planestress=false, kσpoint=:quadrature
 ) where {dim,CellType}
     T = float(promote_type(eltype(sizes), typeof(E), typeof(ν), typeof(force)))
     if CellType === :Linear || dim === 3
@@ -514,7 +623,7 @@ function _HalfMBB(
     N = nnodespercell(rect_grid)
     M = nfacespercell(rect_grid)
 
-    return HalfMBB(rect_grid, E, ν, ch, force, force_dof, metadata)
+    return HalfMBB(rect_grid, E, ν, ch, force, force_dof, metadata, planestress, kσpoint)
 end
 
 nnodespercell(p::Union{PointLoadCantilever,HalfMBB}) = nnodespercell(p.rect_grid)
@@ -572,10 +681,14 @@ struct LBeam{T,N,M,Tc<:ConstraintHandler{<:DofHandler,T},Tf<:Integer,Tm<:Metadat
     force::T
     force_dof::Tf
     metadata::Tm
+    planestress::Bool
+    kσpoint::Symbol
 end
 function Base.show(io::IO, ::MIME{Symbol("text/plain")}, ::LBeam)
     return println(io, "TopOpt L-beam problem")
 end
+getplanestress(p::LBeam) = p.planestress
+getkσpoint(p::LBeam) = p.kσpoint
 
 """
     LBeam(::Type{T}=Float64; celltype=:Linear, length = 100, height = 100, upperslab = 50, lowerslab = 50, E = 1.0, ν = 0.3, force = 1.0, load_width = nothing) where {T}
@@ -619,6 +732,8 @@ function LBeam(
     ν=0.3,
     force=1.0,
     load_width=nothing,
+    planestress=false,
+    kσpoint=:quadrature,
 ) where {T}
     return _LBeam(
         _celltype_tag(celltype),
@@ -631,6 +746,8 @@ function LBeam(
         ν=ν,
         force=force,
         load_width=load_width,
+        planestress=planestress,
+        kσpoint=kσpoint,
     )
 end
 function _LBeam(
@@ -644,6 +761,8 @@ function _LBeam(
     ν=0.3,
     force=1.0,
     load_width=nothing,
+    planestress=false,
+    kσpoint=:quadrature,
 ) where {CellType,T}
     # Create displacement field u
     grid = LGrid(
@@ -684,7 +803,7 @@ function _LBeam(
     N = nnodes(eltype(grid.cells))
     M = Ferrite.nfacets(Ferrite.getrefshape(eltype(grid.cells)))
     return LBeam{T,N,M,typeof(ch),typeof(force_dof),typeof(metadata)}(
-        E, ν, ch, force, force_dof, metadata
+        E, ν, ch, force, force_dof, metadata, planestress, kσpoint
     )
 end
 
@@ -785,10 +904,14 @@ struct TieBeam{T,N,M,Tc<:ConstraintHandler{<:DofHandler,T},Tm<:Metadata} <:
     force::T
     ch::Tc
     metadata::Tm
+    planestress::Bool
+    kσpoint::Symbol
 end
 function Base.show(io::IO, ::MIME{Symbol("text/plain")}, ::TieBeam)
     return println(io, "TopOpt tie-beam problem")
 end
+getplanestress(p::TieBeam) = p.planestress
+getkσpoint(p::TieBeam) = p.kσpoint
 
 """
     TieBeam(::Type{T} = Float64; celltype=:Linear, refine = 1, force = T(1), E = T(1), ν = T(0.3)) where {T}
@@ -801,12 +924,24 @@ end
 - `celltype`: can be either `:Linear` or `:Quadratic` to determine the order of the geometric and field basis functions and element type. Only isoparametric elements are supported for now.
 """
 function TieBeam(
-    (::Type{T})=Float64; celltype::Symbol=:Linear, refine=1, force=T(1), E=T(1), ν=T(0.3)
+    (::Type{T})=Float64;
+    celltype::Symbol=:Linear,
+    refine=1,
+    force=T(1),
+    E=T(1),
+    ν=T(0.3),
+    planestress=false,
+    kσpoint=:quadrature,
 ) where {T}
-    return _TieBeam(_celltype_tag(celltype), T; refine=refine, force=force, E=E, ν=ν)
+    return _TieBeam(
+        _celltype_tag(celltype), T;
+        refine=refine, force=force, E=E, ν=ν,
+        planestress=planestress, kσpoint=kσpoint,
+    )
 end
 function _TieBeam(
-    ::Val{CellType}, ::Type{T}; refine=1, force=T(1), E=T(1), ν=T(0.3)
+    ::Val{CellType}, ::Type{T}; refine=1, force=T(1), E=T(1), ν=T(0.3),
+    planestress=false, kσpoint=:quadrature
 ) where {T,CellType}
     grid = TieBeamGrid(T; celltype=CellType, refine=refine)
 
@@ -833,7 +968,9 @@ function _TieBeam(
 
     N = nnodes(eltype(grid.cells))
     M = Ferrite.nfacets(Ferrite.getrefshape(eltype(grid.cells)))
-    return TieBeam{T,N,M,typeof(ch),typeof(metadata)}(E, ν, force, ch, metadata)
+    return TieBeam{T,N,M,typeof(ch),typeof(metadata)}(
+        E, ν, force, ch, metadata, planestress, kσpoint
+    )
 end
 
 getdim(::TieBeam) = 2

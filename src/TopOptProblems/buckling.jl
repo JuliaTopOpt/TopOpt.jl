@@ -30,8 +30,41 @@ function element_kσ(
     σ = zeros(T, xdim, xdim)
     # u_i,j: partial derivative
     u_p = zeros(T, xdim, xdim)
-    λ = T(E * ν / ((1 + ν) * (1 - 2 * ν)))
+    λ = T(
+        getplanestress(sp) ?
+        E * ν / (1 - ν^2) :            # plane stress
+        E * ν / ((1 + ν) * (1 - 2 * ν)) # plane strain
+    )
     two_mu = T(E / (1 + ν))
+
+    if getkσpoint(sp) === :centroid
+        # A single stress evaluation at the element centroid — the
+        # superconvergent stress point of the Q4/Q1 element, the convention
+        # of the topBuck250 benchmark (Ferrari, Sigmund and Guest 2021).
+        nq = getnquadpoints(cellvalues)
+        dΩc = sum(getdetJdV(cellvalues, q) for q in 1:nq)
+        ∇Nc = [
+            sum(shape_gradient(cellvalues, q, a) for q in 1:nq) / nq for
+            a in 1:n_basefuncs
+        ]
+        ϵ = zeros(T, xdim, xdim)
+        for a in 1:n_basefuncs
+            _u = @view u_e[xdim * (a - 1) .+ (1:xdim)]
+            for i in 1:xdim, j in 1:xdim
+                ϵ[i, j] += 1 / 2 * (_u[i] * ∇Nc[a][j] + _u[j] * ∇Nc[a][i])
+            end
+        end
+        σ = λ * sum(ϵ[d, d] for d in 1:xdim) * δ + two_mu * ϵ
+        G = zeros(T, xdim * xdim, xdim * n_basefuncs)
+        ψ_e = zeros(T, xdim * xdim, xdim * xdim)
+        for a in 1:n_basefuncs, d in 1:xdim
+            G[(xdim * (d - 1) + 1):(xdim * d), (a - 1) * xdim + d] .= ∇Nc[a]
+        end
+        for d in 1:xdim
+            ψ_e[((d - 1) * xdim + 1):(d * xdim), ((d - 1) * xdim + 1):(d * xdim)] .= σ
+        end
+        return dΩc .* (G' * ψ_e * G)
+    end
     for q_point in 1:getnquadpoints(cellvalues)
         dΩ = getdetJdV(cellvalues, q_point)
         for d in 1:xdim

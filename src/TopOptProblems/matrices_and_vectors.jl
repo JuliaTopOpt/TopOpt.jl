@@ -80,7 +80,9 @@ function make_Kes_and_fes(
         _base_interpolation(dh.subdofhandlers[1].field_interpolations[1])
     )
 
-    λ = E * ν / ((1 + ν) * (1 - 2 * ν))
+    λ = getplanestress(problem) ?
+        E * ν / (1 - ν^2) :            # plane stress
+        E * ν / ((1 + ν) * (1 - 2 * ν)) # plane strain
     μ = E / (2 * (1 + ν))
     δ(i, j) = i == j ? T(1) : T(0)
     g(i, j, k, l) = λ * δ(i, j) * δ(k, l) + μ * (δ(i, k) * δ(j, l) + δ(i, l) * δ(j, k))

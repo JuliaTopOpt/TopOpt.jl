@@ -365,8 +365,8 @@ end
     cv = solver.elementinfo.cellvalues
     dh = problem.ch.dh
     T = eltype(problem.E)
-    E = getE(problem)
-    ν = getν(problem)
+    E = problem.E
+    ν = problem.ν
     λ = T(E * ν / ((1 + ν) * (1 - 2 * ν)))
     two_mu = T(E / (1 + ν))
     global_dofs = zeros(Int, ndofs_per_cell(dh))
@@ -404,6 +404,55 @@ end
                     (ga[1] * σ12 + ga[2] * σ22) * gb[2]
                 )
             end
+        end
+        @test Ke ≈ Kref atol = 1e-8 * max(1.0, norm(Kref))
+    end
+end
+
+# The centroid variant: the same affine-field closed form with the centroid
+# gradients (the mean over the quadrature points) and the total cell area.
+@testset "element_kσ centroid-stress reference" begin
+    problem = PointLoadCantilever((2, 2), (1.0, 1.0), 1.0, 0.3, 1.0; kσpoint=:centroid)
+    solver = FEASolver(DirectSolver, problem; xmin=0.0, penalty=PowerPenaltyFun(1.0))
+    cv = solver.elementinfo.cellvalues
+    dh = problem.ch.dh
+    T = eltype(problem.E)
+    E = problem.E
+    ν = problem.ν
+    λ = T(E * ν / ((1 + ν) * (1 - 2 * ν)))
+    two_mu = T(E / (1 + ν))
+    a11, a12, a21, a22 = -0.01, 0.002, 0.0005, -0.003
+    cc = Ferrite.CellCache(dh)
+    for ci in 1:getncells(dh.grid)
+        Ferrite.reinit!(cc, ci)
+        Ferrite.reinit!(cv, cc)
+        xc = Ferrite.getcoordinates(cc)
+        ue = zeros(T, 8)
+        for (k, x) in enumerate(xc)
+            ue[2k-1] = a11 * x[1] + a12 * x[2]
+            ue[2k] = a21 * x[1] + a22 * x[2]
+        end
+        Ke = TopOpt.TopOptProblems.element_kσ(problem, cv, ue)
+        # reference: constant stress (affine field) at the centroid grads
+        ϵ11, ϵ22 = a11, a22
+        ϵ12 = (a12 + a21) / 2
+        σ11 = λ * (ϵ11 + ϵ22) + two_mu * ϵ11
+        σ22 = λ * (ϵ11 + ϵ22) + two_mu * ϵ22
+        σ12 = two_mu * ϵ12
+        nq = Ferrite.getnquadpoints(cv)
+        A = sum(Ferrite.getdetJdV(cv, q) for q in 1:nq)
+        grads = [
+            sum(Ferrite.shape_gradient(cv, q, n) for q in 1:nq) / nq for n in 1:4
+        ]
+        Kref = zeros(T, 8, 8)
+        for a in 1:8, b in 1:8
+            (a % 2 == b % 2) || continue
+            ga = grads[(a + 1) ÷ 2]
+            gb = grads[(b + 1) ÷ 2]
+            Kref[a, b] += A * (
+                (ga[1] * σ11 + ga[2] * σ12) * gb[1] +
+                (ga[1] * σ12 + ga[2] * σ22) * gb[2]
+            )
         end
         @test Ke ≈ Kref atol = 1e-8 * max(1.0, norm(Kref))
     end
