@@ -515,3 +515,238 @@ function ChainRulesCore.rrule(
     end
     return val, cuts_pb
 end
+
+"""
+    BucklingElementCutsFun(solver::AbstractFEASolver, λ̄, V; active=nothing, c̄=nothing)
+
+The element-based relaxation of the buckling constraint bundled with the
+global cuts (and optionally the compliance): one evaluation solves the
+prebuckling displacement field and assembles the per-cell stress state
+*once*, then returns the tuple
+
+    (c(x)/c̄ − 1 if c̄ !== nothing,
+     P_e for e ∈ active..., vᵢᵀ(K + λ̄Kσ)vᵢ for vᵢ ∈ V...),
+
+where `P_e = ρ_e·(K0e + λ̄·G0e)` is element `e`'s contribution to the
+global buckling matrix `K + λ̄Kσ` (`K0e` the element stiffness, `G0e` the
+unpenalized geometric stiffness from the shared stress state). Enforcing
+`P_e ⪰ 0` for every element is the local (element-wise) relaxation of
+`K + λ̄Kσ ⪰ 0` — sufficient, conservative, and blind to global mode
+shapes; the cuts capture the remaining global violations. Elements with
+`ρ_e ≈ 0` satisfy it automatically, and tension elements (`G0e ⪰ 0`) do
+too, so in practice only compression-carrying solid material is charged.
+
+Declare the bundle as ONE function-in-set constraint:
+
+```julia
+add_set_constraint!(
+    model, x -> bec(filter(x)),
+    SetProduct(NonconvexCore.AbstractSet[
+        LessThan(0.0),                                # when c̄ !== nothing
+        fill(PSDCone(8), length(active))...,
+        Nonnegatives(length(V)),
+    ]),
+)
+```
+
+which NonconvexAugLagLab (with NonconvexSemidefinite loaded) evaluates as
+one group: the projected augmented Lagrangian charges the PSD components
+and the classical ALM the cut components, all sharing the one solve. The
+reverse rule assembles the gradients of every component from a *single*
+adjoint solve — the per-cell cotangents of the stress matrices (the
+cuts' `λ̄·ρ_e·Δcᵢ·vᵢvᵢᵀ` and the elements' `λ̄·ρ_e·ΔP_e`) are summed into
+one load.
+
+`active` selects the elements contributing PSD components; defaults to
+every element with a free design variable (passive solid/void excluded).
+`V` may be empty (the local relaxation alone). With `c̄` given, the first
+output component is the normalized compliance `c(x)/c̄ − 1` (the
+displacement solve it shares with everything else), to be paired with a
+`LessThan(0.0)` component. The cut values are the raw quadratic forms
+`vᵢᵀ(K + λ̄Kσ)vᵢ` — pair the last component with `Nonnegatives` to enforce
+them ≥ 0.
+"""
+struct BucklingElementCutsFun{TS<:AbstractFEASolver,T,TV,TC,TA,TCB}
+    solver::TS
+    λ̄::T
+    V::TV
+    cuts::TC
+    active::TA
+    c̄::TCB
+end
+function BucklingElementCutsFun(
+    solver::AbstractFEASolver, λ̄, V; active=nothing, c̄=nothing
+)
+    cuts = [BucklingCutFun(solver, λ̄, v) for v in V]
+    problem = solver.problem
+    if active === nothing
+        m = getncells(problem.ch.dh.grid)
+        pas = applicable(getpassive_solid, problem) ?
+              union(getpassive_solid(problem), getpassive_void(problem)) :
+              Int[]
+        active = [e for e in 1:m if !(e in pas)]
+    end
+    return BucklingElementCutsFun(solver, λ̄, V, cuts, active, c̄)
+end
+
+# one bundle evaluation from the shared solve + stress state
+function _bec_tuple(bec::BucklingElementCutsFun, x̂::PseudoDensities, u, Kσ0s, ρs)
+    dh = bec.solver.problem.ch.dh
+    gd = zeros(Int, ndofs_per_cell(dh))
+    m = length(Kσ0s)
+    K = bec.solver.globalinfo.K
+    out = Any[]
+    if bec.c̄ !== nothing
+        push!(out, dot(u, bec.solver.globalinfo.f) / bec.c̄ - 1)
+    end
+    for e in bec.active
+        K0e = Matrix(rawmatrix(bec.solver.elementinfo.Kes[e]))
+        push!(out, ρs[e] .* (K0e + bec.λ̄ .* Kσ0s[e]))
+    end
+    if !isempty(bec.V)
+        # the cuts are ONE vector component (paired with Nonnegatives(n)):
+        # n scalar entries would misalign with the set components.
+        cutvals = zeros(length(bec.V))
+        for (i, v) in enumerate(bec.V)
+            val = dot(v, K * v)
+            for e in 1:m
+                celldofs!(gd, dh, e)
+                val += bec.λ̄ * ρs[e] * dot(v[gd], Kσ0s[e], v[gd])
+            end
+            cutvals[i] = val
+        end
+        push!(out, cutvals)
+    end
+    # a plain Vector on purpose: FunctionInSet keeps vector outputs as
+    # vectors, so products with thousands of element components never
+    # materialize a giant tuple type.
+    return out
+end
+
+# zero cotangents: ChainRules zeros AND plain scalar zeros (manual
+# callers may pass untyped zero vectors).
+_cotzero(Δx) = Δx isa ChainRulesCore.AbstractZero ||
+               (Δx isa Number && iszero(Δx))
+
+function _bec_notangent(bec::BucklingElementCutsFun)
+    return Tangent{typeof(bec)}(;
+        solver=NoTangent(), λ̄=NoTangent(), V=NoTangent(),
+        cuts=NoTangent(), active=NoTangent(), c̄=NoTangent(),
+    )
+end
+
+function (bec::BucklingElementCutsFun)(x̂::PseudoDensities)
+    solver = bec.solver
+    solver.vars .= x̂.x
+    solver()
+    u = solver.u
+    penalty = getpenalty(solver)
+    xmin = solver.xmin
+    m = getncells(solver.problem.ch.dh.grid)
+    Kσ0s = _element_kσs(solver, u)
+    ρs = [get_ρ_dρ(x̂.x[e], penalty, xmin)[1] for e in 1:m]
+    # compliance (shared u), element submatrices and cuts (shared stress):
+    # all components of one evaluation come from the same state.
+    return _bec_tuple(bec, x̂, u, Kσ0s, ρs)
+end
+function (bec::BucklingElementCutsFun)(x::AbstractVector)
+    return bec(PseudoDensities(x))
+end
+
+function ChainRulesCore.rrule(
+    bec::BucklingElementCutsFun, x̂::PseudoDensities
+)
+    solver = bec.solver
+    solver.vars .= x̂.x
+    solver()
+    u = solver.u
+    problem = solver.problem
+    penalty = getpenalty(solver)
+    xmin = solver.xmin
+    dh = problem.ch.dh
+    cellvalues = solver.elementinfo.cellvalues
+    Kσ0s = _element_kσs(solver, u)
+    m = length(Kσ0s)
+    gd = zeros(Int, ndofs_per_cell(dh))
+    ρs = [get_ρ_dρ(x̂.x[e], penalty, xmin)[1] for e in 1:m]
+    K0act = [Matrix(rawmatrix(solver.elementinfo.Kes[e])) for e in bec.active]
+    actidx = Dict(e => k for (k, e) in enumerate(bec.active))
+    val = _bec_tuple(bec, x̂, u, Kσ0s, ρs)
+    nc = bec.c̄ === nothing ? 0 : 1   # compliance component offset
+    function bec_pb(Δ)
+        Δ = ChainRulesCore.unthunk(Δ)
+        grad = zeros(eltype(x̂.x), m)
+        if Δ isa ChainRulesCore.AbstractZero
+            return _bec_notangent(bec), Tangent{typeof(x̂)}(; x=grad)
+        end
+        na = length(bec.active)
+        ncut = length(bec.V)
+        Δcomp = nc == 1 ? ChainRulesCore.unthunk(Δ[1]) :
+                ChainRulesCore.NoTangent()
+        Δcuts = ncut > 0 ? ChainRulesCore.unthunk(Δ[nc + na + 1]) :
+                ChainRulesCore.NoTangent()
+        cv = Ferrite.CellCache(dh)
+        # ONE combined adjoint load: the per-cell cotangents on G0e from
+        # the element components (λ̄ρ_eΔP_e) and the cut components
+        # (Δcᵢ·λ̄ρ_e·vᵢvᵢᵀ), all absorbed λ̄ so a single w = K⁻¹load serves
+        # every component's u-chain. The compliance component needs no
+        # load: its design derivative −uᵀ(∂K/∂x̂)u is self-adjoint and is
+        # added directly from the same shared u.
+        load = zeros(size(u))
+        for e in 1:m
+            ΔG = zeros(eltype(u), ndofs_per_cell(dh), ndofs_per_cell(dh))
+            k = get(actidx, e, 0)
+            if k != 0
+                ΔP = ChainRulesCore.unthunk(Δ[nc + k])
+                !_cotzero(ΔP) && (ΔG .+= bec.λ̄ .* ρs[e] .* ΔP)
+            end
+            if !_cotzero(Δcuts)
+                for (i, v) in enumerate(bec.V)
+                    Δc = ChainRulesCore.unthunk(Δcuts[i])
+                    _cotzero(Δc) && continue
+                    celldofs!(gd, dh, e)
+                    ΔG .+= Δc .* bec.λ̄ .* ρs[e] .* (v[gd] * v[gd]')
+                end
+            end
+            iszero(ΔG) && continue
+            celldofs!(gd, dh, e)
+            Ferrite.reinit!(cv, e)
+            reinit!(cellvalues, cv)
+            _, _, _, Δue = ChainRulesCore.rrule(
+                element_kσ, problem, cellvalues, u[gd]
+            )[2](ΔG)
+            load[gd] .+= Δue
+        end
+        solver.rhs .= load
+        solver(; reuse_fact=true, assemble_f=false)
+        w = solver.lhs
+        for (k, e) in enumerate(bec.active)
+            ΔP = ChainRulesCore.unthunk(Δ[nc + k])
+            celldofs!(gd, dh, e)
+            ue = u[gd]
+            we = w[gd]
+            K0e = K0act[k]
+            G0e = Kσ0s[e]
+            t = zero(eltype(x̂.x))
+            if !_cotzero(ΔP)
+                t += dot(ΔP, K0e + bec.λ̄ .* G0e)
+            end
+            if !_cotzero(Δcomp)
+                # compliance (shared u): d/dx̂[c/c̄] = −uᵀ(∂K/∂x̂)u / c̄
+                t -= Δcomp * dot(ue, K0e, ue) / bec.c̄
+            end
+            if !_cotzero(Δcuts)
+                for (i, v) in enumerate(bec.V)
+                    Δc = ChainRulesCore.unthunk(Δcuts[i])
+                    _cotzero(Δc) && continue
+                    ve = v[gd]
+                    t += Δc * (dot(ve, K0e, ve) + bec.λ̄ * dot(ve, G0e, ve))
+                end
+            end
+            _, dρ = get_ρ_dρ(x̂.x[e], penalty, xmin)
+            grad[e] = dρ * (t - dot(we, K0e, ue))
+        end
+        return _bec_notangent(bec), Tangent{typeof(x̂)}(; x=grad)
+    end
+    return val, bec_pb
+end

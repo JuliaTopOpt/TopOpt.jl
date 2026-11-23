@@ -139,3 +139,51 @@ end
     end, x)[1]
     @test norm(gv3 - gv3_fd) / max(norm(gv3_fd), 1) < 1e-7
 end
+
+@testset "BucklingElementCutsFun" begin
+    problem = PointLoadCantilever((2, 2), (1.0, 1.0), 1.0, 0.3, 1.0)
+    solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(3.0))
+    λ̄ = 5.9
+    m = getncells(problem)
+    x = clamp.(rand(m) .* 0.9 .+ 0.1, 0.0, 1.0)
+    x̂ = PseudoDensities(x)
+    solver.vars .= x
+    solver()
+    K, Kσ = TopOpt.buckling(solver)
+    ev = eigen(Symmetric(Matrix(Kσ.data)), Symmetric(Matrix(K.data)))
+    V = [vec(ev.vectors[:, 1])]
+    cfull = dot(solver.u, solver.globalinfo.f)
+    bec = BucklingElementCutsFun(solver, λ̄, V; c̄=cfull)
+    val = bec(x̂)
+    na = length(bec.active)
+    @test length(val) == 1 + na + 1
+    # compliance component (shared u)
+    @test val[1] ≈ dot(solver.u, solver.globalinfo.f) / cfull - 1 rtol=1e-12
+    # element component matches ρ_e(K0e + λ̄G0e)
+    u = copy(solver.u)
+    dh = problem.ch.dh
+    cv = Ferrite.CellCache(dh)
+    gd = zeros(Int, Ferrite.ndofs_per_cell(dh))
+    cellvalues = solver.elementinfo.cellvalues
+    e1 = bec.active[1]
+    Ferrite.celldofs!(gd, dh, e1)
+    Ferrite.reinit!(cv, e1)
+    Ferrite.reinit!(cellvalues, cv)
+    G0e = TopOpt.TopOptProblems.element_kσ(problem, cellvalues, u[gd])
+    K0e = Matrix(TopOpt.rawmatrix(solver.elementinfo.Kes[e1]))
+    ρ_e, _ = TopOpt.Utilities.get_ρ_dρ(x[e1], TopOpt.Utilities.getpenalty(solver), solver.xmin)
+    @test val[2] ≈ ρ_e .* (K0e + λ̄ .* G0e) rtol=1e-12
+    # cut component matches BucklingCutFun
+    cut = BucklingCutFun(solver, λ̄, V[1])
+    @test val[end][1] ≈ cut(x̂) rtol=1e-12
+    # FD gradients: compliance, one element-matrix entry, the cut
+    g1 = Zygote.gradient(x -> bec(PseudoDensities(x))[1], x)[1]
+    g_fd1 = FDM.grad(central_fdm(5, 1), x -> bec(PseudoDensities(x))[1], x)[1]
+    @test norm(g1 - g_fd1) / max(norm(g_fd1), 1) < 1e-7
+    g2 = Zygote.gradient(x -> bec(PseudoDensities(x))[2][1, 2], x)[1]
+    g_fd2 = FDM.grad(central_fdm(5, 1), x -> bec(PseudoDensities(x))[2][1, 2], x)[1]
+    @test norm(g2 - g_fd2) / max(norm(g_fd2), 1) < 1e-7
+    g3 = Zygote.gradient(x -> bec(PseudoDensities(x))[end][1], x)[1]
+    g_fd3 = FDM.grad(central_fdm(5, 1), x -> bec(PseudoDensities(x))[end][1], x)[1]
+    @test norm(g3 - g_fd3) / max(norm(g_fd3), 1) < 1e-7
+end
