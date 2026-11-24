@@ -723,12 +723,20 @@ function ChainRulesCore.rrule(
         solver.rhs .= load
         solver(; reuse_fact=true, assemble_f=false)
         w = solver.lhs
-        for (k, e) in enumerate(bec.active)
-            ΔP = ChainRulesCore.unthunk(Δ[nc + k])
+        # the scatter runs over ALL cells: the compliance and cut terms
+        # (and the adjoint w-chain) are global quantities with respect to
+        # every design variable, while the element-PSD terms only touch
+        # the cells in `active`. Restricting the loop to `active` would
+        # silently drop the compliance gradient when active is empty.
+        for e in 1:m
+            ΔP = haskey(actidx, e) ?
+                 ChainRulesCore.unthunk(Δ[nc + actidx[e]]) :
+                 ChainRulesCore.NoTangent()
             celldofs!(gd, dh, e)
             ue = u[gd]
             we = w[gd]
-            K0e = K0act[k]
+            K0e = haskey(actidx, e) ? K0act[actidx[e]] :
+                  Matrix(rawmatrix(solver.elementinfo.Kes[e]))
             G0e = Kσ0s[e]
             t = zero(eltype(x̂.x))
             if !_cotzero(ΔP)

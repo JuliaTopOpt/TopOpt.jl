@@ -186,4 +186,14 @@ end
     g3 = Zygote.gradient(x -> bec(PseudoDensities(x))[end][1], x)[1]
     g_fd3 = FDM.grad(central_fdm(5, 1), x -> bec(PseudoDensities(x))[end][1], x)[1]
     @test norm(g3 - g_fd3) / max(norm(g_fd3), 1) < 1e-7
+
+    # regression: with NO active elements (compliance-only bundle) the
+    # compliance gradient must still be nonzero — it scatters over every
+    # cell, not only the active ones.
+    bec0 = BucklingElementCutsFun(solver, λ̄, Vector{Vector{Float64}}();
+                                  active=Int[], c̄=cfull)
+    g0 = Zygote.gradient(x -> bec0(PseudoDensities(x))[1], x)[1]
+    g_fd0 = FDM.grad(central_fdm(5, 1), x -> bec0(PseudoDensities(x))[1], x)[1]
+    @test norm(g0 - g_fd0) / max(norm(g_fd0), 1) < 1e-7
+    @test !iszero(g0)
 end
