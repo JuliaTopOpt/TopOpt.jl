@@ -557,8 +557,12 @@ adjoint solve — the per-cell cotangents of the stress matrices (the
 cuts' `λ̄·ρ_e·Δcᵢ·vᵢvᵢᵀ` and the elements' `λ̄·ρ_e·ΔP_e`) are summed into
 one load.
 
-`active` selects the elements contributing PSD components; defaults to
-every element with a free design variable (passive solid/void excluded).
+`active` selects the elements contributing PSD components — an optional
+*value-side* restriction: `nothing` (default) means every element with a
+free design variable (no restriction), `:none` means no element
+components at all, or pass an explicit index list (e.g. only
+compression-carrying elements). The gradients always cover every design
+cell regardless of the restriction.
 `V` may be empty (the local relaxation alone). With `c̄` given, the first
 output component is the normalized compliance `c(x)/c̄ − 1` (the
 displacement solve it shares with everything else), to be paired with a
@@ -580,11 +584,14 @@ function BucklingElementCutsFun(
     cuts = [BucklingCutFun(solver, λ̄, v) for v in V]
     problem = solver.problem
     if active === nothing
+        # no restriction: every element with a free design variable
         m = getncells(problem.ch.dh.grid)
         pas = applicable(getpassive_solid, problem) ?
               union(getpassive_solid(problem), getpassive_void(problem)) :
               Int[]
         active = [e for e in 1:m if !(e in pas)]
+    elseif active === :none
+        active = Int[]
     end
     return BucklingElementCutsFun(solver, λ̄, V, cuts, active, c̄)
 end
