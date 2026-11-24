@@ -197,3 +197,36 @@ end
     @test norm(g0 - g_fd0) / max(norm(g_fd0), 1) < 1e-7
     @test !iszero(g0)
 end
+
+@testset "KSBucklingFun" begin
+    problem = PointLoadCantilever((2, 2), (1.0, 1.0), 1.0, 0.3, 1.0)
+    solver = FEASolver(DirectSolver, problem; xmin=0.01, penalty=PowerPenaltyFun(3.0))
+    m = getncells(problem)
+    x = clamp.(rand(m) .* 0.9 .+ 0.1, 0.0, 1.0)
+    x̂ = PseudoDensities(x)
+    solver.vars .= x
+    solver()
+    K, Kσ = TopOpt.buckling(solver)
+    # deterministic dense eigensolver: BLFs λ = -1/ν, K-normalized modes
+    dense_eigs(Kd, Kσd, k) = begin
+        ev = eigen(Symmetric(Matrix(Kσd)), Symmetric(Matrix(Kd)))
+        perm = sortperm(ev.values)[1:min(k, length(ev.values))]
+        λs = Float64[]
+        Xs = Vector{Vector{Float64}}()
+        for j in perm
+            ν = ev.values[j]
+            ν < -1.0e-14 || continue
+            φ = vec(ev.vectors[:, j])
+            push!(λs, -1.0 / ν)
+            push!(Xs, φ ./ sqrt(dot(φ, Kd * φ)))
+        end
+        return λs, Xs
+    end
+    ksb = KSBucklingFun(solver, 2, 10.0; eigsolver=dense_eigs)
+    g = Zygote.gradient(x -> ksb(PseudoDensities(x)), x)[1]
+    g_fd = FDM.grad(central_fdm(5, 1), x -> ksb(PseudoDensities(x)), x)[1]
+    @test norm(g - g_fd) / max(norm(g_fd), 1) < 1e-6
+    # the value is the logsumexp lower bound of the smallest BLFs
+    λs_dense = dense_eigs(K.data, Kσ.data, 2)[1]
+    @test ksb(x̂) ≈ -(1 / 10.0) * log(sum(exp(-10.0 * λ) for λ in λs_dense)) rtol=1e-4
+end

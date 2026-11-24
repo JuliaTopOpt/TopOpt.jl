@@ -768,3 +768,147 @@ function ChainRulesCore.rrule(
     end
     return val, bec_pb
 end
+
+
+"""
+    KSBucklingFun(solver::AbstractFEASolver, k, ρ; eigsolver=nothing)
+
+The Kreisselmeier–Steinhauser lower bound on the minimum of the `k`
+smallest buckling load factors of the pencil `Kφ + λKσφ = 0` (the
+eigenpairs from LOBPCG by default, K-orthonormal modes, `λᵢ = -1/νᵢ`):
+
+    KS = -(1/ρ) · log( Σᵢ exp(-ρ λᵢ) )
+
+a smooth underestimate of `λ₁` — the element-level counterpart of
+`NonconvexSemidefinite.ks_aggregate(K, -Kσ, k, ρ)` for large sparse
+pencils, whose matrix cotangents would be O(n²). The rrule is the
+closed-form design sensitivity with ONE combined adjoint solve:
+`dλᵢ = λᵢ·φᵢᵀdKφᵢ + λᵢ²·φᵢᵀdKσφᵢ` (φᵢ K-orthonormal), weighted by
+`wᵢ = softmax(-ρλᵢ)`, and the stress's design dependence flows through
+the same per-cell cotangent machinery as [`BucklingCutFun`](@ref)
+(O(k·m) memory; no matrix cotangents are ever formed).
+"""
+struct KSBucklingFun{TS<:AbstractFEASolver,T,TE} <: AbstractFunction{T}
+    solver::TS
+    k::Int
+    ρ::T
+    eigsolver::TE
+end
+function KSBucklingFun(
+    solver::AbstractFEASolver, k::Int, ρ; eigsolver=nothing
+)
+    T = Float64
+    es = eigsolver === nothing ? _ksb_lobpcg : eigsolver
+    return KSBucklingFun{typeof(solver),T,typeof(es)}(solver, k, T(ρ), es)
+end
+
+# default: the k smallest generalized eigenvalues of (Kσ, K) via LOBPCG;
+# returns (BLFs λ = -1/ν ascending, K-orthonormal vectors).
+function _ksb_lobpcg(K, Kσ, k)
+    n = size(K, 1)
+    X0 = rand(n, min(k + 2, n))
+    res = lobpcg(Kσ, K, false, X0; tol=1.0e-6, maxiter=400)
+    λs = Float64[]
+    Xs = Vector{Vector{Float64}}()
+    for j in 1:min(k, length(res.λ))
+        ν = res.λ[j]
+        ν < -1.0e-14 || continue
+        push!(λs, -1.0 / ν)
+        push!(Xs, vec(res.X[:, j]))
+    end
+    return λs, Xs
+end
+
+function (ksb::KSBucklingFun)(x̂::PseudoDensities)
+    solver = ksb.solver
+    solver.vars .= x̂.x
+    solver()
+    K, Kσ = buckling(solver)
+    λs, _ = ksb.eigsolver(K.data, Kσ.data, ksb.k)
+    isempty(λs) && return -Inf
+    return -(1 / ksb.ρ) * log(sum(exp(-ksb.ρ * λ) for λ in λs))
+end
+function (ksb::KSBucklingFun)(x::AbstractVector)
+    return ksb(PseudoDensities(x))
+end
+
+function ChainRulesCore.rrule(ksb::KSBucklingFun, x̂::PseudoDensities)
+    solver = ksb.solver
+    solver.vars .= x̂.x
+    solver()
+    u = solver.u
+    problem = solver.problem
+    penalty = getpenalty(solver)
+    xmin = solver.xmin
+    dh = problem.ch.dh
+    cellvalues = solver.elementinfo.cellvalues
+    K, Kσ = buckling(solver)
+    λs, Xs = ksb.eigsolver(K.data, Kσ.data, ksb.k)
+    m = getncells(dh.grid)
+    if isempty(λs)
+        val = -Inf
+    else
+        val = -(1 / ksb.ρ) * log(sum(exp(-ksb.ρ * λ) for λ in λs))
+    end
+    Kσ0s = _element_kσs(solver, u)
+    ρs = [get_ρ_dρ(x̂.x[e], penalty, xmin)[1] for e in 1:m]
+    function ksb_pb(Δ)
+        Δ = ChainRulesCore.unthunk(Δ)
+        grad = zeros(eltype(x̂.x), m)
+        if Δ isa ChainRulesCore.AbstractZero || isempty(λs)
+            return Tangent{typeof(ksb)}(;
+                solver=NoTangent(), k=NoTangent(), ρ=NoTangent(),
+                eigsolver=NoTangent(),
+            ),
+            Tangent{typeof(x̂)}(; x=grad)
+        end
+        w = exp.(-ksb.ρ .* λs)
+        w ./= sum(w)          # dKS/dλᵢ = softmax(-ρλᵢ)
+        gd = zeros(Int, ndofs_per_cell(dh))
+        cv = Ferrite.CellCache(dh)
+        # ONE combined adjoint load: the per-cell Kσ cotangents
+        # Δ·wᵢ·λᵢ²·ρ_e·φᵢφᵢᵀ through the analytic element_kσ reverse
+        load = zeros(size(u))
+        for e in 1:m
+            ΔG = zeros(eltype(u), ndofs_per_cell(dh), ndofs_per_cell(dh))
+            for (i, φ) in enumerate(Xs)
+                celldofs!(gd, dh, e)
+                ΔG .+= Δ .* w[i] .* λs[i]^2 .* ρs[e] .* (φ[gd] * φ[gd]')
+            end
+            iszero(ΔG) && continue
+            celldofs!(gd, dh, e)
+            Ferrite.reinit!(cv, e)
+            reinit!(cellvalues, cv)
+            _, _, _, Δue = ChainRulesCore.rrule(
+                element_kσ, problem, cellvalues, u[gd]
+            )[2](ΔG)
+            load[gd] .+= Δue
+        end
+        solver.rhs .= load
+        solver(; reuse_fact=true, assemble_f=false)
+        wadj = solver.lhs
+        for e in 1:m
+            celldofs!(gd, dh, e)
+            ue = u[gd]
+            K0e = Matrix(rawmatrix(solver.elementinfo.Kes[e]))
+            G0e = Kσ0s[e]
+            t = zero(eltype(x̂.x))
+            for (i, φ) in enumerate(Xs)
+                ve = φ[gd]
+                # dλᵢ = λᵢ·vᵀdKv + λᵢ²·vᵀdKσv (φ K-orthonormal)
+                t += Δ * w[i] * (
+                    λs[i] * dot(ve, K0e, ve) +
+                    λs[i]^2 * dot(ve, G0e, ve)
+                )
+            end
+            _, dρ = get_ρ_dρ(x̂.x[e], penalty, xmin)
+            grad[e] = dρ * (t - dot(wadj[gd], K0e, ue))
+        end
+        return Tangent{typeof(ksb)}(;
+            solver=NoTangent(), k=NoTangent(), ρ=NoTangent(),
+            eigsolver=NoTangent(),
+        ),
+        Tangent{typeof(x̂)}(; x=grad)
+    end
+    return val, ksb_pb
+end
