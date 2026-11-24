@@ -683,6 +683,9 @@ function ChainRulesCore.rrule(
         ncut = length(bec.V)
         Δcomp = nc == 1 ? ChainRulesCore.unthunk(Δ[1]) :
                 ChainRulesCore.NoTangent()
+        # the scalar compliance component may arrive as a length-1 vector
+        # (the order-set violations are vector-valued); collapse it.
+        Δcomp = Δcomp isa AbstractVector ? only(Δcomp) : Δcomp
         Δcuts = ncut > 0 ? ChainRulesCore.unthunk(Δ[nc + na + 1]) :
                 ChainRulesCore.NoTangent()
         cv = Ferrite.CellCache(dh)
