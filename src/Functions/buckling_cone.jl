@@ -214,20 +214,14 @@ end
 # of a *given* displacement field. Shared by the precomputed-input call
 # forms of BucklingCutFun and by BucklingCutsFun.
 function _element_kσs(solver::AbstractFEASolver, u::AbstractVector)
+    # the whole mesh in ONE buffered call (single shared scratch, no
+    # per-cell closures or allocations)
     problem = solver.problem
     cellvalues = solver.elementinfo.cellvalues
-    dh = problem.ch.dh
-    cv_cell = Ferrite.CellCache(dh)
-    global_dofs = zeros(Int, ndofs_per_cell(dh))
-    m = getncells(dh.grid)
-    Kσ0s = Vector{Matrix{eltype(u)}}(undef, m)
-    for ci in 1:m
-        celldofs!(global_dofs, dh, ci)
-        Ferrite.reinit!(cv_cell, ci)
-        reinit!(cellvalues, cv_cell)
-        Kσ0s[ci] = element_kσ(problem, cellvalues, u[global_dofs])
-    end
-    return Kσ0s
+    m = getncells(problem.ch.dh.grid)
+    nd = ndofs_per_cell(problem.ch.dh)
+    Kσ0s = [zeros(eltype(u), nd, nd) for _ in 1:m]
+    return element_kσ_all!(Kσ0s, problem, cellvalues, u)
 end
 
 # The shared closed-form gradient:
@@ -788,18 +782,27 @@ closed-form design sensitivity with ONE combined adjoint solve:
 the same per-cell cotangent machinery as [`BucklingCutFun`](@ref)
 (O(k·m) memory; no matrix cotangents are ever formed).
 """
-struct KSBucklingFun{TS<:AbstractFEASolver,T,TE} <: AbstractFunction{T}
+struct KSBucklingFun{TS<:AbstractFEASolver,T,TE,TB} <: AbstractFunction{T}
     solver::TS
     k::Int
     ρ::T
     eigsolver::TE
+    ΔG_scratch::Vector{Matrix{T}}   # per-cell cotangent buffer (m × ndof_pc²)
+    vv_scratch::Matrix{T}           # ndof_pc × ndof_pc temporary
 end
 function KSBucklingFun(
     solver::AbstractFEASolver, k::Int, ρ; eigsolver=nothing
 )
     T = Float64
     es = eigsolver === nothing ? _ksb_lobpcg : eigsolver
-    return KSBucklingFun{typeof(solver),T,typeof(es)}(solver, k, T(ρ), es)
+    dh = solver.problem.ch.dh
+    nd = ndofs_per_cell(dh)
+    m = getncells(dh.grid)
+    ΔG_scratch = [zeros(T, nd, nd) for _ in 1:m]
+    vv_scratch = zeros(T, nd, nd)
+    return KSBucklingFun{typeof(solver),T,typeof(es),typeof(ΔG_scratch)}(
+        solver, k, T(ρ), es, ΔG_scratch, vv_scratch
+    )
 end
 
 # default: the k smallest generalized eigenvalues of (Kσ, K) via LOBPCG;
@@ -850,7 +853,11 @@ function ChainRulesCore.rrule(ksb::KSBucklingFun, x̂::PseudoDensities)
     else
         val = -(1 / ksb.ρ) * log(sum(exp(-ksb.ρ * λ) for λ in λs))
     end
-    Kσ0s = _element_kσs(solver, u)
+    nd = ndofs_per_cell(dh)
+    Kσ0s = [zeros(eltype(u), nd, nd) for _ in 1:m]
+    Kσ0s, ek_all_pb = ChainRulesCore.rrule(
+        element_kσ_all!, Kσ0s, problem, cellvalues, u
+    )
     ρs = [get_ρ_dρ(x̂.x[e], penalty, xmin)[1] for e in 1:m]
     function ksb_pb(Δ)
         Δ = ChainRulesCore.unthunk(Δ)
@@ -865,14 +872,13 @@ function ChainRulesCore.rrule(ksb::KSBucklingFun, x̂::PseudoDensities)
         w = exp.(-ksb.ρ .* λs)
         w ./= sum(w)          # dKS/dλᵢ = softmax(-ρλᵢ)
         gd = zeros(Int, ndofs_per_cell(dh))
-        cv = Ferrite.CellCache(dh)
         # ONE combined adjoint load: the per-cell Kσ cotangents
-        # Δ·wᵢ·λᵢ²·ρ_e·φᵢφᵢᵀ through the analytic element_kσ reverse.
-        # Preallocated per-cell buffers: no per-cell/per-mode temporaries.
-        load = zeros(size(u))
-        ΔG = zeros(eltype(u), ndofs_per_cell(dh), ndofs_per_cell(dh))
-        vv = zeros(eltype(u), ndofs_per_cell(dh), ndofs_per_cell(dh))
+        # Δ·wᵢ·λᵢ²·ρ_e·φᵢφᵢᵀ accumulated into the preallocated buffer,
+        # then ONE all-elements rule call — no per-cell closures anywhere.
+        ΔGs = ksb.ΔG_scratch
+        vv = ksb.vv_scratch
         for e in 1:m
+            ΔG = ΔGs[e]
             fill!(ΔG, 0)
             for (i, φ) in enumerate(Xs)
                 celldofs!(gd, dh, e)
@@ -880,15 +886,8 @@ function ChainRulesCore.rrule(ksb::KSBucklingFun, x̂::PseudoDensities)
                 mul!(vv, ve, ve')
                 ΔG .+= Δ .* w[i] .* λs[i]^2 .* ρs[e] .* vv
             end
-            iszero(ΔG) && continue
-            celldofs!(gd, dh, e)
-            Ferrite.reinit!(cv, e)
-            reinit!(cellvalues, cv)
-            _, _, _, Δue = ChainRulesCore.rrule(
-                element_kσ, problem, cellvalues, u[gd]
-            )[2](ΔG)
-            load[gd] .+= Δue
         end
+        load = ek_all_pb(ΔGs)[5]
         solver.rhs .= load
         solver(; reuse_fact=true, assemble_f=false)
         wadj = solver.lhs

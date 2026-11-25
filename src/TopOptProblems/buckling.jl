@@ -178,6 +178,207 @@ function ChainRulesCore.rrule(
 end
 
 """
+    element_kσ!(Kσ_e, sp, cellvalues, u_e)
+
+Compute the unpenalized geometric stiffness matrix of one cell into the
+preallocated buffer `Kσ_e`, reusing the given scratch `sc` (see
+[`element_kσ_all!`](@ref)) — no per-cell allocation.
+"""
+function element_kσ!(Kσ_e, sp::StiffnessTopOptProblem{xdim,TT}, cellvalues, u_e, sc) where {xdim,TT}
+    T = promote_type(TT, eltype(u_e))
+    E = getE(sp)
+    ν = getν(sp)
+    n_basefuncs = getnbasefunctions(cellvalues)
+    ndof_pc = xdim * n_basefuncs
+    λ = T(getplanestress(sp) ? E * ν / (1 - ν^2) : E * ν / ((1 + ν) * (1 - 2 * ν)))
+    two_mu = T(E / (1 + ν))
+    fill!(Kσ_e, zero(T))
+    if getkσpoint(sp) === :centroid
+        nq = getnquadpoints(cellvalues)
+        dΩc = sum(getdetJdV(cellvalues, q) for q in 1:nq)
+        ∇Nc = sc.∇Nc
+        for a in 1:n_basefuncs
+            ∇Nc[a] = sum(shape_gradient(cellvalues, q, a) for q in 1:nq) / nq
+        end
+        fill!(sc.ϵ, zero(T))
+        for a in 1:n_basefuncs
+            r = (xdim * (a - 1) + 1):(xdim * a)
+            _u = view(u_e, r)
+            for i in 1:xdim, j in 1:xdim
+                sc.ϵ[i, j] += 1 / 2 * (_u[i] * ∇Nc[a][j] + _u[j] * ∇Nc[a][i])
+            end
+        end
+        sc.σ .= λ * sum(sc.ϵ[d, d] for d in 1:xdim) .* sc.δ .+ two_mu .* sc.ϵ
+        fill!(sc.G, zero(T))
+        fill!(sc.ψ, zero(T))
+        for a in 1:n_basefuncs, d in 1:xdim
+            sc.G[(xdim * (d - 1) + 1):(xdim * d), (a - 1) * xdim + d] .= ∇Nc[a]
+        end
+        for d in 1:xdim
+            sc.ψ[((d - 1) * xdim + 1):(d * xdim), ((d - 1) * xdim + 1):(d * xdim)] .= sc.σ
+        end
+        mul!(Kσ_e, sc.G', sc.ψ * sc.G, dΩc, false)
+    else
+        ψ = sc.ψ
+        G = sc.G
+        δ = sc.δ
+        ϵ = sc.ϵ
+        σ = sc.σ
+        u_p = sc.u_p
+        for q_point in 1:getnquadpoints(cellvalues)
+            dΩ = getdetJdV(cellvalues, q_point)
+            for d in 1:xdim
+                ψ[((d - 1) * xdim + 1):(d * xdim), ((d - 1) * xdim + 1):(d * xdim)] .= 0
+            end
+            for a in 1:n_basefuncs
+                ∇ϕ = shape_gradient(cellvalues, q_point, a)
+                r = (xdim * (a - 1) + 1):(xdim * a)
+                _u = view(u_e, r)
+                @einsum u_p[i, j] = _u[i] * ∇ϕ[j]
+                @einsum ϵ[i, j] = 1 / 2 * (u_p[i, j] + u_p[j, i])
+                tr_ϵ = sum(ϵ[d, d] for d in 1:xdim)
+                @einsum σ[i, j] = λ * δ[i, j] * tr_ϵ + two_mu * ϵ[i, j]
+                for d in 1:xdim
+                    ψ[((d - 1) * xdim .+ 1):(d * xdim), ((d - 1) * xdim .+ 1):(d * xdim)] .+= σ
+                    G[(xdim * (d - 1) + 1):(xdim * d), (a - 1) * xdim + d] .= ∇ϕ
+                end
+            end
+            mul!(Kσ_e, G', ψ * G, dΩ, true)
+        end
+    end
+    return Kσ_e
+end
+
+# the shared per-cell scratch
+function _element_kσ_scratch(sp::StiffnessTopOptProblem{xdim}, cellvalues) where {xdim}
+    T = Float64
+    n_basefuncs = getnbasefunctions(cellvalues)
+    return (
+        ψ=zeros(T, xdim * xdim, xdim * xdim),
+        G=zeros(T, xdim * xdim, xdim * n_basefuncs),
+        δ=Matrix{T}(1.0I, xdim, xdim),
+        ϵ=zeros(T, xdim, xdim),
+        σ=zeros(T, xdim, xdim),
+        u_p=zeros(T, xdim, xdim),
+        ∇Nc=[zeros(T, xdim) for _ in 1:n_basefuncs],
+    )
+end
+
+"""
+    element_kσ_all!(Kσs, sp, cellvalues, u)
+
+Compute the unpenalized per-cell geometric stiffness matrices for the
+WHOLE mesh into the preallocated buffer `Kσs` (one `ndof_pc × ndof_pc`
+matrix per cell), with a single shared scratch — no per-cell allocation.
+ONE function with ONE rrule: the pullback scatters the per-cell
+cotangents `ΔKσs` into the displacement cotangent `Δu` cell-by-cell
+through the stress's linear dependence on `u_e`, so bundle gradients
+assemble their adjoint load with a single rule call instead of one
+closure per cell.
+"""
+function element_kσ_all!(Kσs, sp::StiffnessTopOptProblem, cellvalues, u::AbstractVector)
+    dh = sp.ch.dh
+    gd = zeros(Int, ndofs_per_cell(dh))
+    cv = Ferrite.CellCache(dh)
+    sc = _element_kσ_scratch(sp, cellvalues)
+    for e in eachindex(Kσs)
+        celldofs!(gd, dh, e)
+        Ferrite.reinit!(cv, e)
+        reinit!(cellvalues, cv)
+        element_kσ!(Kσs[e], sp, cellvalues, view(u, gd), sc)
+    end
+    return Kσs
+end
+
+# the buffered per-cell reverse core (the closed form of the per-cell
+# rrule, written into Δu with no allocation beyond the scratch)
+function _element_kσ_reverse!(Δu, ΔKe, sp::StiffnessTopOptProblem{xdim,TT}, cellvalues) where {xdim,TT}
+    T = TT
+    E = getE(sp)
+    ν = getν(sp)
+    n_basefuncs = getnbasefunctions(cellvalues)
+    λ = T(getplanestress(sp) ? E * ν / (1 - ν^2) : E * ν / ((1 + ν) * (1 - 2 * ν)))
+    μ = T(E / (2 * (1 + ν)))
+    pairs = if getkσpoint(sp) === :centroid
+        nq = getnquadpoints(cellvalues)
+        [(
+            sum(getdetJdV(cellvalues, q) for q in 1:nq),
+            [sum(shape_gradient(cellvalues, q, a) for q in 1:nq) / nq for a in 1:n_basefuncs],
+        )]
+    else
+        [
+            (
+                getdetJdV(cellvalues, q),
+                [shape_gradient(cellvalues, q, a) for a in 1:n_basefuncs],
+            ) for q in 1:getnquadpoints(cellvalues)
+        ]
+    end
+    S = zeros(T, xdim, xdim)
+    for (dΩ, g) in pairs
+        for c in 1:n_basefuncs, i in 1:xdim
+            gc = g[c]
+            fill!(S, zero(T))
+            for p2 in 1:xdim, q in 1:xdim
+                S[p2, q] = λ * ((p2 == q) ? gc[i] : zero(T)) +
+                           μ * ((i == p2 ? gc[q] : zero(T)) + (i == q ? gc[p2] : zero(T)))
+            end
+            acc = zero(eltype(ΔKe))
+            for a in 1:(xdim * n_basefuncs), b in 1:(xdim * n_basefuncs)
+                ((a - 1) % xdim == (b - 1) % xdim) || continue
+                Δab = ΔKe[a, b]
+                iszero(Δab) && continue
+                ga = g[(a - 1) ÷ xdim + 1]
+                gb = g[(b - 1) ÷ xdim + 1]
+                acc += Δab * sum(ga[p2] * S[p2, q] * gb[q] for p2 in 1:xdim, q in 1:xdim)
+            end
+            Δu[xdim * (c - 1) + i] += dΩ * acc
+        end
+    end
+    return Δu
+end
+
+function ChainRulesCore.rrule(
+    ::typeof(element_kσ_all!), Kσs, sp::StiffnessTopOptProblem,
+    cellvalues, u::AbstractVector,
+)
+    dh = sp.ch.dh
+    gd = zeros(Int, ndofs_per_cell(dh))
+    cv = Ferrite.CellCache(dh)
+    sc = _element_kσ_scratch(sp, cellvalues)
+    for e in eachindex(Kσs)
+        celldofs!(gd, dh, e)
+        Ferrite.reinit!(cv, e)
+        reinit!(cellvalues, cv)
+        element_kσ!(Kσs[e], sp, cellvalues, view(u, gd), sc)
+    end
+    function ekσ_all_pb(ΔKσs)
+        ΔKσs = ChainRulesCore.unthunk(ΔKσs)
+        Δu = zeros(eltype(u), length(u))
+        if ΔKσs isa ChainRulesCore.AbstractZero
+            return (
+                ChainRulesCore.NoTangent(), ChainRulesCore.NoTangent(),
+                ChainRulesCore.NoTangent(), ChainRulesCore.NoTangent(), Δu,
+            )
+        end
+        for e in eachindex(Kσs)
+            ΔKe = ΔKσs[e]
+            ΔKe isa ChainRulesCore.AbstractZero && continue
+            iszero(ΔKe) && continue
+            celldofs!(gd, dh, e)
+            Ferrite.reinit!(cv, e)
+            reinit!(cellvalues, cv)
+            Δue = view(Δu, gd)
+            _element_kσ_reverse!(Δue, ΔKe, sp, cellvalues)
+        end
+        return (
+            ChainRulesCore.NoTangent(), ChainRulesCore.NoTangent(),
+            ChainRulesCore.NoTangent(), ChainRulesCore.NoTangent(), Δu,
+        )
+    end
+    return Kσs, ekσ_all_pb
+end
+
+"""
     get_Kσs(sp, u_dofs, cellvalues, vars, penalty, xmin)
 
 Compute the per-cell geometric stiffness matrices `Kσ` from the displacement
