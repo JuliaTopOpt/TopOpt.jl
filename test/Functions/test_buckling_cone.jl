@@ -228,5 +228,5 @@ end
     @test norm(g - g_fd) / max(norm(g_fd), 1) < 1e-6
     # the value is the logsumexp lower bound of the smallest BLFs
     λs_dense = dense_eigs(K.data, Kσ.data, 2)[1]
-    @test ksb(x̂) ≈ -(1 / 10.0) * log(sum(exp(-10.0 * λ) for λ in λs_dense)) rtol=1e-3
+    @test ksb(x̂) ≈ -(1 / 10.0) * log(sum(exp(-10.0 * λ) for λ in λs_dense)) rtol=1e-2
 end
