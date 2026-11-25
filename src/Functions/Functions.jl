@@ -8,7 +8,7 @@ using ..FEA, ..CheqFilters
 using ..Utilities, ForwardDiff, LinearAlgebra
 using ..Utilities: get_ρ, get_ρ_dρ
 using ..TrussTopOptProblems: getA, compute_local_axes
-using IterativeSolvers: cg!
+using IterativeSolvers: cg!, lobpcg
 using Preconditioners: UpdatePreconditioner!
 
 using Parameters: @unpack

@@ -867,13 +867,18 @@ function ChainRulesCore.rrule(ksb::KSBucklingFun, x̂::PseudoDensities)
         gd = zeros(Int, ndofs_per_cell(dh))
         cv = Ferrite.CellCache(dh)
         # ONE combined adjoint load: the per-cell Kσ cotangents
-        # Δ·wᵢ·λᵢ²·ρ_e·φᵢφᵢᵀ through the analytic element_kσ reverse
+        # Δ·wᵢ·λᵢ²·ρ_e·φᵢφᵢᵀ through the analytic element_kσ reverse.
+        # Preallocated per-cell buffers: no per-cell/per-mode temporaries.
         load = zeros(size(u))
+        ΔG = zeros(eltype(u), ndofs_per_cell(dh), ndofs_per_cell(dh))
+        vv = zeros(eltype(u), ndofs_per_cell(dh), ndofs_per_cell(dh))
         for e in 1:m
-            ΔG = zeros(eltype(u), ndofs_per_cell(dh), ndofs_per_cell(dh))
+            fill!(ΔG, 0)
             for (i, φ) in enumerate(Xs)
                 celldofs!(gd, dh, e)
-                ΔG .+= Δ .* w[i] .* λs[i]^2 .* ρs[e] .* (φ[gd] * φ[gd]')
+                ve = @view φ[gd]
+                mul!(vv, ve, ve')
+                ΔG .+= Δ .* w[i] .* λs[i]^2 .* ρs[e] .* vv
             end
             iszero(ΔG) && continue
             celldofs!(gd, dh, e)
